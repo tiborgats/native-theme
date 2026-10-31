@@ -724,12 +724,14 @@ MAT-X13–MAT-X15, X-MO-1).
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
   input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
-  which start on their own test, and GtkSwitch's slide, which starts on an activation (below); the transition of the style
-  after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`), and a part that becomes absent is gone at once, as that style states nothing for it
-  (ADD-A126; rejected: timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could
-  not both fade out as the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one
-  style). A transition may name the states it applies from (`from`, a set of flags): one with
+  which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
+  as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
+  the style after the change governs, in both directions, as in CSS and GTK
+  (`gtkcssanimatedstyle.c`), and a part that becomes absent is gone at once, as that style states nothing for it, a
+  part a platform hides by state and draws on or trims off being styled in every state and hidden by `shown`
+  instead (below; ADD-A126; rejected:
+  timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could not both fade out as
+  the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
   after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
   later in stated order wins (Breeze's runs rank instead, below). Two platforms need `from`. Compose chooses an elevation's spec by the interaction
@@ -802,10 +804,12 @@ MAT-X13–MAT-X15, X-MO-1).
   - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
   - *A preset default with a per-transition override*: two homes for one fact.
   - *An engine per part* (stated once on a part, rules restating it, Breeze's test per transition): it saves the
-    `engine` repeated on each transition, and no part at the pins runs two engines on its groups; but a rule changes
-    the engine of a part's group (K1.30's Kirigami zeros Breeze's where Kirigami's Behaviors are Qt Quick's), the
-    focus indicator's runs on its own, and Breeze's test, its data, is per transition anyway, so the part's engine
-    would be a second home beside the transition it governs.
+    `engine` repeated on each transition; but a part runs two engines on its groups (Compose's segment, its press
+    `ComposeHeld` and its state layer `ComposeAnimatable`, MAT-N6, MAT-X9; its check mark, its drawn fraction
+    `ComposeTransition` and its colour `ComposeAnimatable`, MAT-C8), a rule changes a group's engine (Q3.26's
+    `QtQuick` under `flavor:kirigami`), the focus indicator's runs on its own, and Breeze's test and the AnimatedIcon's
+    visual, the engines' data, are per transition anyway, so the part's engine would be a second home beside the
+    transition it governs.
   - *A gate check in place of Breeze's reduction* (S12 proving, for every combination of flags, the style under the
     kept flags equal to the style under the reduced ones, so the connector draws the kept flags): a simpler runtime,
     but each preset would restate Breeze's precedence as rules for every combination a test excludes (a hovered
@@ -819,15 +823,16 @@ MAT-X13–MAT-X15, X-MO-1).
     `WinUiAnimatedIcon`, `GtkSwitch`), each implemented once in
     native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
     an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
-    transition: Breeze's test, quoted from its `updateState` call, and whether AdwEntryRow's title replays. The value
+    transition: Breeze's test, quoted from its `updateState` call, whether AdwEntryRow's title replays, and the
+    AnimatedIcon's visual, whose duration and markers `token.icons.animated_visuals` states once per visual. The value
     engines start from the value drawn; Breeze's turn where they are or restart, ranked in stated order with live
     ends; `from` stays ADD-A124's, the flags held before, as no fact reads otherwise under "a flag cleared" (ADD-A125's
     attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
     where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
     GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
     two engines, the governing transition's engine draws it, one hand-off rule deciding the update where it changes
-    (the leaving engine ending at the value drawn, a value engine taking over from there, Breeze taking over at its
-    rest value; a Breeze zero is Breeze governing). Breeze's group draws its flags reduced by its tests, at rest, under a
+    (a value engine leaving ending at the value drawn, Breeze's runs going on hidden, a value engine taking over from
+    there, Breeze taking over at its rest value; a Breeze zero is Breeze governing). Breeze's group draws its flags reduced by its tests, at rest, under a
     zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted, but those a passing test names), so a
     fade a flag's style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and
     fill, its header) are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
@@ -839,6 +844,34 @@ MAT-X13–MAT-X15, X-MO-1).
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
     appears) is a presentation event's matter, not settled here.
+- **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
+  on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
+  radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,
+  and macOS's dot is measured.
+  - *`Absent` at rest* (ADD-A125's form): the rest look by the part decision, but any later layer's `Style` patch for
+    the part (a colour stated for every state) brings an unchecked mark back (S6.3), and the motion needs values in
+    the state where the part is absent.
+  - *A part patch that hides and that a `Style` patch does not undo*: robust, but a third part decision with a merge
+    rule of its own, where a field merges as every field does.
+  - *Hidden values alone* (a zero extent or size in every state, check 17's form): plain transitions, but an extent
+    has no reading on a code point, a theme icon or a system rendering, and GTK's swap has no value to zero.
+  - *`opacity` 0*: a later patch of the opacity shows the part, and a fade runs where the platform draws on.
+  - *A hidden look on the transition*: one patch per transition, but it cannot follow the state the mark trims off in
+    (WinUI's per-state foregrounds, Compose's unselected colour), and it is a second home for values the rules state.
+  - *A `Keyed` transition per platform*: the motion out of the model's terms, which a connector cannot draw from the
+    theme; right only where the platform's own asset is an animation (WinUI's AnimatedIcon).
+  - *WinUI's check as one stroked path* (`draw_extent` on, `draw_start` off): the accept visual is a composition of
+    visibility-switched layers trimmed per segment, which one path's extents do not reproduce.
+  - **Decision**: *`PartStyle.shown`*, a field listed only on the parts a platform hides by state (the check mark,
+    the radio dot): the part is styled in every state, `shown = false` where nothing is drawn at rest, so a later
+    layer's patch of another field leaves it hidden and a measured look (macOS's dot) is kept for a connector that
+    draws the parts itself; the part is drawn while `shown` holds or a seen run of it runs, so its hidden style, its
+    style where `shown` is false, is what it enters from and leaves to under the transition that governs, one rule
+    for every engine. `GlyphDraw` times a glyph's path and drawn span apart from its colour, as `StrokeWidth` does a
+    stroke's widths, for Compose's check, whose spatial and effects motions differ; a path moves to one of the same
+    commands point by point (the check pulled to the dash), and any other source change is discrete. WinUI's mark
+    stays the AnimatedIcon's, its visual's duration and markers in `token.icons.animated_visuals` and its frames the
+    Windows lane's asset; AppKit's and UIKit's motion is measured.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an

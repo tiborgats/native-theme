@@ -260,7 +260,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
-| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected) | rule |
+| CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark hidden unselected, `shown = false`, and whether UIKit animates its check in a register row, the catalogue's Open items, its entry stated as S2.7's *A part not shown at rest* has it once measured, ADD-A126) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
 | CK-2† | `checkbox.box.{min_width,min_height} @ variant selection` (`= uifm_scaled(<size>, body)`: the circle's size per Dynamic Type; ADD-A55) | rule |
 | CK-2† | `reader:ios:the Dynamic Type category the circle's size follows` | readers (R18) |
@@ -923,7 +923,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SE-3 | `list.row_background.fill @ {pressed} / {selected}` (the grey touch highlight against the tint selection; per context by `context` rules) | rule |
 | X-FO-1 | `PartStyle.focus kind Ring (halo shape, position, width, colour)` | field |
 | X-FO-2 | `list.row_background.fill @ {focus_visible} (cell focus highlight)` | rule |
-| X-FO-2 | `FocusIndicator.transition kind FocusMove (ADD-A19)` | field |
+| X-FO-2 | `FocusIndicator.transition` (UIKit's focus moving between elements, `FocusMove`, ADD-A19: pending with X-MO-1's engine, the preset stating `"absent"` with the pending id, S17, ADD-A126) | field |
 | X-PH-1 | `PartStyle.transform @ {hover} (pointer lift)` | rule |
 | X-PH-1 | `PartStyle.shadow @ {hover}` | rule |
 | X-PH-1 | `PartStyle.fill @ {hover} (highlight)` | rule |

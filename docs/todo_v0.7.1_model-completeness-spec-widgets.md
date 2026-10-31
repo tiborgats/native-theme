@@ -62,9 +62,20 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
     `WinUi` (a pending fact, the preset stating no transition, until then);
-  - `windows-11`: what WinUI's transitions but AnimatedIcon's (`WinUi`, S2.7) do under each presence (S2.7's `Presence`) and as the element is painted again, a change
-    made meanwhile included, and as animations turn off (AnimatedIcon's decided from its source, S2.7); and on every lane, which `Presence` a minimised
+  - `windows-11`: what WinUI's transitions do under each presence (S2.7's `Presence`) and as the element is painted again, a change
+    made meanwhile included, and as animations turn off, a running AnimatedIcon segment's included (the segments
+    started after it jumping, from its source, S2.7);
+  - `windows-11`: the AnimatedIcon visuals' frames (their shapes, trims and visibility keyframes over the progress),
+    transcribed from `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/` into the icon asset the
+    connector draws at `Drawn.icon_progress` (the accept visual, W1-039; the visuals of W3-28), as a genuine source's
+    artwork; until then the connector draws the part's glyph, the visual's timing standing complete (S2.7);
+  - `material-3`: a re-press on a button group's segment during its run back, the press fraction's velocity at the
+    re-press, which S2.7's `ComposeHeld` states as zero from kotlinx.coroutines' `collectLatest` (its
+    `ChannelFlowTransformLatest` cancelling and joining the block before), whose source is not in the cache; and on every lane, which `Presence` a minimised
     window's elements have (an occluded window's are `Unpainted`, S2.7);
+  - `macos-*` and `ios-*`: whether AppKit draws its check mark and radio dot on, trims or grows them (MAC-X11's
+    recording) and whether UIKit's multiselect check enters (CK-2†), stated as S2.7's *A part not shown at rest* has
+    them; `windows-11`: a checked radio's dot while pressed, which two state groups set (W1-041);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
   - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2).
@@ -1947,9 +1958,10 @@ spaces:
   of `NSUserInterfaceCompressionOptions`, `standard` AppKit's standard combination of them); `image_scaling:
   Value<Key>` (AppKit `imageScaling`, MAC-SG10†; declared `{ key = ["proportionally_down", "axes_independently", "none",
   "proportionally_up_or_down"] }`, the cases of `NSImageScaling`);
-  `indicator_draggable: Value<bool>` (SG-5); `pressed_width_factor: Value<f32>` (Material's standard button group:
-  the pressed segment's width is its width times this factor, its neighbours narrowing to make room, applied by the
-  connector at layout, MAT-N6); `presentations: Vec<PresentationTransition>` (queried with the control): events
+  `indicator_draggable: Value<bool>` (SG-5); `pressed_width_ratio: Value<f32>` (Material's standard button group:
+  the share of its width a fully pressed segment grows by, at most its neighbours' `compression_limit_px` on each
+  side, they narrowing to make room, applied by the connector at layout, S2.7's `ComposeHeld`, MAT-N6);
+  `compression_limit_px: Value<Px>` (the most a neighbour of a pressed segment gives up, MAT-N6); `presentations: Vec<PresentationTransition>` (queried with the control): events
   `@indicator_move` with a step on the segment's part `indicator` (S2.7: the indicator sliding to the new segment:
   SG-5, MAC-SG09, W1-138, K-KA-25†), `@spring_load` (a
   spring-loaded segment's flash or blink while a drag hovers it, MAC-X21, P3-11†).
@@ -1990,7 +2002,7 @@ spaces:
   - values: `compression` (all but `macos-*`), `image_scaling` (all but `macos-*`), `item_gap_px` (`adwaita`,
     `ios-*`: their segments abut, the `separator` between them, GN-1.243, SG-3; `macos-*` in the base, its segments
     abutting, MAC-SG01, and stated by a rule under `@separated`, whose segments AppKit draws apart, MAC-SG04),
-    `pressed_width_factor` (all but `material-3`). The draggable-indicator flag is false, not absent, where the
+    `pressed_width_ratio` (all but `material-3`), `compression_limit_px` (all but `material-3`). The draggable-indicator flag is false, not absent, where the
     indicator cannot be dragged (a `Value<bool>`, SG-5).
 - **State-model source:** `adwaita`: `_toggle-group.scss` selectors (`toggle:hover`, `:active`, `:checked`,
   `:disabled`, `.flat`, `.round`, `.osd`, `.vertical`, `prefers-contrast: more`); `kde-breeze`: kirigami-addons'
@@ -2009,9 +2021,10 @@ spaces:
   `segment.padding`; `border.shadow_enabled` → `track.shadow` / `indicator.shadow`.
 - **Notes:**
   - Group 6: Material's button group (`@standard_group`, `@connected`, MAT-N6): inner corners by state as
-    `segment.corners` rules under `{pressed}` and `{selected}`; the standard group's pressed width as
-    `values.pressed_width_factor`
-    (a factor of the segment's own width, which S8 keeps out of size limits, so the connector applies it at layout),
+    `segment.corners` rules under `{pressed}` and `{selected}`; the standard group's pressed growth as
+    `values.pressed_width_ratio` and `values.compression_limit_px`
+    (a share of the segment's own width, capped by its neighbours' limits, which S8 keeps out of size limits, so the
+    connector applies them at layout, S2.7),
     with a spring `Geometry` transition on `segment`.
   - kirigami-addons: `@ka_segmented_button` (K-KA-24†: joined segments, outer corners only by position, a hard shadow
     layer hidden while pressed); `@ka_radio_selector` (K-KA-25†: the sliding `indicator` pill, the selected label's
@@ -2123,10 +2136,16 @@ spaces:
   - `box` — the indicator: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring and macOS 12–15's bevel are inset
     layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
-    `QPainterPath`, Segoe Fluent code points, AppKit's whole-control rendering, iOS's named symbol), `padding` (its
-    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions` (its entrance and
-    exit: absent while neither checked nor indeterminate, it enters from transparent and leaves to transparent by
-    these, S2.7).
+    `QPainterPath`, WinUI's accept visual's path, AppKit's whole-control rendering, iOS's named symbol), `padding` (its
+    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `shown`, `transitions`. At rest
+    the mark draws nothing while neither checked nor indeterminate on every preset, so it states `shown = false`
+    there, by the base and `shown = true` rules `@ {checked}` and `@ {indeterminate}`, styled in every state (S2.7's
+    *A part not shown at rest*, ADD-A126), so a later layer's colour or size leaves an unchecked mark hidden; its
+    unchecked style holds what it is drawn on from and trimmed off to: `kde-breeze` and `material-3` a `draw_extent`
+    of 0 (K1.55, MAT-C8, Material's in its transparent unchecked colour), `windows-11` the unchecked states'
+    foregrounds and AnimatedIcon keys (W1-037, W1-039); `adwaita` states no transition, as GTK swaps the icon at
+    once; `macos-*` and `ios-*` style it from their measurements, and whether AppKit or UIKit animates it is measured
+    (Open items).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2148,8 +2167,7 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`),
-    `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
+  - parts: `state_layer` (all but `material-3`), `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
     K1.57, MAT-X10), `box.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61;
@@ -2199,8 +2217,14 @@ spaces:
     `min_height`, `focus`, `transitions` (the hover ring fading in, K1.52).
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
-    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
+    `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`,
+    `shown`. At rest an unchecked radio draws no dot, so it states `shown = false` unchecked, on `windows-11` neither
+    checked nor pressed, by the base and `shown = true` rules (S2.7's *A part not shown at rest*, ADD-A126); its
+    unchecked style holds what it grows from and shrinks to: `kde-breeze` a `transform` scale of 0 (K1.55),
+    `material-3` a size of 0 in the unselected colour (MAT-C1, MAT-C8), `windows-11` the pressed glyph's template
+    size (W1-041); `adwaita` no transition, as GTK swaps it at once; `macos-*` its measured dot (MAC-C07), kept for a
+    connector that draws the parts where AppKit's rendering cannot be composited (S15), AppKit's motion measured (Open
+    items).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
     ripple's `box_part` `ring` with `box_outset` Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
@@ -2215,7 +2239,7 @@ spaces:
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
+  - parts: `state_layer` (all but `material-3`); the dot is never absent, but hidden by `shown` (above).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
@@ -9299,10 +9323,13 @@ per-style table for the content-size category, `ReaderState.content_size_categor
 TS-2, X-DT-1, R25.15; `Linear` elsewhere; S9.4, ADD-A88), with
 each keyed style's `scaling_role` (*keyed text styles per platform*).
 
-**token.icons** (`IconTokens`, S4.5): `set`, `theme`, `theme_fallback`, `sizes` and `mirroring` (per icon role,
+**token.icons** (`IconTokens`, S4.5): `set`, `theme`, `theme_fallback`, `sizes`, `animated_visuals` and `mirroring` (per icon role,
 GN-FM03†, MAT-FM04†, W3-54†, X-SV-3). Under `sizes`, contexts beyond the five groups (GN-3.59, K3.63, W3-27) are keys
 of the same token; weight and scale are `IconStyle` fields (X-IC-2), stated in a context where the platform's context
-sets them (S4.5) and on parts otherwise; a `scale` is a key of `[declare] symbol_scales` (S10).
+sets them (S4.5) and on parts otherwise; a `scale` is a key of `[declare] symbol_scales` (S10). `animated_visuals`
+(ADD-A126): WinUI's AnimatedIcon sources, each an `AnimatedVisual` (its duration and markers, as its source states
+them), keyed by visual (`accept`, W1-039; the chevrons, the back arrow, the hamburger and the gear of W3-28), which a
+`WinUiAnimatedIcon` transition names (S2.7); stated `windows-11` alone, an empty map elsewhere.
 
 **token.pointer** (ADD-A46): cursor theme, cursor size, pointer colours where read; `drag_cursors` keyed by drop
 operation (`copy`, `move`, `link`, `ask`, `none`, `not_allowed`) for GN-P3-12†, K-P4-7†, W-P4-5†, MAT-P4-3†, P3-10†.
