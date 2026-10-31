@@ -38,8 +38,9 @@
 #                  too, and offline falls back to the cached advisory
 #                  database with a warning (the section says how). Run
 #                  every third task and at a milestone's close.
-#   --quick        the per-task gate: formatting, clippy (-D warnings, all
-#                  targets and features) and the strict panic lints on
+#   --quick        the per-task gate: formatting, the panic-pattern scan,
+#                  clippy (-D warnings, all targets and features) and the
+#                  strict panic lints on
 #                  native-theme and native-theme-derive, their library tests,
 #                  CI's two MSRV checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
@@ -73,8 +74,9 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  and source cache checks, and the visual-asset and
                  compatibility stamp checks; run every third task and at a
                  milestone's close
-  --quick        the per-task gate: cargo fmt, clippy (-D warnings, all
-                 targets and features) and the strict panic lints on
+  --quick        the per-task gate: cargo fmt, the panic-pattern scan,
+                 clippy (-D warnings, all targets and features) and the
+                 strict panic lints on
                  native-theme and native-theme-derive, their library tests,
                  CI's two MSRV checks (cargo +1.88.0, -D warnings), and the
                  0.8.0 plan's data checks (generate_widgets.py --check,
@@ -452,6 +454,8 @@ msrv_checks() {
 if [[ $QUICK_MODE ]]; then
     print_section "Per-task gate (--quick)"
     run_check "cargo fmt (all crates)" cargo fmt --all
+    run_check "panic-pattern scan (native-theme, native-theme-derive)" \
+        python3 scripts/check_panic_patterns.py native-theme/src native-theme-derive/src
     run_check "clippy (native-theme, native-theme-derive, all targets and features)" \
         cargo clippy -p native-theme -p native-theme-derive --all-targets --all-features -- -D warnings
     run_check "strict-panic (native-theme, Linux features)" \

@@ -2065,5 +2065,4 @@ impl ResolvedTheme {
 }
 
 #[cfg(test)]
-#[path = "evaluate_tests.rs"]
 mod tests;
