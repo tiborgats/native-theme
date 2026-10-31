@@ -626,8 +626,11 @@ fn record(
     }
 }
 
-/// The widgets a `when` names as an ancestor or a sibling (S11): its
-/// contexts' (`scope.nearest`'s too) and its position's.
+/// The widgets a `when`'s positive lists name as an ancestor or a sibling
+/// (S11), the units a fact belongs to beside its key's (S17, ADD-A128):
+/// its contexts' (`scope.nearest`'s too) and its position's. A negative
+/// list never adds a unit: where its widget's unit is not enabled no such
+/// widget exists, so the negation holds ([`read_when`]).
 fn when_widgets(when: &Value) -> Vec<String> {
     let mut out = Vec::new();
     let widget = |entry: &Value| {
@@ -636,18 +639,16 @@ fn when_widgets(when: &Value) -> Vec<String> {
             .and_then(Value::as_str)
             .map(str::to_owned)
     };
-    for list in ["context", "not_context"] {
-        for entry in when
-            .get(list)
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            out.extend(widget(entry));
-            out.extend(strings(
-                entry.get("scope").and_then(|scope| scope.get("nearest")),
-            ));
-        }
+    for entry in when
+        .get("context")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        out.extend(widget(entry));
+        out.extend(strings(
+            entry.get("scope").and_then(|scope| scope.get("nearest")),
+        ));
     }
     if let Some(position) = when.get("position") {
         out.extend(strings(position.get("among")));
@@ -727,7 +728,12 @@ fn skipped_variants(
         if names.is_empty() {
             continue;
         }
-        let key_held = matches!(platform.key(&fact.key), Some(Ok(_)));
+        // A refused key fails `read_all`; only one the model does not hold
+        // makes the fact skipped.
+        let key_held = !matches!(
+            platform.key(&fact.key),
+            Some(Err(Unread::NotHeld(_))) | None
+        );
         let skipped = !key_held
             || when_widgets(&when)
                 .iter()

@@ -33,20 +33,26 @@ const DIRECTORIES: [(&str, &str); 8] = [
 ];
 
 /// A fixture's facts root and its preset (the fixtures' base with the
-/// case's declarations and rules appended), checked against its `gnome`
-/// directory.
-fn fixture(name: &str) -> (PathBuf, Vec<(String, Preset)>) {
+/// case's declarations and rules, its `file`, appended), checked against
+/// its `gnome` directory.
+fn fixture(name: &str, file: &str) -> (PathBuf, Vec<(String, Preset)>) {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
     let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
     let case = fixtures.join(name);
-    let own = std::fs::read_to_string(case.join("preset.toml")).unwrap();
+    let own = std::fs::read_to_string(case.join(file)).unwrap();
     let preset = Preset::from_toml(&format!("{base}\n{own}"))
-        .unwrap_or_else(|error| panic!("{name}: {error}"));
+        .unwrap_or_else(|error| panic!("{name}/{file}: {error}"));
     (case.join("docs/facts"), vec![("gnome".to_owned(), preset)])
 }
 
 fn fixture_report(name: &str) -> run::Report {
-    let (root, presets) = fixture(name);
+    fixture_report_with(name, "preset.toml")
+}
+
+/// The report of a fixture's facts checked against the case's preset
+/// `file`, a twin of its `preset.toml`.
+fn fixture_report_with(name: &str, file: &str) -> run::Report {
+    let (root, presets) = fixture(name, file);
     run::run(&root, &presets)
 }
 
@@ -486,6 +492,53 @@ fn gate_fixture_variants_of_units_not_enabled() {
         undeclared.failures
     );
     assert!(undeclared.variants_not_held.is_empty(), "{undeclared:?}");
+}
+
+/// A fact whose only list naming a widget of a unit not enabled is
+/// negative (`not_context` a toolbar) belongs to its key's unit alone: the
+/// negation holds, so the variant it names is not projected out, and the
+/// fact applies (S17, ADD-A128's unit membership). A preset stating its
+/// value passes; one leaving it unstated fails there.
+#[test]
+fn gate_fixture_negative_list_adds_no_unit() {
+    let report = fixture_report("variant_negated");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.variants_not_held.is_empty(), "{report:?}");
+    let unstated = fixture_report_with("variant_negated", "unstated.toml");
+    let failures = failing(&unstated, "`button.body.fill` at");
+    assert!(!failures.is_empty(), "{:?}", unstated.failures);
+    assert_eq!(
+        failures.len(),
+        unstated.failures.len(),
+        "{:?}",
+        unstated.failures
+    );
+    assert!(
+        failures
+            .iter()
+            .all(|failure| failure.contains("variants: [\"@raised\"]")),
+        "{failures:?}"
+    );
+}
+
+/// A variant named only by a fact whose key the model refuses stays in
+/// the state model: the refusal fails the run, and the declarations run
+/// compares the variant as declared, its messages not hiding it (S17,
+/// ADD-A128: only a key the model does not hold is skipped).
+#[test]
+fn gate_fixture_refused_key_skips_no_variant() {
+    let report = fixture_report("variant_refused");
+    assert!(
+        !failing(&report, "the key `button..fill` is refused").is_empty(),
+        "{:?}",
+        report.failures
+    );
+    assert!(
+        failing(&report, "`button` variants under").is_empty(),
+        "{:?}",
+        report.failures
+    );
+    assert!(report.variants_not_held.is_empty(), "{report:?}");
 }
 
 /// A pending fact is listed with its register id and its key, apart from

@@ -30,10 +30,12 @@ What is left out, and why (each counted by reason)
 - not held: a key the model does not hold yet (S17 *The gate*: the plan enables its units one by one): a key outside
   every enabled unit, or deferred or staged there (check_facts_trace.in_unit). An `input.…` key is held (S9.1's
   inputs are in M1a's code).
-- unit not enabled: a fact whose `when` names a widget the model does not hold (a `context` or `not_context` entry,
-  a `nearest` scope, a position's `among`, `previous`, `next`), counted by that widget (its unit): the reader's S12
+- unit not enabled: a fact whose `when`'s positive lists name a widget the model does not hold (a `context` entry, its
+  `nearest` scope, a position's `among`, `previous`, `next`), counted by that widget (its unit): the reader's S12
   checks refuse a rule naming an undeclared widget, and the fact comes back when its unit is enabled and the preset
-  is regenerated (check_facts_trace.py's rule for trace lines).
+  is regenerated (check_facts_trace.py's rule for trace lines). A negative list adds no unit (S17, ADD-A128): a
+  `not_context` entry naming such a widget holds, as no such widget exists, and is left out of the fact's `when`.
+- These two come first, a pending fact of a key or unit not held counting as left out, as the gate skips it.
 - read: a fact with a `read` citation (S17 *`read`*: the reference a key takes from a reader input), which D6 lists
   among the parts written by hand.
 - accent run: a fact with `scheme_file` and `accent` (S17 *The accent run*), which the preset's own resolution never
@@ -287,22 +289,44 @@ def group_of(f: Fact) -> str:
     return {"role": "colour roles", "input": "inputs"}.get(f.kind, f.kind)
 
 
-def context_widgets(when) -> set:
-    """The widgets a `when` names as an ancestor or a sibling."""
+def entry_widgets(e) -> set:
+    """The widgets a context entry names: its `widget` and its `nearest` scope's."""
     out = set()
-    for k in ("context", "not_context"):
-        for e in when.get(k, []) if isinstance(when.get(k), list) else []:
-            if isinstance(e, dict) and isinstance(e.get("widget"), str):
-                out.add(e["widget"])
-            scope = e.get("scope") if isinstance(e, dict) else None
-            if isinstance(scope, dict) and isinstance(scope.get("nearest"), list):
-                out |= {w for w in scope["nearest"] if isinstance(w, str)}
+    if isinstance(e, dict) and isinstance(e.get("widget"), str):
+        out.add(e["widget"])
+    scope = e.get("scope") if isinstance(e, dict) else None
+    if isinstance(scope, dict) and isinstance(scope.get("nearest"), list):
+        out |= {w for w in scope["nearest"] if isinstance(w, str)}
+    return out
+
+
+def context_widgets(when) -> set:
+    """The widgets a `when`'s positive lists name as an ancestor or a sibling (its `context` entries and their `nearest`
+    scopes, its position's), the units a fact belongs to beside its key's (S17, ADD-A128). A negative list adds none:
+    `not_context X` holds wherever X's unit is not enabled, as no X exists there (without_unheld_negations())."""
+    out = set()
+    for e in when.get("context", []) if isinstance(when.get("context"), list) else []:
+        out |= entry_widgets(e)
     pos = when.get("position") if isinstance(when.get("position"), dict) else {}
     if isinstance(pos.get("among"), list):
         out |= {w for w in pos["among"] if isinstance(w, str)}
     for k in ("previous", "next"):
         if isinstance(pos.get(k), dict) and isinstance(pos[k].get("widget"), str):
             out.add(pos[k]["widget"])
+    return out
+
+
+def without_unheld_negations(when, units) -> dict:
+    """`when` without its `not_context` entries naming a widget the model does not hold: no such widget exists, so the
+    negation holds and the fact applies everywhere else, in its key's unit alone (S17, ADD-A128), as the facts gate reads
+    it; a rule keeping the entry would name an undeclared widget, which S12 refuses. A list emptied so goes."""
+    entries = when.get("not_context")
+    if not isinstance(entries, list):
+        return when
+    kept = [e for e in entries if all(held(units, w, "widget") for w in entry_widgets(e))]
+    out = {k: v for k, v in when.items() if k != "not_context"}
+    if kept:
+        out["not_context"] = kept
     return out
 
 
@@ -554,20 +578,21 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         if it.table != "fact" or it.platform != platform or not holds_for(it, preset):
             continue
         info = check_facts.key_info(ctx, it.data.get("key"))
-        facts.append(Fact(it, it.data["key"], check_facts.canonical_key(it.data["key"]),
-                          preset_when(it.data.get("when"), preset), info[3], info[2], info[4], info[1]))
+        when = without_unheld_negations(preset_when(it.data.get("when"), preset), units)
+        facts.append(Fact(it, it.data["key"], check_facts.canonical_key(it.data["key"]), when, info[3], info[2],
+                          info[4], info[1]))
     files = {}
     for f in facts:
         files.setdefault(f.ckey, set()).add(f.item.file)
     for f in facts:
         d = f.item.data
-        if "pending" in d:
-            f.status = PENDING
-        elif not held(units, f.key, f.kind):
+        if not held(units, f.key, f.kind):
             f.status, f.reason = LEFT_OUT, NOT_HELD
         elif any(not held(units, w, "widget") for w in context_widgets(f.when)):
             off = sorted(w for w in context_widgets(f.when) if not held(units, w, "widget"))
             f.status, f.reason = LEFT_OUT, f"{UNIT_NOT_ENABLED} ({', '.join(off)})"
+        elif "pending" in d:
+            f.status = PENDING
         elif any(c.data.get("kind") == "read" for c in f.item.cites):
             f.status, f.reason = LEFT_OUT, READ
         elif "scheme_file" in d or "accent" in d:
@@ -631,7 +656,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule"])
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
-                                                                     getattr(ctx, "content_variants", {}))
+                                                                     ctx.content_variants)
     bases += covering_bases(facts, models, tree)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped)
 
@@ -826,7 +851,7 @@ def declarations(items, platform, preset, units, facts, content):
             header = (("flavor", flavor) if flavor else ()) + (kind, name)
             kvs = [("available", False)] if d.get("available") is False else [
                 (k, d[k]) for k in DECLARE_KEYS if k in d]
-            off = off_variants(widget, d, facts, content.get(widget, []))
+            off = off_variants(widget, d, facts, widget_content(content, widget))
             if off:
                 kvs = [(k, without_variants(k, v, off)) for k, v in kvs]
                 dropped.append((widget, sorted(off)))
@@ -841,6 +866,16 @@ def declarations(items, platform, preset, units, facts, content):
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
                                     if c.startswith("system_setting:")))
     return declare, conditions, models, left, dropped
+
+
+def widget_content(content: dict, widget: str) -> list:
+    """The content variants of `widget` and of its parts (spec_catalogue.content_variants keys an *(element)* part's
+    pairs `<widget>.<part>`), as the gate's content_variants gives them."""
+    out = list(content.get(widget, []))
+    for target, names in content.items():
+        if target.startswith(widget + "."):
+            out += names
+    return out
 
 
 VARIANT_LISTS = ("variants", "not_variants")
@@ -885,6 +920,8 @@ def off_variants(widget, model, facts, content) -> set:
         exempt |= {e.get("variant") for e in model.get(k, []) if isinstance(e, dict)}
     named_in, named_off = set(), set()
     for f in facts:
+        if f.reason == ACCENT_RUN:   # the accent run's facts name no variant the gate's projection reads
+            continue
         names = context_variants(f.when, widget)
         if f.kind == "widget" and f.widget == widget:
             names |= named_variants(f.when, widget)
@@ -1301,7 +1338,7 @@ SELF_TEST_FILES = {
 [[model]]
 widget = "button"
 available = true
-variants = ["flat", "primary", "@pill", "@raised"]
+variants = ["flat", "primary", "@pill", "@raised", "@lifted"]
 sizes = []
 densities = []
 flags = ["@busy"]
@@ -1375,6 +1412,9 @@ quote = "x"
         _fact("button.values.repeat_delay", '"absent"'),
         _fact("button.body.interaction.state_layer.alpha", "0.08", '{ states = ["hover"], direction = "rtl" }'),
         _fact("pull_to_refresh.body.padding", "{ top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }"),
+        _pending("pull_to_refresh.body.opacity", "U9", '{ states = ["hover"] }'),
+        _fact("button.body.min_width", '"30px"', '{ variants = ["@lifted"], not_context = [{ scope = "any", '
+                                                 'widget = "toolbar", part = "bar" }] }'),
     ]),
     "docs/facts/gnome/roles.toml": "".join([
         _fact("role.window.background", '"#fafafb"', '{ conditions = ["scheme:light"] }'),
@@ -1414,7 +1454,7 @@ conditions = ["@reduced_chrome"]
 # docs/facts/gnome/state-models.toml:2
 [declare.widget.button]
 available = true
-variants = ["flat", "primary", "@pill"]
+variants = ["flat", "primary", "@pill", "@lifted"]
 sizes = []
 densities = []
 flags = ["@busy"]
@@ -1625,6 +1665,14 @@ target = "button.body"
 interaction.state_layer.alpha = 0.08
 
 [[rules]]
+when = { variants = ["@lifted"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:357
+min_width_px = 30
+
+[[rules]]
 when = { conditions = ["contrast_high", "scheme:light"] }
 target = "colors"
 
@@ -1734,6 +1782,8 @@ SELF_TEST_STATUS = [
     ("input.selected", "#ffffff", (LEFT_OUT, INPUT_WHEN)),
     ("token.kde.frame_width", "2px", (LEFT_OUT, NOT_HELD)),
     ("button.body.fill", "#000000", (LEFT_OUT, f"{UNIT_NOT_ENABLED} (toolbar)")),
+    ("pull_to_refresh.body.opacity", "U9", (LEFT_OUT, NOT_HELD)),
+    ("button.body.min_width", "30px", ("rule", "")),
 ]
 
 
@@ -1780,6 +1830,27 @@ def self_test() -> int:
         got = split_blocks(None, bases, rules, repeat_block)
         if [f.key for f in got] != [f.key for f in want]:
             failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
+    # off_variants: a variant only skipped facts name is left out (a key not held, a unit not enabled, an accent-run
+    # fact naming nothing), one a kept fact names too stays, as does one S12 exempts (requires_variants,
+    # sizes_by_variant, an element part's content variant); without_variants trims an exclusive group
+    def named(variant, status="rule", reason="", key="button.body.fill", widget="button"):
+        return Fact(None, key, tuple(key.split(".")), {"variants": [variant]}, "widget", widget, None, None,
+                    status=status, reason=reason)
+
+    skipped = [named("@both", LEFT_OUT, NOT_HELD), named("@both"), named("@unheld", LEFT_OUT, NOT_HELD),
+               named("@unit", LEFT_OUT, f"{UNIT_NOT_ENABLED} (toolbar)"), named("@required", LEFT_OUT, NOT_HELD),
+               named("@sized", LEFT_OUT, NOT_HELD), named("@content", LEFT_OUT, NOT_HELD),
+               named("@accent", LEFT_OUT, ACCENT_RUN), named("@accent", LEFT_OUT, NOT_HELD), named("@pending", PENDING)]
+    model = {"variants": ["flat", "@both", "@unheld", "@unit", "@required", "@sized", "@content", "@accent",
+                          "@pending"],
+             "requires_variants": ["@required"], "sizes_by_variant": [{"variant": "@sized", "sizes": []}]}
+    got = off_variants("button", model, skipped, widget_content({"button.icon": ["@content"]}, "button"))
+    if got != {"@unheld", "@unit", "@accent"}:
+        failures.append(f"off_variants: {sorted(got)}, expected @accent, @unheld and @unit")
+    trimmed = without_variants("exclusive_variants", [["flat", "primary", "@unit"], ["@unit", "@unheld"],
+                                                      ["flat", "@both"]], {"@unit", "@unheld"})
+    if trimmed != [["flat", "primary"], ["flat", "@both"]]:
+        failures.append(f"without_variants: {trimmed}")
     # a key whose rules cover every scheme, or every size, gets a base from one of them; one covering less gets none
     def rule_fact(key, when, value):
         f = Fact(None, key, tuple(key.split(".")), when, "widget", "button", None, None, status="rule",
@@ -1816,8 +1887,8 @@ def self_test() -> int:
             if status.get((key, repr(value))) != want:
                 failures.append(f"{key} = {value!r}: {status.get((key, repr(value)))}, expected {want}")
         lines = share_lines(draft, units, trip)
-        for needle in ("1 pending", "pending (register id: facts): U1: 1", f"{READ} 1", f"{NOT_HELD} 2",
-                       "18 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
+        for needle in ("1 pending", "pending (register id: facts): U1: 1", f"{READ} 1", f"{NOT_HELD} 3",
+                       "19 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
         # grouping and order: the second hover rule after the flat rule that states `fill` between them; a later
