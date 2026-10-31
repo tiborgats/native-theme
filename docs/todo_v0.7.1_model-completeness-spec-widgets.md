@@ -2733,7 +2733,8 @@ spaces:
     (W1-150†): `text`, `padding`, `opacity`.
 - **Widget values:** `icon_text_gap_px`, `label_arrow_gap_px: Value<Px>` (the gaps of the content row, below;
   GN-1.233, K1.240, W1-132, MAT-CB1, CB-1); `content_width: Value<ContentWidth>`, `content_slack_px: Value<Px>`,
-  `input_placement: Value<InputPlacement>` (the natural width and the editable input's place, below; ADD-A127);
+  `input_placement: Value<InputPlacement>`, `icon_clip_inset_px: Value<Px>` (the natural width, the editable input's
+  place and the icon's cut, below; ADD-A127);
   `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
@@ -2762,7 +2763,10 @@ spaces:
     `androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/TextFieldScroll.kt:158`);
     GTK never reaches the cut, as it never allocates the label less than its text (`gtk@4.24.1
     gtk/gtklabel.c:1287-1297`), and the `ios-*` and `macos-*` cuts are measurements (CB-1, MAC-CB01); an `input`
-    cuts its text as its own widget does.
+    cuts its text as its own widget does. An `icon` taller than `body`'s box less `icon_clip_inset_px` at the top and
+    bottom is cut there, where the preset states the inset (Breeze's clip at its edit field, the style item's box less
+    its frame, whatever the body's padding, K1.240, reached only where the box is shorter than the icon's reserve:
+    under Kirigami, Q1.124; on `kde-breeze` alone).
   - *Cross axis:* the end part's margin box is centred on `body`'s box, not the content box, and `body` is at least
     as tall as it (WinUI centres its chevron in the template's whole row under the uneven `12,5,0,7`,
     `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:582`; Compose its trailing box on
@@ -2866,7 +2870,7 @@ spaces:
   `label`); `body.shadow` (`adwaita` by the toolbar rule, GN-1.151, and under `variants {editable,@gtk_combo_box}`, GN-1.238; `kde-breeze`, `macos-*` by a
   rule under `flat`, K1.241, MAC-CB05; the value phase names the others from the facts), `arrow_area.corners`
   (`kde-breeze`, whose arrow area draws no box, K1.240); values: `icon_text_gap_px` (all but `material-3`,
-  `kde-breeze`, `macos-*`, as `icon`), `input_placement` (`ios-*`, which declares no `editable`), `header_gap_px`
+  `kde-breeze`, `macos-*`, as `icon`), `icon_clip_inset_px` (all but `kde-breeze`), `input_placement` (`ios-*`, which declares no `editable`), `header_gap_px`
   (all but `windows-11`),
   `supporting_text_gap_px` (all but `windows-11`, `material-3`), `notch_padding_px` (all but `material-3`),
   `floating_label_gap_px` (all but `material-3`).

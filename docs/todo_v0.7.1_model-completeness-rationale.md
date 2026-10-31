@@ -1411,7 +1411,7 @@ application's policy, not the theme's. Compose measures its resting floating lab
 bounds the box by a floated label plus the field's content padding on both sides, interpolating between the two as
 the label floats (the outlined field), while its filled field pads its label as its text and measures it at its
 current, interpolated size, a third shown text (`TextFieldImpl.kt:423-432`, `:1950-1951`): options, one form for
-both (the outlined field's 20 dp too wide at rest, or the filled field's label short by the padding), a separate
+both (the outlined field's 20 dp too wide at rest, 8 with a leading icon, or the filled field's label short by the padding), a separate
 value for the label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as
 `label_padding`, `Some` for the outlined form and `None`, the label a third shown text, for the filled; the last is
 the smallest exact form. So is a measure that depends on
