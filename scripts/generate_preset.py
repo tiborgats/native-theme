@@ -77,6 +77,11 @@ preset's bases apply before its rules, its rules in stated order, the later winn
 - Every other alive fact becomes a rule. One alive in fewer slots than its `when` admits (a later scheme's base, or a
   later `scheme:` fact, covers it in the other) takes that slot's `scheme:` condition into its `conditions`
   (narrowed), so it holds exactly where it applied.
+- A widget's or a token's key with no fact at rest whose rules cover an axis, one fact under each scheme alone or (a
+  widget's) under each of its sizes alone, gets a base too (covering_bases()): the reader needs a value for every field,
+  and those rules replace the base in every combination. Its value is the light scheme's fact's, or the default
+  size's, the round trip checking that it never shows (its minimal combinations take the size an element holds:
+  `default_size`, or its variant's `default_size_by_variant`, S10).
 - Facts with an equal `when` (check_facts.canonical_when) and an equal target group into one rule: a fact joins the
   last rule with its `when` and target unless a later rule states its key or a key above or below it (a block and its
   leaves), or the rule's `set` already holds a key above or below it in TOML, and else starts a new rule at the end.
@@ -626,7 +631,49 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         rules = group_rules([f for f in facts if f.status == "rule"])
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      getattr(ctx, "content_variants", {}))
+    bases += covering_bases(facts, models, tree)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped)
+
+
+def covering_bases(facts, models, tree) -> list:
+    """The bases of keys whose facts are all rules that together cover an axis (S11, S8): a widget's or a token's key
+    with no fact at rest, one fact under each scheme alone (`{ conditions = ["scheme:<s>"] }`), or for a widget one
+    under each of its sizes alone (`{ sizes = ["<size>"] }`; every element has a size, its `default_size` where it
+    states none). The reader needs a base for every field (S11: a field left out is missing), and the axis' rules
+    replace it in every combination, so the base is one of those facts' values: the light scheme's, or the default
+    size's (else the first size's), S11 stating a value shared across schemes once outside the colour roles. Its
+    comment cites that fact. The round trip checks that the base never shows."""
+    by_key = {}
+    for f in facts:
+        if f.kind in ("widget", "token"):
+            by_key.setdefault(f.ckey, []).append(f)
+    out = []
+    for fs in by_key.values():
+        if any(f.status == "base" for f in fs):
+            continue
+        rules = [f for f in fs if f.status == "rule"]
+
+        def alone(when):
+            want = check_facts.canonical_when(when)
+            return next((f for f in rules if check_facts.canonical_when(f.rule_when) == want), None)
+
+        chosen = None
+        per_scheme = [alone({"conditions": [f"scheme:{s}"]}) for s in SCHEMES]
+        if all(per_scheme):
+            chosen = per_scheme[0]
+        elif rules and rules[0].kind == "widget":
+            model = models.get(rules[0].widget) or {}
+            sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
+            per_size = {z: alone({"sizes": [z]}) for z in sizes}
+            if sizes and all(per_size.values()):
+                default = model.get("default_size")
+                chosen = per_size.get(default) or per_size[sizes[0]]
+        if chosen is None:
+            continue
+        path = (chosen.section,) + chosen.header + tuple(chosen.dotted)
+        if insert(tree, path, Leaf(chosen)):
+            out.append((chosen.section, None, chosen.header, tuple(chosen.dotted), chosen.value, chosen))
+    return out
 
 
 def set_whole_block(ctx, f: Fact):
@@ -963,15 +1010,30 @@ def holds(when: dict, c: dict, groups: list, recency: dict) -> bool:
     return True
 
 
-def minimal(when: dict, scheme: str, groups: list, recency: dict):
-    """The `when`'s minimal combination under a scheme (its required names and nothing else), or None where no
-    element holds it."""
+def element_size(when: dict, model) -> list:
+    """The size an element of the `when`'s minimal combination holds (S10): the one it names, else its variant's
+    `default_size_by_variant` (the first entry whose variant it holds), else the widget's `default_size`; none where
+    the widget declares no sizes."""
+    if when.get("sizes") or not model or not model.get("sizes"):
+        return list(when.get("sizes", []))
+    variants = set(when.get("variants", []))
+    for e in model.get("default_size_by_variant", []):
+        if isinstance(e, dict) and e.get("variant") in variants and isinstance(e.get("size"), str):
+            return [e["size"]]
+    default = model.get("default_size")
+    return [default] if isinstance(default, str) else []
+
+
+def minimal(when: dict, scheme: str, groups: list, recency: dict, model=None):
+    """The `when`'s minimal combination under a scheme (its required names and nothing else, and the size an element
+    holds, element_size()), or None where no element holds it."""
     conds = list(when.get("conditions", []))
     if any(x.startswith("scheme:") and x != f"scheme:{scheme}" for x in conds):
         return None
     latest = when.get("latest", {})
     d = {"conditions": conds + [f"scheme:{scheme}"], "states": list(when.get("states", [])) + list(latest.values()),
-         "variants": when.get("variants", []), "sizes": when.get("sizes", []), "densities": when.get("densities", []),
+         "variants": when.get("variants", []), "sizes": element_size(when, model),
+         "densities": when.get("densities", []),
          "direction": when.get("direction", "ltr"), "position": when.get("position"), "latest": latest,
          "size_class": when.get("size_class", {}),
          "ancestors": [{"widget": e.get("widget"), "part": e.get("part"), "surface": e.get("surface"),
@@ -1094,11 +1156,11 @@ def round_trip(draft: Draft, text: str) -> Trip:
         groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
         recency = check_facts.recency_of(model) if model else {}
         for f in fs:
-            if slots_of(f.when) and all(minimal(f.when, s, groups, recency) is None for s in SCHEMES):
+            if slots_of(f.when) and all(minimal(f.when, s, groups, recency, model) is None for s in SCHEMES):
                 trip.impossible += 1
         for when in whens[group_of(fs[0])]:
             for s in SCHEMES:
-                c = minimal(when, s, groups, recency)
+                c = minimal(when, s, groups, recency, model)
                 if c is None:
                     continue
                 applies = last_holding(fs, c, groups, recency)
@@ -1716,6 +1778,21 @@ def self_test() -> int:
         got = split_blocks(None, bases, rules, repeat_block)
         if [f.key for f in got] != [f.key for f in want]:
             failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
+    # a key whose rules cover every scheme, or every size, gets a base from one of them; one covering less gets none
+    def rule_fact(key, when, value):
+        f = Fact(None, key, tuple(key.split(".")), when, "widget", "button", None, None, status="rule",
+                 section="widgets", header=("button", "body"), dotted=(key.split(".")[-1] + "_px",), value=value)
+        f.rule_when = when
+        return f
+
+    by_scheme = [rule_fact("button.body.min_height", {"conditions": [f"scheme:{x}"]}, v)
+                 for x, v in (("light", 24), ("dark", 25))]
+    by_size = [rule_fact("button.body.min_width", {"sizes": [z]}, v) for z, v in (("small", 20), ("regular", 30))]
+    partial = [rule_fact("button.body.margin", {"sizes": ["small"]}, 1)]
+    sized = {"button": {"sizes": ["small", "regular"], "default_size": "regular"}}
+    got = [(b[3], b[4]) for b in covering_bases(by_scheme + by_size + partial, sized, {})]
+    if got != [(("min_height_px",), 24), (("min_width_px",), 30)]:
+        failures.append(f"covering_bases: {got}, expected light's min_height and the default size's min_width")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")
