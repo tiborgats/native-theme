@@ -1768,8 +1768,25 @@ impl Checks<'_, '_> {
         }
         let mut inner = Vec::new();
         value_fields(fields, &op.path, &mut inner);
+        // The steps stating a block field absent, by the field's path: a
+        // field below it that step makes absent is no field of the block.
+        let mut absent_blocks: Vec<(String, Option<(usize, usize)>)> = Vec::new();
         for (path, field) in inner {
             for found in stack.effective(world, source.target, &path) {
+                if matches!(found.got, Got::Absent) {
+                    let below_absent = absent_blocks.iter().any(|(block, id)| {
+                        *id == found.id
+                            && path
+                                .strip_prefix(block.as_str())
+                                .is_some_and(|rest| rest.starts_with('.'))
+                    });
+                    if below_absent {
+                        continue;
+                    }
+                    if matches!(field.ty, FieldType::Block { .. }) {
+                        absent_blocks.push((path.clone(), found.id));
+                    }
+                }
                 if !found.via && found.cx.target == source.target {
                     continue;
                 }

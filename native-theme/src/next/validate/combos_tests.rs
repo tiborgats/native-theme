@@ -1513,3 +1513,40 @@ fn combination_input_cycle_reader_accent_left_out() {
         ]
     );
 }
+
+/// A reference to a text style whose `decoration` is absent, directly or
+/// through another reference, brings no field of the decoration: an absent
+/// block has none (S2.2, S2.8, S12). A drawn decoration's field stated
+/// absent is still refused.
+#[test]
+fn combination_reference_through_an_absent_block() {
+    let decl = declare("text_styles = [\"a\"]\n");
+    let base = "[tokens.text]\nkeyed.a.decoration = \"absent\"\n\
+                keyed.a.mnemonic_decoration = \"absent\"\n";
+    assert_eq!(
+        over(
+            base,
+            "[tokens.text]\nroles.body = \"= token.text.keyed.a\"\n",
+            &decl
+        ),
+        NONE
+    );
+    assert_eq!(
+        over(
+            base,
+            "[tokens.text]\nroles.body = \"= token.text.keyed.a\"\n\
+             roles.label = \"= token.text.roles.body\"\n",
+            &decl
+        ),
+        NONE
+    );
+    let leaf = "[tokens.text]\nkeyed.a.decoration.thickness_px = \"absent\"\n";
+    assert_eq!(
+        over(
+            leaf,
+            "[tokens.text]\nroles.body = \"= token.text.keyed.a\"\n",
+            &decl
+        ),
+        ["tokens.text.roles.body.decoration.thickness: may not be absent"]
+    );
+}
