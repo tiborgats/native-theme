@@ -1057,3 +1057,74 @@ fn widget_part_reads_that_parts_bindings() {
         )
     );
 }
+
+/// Task 11b's review: a plain reference to element data is total in an
+/// `auto` length and in a paint too (S2.2's *Totality*): a negative length
+/// where the field cannot be negative zero, a non-finite datum zero.
+#[test]
+fn plain_references_are_total_in_auto_lengths_and_paints() {
+    let theme = resolved(
+        &[
+            BASE,
+            "[widgets.button.body]\nmin_width_px = \"= element.scroll_offset\"\n\
+             fill = \"= element.color\"",
+        ],
+        1.0,
+    );
+    let scope = scope();
+    let body = |offset: f32, red: f32| {
+        let mut element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+        element.data.scroll_offset = Px(offset);
+        element.data.color = Color {
+            r: red,
+            g: 0.5,
+            b: 0.5,
+            a: 1.0,
+        };
+        theme
+            .evaluate_part(BODY, &element, &|_| true)
+            .value
+            .expect("the body is drawn")
+    };
+    use crate::next::units::Length;
+    assert_eq!(body(-3.0, 0.5).min_width, Some(Length::Px(0.0)));
+    assert_eq!(body(f32::NAN, 0.5).min_width, Some(Length::Px(0.0)));
+    assert_eq!(body(7.0, 0.5).min_width, Some(Length::Px(7.0)));
+    let fill = body(0.0, f32::NAN).fill.expect("a fill");
+    assert_eq!(
+        format!("{:?}", fill.layers),
+        format!(
+            "[ResolvedPaintLayer {{ kind: Color(Some({:?})), blend: Normal }}]",
+            Color {
+                r: 0.0,
+                g: 0.5,
+                b: 0.5,
+                a: 1.0
+            }
+        )
+    );
+}
+
+/// Task 11b's review: the DPI and the scaling, read once, are read from
+/// the bases and the rules even where an `active(…)` reads first (S2.2,
+/// S9.4): the rule's linear scaling scales the body slot's 12px by 1.5.
+#[test]
+fn sizes_read_outside_active() {
+    let base = BASE.replace("scaling = \"linear\"", "scaling = \"android_non_linear\"");
+    let layers = "[colors.light.surfaces.window]\nbackground = \"= mix(#ffffff, #000000, 0.5)\"\n\
+                  [[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"tokens\"\n\
+                  set = { text.scaling = \"linear\" }";
+    let theme = resolved(&[&base, layers], 1.5);
+    let scope = scope();
+    let size = with_body(&theme, &scope, |cx| {
+        let _ = cx.operand_of(
+            &reference("active(role.window.background)"),
+            Target::Part(BODY),
+        );
+        cx.operand_of(
+            &reference("token.text.roles.body.font.size"),
+            Target::Part(BODY),
+        )
+    });
+    assert_eq!(size, Some(Val::FontSize(Px(18.0))));
+}

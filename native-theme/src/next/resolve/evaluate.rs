@@ -1354,6 +1354,7 @@ impl<'t> Cx<'t> {
         }
         self.sizes = Some((None, None));
         let saved = std::mem::take(&mut self.visiting);
+        let saved_bases = std::mem::replace(&mut self.bases_only, false);
         let dpi = match self.theme.font_dpi {
             Some(dpi) => Some(dpi),
             None => {
@@ -1372,6 +1373,7 @@ impl<'t> Cx<'t> {
             Some(TextScaling::AndroidNonLinear | TextScaling::DynamicType) | None => None,
         };
         self.visiting = saved;
+        self.bases_only = saved_bases;
         self.sizes = Some((dpi, factor));
         (dpi, factor)
     }
@@ -1695,7 +1697,10 @@ impl<'t> Cx<'t> {
                 self.auto(items.get(..at).unwrap_or_default(), signed)
             }
             Value::Expr(Expr::Ref(reference)) => match self.reference(reference, fold.target)? {
-                Answer::Val(val) => Px::from_val(&val).map(|px| Length::Px(px.0)),
+                Answer::Val(val) => {
+                    let bound = Px::field(signed).map_or(Bound::Unbounded, |field| field.bound);
+                    Px::from_val(&bounded(val, bound)).map(|px| Length::Px(px.0))
+                }
                 Answer::Place {
                     target,
                     path,
@@ -1760,7 +1765,9 @@ impl<'t> Cx<'t> {
             Value::Absent | Value::Auto => None,
             Value::Expr(Expr::Ref(Ref::Base)) => self.font_value(below, size),
             Value::Expr(Expr::Ref(reference)) => match self.reference(reference, fold.target)? {
-                Answer::Val(val) => Px::from_val(&val).map(|px| (px, !self.unscaled)),
+                Answer::Val(val) => {
+                    Px::from_val(&bounded(val, Bound::Unbounded)).map(|px| (px, !self.unscaled))
+                }
                 Answer::Place {
                     target,
                     path,
@@ -1974,7 +1981,7 @@ impl<'t> Cx<'t> {
                                     );
                                 }
                             }
-                            Answer::Val(val) => Color::from_val(&val),
+                            Answer::Val(val) => Color::from_val(&bounded(val, Bound::Unbounded)),
                         };
                         if let Some(color) = color {
                             drawn = true;
