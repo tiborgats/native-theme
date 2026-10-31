@@ -6753,6 +6753,11 @@ quote = "internal actual val TapIndicationDelay: Long = ViewConfiguration.getTap
 
 [[fact.cite]]
 kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:818-820"
+quote = "public static int getTapTimeout() { return sResourceCache.getTapTimeout(); }"
+
+[[fact.cite]]
+kind = "published"
 source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:1620-1628"
 quote = "mTapTimeout = resources != null ? resources.getInteger(R.integer.config_tapTimeoutMillis) : TAP_TIMEOUT;"
 
