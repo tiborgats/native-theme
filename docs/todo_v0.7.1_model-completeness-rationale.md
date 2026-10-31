@@ -862,7 +862,7 @@ MAT-X13–MAT-X15, X-MO-1).
   - *WinUI's check as one stroked path* (`draw_extent` on, `draw_start` off): the accept visual is a composition of
     visibility-switched layers trimmed per segment, which one path's extents do not reproduce.
   - **Decision**: *`PartStyle.shown`*, a field listed only on the parts a platform hides by state and animates in
-    or out (the check mark, the radio dot, a value bubble, a picker's popup): the part is styled in every state,
+    or out (the check mark, the radio dot, a value bubble, WinUI's list selection pill): the part is styled in every state,
     `shown = false` where nothing is drawn at rest, laid out as styled, so a later layer's patch of another field
     leaves it hidden and a measured look (macOS's dot) is kept for a connector that draws the parts itself; it is
     drawn while `shown` holds or while it leaves (the runs running as `shown` became false), a run started while it
@@ -874,17 +874,26 @@ MAT-X13–MAT-X15, X-MO-1).
     Windows lane's asset; AppKit's and UIKit's motion is measured.
 - **A later patch over a conditionally absent part** (ADD-A126; ledger queue #110): under ADD-A123's S6.3 a `Style`
   patch after an `Absent` brought the part back, and every layer's rules apply after the preset's, so an
-  application's `@ {hover}` colour drew WinUI's selection pill on unselected items (W1-107, W1-135), as it would an
-  unchecked mark.
+  application's `@ {hover}` colour drew a title bar in full screen (GN-P3-5†, W-P3-2†) or WinUI's combo-box pill on
+  unselected items (W1-135), as it would an unchecked mark; a field made `Absent` by a rule (the menu's check glyph,
+  Breeze's tab focus line) met the same patch as a refused merge conflict.
   - *`shown` on every part a condition can hide*: robust, but every such part would state it, and an absent part
     leaves the layout while a hidden one keeps it, so a title bar in full screen still needs `Absent`.
   - *An S12 refusal of a later rule that can match where a part is conditionally absent*: it refuses an
     application's ordinary rule instead of keeping the part absent.
   - *Documented only*: the defect stays.
+  - *For fields*: (a) every field a rule hides made a nested part (the menu's check glyph a `check_mark` part), so
+    the part rule covers it: a part per such field, its widget's structure changed for a presence; (c) `shown` on
+    the field's part: it hides the whole part, while the menu's column and Breeze's box or ring stay drawn; (b) the
+    part rule for block fields too.
   - **Decision**: *presence by its own patches* (S6.3): a part's presence changes only by `Absent`, `DrawnAs` or
-    `Present` (`absent = false`); a `Style` patch sets fields only, so no later field rule restores an absent part,
-    and a rule that draws a part a broader patch made absent says so (GtkInfoBar's edge line, GN-2.31). One rule
-    for every part, base or conditional, in every layer, with one row of the traces changed.
+    `Present` (`absent = false`), a patch that states none setting fields only, so no later field rule restores an
+    absent part; and a block field's only by a `Set`, a `Fields` patch over an `Absent` block leaving it absent
+    (S2.2), the smallest form and the part rule's own. `Present` is needed beyond the presets (GtkInfoBar's edge line,
+    GN-2.31, could be restated by narrower selectors): an application layer that draws a part its preset hides
+    cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
+    every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
+    part, which is the layer's statement, not an accident.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -996,9 +1005,10 @@ appearance, key state and scale, as the SF Symbols loader renders symbols today.
 off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
 a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
 together, the rendering stated on the box, drawn in every state, ADD-A126); the modelled box (its measured fill,
-stroke and corners, R6, R7) remains for a toolkit that cannot, and the radio's dot, measured (its diameter and
-colour, a cornered fill), likewise, while the checkbox's mark has no model of its own, so without the rendering a
-checked and a mixed checkbox differ by the box's fill alone, the limit recorded where it is (R23). The rendering uses the system's accent: an application's accent cannot
+stroke and corners, R6, R7) remains for a toolkit that cannot, and the radio's dot (its measured diameter and its
+colour, a cornered fill) likewise, while the checkbox's mark has no model of its own, so without the rendering no
+mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement
+(MAC-C01), the limit recorded where it is (R23). The rendering uses the system's accent: an application's accent cannot
 reach it, which the connector records (R23). Measuring the mark's geometry from renders was weighed and rejected:
 its outline can only be traced from a picture, which the project's asset rule forbids; its size and colour are
 still measured. Elsewhere a glyph's size, stroke width and fill are its values.

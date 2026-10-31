@@ -141,7 +141,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-I10† | `text_area.values.document_margin; text_area.values.line_padding` | field |
 | MAC-I10† | `reader:macos:NSTextView.textContainerInset, textContainer.lineFragmentPadding -> text_area.values.document_margin, line_padding` | reader |
 | MAC-C01 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (the mixed state rendered with the rest, MAC-C06's rendering) | system-control |
-| MAC-C01 | `checkbox.box.fill @ {indeterminate}` (the dash itself unmodelled, as the check is, MAC-C06; its extent and colour a new render's, `todo_v0.7.1_model-completeness-gap-map-macos.md:145`, ADD-A126) | rule |
+| MAC-C01 | `checkbox.box.fill @ {indeterminate}` (the mixed box's fill unmeasured, the gap map's "accent?", a new render, the catalogue's Open items; the dash itself unmodelled, as the check is, MAC-C06; its extent and colour a new render's, `todo_v0.7.1_model-completeness-gap-map-macos.md:145`, ADD-A126) | rule |
 | MAC-C02 | `checkbox.box.fill @ {pressed} / {checked,pressed}` | rule |
 | MAC-C02 | `radio.ring.fill @ {pressed} / {checked,pressed}` | rule |
 | MAC-C03 | `checkbox.box.fill @ {checked,disabled}` (the mark unmodelled, MAC-C06) | rule |
@@ -149,9 +149,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-C05 | `checkbox.box.fill @ cond scheme:dark (Linear gradient)` | rule |
 | MAC-C05 | `checkbox.box.stroke (gradient paint), checkbox.box.shadow (inset bevel layer)` | field |
 | MAC-C06 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (AppKit's rendering on the box, a part drawn in every state, so an unchecked control is rendered too; S15, R11, ADD-A126) | system-control |
-| MAC-C06 | `checkbox.mark.shown (false); checkbox.mark.glyph (Absent)` (in every state: AppKit names no image for the mark and its outline could only be traced from a render, R11, so the model draws none; the rendering draws it, and without the rendering, off the main thread, off macOS or in a toolkit that cannot composite it, a checked and a mixed checkbox differ by the box's fill alone, the model's limit, R23; S2.7's *A part not shown at rest*, ADD-A126) | field |
-| MAC-C06 | `checkbox.mark.padding` (the mark's inset inside the box, measured, kept with the facts for the mark's measured extent and colour, R11; drawn by no model glyph, ADD-A126) | field |
-| MAC-C07 | `radio.dot.{shown,corners,min_width,min_height,fill} (false; Full; the measured diameter, `docs/platform-facts.md:1241`, `radio_dot_diameter`; `indicator_color`, `:1232`, measured on macOS 14–15, macOS 26's a pending fact); radio.dot.shown @ {checked} (true); radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` (the dot modelled as the cornered fill AppKit draws, measured and shipped today, kept for a connector without the rendering, which replaces it where composited, MAC-C07's rendering; S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| MAC-C06 | `checkbox.mark (absent = true)` (in every state, the base: AppKit names no image for the mark and its outline could only be traced from a render, R11, so the model draws none; the rendering on the box draws it, and without the rendering, off the main thread, off macOS or in a toolkit that cannot composite it, no mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement, MAC-C01, the model's limit, R23; no later field patch brings the part back, S6.3, ADD-A126) | field |
+| MAC-C06 | `checkbox.mark` (its measured inset inside the box kept in the facts with its measured extent and colour, R11, the part `Absent` and drawn by no model glyph, the row above, ADD-A126) | field |
+| MAC-C07 | `radio.dot.{shown,corners,min_width,min_height,fill} (false; Full; the measured diameter, `docs/platform-facts.md:1241`, `radio_dot_diameter`; `indicator_color`, `:1232`, stated there unsourced, so a measurement, a register row); radio.dot.shown @ {checked} (true); radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` (the dot modelled as the cornered fill AppKit draws, measured and shipped today, kept for a connector without the rendering, which replaces it where composited, MAC-C07's rendering; S2.7's *A part not shown at rest*, ADD-A126) | rule |
 | MAC-C07 | `radio.ring.*, radio.dot.* @ cond window_inactive` | rule |
 | MAC-C07 | `radio.ring.glyph = SystemControl { control: AppKitRadio, replaces: [ring, dot] }` (on the ring, a part drawn in every state; the dot's glyph absent, its form a fill; S15, R11, ADD-A126) | system-control |
 | MAC-MN01 | `menu.item.corners` | field |
@@ -165,7 +165,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
-| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, so a later layer's patch of the glyph's fields is refused, S12, never drawn, and a whole glyph it sets is its own; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |
@@ -723,7 +723,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
 | MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
-| MAC-X11 | `checkbox.box.transitions, radio.ring.transitions (the toggle)` (the parts that carry AppKit's rendering where the connector composites it, S15; the mark and dot styled from their measurements and hidden by `shown = false` where AppKit draws none, MAC-C06, MAC-C07; whether AppKit animates them in and out is this row's recording, a register row, the catalogue's Open items, stated as S2.7's *A part not shown at rest* has it once measured, ADD-A126) | field |
+| MAC-X11 | `checkbox.box.transitions, radio.ring.transitions (the toggle)` (the parts that carry AppKit's rendering where the connector composites it, S15; the dot styled from its measurements and hidden by `shown = false` unchecked, the mark unmodelled, MAC-C06, MAC-C07; whether AppKit animates them in and out is this row's recording, a register row, the catalogue's Open items, stated as S2.7's *A part not shown at rest* has it once measured, ADD-A126) | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |

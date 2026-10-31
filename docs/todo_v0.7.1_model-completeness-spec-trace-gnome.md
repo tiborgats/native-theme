@@ -210,7 +210,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
-| GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, so a later layer's patch of the glyph's fields is refused, S12, never drawn, and a whole glyph it sets is its own; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio cond contrast_high` | rule |

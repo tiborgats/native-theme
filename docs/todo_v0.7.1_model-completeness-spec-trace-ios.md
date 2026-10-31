@@ -255,7 +255,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (false) @ variant selection` (the check hidden unselected, S2.7's *A part not shown at rest*, ADD-A126) | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (false) @ variant selection` (the check hidden unchecked, `checked` the selection's flag, CK-2†, S2.7's *A part not shown at rest*, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
 | CK-2† | `checkbox.box.fill, checkbox.mark.{glyph,shown} @ {checked} variant selection` (shown, true, while selected, ADD-A126) | rule |
@@ -273,7 +273,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-5 | `menu.item_trailing_icon.icon` | field |
 | MN-6 | `menu.check_indicator.glyph @ {checked}` | rule |
 | MN-6 | `menu.check_indicator.glyph @ {indeterminate}` | rule |
-| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, so a later layer's patch of the glyph's fields is refused, S12, never drawn, and a whole glyph it sets is its own; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
