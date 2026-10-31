@@ -42320,7 +42320,8 @@ rows = ["MAC-X11"]
 # macos-tahoe fill (preset gaps, pass 1): the label text's leaves NSButton's title has no counterpart for (as the
 # text styles' in tokens.toml): NSButton's class and deprecated category (NSButton.h:20-181, :183-188), its
 # cell's (NSButtonCell.h:81-128, :172-188) and its NSFont carry no decoration, word spacing or case transform,
-# and macOS uses no mnemonics; the title's letter spacing is SF Pro's tracking, pending (U150).
+# and macOS uses no mnemonics; the title's letter spacing is SF Pro's tracking (the HIG's macOS table, its rows
+# for the control sizes' 9, 11 and 13 pt).
 
 [[fact]]
 key = "button.label.text.decoration"
@@ -42426,8 +42427,53 @@ quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS
 [[fact]]
 key = "button.label.text.letter_spacing"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U150"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/82/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/4/0/0/inlineContent/0/text"
+quote = "9"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/4/1/0/inlineContent/0/text"
+quote = "+19"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/83/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "button.label.text.word_spacing"
