@@ -340,7 +340,12 @@ pub struct TouchBehavior {
     /// The farthest a touch may move between the taps of a double tap.
     #[parts(may_be_absent)]
     pub double_tap_slop: Value<Px>,
-    /// How long a touch waits before it presses.
+    /// How long a press waits before it shows inside a scrolling container,
+    /// so a scroll can claim the gesture first: the connector sets the
+    /// element's `pressed` flag only after it, for every press; a release
+    /// within it delivers the press and its release in one update (the
+    /// pressed style not drawn, a press ripple started and exited, S2.12), a
+    /// cancel within it nothing. Absent: no delay.
     #[parts(may_be_absent)]
     pub delay: Value<Ms>,
 }
