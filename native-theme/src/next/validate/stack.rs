@@ -141,6 +141,11 @@ pub(super) struct BindingOp {
     pub(super) value: Val,
     /// Where it is stated.
     pub(super) at: String,
+    /// Its value's step: its source's number and the step's index there, so
+    /// a cycle through it finds it as the step it is.
+    pub(super) id: Option<(usize, usize)>,
+    /// Its place in the part's list, which its value's step names.
+    index: usize,
 }
 
 /// One base's or rule's patch of one target, flattened.
@@ -219,10 +224,9 @@ impl PartialEq for ItemKey {
             (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
             (ItemKey::Role(a), ItemKey::Role(b)) => a == b,
             (ItemKey::Surface, ItemKey::Surface) => true,
-            (
-                ItemKey::Group(..) | ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface,
-                _,
-            ) => false,
+            (ItemKey::Group(..) | ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface, _) => {
+                false
+            }
         }
     }
 }
@@ -704,6 +708,8 @@ impl<'a> Stack<'a> {
                             role: role.clone(),
                             value: binding_val(value),
                             at: format!("{at}.bindings[{index}].value"),
+                            id: None,
+                            index,
                         }),
                         Binding::Surface(set) => surfaces.push(*set),
                     }
@@ -724,6 +730,13 @@ impl<'a> Stack<'a> {
                 }
                 let mut ops = vec![shown(Shown::Drawn)];
                 ops.extend(flatten(style, at, toml, number, Some(info.fields)));
+                for binding in &mut bindings {
+                    let place = format!("bindings[{number}:{}].role.value", binding.index);
+                    binding.id = ops
+                        .iter()
+                        .position(|op| op.path == place)
+                        .map(|step| (number, step));
+                }
                 ops
             }
         };

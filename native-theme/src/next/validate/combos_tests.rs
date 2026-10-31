@@ -1371,3 +1371,29 @@ fn combination_replaced_binding_not_evaluated() {
                value = \"#ff0000\" } }]";
     assert_eq!(over(below, top, &decl), NONE);
 }
+
+/// A cycle through two bindings of one part (S12: "through bindings
+/// too"): the state layer's colour reads the role the first binding binds
+/// and the role the second binds, whose value reads the state layer's
+/// colour; the second binding's own check finds it.
+#[test]
+fn combination_cycle_through_two_bindings() {
+    let decl = declare("surface_sets = [\"window\"]");
+    let preset = "[colors.light.surfaces.window]\nneutral = \"#00ff00\"\n\
+                  [colors.dark.surfaces.window]\nneutral = \"#00ff00\"\n\
+                  [colors.light.global]\naccent = \"#0000ff\"\n\
+                  [colors.dark.global]\naccent = \"#0000ff\"";
+    let top = "[widgets.button.body]\n\
+               interaction.state_layer.color = \"= mix(role.global.accent, surface.neutral, 0.5)\"\n\
+               bindings = [\
+               { role = { role = { global = \"accent\" }, value = \"= mix(role.window.neutral, #000000, 0.5)\" } }, \
+               { role = { role = { surface = \"neutral\" }, value = \"= part.interaction.state_layer.color\" } }]";
+    let found = over(preset, top, &decl);
+    assert!(
+        found.iter().any(
+            |problem| problem.starts_with("widgets.button.body.bindings[1]")
+                && problem.contains("itself")
+        ),
+        "{found:?}"
+    );
+}

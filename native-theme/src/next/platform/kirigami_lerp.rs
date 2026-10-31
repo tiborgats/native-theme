@@ -159,7 +159,10 @@ fn lerp(x: f32, y: f32, t: f64) -> f64 {
 /// the short way round). A colour without a hue, or with hue exactly 0, takes the other
 /// colour's hue for both ends. `None` stands for Qt's invalid colour, which only a NaN
 /// balance produces.
-#[allow(clippy::modulo_arithmetic, reason = "a float remainder, which cannot panic")]
+#[allow(
+    clippy::modulo_arithmetic,
+    reason = "a float remainder, which cannot panic"
+)]
 fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4]> {
     let t = f64::from(balance.clamp(0.0, 1.0));
     let (ha, hb) = (rgb_to_hsv(a), rgb_to_hsv(b));

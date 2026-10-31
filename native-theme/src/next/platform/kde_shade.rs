@@ -129,7 +129,10 @@ fn norm(a: f64) -> f64 {
     }
 }
 
-#[allow(clippy::modulo_arithmetic, reason = "a float remainder, which cannot panic")]
+#[allow(
+    clippy::modulo_arithmetic,
+    reason = "a float remainder, which cannot panic"
+)]
 fn wrap(a: f64) -> f64 {
     let r = a % 1.0;
     if r < 0.0 {

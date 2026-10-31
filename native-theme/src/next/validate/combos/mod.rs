@@ -1022,7 +1022,7 @@ fn binding_found<'s>(source: &'s Source, binding: &'s BindingOp) -> Found<'s> {
         at: &binding.at,
         cx: binding_cx(source),
         layer: source.layer,
-        id: None,
+        id: binding.id,
         via: false,
     }
 }
@@ -1859,7 +1859,9 @@ impl Checks<'_, '_> {
     /// does).
     fn cycles(&self, world: &World, id: (usize, usize), cx: Cx<'_>, expr: &Expr) -> bool {
         let stack = self.stack;
-        let mut seen: Vec<(Target, String)> = Vec::new();
+        // A step is one node; a part's bindings, sharing one place, are told
+        // apart by their steps.
+        let mut seen: Vec<(Target, String, Option<(usize, usize)>)> = Vec::new();
         let mut pending: Vec<(Cx<'_>, &Expr)> = vec![(cx, expr)];
         while let Some((cx, expr)) = pending.pop() {
             for reference in refs(expr) {
@@ -1876,7 +1878,7 @@ impl Checks<'_, '_> {
                             return true;
                         }
                         if let Got::Expr(next) = found.got {
-                            let node = (found.cx.target, found.cx.path.to_owned());
+                            let node = (found.cx.target, found.cx.path.to_owned(), found.id);
                             if !seen.contains(&node) {
                                 seen.push(node);
                                 pending.push((found.cx, next));

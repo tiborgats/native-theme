@@ -27,12 +27,12 @@
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
+use objc2::{ClassType, rc::Retained};
+#[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
     NSAppearance, NSColor, NSColorSpace, NSControlSize, NSFont, NSFontTraitsAttribute,
     NSFontWeightRegular, NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
 };
-#[cfg(all(target_os = "macos", feature = "macos"))]
-use objc2::{ClassType, rc::Retained};
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_foundation::{NSDictionary, NSNumber, NSProcessInfo, NSString};
 
