@@ -178,7 +178,7 @@ fn kirigami_lerp_rgb16(a: [u16; 4], b: [u16; 4], balance: f32) -> Option<[u16; 4
 }
 
 /// Interpolates between two model colours `[red, green, blue, alpha]` with channels in [0, 1],
-/// as [`kirigami_lerp_rgb16`] does, returning the result's channels (16-bit storage over 65535).
+/// as `kirigami_lerp_rgb16` does, returning the result's channels (16-bit storage over 65535).
 ///
 /// Each channel enters Qt's storage rounded to 16 bits. `None` when an input channel lies
 /// outside [0, 1] or is NaN (such a colour is not plain 16-bit RGB in Qt), or when the
