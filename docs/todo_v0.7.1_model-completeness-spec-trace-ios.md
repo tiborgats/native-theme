@@ -271,9 +271,9 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-3 | `menu.values.scrollable` | field |
 | MN-4 | `menu.item_subtitle.text` | field |
 | MN-5 | `menu.item_trailing_icon.icon` | field |
-| MN-6 | `menu.check_indicator.glyph @ {checked}` | rule |
-| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` | rule |
-| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph @ {checked}` (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (MN-6, CB-3), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
@@ -539,7 +539,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2) | rule |
+| CB-3 | `menu.check_indicator.glyph @ {selected} context combo_box` (the checkmark on the current item: a combo list's chosen value is `selected`, S7.2; the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |

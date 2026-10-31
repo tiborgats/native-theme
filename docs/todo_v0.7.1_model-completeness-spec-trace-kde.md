@@ -172,8 +172,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.67 | `menu.accelerator.{text,opacity}` | field |
 | K1.67 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | K1.68 | `menu.submenu_arrow.{glyph,min_width}` | field |
-| K1.69 | `menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check / variant radio` (Breeze's check box and radio look on the item's mark, which takes the item's states; Nested controls) | rule |
-| K1.69 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126; the glyph of the combo list's chosen value under `kde-breeze` and `flavor:kirigami` the KDE lane's to state, K1.245, the catalogue's Open items) | rule |
+| K1.69 | `menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check / variant radio` (Breeze's check box and radio look on the item's mark, which takes the item's states; Nested controls; the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
+| K1.69 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (K1.69, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126; the glyph of the combo list's chosen value under `kde-breeze` and `flavor:kirigami` the KDE lane's to state, K1.245, the catalogue's Open items) | rule |
 | K1.69 | `menu.values.check_column, menu.values.check_column_width` | field |
 | K1.69 | `menu.item.padding (the text's leading margin)` | field |
 | K1.70 | `menu.values.icon_column, menu.values.icon_column_width, menu.values.icon_text_gap, menu.values.show_item_icons` | field |
@@ -468,7 +468,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.29 | `menu.values.check_column, menu.values.icon_column (reserved when any item needs it)` | field |
 | Q1.30 | `menu.accelerator.text (the label's fill), menu.values.accelerator_alignment @ cond flavor:kirigami` | rule |
 | Q1.30 | `menu.submenu_arrow.glyph (ThemeIcon, size = token.icons.sizes.keyed.small.size) @ cond flavor:kirigami` | rule |
-| Q1.31 | `menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check cond flavor:kirigami / variant radio cond flavor:kirigami` (qqc2's check and radio indicators on the item's mark; an exclusive group's items `radio`) | rule |
+| Q1.31 | `menu.check_indicator.{fill,stroke,corners,shadow,glyph} @ variant check cond flavor:kirigami / variant radio cond flavor:kirigami` (qqc2's check and radio indicators on the item's mark; an exclusive group's items `radio`) (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
 | Q1.32 | `menu.separator.margin, menu.separator.stroke, menu.separator.min_height @ cond flavor:kirigami (its implicit width is the menu's min_width, Q1.25)` | rule |
 | Q1.33 | `tooltip.body.shadow @ cond flavor:kirigami` | rule |
 | Q1.34 | `tooltip.values.presentations (Appear, Disappear: Fade; = token.motion.durations.long, its timing) @ cond flavor:kirigami` | rule |

@@ -162,10 +162,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
 | MAC-MN04 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | MAC-MN04 | `menu.accelerator.text.letter_spacing` (the modifier-glyph spacing; the capture decides whether AppKit spaces the glyphs as text or lays modifiers and key in columns, which would make it a value) | field |
-| MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
+| MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` (the glyph a whole `Set`, `{ replace = { … } }`, S11, as a `Fields` patch over the base's `"absent"` glyph would set nothing, S2.2, S6.3, ADD-A126) | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
-| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after every glyph rule of the lane (GN-1.234, Q1.31), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (MAC-MN05), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |

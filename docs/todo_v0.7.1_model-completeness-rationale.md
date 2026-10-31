@@ -893,7 +893,12 @@ MAT-X13–MAT-X15, X-MO-1).
     GN-2.31, could be restated by narrower selectors): an application layer that draws a part its preset hides
     cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
     every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
-    part, which is the layer's statement, not an accident.
+    part, which is the layer's statement, not an accident. Keeping the presets' own mistakes visible, S12 refuses a
+    dead patch, one that meets `Absent` wherever its rule applies and so sets nothing (a checked rule's glyph table
+    over a base `"absent"` glyph), while a patch that meets a drawn value under some combination (an application's
+    `@ {hover}` over a menu check) passes. A part that becomes drawn appears at once, as no engine animates a part
+    it did not draw (GTK creates transitions only from a previous style, `gtkcssanimatedstyle.c:1030-1031`); one
+    that animates in is `shown`.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -1023,8 +1028,8 @@ fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields 
 becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
 indicator of the style without the flag, its paint and shadow transparent, so libadwaita's ring grows in from and
 shrinks out to its rest outline, zero wide and transparent at a larger offset (`libadwaita@1.10.0
-src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style enters from its own geometry and is
-gone at once (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
+src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` in that style appears and is gone at once, as no engine animates a
+part or block that was not drawn (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
 no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest
 style restating the ring, one left at the focused paint jumping in); an entering geometry on the block (a repeat of
 the rest style). The focus flags are the toolkit's in an inactive window, which GTK and Qt clear (S7.2).
