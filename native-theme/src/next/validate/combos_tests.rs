@@ -895,6 +895,15 @@ fn combination_bindings_follow_s3_3() {
                     { set = [\"header\", \"neutral\"] }, value = \"#ff0000\" } }]\n\
                     fill = \"= mix(surface.neutral, #000000, 0.5)\"";
     assert_eq!(over(below, surfaced, &decl), NONE);
+    // (d) A binding's value is evaluated in the scope outside it.
+    let outside = bind("{ surface = \"neutral\" }").replace(
+        "value = \"#ff0000\"",
+        "value = \"= mix(surface.neutral, #000000, 0.5)\"",
+    );
+    assert_eq!(
+        over(below, &outside, &decl),
+        ["widgets.button.body.bindings[0].role.value: `surface.neutral` can be `absent` here"]
+    );
 }
 
 /// `widget.<part>` read from the widget's values (S12): the part not drawn,
@@ -959,5 +968,33 @@ fn combination_widget_part_text_metrics_followed() {
             "widgets.button.label.text.line_height: the expression reads itself",
             "widgets.button.subtitle.text.line_height: the expression reads itself",
         ]
+    );
+}
+
+/// A keyed list's later item replaces the earlier whole (S6.1): the
+/// replaced transition's `delay` is never evaluated.
+#[test]
+fn combination_keyed_item_replaced() {
+    let transition = |delay: &str| {
+        format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = {delay}, timing = \"linear\", \
+             suspended_by_theme_change = true }}]"
+        )
+    };
+    let below = format!(
+        "{}\n[widgets.button.values]\nrepeat_delay_ms = 400",
+        transition("\"= add(values.repeat_delay, 10ms)\"")
+    );
+    let top = format!(
+        "{}\n[widgets.button.values]\nrepeat_delay_ms = \"absent\"",
+        transition("0")
+    );
+    assert_eq!(over(&below, &top, &Declarations::default()), NONE);
+    // Left in place, the preset's transition meets the absent value.
+    let kept = "[widgets.button.values]\nrepeat_delay_ms = \"absent\"";
+    assert_eq!(
+        over(&below, kept, &Declarations::default()),
+        ["widgets.button.body.transitions[0].delay_ms: `values.repeat_delay` can be `absent` here"]
     );
 }

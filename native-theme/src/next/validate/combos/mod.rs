@@ -23,8 +23,8 @@ use std::rc::Rc;
 use super::LayerKind;
 use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
-    BindingOp, Fact, Op, OpKind, Pos, Source, Stack, Target, Val, below, is_above, part_info, tail,
-    widget_of,
+    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Target, Val, below, is_above,
+    part_info, tail, widget_of,
 };
 use crate::next::blocks::part_style::RoleRef;
 use crate::next::declare::{DataName, DataOwner, Declarations};
@@ -244,6 +244,30 @@ impl<'a> Stack<'a> {
         rule && source.scheme.is_none_or(|scheme| scheme == world.scheme)
     }
 
+    /// The places of the keyed items the source `number` states that later
+    /// sources applying under `world` replace at every key (S6.1).
+    fn replaced<'s>(&self, world: &World, number: usize, source: &'s Source) -> Vec<&'s str> {
+        source
+            .items
+            .iter()
+            .filter(|item| {
+                let list = item.place.split('[').next().unwrap_or_default();
+                !item.keys.is_empty()
+                    && item.keys.iter().all(|key| {
+                        self.of(source.target).any(|(later, other)| {
+                            later > number
+                                && self.applies(world, other)
+                                && other.items.iter().any(|held| {
+                                    held.place.split('[').next() == Some(list)
+                                        && held.keys.contains(key)
+                                })
+                        })
+                    })
+            })
+            .map(|item| item.place.as_str())
+            .collect()
+    }
+
     fn roles_of(&self, world: &World) -> Target {
         Target::Roles(world.scheme)
     }
@@ -266,7 +290,14 @@ impl<'a> Stack<'a> {
             if !self.applies(world, source) || !bound.admits(source.pos) {
                 continue;
             }
+            let replaced = self.replaced(world, number, source);
             for (index, op) in source.ops.iter().enumerate() {
+                if replaced
+                    .iter()
+                    .any(|item| op.path == *item || is_above(item, &op.path))
+                {
+                    continue;
+                }
                 let found = |got| Found {
                     got,
                     at: &op.at,
@@ -663,6 +694,26 @@ impl<'a> Stack<'a> {
                         other => vec![*other],
                     };
                     for target in targets {
+                        // A keyed item holding the place is gone where a
+                        // later item replaces it at every key (S6.1).
+                        let keys: Vec<&ItemKey> = self
+                            .of(target)
+                            .flat_map(|(_, source)| &source.items)
+                            .filter(|item| item.place == *q || is_above(&item.place, q))
+                            .flat_map(|item| &item.keys)
+                            .collect();
+                        for (_, source) in self.of(target) {
+                            let replaces = source
+                                .items
+                                .iter()
+                                .any(|item| item.keys.iter().any(|key| keys.contains(&key)));
+                            if replaces
+                                && let Some(rule) = source.rule
+                                && !rules.contains(&rule)
+                            {
+                                rules.push(rule);
+                            }
+                        }
                         for (_, source) in self.of(target) {
                             let related: Vec<&Op> = source
                                 .ops
@@ -892,7 +943,7 @@ fn cx_of<'s>(source: &Source, op: &'s Op) -> Cx<'s> {
         path: &op.path,
         pos: source.pos,
         text_style: op.text_style.as_deref(),
-        in_binding: false,
+        in_binding: is_above("bindings", &op.path),
     }
 }
 

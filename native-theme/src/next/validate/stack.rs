@@ -11,6 +11,9 @@ use std::rc::Rc;
 use super::combos::World;
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
+use crate::next::blocks::motion::{
+    PresentationEvent, PresentationTransition, PropertyGroup, Transition,
+};
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
 use crate::next::expr::Expr;
@@ -157,6 +160,8 @@ pub(super) struct Source {
     pub(super) bindings: Vec<BindingOp>,
     /// A part's surface-set bindings, in order: the last binds (S6.1).
     pub(super) surfaces: Vec<SurfaceSet>,
+    /// The keyed lists' items it states (S6.1).
+    pub(super) items: Vec<Item>,
 }
 
 /// A rule of the stack.
@@ -183,9 +188,59 @@ pub(super) struct Stack<'a> {
     pub(super) cache: RefCell<HashMap<Vec<usize>, Rc<Vec<World>>>>,
 }
 
-/// A list's items whose list merges by key (S6.1): kept beside the earlier
-/// items, never replacing them by their place.
-const KEYED_ITEMS: [&str; 3] = ["Transition", "Binding", "PresentationTransition"];
+/// The lists that merge by key (S6.1): their items are kept beside the
+/// earlier items, never replacing them by their place.
+const KEYED_LISTS: [&str; 3] = ["bindings", "transitions", "presentations"];
+
+/// What a keyed list's item is keyed by there (S6.1).
+#[derive(Clone, Debug, PartialEq)]
+pub(super) enum ItemKey {
+    /// A transition's property group: a transition listing several is split
+    /// per group first.
+    Group(PropertyGroup),
+    /// A presentation's event.
+    Event(PresentationEvent),
+}
+
+/// A keyed list's item a source states, and its keys: a later item holding
+/// one replaces it there (S6.1).
+#[derive(Clone, Debug)]
+pub(super) struct Item {
+    /// Its place (`transitions[3:0]`).
+    pub(super) place: String,
+    /// Its keys; replaced at every one, it is gone.
+    pub(super) keys: Vec<ItemKey>,
+}
+
+/// A widget's presentations, keyed by event.
+fn presentation_items(source: usize, held: &[PresentationTransition]) -> Vec<Item> {
+    items("presentations", source, held, |presentation| {
+        vec![ItemKey::Event(presentation.event.clone())]
+    })
+}
+
+/// The items of a keyed list at `list`, stated by the source `source`.
+fn items<T>(list: &str, source: usize, held: &[T], keys: impl Fn(&T) -> Vec<ItemKey>) -> Vec<Item> {
+    held.iter()
+        .enumerate()
+        .map(|(index, item)| Item {
+            place: format!("{list}[{source}:{index}]"),
+            keys: keys(item),
+        })
+        .collect()
+}
+
+/// A part's transitions, keyed by property group.
+fn transition_items(at: &str, source: usize, held: &[Transition]) -> Vec<Item> {
+    items(&below(at, "transitions"), source, held, |transition| {
+        transition
+            .properties
+            .iter()
+            .copied()
+            .map(ItemKey::Group)
+            .collect()
+    })
+}
 
 /// Whether `ancestor` lies above `path`.
 pub(super) fn is_above(ancestor: &str, path: &str) -> bool {
@@ -236,16 +291,14 @@ impl Flatten {
                 }
                 Segment::Key(key) => out = below(&out, key),
                 Segment::Index(item) => {
-                    let next =
-                        segments
-                            .get(index.saturating_add(1))
-                            .and_then(|segment| match segment {
-                                Segment::Field { owner, .. } | Segment::Variant { owner, .. } => {
-                                    Some(*owner)
-                                }
-                                Segment::Key(_) | Segment::Index(_) => None,
-                            });
-                    let keyed = next.is_some_and(|owner| KEYED_ITEMS.contains(&owner));
+                    let list = index
+                        .checked_sub(1)
+                        .and_then(|before| segments.get(before))
+                        .and_then(|segment| match segment {
+                            Segment::Field { name, .. } => Some(*name),
+                            Segment::Variant { .. } | Segment::Key(_) | Segment::Index(_) => None,
+                        });
+                    let keyed = list.is_some_and(|name| KEYED_LISTS.contains(&name));
                     if keyed || self.appended.contains(&out) {
                         out = format!("{out}[{}:{item}]", self.source);
                     } else {
@@ -527,6 +580,7 @@ impl<'a> Stack<'a> {
             ops,
             bindings: Vec::new(),
             surfaces: Vec::new(),
+            items: Vec::new(),
         });
     }
 
@@ -554,6 +608,7 @@ impl<'a> Stack<'a> {
                 let number = self.sources.len();
                 let ops = flatten(&values, &join(&root, "values"), toml, number, None);
                 self.push(Target::Values(WidgetKind::Button), pos, layer, None, ops);
+                self.presentations(number, values.presentations.as_deref());
             }
         }
     }
@@ -611,6 +666,7 @@ impl<'a> Stack<'a> {
         };
         let mut bindings = Vec::new();
         let mut surfaces = Vec::new();
+        let mut held = Vec::new();
         let ops = match patch {
             PartPatch::Absent => vec![shown(Shown::Absent)],
             PartPatch::DrawnAs { target, variants } => vec![shown(Shown::DrawnAs {
@@ -628,6 +684,9 @@ impl<'a> Stack<'a> {
                         Binding::Surface(set) => surfaces.push(*set),
                     }
                 }
+                if let Some(transitions) = &style.transitions {
+                    held = transition_items("", number, transitions);
+                }
                 let mut ops = vec![shown(Shown::Drawn)];
                 ops.extend(flatten(style, at, toml, number, Some(info.fields)));
                 ops
@@ -642,6 +701,7 @@ impl<'a> Stack<'a> {
             ops,
             bindings,
             surfaces,
+            items: held,
         });
     }
 
@@ -694,7 +754,15 @@ impl<'a> Stack<'a> {
                     Some(index),
                     ops,
                 );
+                self.presentations(number, values.presentations.as_deref());
             }
+        }
+    }
+
+    /// The presentations the source `number`, a widget's values, states.
+    fn presentations(&mut self, number: usize, held: Option<&[PresentationTransition]>) {
+        if let (Some(source), Some(held)) = (self.sources.get_mut(number), held) {
+            source.items = presentation_items(number, held);
         }
     }
 
