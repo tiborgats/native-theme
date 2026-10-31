@@ -653,8 +653,8 @@ def index_file(widgets: list, shared: dict) -> str:
     out += ["}", ""]
     for e in shared.values():
         out += enum_code(e)
-    dead = ('#[cfg_attr(\n    not(test),\n    expect(\n        dead_code,\n        reason = "S8\'s resolution applies '
-            'the bases and rules (M1a task 10)"\n    )\n)]')
+    dead = ('#[cfg_attr(\n    not(test),\n    allow(\n        dead_code,\n        reason = "S8\'s resolution applies '
+            'the bases and rules (M1a task 10); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"\n    )\n)]')
     out += ["/// The typed widgets' patches applied in order (S8: the bases, then the rules",
             "/// on a part): each part's slot and each widget's values' patch merged.",
             "#[derive(Clone, Debug, Default, PartialEq)]", dead, "pub(crate) struct WidgetSlots {"]

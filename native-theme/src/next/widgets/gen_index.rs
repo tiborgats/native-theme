@@ -147,9 +147,9 @@ pub enum ButtonLabelPosition {
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "S8's resolution applies the bases and rules (M1a task 10)"
+        reason = "S8's resolution applies the bases and rules (M1a task 10); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) struct WidgetSlots {
@@ -159,9 +159,9 @@ pub(crate) struct WidgetSlots {
 
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "S8's resolution applies the bases and rules (M1a task 10)"
+        reason = "S8's resolution applies the bases and rules (M1a task 10); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 impl WidgetSlots {

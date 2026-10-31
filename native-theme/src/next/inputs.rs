@@ -39,7 +39,10 @@ impl InputName {
     #[must_use]
     #[cfg_attr(
         not(test),
-        expect(dead_code, reason = "read by the evaluator (M1a task 10)")
+        allow(
+            dead_code,
+            reason = "read by the evaluator (M1a task 10); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
+        )
     )]
     pub(crate) fn segments(&self) -> &[Key] {
         &self.0

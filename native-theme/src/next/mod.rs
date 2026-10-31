@@ -8,7 +8,10 @@ mod blocks;
 pub mod color;
 #[cfg_attr(
     not(test),
-    expect(dead_code, reason = "S12's checks read the declarations (M1a task 8)")
+    allow(
+        dead_code,
+        reason = "S12's checks read the declarations (M1a task 8); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
+    )
 )]
 mod declare;
 mod error;

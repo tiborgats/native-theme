@@ -10,9 +10,9 @@
 
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "typing and evaluation are called by S12's checks and S8's query (M1a tasks 8 to 11)"
+        reason = "typing and evaluation are called by S12's checks and S8's query (M1a tasks 8 to 11); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 mod arith;

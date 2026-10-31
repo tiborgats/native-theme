@@ -18,9 +18,9 @@ pub mod icon;
 pub mod interaction;
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "patches are merged by S8's resolution (M1a task 10)"
+        reason = "patches are merged by S8's resolution (M1a task 10); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 mod merge;

@@ -27,9 +27,9 @@ pub(crate) use stack::Stacked;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "S16's `Theme` adds layers of each kind (M1a task 12)"
+        reason = "S16's `Theme` adds layers of each kind (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) enum LayerKind {
@@ -65,9 +65,9 @@ pub(crate) struct Context<'a> {
 /// Every structural problem `layer` has against `cx` (S12).
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "S16's `Theme::add_layer` validates each layer (M1a task 12)"
+        reason = "S16's `Theme::add_layer` validates each layer (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
@@ -129,9 +129,9 @@ fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
 /// nothing uses.
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "S16's `Theme` validates each bundled preset (M1a task 12)"
+        reason = "S16's `Theme` validates each bundled preset (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) fn check_preset(

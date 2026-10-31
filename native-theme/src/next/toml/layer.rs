@@ -63,9 +63,9 @@ pub(crate) fn read_layer(text: &str) -> Result<Layer, LayerError> {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
-        reason = "the bundled presets are read by S16's `Theme` (M1a task 12)"
+        reason = "the bundled presets are read by S16's `Theme` (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) struct PresetFile {
