@@ -153,7 +153,7 @@ pub enum ButtonLabelPosition {
     not(test),
     allow(
         dead_code,
-        reason = "S16's `Theme` applies the bases and rules (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
+        reason = "only the tests apply the widgets' patches through the slots (S6.1's merge, part by part): resolution keeps each base and rule a step of its own, for S8's lazy composition (M1a tasks 10 and 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 pub(crate) struct WidgetSlots {
@@ -165,7 +165,7 @@ pub(crate) struct WidgetSlots {
     not(test),
     allow(
         dead_code,
-        reason = "S16's `Theme` applies the bases and rules (M1a task 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
+        reason = "only the tests apply the widgets' patches through the slots (S6.1's merge, part by part): resolution keeps each base and rule a step of its own, for S8's lazy composition (M1a tasks 10 and 12); an `allow`, as Rust 1.88 (the MSRV) counts what dead code under an `expect` uses as used, and stable does not"
     )
 )]
 impl WidgetSlots {

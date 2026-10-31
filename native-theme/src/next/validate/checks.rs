@@ -2735,6 +2735,7 @@ pub(super) mod triggers {
             declarations: &decl,
             preset: None,
             kind: LayerKind::Application,
+            reader_accent_left_out: false,
             below: &[],
         };
         let mut checker = checker_over(&cx);
@@ -2749,6 +2750,7 @@ pub(super) mod triggers {
             declarations: &decl,
             preset: None,
             kind: LayerKind::Application,
+            reader_accent_left_out: false,
             below: &[],
         };
         let mut checker = checker_over(&cx);
@@ -2789,6 +2791,7 @@ mod tests {
             declarations: &decl,
             preset: None,
             kind: LayerKind::Application,
+            reader_accent_left_out: false,
             below: &[],
         };
         let mut checker = Checker::new(&cx, false);
@@ -2867,6 +2870,7 @@ mod tests {
                 declarations: &decl,
                 preset: None,
                 kind: LayerKind::Application,
+                reader_accent_left_out: false,
                 below: &[],
             };
             let mut checker = Checker::new(&cx, false);
@@ -2957,6 +2961,7 @@ mod tests {
                 declarations: &decl,
                 preset: None,
                 kind: LayerKind::Application,
+                reader_accent_left_out: false,
                 below: &[],
             };
             let mut checker = Checker::new(&cx, false);

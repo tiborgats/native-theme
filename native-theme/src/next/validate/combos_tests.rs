@@ -38,6 +38,7 @@ fn over(below: &str, top: &str, decl: &Declarations) -> Vec<String> {
         declarations: decl,
         preset: None,
         kind: LayerKind::Application,
+        reader_accent_left_out: false,
         below: &below,
     };
     match check(&toml(top), &cx) {
@@ -711,6 +712,7 @@ fn combination_mapping_palette() {
             declarations: &decl,
             preset: None,
             kind: LayerKind::Palette,
+            reader_accent_left_out: false,
             below: &[],
         };
         let stack = Stack::new(&layers, cx);
@@ -1471,5 +1473,43 @@ fn combination_input_cycle() {
             &decl
         ),
         ["inputs.other: the expression reads itself"]
+    );
+}
+
+/// Task 11e's review: where the reader's common accent is left out (S8,
+/// S9.5), the reader layer's `accent` is not in force, so the preset's two
+/// inputs that read each other are a cycle, as evaluation finds it.
+#[test]
+fn combination_input_cycle_reader_accent_left_out() {
+    let decl = declare("inputs = [\"accent\", \"other\"]\naccent_inputs = [\"accent\", \"other\"]");
+    let preset = toml(
+        "[inputs.accent]\nlight = \"= input.other\"\n[inputs.other]\nlight = \"= input.accent\"",
+    );
+    let below = [Stacked {
+        layer: &preset,
+        kind: LayerKind::Preset,
+    }];
+    let reader = toml("[inputs.accent]\nlight = \"#3366ff\"");
+    let found = |left_out: bool| {
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Reader,
+            reader_accent_left_out: left_out,
+            below: &below,
+        };
+        match check(&reader, &cx) {
+            Ok(()) => Vec::new(),
+            Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+            Err(other) => panic!("{other}"),
+        }
+    };
+    assert_eq!(found(false), NONE);
+    assert_eq!(
+        found(true),
+        [
+            "inputs.accent: the expression reads itself",
+            "inputs.other: the expression reads itself"
+        ]
     );
 }

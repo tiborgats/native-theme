@@ -316,6 +316,7 @@ fn opacity_worlds(layer: &Layer, decl: &Declarations) -> (usize, Duration) {
         declarations: decl,
         preset: None,
         kind: LayerKind::Application,
+        reader_accent_left_out: false,
         below: &[],
     };
     let stack = Stack::new(&below, cx);
@@ -334,6 +335,7 @@ fn checked(layer: &Layer, decl: &Declarations) -> (usize, Duration) {
         declarations: decl,
         preset: None,
         kind: LayerKind::Application,
+        reader_accent_left_out: false,
         below: &[],
     };
     let started = Instant::now();

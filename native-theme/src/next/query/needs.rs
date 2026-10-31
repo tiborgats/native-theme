@@ -1,6 +1,5 @@
 //! What a part reads of its element (S8, S10): the data its preset
-//! declares, the box a `Full` corner operand halves, and whether its glyph
-//! or icon is drawn to its box.
+//! declares, and whether its glyph or icon is drawn to its box.
 
 use crate::next::blocks::outline::Radius;
 use crate::next::declare::{DataName, DataOwner};
@@ -83,35 +82,28 @@ fn corner(path: &[&str]) -> bool {
 
 impl ResolvedTheme {
     /// What the connector supplies for `part` (S8): the data its preset
-    /// declares for it (the root's with the widget values'), the box where
-    /// its values can read a `Full` corner as an operand, and whether its
-    /// glyph or icon is drawn to its box. Nothing for a component's part, as
-    /// no preset declares a component yet.
+    /// declares for it (with the widget values' where it starts an element,
+    /// a root or an *(element)* part, as `values()` is queried with its
+    /// element), and whether its glyph or icon is drawn to its box. A `Full`
+    /// corner read as an operand needs no pass of its own: S12 refuses one
+    /// unless the reading part declares `width` and `height`, so the
+    /// declaration is the answer for every stack over the preset (S10).
+    /// Nothing for a component's part, as no preset declares a component
+    /// yet.
     #[must_use]
     pub fn data_needs(&self, part: PartRef) -> DataNeeds {
         let PartRef::Typed(part) = part else {
             return DataNeeds::default();
         };
-        let root = part.info().is_some_and(|info| info.root);
+        let element = part.starts_element();
         let decl = declarations(self, part.widget());
         let mut data: Vec<DataName> = Vec::new();
         for (owner, names) in decl.data.iter().flatten() {
-            if *owner == DataOwner::Part(part) || (root && *owner == DataOwner::Values) {
+            if *owner == DataOwner::Part(part) || (element && *owner == DataOwner::Values) {
                 for name in names {
                     if !data.contains(name) {
                         data.push(*name);
                     }
-                }
-            }
-        }
-        let mut seeds = vec![(Target::Part(part), String::new())];
-        if root {
-            seeds.push((Target::Values(part.widget()), String::new()));
-        }
-        if self.reads_box(seeds).1 {
-            for datum in [ElementDatum::Width, ElementDatum::Height] {
-                if !data.contains(&DataName::Element(datum)) {
-                    data.push(DataName::Element(datum));
                 }
             }
         }

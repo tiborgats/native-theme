@@ -2272,7 +2272,8 @@ impl Checks<'_, '_> {
     /// refuses it ([`inputs::input_cycles`]).
     fn input_cycles(&mut self) {
         let stack = self.stack;
-        for (layer, name) in inputs::input_cycles(&stack.layers, stack.preset()) {
+        let left_out = stack.cx.reader_accent_left_out;
+        for (layer, name) in inputs::input_cycles(&stack.layers, stack.preset(), left_out) {
             let toml = stack.layers.get(layer).is_some_and(|stacked| {
                 matches!(stacked.layer.spelled, crate::next::layer::Spelled::Toml)
             });

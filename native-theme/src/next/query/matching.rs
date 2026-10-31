@@ -6,6 +6,7 @@
 use super::{Element, ScopeEntry, Sibling, Unavailable};
 use crate::next::declare::WidgetDecl;
 use crate::next::key::Key;
+use crate::next::registry;
 use crate::next::resolve::ResolvedTheme;
 use crate::next::selector::{
     ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, PartRef, PositionMatch,
@@ -77,15 +78,6 @@ fn widget_variants(part: TypedPart, outer: &[ScopeEntry]) -> Vec<VariantRef> {
         }
     }
     out
-}
-
-/// Whether `part` starts an element: a typed widget's root or *(element)*
-/// part, and a component's every part (none is declared yet, S10).
-fn starts_element(part: &PartRef) -> bool {
-    match part {
-        PartRef::Typed(part) => part.starts_element(),
-        PartRef::Component { .. } => true,
-    }
 }
 
 /// The widget a part belongs to.
@@ -343,7 +335,7 @@ impl<'e> Matched<'e> {
 
     /// Whether a context match holds over the element's ancestors, its own
     /// parts' entries skipped (S8): any of them, or the nearest ancestor
-    /// element of one of the widgets named, by any of its parts' entries.
+    /// instance of one of the widgets named, by any of its parts' entries.
     fn context(&self, context: &ContextMatch) -> bool {
         let holds = |entry: &ScopeEntry| {
             is_target(context.target.as_ref(), &entry.part)
@@ -358,7 +350,7 @@ impl<'e> Matched<'e> {
         };
         match &context.scope {
             ContextScope::AnyAncestor => self.outer.iter().any(holds),
-            ContextScope::NearestAmong(widgets) => elements(self.outer)
+            ContextScope::NearestAmong(widgets) => instances(self.outer)
                 .into_iter()
                 .rev()
                 .find(|entries| {
@@ -442,7 +434,7 @@ fn set_by_connector(decl: &WidgetDecl, part: TypedPart, variant: &VariantRef) ->
     let head = part.element();
     let own = (!head.info().is_some_and(|info| info.root)).then(|| head.name());
     let name = variant_name(variant);
-    let content = crate::next::registry::widgets()
+    let content = registry::widgets()
         .iter()
         .filter(|info| info.kind == part.widget())
         .flat_map(|info| info.content_variants)
@@ -455,9 +447,10 @@ fn set_by_connector(decl: &WidgetDecl, part: TypedPart, variant: &VariantRef) ->
             .any(|breakpoint| breakpoint.variant == *variant)
 }
 
-/// The sizes an element takes (S10): its first variant's with
-/// `sizes_by_variant`, else the nearest ancestor's of `sizes_by_context`,
-/// else the widget's `sizes`; `None` where none is declared.
+/// The sizes an element takes (S10): those of the first
+/// `sizes_by_variant` entry, in written order, whose variant the element
+/// holds, else the nearest ancestor's of `sizes_by_context`, else the
+/// widget's `sizes`; `None` where none is declared.
 fn takes<'d>(
     decl: &'d WidgetDecl,
     variants: &[VariantRef],
@@ -482,13 +475,16 @@ fn takes<'d>(
     }
 }
 
-/// `entries` split into the elements they belong to, outermost first: each
-/// from an entry that starts one through the entries of its parts.
-fn elements(entries: &[ScopeEntry]) -> Vec<&[ScopeEntry]> {
+/// `entries` split into the widget instances they belong to, outermost
+/// first: each from an entry of a widget's root (a component's part) through
+/// the entries of its parts, its *(element)* parts' among them, so the
+/// nearest of the widgets a context names is a widget, never one of its
+/// elements (S7: `NearestAmong` names widgets).
+fn instances(entries: &[ScopeEntry]) -> Vec<&[ScopeEntry]> {
     let mut starts: Vec<usize> = entries
         .iter()
         .enumerate()
-        .filter(|(at, entry)| *at == 0 || starts_element(&entry.part))
+        .filter(|(at, entry)| *at == 0 || starts_instance(&entry.part))
         .map(|(at, _)| at)
         .collect();
     starts.push(entries.len());
@@ -499,4 +495,13 @@ fn elements(entries: &[ScopeEntry]) -> Vec<&[ScopeEntry]> {
             _ => None,
         })
         .collect()
+}
+
+/// Whether `part` starts a widget instance: a typed widget's root, and a
+/// component's every part (none is declared yet, S10).
+fn starts_instance(part: &PartRef) -> bool {
+    match part {
+        PartRef::Typed(part) => part.info().is_none_or(|info| info.root),
+        PartRef::Component { .. } => true,
+    }
 }

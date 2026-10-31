@@ -7,14 +7,17 @@
 //! colour rule that can hold under that scheme and contrast
 //! (conservatively, the other conditions not decided).
 
+use super::super::LayerKind;
 use super::super::stack::{Stacked, excluded};
+use crate::next::color::Color;
 use crate::next::expr::{Expr, Ref};
 use crate::next::inputs::{Contrast, InputName};
 use crate::next::key::Key;
-use crate::next::layer::Layer;
+use crate::next::layer::{Bases, Layer};
 use crate::next::presets::PresetId;
 use crate::next::resolve::compose::{Found, Locate};
-use crate::next::resolve::input_value;
+use crate::next::resolve::evaluate::references;
+use crate::next::resolve::{input_value, is_accent};
 use crate::next::roles::ColorRolesPatch;
 use crate::next::selector::{Condition, RuleBody, Scheme, SetMatch};
 use crate::next::value::Value;
@@ -24,7 +27,7 @@ const CONTRASTS: [Option<Contrast>; 3] = [None, Some(Contrast::Increased), Some(
 
 /// A layer's bases' parts in force: its common bases, and the current
 /// preset's own.
-fn bases_of(layer: &Layer, preset: Option<PresetId>) -> Vec<&crate::next::layer::Bases> {
+fn bases_of(layer: &Layer, preset: Option<PresetId>) -> Vec<&Bases> {
     let mut out = vec![&layer.bases];
     out.extend(
         layer
@@ -52,10 +55,10 @@ fn can_hold(conditions: &SetMatch<Condition>, scheme: Scheme, contrast: Option<C
 fn role_expr<'a>(patch: &'a ColorRolesPatch, path: &[&str]) -> Option<&'a Expr> {
     match patch.locate(path) {
         Found::Through { expr, .. } => Some(expr),
-        found => match found.get::<Value<crate::next::color::Color>>() {
+        found => match found.get::<Value<Color>>() {
             Some(Value::Expr(expr)) => Some(expr),
             _ => found
-                .get::<Option<Value<crate::next::color::Color>>>()
+                .get::<Option<Value<Color>>>()
                 .and_then(Option::as_ref)
                 .and_then(|value| match value {
                     Value::Expr(expr) => Some(expr),
@@ -100,13 +103,19 @@ struct InForce<'a> {
     preset: Option<PresetId>,
     scheme: Scheme,
     contrast: Option<Contrast>,
+    /// The reader layer's `accent` is left out, as resolution leaves it
+    /// (S8, S9.5).
+    reader_accent_left_out: bool,
 }
 
 impl<'a> InForce<'a> {
     /// The input `name`'s value in force, and the layer stating it.
-    fn input(&self, name: &InputName) -> Option<(usize, Value<crate::next::color::Color>)> {
+    fn input(&self, name: &InputName) -> Option<(usize, Value<Color>)> {
         let mut out = None;
         for (layer, stacked) in self.layers.iter().enumerate() {
+            if self.reader_accent_left_out && stacked.kind == LayerKind::Reader && is_accent(name) {
+                continue;
+            }
             for bases in bases_of(stacked.layer, self.preset) {
                 for (held, value) in &bases.inputs.entries {
                     if held == name
@@ -165,7 +174,7 @@ impl<'a> InForce<'a> {
 /// The nodes an expression's references read.
 fn reads(expr: &Expr, inputs: &[InputName]) -> Vec<Node> {
     let mut refs = Vec::new();
-    crate::next::resolve::evaluate::references(expr, &mut refs);
+    references(expr, &mut refs);
     refs.iter()
         .filter_map(|reference| match reference {
             Ref::Input(path) => inputs
@@ -179,10 +188,12 @@ fn reads(expr: &Expr, inputs: &[InputName]) -> Vec<Node> {
 }
 
 /// Every input whose value in force reads itself under some scheme and
-/// contrast, with the layer stating that value.
+/// contrast, with the layer stating that value; the reader layer's `accent`
+/// not in force where `reader_accent_left_out`.
 pub(super) fn input_cycles(
     layers: &[Stacked<'_>],
     preset: Option<PresetId>,
+    reader_accent_left_out: bool,
 ) -> Vec<(usize, InputName)> {
     let mut names: Vec<InputName> = Vec::new();
     for stacked in layers {
@@ -202,6 +213,7 @@ pub(super) fn input_cycles(
                 preset,
                 scheme,
                 contrast,
+                reader_accent_left_out,
             };
             for name in &names {
                 let Some((layer, Value::Expr(expr))) = in_force.input(name) else {

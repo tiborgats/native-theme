@@ -65,7 +65,6 @@ pub enum Unavailable {
 /// What a window's root scope starts from (S8): what the connector measures
 /// and the application sets for the whole window.
 #[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
 pub struct RootInputs {
     /// The density; `None`: the default.
     pub density: Option<Density>,

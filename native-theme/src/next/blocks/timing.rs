@@ -694,4 +694,37 @@ mod tests {
         assert!(tally.failed.is_empty());
         assert_eq!(tally.passed, 25);
     }
+
+    /// Task 11e's review: the production path (`motion::evaluate`, through
+    /// its `spring_at`) gives exactly what `value_at_fraction`, the vector
+    /// table's sampler, gives, at each of the table's springs and times.
+    #[test]
+    fn evaluate_spring_matches_value_at_fraction() {
+        use crate::next::blocks::motion::{Timing, evaluate};
+        use crate::next::value::Value;
+        let mut compared = 0_usize;
+        for line in TABLE.lines().filter(|line| line.starts_with("&spring(")) {
+            let Some((ratio, stiffness, clamp)) = spring_key(line) else {
+                panic!("a spring row: {line}");
+            };
+            let timing = Timing::Spring {
+                mass: 1.0,
+                stiffness: stiffness as f32,
+                damping_ratio: ratio as f32,
+                initial_velocity: 0.0,
+                rest_epsilon: 0.001,
+                clamp,
+                time_scale: Value::Stated(1.0),
+            };
+            for t in TIMED_TS {
+                assert_eq!(
+                    evaluate(&timing, t),
+                    spring(ratio, stiffness, clamp).value_at_fraction(t),
+                    "{line} at {t}"
+                );
+                compared += 1;
+            }
+        }
+        assert!(compared > 0, "the table holds springs");
+    }
 }

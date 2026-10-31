@@ -649,8 +649,10 @@ fn size_classes_from_thresholds() {
     );
 }
 
-/// `data_needs` (S8, S10): the part's declared data, the box where a `Full`
-/// corner is read as an operand, and a glyph or icon drawn to its box.
+/// `data_needs` (S8, S10): the part's declared data, the widget values'
+/// with an element's head (task 11e's review), and a glyph or icon drawn to
+/// its box; a `Full` corner operand adds nothing beyond the declaration,
+/// which S12 requires to hold the box.
 #[test]
 fn data_needs_declared_full_corner_and_box() {
     let theme = fixture(&[]);
@@ -667,7 +669,8 @@ fn data_needs_declared_full_corner_and_box() {
     let theme = theme_with(
         &DECLARE.replace(
             "data = { label = [\"char_width\"] }",
-            "data = { label = [\"char_width\"], icon = [\"width\", \"height\"] }",
+            "data = { label = [\"char_width\", \"width\", \"height\"], icon = [\"width\", \
+             \"height\"], values = [\"move_distance\"] }",
         ),
         &[full],
     );
@@ -682,6 +685,10 @@ fn data_needs_declared_full_corner_and_box() {
     );
     assert!(!needs.drawn_to_box);
     assert!(theme.data_needs(ICON).drawn_to_box);
+    assert_eq!(
+        theme.data_needs(BODY).data,
+        [DataName::Element(ElementDatum::MoveDistance)]
+    );
     assert_eq!(
         theme.data_needs(PartRef::Component {
             key: key("rule_editor"),

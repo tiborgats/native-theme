@@ -56,6 +56,9 @@ pub(crate) struct Context<'a> {
     /// The layers below it, bottom first: the stack the checks over
     /// combinations read with it (S8, S12).
     pub(crate) below: &'a [Stacked<'a>],
+    /// The reader's common accent is left out of the stack (S8, S9.5), so
+    /// the reader layer's `accent` input is not in force.
+    pub(crate) reader_accent_left_out: bool,
 }
 
 /// Every structural problem `layer` has against `cx` (S12).
@@ -125,6 +128,7 @@ pub(crate) fn check_preset(
         declarations,
         preset,
         kind: LayerKind::Preset,
+        reader_accent_left_out: false,
         below: &[],
     };
     let mut problems: Vec<Problem> = checks::layer(layer, &cx);

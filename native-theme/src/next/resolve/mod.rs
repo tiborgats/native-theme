@@ -40,7 +40,6 @@ use super::widgets::{PartPatch, TypedPart, WidgetKind, WidgetValuesPatch, Widget
 /// The system conditions a reader reports (S8, R2.3, S7.1), and its text
 /// scaling factor and font DPI (S9.4).
 #[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
 pub struct ReaderState {
     /// The system's scheme.
     pub scheme: Scheme,
@@ -191,7 +190,6 @@ impl ContentSizeCategory {
 
 /// A window's conditions, which its connector states (S8).
 #[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
 pub struct WindowConditions {
     /// The window is inactive.
     pub inactive: bool,
@@ -695,6 +693,7 @@ impl Stack {
                 declarations: &self.declarations,
                 preset: self.preset,
                 kind: layer.kind,
+                reader_accent_left_out: self.reader_accent_left_out(),
                 below: stacked.get(..index).unwrap_or_default(),
             };
             match validate::check(layer.layer, &cx) {
@@ -885,7 +884,7 @@ fn accent_inputs_held(
 }
 
 /// Whether `name` is the `accent` input.
-fn is_accent(name: &InputName) -> bool {
+pub(crate) fn is_accent(name: &InputName) -> bool {
     matches!(name.segments(), [only] if only.as_str() == "accent")
 }
 

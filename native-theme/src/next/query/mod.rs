@@ -132,7 +132,6 @@ impl Scope {
 
 /// A sibling of the queried element (S8).
 #[derive(Clone, Debug)]
-#[non_exhaustive]
 pub struct Sibling<'a> {
     /// Its part.
     pub part: PartRef,
