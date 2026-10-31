@@ -2547,6 +2547,19 @@ impl ResolvedTheme {
         f(&mut cx)
     }
 
+    /// The logical px a point resolves to in `scope` (S9.4): a point
+    /// converted as a font size is, the DPI over 72, scaled where text
+    /// scales linearly; `None` without a DPI.
+    pub(crate) fn px_per_point(&self, scope: &Scope) -> Option<f32> {
+        let mut cx = Cx::new(self, scope, None, &|_| true, Target::Tokens);
+        let (dpi, factor) = cx.sizes();
+        let px = convert(FontSize::Pt(1.0), dpi)?;
+        Some(match factor {
+            Some(factor) => px.0 * factor,
+            None => px.0,
+        })
+    }
+
     /// The keyed scalar `token.params.<group>.<key>` in `scope`, typed by
     /// its group's declared unit (S4.6); `None` where it is not stated or
     /// is `Absent`.

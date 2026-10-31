@@ -185,9 +185,11 @@ fn gate_fixture_not_drawn_skipped() {
     assert_eq!(report.failures, Vec::<String>::new());
 }
 
-/// A measured fact compares within its measured tolerance, inclusive, and
-/// fails beyond it (S17 *The gate's tolerance*): 40.5px holds against 40px
-/// at 0.5, 4.6px does not against 4px.
+/// A measured fact compares within its measured tolerance and fails beyond
+/// it (S17 *The gate's tolerance*): 40.5px holds against 40px at 0.5, 4.6px
+/// does not against 4px; a point size's tolerance is in points, compared in
+/// px as the value is (S9.4). The edge and the f32 slack beside it are
+/// `measured_tolerance_edge_and_its_slack`'s.
 #[test]
 fn gate_fixture_tolerance_edge() {
     let report = fixture_report("tolerance");

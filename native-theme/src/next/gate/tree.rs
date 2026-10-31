@@ -335,9 +335,16 @@ pub struct Tolerance {
     /// The measured tolerance for every numeric leaf, where one is stated
     /// so.
     every: Option<f64>,
-    /// The measured tolerance per leaf, by its path in the value with any
-    /// unit suffix left out.
-    leaves: Vec<(String, f64)>,
+    /// The measured tolerance per leaf, by its path in the value as S11
+    /// spells it, each unit suffix left out.
+    leaves: Vec<(Vec<String>, f64)>,
+    /// The leaves whose value is in points (S9.4), by their paths as
+    /// `leaves` holds them: their tolerance is in points, the resolved
+    /// value in px.
+    points: Vec<Vec<String>>,
+    /// The px a point resolves to where the value is compared; `None`
+    /// before the gate knows the place.
+    px_per_point: Option<f64>,
 }
 
 /// The quote check's relative precision for numbers (S17).
@@ -363,21 +370,52 @@ impl Tolerance {
     pub fn every(tolerance: f64) -> Tolerance {
         Tolerance {
             every: Some(tolerance),
-            leaves: Vec::new(),
+            ..Tolerance::default()
         }
     }
 
     /// A measured tolerance per leaf, by the leaf's path in the value as
-    /// S11 spells it (`layers.0.y_px`).
+    /// S11 spells it (`layers.0.y_px`); a leaf suffixed `_pt` is in points.
     #[must_use]
     pub fn per_leaf(leaves: Vec<(String, f64)>) -> Tolerance {
+        let mut points = Vec::new();
         let leaves = leaves
             .into_iter()
-            .map(|(path, tolerance)| (unsuffixed(&path), tolerance))
+            .map(|(path, tolerance)| {
+                let segments = unsuffixed(&path);
+                if path.ends_with("_pt") && !points.contains(&segments) {
+                    points.push(segments.clone());
+                }
+                (segments, tolerance)
+            })
             .collect();
         Tolerance {
-            every: None,
             leaves,
+            points,
+            ..Tolerance::default()
+        }
+    }
+
+    /// The tolerance with the leaves at `paths` (as S11 spells them in the
+    /// value, `""` the value itself) in points (S9.4): a measured tolerance
+    /// there is in points, and is compared in px as the value is.
+    #[must_use]
+    pub fn in_points(mut self, paths: &[String]) -> Tolerance {
+        for path in paths {
+            let segments = unsuffixed(path);
+            if !self.points.contains(&segments) {
+                self.points.push(segments);
+            }
+        }
+        self
+    }
+
+    /// The tolerance compared where a point resolves to `px_per_point` px.
+    #[must_use]
+    pub(crate) fn at_points_of(&self, px_per_point: f64) -> Tolerance {
+        Tolerance {
+            px_per_point: Some(px_per_point),
+            ..self.clone()
         }
     }
 
@@ -396,43 +434,112 @@ impl Tolerance {
                 None => leaves.push((path, tolerance)),
             }
         }
-        Tolerance { every, leaves }
+        let mut points = self.points;
+        for path in other.points {
+            if !points.contains(&path) {
+                points.push(path);
+            }
+        }
+        Tolerance {
+            every,
+            leaves,
+            points,
+            px_per_point: self.px_per_point,
+        }
     }
 
-    /// The measured tolerance at the leaf `path`, where one is stated.
-    fn at(&self, path: &str) -> Option<f64> {
+    /// The measured tolerance at the leaf `path`, where one is stated, in
+    /// the resolved value's unit.
+    fn at(&self, path: &[Segment]) -> Option<f64> {
         let leaf = self
             .leaves
             .iter()
-            .filter(|(held, _)| *held == path)
+            .filter(|(held, _)| spelled(held, path))
             .map(|(_, tolerance)| *tolerance)
             .reduce(f64::min);
-        match (self.every, leaf) {
+        let tolerance = match (self.every, leaf) {
             (Some(a), Some(b)) => Some(a.min(b)),
             (a, b) => a.or(b),
+        }?;
+        match self.px_per_point {
+            Some(px) if self.points.iter().any(|held| spelled(held, path)) => Some(tolerance * px),
+            _ => Some(tolerance),
         }
     }
 }
 
-/// A leaf's path with each segment's unit suffix left out.
-fn unsuffixed(path: &str) -> String {
+/// A leaf's path, `.`-separated, with each segment's unit suffix left out.
+fn unsuffixed(path: &str) -> Vec<String> {
+    if path.is_empty() {
+        return Vec::new();
+    }
     path.split('.')
         .map(|segment| {
             SUFFIXES
                 .iter()
                 .find_map(|suffix| segment.strip_suffix(suffix))
                 .unwrap_or(segment)
+                .to_owned()
         })
-        .collect::<Vec<_>>()
-        .join(".")
+        .collect()
 }
 
-/// `path` with `segment` appended.
-fn below(path: &str, segment: &str) -> String {
-    if path.is_empty() {
-        segment.to_owned()
+/// One segment of a leaf's path in the compared tree: a field's name or an
+/// item's index, or a name S11 may spell or leave out there (a variant's or
+/// a type's name in snake_case, `cubic_bezier`; `layers` before a list's
+/// index, as S11 spells a shadow's layers, S2.5, whose resolved form is the
+/// list alone).
+#[derive(Clone, Debug, PartialEq)]
+struct Segment {
+    name: String,
+    optional: bool,
+}
+
+/// Whether `spelling`, a path as S11 spells it, names the leaf at `path`:
+/// its segments in order, each optional one of `path` written or left out.
+fn spelled(spelling: &[String], path: &[Segment]) -> bool {
+    match (spelling.split_first(), path.split_first()) {
+        (_, None) => spelling.is_empty(),
+        (None, Some(_)) => path.iter().all(|segment| segment.optional),
+        (Some((first, rest)), Some((segment, after))) => {
+            (segment.name == *first && spelled(rest, after))
+                || (segment.optional && spelled(spelling, after))
+        }
+    }
+}
+
+/// `path` with `name` appended.
+fn below(path: &[Segment], name: &str, optional: bool) -> Vec<Segment> {
+    let mut out = path.to_vec();
+    out.push(Segment {
+        name: name.to_owned(),
+        optional,
+    });
+    out
+}
+
+/// `path` with a type's or variant's `name` appended as an optional
+/// segment, where it has one.
+fn named(path: &[Segment], name: &str) -> Vec<Segment> {
+    if name.is_empty() {
+        path.to_vec()
     } else {
-        format!("{path}.{segment}")
+        below(path, &snake(name), true)
+    }
+}
+
+/// A path as a failure names it: its fields and indices, `.` for the value
+/// itself.
+fn written(path: &[Segment]) -> String {
+    let names: Vec<&str> = path
+        .iter()
+        .filter(|segment| !segment.optional)
+        .map(|segment| segment.name.as_str())
+        .collect();
+    if names.is_empty() {
+        ".".to_owned()
+    } else {
+        names.join(".")
     }
 }
 
@@ -460,15 +567,14 @@ impl Tree {
     /// agree.
     #[must_use]
     pub fn differs(&self, fact: &Tree, tolerance: &Tolerance) -> Option<String> {
-        self.differs_at(fact, tolerance, "")
+        self.differs_at(fact, tolerance, &[])
     }
 
-    fn differs_at(&self, fact: &Tree, tolerance: &Tolerance, path: &str) -> Option<String> {
-        let at = if path.is_empty() { "." } else { path };
-        let here = || Some(at.to_owned());
+    fn differs_at(&self, fact: &Tree, tolerance: &Tolerance, path: &[Segment]) -> Option<String> {
+        let here = || Some(written(path));
         match (self, fact) {
             (Tree::Number(a), Tree::Number(b)) => {
-                (!numbers_agree(*a, *b, tolerance.at(path))).then(|| at.to_owned())
+                (!numbers_agree(*a, *b, tolerance.at(path))).then(|| written(path))
             }
             (Tree::Color(a), Tree::Color(b)) => {
                 let limit = tolerance.at(path).unwrap_or(COLOR_PRECISION);
@@ -476,10 +582,10 @@ impl Tree {
                     .iter()
                     .zip(b)
                     .all(|(a, b)| a == b || ((a - b) * 255.0).abs() <= limit + STORED * 255.0);
-                (!close).then(|| at.to_owned())
+                (!close).then(|| written(path))
             }
             (Tree::Text(a), Tree::Text(b)) | (Tree::Word(a), Tree::Word(b)) => {
-                (a != b).then(|| at.to_owned())
+                (a != b).then(|| written(path))
             }
             (
                 Tree::Fields { name, fields },
@@ -491,14 +597,15 @@ impl Tree {
                 if name != other || fields.len() != others.len() {
                     return here();
                 }
+                let path = named(path, name);
                 fields
                     .iter()
                     .zip(others)
                     .find_map(|((field, a), (other, b))| {
                         if field != other {
-                            return here();
+                            return Some(written(&path));
                         }
-                        a.differs_at(b, tolerance, &below(path, field))
+                        a.differs_at(b, tolerance, &below(&path, field, false))
                     })
             }
             (
@@ -511,27 +618,29 @@ impl Tree {
                 if name != other || items.len() != others.len() {
                     return here();
                 }
+                let path = named(path, name);
                 if let ([a], [b]) = (items.as_slice(), others.as_slice()) {
-                    return a.differs_at(b, tolerance, path);
+                    return a.differs_at(b, tolerance, &path);
                 }
                 items
                     .iter()
                     .zip(others)
                     .enumerate()
                     .find_map(|(index, (a, b))| {
-                        a.differs_at(b, tolerance, &below(path, &index.to_string()))
+                        a.differs_at(b, tolerance, &below(&path, &index.to_string(), false))
                     })
             }
             (Tree::List(items), Tree::List(others)) => {
                 if items.len() != others.len() {
                     return here();
                 }
+                let path = below(path, "layers", true);
                 items
                     .iter()
                     .zip(others)
                     .enumerate()
                     .find_map(|(index, (a, b))| {
-                        a.differs_at(b, tolerance, &below(path, &index.to_string()))
+                        a.differs_at(b, tolerance, &below(&path, &index.to_string(), false))
                     })
             }
             _ => here(),
@@ -544,6 +653,7 @@ mod tests {
     #![allow(clippy::unwrap_used)]
 
     use super::*;
+    use crate::next::blocks::motion::Timing;
     use crate::next::color::Color;
     use crate::next::units::Px;
 
@@ -607,5 +717,93 @@ mod tests {
             Some("paint.0".to_owned())
         );
         assert_eq!(tree.differs(&redder, &Tolerance::every(1.0)), None);
+    }
+
+    #[derive(Debug)]
+    #[allow(dead_code, reason = "read through its Debug form only")]
+    struct ResolvedShadowLayer {
+        x: Px,
+        y: Px,
+    }
+
+    #[derive(Debug)]
+    #[allow(dead_code, reason = "read through its Debug form only")]
+    struct Part {
+        shadow: Option<Vec<ResolvedShadowLayer>>,
+        timing: Timing,
+        size: Option<Px>,
+    }
+
+    /// A per-leaf tolerance reaches the leaf S11 spells (S17's own
+    /// `"layers.0.y_px"`): a resolved shadow's list of layers, which S11
+    /// spells under `layers`, and a curve's points under its variant's
+    /// name; a point size's tolerance is compared in px.
+    #[test]
+    fn per_leaf_tolerances_reach_the_leaves_s11_spells() {
+        let part = |y: f32, x1: f32, size: f32| Part {
+            shadow: Some(vec![ResolvedShadowLayer {
+                x: Px(0.0),
+                y: Px(y),
+            }]),
+            timing: Timing::CubicBezier(x1, 0.0, 0.0, 1.0),
+            size: Some(Px(size)),
+        };
+        let path = |text: &str| vec![text.to_owned()];
+        let field = |part: &Part, name: &str| Tree::of(part).unwrap().at(&path(name)).cloned();
+        let (base, moved) = (part(2.0, 0.2, 16.0), part(2.4, 0.25, 16.6));
+        let shadow = |part: &Part| field(part, "shadow").unwrap();
+        let layers = Tolerance::per_leaf(vec![("layers.0.y_px".to_owned(), 0.5)]);
+        assert_eq!(shadow(&base).differs(&shadow(&moved), &layers), None);
+        assert_eq!(
+            shadow(&base).differs(&shadow(&moved), &Tolerance::quote()),
+            Some("0.y".to_owned())
+        );
+        let other = Tolerance::per_leaf(vec![("layers.0.x_px".to_owned(), 0.5)]);
+        assert_eq!(
+            shadow(&base).differs(&shadow(&moved), &other),
+            Some("0.y".to_owned())
+        );
+        let timing = |part: &Part| field(part, "timing").unwrap();
+        let curve = Tolerance::per_leaf(vec![("cubic_bezier.0".to_owned(), 0.1)]);
+        assert_eq!(timing(&base).differs(&timing(&moved), &curve), None);
+        assert_eq!(
+            timing(&base).differs(&timing(&moved), &Tolerance::quote()),
+            Some("0".to_owned())
+        );
+        // 0.5pt at 96 dpi is 0.667px: 0.6px apart holds, which 0.5px would
+        // not.
+        let size = |part: &Part| field(part, "size").unwrap();
+        let points = Tolerance::every(0.5).in_points(&[String::new()]);
+        assert_eq!(
+            size(&base).differs(&size(&moved), &points.at_points_of(96.0 / 72.0)),
+            None
+        );
+        assert_eq!(
+            size(&base).differs(&size(&moved), &Tolerance::every(0.5)),
+            Some(".".to_owned())
+        );
+        let leaf = Tolerance::per_leaf(vec![("size_pt".to_owned(), 0.5)]);
+        let larger = Tree::of(&part(2.0, 0.2, 16.6)).unwrap();
+        let whole = Tree::of(&base).unwrap();
+        assert_eq!(
+            whole.differs(&larger, &leaf.at_points_of(96.0 / 72.0)),
+            None
+        );
+        assert_eq!(
+            whole.differs(&larger, &leaf.at_points_of(1.0)),
+            Some("size".to_owned())
+        );
+    }
+
+    /// A measured tolerance holds at its edge and fails beyond it by more
+    /// than the f32 storage slack beside it (S17 *The gate's tolerance*).
+    #[test]
+    fn measured_tolerance_edge_and_its_slack() {
+        assert!(numbers_agree(40.5, 40.0, Some(0.5)));
+        let slack = STORED * 40.5;
+        assert!(slack < 1e-5);
+        assert!(!numbers_agree(40.5 + 1e-5, 40.0, Some(0.5)));
+        assert!(numbers_agree(40.0 + 0.5 * slack, 40.0, Some(0.0)));
+        assert!(!numbers_agree(40.0 + 2.0 * slack, 40.0, Some(0.0)));
     }
 }

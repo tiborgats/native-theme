@@ -9,3 +9,15 @@ rows = []
 kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
+
+# A point size measured within 0.5pt: the preset's 12px is 9pt at its 96 dpi, 0.4pt below the fact,
+# 0.53px in px, so the tolerance holds only converted to px as the value is (S9.4).
+[[fact]]
+key = "token.text.keyed.body.font.size"
+value = "9.4pt"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#text.body.size"
+tolerance = 0.5

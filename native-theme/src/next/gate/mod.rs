@@ -982,8 +982,9 @@ pub enum Outcome {
         /// The fact's value, evaluated where the theme's is.
         fact: String,
     },
-    /// The key's part is not drawn, or drawn by another widget, so its
-    /// fields are not compared.
+    /// The key's part is not drawn, or drawn by another widget, where a
+    /// fact of its field applies: a failure, as the fact states a value
+    /// where the platform draws none (S17).
     NotDrawn,
 }
 
@@ -1116,12 +1117,8 @@ impl Resolved {
     ) -> Result<Outcome, Unread> {
         let (actual, path) = self.global_tree(key, None, root)?;
         let (expected, _) = self.global_tree(key, Some(value), root)?;
-        Ok(differs(
-            actual.as_ref(),
-            expected.as_ref(),
-            &path,
-            tolerance,
-        ))
+        let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
+        differs(actual.as_ref(), expected.as_ref(), &path, &tolerance)
     }
 
     /// A measured derivation's pass (S17 *A measured derivation*): the
@@ -1137,12 +1134,8 @@ impl Resolved {
     ) -> Result<Outcome, Unread> {
         let (measured, path) = self.global_tree(key, Some(result), root)?;
         let (derived, _) = self.global_tree(key, Some(value), root)?;
-        Ok(differs(
-            measured.as_ref(),
-            derived.as_ref(),
-            &path,
-            tolerance,
-        ))
+        let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
+        differs(measured.as_ref(), derived.as_ref(), &path, &tolerance)
     }
 
     /// The combination's element queried top-down, each part in the scope
@@ -1388,23 +1381,42 @@ impl Parsed {
     }
 }
 
-/// The theme's and the fact's values at `path` compared.
+/// The theme's and the fact's values at `path` compared, a point's
+/// tolerance in the px a point resolves to; refused where the gate cannot
+/// read either side there, so two sides it cannot read never agree.
 fn differs(
     actual: Option<&Tree>,
     expected: Option<&Tree>,
     path: &[String],
     tolerance: &Tolerance,
-) -> Outcome {
-    let none = Tree::Word("unresolved".to_owned());
-    let actual = actual.and_then(|tree| tree.at(path)).unwrap_or(&none);
-    let expected = expected.and_then(|tree| tree.at(path)).unwrap_or(&none);
-    match actual.differs(expected, tolerance) {
+) -> Result<Outcome, Unread> {
+    let unread = |side: &str| {
+        Unread::Refused(format!(
+            "the gate cannot read {side} value at `{}`",
+            path.join(".")
+        ))
+    };
+    let actual = actual
+        .and_then(|tree| tree.at(path))
+        .ok_or_else(|| unread("the theme's"))?;
+    let expected = expected
+        .and_then(|tree| tree.at(path))
+        .ok_or_else(|| unread("the fact's"))?;
+    Ok(match actual.differs(expected, tolerance) {
         None => Outcome::Agrees,
         Some(at) => Outcome::Differs {
             at,
             theme: actual.to_string(),
             fact: expected.to_string(),
         },
+    })
+}
+
+/// `tolerance` where a point resolves as it does in `scope` (S9.4).
+fn in_scope(theme: &ResolvedTheme, scope: &Scope, tolerance: &Tolerance) -> Tolerance {
+    match theme.px_per_point(scope) {
+        Some(px) => tolerance.at_points_of(f64::from(px)),
+        None => tolerance.clone(),
     }
 }
 
@@ -1595,12 +1607,12 @@ impl Session<'_> {
                 let (expected, _) = self
                     .field_tree(key, Some(rule_body(value)?))?
                     .unwrap_or_default();
-                Ok(differs(
+                differs(
                     actual.as_ref(),
                     expected.as_ref(),
                     &path,
-                    tolerance,
-                ))
+                    &self.in_scope(key, tolerance),
+                )
             }
             Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => Err(
                 Unread::Refused("a token, a role or an input is read in the root scope".to_owned()),
@@ -1625,12 +1637,80 @@ impl Session<'_> {
         let (derived, _) = self
             .field_tree(key, Some(rule_body(Some(value))?))?
             .unwrap_or_default();
-        Ok(differs(
+        differs(
             measured.as_ref(),
             derived.as_ref(),
             &path,
-            tolerance,
-        ))
+            &self.in_scope(key, tolerance),
+        )
+    }
+
+    /// `tolerance` where a point resolves as it does in the scope the key's
+    /// part (its root's, for a value) is queried in (S9.4).
+    fn in_scope(&self, key: &FactKey, tolerance: &Tolerance) -> Tolerance {
+        let queried = match &key.place {
+            Place::WholePart(part) | Place::Part(part, _) => self.queried(*part),
+            Place::Values(..)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::Input(_)
+            | Place::KdeList(_) => self.root(),
+        };
+        match queried {
+            Some(queried) => in_scope(&self.resolved.theme, &queried.scope, tolerance),
+            None => tolerance.clone(),
+        }
+    }
+
+    /// Whether the key's part is drawn for the element, where the key is a
+    /// part's field: its query answered a style of its own (S8). A whole
+    /// part's key, a value's, a token's, a role's and an input's are read
+    /// whatever the parts' answers.
+    #[must_use]
+    pub fn drawn(&self, key: &FactKey) -> bool {
+        match &key.place {
+            Place::Part(part, _) => self
+                .queried(*part)
+                .is_some_and(|queried| queried.answer == Answer::Drawn),
+            Place::WholePart(_)
+            | Place::Values(..)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::Input(_)
+            | Place::KdeList(_) => true,
+        }
+    }
+
+    /// The query's answer for the key's part, as the report writes it.
+    #[must_use]
+    pub fn answer(&self, key: &FactKey) -> String {
+        let queried = match &key.place {
+            Place::WholePart(part) | Place::Part(part, _) => self.queried(*part),
+            Place::Values(..)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::Input(_)
+            | Place::KdeList(_) => self.root(),
+        };
+        queried.map_or_else(String::new, |queried| format!("{:?}", queried.answer))
+    }
+
+    /// Whether `when`, a state model's `not_drawn` entry (S17), holds for
+    /// the element of the widget's root: its conditions as resolution
+    /// decided them, the rest matched as the query matches a rule (S8),
+    /// its contexts among them.
+    #[must_use]
+    pub fn root_holds(&self, when: &When) -> bool {
+        if !self.resolved.conditions_hold(when) {
+            return false;
+        }
+        let Some(root) = self.root() else {
+            return false;
+        };
+        let theme = &self.resolved.theme;
+        self.with_element(root.part, &root.scope, |element| {
+            Matched::new(theme, element).is_ok_and(|matched| matched.matches(&when.0))
+        })
     }
 
     /// A part field's or a widget value's tree for the element, with the
@@ -1739,6 +1819,32 @@ mod tests {
         };
         assert!(why.contains("double_click_time_ms"), "{why}");
         assert!(!why.contains("unknown key"), "{why}");
+    }
+
+    /// A side the gate cannot read is refused, so two such sides never
+    /// agree (S17).
+    #[test]
+    fn unresolved_sides_never_agree() {
+        let path = vec!["width".to_owned()];
+        let tree = Tree::of(&vec![("width".to_owned(), 4.0_f32)]).unwrap();
+        let quote = Tolerance::quote();
+        assert!(matches!(
+            differs(None, None, &path, &quote),
+            Err(Unread::Refused(_))
+        ));
+        assert!(matches!(
+            differs(Some(&tree), None, &path, &quote),
+            Err(Unread::Refused(_))
+        ));
+        let missing = vec!["height".to_owned()];
+        assert!(matches!(
+            differs(Some(&tree), Some(&tree), &missing, &quote),
+            Err(Unread::Refused(_))
+        ));
+        assert_eq!(
+            differs(Some(&tree), Some(&tree), &path, &quote),
+            Ok(Outcome::Agrees)
+        );
     }
 
     /// A leaf of `Option<KeyRepeat>`, which S6.1 sets whole, names its

@@ -151,10 +151,56 @@ fn measured(cite: &Table) -> Option<Tolerance> {
     }
 }
 
+/// The paths, as S11 spells them in `value`, of its leaves in points
+/// (S9.4): `""` for a value `"<n>pt"`, a table's `_pt`-suffixed keys.
+pub fn points(value: &Value) -> Vec<String> {
+    fn walk(value: &Value, at: &str, out: &mut Vec<String>) {
+        let below = |key: &str| {
+            if at.is_empty() {
+                key.to_owned()
+            } else {
+                format!("{at}.{key}")
+            }
+        };
+        match value {
+            Value::String(text)
+                if text
+                    .strip_suffix("pt")
+                    .is_some_and(|number| number.trim().parse::<f64>().is_ok()) =>
+            {
+                out.push(at.to_owned());
+            }
+            Value::Table(table) => {
+                for (key, item) in table {
+                    if key.ends_with("_pt") && !item.is_table() && !item.is_array() {
+                        out.push(below(key));
+                    } else {
+                        walk(item, &below(key), out);
+                    }
+                }
+            }
+            Value::Array(items) => {
+                for (index, item) in items.iter().enumerate() {
+                    walk(item, &below(&index.to_string()), out);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    walk(value, "", &mut out);
+    out
+}
+
 /// The tolerance `fact` is compared at for `preset` (S17 *The gate's
 /// tolerance*): the smallest of the measured citations serving the preset,
-/// else the quote check's precision.
+/// else the quote check's precision; its leaves in points marked so, as
+/// the value is compared in px (S9.4).
 pub fn tolerance(fact: &Fact, root: &Path, preset: &str) -> Tolerance {
+    let points = match &fact.stated {
+        Stated::Value(value) => points(value),
+        Stated::Pending(_) => Vec::new(),
+    };
     fact.cites
         .iter()
         .filter(|cite| cite.get("kind").and_then(Value::as_str) == Some("measured"))
@@ -167,6 +213,7 @@ pub fn tolerance(fact: &Fact, root: &Path, preset: &str) -> Tolerance {
         .filter_map(measured)
         .reduce(Tolerance::smallest)
         .unwrap_or_else(Tolerance::quote)
+        .in_points(&points)
 }
 
 /// A fact's `when` for `preset` (S17, decision 7): its `preset:` conditions
@@ -277,11 +324,12 @@ pub fn derivation_passes(
             let result = pass.get("result").cloned().ok_or_else(|| {
                 format!("{}: a pass of {file}#{path} has no result", fact.place())
             })?;
+            let tolerance = tolerance.clone().in_points(&points(&result));
             out.push(DerivationPass {
                 inputs,
                 result,
                 conditions: super::model::strings(pass.get("conditions")),
-                tolerance: tolerance.clone(),
+                tolerance,
             });
         }
     }
