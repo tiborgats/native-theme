@@ -255,7 +255,7 @@ Each `### <widget>` section states, in this order:
   entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
-  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `splitter`: Material's keyed `@clickable` (the `splitter`
+  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `combo_box`: `with_icon` (ADD-A127); `splitter`: Material's keyed `@clickable` (the `splitter`
   entry gives the rule); `badge`:
   `custom_color`; `toolbar`: `with_search`, `with_prompt`; `form`: `collapsed` (KDE's form layout when its wide layout
   does not fit); `form.row`: `bitmap_icon`, `activatable`; `rich_text.code_block`: `fenced`; `window`:
@@ -2490,7 +2490,10 @@ spaces:
     and `adwaita` draw handles for touch selections only, and `ios-*` and `material-3` state the rule where the value
     phase's facts show UIKit and Android draw none for a pointer's selection), `magnifier` (all but `adwaita`,
     `material-3`, `ios-*`), `strength_meter` (all but `kde-breeze`), `strength_meter_fill` (all but `kde-breeze`).
-  - fields: `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
+  - fields: `body.fill` (`kde-breeze` and `material-3` by a rule in `context any combo_box`, the combo box's body
+    drawing the field: Qt's frameless line edit, K1.240; Compose's one text field, MAT-CB1; ADD-A127), `body.stroke`
+    (as `body.fill`),
+    `body.shadow` (`adwaita` by rules outside `{drop_target}` and `cond contrast_high`, GN-1.46, GN-1.51;
     `kde-breeze` under `flat`, K1.41; the value phase names the others from the facts), `body.focus` (the value
     phase names the presets from the facts where the field marks focus by its stroke alone, as `focus_border_color`
     maps below).
@@ -2700,35 +2703,136 @@ spaces:
     the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
     negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
     Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
-  - `label` — the current value's text: `text`.
-  - `placeholder` — WinUI's placeholder text: `text`.
+  - `label` — the current value's text: `text`, `padding` (inside it: GTK's cell renderer's 2 × 2, GN-1.238;
+    Breeze's text pixel, K1.240; ADD-A127).
+  - `placeholder` — the placeholder text in the label's place while no value is chosen (WinUI's; QComboBox's
+    `placeholderText`, K1.240; Compose's text field placeholder, MAT-CB1; ADD-A127): `text`.
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's
-    `NSPopUpButton`): `icon`, `opacity` (its disabled opacity, as on input: MAT-CB1, MAT-I7).
+    `NSPopUpButton`): `icon`, `opacity` (its disabled opacity, as on input: MAT-CB1, MAT-I7), `margin` (a margin in
+    the content row: Breeze's `iconSize + 4` rect with the pixmap centred and Qt's `iconSize + 2` height, K1.240;
+    Compose's minimum interactive box with the icon centred, MAT-CB1; ADD-A127).
   - `arrow_area` *(element)* — the arrow's sub-control, hovered and pressed on its own: macOS's accent-filled arrow
     area of the pop-up, NSComboBox's separate arrow button, Breeze's editable combo's arrow sub-control, which draws
     no box of its own (its drawing fields `Absent`, S6.3) but whose own hover recolours the arrow (`SC_ComboBoxArrow`,
-    `breezestyle.cpp:7884`, K1.240): `fill`, `stroke`, `corners`, `min_width`.
-  - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS the AppKit rendering, the
+    `breezestyle.cpp:7884`, K1.240), WinUI's editable combo's `DropDownOverlay` (W1-137), GTK's entry combo's arrow
+    button (GN-1.238): `fill`, `stroke`, `corners`, `min_width`, `max_height`, `margin` (its place, the content row
+    below; ADD-A127).
+  - `arrow`, in `arrow_area` — the indicator glyph (single or double chevron; on macOS outside `editable` the AppKit rendering, the
     system control `AppKitPopUp`: `GlyphSource::SystemControl { control: AppKitPopUp, replaces: [body, arrow_area,
     arrow] }`, as S15's image is the whole button, so the connector draws none of those parts' own fills, strokes or
     shadows under it and passes the `body`'s laid-out width as `render_system_control`'s `width`; the arrow area is
     the image's `ControlImage.arrow`), a mark that takes the combo box's states (Nested controls: it is queried with the
     combo box's element, so `{hover}` is the combo's; nested in `arrow_area`, `context combo_box.arrow_area {hover}`
-    selects the arrow area's own hover, and where no arrow area is drawn it is queried in the root's scope, Nesting):
+    selects the arrow area's own hover, and where no arrow area is drawn it is queried in the root's scope, Nesting;
+    the nesting is its query's, its place the content row's, below):
     `glyph` (its fill per state), `transform` (its rotation while `open`), `transitions` (WinUI's animated chevron,
-    W1-132).
+    W1-132), `margin` (a margin in the content row: Breeze's glyph centred in its arrow square, K1.240; WinUI's
+    chevron's end inset, W1-132; Compose's minimum interactive box, MAT-CB1; ADD-A127).
   - `header` — WinUI's header text: `text`, `padding`.
   - `floating_label` — Material's select field label (as on input, MAT-CB1): `text`, `padding`, `opacity`,
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the combo box's content layout: ADD-A127, to come, ledger queue #113); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `icon_text_gap_px`, `label_arrow_gap_px: Value<Px>` (the gaps of the content row, below;
+  GN-1.233, K1.240, W1-132, MAT-CB1, CB-1); `content_width: Value<ContentWidth>`, `content_slack_px: Value<Px>`,
+  `input_placement: Value<InputPlacement>`, `icon_clip_inset_px: Value<Px>` (the natural width, the editable input's
+  place and the icon's cut, below; ADD-A127);
+  `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
   shows, the placement's `max_visible_items`; W1-133, W1-136, MAC-CB04, MAT-P3-9, K1.245, K-P3-5†, MAC-P4-8†, P4-12†).
   The popup is a `menu` in `context combo_box`: its open and close presentations, the check's side and WinUI's pill
   are `menu`'s values and parts there.
+- **The content row** (ADD-A127; the platforms surveyed form by form, R25.16). On the main axis `button`'s content
+  form, its `menu_indicator` under `Inline` the combo box's `arrow`; the cross axis is the combo box's own, below:
+  - *Main axis*, from the start of `body`'s content box (S2.11), mirrored with the layout (S1): the `icon` where one is
+    drawn, its margin box, then `icon_text_gap_px`; the **content's space**, holding the `label` (its `padding` inside
+    it), in its place the `placeholder` while it shows or Material's resting `floating_label`, and under `editable`
+    the `input` (`context any combo_box`) where `input_placement` is `Row`; then `label_arrow_gap_px` and the **end
+    part**, the `arrow`, placed as `button`'s `menu_indicator` is under `Inline` (its `margin` a margin in the row,
+    the content's space ending the gap before its box where its start margin is positive and its end margin the
+    negative of it, before its margin box otherwise; no preset's arrow margins are of the first kind, so the gap is
+    always to the margin box).
+    On `macos-*` outside `editable` the rendering replaces the arrow (S15): the end part is the rendering's arrow area,
+    `ControlImage.arrow`, the content's space ending the gap before it, its width `arrow_area.min_width` and its inset
+    from the image's end `body.padding`'s end for the natural width (MAC-CB01's measurements); NSComboBox, under `editable`, has no rendering, its arrow the end part as elsewhere.
+  - *Spare width* (a stated or stretched width wider than the row needs) goes to the content's space: its text keeps
+    the space's start and the arrow the content box's end (Breeze's field, GTK's expanding stack and cell view, WinUI's
+    star column, Compose's text box; `ios-*` CB-1's measurement). A text longer than the content's space is cut at
+    the space's part's content box (its box less its `padding`) by its `text.elision` (Breeze's clip,
+    `breeze@6.8.2 kstyle/breezestyle.cpp:5800`, `:5826-5832`; WinUI's layout clip; Compose's single-line clip,
+    `androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/TextFieldScroll.kt:158`);
+    GTK never reaches the cut, as it never allocates the label less than its text (`gtk@4.24.1
+    gtk/gtklabel.c:1287-1297`), and the `ios-*` and `macos-*` cuts are measurements (CB-1, MAC-CB01); an `input`
+    cuts its text as its own widget does. An `icon` taller than `body`'s box less `icon_clip_inset_px` at the top and
+    bottom is cut there, where the preset states the inset (Breeze's clip at its edit field, the widget's box (the style item's under
+    Kirigami) less its frame, whatever the body's padding, K1.240, reached only where the box is shorter than the icon's reserve:
+    under Kirigami, Q1.124; on `kde-breeze` alone).
+  - *Cross axis:* the end part's margin box is centred on `body`'s box, not the content box, and `body` is at least
+    as tall as it (WinUI centres its chevron in the template's whole row under the uneven `12,5,0,7`,
+    `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:582`; Compose its trailing box on
+    the field's height, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/TextFieldImpl.kt:1904`;
+    under an even padding the two agree). The `icon`'s margin box lies so too, centred on `body`'s box with `body`
+    at least as tall as it (Compose centres its leading box on the field's height, `TextFieldImpl.kt:1786`, MAT-CB1;
+    Breeze centres the icon in its edit field, which its even frame centres on the body, its top and bottom margins
+    holding Qt's reserve and the frame, K1.240). The content's space is centred in the content box (Material's placed
+    by its field's label layout, as on `input`, MAT-CB1).
+  - *The arrow area*, where one is drawn, takes no layout space (every platform's arrow column is the gap, the arrow's
+    margin box and the padding already): it lies at the end of `body`'s box inset by its `margin`, `min_width` wide,
+    on the cross axis `body`'s box less its margins, at most `max_height`, centred (Breeze's `SC_ComboBoxArrow`
+    square, K1.240; WinUI's `DropDownOverlay`, W1-137; GTK's entry combo's button, GN-1.238), drawn over the
+    content's space and beneath the `arrow`, which the row places whether or not an area is drawn; on `macos-*`
+    outside `editable` it is the rendering's `ControlImage.arrow`.
+  - *Natural size:* `body`'s box at its content (S2.11, its size limits bounding it): on the main axis the row's
+    parts at their natural widths and `body.padding`, the content's space at the width `content_width` names, its
+    part's `padding` added, plus `content_slack_px`, the width the platform's size reserves beyond the drawn row
+    (Breeze's: the end `ComboBox_FrameWidth` and `Button_ItemSpacing` it sizes and never draws, K1.240; 0 where
+    the size is the drawn row, and 0 under every basis but `Widest`); on the cross axis the larger of the content's space's
+    margin box with the padding and the icon's and the end part's margin boxes alone, so Compose's field is the
+    larger of its boxes and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`). `ContentWidth
+    { Shown, ShownAndHints { label_padding: Option<Value<Px>> }, Widest { at_least: Value<Px>, empty: Option<CharRun>,
+    or_shown: bool }, Fixed(Value<Px>) }`, `CharRun { ch: char, count: u32 }`: `Shown` the text the content's space shows, the value, the placeholder
+    while none is chosen, under `editable` the input's text (GtkDropDown's visible page, GN-1.233; WinUI's
+    presenter, W1-132); `ShownAndHints` the largest of the rows at the shown text and at the placeholder
+    and the row whose content's space, without the padding's start and the gaps beside it, holds the resting floating
+    label alone (Compose measures it without the text's padding, between the icons' boxes, `TextFieldImpl.kt:612-633`,
+    `:1684-1691`); with `label_padding` `Some`, that row interpolated away as the label floats and a floated label
+    bounding the box by its width plus `label_padding` on each side (the outlined field, `:1694-1701`), with `None`
+    the label a third shown text instead, its row with the content's space's padding and gaps as the text's, at its
+    current, interpolated size (the filled field, which pads its label as its text, `:423-432`, and measures it at its
+    interpolated style, `:1045-1051`, `:1950-1951`) (MAT-CB1); `Widest` the largest of whole rows on both axes (the width and
+    the height, as Qt reserves an icon's height when any item has one, `qtbase@6.12.0
+    src/widgets/widgets/qcombobox.cpp:597-600`, `:634-635`), one per item, one for the placeholder and,
+    with no items, one for `empty`'s run (`count` advances of `ch` in the label's font, as the toolkit measures
+    them; none where `None`), each row in its own form (`with_icon` where that item has an icon, none for the
+    placeholder and the run) under that form's values, its slack included, its text at least `at_least` (not
+    applying to the `empty` row); with no items, no placeholder and `empty` `None`, one row at no text, its slack
+    included and `at_least` not applying to it either (Kirigami's combo created with no items, Q1.124), so an item's icon is counted once, by its own row (Qt adds `iconSize + 4` per item
+    with one, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:597-601`), and with `or_shown` the larger of that and
+    the row at the shown text without the slack
+    (QComboBox, K1.240; GtkComboBox's `fit-model`, GN-1.238; Kirigami's style item beside its text field, Q1.124);
+    `Fixed` a set width of the input's text, its padding added (GtkComboBox's entry, GN-1.238). When the connector
+    measures again (Qt's default policy takes the width at the first show) is the application's.
+  - *The editable input:* `InputPlacement { Row, Body }`: `Row` the `input` as the content's space (Breeze's line
+    edit at the edit field, K1.240; Kirigami's text field, Q1.124; Compose's text field, MAT-CB1; GTK's entry beside
+    its button, GN-1.238); `Body` the `input`'s box `body`'s box, its own `padding` as the platform writes it holding
+    the end part's column, so the column is counted once, there, beneath the arrow area and the arrow, drawn exactly
+    where the `label` resolves `Absent` (the connector builds no input element otherwise, and the `label` shows in
+    the row), the content's space empty while it is drawn, and the natural width the larger of the row's and the
+    input's box at its text (WinUI's `EditableText`, both columns, `11,5,38,6`, its 0 × 0 box until the combo takes
+    focus, or under a game controller until its popup opens, then kept until focus leaves, a history the rule
+    approximates by the popup's `open`, W1-137). The `label` is not drawn where the input is (may_be_absent).
+  - Rejected (R25.16): the end part the arrow area where one is drawn (ADD-A125's: WinUI's chevron then needs a
+    margin its source does not write to sit where its column puts it, and Breeze's field ends inside the area, not
+    before it); the slack as the arrow's moved margin under `Inline` (exact for one measure, but Kirigami's editable
+    width is a larger-of over the slack and its text field's own width, and Breeze's arrow would carry size terms in
+    its margins, not its written centring); the gap widened by the slack (the natural width and the positions right,
+    the clip early by the slack) or kept as drawn with no slack (the natural width short by it at every size); the slack as
+    the label's padding (the clip early); a content-dependent `min_width` (S8 forbids it); WinUI's input in the row,
+    its written `38` restated as an unwritten 1; the cross axis on the content box with WinUI's chevron given
+    margins 1 and −1 (the same pixels, values WinUI does not write); one size basis for all (the platforms differ
+    visibly); a combo rule of its own (the icon unplaced, written values moved into the padding).
 - **Variants:** typed `editable` (KDE, macOS's NSComboBox, WinUI, Material's editable menu, GTK's combo with entry),
   `flat` (GNOME's flat drop-down, KDE frameless, macOS borderless), `warning` (KDE's neutral highlight; input's `warning`), `tinted`, `primary` (iOS's
   tinted and prominent trigger configurations, `button`'s meanings, CB-2), `glass`, `clear` (iOS 26's glass trigger
@@ -2738,7 +2842,10 @@ spaces:
   iOS's pull-down button is `button` `menu`, B-18†); `kde-breeze` `@dialog_mode`, `@page_mode`
   (the form combo row's display modes, K-KA-12†); `material-3` `@filled`; `ios-*` `@gray`
   (the trigger's `UIButton.Configuration` styles of B-1, as `button` declares them, with its `exclusive_variants`
-  groups, CB-2).
+  groups, CB-2). The content variant `with_icon` (the current item's or the leading icon drawn, as on `button`; the
+  connector sets it from the content, ADD-A61; Kirigami's the control's own style-hint icon, not an item's,
+  Q1.124), declared on `kde-breeze`, `material-3` and `macos-*`, ignored
+  elsewhere (S8; ADD-A127).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. `material-3`: density (keyed). `windows-11`: density `compact` (WinUI's compact sizing dictionary, W3-39).
   Others: none.
 - **Flags:** shared `empty` (Material's select with no value chosen: its label rests inside the field, MAT-CB1); state
@@ -2749,13 +2856,24 @@ spaces:
   (FocusStates); its DropDownStates are the flag `open`, its InputModeStates the conditions `cond input:touch` and
   `cond input:game_controller`, its EditableModeStates the variant `editable`; others none (states combine);
   precedence: state models (S17).
-- **may_be_absent:** parts: `placeholder` (all but `windows-11`), `header` (all but `windows-11`), `icon` (all but
-  `material-3`, `kde-breeze`, `macos-*`: Qt's and AppKit's triggers draw the current item's icon, Q1.122; no row of
-  GNOME, Windows or iOS draws an icon in the trigger), `floating_label` (all but `material-3`), `supporting_text`
-  (all but `material-3`, `windows-11`), `arrow_area` (all but `macos-*`, `kde-breeze`; `kde-breeze` by a rule outside
-  `editable`, K1.240); fields: `body.shadow` (`adwaita` by the toolbar rule, GN-1.151; `kde-breeze`, `macos-*` by a
+- **may_be_absent:** parts: `label` (every preset declaring `editable`, by a rule under it, the input in its place;
+  `windows-11` under `variant editable` where its text box shows, focused or, under a game controller, open,
+  W1-137; ADD-A127), `placeholder` (all but `windows-11`,
+  `kde-breeze`, `material-3`; `kde-breeze` by rules under `cond flavor:kirigami`, Qt Quick's combo having none,
+  Q1.124, and under `editable`, QComboBox drawing no label text there, K1.240), `header` (all but `windows-11`), `icon` (all but `material-3`, `kde-breeze`, `macos-*`: Qt's and AppKit's
+  triggers draw the current item's icon, Q1.122; no row of GNOME, Windows or iOS draws an icon in the trigger; on
+  `material-3`, `kde-breeze` and `macos-*` by a rule outside `with_icon`), `floating_label` (all but `material-3`),
+  `supporting_text` (all but `material-3`, `windows-11`), `arrow_area` (all but `macos-*`, `kde-breeze`,
+  `windows-11`, `adwaita`; the last three by a rule outside `editable`, K1.240, W1-137, GN-1.238); fields:
+  `body.fill` (`adwaita` by a rule under `variants {editable,@gtk_combo_box}`, whose body draws no button, its
+  entry and its arrow button drawing themselves, GN-1.238), `body.stroke` (as `body.fill`);
+  `arrow.margin` (`macos-*` outside `editable`, the rendering's arrow, S15), `arrow_area.margin` (`macos-*` outside `editable`, the
+  rendering's `ControlImage.arrow`; its `max_height` there `auto`), `icon.margin` (as `icon`), `label.padding` (as
+  `label`); `body.shadow` (`adwaita` by the toolbar rule, GN-1.151, and under `variants {editable,@gtk_combo_box}`, GN-1.238; `kde-breeze`, `macos-*` by a
   rule under `flat`, K1.241, MAC-CB05; the value phase names the others from the facts), `arrow_area.corners`
-  (`kde-breeze`, whose arrow area draws no box, K1.240); values: `header_gap_px` (all but `windows-11`),
+  (`kde-breeze`, whose arrow area draws no box, K1.240); values: `icon_text_gap_px` (all but `material-3`,
+  `kde-breeze`, `macos-*`, as `icon`), `icon_clip_inset_px` (all but `kde-breeze`), `input_placement` (`ios-*`, which declares no `editable`), `header_gap_px`
+  (all but `windows-11`),
   `supporting_text_gap_px` (all but `windows-11`, `material-3`), `notch_padding_px` (all but `material-3`),
   `floating_label_gap_px` (all but `material-3`).
 - **State-model source:** `windows-11` the ComboBox and ComboBoxItem visual state groups
@@ -2776,7 +2894,7 @@ spaces:
   drawn): ADD-A127, to come (ledger queue #113). Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
   popover and GtkDropDown's list, the qqc2 combo's Menu and QComboBox's list, macOS's pop-up menu, iOS's menu,
   Material's exposed drop-down menu, WinUI's ComboBox popup: W1-133–W1-136, GN-1.234, MAC-CB04); the editable combo's
-  text is an `input` in `context any combo_box`; GNOME's search entry in the popup is a `search_field` in `context menu`
+  text is an `input` in `context any combo_box`, placed by `input_placement` (the content row); GNOME's search entry in the popup is a `search_field` in `context menu`
   within `context any combo_box`; the form combo row is `combo_box @ context form.row` (K-KA-12†). Provenance: group 1
   wrote the popup's placement as a value named `placement` (GN-P4-2†, K-P3-5†, MAC-P4-8†), now `popup_placement`
   (the host's value, Nested controls; the second check had moved it to `menu`, the third moved it back).

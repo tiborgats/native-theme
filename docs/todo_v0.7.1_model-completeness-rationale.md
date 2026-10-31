@@ -1356,6 +1356,104 @@ applied to the stand-in's factor or content-size category; a reader that reads e
 reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
 platform rule into every application.
 
+**R25.16 — The combo box's content layout (extends R16; ADD-A127).** Every platform lays its combo trigger out as
+one row, [icon] [the content's space] gap [the arrow], the content start-aligned and taking any spare width, the arrow
+keeping the end; they differ in four ways the model must state, each surveyed at the pins form by form (Breeze's and
+Kirigami's editable and non-editable combos with and without an icon, GtkDropDown and GtkComboBox with and without an
+entry, WinUI's at both densities and editable, Compose's and material-web's select with and without a leading icon,
+the iOS pop-up button, AppKit's pop-up and combo box). The catalogue's `combo_box` entry states the result once.
+
+*The row.* Options: a rule of the combo box's own; `button`'s content form with the arrow as `button`'s
+`menu_indicator` under `Inline`; that form with the arrow area as the end part where one is drawn (ADD-A125's).
+The second is chosen: it places the icon, takes written values one to one (WinUI's `ComboBoxPadding` end 0 and its
+chevron's `0,0,14,0`; Breeze's glyph centred in its 20 px square as a margin of 5; Compose's 24 dp icon in its 48 dp
+box as a margin of 12, with the text's own end padding 4 the gap), and needs only `margin` on the arrow and icon and
+`padding` on the label (GTK's cell renderer's 2 px, which in the body's padding would break S2.11's GTK minimum, an
+expression over that padding; Breeze's text pixel). The third fails WinUI, whose chevron sits in its 38 px column by
+its own margin, not centred in the 30 px overlay that is its editable arrow area, and Breeze, whose edit field runs
+2 px into the arrow's square rather than ending before it. So the arrow area, where drawn, is a box at the body's end
+by its own `margin`, `min_width` and `max_height`, taking no layout space (each platform's arrow column is already
+the gap, the arrow's margin box and the padding), and the arrow is placed by the row whether or not an area is drawn;
+on `macos-*`, where the rendering replaces the arrow, its `ControlImage.arrow` is the end part.
+
+*The cross axis.* WinUI centres its chevron on the whole row under an uneven padding (`12,5,0,7`), Compose its
+trailing box on the field's height; `Inline` centres on the content box. Options: `Inline`'s with WinUI's chevron
+given margins 1 and −1; the body's box. The body's box keeps written values and agrees with `Inline` under every even
+padding; Breeze's 20 px minimum content height, which under it no longer reaches the padding, is `body.min_height`,
+stated from its own terms.
+
+*The natural width.* A size hint is visible. Breeze sizes the content plus 38 but its drawn row holds 28: 10 px
+(the end `ComboBox_FrameWidth` and `Button_ItemSpacing`) are sized and never placed, 11 with an icon, 8 editable, 14
+frameless editable; Kirigami's style item 10, 7 with an icon, and editable a larger-of between its style item and its
+text field's own width. Options: (a) the gap widened by the slack (natural width and positions right, a long text cut
+10 px early); (b) the gap as drawn and the slack dropped (the width 10 px short at every size); (c) the slack in the
+label's padding (cut early); (d) the slack as the arrow's margin moved under `Inline` (start d, end −d), which keeps
+the row's size and moves the box: exact for one measure, but Kirigami's editable width is the larger of the style
+item's (with the slack) and the text field's (without), which a margin on the arrow, counted in both, cannot give,
+and Breeze's arrow would carry size terms where its source writes a centring; (e) a `min_width` over the content's
+width, which S8 forbids; (f) a value, `content_slack_px`, added to the content's space at its natural width only. (f)
+is the smallest form exact for every surveyed form: the positions and the cut stay the drawn row's, the size the
+platform's. Under the widest-item basis the slack differs by form (Breeze 10 without an icon, 11 with one) and Qt adds
+an icon's `iconSize + 4` per item, so the measure is the largest of whole rows, one per item (and for the
+placeholder and the empty run), each in its own form with that form's slack: an item's icon is counted once, by its
+own row, and a list mixing iconed and plain items comes out as Qt sizes it; measuring texts and adding the current
+item's icon would count an icon twice or for the wrong item. The slack is nonzero only under that basis, so it could
+be a field of `Widest`; it stays a value of its own because it varies by form (with an icon, editable, frameless,
+under Kirigami) and a rule restating one length is smaller than a rule restating the whole basis with its floor, run
+and `or_shown`, and because each whole row reads it under its own form's rules, as it reads the gaps; it is stated 0
+under the other bases. What the content's space is measured at differs too, visibly: the shown text (GtkDropDown, WinUI), the
+shown text with the placeholder and the floating label (Compose), the widest item, each in its own form, with the
+placeholder (QComboBox, GtkComboBox; Kirigami at least 75 and, editable, beside its text field), and a fixed width
+(GtkComboBox's entry, 150 px of text); one basis for all would misstate four platforms, and leaving it to the
+connector would lose a platform rule (R25.3's argument), so `content_width` names it, with QComboBox's empty list
+(seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
+application's policy, not the theme's. Compose measures its resting floating label without the text's padding, and
+bounds the box by a floated label plus the field's content padding on both sides, interpolating between the two as
+the label floats (the outlined field), while its filled field pads its label as its text and measures it at its
+current, interpolated size, a third shown text (`TextFieldImpl.kt:423-432`, `:1950-1951`): options, one form for
+both (the outlined field's 20 dp too wide at rest, 8 with a leading icon, or the filled field's label short by the padding), a separate
+value for the label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as
+`label_padding`, `Some` for the outlined form and `None`, the label a third shown text, for the filled; the last is
+the smallest exact form. So is a measure that depends on
+the element's history (Kirigami keeps its
+floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
+`kquickstyleitem.cpp:126`): the model measures the element's present content.
+
+*The natural height.* Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes
+and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`, `:1786`, `:1904`), 56, where boxes inside the
+padding would give 80; Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame.
+Under the widest-item basis the height is the tallest row's too, as Qt reserves an icon's height when any item has
+one (`qcombobox.cpp:634-635`), and Kirigami's style item ignores the icon's height (`kquickstyleitem.cpp:1189`), its
+icon taking no height by its margins. Options: the icon in the content box (Compose's height wrong); the icon's vertical margins on Material restated
+smaller (its centring then off under the floating label's uneven padding); a value choosing the content box or the
+body's box per preset; the icon, as the end part, always on the body's box, Breeze's top and bottom margins 7 (Qt's 1
+and the frame's 6). The last is chosen: Breeze's even frame centres the edit field on the body, so its icon lands on
+the same pixels, the 7 keeps Qt's reserve on the frameless editable combo too, whose field has no frame, and no
+surveyed form needs the content box for the icon, so the value would decide nothing. Breeze cuts the icon at its edit field
+(`breezestyle.cpp:5800`; editable QCommonStyle's, `qcommonstyle.cpp:2193`), the widget's box less its frame of 6, 0 on
+the frameless editable field, reached only under Kirigami, whose content (`fontHeight + 2`, at least 20,
+`breezestyle.cpp:3363`) can be shorter than its icon. Options: the cut at the content box (wrong under Kirigami's
+editable combo, whose padding is qqc2's 5); at `body.padding` (the same value, and 6 where the frameless editable clip
+is 0); no cut (a tall icon drawn past the field, as Breeze never draws it); a value, `icon_clip_inset_px`, the inset
+from the body's box. No stated value gives the field's inset on every form, so the value is the smallest exact form.
+The editable forms' inputs take
+the vertical padding that makes the height Qt's (`fontHeight + 2` inside Breeze's frame, `qcombobox.cpp:632`,
+`breezestyle.cpp:3366-3370`): 1 at the top and bottom on Breeze, 2 under Kirigami inside qqc2's 5, the frameless
+editable combo keeping the 6 of the framed one; their text is centred, so nothing drawn moves.
+
+*The editable input.* Breeze, Kirigami, Compose and GTK place the input in the content's space beside the arrow
+(Kirigami's editable end padding of 24 is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
+once); WinUI's text box spans the whole body with `11,5,38,6`, its padding holding the arrow's column, and appears
+only while the combo is focused, or under a game controller from the popup's opening until focus leaves, which the
+label's absence rules state, the input drawn where the label is not (the game controller's history, the box staying
+after the popup closes, approximated by the popup's `open`). Options: WinUI's input in the row with its padding restated (its written 38 becoming
+an unwritten 1); `input_placement`, `Row` or `Body`. The second keeps every written value and counts each column
+once.
+
+*Left to measurement:* the macOS pop-up's and combo box's content row per control size and the iOS pop-up's width
+basis, spare width and cut, which no pinned source states (register rows); a measured result outside these forms
+(a packed iOS title and indicator) is a model change its row records.
+
 ## 4. What the specification decides
 
 The names and types of every field; the colour roles' surface sets, role record and keyed roles; the text ramp's slots;
