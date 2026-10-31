@@ -181,12 +181,14 @@ Each `### <widget>` section states, in this order:
   one `values()` is queried with (S8): queried with an item *(element)* (a row, a tab, a thumbnail), the events and
   their element data (`move_distance`) are that item's; queried with the widget's own element, they are the widget's
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
-  is keyed (`@event`, declared, S10). A part shown and hidden with a state (a check mark, a radio's dot, a selection
-  pill, a slider's value bubble, a picker's popup) is `Absent` by a rule in the states it is hidden in and needs no
-  event: a part that becomes drawn enters from transparent with its own geometry, and one that becomes absent leaves
-  to transparent, by the `transitions` of the style it goes to or comes from (S2.7), so its fade is its
-  `transitions` (group `Opacity`), and a scale or slide while it is drawn its `transform` per state. A motion the
-  enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
+  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event. Where its platform draws
+  it on or grows it in place (a check mark drawn along its path, a radio's dot grown from its centre), it is drawn
+  in every state, at its hidden values where it shows nothing (`glyph.draw_extent` 0, a zero size or scale), and the
+  drawing on and the growth are its `transitions` of those fields (S2.7). Where its platform draws nothing of it in
+  a state (a picker's popup), it is `Absent` by a rule there, and how it enters and leaves is ADD-A126's (S2.7;
+  whether the parts their platforms scale in, WinUI's selection pill, Material's segmented check and value bubble,
+  are instead drawn at a zero scale is ADD-A126's too); a scale or slide while it is drawn is its `transform` per state. A motion
+  no field's transition can state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
   item's `indicator` (`tab.indicator`), which the step moves from its box in the previously selected item, where the
@@ -1201,7 +1203,7 @@ spaces:
     width; the start edge), `min_height` (its length).
   - `item_selection_indicator` — WinUI's selection pill on the selected item of a combo box's list (W1-135), in
     `context combo_box`: `fill`, `corners`, `min_width`, `min_height`, `transform` (its scale per state while drawn),
-    `transitions` (its scale animation; absent outside `{selected}`, it enters from transparent by these, S2.7).
+    `transitions` (its scale animation; absent outside `{selected}`, how it enters and leaves ADD-A126's, S2.7).
   - `found_item_pointer` — the pointer macOS draws at a menu item the Help search found (MAC-N33†): `glyph`, `fill`,
     `transitions`.
   - `dismiss_overlay` — WinUI's light-dismiss overlay, beside the box: `fill`.
@@ -1965,7 +1967,7 @@ spaces:
     padding would not shorten it), `opacity`, `transitions` (its fade as it hides beside a selected segment,
     GN-1.243).
   - `check` — Material's check glyph in a selected segment (MAT-SG1): `glyph`, `transitions` (its show and width
-    animation, MAT-SG1: absent outside `{selected}`, it enters from transparent by these, S2.7).
+    animation, MAT-SG1: absent outside `{selected}`, how it enters and leaves ADD-A126's, S2.7).
   - `menu_indicator` — AppKit's per-segment menu glyph (MAC-SG07): `glyph`.
 - **Widget values:** `segment_width: Value<SegmentWidth>`, `SegmentWidth { Fit, Fill, FillEqually,
   FillProportionally, EqualToWidest }` — `Fit` each its content's width (AdwToggleGroup's default, AppKit `fit`, the
@@ -2155,9 +2157,21 @@ spaces:
     layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
     `QPainterPath`, Segoe Fluent code points, AppKit's whole-control rendering, iOS's named symbol), `padding` (its
-    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions` (its entrance and
-    exit: absent while neither checked nor indeterminate, it enters from transparent and leaves to transparent by
-    these, S2.7).
+    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions` (its drawing on and
+    off, and its colour). Drawn in every state where the platform draws the check on along its path, at no length
+    while neither checked nor indeterminate (`glyph.draw_extent` 0), its draw-on the transition of that field, its
+    engine ADD-A126's (S2.7): `kde-breeze` (the dash pattern `path.length() * animation` toward checked, nothing
+    drawn toward unchecked, `breeze@6.8.2 kstyle/breezehelper.cpp:953-960`, K1.55), `windows-11` (the AnimatedIcon's
+    accept visual, drawn on by `TrimEnd` and off by `TrimStart`, in the unchecked foregrounds while it trims off,
+    `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:437`,
+    `:470`, `:522-553`, W1-037, W1-039), `material-3` (Compose's drawn fraction, drawn on from unchecked, kept
+    drawn for `SnapAnimationDelay` after unchecking, `Checkbox.kt:595-612`, `:1061`, MAT-C8); `Absent` by a rule `@ !{checked,indeterminate}`
+    where the platform draws none and swaps it in: `adwaita` (the `:checked` icon source, untimed:
+    `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:80`, its transition naming background and
+    box-shadow alone, `_common.scss:6-7`), `macos-*` and `ios-*` (their measured renderings draw none unchecked;
+    whether AppKit or UIKit draws the check on is unmeasured, an open item). Rejected: the mark `Absent` while
+    unchecked on every preset, which leaves a draw-on no starting style, and a fade from transparent, which no
+    platform here draws (ADD-A125).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2185,7 +2199,8 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`),
+  - parts: `state_layer` (all but `material-3`), `mark` (`adwaita`, `macos-*`, `ios-*` by a rule
+    `@ !{checked,indeterminate}`, above),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
@@ -2237,7 +2252,15 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
+    (its growth, W1-041). Drawn in every state where the platform grows it, at a zero size or scale while
+    unchecked, its growth the transition of that field, its engine ADD-A126's (S2.7): `kde-breeze` (`radius *
+    animation` both ways, `breeze@6.8.2 kstyle/breezehelper.cpp:1069-1071`, `kstyle/breezestyle.cpp:4960-4965`, K1.55), `material-3` (Compose's dot
+    radius, 0 unchecked, `RadioButton.kt:91`, `:137-142`, `:188-190`, MAT-C1); `Absent` by a rule where the
+    platform draws none: `adwaita` (the `:checked` bullet icon source, `_checks.scss:76`), `macos-*` (as the
+    check mark), `windows-11` `@ !{checked,pressed}` (the checked glyph's opacity 0 unchecked, and a second dot
+    shown on an unchecked radio while pressed, growing from its template size to its pressed size, `microsoft-ui-xaml@2.5.1
+    src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`, `:348-353`, `:362`, `:374`, `:376`,
+    W1-041, W1-042). Rejected: the dot `Absent` while unchecked on every preset (ADD-A125).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
     ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`; its colours
@@ -2253,7 +2276,8 @@ spaces:
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
+  - parts: `state_layer` (all but `material-3`), `dot` (`adwaita`, `macos-*` by a rule `@ !{checked}`,
+    `windows-11` by a rule `@ !{checked,pressed}`, above).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
@@ -2792,7 +2816,7 @@ spaces:
   - `value_label` — GTK's drawn value label (GN-1.102): `text`, `opacity` (dimmed).
   - `value_indicator` — Material's value bubble shown while dragging (MAT-S6): `fill`, `corners`, `min_height`,
     `text`, `transform` (its scale per state while drawn), `transitions` (its show and hide: absent by rule outside
-    the states it shows in, it enters from transparent and leaves to transparent by these, S2.7; restated
+    the states it shows in, how it enters and leaves ADD-A126's, S2.7; restated
     `@ cond reduced_motion`, MAT-S6). WinUI's thumb tooltip is a `tooltip` (Notes).
   - `header` — WinUI's header (W1-072): `text`.
   - `minimum_image`, `maximum_image` — iOS's minimum- and maximum-value images (SL-5): `icon`.
@@ -3332,8 +3356,8 @@ spaces:
   - `row_selection_indicator` — WinUI's selection pill (W1-107; W1-089 in the sidebar variant; the tree's, W2-12);
     Material's navigation rail and drawer active indicator (MAT-N13, rename row 18): `fill`, `corners`, `min_width`,
     `min_height`, `opacity` (the rail's, zero with the width outside `{selected}`, as Compose grows and fades it in,
-    MAT-N13), `transitions` (absent where the row's state shows none, it enters from transparent and leaves to
-    transparent by these, S2.7; its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
+    MAT-N13), `transitions` (absent where the row's state shows none, how it enters and leaves ADD-A126's,
+    S2.7; its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
     their own, MAT-N13).
   - `row_separator` *(element)*, in `section` (beside the rows, so they are its siblings; queried in the view's scope
     where no section is drawn, as the rows) — the line between two rows, an element whose previous and next siblings
@@ -3390,8 +3414,8 @@ spaces:
   - `unread_indicator` — kirigami-addons' unread mark on an indicator row (K-KA-39†): `fill`, `min_width`, `padding`.
   - `swipe_area` — the area a swipe reveals (Q1.89, L-13): `fill`, `shadow` (at its edges).
   - `swipe_action` *(element)* — an action button there (L-13, MAC-L12, MAT-L11, Q1.88, W2-29): `fill`, `text`,
-    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `interaction` (Material's revealed
-    action an icon button with its state layer and press ripple, MAT-L11, S2.12), `transitions`.
+    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `interaction` (Material's swipe action
+    and revealed icon, icon buttons with state layers in the tokens alone, MAT-L11, S2.12), `transitions`.
   - `swipe_handle` — Kirigami's handle that opens the actions (Q1.88): `icon`.
   - `drop_indicator`, in `section` — the insertion line (and its end circle) between rows (MAC-L11, K1.182,
     GN-1.279†), or the drop zone's area where the platform fills one (Material's drop-zone colour, MAT-L10): `stroke`,
@@ -3472,7 +3496,9 @@ spaces:
   `macos-*` `@full_width` (automatic is the base), `@row_size_small`, `@row_size_medium`, `@row_size_large` (MAC-L08;
   a list
   stating its own row size style has that as a variant), `@dashed_horizontal_grid`, `@browser` (NSBrowser's column
-  browser, which draws its column lines whatever the table grid setting, MAC-N08); `windows-11` `@listbox` (W2-33).
+  browser, which draws its column lines whatever the table grid setting, MAC-N08); `windows-11` `@listbox` (W2-33);
+  `material-3` on `swipe_action` `@revealed` (the list reveal's revealed icon button beside the swipe action's,
+  MAT-L11).
 - **Sizes and densities:** `macos-*`: the row size by variant (above) and by the condition
   `cond container_size:sidebar:small` (and `medium`, `large`) for source lists at the default row size (MAC-SB01),
   the sizes declared in `container_sizes` with the platform's default first (S10), the default from the facts
@@ -4093,7 +4119,8 @@ spaces:
     handle), `min_width`, `min_height` (its thickness, by orientation), `bindings` (Kirigami's Header set, Q1.93),
     `cursor`, `transitions`.
   - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): `fill`, `glyph`,
-    `corners`, `min_width`, `min_height`, `padding`, `shadow`.
+    `corners`, `min_width`, `min_height`, `padding`, `shadow`, `interaction` (Material's drag handle: its state
+    layer and press ripple, Compose's `ripple()` indication, MAT-SP2, S2.12).
   - `collapser` *(element)*, in `divider` — KDE's collapser button over the divider (KSplitterCollapserButton,
     K2.17), hovered and pressed on its own, its side a keyed variant: `fill`, `padding`, `opacity` (its fade, K2.17).
     `collapser_arrow` belongs to it.
@@ -4112,7 +4139,8 @@ spaces:
 - **Flags:** none of its own; state flags used: hover, pressed, dragged (MAC-SP03), focus_visible on Material's handle
   (MAT-SP2), disabled (W1-157†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (SizerBase's states); others none (states combine);
-  precedence: state models (S17).
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (the drag
+  handle's state layers, MAT-SP2; `pressed` its ripple and `dragged` its container colour combine).
 - **may_be_absent:** parts: `grip` (`adwaita`, `kde-breeze`: no grip on the divider, W1-157†'s cross-checks;
   `macos-*` by a rule outside `wide`, the thick divider's grip, MAC-SP02), `collapser` (`adwaita`, `macos-*`,
   `windows-11`, `ios-*`, `material-3`: KSplitterCollapserButton is KDE's, K2.17; `kde-breeze` by a rule
@@ -4977,7 +5005,8 @@ spaces:
     `corners`, `shape`, `shadow` (Material's item elevation, MAT-N18), `min_width`, `max_width` (Material's mask
     changing across its keylines with the scroll position: expressions over `element.scroll_progress`, which it
     declares, ADD-B13, MAT-N18), `transitions` (the page settle: a `Geometry` transition with a spring timing,
-    GNOME's page spring GN-2.38, Material's item settle MAT-N18).
+    GNOME's page spring GN-2.38, Material's item settle MAT-N18), `interaction` (Material's item state layers, the tokens' alone, MAT-N18,
+    S2.12).
 - **Widget values:** `item_gap_px: Value<Px>` (the gap between items or pages: MAT-N18; C-48†'s `interPageSpacing`,
   under `@scroll`); `scroll_timeout_ms: Value<Ms>` (GN-2.38);
   `nav_buttons_visibility: Value<NavButtonsVisibility>` (when its previous and next buttons show, W2-31);
@@ -5419,8 +5448,8 @@ spaces:
     its box's edge, S2.4; one structure with `time_picker.segment_separator`).
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
-    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}` and
-    enters from transparent and leaves to transparent by these, S2.7; W2-04's open animation). `popup_header` and
+    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}`, how
+    it enters and leaves ADD-A126's, S2.7; W2-04's open animation). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`

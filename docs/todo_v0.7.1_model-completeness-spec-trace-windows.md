@@ -135,16 +135,17 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-150† | `input.supporting_text.text @ context stepper / context any search_field (NumberBox's and AutoSuggestBox's description; PasswordBox is input variant secure)` | rule |
 | W1-151† | `input.misspelling.text.decoration` (thickness and offset as references to the font's metrics, widget.text.font_underline_thickness and _offset, where the probe shows the line follows the font, S2.8) | field |
 | W1-151† | `input.preedit.{fill,text.fill,text.decoration} @ variant selected_clause (the target clause; the IME's other clause attributes, TF_DISPLAYATTRIBUTE, as keyed preedit variants)` | rule |
-| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}; checkbox.mark.glyph.fill @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` (the mark's paint only where it is drawn: unchecked it is absent by the catalogue's rule `@ !{checked,indeterminate}`, written before these, ADD-A125) | rule |
+| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.mark.glyph.fill, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` (the mark drawn in every state, at no length unchecked, W1-039: its unchecked foregrounds the colours it trims off in, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CheckBox_themeresources.xaml:65-68`, `:153-156`, `:241-244`, set by the unchecked states, `:319-320`, `:344-345`, `:369-370`, the template's default `:604`, ADD-A125) | rule |
 | W1-038 | `checkbox.mark.glyph (FontCodePoint and size) @ {indeterminate}` | rule |
 | W1-038 | `checkbox.box.{fill,stroke} @ {indeterminate}` | rule |
 | W1-039 | `checkbox.mark.glyph (FontCodePoint and size)` | field |
-| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W1-039 | `checkbox.mark.glyph.draw_extent @ !{checked,indeterminate}` (no length unchecked: the accept visual draws the check on by `TrimEnd` and off by `TrimStart`, `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:437`, `:470`, `:522-553`, its Off frames drawing nothing; ADD-A125) | rule |
+| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` (the trims' engine ADD-A126's, ledger queue #85, ADD-A125) | field |
 | W1-040 | `checkbox.body.min_height, checkbox.body.min_width` | field |
-| W1-041 | `radio.dot.{min_width,min_height} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
+| W1-041 | `radio.dot (absent = true) @ !{checked,pressed}; radio.dot.{min_width,min_height} @ {pressed} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the absent rule first; the checked glyph's opacity 0 unchecked, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:374`, `:348-353`, `:362`; an unchecked radio while pressed draws a second dot, which the pressed state grows from the template's dimensions by `ControlFastAnimationDuration`, `:298-306`, `:376`, its start the growth's, ADD-A126's; `{pressed}` written before the checked rules, ADD-A125) | rule |
 | W1-041 | `radio.dot.transitions (Geometry: the scale animation)` | field |
 | W1-042 | `radio.ring.stroke, radio.ring.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {pressed} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the pressed unchecked dot's fill `RadioButtonCheckGlyphFill`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:34`, `:92`, `:150`, its border unset, `:376`; `{pressed}` written first, ADD-A125) | rule |
 | W1-043 | `radio.{body,ring,dot,label} (the typed radio, stated apart from checkbox)` | field |
 | W1-044 | `menu.item.fill @ {pressed}` | rule |
 | W1-044 | `menu.item_label.text.fill @ {pressed}` | rule |
@@ -447,7 +448,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-04 | `button.{body.fill,icon.glyph,body.transform} @ variant previous context picker_wheel.container / variant next context picker_wheel.container (the up and down buttons)` | rule |
 | W2-04 | `button.body.transform @ {pressed} variant previous context picker_wheel.container / {pressed} variant next context picker_wheel.container (their press scale)` | rule |
 | W2-04 | `button.* @ variant @accept context time_picker / variant @dismiss context time_picker / variant @accept context date_picker / variant @dismiss context date_picker (the accept and dismiss row)` | rule |
-| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation: it enters from transparent by its transitions, S2.7) | rule |
+| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation; how it enters and leaves is ADD-A126's, S2.7) | rule |
 | W2-05 | `color_picker.plane.{stroke,min_width,min_height} @ variant @box / variant @ring` | rule |
 | W2-05 | `color_picker.selection_ellipse.{stroke,corners,min_width,min_height}` (the selection ellipse) | field |
 | W2-05 | `color_picker.preview.corners (the previous and current colours)` | field |
@@ -694,7 +695,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
 | W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
 | W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | rule |
-| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` (its source `AnimatedAcceptVisualSource.cpp`, W1-039; the trims' engine ADD-A126's, ledger queue #85) | field |
 | W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27) | rule |
 | W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27) | rule |
 | W3-29 | `link.body.cursor; input.body.cursor; text_area.body.cursor; splitter.divider.cursor; window.resize_zone.cursor (the hand, the I-beam, the resize cursors)` | field |
