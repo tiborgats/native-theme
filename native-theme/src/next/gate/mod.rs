@@ -365,6 +365,7 @@ fn synthetic_value(info: &registry::FieldInfo, second: bool) -> Option<Item> {
     match ty.as_str() {
         "Vec<String>" => Some(names("Synthetic A", "Synthetic B")),
         "Vec<(String,Vec<String>)>" => Some(map("Synthetic")),
+        "Vec<(LanguageTag,Vec<String>)>" => Some(map("x-synth")),
         _ => None,
     }
 }
@@ -2132,6 +2133,7 @@ mod tests {
             "tokens.behavior.touch.delay_ms",
             "tokens.text.fallbacks.families",
             "tokens.text.fallbacks.per_family",
+            "tokens.text.fallbacks.per_language",
             "tokens.icons.sizes.keyed.check.rendering_mode",
             "widgets.button.icon.icon.rendering_mode",
         ]

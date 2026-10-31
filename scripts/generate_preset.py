@@ -188,6 +188,7 @@ BASE_CLASH = "block and its leaf in one base table"
 INPUT_WHEN = "input under a when S9 gives no base"
 INPUT_CONTRAST = "per-contrast input lacking a scheme"
 SET_WHOLE_SPLIT = "a set-whole block's leaf its siblings do not join"
+SET_WHOLE_PENDING = "a set-whole block's leaf beside a pending sibling"
 
 
 class InputError(Exception):
@@ -430,9 +431,10 @@ def normal(v):
 
 def place(f: Fact):
     """Set the fact's target, base table and TOML keys below them (the docstring's *Targets and paths*), its value
-    spelled; Untranscribable where S11 gives no spelling."""
+    spelled; Untranscribable where S11 gives no spelling. A pending fact has no value: its key is spelled by its type
+    (its unit's suffix), as its `[pending]` entry spells it."""
     segs = list(f.ckey)
-    value = f.item.data["value"]
+    value = f.item.data.get("value")
     if f.kind == "role":
         rest = segs[1:]
         if rest[0].startswith("@"):
@@ -566,6 +568,7 @@ class Draft:
     left_models: list         # (widget, item): entries of widgets the model does not hold
     staged: int
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
+    pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id, the pending fact)
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -655,10 +658,57 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule"])
+    pending_blocks = {f.ckey[:-1] for f in facts if f.status == PENDING and set_whole_block(ctx, f)}
+    for f in facts:
+        if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
+            f.reason = SET_WHOLE_PENDING
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      ctx.content_variants)
     bases += covering_bases(facts, models, tree)
-    return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped)
+    listed = pending_table(ctx, facts, bases)
+    return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
+                 listed)
+
+
+def unsuffixed(path: tuple) -> tuple:
+    """A TOML path as a listed path compares (the reader's listed_path): its last key's unit suffix left out."""
+    if not path:
+        return path
+    last = path[-1]
+    for suffix in UNIT_OF_SUFFIX:
+        if last.endswith(suffix):
+            return path[:-1] + (last[:-len(suffix)],)
+    return path
+
+
+def pending_table(ctx, facts, bases, block_of=None) -> list:
+    """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
+    pending fact of the preset states where the draft writes no base at it, above it (a block stated whole) or below
+    it, so the preset's own layer leaves it unstated where that fact applies; a colour role's per scheme the fact holds
+    in; a pending leaf of a set-whole block lists the block, which its bases cannot state without it. Each with the
+    first such fact's register id: [(path, id, fact)], the path spelled as S11 writes its key, unit suffix included."""
+    block_of = block_of or set_whole_block
+    based = [unsuffixed((section,) + ((scheme,) if scheme else ()) + header + tuple(dotted))
+             for section, scheme, header, dotted, _, _ in bases]
+    out, seen = [], set()
+    for f in facts:
+        if f.status != PENDING or f.kind == "input":
+            continue
+        try:
+            place(f)
+        except Untranscribable:
+            continue
+        below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
+        schemes = slots_of(f.when) if f.kind == "role" else (None,)
+        for scheme in schemes:
+            path = (f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
+            key = unsuffixed(path)
+            beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
+            if beneath or key in seen:
+                continue
+            seen.add(key)
+            out.append((dotted_key(path), f.item.data["pending"], f))
+    return out
 
 
 def covering_bases(facts, models, tree) -> list:
@@ -959,6 +1009,11 @@ def render(draft: Draft) -> str:
     for header, kvs, it in draft.declare:
         out += [f"# {it.file}:{it.line}", f"[{dotted_key(('declare',) + header)}]"]
         out += [f"{toml_key(k)} = {toml_inline(v)}" for k, v in kvs] + [""]
+    if draft.pending:
+        out.append("[pending]")
+        for path, uid, f in draft.pending:
+            out += [f"# {f.where}", f"{toml_key(path)} = {toml_inline(uid)}"]
+        out.append("")
     tables = {}
     for section, scheme, header, dotted, value, f in draft.bases:
         tables.setdefault((section, scheme, header), []).append((dotted, value, f))
@@ -1134,6 +1189,9 @@ def round_trip(draft: Draft, text: str) -> Trip:
     except tomllib.TOMLDecodeError as err:
         trip.mismatches.append(f"the draft is no valid TOML: {err}")
         return trip
+    table = data.get("pending", {}) if isinstance(data.get("pending"), dict) else {}
+    if table != {path: uid for path, uid, _ in draft.pending}:
+        trip.mismatches.append(f"the [pending] table reads back otherwise: {table}")
     rules = data.get("rules", []) if isinstance(data.get("rules"), list) else []
     if len(rules) != len(draft.rules):
         trip.mismatches.append(f"{len(rules)} rules read back, {len(draft.rules)} generated")
@@ -1282,6 +1340,9 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if pend:
         out.append("# pending (register id: facts): " + ", ".join(
             f"{k}: {v}" for k, v in sorted(pend.items(), key=lambda kv: int(kv[0][1:]))))
+    if draft.pending:
+        out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
+            f"{path} ({uid})" for path, uid, _ in draft.pending))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     for w, vs in draft.dropped:
@@ -1328,8 +1389,9 @@ def _fact(key, value, when=None, cite=_C):
     return f'\n[[fact]]\nkey = "{key}"\n{w}value = {value}\nrows = []\n{cite}'
 
 
-def _pending(key, uid, when):
-    return f'\n[[fact]]\nkey = "{key}"\nwhen = {when}\npending = "{uid}"\nrows = []\n'
+def _pending(key, uid, when=None):
+    w = f"when = {when}\n" if when else ""
+    return f'\n[[fact]]\nkey = "{key}"\n{w}pending = "{uid}"\nrows = []\n'
 
 
 SELF_TEST_FILES = {
@@ -1439,6 +1501,7 @@ quote = "x"
         _fact("token.kde.frame_width", '"2px"'),
         _fact("token.focus.width", '"2px"'),
         _fact("token.icons.theme", '"Adwaita"'),
+        _pending("token.text.fallbacks.families", "U8"),
     ]),
 }
 
@@ -1461,6 +1524,10 @@ flags = ["@busy"]
 exclusive = [["disabled", "pressed", "hover"]]
 exclusive_variants = [["flat", "primary"]]
 recency = { glow = ["checked", "hover"] }
+
+[pending]
+# docs/facts/gnome/tokens.toml:93
+"tokens.text.fallbacks.families" = "U8"
 
 [inputs.accent]
 # docs/facts/gnome/roles.toml:87
@@ -1783,6 +1850,7 @@ SELF_TEST_STATUS = [
     ("token.kde.frame_width", "2px", (LEFT_OUT, NOT_HELD)),
     ("button.body.fill", "#000000", (LEFT_OUT, f"{UNIT_NOT_ENABLED} (toolbar)")),
     ("pull_to_refresh.body.opacity", "U9", (LEFT_OUT, NOT_HELD)),
+    ("token.text.fallbacks.families", "U8", (PENDING, "")),
     ("button.body.min_width", "30px", ("rule", "")),
 ]
 
@@ -1830,6 +1898,21 @@ def self_test() -> int:
         got = split_blocks(None, bases, rules, repeat_block)
         if [f.key for f in got] != [f.key for f in want]:
             failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
+    # pending_table: a pending leaf of a set-whole block lists the block; a pending fact with a base beneath, or its
+    # block's, lists nothing
+    class _Item:
+        def __init__(self, uid):
+            self.data, self.file, self.line, self.cites = {"pending": uid}, "t.toml", 1, []
+
+    def pending_fact(key, uid, dim="duration"):
+        return Fact(_Item(uid), key, tuple(key.split(".")), {}, "token", None, None, dim, status=PENDING)
+
+    interval = pending_fact("token.behavior.key_repeat.interval", "U3")
+    touch = pending_fact("token.behavior.touch.delay", "U4")
+    got = [(path, uid) for path, uid, _ in pending_table(None, [interval, touch], [
+        ("tokens", None, ("behavior",), ("touch", "delay_ms"), 1, touch)], repeat_block)]
+    if got != [("tokens.behavior.key_repeat", "U3")]:
+        failures.append(f"pending_table: {got}, expected the key repeat block alone")
     # off_variants: a variant only skipped facts name is left out (a key not held, a unit not enabled, an accent-run
     # fact naming nothing), one a kept fact names too stays, as does one S12 exempts (requires_variants,
     # sizes_by_variant, an element part's content variant); without_variants trims an exclusive group
@@ -1887,7 +1970,8 @@ def self_test() -> int:
             if status.get((key, repr(value))) != want:
                 failures.append(f"{key} = {value!r}: {status.get((key, repr(value)))}, expected {want}")
         lines = share_lines(draft, units, trip)
-        for needle in ("1 pending", "pending (register id: facts): U1: 1", f"{READ} 1", f"{NOT_HELD} 3",
+        for needle in ("2 pending", "pending (register id: facts): U1: 1, U8: 1",
+                       "[pending]: 1 listed paths, pending with nothing beneath: tokens.text.fallbacks.families (U8)", f"{READ} 1", f"{NOT_HELD} 3",
                        "19 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
