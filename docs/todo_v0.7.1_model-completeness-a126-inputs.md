@@ -297,3 +297,126 @@ Removed, for ADD-A126:
 - Still open: AppKit's mark and dot animation (MAC-X11's recording), UIKit's multiselect check (CK-2†), and a checked
   WinUI radio's dot while pressed (two groups set the pressed dot's opacity, `RadioButton_themeresources.xaml:298-300`,
   `:353`): register rows.
+
+## The marks' and dots' representation (rest look and motion)
+
+
+ADD-A125's twentieth check moved the representation of the check mark and the radio dot to ADD-A126 whole: the
+rest look and the motion together. The catalogue and the traces now stand as they did before ADD-A125 touched them,
+each affected row marked "the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125". This
+section records what ADD-A125 tried, what it removed and what the checks found. Citations are at the pins in
+`/run/media/tibi/work/cargo-build/native-theme-sources/`. `AAV` is `microsoft-ui-xaml@2.5.1
+src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp`, and `PF` is `docs/platform-facts.md`.
+
+### The forms tried, and why each failed
+
+1. **Drawn in every state at hidden values** (check 17): `Glyph.draw_extent` 0 (or `draw_start`) while unchecked,
+   the dot at a zero size or scale, the draw-on and growth plain transitions of those fields.
+   - `draw_extent` is defined for a path only (S2.9). It has no reading on a font glyph (WinUI's fallback code
+     point), on Breeze's filled-rectangle dots (`breeze@6.8.2 kstyle/breezehelper.cpp:948-952`, drawn in steps at
+     ⅓, ⅔ and 1, `:964-974`, with a transparent brush during the run, `:935-936`), or on Kirigami's `ThemeIcon`
+     check (K-KA-46†).
+   - WinUI's draw-on was stated twice: as a `Glyph` change, and as the `Keyed` AnimatedIcon transition of the
+     `Icon` group, which a `glyph` part lacks (S2.7).
+   - WinUI's draw-off is `TrimStart` 0→1, a rising `draw_start` (`AAV:470`, `:552`), not a falling extent.
+   - An unscoped `Glyph` transition draws the check off on uncheck. Breeze draws nothing toward unchecked
+     (`breezehelper.cpp:957-959`), and Compose snaps after `SnapAnimationDelay` (`Checkbox.kt:604`, `:1061`).
+   - The dot's growth took two forms (Breeze's `transform`, Compose's size), though both animate the radius.
+2. **`Absent` at rest, written last** (checks 18 and 19): the mark `Absent @ !{checked,indeterminate}`, the dot
+   `Absent @ !{checked}` (`adwaita` `!{checked,indeterminate}`, `windows-11` `!{checked,pressed}`), each written after
+   every other rule on the part, since a later `Style` patch brings an absent part back (S6.3).
+   - It holds inside a preset only. Every layer's bases apply, then every layer's rules (S8, `spec.md:2213-2214`), so
+     an application or reader layer's ordinary rule (`checkbox.mark.glyph.fill @ {hover}`, `checkbox.mark.* @ cond
+     scheme:dark`) draws the base check on every unchecked box. S12 refuses a `Fields` patch over an `Absent`
+     block but accepts a part's `Style` patch, so two forms of one rule behave differently (`spec.md:2912-2913`).
+   - Options the checks named: (a) an S12 check refusing, in any layer, a rule on a part whose rest-look `Absent`
+     came earlier where its states can match; (b) a rest-look `Absent` that a later `Style` patch cannot revive
+     unless its states exclude the absent rule's (a new S6.3 rule, against ADD-A123's); (c) document only; and the
+     robust form, present at rest and drawn to zero.
+   - The rows that would revive the part inside the presets if the order were not kept: W1-109, W2-12, W2-13; MAC-C07's
+     `cond window_inactive`, MAC-L17†, MAC-D01; CK-1, CK-2†, L-12.
+
+### The rest looks, as verified (check 19a's walk)
+
+| Preset | Check mark | Radio dot |
+|---|---|---|
+| `adwaita` | none unchecked; the check and dash icon sources (`libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:80`), swapped with no transition (`_common.scss:6-7`) | none unchecked; the bullet (`:76`); the inconsistent radio's dash (`:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`) |
+| `kde-breeze` | `CheckOff` draws nothing (`breezehelper.cpp:942-943`); `CheckOn` the path; `CheckPartial` three rectangles | `default: break` while off (`:1075-1076`); `RadioOn` an ellipse |
+| `windows-11` | the accept visual's Off frames draw nothing; checked, its stroked path | `CheckGlyph` at opacity 0 unchecked (`RadioButton_themeresources.xaml:374`), shown by `Checked` (`:350`); an unchecked radio's `PressedCheckGlyph` while pressed (`:298-306`, `:376`), its border not drawn (a `BorderBrush`, no `BorderThickness`, `:376`); a checked radio's pressed dot set by two groups (`:298-300`, `:353`), to measure |
+| `material-3` | none unchecked: the drawn fraction 0 (`Checkbox.kt:597-612`), a zero-length segment Android does not draw (`frameworks-base@android-17.0.0_r1 graphics/java/android/graphics/PathMeasure.java:134-136`) | none unchecked: the radius 0 (`RadioButton.kt:91`), drawn only above 0 (`:188-190`) |
+| `macos-*`, `ios-*` | none unchecked, as measured | none unchecked (macOS) |
+
+### The motion sources (for the engines)
+
+- Breeze: the check by a dash pattern `path.length() * animation` toward checked, nothing toward unchecked
+  (`breezehelper.cpp:954-962`, `kstyle/breezestyle.cpp:4923-4929`); the dot `radius * animation` both ways
+  (`breezehelper.cpp:1070-1072`, `breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`).
+- WinUI: the accept visual, `TrimEnd` on and `TrimStart` off on its stroked path (`AAV:437`, `:470`, `:522-553`),
+  drawn while it trims off in the unchecked foregrounds (`CheckBox_themeresources.xaml:65-68`, `:153-156`,
+  `:241-244`, set at `:319-320`, `:344-345`, `:369-370`); the pressed unchecked dot growing from its template
+  dimensions by `ControlFastAnimationDuration` (`RadioButton_themeresources.xaml:298-306`, `:376`).
+- Compose: the drawn fraction, `DefaultSpatial` from Off and a snap after `SnapAnimationDelay` to Off
+  (`Checkbox.kt:595-612`, `:1061`); the mark's colour animated in every state, disabled included (`:634`,
+  `:1040-1049`); the check moved to the dash by `lerp` (`:615-631`, `:720-724`); the dot's radius by `FastSpatial`
+  (`RadioButton.kt:137-142`) and its colour snapped at disabled (`:144-152`).
+- GTK: the icon source swapped, no transition.
+- AppKit and UIKit: unmeasured (MAC-X11's recording; CK-2†); register rows.
+
+### The mark's colour field
+
+- WinUI's and Compose's marks are stroked open paths: the accept visual sets `StrokeBrush(_themeColor_Foreground)`
+  and no fill (`AAV:564`, `:581`), Compose draws `drawPath(…, style = stroke)` (`Checkbox.kt:735`). S2.9 gives a
+  stroked path's colour to `GlyphStroke.paint`, with `fill` absent on a stroked-only path (`spec.md:1079`, `:1985`),
+  as the spinner does. The rows state the colour on `glyph.fill` (W1-037; MAT-C5, MAT-C6, MAT-C7), which on the
+  open polyline "M L L" fills a wedge. Breeze's three dots are filled; its check is stroked. ADD-A126 states each
+  mark's colour on the field its form takes.
+
+### WinUI's path data (in the source, not a measurement)
+
+- The check is `Geometry_1`, an open polyline through (−15.172, 0.016), (−5, 10.188), (15.337, −10.337)
+  (`AAV:372-385`); the pressed-on tweak, `Geometry_2`, ends at (15.337, −10.281) (`AAV:392-404`); the dash is
+  `Geometry_0`, from (−11.75, −0.125) to (11.875, −0.125) (`AAV:358-370`).
+- Each is placed at scale 0.7, offset (24, 23) or (24, 24) (`AAV:563`, `:580`), inside a 48×48 visual (`AAV:846`),
+  stroked at `StrokeThickness(4.0F)` with round caps and join (`AAV:564-569`, `:581-587`). `AnimatedIcon` scales the
+  visual uniformly to its arranged size (`AnimatedIcon.cpp:153-181`).
+- The template's code point (`CheckBoxCheckedGlyph`, E73E) is only the `FallbackIconSource`
+  (`CheckBox_themeresources.xaml:604-608`), shown where `InsertVisual` fails (`AnimatedIcon.cpp:473-479`,
+  `:537-558`). ADD-A125 states the mark as the stroked path (W1-038, W1-039), its path data the value phase's.
+- The facts still say "a font glyph, no stroke": `PF:1242` (`check_mark_stroke_width`, Windows column) and
+  `docs/facts/imported/windows.toml:2687-2694` (`none_cell`). They are the Windows lane's to correct.
+
+### macOS: AppKit's rendering and the measured parts
+
+- ADD-A125 tried the rendering on `checkbox.box.glyph` and `radio.ring.glyph` (`replaces: [box, mark]`, `[ring,
+  dot]`), the parts drawn in every state, so an unchecked control is rendered too (check 19b's serious 2: with the
+  rendering on the mark and the mark `Absent` unchecked, the unchecked control is never rendered). It made the mark
+  and dot `Absent` in every state on `macos-*` and amended R11. Removed: it stands only with the absent marks.
+- Check 20's findings against that form:
+  - the dot is measured and can be modelled without tracing: its diameter (`PF:1241`, `radio_dot_diameter`:
+    macOS 14–15 6, macOS 26 5, measured) and its colour (`PF:1232`, `indicator_color` white on macOS 14–15, macOS 26 unsourced), shipped today
+    (`native-theme/src/presets/macos-tahoe.toml:172-174`, `:585-587`), as a cornered fill (`Full`), as Windows and
+    Material model theirs; R11's rejection (a traced outline) covers the mark alone;
+  - the mark cannot be modelled without tracing or substituting artwork (R11: AppKit names no image for it), so
+    without the rendering (off the main thread, off macOS, a toolkit that cannot composite) a checked and a mixed
+    checkbox differ by the box's fill alone: the model's limit, to record where it is (R23); MAC-C01's gap row asked
+    for the dash's size and colour by a new render (`todo_v0.7.1_model-completeness-gap-map-macos.md:145`);
+  - the options check 20b named: (a) the dot a modelled fill on `macos-*`, the rendering's `replaces` keeping it;
+    (b) (a) plus the mixed dash as a measured fill; (c) the absent form with the limit stated.
+- `SystemControl` glyphs: ADD-A125 made `Glyph.size` and `fill` may-be-absent on a `SystemControl` source (S6.3).
+
+### The menu item's check glyph
+
+- `menu.check_indicator` is drawn in every state (its column), and its `glyph` is stated only `@ {checked}` /
+  `{indeterminate}` (MAC-MN05, W1-050, MN-6, CB-3, GN-1.73, K1.69), so an unchecked item resolves the base glyph.
+  ADD-A125 tried `check_indicator.glyph` `Absent` outside the checked states; check 20 found the combo-box half
+  undecided (it needs `@ !{checked,indeterminate} not_context combo_box` and `@ !{selected} context combo_box`), no
+  trace stating it, macOS's and KDE's selected glyph in the pop-up unstated (K1.245), and the "a later `Style`
+  patch" reason wrong for a field (a later `Set` replaces it; a `Fields` patch conflicts). It goes with the marks'
+  representation.
+
+### Kept in ADD-A125
+
+- WinUI's accept visual as the mark's source (W1-038, W1-039), its code point WinUI's own fallback, not modelled.
+- `adwaita`'s inconsistent radio: `indeterminate` among `radio`'s flags, GN-1.58's dash, the radio rows'
+  `!{checked,indeterminate}`; WinUI's radio `[indeterminate, checked]` group (its empty `Indeterminate` state).
+- The rendering's cache key without a background style, an open item (S15; MAC-L17†).
