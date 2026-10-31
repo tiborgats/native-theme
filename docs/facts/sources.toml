@@ -548,6 +548,22 @@ researched = "2026-10-29"
 proof = "git ls-remote https://invent.kde.org/documentation/develop-kde-org.git HEAD"
 note = "The source of develop.kde.org (its HIG under content/hig/); the repository has no tags, so the pin is master's head on 2026-10-29."
 
+# KDE colour schemes the accent run measures beside Breeze's own (specification S17, *The accent run*): third-party
+# `.colors` files, each pinned by commit.
+
+[[source]]
+id = "SUSE-Cafe@2f66c168"
+kind = "git"
+project = "LyrixCaz/SUSE-Cafe"
+repository = "https://github.com/LyrixCaz/SUSE-Cafe.git"
+tag = "commit"
+commit = "2f66c1681901c0498302a9c62f6b08013d08bb1e"
+release = "SUSE Café v2, a third-party Plasma colour scheme (SUSECafe.colors)"
+generations = ["kde-breeze"]
+researched = "2026-10-31"
+proof = "git ls-remote https://github.com/LyrixCaz/SUSE-Cafe.git HEAD (refs/heads/main, the same SHA)"
+note = "The accent run's scheme that tints and has the accent-coloured title bar and a Colors:Header group (SUSECafe.colors: TintFactor=0.15, TitlebarIsAccentColored=true, a Colors:Header group of two keys; SHA-256 5225742f994f5689cdb3f3c7015804782c1d96fa30b874b5814019252f86d7a9). The repository has no release tags, so the pin is main's head on 2026-10-31 (its commit dated 2024-06-16). GPL-2.0: the file is fetched, never copied into this repository."
+
 # GNOME 51 (archlinux@2026-10-29)
 
 [[source]]
