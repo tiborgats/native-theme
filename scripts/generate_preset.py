@@ -30,6 +30,10 @@ What is left out, and why (each counted by reason)
 - not held: a key the model does not hold yet (S17 *The gate*: the plan enables its units one by one): a key outside
   every enabled unit, or deferred or staged there (check_facts_trace.in_unit). An `input.…` key is held (S9.1's
   inputs are in M1a's code).
+- unit not enabled: a fact whose `when` names a widget the model does not hold (a `context` or `not_context` entry,
+  a `nearest` scope, a position's `among`, `previous`, `next`), counted by that widget (its unit): the reader's S12
+  checks refuse a rule naming an undeclared widget, and the fact comes back when its unit is enabled and the preset
+  is regenerated (check_facts_trace.py's rule for trace lines).
 - read: a fact with a `read` citation (S17 *`read`*: the reference a key takes from a reader input), which D6 lists
   among the parts written by hand.
 - accent run: a fact with `scheme_file` and `accent` (S17 *The accent run*), which the preset's own resolution never
@@ -109,10 +113,6 @@ name, as `@<key>`. The other keyed namespaces S10 declares (`color_roles`, `dura
 units, `text_styles`, `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their
 units or defaults.
 
-Rules naming a context widget the model does not hold (`context`, `not_context`, a position's `among`, `previous`,
-`next`) are transcribed as the facts write them and counted: the reader refuses them until that widget's unit is
-enabled (check_facts_trace.py's rule for trace lines).
-
 The round trip (the exactness proof)
 ------------------------------------
 The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in
@@ -160,6 +160,7 @@ PENDING = "pending"
 LEFT_OUT = "left out"
 SHADOWED = "shadowed"
 NOT_HELD = "not held by the model"
+UNIT_NOT_ENABLED = "unit not enabled"
 READ = "read input"
 ACCENT_RUN = "accent run"
 TWO_FILES = "key in two files"
@@ -510,7 +511,6 @@ class Draft:
     models: dict              # widget: the state model's data the round trip reduces by
     left_models: list         # (widget, item): entries of widgets the model does not hold
     staged: int
-    contexts: dict = field(default_factory=dict)   # a context widget the model does not hold: the rules naming it
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -534,6 +534,9 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status = PENDING
         elif not held(units, f.key, f.kind):
             f.status, f.reason = LEFT_OUT, NOT_HELD
+        elif any(not held(units, w, "widget") for w in context_widgets(f.when)):
+            off = sorted(w for w in context_widgets(f.when) if not held(units, w, "widget"))
+            f.status, f.reason = LEFT_OUT, f"{UNIT_NOT_ENABLED} ({', '.join(off)})"
         elif any(c.data.get("kind") == "read" for c in f.item.cites):
             f.status, f.reason = LEFT_OUT, READ
         elif "scheme_file" in d or "accent" in d:
@@ -589,12 +592,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         bases += [(f.section, s, f.header, tuple(dotted), v, f) for s, dotted, v in entries]
     rules = group_rules([f for f in facts if f.status == "rule"])
     declare, conditions, models, left_models = declarations(items, platform, preset, units, facts)
-    draft = Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged)
-    for i, r in enumerate(rules):
-        for w in context_widgets(r.when):
-            if not held(units, w, "widget"):
-                draft.contexts.setdefault(w, set()).add(i)
-    return draft
+    return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged)
 
 
 def remove(tree: dict, path: tuple):
@@ -1043,9 +1041,6 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if pend:
         out.append("# pending (register id: facts): " + ", ".join(
             f"{k}: {v}" for k, v in sorted(pend.items(), key=lambda kv: int(kv[0][1:]))))
-    for w, rs in sorted(draft.contexts.items()):
-        out.append(f"# {len(rs)} rules name the context widget `{w}`, which the model does not hold yet (the reader "
-                   f"refuses them until its unit is enabled)")
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     out.append(f"# left for hand-writing: S19.2's staged bases for {draft.preset}: {draft.staged} "
@@ -1375,14 +1370,6 @@ target = "button.body"
 min_width_px = "auto"
 
 [[rules]]
-when = { context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-target = "button.body"
-
-[rules.set]
-# docs/facts/gnome/button.toml:218
-fill = "#000000"
-
-[[rules]]
 when = { conditions = ["contrast_high"] }
 target = "button.label"
 
@@ -1508,8 +1495,8 @@ HOLDS_CASES = [
      True),
     ({"states": ["checked"], "latest": {"glow": "hover"}}, {"states": ["checked", "hover"]}, [],
      {"glow": ["checked", "hover"]}, False),
-    ({"states": ["checked"], "latest": {"glow": "hover"}}, {"states": ["checked", "hover"], "latest": {"glow": "hover"}},
-     [], {"glow": ["checked", "hover"]}, True),
+    ({"states": ["checked"], "latest": {"glow": "hover"}},
+     {"states": ["checked", "hover"], "latest": {"glow": "hover"}}, [], {"glow": ["checked", "hover"]}, True),
     ({"latest": {"glow": "checked"}}, {"states": ["checked", "hover"]}, [], {"glow": ["checked", "hover"]}, True),
     ({"sizes": ["small", "regular"]}, {"sizes": ["regular"]}, [], {}, False),
     ({"conditions": ["contrast_high"], "not_conditions": ["window_inactive"]},
@@ -1538,6 +1525,7 @@ SELF_TEST_STATUS = [
     ("role.global.accent", "= input.accent", (LEFT_OUT, READ)),
     ("input.selected", "#ffffff", (LEFT_OUT, INPUT_WHEN)),
     ("token.kde.frame_width", "2px", (LEFT_OUT, NOT_HELD)),
+    ("button.body.fill", "#000000", (LEFT_OUT, f"{UNIT_NOT_ENABLED} (toolbar)")),
 ]
 
 
@@ -1586,7 +1574,7 @@ def self_test() -> int:
                 failures.append(f"{key} = {value!r}: {status.get((key, repr(value)))}, expected {want}")
         lines = share_lines(draft, units, trip)
         for needle in ("1 pending", "pending (register id: facts): U1: 1", f"{READ} 1", f"{NOT_HELD} 2",
-                       "19 rules", "the context widget `toolbar`", "[declare] left out: toolbar"):
+                       "18 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
         # grouping and order: the second hover rule after the flat rule that states `fill` between them; a later
