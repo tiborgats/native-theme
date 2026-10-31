@@ -88,11 +88,17 @@ fn refused(error: &LayerError) -> String {
 }
 
 /// A preset the gate checks: its stack, validated as `Theme` validates a
-/// bundled preset (S12).
+/// bundled preset (S12); where its `[pending]` table lists paths, through
+/// the synthetic route, once with each type's first synthetic value and
+/// once with its second, so a value reaching one is told from the preset's
+/// own (S17, ADD-A128).
 #[derive(Clone, Debug)]
 pub struct Preset {
     stack: Stack,
     id: String,
+    pending: Vec<(String, String)>,
+    /// The synthetic route's stack with the second synthetic values.
+    alternate: Option<Stack>,
 }
 
 impl Preset {
@@ -109,9 +115,41 @@ impl Preset {
 
     fn read(text: &str, id: Option<PresetId>) -> Result<Preset, String> {
         let file = read_preset(text).map_err(|error| refused(&error))?;
-        let stack = Stack::new(id, file.declarations, file.layer, Scheme::Light)
-            .map_err(|error| refused(&error))?;
-        Ok(Preset { stack, id: file.id })
+        if file.pending.is_empty() {
+            let stack = Stack::new(id, file.declarations, file.layer, Scheme::Light)
+                .map_err(|error| refused(&error))?;
+            return Ok(Preset {
+                stack,
+                id: file.id,
+                pending: Vec::new(),
+                alternate: None,
+            });
+        }
+        let synthetic = |second: bool| {
+            let layers = synthetic_layers(&file.pending, second)?;
+            Stack::synthetic(
+                id,
+                file.declarations.clone(),
+                file.layer.clone(),
+                Scheme::Light,
+                &file.pending,
+                layers,
+            )
+            .map_err(|error| refused(&error))
+        };
+        Ok(Preset {
+            stack: synthetic(false)?,
+            alternate: Some(synthetic(true)?),
+            id: file.id,
+            pending: file.pending,
+        })
+    }
+
+    /// Its `[pending]` table: each listed path as S11 spells it, with its
+    /// register id (S17, ADD-A128).
+    #[must_use]
+    pub fn pending(&self) -> &[(String, String)] {
+        &self.pending
     }
 
     /// The preset's `id`.
@@ -217,24 +255,40 @@ impl Preset {
     /// `conditions` and no reader (S17), validated as `Theme` validates the
     /// stand-in.
     pub fn resolve(&self, conditions: &Conditions, stand_in: &Layer) -> Result<Resolved, String> {
-        let mut stack = self.stack.clone();
-        if let Some(flavor) = &conditions.flavor {
-            stack
-                .set_flavor(flavor.clone())
-                .map_err(|error| refused(&error))?;
-        }
-        stack
-            .set_reader_stand_in(conditions.state.clone(), stand_in.clone())
-            .map_err(|error| refused(&error))?;
-        let theme = stack
-            .resolve(&mut WindowState::default(), &conditions.window)
-            .theme;
-        Ok(Resolved {
-            theme,
-            stack,
-            window: conditions.window.clone(),
-        })
+        let alternate = match &self.alternate {
+            Some(stack) => Some(Box::new(resolve_stack(stack, conditions, stand_in)?)),
+            None => None,
+        };
+        let mut resolved = resolve_stack(&self.stack, conditions, stand_in)?;
+        resolved.alternate = alternate;
+        Ok(resolved)
     }
+}
+
+/// `stack` resolved with a stand-in stating `stand_in` in `conditions`.
+fn resolve_stack(
+    stack: &Stack,
+    conditions: &Conditions,
+    stand_in: &Layer,
+) -> Result<Resolved, String> {
+    let mut stack = stack.clone();
+    if let Some(flavor) = &conditions.flavor {
+        stack
+            .set_flavor(flavor.clone())
+            .map_err(|error| refused(&error))?;
+    }
+    stack
+        .set_reader_stand_in(conditions.state.clone(), stand_in.clone())
+        .map_err(|error| refused(&error))?;
+    let theme = stack
+        .resolve(&mut WindowState::default(), &conditions.window)
+        .theme;
+    Ok(Resolved {
+        theme,
+        stack,
+        window: conditions.window.clone(),
+        alternate: None,
+    })
 }
 
 /// The field a listed path names (S11's `[pending]` key: `tokens.…` or
@@ -260,6 +314,20 @@ fn listed_field(path: &str) -> Option<&'static registry::FieldInfo> {
         _ => return None,
     };
     registry::find(fields, &below.join("."))
+}
+
+/// The fact key a listed path names (S11's `[pending]` key as S17's key
+/// spells it: `tokens.behavior.touch.delay_ms` is
+/// `token.behavior.touch.delay`, `widgets.button.icon.icon.size_px` is
+/// `button.icon.icon.size`); `None` for a path of no field the gate reads.
+#[must_use]
+pub fn listed_key(path: &str) -> Option<String> {
+    let path = super::toml::read::listed_path(path);
+    if let Some(rest) = path.strip_prefix("tokens.") {
+        Some(format!("token.{rest}"))
+    } else {
+        path.strip_prefix("widgets.").map(str::to_owned)
+    }
 }
 
 /// A synthetic value of the field `info` (S17, ADD-A128): one of two per
@@ -1187,6 +1255,9 @@ pub struct Resolved {
     theme: ResolvedTheme,
     stack: Stack,
     window: WindowConditions,
+    /// The synthetic route's second resolution, with each type's other
+    /// synthetic value (S17, ADD-A128).
+    alternate: Option<Box<Resolved>>,
 }
 
 /// The place a fact's value is evaluated in beside the theme's own steps,
@@ -1299,6 +1370,31 @@ impl Resolved {
         Ok((tree, path))
     }
 
+    /// Whether a token's, a role's or an input's value, or `value`
+    /// evaluated in its place, reaches a synthetic value (S17, ADD-A128):
+    /// it differs between the synthetic route's two resolutions. Never
+    /// without a `[pending]` table.
+    pub fn global_synthetic(
+        &self,
+        key: &FactKey,
+        value: Option<&FactValue>,
+        root: &RootInputs,
+    ) -> Result<bool, Unread> {
+        let Some(alternate) = &self.alternate else {
+            return Ok(false);
+        };
+        for value in [None, value] {
+            let (first, path) = self.global_tree(key, value, root)?;
+            let (second, _) = alternate.global_tree(key, value, root)?;
+            if first.as_ref().and_then(|tree| tree.at(&path))
+                != second.as_ref().and_then(|tree| tree.at(&path))
+            {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// A token's, a role's or an input's value, read in the root scope,
     /// compared with `value`'s evaluated there (S17).
     pub fn compare_global(
@@ -1346,6 +1442,10 @@ impl Resolved {
         if let Some(context) = &combination.context {
             scope = self.context_scope(context, scope, metrics)?;
         }
+        let alternate = match &self.alternate {
+            Some(alternate) => Some(Box::new(alternate.session(combination, root, metrics)?)),
+            None => None,
+        };
         let mut session = Session {
             resolved: self,
             metrics,
@@ -1353,6 +1453,7 @@ impl Resolved {
             widget,
             parts: Vec::new(),
             values: OnceCell::new(),
+            alternate,
         };
         let info = registry::widgets()
             .iter()
@@ -1622,6 +1723,9 @@ pub struct Session<'r> {
     parts: Vec<Queried>,
     /// The theme's own resolved values, read once.
     values: OnceCell<Option<Tree>>,
+    /// The same element in the synthetic route's second resolution (S17,
+    /// ADD-A128).
+    alternate: Option<Box<Session<'r>>>,
 }
 
 impl Session<'_> {
@@ -1871,6 +1975,35 @@ impl Session<'_> {
             | Place::Role(..)
             | Place::Input(_)
             | Place::KdeList(_) => true,
+        }
+    }
+
+    /// Whether the key's value for the element, or `value` evaluated in
+    /// its place, reaches a synthetic value (S17, ADD-A128): it differs
+    /// between the synthetic route's two resolutions, a whole part by its
+    /// answer. Never without a `[pending]` table.
+    pub fn synthetic(&self, key: &FactKey, value: Option<&FactValue>) -> Result<bool, Unread> {
+        let Some(alternate) = &self.alternate else {
+            return Ok(false);
+        };
+        match &key.place {
+            Place::WholePart(part) => Ok(self.queried(*part).map(|held| &held.answer)
+                != alternate.queried(*part).map(|held| &held.answer)),
+            Place::Part(..) | Place::Values(..) => {
+                let body = value.and_then(|value| rule_body(Some(value)).ok());
+                for body in [None, body] {
+                    let read = |session: &Session<'_>| -> Result<Option<Tree>, Unread> {
+                        Ok(session
+                            .field_tree(key, body)?
+                            .and_then(|(tree, path)| tree.and_then(|tree| tree.at(&path).cloned())))
+                    };
+                    if read(self)? != read(alternate)? {
+                        return Ok(true);
+                    }
+                }
+                Ok(false)
+            }
+            Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => Ok(false),
         }
     }
 

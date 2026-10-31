@@ -9,7 +9,8 @@ use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
     Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, content_variants, parse_key, parse_value, parse_when, parts, set_whole, widgets,
+    Unread, When, content_variants, listed_key, parse_key, parse_value, parse_when, parts,
+    set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -101,6 +102,14 @@ pub struct Report {
     /// Each pending fact met: its place, its id, its key, and how many
     /// combinations it applied in.
     pub pending: BTreeMap<String, (String, String, u64)>,
+    /// Each fact skipped as its evaluation reaches a synthetic value, the
+    /// synthetic route's stand-in for a listed path (S17, ADD-A128): its
+    /// place, its key, and how many combinations.
+    pub synthetic: BTreeMap<String, (String, u64)>,
+    /// Each listed path found: a pending fact applying where the preset
+    /// leaves the path to the synthetic value, by `<preset> <key>`: the
+    /// pending fact's register id and how many combinations.
+    pub listed: BTreeMap<String, (String, u64)>,
     /// Each set-whole leaf's fact left unchecked as a sibling leaf's
     /// applying fact is pending (ADD-A128): its place, its key, the pending
     /// fact, and how many combinations.
@@ -1138,10 +1147,36 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
                 let entries = projected(&platform, preset, flavor, &mut report);
                 derivations(preset, flavor, &keys, &entries, &not_drawn, &mut report);
             }
+            listed_paths(preset, &mut report);
         }
     }
     report.elapsed = started.elapsed();
     report
+}
+
+/// The preset's `[pending]` table against the listed paths the run found
+/// (S17, ADD-A128): an entry no combination leaves to a pending fact with
+/// nothing beneath fails, as does one whose register id is not that
+/// fact's. A listed path the table lacks is S12's missing field, which the
+/// preset's own loading refuses.
+fn listed_paths(preset: &Preset, report: &mut Report) {
+    for (path, id) in preset.pending() {
+        let found = listed_key(path)
+            .and_then(|key| report.listed.get(&format!("{} {key}", preset.id())))
+            .cloned();
+        match found {
+            None => report.fail(format!(
+                "{}: `{path}` ({id}) is in its [pending] table, and no combination leaves it to a \
+                 pending fact with nothing beneath",
+                preset.id()
+            )),
+            Some((fact, _)) if fact != *id => report.fail(format!(
+                "{}: `{path}` is listed as {id} in its [pending] table, and its pending fact is {fact}",
+                preset.id()
+            )),
+            Some(_) => {}
+        }
+    }
 }
 
 /// The declarations run (S17, ADD-A116): each entry in force against the
@@ -1544,9 +1579,10 @@ fn check(
                 continue;
             };
             if global_vectors.contains(vector) {
-                check_globals(&resolved, keys, vector, pass, &root, report);
+                check_globals(preset.id(), &resolved, keys, vector, pass, &root, report);
             }
             let run = Run {
+                preset: preset.id(),
                 resolved: &resolved,
                 keys,
                 vector,
@@ -1561,6 +1597,7 @@ fn check(
 
 /// One resolution of a condition vector, for one pass.
 struct Run<'a, 'f> {
+    preset: &'a str,
     resolved: &'a Resolved,
     keys: &'a [KeyFacts<'f>],
     vector: &'a [String],
@@ -1572,6 +1609,7 @@ struct Run<'a, 'f> {
 
 /// Every token, colour-role and input key under one condition vector.
 fn check_globals(
+    preset: &str,
     resolved: &Resolved,
     keys: &[KeyFacts<'_>],
     vector: &[String],
@@ -1597,6 +1635,21 @@ fn check_globals(
             report,
             &combination,
         );
+        if pass == Pass::Normal
+            && let Some(Prepared {
+                fact:
+                    Fact {
+                        stated: Stated::Pending(id),
+                        ..
+                    },
+                ..
+            }) = fact
+            && resolved
+                .global_synthetic(&key.key, None, root)
+                .unwrap_or(false)
+        {
+            found_listed(report, preset, key, id);
+        }
         if let Verdict::Compare(value, tolerance) = verdict(
             &key.name,
             false,
@@ -1606,10 +1659,43 @@ fn check_globals(
             report,
             &combination,
         ) {
-            let outcome = resolved.compare_global(&key.key, value, root, tolerance);
-            record(outcome, &key.name, &place, report, &combination, pass);
+            match resolved.global_synthetic(&key.key, Some(value), root) {
+                Ok(true) => synthetic_skip(report, &place, &key.name, pass),
+                Ok(false) => {
+                    let outcome = resolved.compare_global(&key.key, value, root, tolerance);
+                    record(outcome, &key.name, &place, report, &combination, pass);
+                }
+                Err(unread) => record(Err(unread), &key.name, &place, report, &combination, pass),
+            }
         }
     }
+}
+
+/// A fact skipped as its evaluation reaches a synthetic value (S17,
+/// ADD-A128), counted and reported by its place.
+fn synthetic_skip(report: &mut Report, place: &str, key: &str, pass: Pass) {
+    if pass == Pass::Normal {
+        let entry = report
+            .synthetic
+            .entry(place.to_owned())
+            .or_insert_with(|| (key.to_owned(), 0));
+        entry.1 += 1;
+    }
+}
+
+/// A listed path found (S17, ADD-A128): the pending fact `id` of `key`
+/// applies where the preset leaves the key, or the set-whole block it is a
+/// leaf of, to its synthetic value.
+fn found_listed(report: &mut Report, preset: &str, key: &KeyFacts<'_>, id: &str) {
+    let name = key
+        .set_whole
+        .as_ref()
+        .map_or(key.name.as_str(), |block| block.block.as_str());
+    let entry = report
+        .listed
+        .entry(format!("{preset} {name}"))
+        .or_insert_with(|| (id.to_owned(), 0));
+    entry.1 += 1;
 }
 
 /// Every widget key over a condition vector's combinations, each distinct
@@ -1697,6 +1783,19 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                 report,
                 &describe,
             );
+            if pass == Pass::Normal
+                && let Some(Prepared {
+                    fact:
+                        Fact {
+                            stated: Stated::Pending(id),
+                            ..
+                        },
+                    ..
+                }) = fact
+                && session.synthetic(&key.key, None).unwrap_or(false)
+            {
+                found_listed(report, run.preset, key, id);
+            }
             match verdict(
                 &key.name,
                 key.key.whole_part(),
@@ -1707,8 +1806,16 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                 &describe,
             ) {
                 Verdict::Compare(value, tolerance) => {
-                    let outcome = session.compare(&key.key, Some(value), tolerance);
-                    record(outcome, &key.name, &place, report, &describe, pass);
+                    match session.synthetic(&key.key, Some(value)) {
+                        Ok(true) => synthetic_skip(report, &place, &key.name, pass),
+                        Ok(false) => {
+                            let outcome = session.compare(&key.key, Some(value), tolerance);
+                            record(outcome, &key.name, &place, report, &describe, pass);
+                        }
+                        Err(unread) => {
+                            record(Err(unread), &key.name, &place, report, &describe, pass);
+                        }
+                    }
                 }
                 Verdict::Drawn if pass == Pass::Normal => {
                     let outcome = session.compare(&key.key, None, &Tolerance::quote());
@@ -1819,6 +1926,16 @@ fn derivations(
                             continue;
                         }
                     };
+                    let synthetic = match &widget {
+                        None => resolved.global_synthetic(&key.key, Some(value), &root),
+                        Some(_) => resolved
+                            .session(&combination, &root, &metrics)
+                            .and_then(|session| session.synthetic(&key.key, Some(value))),
+                    };
+                    if synthetic.unwrap_or(false) {
+                        synthetic_skip(report, &prepared.fact.place(), &key.name, Pass::Normal);
+                        continue;
+                    }
                     let outcome = match &widget {
                         None => resolved.compare_global_pass(
                             &key.key,

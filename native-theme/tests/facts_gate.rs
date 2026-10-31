@@ -39,10 +39,28 @@ fn fixture(name: &str, file: &str) -> (PathBuf, Vec<(String, Preset)>) {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
     let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
     let case = fixtures.join(name);
-    let own = std::fs::read_to_string(case.join(file)).unwrap();
-    let preset = Preset::from_toml(&format!("{base}\n{own}"))
+    let preset = Preset::from_toml(&fixture_text(&case, &base, file))
         .unwrap_or_else(|error| panic!("{name}/{file}: {error}"));
     (case.join("docs/facts"), vec![("gnome".to_owned(), preset)])
+}
+
+/// A case's preset text: the base, less each line a `# base without: <line>`
+/// comment of the case's `file` names (a listed path's own line, S17), with
+/// the case's file appended.
+fn fixture_text(case: &Path, base: &str, file: &str) -> String {
+    let own = std::fs::read_to_string(case.join(file)).unwrap();
+    let mut base = base.to_owned();
+    for line in own.lines() {
+        if let Some(dropped) = line.strip_prefix("# base without: ") {
+            let dropped = format!("\n{dropped}\n");
+            assert!(
+                base.contains(&dropped),
+                "{file}: the base has no {dropped:?}"
+            );
+            base = base.replacen(&dropped, "\n", 1);
+        }
+    }
+    format!("{base}\n{own}")
 }
 
 fn fixture_report(name: &str) -> run::Report {
@@ -832,6 +850,73 @@ fn gate_fixture_set_whole_pending_leaf() {
     assert!(*count > 0);
 }
 
+/// A preset whose `[pending]` table lists a path (S17, ADD-A128), marked
+/// synthetic: the gate loads it through the synthetic route, finds the
+/// listed path where its pending fact applies with nothing beneath,
+/// compares the path where the preset's rule states it (high contrast),
+/// and skips and reports a fact whose evaluation reaches the synthetic
+/// value (the long press reading the delay), comparing it where the rule
+/// gives the value.
+#[test]
+fn gate_fixture_pending_listed() {
+    let report = fixture_report("pending_listed");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe token.behavior.touch.delay"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(id, _)| id.as_str()),
+        Some("U5")
+    );
+    let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    assert_eq!(
+        skipped,
+        ["token.behavior.long_press"],
+        "{:?}",
+        report.synthetic
+    );
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// The table holds exactly the listed paths (S17, ADD-A128): a listed path
+/// the table lacks is S12's missing field, which loading the preset
+/// refuses; an entry no combination leaves to a pending fact fails, and so
+/// does one under another register id than its pending fact's.
+#[test]
+fn gate_fixture_pending_table_both_ways() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = std::fs::read_to_string(fixtures.join("base.toml")).unwrap();
+    let case = fixtures.join("pending_listed");
+    let error = Preset::from_toml(&fixture_text(&case, &base, "unlisted.toml")).unwrap_err();
+    assert!(
+        error.contains("tokens.behavior.touch.delay: missing"),
+        "{error}"
+    );
+    let extra = fixture_report_with("pending_listed", "extra.toml");
+    assert_eq!(
+        failing(&extra, "[pending]"),
+        [
+            &"probe: `tokens.behavior.drag_time_ms` (U6) is in its [pending] table, and no \
+           combination leaves it to a pending fact with nothing beneath"
+                .to_owned()
+        ],
+        "{:?}",
+        extra.failures
+    );
+    let wrong = fixture_report_with("pending_listed", "wrong_id.toml");
+    assert_eq!(
+        failing(&wrong, "[pending]"),
+        [
+            &"probe: `tokens.behavior.touch.delay_ms` is listed as U7 in its [pending] table, and \
+           its pending fact is U5"
+                .to_owned()
+        ],
+        "{:?}",
+        wrong.failures
+    );
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the
@@ -911,6 +996,12 @@ fn facts_gate() {
     for (place, (id, key, count)) in &report.pending {
         eprintln!("  pending: {place}: {id} `{key}` on {count} combinations");
     }
+    for (key, (id, count)) in &report.listed {
+        eprintln!("  listed: {key}: {id} on {count} combinations");
+    }
+    for (place, (key, count)) in &report.synthetic {
+        eprintln!("  reaches a synthetic value: {place}: `{key}` on {count} combinations");
+    }
     for (place, (key, pending, count)) in &report.unchecked {
         eprintln!(
             "  unchecked: {place}: `{key}` beside the pending {pending} on {count} combinations"
@@ -921,9 +1012,9 @@ fn facts_gate() {
         report.fields_not_drawn, report.whens_not_drawn
     );
     assert_eq!(report.failures, Vec::<String>::new());
-    // The release's gate (S17, R21): 0.8.0 is released with nothing skipped
-    // and no pending fact, which the plan's final gate runs this test with
-    // `FACTS_GATE_RELEASE=1` to require.
+    // The release's gate (S17, R21): 0.8.0 is released with nothing skipped,
+    // no pending fact and every `[pending]` table empty, which the plan's
+    // final gate runs this test with `FACTS_GATE_RELEASE=1` to require.
     if std::env::var_os("FACTS_GATE_RELEASE").is_some() {
         assert_eq!(
             (
@@ -934,8 +1025,9 @@ fn facts_gate() {
                 report.combinations_skipped,
                 report.variants_not_held.len(),
                 report.unread.len(),
+                report.listed.len() + report.synthetic.len(),
             ),
-            (0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0),
             "the release's gate: no pending fact, nothing skipped, no value refused"
         );
     }
