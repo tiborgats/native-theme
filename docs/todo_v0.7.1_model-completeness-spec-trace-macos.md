@@ -727,7 +727,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
-| MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted) | field |
+| MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted; `@expand`, `@collapse`: ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
 | MAC-X11 | `FocusIndicator.transition (the ring's appearance and disappearance, their geometry and engine measured, S2.10, the catalogue's Open items, ADD-A126)` | field |
 | MAC-X11 | `menu.values.presentations events Appear, Disappear, @submenu_expand; menu.values.activation_flash` | field |
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |

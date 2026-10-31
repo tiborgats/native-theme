@@ -582,8 +582,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.257 | `form.row_arrow.{glyph,opacity} @ {open} variant expander` (an AdwExpanderRow in a preferences group); `list.disclosure.{glyph,opacity} @ context list.row {open} variant inset` (one in a plain boxed list: the same arrow, the same field kind) | rule |
 | GN-1.258 | `form.row_arrow.transform @ {open} variant expander; list.disclosure.transform @ context list.row {open} variant inset` | rule |
 | GN-1.258 | `form.row_arrow.transitions (Transform) @ variant expander; list.disclosure.transitions (Transform) @ variant inset` | rule |
-| GN-1.259 | `form.values.presentations events @expand, @collapse (queried with the row) @ variant expander; list.values.presentations events @expand, @collapse (queried with the row) @ variant inset` | rule |
-| GN-1.259 | `form.row_nested.shown (false) @ variant expander; form.row_nested.shown (true) @ {open} variant expander; list.nested.shown (false) @ variant inset; list.nested.shown (true) @ {open} variant inset` (the nested rows hidden collapsed, S2.7) | rule |
+| GN-1.259 | `form.values.presentations events @expand, @collapse (queried with the row) @ variant expander; list.values.presentations events @expand, @collapse (queried with the row) @ variant inset` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
+| GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open} variant inset` (written last: the revealer measures its child by its progress, zero collapsed, `gtk@4.24.1 gtk/gtkrevealer.c:635-636`, S2.7) | rule |
 | GN-1.260 | `form.row_nested.fill @ variant expander; list.nested.fill @ variant inset` | rule |
 | GN-1.261 | `expander.header.corners, expander.header.focus` | field |
 | GN-1.261 | `expander.arrow.{glyph,opacity}` | field |

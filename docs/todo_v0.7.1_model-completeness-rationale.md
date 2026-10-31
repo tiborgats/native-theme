@@ -728,7 +728,7 @@ MAT-X13–MAT-X15, X-MO-1).
   as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
   (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
-  exit (an unmeasured motion `Absent` meanwhile; a `popup` part's opening and closing queue #118's, an expander's reveal running as its rows state; one rule for every interim of #118: a deferred subject whose motion needs machinery the model lacks, or whose row states no presentation, appears and leaves at once until ADD-A129; so a `popup` part drawn as itself opens and closes at once, one drawn as another widget presents as that widget, and every other stated presentation runs, R25.6; rejected: counting the overlays as popups, whose line read either way (their parts, a substitute), and no presentation until ADD-A129, which would undo R25.6 for a deferral), styled
+  exit (an unmeasured motion `Absent` meanwhile; a `popup` part's opening and closing queue #118's, its presence ordinary state; an expander's reveal wholly #118's, its box `Absent` collapsed (rejected: running the reveals the rows state, which needs the box `shown`, keeping a layout box every source collapses to zero, `kcollapsiblegroupbox.cpp:60`, `Expander.xaml:114`, `gtkrevealer.c:635-636`, and a presentation drawing a part, which `Motion` does not; the reveal is a presentation, ADD-A129's survey); one rule for every interim of #118: a deferred subject whose motion needs machinery the model lacks, or whose row states no presentation, appears and leaves at once until ADD-A129; so a `popup` part drawn as itself opens and closes at once, one drawn as another widget presents as that widget, and every other stated presentation runs, R25.6; rejected: counting the overlays as popups, whose line read either way (their parts, a substitute), and no presentation until ADD-A129, which would undo R25.6 for a deferral), styled
   in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
   the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
   under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
@@ -847,7 +847,8 @@ MAT-X13–MAT-X15, X-MO-1).
     measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
-    appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118).
+    appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118), meanwhile cut, the state after
+    drawn at once (S2.7's one rule).
 - **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
   on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
   radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,
