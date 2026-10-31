@@ -1,7 +1,8 @@
 //! Right-to-left (S2.4): the query returns values physical, already
 //! mirrored for the element's direction. What mirrors with the layout is
 //! its own geometry: every `Sides` (`left` and `right` swapped), a
-//! presentation's start or end edge, and of a part's drawing only a
+//! presentation's start or end edge, an alignment value's start and end
+//! (a widget value's `Leading` and `Trailing`), and of a part's drawing only a
 //! translation (`translate_x`, `Translate.dx` negated). Corners, a stroke's
 //! edges, a shadow's offsets, paints and a transform's origin are physical
 //! as stated and stay.

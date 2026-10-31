@@ -14,6 +14,7 @@ use super::gen_index::ButtonLabelPosition;
 use crate::next::blocks::focus::{FocusVisibleWhen, ResolvedFocusVisibleWhen};
 use crate::next::blocks::motion::{PresentationTransition, ResolvedPresentationTransition};
 use crate::next::blocks::part_style::PartStyle;
+use crate::next::query::mirror::Mirror;
 use crate::next::units::{Ms, Px, Sides};
 use crate::next::value::Value;
 
@@ -137,6 +138,17 @@ pub enum IconPlacement {
     Top,
     /// Bottom.
     Bottom,
+}
+
+/// Its start and end swapped for a right-to-left layout (S2.4).
+impl Mirror for IconPlacement {
+    fn mirror(&mut self) {
+        *self = match *self {
+            IconPlacement::Leading => IconPlacement::Trailing,
+            IconPlacement::Trailing => IconPlacement::Leading,
+            other => other,
+        };
+    }
 }
 
 /// The values of `button`'s `menu_indicator_anchor`: where the `menu_indicator`

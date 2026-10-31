@@ -226,10 +226,11 @@ impl Widget for ButtonValues {
     }
 }
 
-/// `button`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations and
-/// placements.
+/// `button`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations,
+/// placements and alignments.
 impl Mirror for ResolvedButtonValues {
     fn mirror(&mut self) {
+        self.icon_placement.mirror();
         self.hit_extension.mirror();
         self.presentations.mirror();
     }

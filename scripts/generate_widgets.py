@@ -318,11 +318,22 @@ class Widget:
 # or end edge and its translation, a placement's sides and alignments; and every `Sides`.
 MIRRORED = {"PresentationTransition", "Placement"}
 
+# The start and end of an alignment value, as the catalogue's enums name them, which the query swaps in
+# right-to-left (S2.4: "the start and end of every other alignment value").
+ALIGNMENT_ENDS = [("Start", "End"), ("Leading", "Trailing")]
 
-def mirrors(ty: str) -> bool:
-    """Whether the query mirrors a value of type `ty` in right-to-left (S2.4)."""
+
+def alignment_ends(e) -> list:
+    """The pairs of `ALIGNMENT_ENDS` an enum declares both members of."""
+    return [(a, b) for a, b in ALIGNMENT_ENDS if a in e.variants and b in e.variants]
+
+
+def mirrors(ty: str, aligned=frozenset()) -> bool:
+    """Whether the query mirrors a value of type `ty` in right-to-left (S2.4); `aligned` names the widget's enums
+    with a start and an end."""
     wrapper, inner = split_type(ty)
-    return wrapper == "Sides" or split_type(inner)[1] in MIRRORED
+    name = split_type(inner)[1]
+    return wrapper == "Sides" or name in MIRRORED or name in aligned
 
 
 def split_type(ty: str):
@@ -508,7 +519,15 @@ def enum_code(e: EnumDecl) -> list:
             f"pub enum {e.name} {{"]
     for v in e.variants:
         out += wrap_doc(words(v), "    ") + [f"    {v},"]
-    return out + ["}", ""]
+    out += ["}", ""]
+    ends = alignment_ends(e)
+    if ends:
+        out += ["/// Its start and end swapped for a right-to-left layout (S2.4).", f"impl Mirror for {e.name} {{",
+                "    fn mirror(&mut self) {", "        *self = match *self {"]
+        for a, b in ends:
+            out += [f"            {e.name}::{a} => {e.name}::{b},", f"            {e.name}::{b} => {e.name}::{a},"]
+        out += ["            other => other,", "        };", "    }", "}", ""]
+    return out
 
 
 def value_type(v: ValueDecl) -> tuple:
@@ -593,6 +612,8 @@ def widget_file(w: Widget, shared_names: set) -> str:
     body += ["}", ""]
     for e in w.enums:
         body += enum_code(e)
+        if alignment_ends(e):
+            imports.add(("crate::next::query::mirror", "Mirror"))
     used_shared = sorted({split_type(v.ty)[1] for v in w.values} & shared_names)
     for name in used_shared:
         imports.add(("super::gen_index", name))
@@ -711,9 +732,10 @@ def index_file(widgets: list, shared: dict) -> str:
                 "        applies: &dyn Fn(&Selector) -> bool,", "        direction: Direction,",
                 f"    ) -> Option<Resolved{W}Values> {{",
                 f"        theme.widget_values::<{W}Values>(Self::KIND, element, applies, direction)", "    }", "}", ""]
-        mirrored = [v.rust for v in w.values if mirrors(v.ty)]
-        out += [f"/// `{w.name}`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations and",
-                "/// placements.", f"impl Mirror for Resolved{W}Values {{"]
+        aligned = frozenset(e.name for e in list(w.enums) + list(shared.values()) if alignment_ends(e))
+        mirrored = [v.rust for v in w.values if mirrors(v.ty, aligned)]
+        out += [f"/// `{w.name}`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations,",
+                "/// placements and alignments.", f"impl Mirror for Resolved{W}Values {{"]
         if mirrored:
             out += ["    fn mirror(&mut self) {"] + [f"        self.{name}.mirror();" for name in mirrored] + ["    }"]
         else:
