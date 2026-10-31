@@ -993,7 +993,7 @@ quote = "adw_rgb_to_oklab (rgba->red, rgba->green, rgba->blue, &L, &a, &b); if (
 # libadwaita states the accent as one background, one foreground and one standalone colour (:166-170): no ramp
 [[fact]]
 key = "role.global.accent_ramp"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]

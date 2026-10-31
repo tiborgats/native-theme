@@ -1975,7 +1975,7 @@ quote = "private fun rememberTextLinkStyles(): TextLinkStyles { val primaryColor
 
 [[fact]]
 key = "role.global.accent_ramp"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]

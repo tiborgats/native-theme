@@ -268,7 +268,7 @@ quote = "PANGO_WEIGHT_NORMAL = 400,"
 
 [[fact]]
 key = "button.icon.icon.status_colors"
-value = [["success", "= role.global.status.success.standalone"], ["warning", "= role.global.status.warning.standalone"], ["error", "= role.global.status.error.standalone"], ["accent", "= role.global.accent_standalone"]]
+value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = ["GN-3.58"]
 
 [[fact.cite]]
@@ -279,7 +279,7 @@ quote = "-gtk-icon-palette: success var(--success-color), warning var(--warning-
 # GTK's symbolic icons have a weight (above) and no other axis
 [[fact]]
 key = "button.icon.icon.axes"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
@@ -2630,7 +2630,7 @@ quote = "icon = gtk_icon_theme_lookup_icon (icon_theme->icon_theme, icon_theme->
 [[fact]]
 key = "button.menu_indicator.glyph.axes"
 when = { variants = ["menu"] }
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]
