@@ -1,5 +1,6 @@
-//! What S8's query evaluates with: the element a part is queried for, the
-//! scope it is queried in, and the toolkit's font measurement.
+//! S8's query: the element a part is queried for, the scope it is queried
+//! in and the toolkit's font measurement; what the query answers, and the
+//! queries themselves.
 
 use super::blocks::part_style::RoleRef;
 use super::blocks::text::{LanguageTag, ResolvedFont};
@@ -9,6 +10,17 @@ use super::selector::{
     ControlSize, Density, Direction, PartRef, SizeClasses, StateFlag, StateFlags, VariantRef,
 };
 use super::units::{Fraction, Px, Size};
+
+mod matching;
+pub(crate) mod mirror;
+mod needs;
+#[cfg(test)]
+mod tests;
+mod theme;
+
+pub(crate) use matching::own_entries;
+pub use needs::DataNeeds;
+pub use theme::{RootInputs, Styled, Unavailable, Widget};
 
 /// The toolkit's font measurement (S8), all infallible.
 pub trait FontMetrics {
@@ -75,10 +87,6 @@ pub struct Scope {
 impl Scope {
     /// A root scope: no part entered, the window's and screen's sizes and
     /// the direction given.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "S8's query builds the scopes (M1a task 11b)")
-    )]
     pub(crate) fn root(window: Size, screen: Size, direction: Direction) -> Scope {
         Scope {
             entries: Vec::new(),
@@ -92,10 +100,6 @@ impl Scope {
     }
 
     /// The scope with `entry` entered, nearest last.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "S8's query builds the scopes (M1a task 11b)")
-    )]
     pub(crate) fn entered(&self, entry: ScopeEntry) -> Scope {
         let mut out = self.clone();
         out.entries.push(entry);

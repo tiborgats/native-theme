@@ -314,6 +314,17 @@ class Widget:
     content_variants: list = field(default_factory=list)
 
 
+# The model's types a widget value may hold that the query mirrors in right-to-left (S2.4): a presentation's start
+# or end edge and its translation, a placement's sides and alignments; and every `Sides`.
+MIRRORED = {"PresentationTransition", "Placement"}
+
+
+def mirrors(ty: str) -> bool:
+    """Whether the query mirrors a value of type `ty` in right-to-left (S2.4)."""
+    wrapper, inner = split_type(ty)
+    return wrapper == "Sides" or split_type(inner)[1] in MIRRORED
+
+
 def split_type(ty: str):
     """(wrapper, inner) of `Value<T>`, `Vec<T>`, `Sides<T>`; (None, ty) otherwise."""
     m = re.fullmatch(r"(Value|Vec|Sides|Option)<(.+)>", ty)
@@ -602,6 +613,9 @@ def index_file(widgets: list, shared: dict) -> str:
         "patches, their slots, their readers and the registry's list.", "")] + ["", "use native_theme_derive::ThemeParts;",
                                                                             ""]
     imports = {("crate::next::blocks", "Apply"), ("crate::next::blocks", "MergeConflict"),
+               ("crate::next::query", "Element"), ("crate::next::query", "Widget"),
+               ("crate::next::query::mirror", "Mirror"), ("crate::next::resolve", "ResolvedTheme"),
+               ("crate::next::selector", "Direction"), ("crate::next::selector", "Selector"),
                ("crate::next::registry", "WidgetInfo"), ("super", "PartPatch"), ("super", "WidgetSlot"),
                ("super", "WidgetTable"), ("crate::next::toml::read", "FromToml"),
                ("crate::next::toml::read", "Reader"), ("crate::next::toml::read", "Spelling"),
@@ -679,7 +693,32 @@ def index_file(widgets: list, shared: dict) -> str:
     for w in widgets:
         W = camel(w.name)
         out.append(f"            WidgetKind::{W} => {W}Part::from_name(part).map(TypedPart::{W}),")
+    out += ["        }", "    }", "", "    /// The widget the part belongs to.", "    pub(crate) fn widget(self) -> WidgetKind {",
+            "        match self {"]
+    for w in widgets:
+        W = camel(w.name)
+        out.append(f"            TypedPart::{W}(_) => WidgetKind::{W},")
+    out += ["        }", "    }", "", "    /// The part's bare name.", "    pub(crate) fn name(self) -> &'static str {",
+            "        match self {"]
+    for w in widgets:
+        out.append(f"            TypedPart::{camel(w.name)}(part) => part.name(),")
     out += ["        }", "    }", "}", ""]
+    for w in widgets:
+        W = camel(w.name)
+        out += [f"impl Widget for {W}Values {{", f"    type Values = Resolved{W}Values;", "",
+                f"    const KIND: WidgetKind = WidgetKind::{W};", "",
+                "    fn evaluate(", "        theme: &ResolvedTheme,", "        element: &Element<'_>,",
+                "        applies: &dyn Fn(&Selector) -> bool,", "        direction: Direction,",
+                f"    ) -> Option<Resolved{W}Values> {{",
+                f"        theme.widget_values::<{W}Values>(Self::KIND, element, applies, direction)", "    }", "}", ""]
+        mirrored = [v.rust for v in w.values if mirrors(v.ty)]
+        out += [f"/// `{w.name}`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations and",
+                "/// placements.", f"impl Mirror for Resolved{W}Values {{"]
+        if mirrored:
+            out += ["    fn mirror(&mut self) {"] + [f"        self.{name}.mirror();" for name in mirrored] + ["    }"]
+        else:
+            out += ["    fn mirror(&mut self) {}"]
+        out += ["}", ""]
     out += ["impl WidgetsPatch {",
             "    /// Reads the table of the widget `name` into its patch (S11); `false` where",
             "    /// no typed widget is named `name`.",

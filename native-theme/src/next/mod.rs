@@ -123,13 +123,17 @@ pub use blocks::text::{
 pub use blocks::transform::{ResolvedTransform, Transform, TransformPatch};
 pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
+pub use declare::{DataName, FontMetric};
 pub use error::{KeyError, LayerError, Problem, ProblemKind};
 pub use expr::{Expr, ParseError};
 pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;
 pub use layer::{Bases, Layer};
 pub use presets::PresetId;
-pub use query::{Element, ElementData, FontMetrics, Scope, Sibling};
+pub use query::{
+    DataNeeds, Element, ElementData, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable,
+    Widget,
+};
 pub use resolve::{
     Change, ContentSizeCategory, ReaderState, Resolution, ResolvedTheme, WindowConditions,
     WindowState,

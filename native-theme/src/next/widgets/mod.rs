@@ -6,7 +6,7 @@
 
 use super::blocks::part_style::PartStylePatch;
 use super::blocks::{Apply, Merge, MergeConflict, merge_slot};
-use super::registry::{FieldInfo, PartInfo};
+use super::registry::{self, FieldInfo, PartInfo};
 use super::selector::{VariantRef, WidgetOrPart};
 
 mod gen_button;
@@ -131,6 +131,70 @@ impl<P: PartialEq, V: Merge> WidgetSlot<P, V> {
             self.apply_part(part, patch)?;
         }
         merge_slot(&mut self.values, values)
+    }
+}
+
+impl TypedPart {
+    /// The part's catalogue entry.
+    pub(crate) fn info(self) -> Option<&'static PartInfo> {
+        let widget = self.widget();
+        registry::widgets()
+            .iter()
+            .find(|info| info.kind == widget)
+            .and_then(|info| info.part(self.name()))
+    }
+
+    /// Whether the part starts an element of its own: the widget's root
+    /// part, or an *(element)* part (S8).
+    pub(crate) fn starts_element(self) -> bool {
+        self.info().is_none_or(|info| info.root || info.element)
+    }
+
+    /// The part it nests in: its bullet's parent, else the root; `None` for
+    /// the root.
+    pub(crate) fn parent(self) -> Option<TypedPart> {
+        let info = self.info()?;
+        if info.root {
+            return None;
+        }
+        let widget = self.widget();
+        let parent = match info.parent {
+            Some(parent) => parent,
+            None => {
+                registry::widgets()
+                    .iter()
+                    .find(|held| held.kind == widget)?
+                    .parts
+                    .iter()
+                    .find(|part| part.root)?
+                    .name
+            }
+        };
+        TypedPart::from_names(widget, parent)
+    }
+
+    /// The part whose element it belongs to (S8): itself where it starts
+    /// one, else the nearest enclosing part that does.
+    pub(crate) fn element(self) -> TypedPart {
+        self.enclosing()
+            .into_iter()
+            .find(|part| part.starts_element())
+            .unwrap_or(self)
+    }
+
+    /// The part and the parts enclosing it, innermost first, the root last;
+    /// each once, as the catalogue nests no part in itself.
+    pub(crate) fn enclosing(self) -> Vec<TypedPart> {
+        let mut out = vec![self];
+        let mut current = self;
+        while let Some(parent) = current.parent() {
+            if out.contains(&parent) {
+                break;
+            }
+            out.push(parent);
+            current = parent;
+        }
+        out
     }
 }
 

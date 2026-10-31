@@ -296,7 +296,7 @@ pub(crate) enum DataOwner {
 /// An operand a part's values read from `Element.data` or
 /// `Element.metrics` (S8, S10).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum DataName {
+pub enum DataName {
     /// An `element.` operand.
     Element(ElementDatum),
     /// The own font's line spacing, which `line_height` reads under `auto`.
@@ -315,7 +315,7 @@ pub(crate) enum DataName {
 /// A font metric another part's declaration names (S10).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ThemeParts)]
 #[parts(toml)]
-pub(crate) enum FontMetric {
+pub enum FontMetric {
     /// The average character width.
     CharWidth,
     /// The widest glyph.

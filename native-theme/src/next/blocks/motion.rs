@@ -365,7 +365,7 @@ pub struct Transition {
     pub suspended_by_theme_change: bool,
     /// The states it applies from: a change where the element held at least
     /// one of these flags before it, taken after the exclusive groups' drop
-    /// (`ResolvedTheme::kept_states`, S8's query); `None`:
+    /// ([`ResolvedTheme::kept_states`](crate::next::ResolvedTheme::kept_states), S8); `None`:
     /// from any state.
     pub from: Option<Vec<StateFlag>>,
 }

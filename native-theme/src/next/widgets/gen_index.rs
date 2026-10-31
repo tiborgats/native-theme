@@ -16,7 +16,11 @@ pub use super::gen_button::{
 };
 use super::{PartPatch, WidgetSlot, WidgetTable};
 use crate::next::blocks::{Apply, MergeConflict};
+use crate::next::query::mirror::Mirror;
+use crate::next::query::{Element, Widget};
 use crate::next::registry::WidgetInfo;
+use crate::next::resolve::ResolvedTheme;
+use crate::next::selector::{Direction, Selector};
 use crate::next::toml::layer::read_widget;
 use crate::next::toml::read::{FromToml, Reader, Spelling};
 
@@ -190,6 +194,44 @@ impl TypedPart {
         match widget {
             WidgetKind::Button => ButtonPart::from_name(part).map(TypedPart::Button),
         }
+    }
+
+    /// The widget the part belongs to.
+    pub(crate) fn widget(self) -> WidgetKind {
+        match self {
+            TypedPart::Button(_) => WidgetKind::Button,
+        }
+    }
+
+    /// The part's bare name.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            TypedPart::Button(part) => part.name(),
+        }
+    }
+}
+
+impl Widget for ButtonValues {
+    type Values = ResolvedButtonValues;
+
+    const KIND: WidgetKind = WidgetKind::Button;
+
+    fn evaluate(
+        theme: &ResolvedTheme,
+        element: &Element<'_>,
+        applies: &dyn Fn(&Selector) -> bool,
+        direction: Direction,
+    ) -> Option<ResolvedButtonValues> {
+        theme.widget_values::<ButtonValues>(Self::KIND, element, applies, direction)
+    }
+}
+
+/// `button`'s values mirrored for a right-to-left layout (S2.4): its `Sides`, presentations and
+/// placements.
+impl Mirror for ResolvedButtonValues {
+    fn mirror(&mut self) {
+        self.hit_extension.mirror();
+        self.presentations.mirror();
     }
 }
 

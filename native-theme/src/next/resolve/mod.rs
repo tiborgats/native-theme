@@ -363,6 +363,9 @@ pub struct ResolvedTheme {
     /// The preset's declarations, which expressions are typed against
     /// (S2.2, S10).
     pub(crate) declarations: Declarations,
+    /// The flavour in force, whose declarations the query reads (S10);
+    /// `None` where the preset declares none.
+    pub(crate) flavor: Option<Key>,
 }
 
 /// KDE's scheme lists under the scheme in force (S9.1).
@@ -443,6 +446,35 @@ impl Stack {
         validate::check_preset(&stack.declarations, &stack.preset_layer, preset)?;
         stack.validate()?;
         Ok(stack)
+    }
+
+    /// The stack of a preset's declarations and its layers, the first the
+    /// preset's, a stand-in under `scheme` scaling text by 1, and the
+    /// flavour `flavor`, unvalidated: the query alone is tested on it.
+    #[cfg(test)]
+    pub(crate) fn unvalidated(
+        declarations: Declarations,
+        layers: Vec<Layer>,
+        flavor: Option<Key>,
+    ) -> Stack {
+        let mut layers = layers.into_iter().map(Arc::new);
+        let preset_layer = layers.next().unwrap_or_default();
+        Stack {
+            preset: None,
+            declarations,
+            preset_layer,
+            reader: Some(Reader::StandIn {
+                state: ReaderState::new(Scheme::Light, 1.0),
+                layer: Arc::default(),
+            }),
+            layers: layers.collect(),
+            accent: None,
+            accent_layer: Arc::default(),
+            picked: None,
+            default_scheme: Scheme::Light,
+            contrast: None,
+            flavor,
+        }
     }
 
     /// `change` over a copy of the stack, kept where the whole stack
@@ -708,6 +740,7 @@ impl Stack {
             font_dpi: reader.and_then(|state| state.font_dpi),
             content_size_category: reader.and_then(|state| state.content_size_category),
             declarations: self.declarations.clone(),
+            flavor: self.flavor().cloned(),
         };
         let stacked = self.stacked();
         let left_out = self.reader_accent_left_out();

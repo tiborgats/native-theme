@@ -35,9 +35,9 @@ use crate::next::expr::{
     bounded,
 };
 use crate::next::key::Key;
-use crate::next::query::{Element, Scope};
+use crate::next::query::{Element, Scope, ScopeEntry, own_entries};
 use crate::next::roles::SurfaceSet;
-use crate::next::selector::Selector;
+use crate::next::selector::{PartRef, Selector};
 use crate::next::tokens::TextScaling;
 use crate::next::toml::read::{MapKey, Named};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Length, Ms, Px, Scalar, Sides};
@@ -420,12 +420,21 @@ pub(crate) struct Cx<'t> {
     target: Target,
     /// The place being evaluated, below its target.
     path: Vec<String>,
-    /// The queried part, whose own bindings are innermost (S3.3).
-    own_part: Option<TypedPart>,
-    /// The queried part's own surface-set binding.
-    own_surface: Option<SurfaceSet>,
-    /// The queried part's own role bindings.
-    own_roles: Vec<(RoleRef, Option<Color>)>,
+    /// The scope's entries outside the bindings `chain` holds.
+    outer: &'t [ScopeEntry],
+    /// The scope's entries outside the queried element's own parts: the
+    /// scope its parts are queried in below their element's (S2.2's
+    /// `widget.<part>`).
+    element_outer: &'t [ScopeEntry],
+    /// The bindings of the element's parts in scope, outermost first: the
+    /// parts enclosing the part whose place is evaluated, then its own
+    /// (S3.3).
+    chain: Vec<Bindings>,
+    /// The part whose scope `chain` is; `None`: no part's.
+    chain_part: Option<TypedPart>,
+    /// The part whose `bindings` are being evaluated: they are evaluated in
+    /// the scope outside it, its own left out (S3.3).
+    outside: Option<TypedPart>,
     /// The text styles the place lies in, innermost last.
     text: Vec<TextFrame>,
     /// The places whose references are being followed.
@@ -440,6 +449,37 @@ pub(crate) struct Cx<'t> {
     /// references (S9.4); `None` until read.
     sizes: Option<(Option<f32>, Option<f32>)>,
     refusals: Vec<Refusal>,
+}
+
+/// One part's bindings in scope (S3.3): its surface set and its roles,
+/// each role evaluated in the scope outside it.
+#[derive(Clone, Debug)]
+struct Bindings {
+    part: TypedPart,
+    surface: Option<SurfaceSet>,
+    roles: Vec<(RoleRef, Option<Color>)>,
+}
+
+impl Bindings {
+    /// `part`'s bindings, a later of one role or the surface replacing the
+    /// earlier (S6.1).
+    fn of(part: TypedPart, bindings: Vec<ResolvedBinding>) -> Bindings {
+        let mut bound = Bindings {
+            part,
+            surface: None,
+            roles: Vec::new(),
+        };
+        for binding in bindings {
+            match binding {
+                ResolvedBinding::Surface(set) => bound.surface = Some(set),
+                ResolvedBinding::Role { role, value } => {
+                    bound.roles.retain(|(held, _)| *held != role);
+                    bound.roles.push((role, value));
+                }
+            }
+        }
+        bound
+    }
 }
 
 /// An evaluated expression's operands, which typed evaluation reads.
@@ -479,7 +519,7 @@ fn convert(size: FontSize, dpi: Option<f32>) -> Option<Px> {
 }
 
 /// The references an expression reads, `active(…)`'s whole.
-fn references(expr: &Expr, out: &mut Vec<Ref>) {
+pub(crate) fn references(expr: &Expr, out: &mut Vec<Ref>) {
     match expr {
         Expr::Lit(_) => {}
         Expr::Ref(reference) => {
@@ -647,9 +687,17 @@ impl<'t> Cx<'t> {
             applies,
             target,
             path: Vec::new(),
-            own_part: None,
-            own_surface: None,
-            own_roles: Vec::new(),
+            outer: &scope.entries,
+            element_outer: element.map_or(&scope.entries, |element| {
+                let own = own_entries(&element.part, &scope.entries);
+                scope
+                    .entries
+                    .get(..scope.entries.len().saturating_sub(own))
+                    .unwrap_or_default()
+            }),
+            chain: Vec::new(),
+            chain_part: None,
+            outside: None,
             text: Vec::new(),
             visiting: Vec::new(),
             unscaled: false,
@@ -666,9 +714,15 @@ impl<'t> Cx<'t> {
 
     /// `f` evaluated at the place `name` below the current one.
     pub(crate) fn at<R>(&mut self, name: &str, f: impl FnOnce(&mut Self) -> R) -> R {
+        let outside = match self.target {
+            Target::Part(part) if name == "bindings" && self.path.is_empty() => Some(part),
+            _ => self.outside,
+        };
+        let saved = std::mem::replace(&mut self.outside, outside);
         self.path.push(name.to_owned());
         let out = f(self);
         self.path.pop();
+        self.outside = saved;
         out
     }
 
@@ -791,13 +845,59 @@ impl<'t> Cx<'t> {
         let saved_target = std::mem::replace(&mut self.target, target);
         let saved_path = std::mem::replace(&mut self.path, path);
         let saved_text = std::mem::take(&mut self.text);
-        let out = f(self, &folds);
+        let out = match target {
+            // Another part of the element is evaluated in the scope it is
+            // itself queried in (S2.2): the element's outer scope and the
+            // bindings of the parts enclosing it, then its own.
+            Target::Part(part) if self.element.is_some() && self.chain_part != Some(part) => {
+                let saved_outer = std::mem::replace(&mut self.outer, self.element_outer);
+                let saved_chain = std::mem::take(&mut self.chain);
+                let saved_part = self.chain_part;
+                let saved_outside = self.outside.take();
+                self.chain = self.chain_of(part);
+                self.chain_part = Some(part);
+                let out = f(self, &folds);
+                self.outside = saved_outside;
+                self.chain_part = saved_part;
+                self.chain = saved_chain;
+                self.outer = saved_outer;
+                out
+            }
+            _ => f(self, &folds),
+        };
         self.bases_only = saved_bases;
         self.text = saved_text;
         self.path = saved_path;
         self.target = saved_target;
         self.visiting.pop();
         out
+    }
+
+    /// The bindings in scope for `part` within the element (S2.2, S3.3):
+    /// those of the parts enclosing it, from its element's part inward, and
+    /// its own, each evaluated in the scope outside it.
+    fn chain_of(&mut self, part: TypedPart) -> Vec<Bindings> {
+        let head = self.element.and_then(|element| match &element.part {
+            PartRef::Typed(own) => Some(own.element()),
+            PartRef::Component { .. } => None,
+        });
+        let mut enclosing = part.enclosing();
+        if let Some(at) = enclosing.iter().position(|held| Some(*held) == head) {
+            enclosing.truncate(at.saturating_add(1));
+        }
+        let mut chain = Vec::new();
+        for held in enclosing.into_iter().rev() {
+            self.chain = chain.clone();
+            self.chain_part = Some(held);
+            self.outside = Some(held);
+            let path = vec!["bindings".to_owned()];
+            let bindings = self.follow(Target::Part(held), path, false, |cx, folds| {
+                cx.keyed::<Binding>(folds)
+            });
+            chain.push(Bindings::of(held, bindings.unwrap_or_default()));
+        }
+        self.outside = None;
+        chain
     }
 
     /// `f` over the steps of the place a reference above the current one
@@ -967,20 +1067,15 @@ impl<'t> Cx<'t> {
     fn role(&self, reference: &Ref, bases: bool) -> Answer {
         let bases = bases || self.bases_only;
         let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
-        let in_own_bindings = match self.own_part {
-            Some(part) => {
-                self.target == Target::Part(part)
-                    && self.path.first().is_some_and(|first| first == "bindings")
-            }
-            None => true,
-        };
-        let mut chain: Vec<ScopeBindings<'_>> = Vec::new();
-        if !in_own_bindings {
-            chain.push((self.own_surface, &self.own_roles));
-        }
+        let mut chain: Vec<ScopeBindings<'_>> = self
+            .chain
+            .iter()
+            .rev()
+            .filter(|bound| Some(bound.part) != self.outside)
+            .map(|bound| (bound.surface, bound.roles.as_slice()))
+            .collect();
         chain.extend(
-            self.scope
-                .entries
+            self.outer
                 .iter()
                 .rev()
                 .map(|entry| (entry.surface, entry.roles.as_slice())),
@@ -2144,19 +2239,12 @@ impl<'t> Cx<'t> {
         }
         let folds = self.roots(Target::Part(part));
         self.target = Target::Part(part);
-        self.own_part = Some(part);
+        self.chain_part = Some(part);
         let bindings = self.at("bindings", |cx| {
             cx.keyed::<Binding>(&compose::children(&folds, "bindings"))
         });
-        for binding in bindings.into_iter().flatten() {
-            match binding {
-                ResolvedBinding::Surface(set) => self.own_surface = Some(set),
-                ResolvedBinding::Role { role, value } => {
-                    self.own_roles.retain(|(held, _)| *held != role);
-                    self.own_roles.push((role, value));
-                }
-            }
-        }
+        self.chain
+            .push(Bindings::of(part, bindings.unwrap_or_default()));
         PartStyle::resolve(&folds, self)
     }
 }
@@ -2264,6 +2352,39 @@ impl ResolvedTheme {
             value,
             refusals: cx.refusals,
         }
+    }
+
+    /// `target`'s root, a block of type `V` with no selector on its steps,
+    /// evaluated in `scope` with no element (the tokens, S8).
+    pub(crate) fn evaluate_target<'t, V: Resolve>(
+        &'t self,
+        scope: &'t Scope,
+        target: Target,
+    ) -> Evaluated<Option<V::Resolved>> {
+        let mut cx = Cx::new(self, scope, None, &|_| true, target);
+        let folds = cx.roots(target);
+        let value = V::resolve(&folds, &mut cx);
+        Evaluated {
+            value,
+            refusals: cx.refusals,
+        }
+    }
+
+    /// The bound a size class's threshold states on `axis` (`horizontal`
+    /// or `vertical`), evaluated in `scope` (R16); `None` where it states
+    /// none.
+    pub(crate) fn evaluate_threshold<'t>(
+        &'t self,
+        scope: &'t Scope,
+        class: &str,
+        axis: &str,
+    ) -> Option<Px> {
+        let mut cx = Cx::new(self, scope, None, &|_| true, Target::Tokens);
+        let path = vec!["size_classes".to_owned(), class.to_owned(), axis.to_owned()];
+        cx.follow(Target::Tokens, path, false, |cx, folds| {
+            cx.optional::<Px>(folds, false)
+        })
+        .flatten()
     }
 
     /// The values of `element`'s widget `widget` (S8), their kept rules

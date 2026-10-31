@@ -177,7 +177,7 @@ fn with_body<R>(theme: &ResolvedTheme, scope: &Scope, f: impl FnOnce(&mut Cx<'_>
     element.data.color = rgb(1, 2, 3);
     let all: &dyn Fn(&Selector) -> bool = &|_| true;
     let mut cx = Cx::new(theme, scope, Some(&element), all, Target::Part(BODY));
-    cx.own_part = Some(BODY);
+    cx.chain_part = Some(BODY);
     f(&mut cx)
 }
 
@@ -1029,4 +1029,31 @@ fn plain_references_are_total() {
         .and_then(|label| label.text)
         .and_then(|text| text.letter_spacing);
     assert_eq!(spacing, Some(Px(2.0)));
+}
+
+/// `widget.<part>` is evaluated in the scope that part is itself queried
+/// in (S2.2): the bindings of the parts enclosing it and its own, not the
+/// querying part's. The label reads the body's fill as the body draws it,
+/// under the body's own `Surface(button)` binding.
+#[test]
+fn widget_part_reads_that_parts_bindings() {
+    let bound = "[widgets.button.body]\nfill = \"= surface.background\"\n\
+                 bindings = [{ surface = \"button\" }]";
+    let theme = resolved(&[BASE, bound], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    let all: &dyn Fn(&Selector) -> bool = &|_| true;
+    let mut cx = Cx::new(&theme, &scope, Some(&element), all, Target::Part(LABEL));
+    cx.chain_part = Some(LABEL);
+    let fill = cx.operand_of(&reference("widget.body.fill"), Target::Part(LABEL));
+    let Some(Val::Paint(paint)) = fill else {
+        panic!("a paint: {fill:?}");
+    };
+    assert_eq!(
+        format!("{:?}", paint.layers),
+        format!(
+            "[ResolvedPaintLayer {{ kind: Color(Some({:?})), blend: Normal }}]",
+            rgb(0xe0, 0xe0, 0xe0)
+        )
+    );
 }
