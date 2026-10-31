@@ -634,7 +634,7 @@ colour is drawn, as GTK clamps it, not by the function (which changes an `alpha`
 of resolution (which clamps a translucent colour before GTK's renderer premultiplies it). The connector's hand-over
 follows GTK: premultiplied, then clamped, where the toolkit takes premultiplied colours (egui's `Color32`); the
 unclamped value where it takes float colours and premultiplies them itself; a straight clamp, a recorded limit,
-where it takes only straight 8-bit colours, as that clamp brings back the end-of-resolution error (on the dark accents' focus ring up to 34 steps of 255 (13 to 34 for blue, orange, red, pink and purple; about 2 for yellow; 0 for teal, green and slate, in gamut)); `color::composite_over` draws as the hand-over does. Its vectors come from GTK
+in the third case (straight 8-bit colours, or floats the toolkit clamps first), as that clamp brings back the end-of-resolution error (on the dark accents' focus ring up to 34 steps of 255 (13 to 34 for blue, orange, red, pink and purple; about 2 for yellow; 0 for teal, green and slate, in gamut)); `color::composite_over` draws as the hand-over does. Its vectors come from GTK
 itself, through `gtk_widget_get_color` with libadwaita's stylesheet loaded, so the reference is the stylesheet's own path; the
 conversion follows CSS Color 4, and GTK's constants and per-step precision, which the vectors' 1e-3 needs, come from
 the clean room (D10).
