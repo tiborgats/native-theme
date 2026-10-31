@@ -901,7 +901,8 @@ MAT-X13–MAT-X15, X-MO-1).
     wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent` part for a
     later `Present` to draw, so a patch latent under one combination is not dead; for a block, the one spelling
     (below) keeps every base patch live, and a narrower rule meeting an `Absent` block wherever it applies is the
-    layer's own choice, which refusing would make it restate the preset's selectors.
+    layer's own choice; refusing it would make a layer's validity hang on each preset's selectors (the eleventh check's
+    withdrawal).
   - *Spelling a block drawn by state* (ADD-A126's twelfth check): (a) one spelling on every preset, the base stating
     it drawn, its state rules patching it, the rule hiding it last; (b) each preset its own spelling, the catalogue
     documenting that a layer's base patch reaches the block only where the base draws it; (c) an S12 check of the

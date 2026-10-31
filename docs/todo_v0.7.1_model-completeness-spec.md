@@ -851,9 +851,11 @@ indicator, MAT-N13, libadwaita's ring, S2.10, is neither), appearing at once wit
 gone in the frame of the change as it becomes absent, the style after, which governs, stating nothing for it (as GTK
 creates a node's transitions only from its previous style, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1033-1034`); S2.10's
 indicator, a block, has its own rule (ADD-A126). A part whose motion is unmeasured is `Absent` where hidden until the
-measurement decides (MAC-X11, CK-2†). A popup's presence and presentation, and an expander's revealed content, are
-ledger queue #118's (ADD-A129): this batch's presence and `shown` rules do not reach them, and the rows state them as
-before it. Breeze's tab focus line fades in on a newly selected tab while the
+measurement decides (MAC-X11, CK-2†). A popup (the catalogue's `popup` parts and the components it marks as
+presented) and an expander's revealed content are ledger queue #118's (ADD-A129): this batch's `shown` and
+part-presence rules (a part hidden at rest `shown` or `Absent`, above) do not decide their motion, and until
+ADD-A129 states it `Motion` draws a popup as any part, appearing and gone at once; the element `Presence` a collapsed
+expander's content reports (`Unmapped`, `Removed`, below) is this batch's. Breeze's tab focus line fades in on a newly selected tab while the
 bar has focus, as its tab-bar engine restarts the current tab's run from 0 (`breeze@6.8.2
 kstyle/animations/breezetabbardata.cpp:72-80`, `kstyle/breezestyle.cpp:7157-7161`), fades out as the focus leaves a
 selected tab, and is gone at once from the tab left, whose `selected` the test needs (`:7106-7115`): drawn in the
@@ -1808,7 +1810,7 @@ shadow are its own, which no part's group names, and libadwaita times its outlin
 indicator is smaller than naming `Stroke`, `StrokeWidth` and `Geometry` for it, groups that mean a part's own stroke
 and box (ledger queue #126); its engine is the one that runs it (S2.7: libadwaita's
 `GtkCss`, Breeze's tab line `BreezeTabBar`), and a `FocusMove` transition moves it from the old element's indicator
-to the new one's instead (ADD-A19). The focus flags are the toolkit's in an inactive window (S7.2). No bundled preset
+to the new one's instead (ADD-A19), a kind no engine runs yet, refused until X-MO-1's measurement (S12). The focus flags are the toolkit's in an inactive window (S7.2). No bundled preset
 but `adwaita` is known to state a rest ring other than its focused one: Breeze's focus frame attaches and detaches at
 once (`breeze@6.8.2 kstyle/breezestyle.cpp:1667-1678`; `drawFocusFrame` reads no engine, `:6614-6781`; its
 `transition` `Absent`, K3.20), its tab focus line is drawn only on a selected tab (K1.129), and AppKit's ring, in and
@@ -4147,7 +4149,7 @@ tolerance = <t>
   inputs (`role.…`, `token.…`, `input.…`); a whole part's absence or substitution is keyed by the part,
   `<widget>.<part>` (`component.<key>.<part>`), with `value = "absent"` (S6.3's `absent = true`,
   `PartPresence::Absent`), `value = "present"` (S6.3's `absent = false`, `PartPresence::Present`, a part drawn over
-  an `Absent` or `DrawnAs` below, stated after the fact that makes it absent; ADD-A126, ledger queue #126) or the
+  an `Absent` or `DrawnAs` below, stated after the fact that makes it absent or drawn as another; ADD-A126, ledger queue #126) or the
   part's `drawn_as` table as S11 spells it (`PartPresence::DrawnAs`), and the gate compares it with the query's
   `Styled::NotDrawn`, `Styled::DrawnAs` or, for `present`, any `Styled::Style` (ADD-A121); a map entry whose key is text is keyed by that key as a TOML
   dotted key writes it, quoted where needed, and equal to the preset's entry as S11's TOML keys are

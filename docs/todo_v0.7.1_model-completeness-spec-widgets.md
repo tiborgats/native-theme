@@ -416,7 +416,7 @@ decision):
 - Otherwise it is a part of the host, an *(element)* where it has states: a piece that exists only within its host
   (a slider's thumb, a scroll bar's arrows, a stepper's increment and decrement, a segment, a tab, a menu item, a list
   row, a breadcrumb's crumbs and separators, a page indicator's dots, a split button's halves), a mark that takes its
-  host's states and has none of its own (a menu item's check or radio mark, `menu.check_indicator`, on every preset:
+  host's states and has none of its own (a menu item's check or radio mark, `menu.check_indicator`, on every preset but `material-3` (MAT-M1):
   Breeze draws it with its check box's look, its fields stated there), and a surface that holds the host's own parts
   (a date picker's popup with its header and headline).
 - Where one platform draws a host's own part with another widget (KDE's date and time triggers as a combo box or a
@@ -1374,7 +1374,7 @@ spaces:
     check glyph of a checked toggle item is `check_indicator` there (W1-100).
   - A combo box's popup is this widget in `context combo_box` (GNOME's menu-style popover, the qqc2 combo's Menu,
     macOS's pop-up menu, iOS's menu, Material's exposed drop-down menu, WinUI's and Qt Widgets' popup lists): its rows
-    `item`, the selected row's mark `check_indicator` (after the label on GNOME: `check_indicator_side`, GN-1.234),
+    `item`, the selected row's mark, where the platform draws one, `check_indicator` (after the label on GNOME: `check_indicator_side`, GN-1.234),
     WinUI's pill `item_selection_indicator`, its open and close `values.presentations` (W1-136, Q1.125); it is
     placed by `combo_box.values.popup_placement` (W1-136, MAT-P3-9, K1.245, K-P3-5†, MAC-P4-8†).
   - A list in a popover menu is `list` in `context menu.body`: GTK's standalone list (the popover's own content,
@@ -2235,7 +2235,7 @@ spaces:
     and GNOME's selection mode, variant `selection` (L-12, CK-1); WinUI's presenter check box (W1-109) and grid-item
     corner check box (W2-13, W2-14, its corner `list.values.check_box_placement`), the tree's (W2-12) and
     kirigami-addons' (K-KA-46†), plain; `list` has no check part.
-  - A menu item's check is `menu.check_indicator` on every preset (Nested controls: it takes the item's states); on
+  - A menu item's check is `menu.check_indicator` on every preset but `material-3` (MAT-M1) (Nested controls: it takes the item's states); on
     KDE it is drawn with this widget's look, its facts stated on that part (K1.69, Q1.31).
   - Group 4: KDE's check delegate in `context list.row` (Q1.83).
   - Group 6: KDE's checkable group title is a `checkbox` in `context group_box` (K2.8).
@@ -5451,7 +5451,7 @@ spaces:
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
     `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}` and
-    enters from transparent and leaves to transparent by these, S2.7; W2-04's open animation). `popup_header` and
+    the platform's motion ADD-A129's, queue #118; W2-04's open animation). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`
@@ -7448,7 +7448,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     time_picker.popup`, whose band and item height are `picker_wheel`'s; one name with `date_picker.popup`), and
     Material's time-picker container, whose colour, shape and elevation are time-picker tokens (MAT-N17, as
     `date_picker.popup` holds the date picker's, MAT-N16): `fill`, `stroke`, `corners`, `shadow`, `transitions`
-    (Windows' flyout drawn only `{open}`, entering and leaving by these, S2.7; its open animation, W2-04).
+    (Windows' flyout drawn only `{open}`, its motion ADD-A129's, queue #118; its open animation, W2-04).
     `kde-breeze` draws kirigami-addons' popup with another widget: under `variant with_popup cond flavor:kirigami`
     `popup` is `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }` (K-KA-23†, whose fade is the
     dialog's), so one box is drawn, as on `date_picker`.

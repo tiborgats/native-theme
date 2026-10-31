@@ -273,7 +273,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-5 | `menu.item_trailing_icon.icon` | field |
 | MN-6 | `menu.check_indicator.glyph` (the checkmark, in the base, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | field |
 | MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the mixed mark, a patch of the base's) | rule |
-| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MN-6, CB-3), the catalogue's one spelling; S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MN-6), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |

@@ -129,7 +129,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-C9 | `checkbox.body.touch_target; radio.body.touch_target (ADD-A72)` | field |
 | MAT-M1 | `menu.{item.fill,item_label.text.fill,item_icon.icon.fill,item_trailing_icon.icon.fill} @ {selected} context combo_box / {checked}` (the chosen option of a select menu, `selected` in `context combo_box`; an item chosen in a selectable menu outside one, toggled on, `checked`: S7.2; the keyboard highlight is the focus state layer) | rule |
 | MAT-M1 | `menu.item.transitions (Fill: = token.motion.timings.fast_effects)` (the selectable item's container animated by `FastEffects`, `Menu.kt:2016-2019`) | field |
-| MAT-M1 | `menu.check_indicator (absent = true)` (Compose's checkable item draws no mark of its own: its checked state shows the application's `checkedLeadingIcon` and the fill above, `material3/…/Menu.kt:553-560`; ADD-A126) | field |
+| MAT-M1 | `menu.check_indicator (absent = true)` (Compose's checkable item draws no mark of its own: its checked state shows the application's `checkedLeadingIcon`, `null` by default, and the fill above, `CheckableDropdownMenuItem`, `material3/…/Menu.kt:463-488`, `:2066-2090`; ADD-A126) | field |
 | MAT-M2 | `menu.item.interaction.state_layer @ latest state_layer:focus_visible` | rule |
 | MAT-M2 | `menu.item_label.text.fill @ {focus_visible} / {pressed}` | rule |
 | MAT-M3 | `menu.{item_icon,item_trailing_icon}.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled}` | rule |
