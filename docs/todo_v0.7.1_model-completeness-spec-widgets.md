@@ -54,9 +54,12 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   the transitions' `Oklab` clamps the components: the toggleable FAB's container and icon colours in the FAB menu's
   `Morph` presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it would need
   the per-transition override S2.7 leaves to a class 2 change (ADD-A125).
-- `button` on `ios-*`: `@role_primary` at `mini`, `small` and `large`, which the host did not draw, its rule stated
-  without a size and pending facts at those sizes; `@system`'s title at the content size categories other than L
-  (ADD-A125).
+- `button` on `ios-*` (ADD-A125): `@role_primary` at `mini`, `small` and `large`, which the host did not draw, its rule
+  stated without a size and pending facts at those sizes; at the content size categories other than L, the styles'
+  title (`UICTFontTextStyleShortBody`, whose curve the model's text roles may not hold), padding and `min_height`
+  (X-DT-2's `uifm_scaled` bases, their text role unread), and the base's title, `UIButton(type: .system)`'s own font,
+  which UIKit may leave unscaled, where the model's `scaling_role: None` gives `body`'s curve: a title UIKit does not
+  scale would be a class 2 change (a scaling role that names no curve), as a radius no text style gives is.
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
   thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
@@ -64,8 +67,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `button` on `ios-*` (ADD-A125, measurements, nothing claimed until they are made): the bar item padding TB-8 names
   (`isPaddingRemoved` in the gap map) has no UIKit API the iOS lane found in the pinned SDKs' `UIBarButtonItem.h`, so
   no `@padding_removed` is declared, and one is added with its API where a header check finds it; the dynamic corner
-  style, the non-glass styles' base and `@corner_dynamic` on the glass styles, on both presets, is "adjusted based on
-  dynamic type" with no text style named (`UIButtonConfiguration.h:41-44` in Xcode 16.4, `:42-45` in 26.6), so its
+  style, the non-glass styles' base on both presets and `@corner_dynamic` on the glass styles on `ios-26`, is "adjusted based on
+  dynamic type" with no text style named (`UIButtonConfiguration.h:42-43` in Xcode 16.4, `:43-44` in 26.6, the default `Dynamic`, `:96` and `:102`), so its
   radius is stated at the default category (L) only until the host draws it at every
   content size category and the analysis finds the `UIFontMetrics` text style whose scaling it follows (then
   `= uifm_scaled(<radius at L>, <role>)`; a radius no text style's scaling gives is a class 2 change): the gate builds
@@ -1363,8 +1366,7 @@ spaces:
   Qt's QToolButton, WinUI's AppBarButton and AppBarToggleButton, AppKit's toolbar items, iOS's bar button items), and
   every button nested in another widget (Nested controls: dialog responses, close, navigation, overflow, clear and
   reveal buttons, media controls, edit-menu commands).
-- **Available:** every preset; on `ios-*` each element one configuration style or one form (`requires_variants`,
-  below, S10).
+- **Available:** every preset.
 - **Parts:**
   - `body` — the bezel or container (the root): `fill` (libadwaita's state layers are appended paint layers, R3, Material's the `interaction` block, S2.12; an expression on
     `element.color` where the application tints the button: AppKit's `bezelColor`, a toolbar item's
@@ -1591,17 +1593,29 @@ spaces:
     of their own until a capture shows a difference; the glass styles are `glass` and `clear`, with `primary` for the
     prominent ones; the configuration styles are two `exclusive_variants` groups, `[flat, @gray, tinted, primary]`
     and `[flat, @gray, tinted, glass, clear]` (the second on `ios-26`), so `primary` combines with `glass` and `clear`
-    alone, S10, and each group also holds the forms that are no configuration (`@system`, `@info`, `@contact_add`,
-    `close`, `back`, `done`, `add`, `@share`, `@paste_control`, `route`, `@host_drawn`), which with the styles are
-    `requires_variants`, an element being one style or one form; `@host_drawn` is a button a UIKit host draws for
-    itself, with no configuration of the application's: an alert's or action sheet's action (`UIAlertAction`, DL-5,
-    DL-7, C-11), a search bar's cancel, clear and bookmark buttons (C-3), a text field's clear button (I-2), which the
-    connector sets with the host's identity (`clear_field`, `@cancel`, `destructive`), so those hosts' rows hold an
-    element, and its role products are `[{ one = [@host_drawn] }, { any = [@cancel, destructive] }]` (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
-    `exclusive_variants` group, as a button holds one `UIButton.Role`, and each configuration style with a role is a
-    set the state model's `variant_products` gives (a group `{ any = [@cancel, @role_primary, destructive] }` beside
-    the style's, and on `ios-26` a product `[{ one = [glass, clear] }, { one = [primary] }, { any = [@cancel,
-    @role_primary, destructive] }]` for the prominent glass styles), as the host drew them
+    alone, S10, and each group also holds the forms that are no configuration (`@info`, `@contact_add`, `close`,
+    `back`, `done`, `add`, `@share`, `@paste_control`, `route`). The base, with none of them, is `UIButton(type: .system)`
+    with no configuration (the system type, `UIButton.h:21-35`, drawn and measured apart from every style, its title
+    smaller and its padding other than `flat`'s, the host's `forms.<scheme>.system` against `cells.<scheme>.plain.medium`;
+    its title a font of UIKit's own, no text style, `text_style = "CTFontRegularUsage"` against the styles'
+    `UICTFontTextStyleShortBody`, the host's `run1/index.toml`); and every button a UIKit host draws for itself is that
+    element in its host's context, which the connector building the host's elements sets as it builds them (Nested
+    controls) and the state model lists in `axes.contexts`, its look the context's rules: an alert's or action sheet's
+    action (DL-5, DL-7, C-11), a bar button item with no configuration (its default plain style,
+    `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115` in Xcode 26.6; TB-6, TB-8, P3-3†, P4-10†, the overflow
+    and sidebar toggle of C-1, T-13, C-22, C-29 and X-IC-5), the search bar's and text field's buttons (C-3, I-2), the
+    date picker's, edit menu's and find bar's buttons (C-6, C-14, C-25), the media controls and the ink toolbar's tools
+    (C-42†, C-40†); the host contexts take no size (`sizes_by_context`), as their buttons hold no `buttonSize`
+    (ADD-A125). Rejected: `requires_variants` on the styles and forms with a host variant beside them (`@host_drawn`:
+    a variant restating the context, whose closed list of hosts refused every other host's button, and widened to
+    every host it would be the context again); a variant per host (a second name for each context). The roles
+    `@cancel`, `@role_primary` and `destructive` are one `exclusive_variants` group, as a button holds one
+    `UIButton.Role`: `@role_primary` with each configuration style (a product `{ any = [@role_primary] }` beside the
+    style's, and on `ios-26` `[{ one = [glass, clear] }, { one = [primary] }, { any = [@role_primary] }]` for the
+    prominent glass styles), and `@cancel` and `destructive` set by the connector only in the hosts that draw them
+    otherwise (an alert's or action sheet's actions, the search bar's cancel button: DL-7, C-11, C-3), as they draw
+    as normal on a standalone button, the base under another name there (the connector setting `@corner_dynamic`
+    likewise), as the host drew them
     (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
     rule stated after the styles' own weight rules, B-13, stated without a size and measured at `regular` (UIKit's
     medium), the one size the host drew it at, the others pending (Open items; ADD-A125); the state
@@ -1622,15 +1636,9 @@ spaces:
     ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
     in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
     weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
-    draw as normal on a standalone button and are variants for the hosts that draw them otherwise, an alert's or
-    action sheet's actions, DL-7, C-11, and the search field's cancel button, C-3, their facts there; iOS 26's further
-    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types
-    `@system` (`UIButton(type: .system)` with no configuration, the form before `UIButton.Configuration`, drawn and
-    measured apart from every style, its title smaller and its padding other than `flat`'s, the host's
-    `forms.<scheme>.system` against `cells.<scheme>.plain.medium`, its title a literal size, not a text role, as UIKit
-    gives it a font of its own, no text style (`text_style = "CTFontRegularUsage"` against the styles'
-    `UICTFontTextStyleShortBody`, the host's `run1/index.toml`), its size at other content size categories unread; a form that is no configuration, in the configuration styles' exclusive groups and in
-    `requires_variants`, as `@info` is; ADD-A125), `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
+    draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
+    facts there; iOS 26's further
+    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
     `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
     style, state and scheme the host captured, is the base under another name, the connector mapping it; ADD-A125);
@@ -2136,8 +2144,8 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `indication_box` the `box`, no outset, the tokens' container, as Compose's styling fix draws it with the
-    tokens' ripple colour, `Checkbox.kt:505-530`, R1.6, S2.12, ADD-A125),
+    ripple's `indication_box` the `box`, no outset; `material-3` follows Compose's Material 3 styling branch whole, its
+    box, ripple colours, disabled checkmark and check path, `Checkbox.kt:500-530`, `:711-718`, R1.6, S2.12, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -9168,7 +9176,7 @@ duration or timing, is named by S4.1's rule (ADD-A122): libadwaita's inline spri
 AdwLeaflet's, which applications built on them still draw: `flap_reveal` (`libadwaita@1.10.0 src/adw-flap.c:1598-1599`, clamped at `:1600-1601`)
 and `leaflet_child` (`adw-leaflet.c:2474-2476`, clamped at `:2477-2478`), each the class's spring for that transition.
 
-**token.motion.color_space** (`Value<ColorInterpolation>`, S2.7's *Colour interpolation*, ADD-A125), one per preset
+**token.motion.color_space** (`Value<ColorInterpolation>`, S2.7's *Colour interpolation*, ADD-A125), one per preset, a rule restating it under a condition (Kirigami's flavour),
 from its toolkit's colour interpolation: `adwaita` `premultiplied_srgb` (GTK's CSS transitions, `gtk@4.24.1
 gtk/gtkcsscolorvalue.c:323-329`, `:586-604`; GN-3.18); `kde-breeze` `premultiplied_srgb` (Breeze's fades paint
 `KColorUtils::mix`, `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`) and under `cond flavor:kirigami`

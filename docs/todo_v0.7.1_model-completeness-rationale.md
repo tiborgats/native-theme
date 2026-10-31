@@ -200,7 +200,12 @@ Expressive tokens and agrees with Compose (the pressed state layer's opacity is 
 older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
 silent, Compose Material 3 is the reference, cited at a pinned commit, experimental or not (for some
 Expressive behaviour it is Google's only implementation); material-web's components, built on the older
-token set, only where Compose has no such component.
+token set, only where Compose has no such component. Where the tokens and Compose's own Material 3 drawing disagree (the
+checkbox's halo colours under Compose's Material 3 styling, which its flag's documentation names so,
+`androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ComposeMaterial3Flags.kt:40-44`),
+the drawing decides and the facts record the tokens' value as the difference (ADD-A125): *the tokens* would draw a
+halo no Compose branch draws; *the drawing* is the look this decision describes, the tokens being its source because
+they agree with it.
 
 ### R2 — The model's shape
 
@@ -799,7 +804,7 @@ MAT-X13–MAT-X15, X-MO-1).
   with property transitions as usual). Each preset's kind is a fact, measured where no source states it
   (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
   transitions run as stated (Breeze's decoration shadow on a change of activation, K1.17; Mica's fade, W3-10); ADD-A126
-  reviews which changes start which transitions (the specification's S2.7).
+  reviews which changes start which transitions (the specification's S2.7, ledger queue #95).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes
