@@ -202,6 +202,10 @@ pub(super) enum ItemKey {
     Group(PropertyGroup, Option<Vec<StateFlag>>),
     /// A presentation's event.
     Event(PresentationEvent),
+    /// A binding's role.
+    Role(RoleRef),
+    /// A surface-set binding: a part binds one surface set.
+    Surface,
 }
 
 /// Two keys are one where they name one group and `from` sets of the same
@@ -213,9 +217,12 @@ impl PartialEq for ItemKey {
                 a == b && same_flags(x.as_deref(), y.as_deref())
             }
             (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
-            (ItemKey::Group(..), ItemKey::Event(_)) | (ItemKey::Event(_), ItemKey::Group(..)) => {
-                false
-            }
+            (ItemKey::Role(a), ItemKey::Role(b)) => a == b,
+            (ItemKey::Surface, ItemKey::Surface) => true,
+            (
+                ItemKey::Group(..) | ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface,
+                _,
+            ) => false,
         }
     }
 }
@@ -703,6 +710,17 @@ impl<'a> Stack<'a> {
                 }
                 if let Some(transitions) = &style.transitions {
                     held = transition_items("", number, transitions);
+                }
+                // The bindings by role or surface (S6.1): a later binding of
+                // the same key replaces this one, whose value is then never
+                // evaluated.
+                if let Some(bindings) = &style.bindings {
+                    held.extend(items("bindings", number, bindings, |binding| {
+                        vec![match binding {
+                            Binding::Role { role, .. } => ItemKey::Role(role.clone()),
+                            Binding::Surface(_) => ItemKey::Surface,
+                        }]
+                    }));
                 }
                 let mut ops = vec![shown(Shown::Drawn)];
                 ops.extend(flatten(style, at, toml, number, Some(info.fields)));

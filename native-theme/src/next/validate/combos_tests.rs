@@ -1354,3 +1354,20 @@ fn combination_exclusions_are_s12s() {
         assert_eq!(pair(first, second, ""), [REFUSED], "{name}");
     }
 }
+
+/// A binding a later binding of the same role replaces is never evaluated
+/// (S6.1: the bindings merge by role), so an operand absent above it is no
+/// problem; the later one's is.
+#[test]
+fn combination_replaced_binding_not_evaluated() {
+    let decl = declare("surface_sets = [\"window\"]");
+    let below = "[colors.light.surfaces.window]\nneutral = \"#00ff00\"\n\
+                 [colors.dark.surfaces.window]\nneutral = \"#00ff00\"\n\
+                 [widgets.button.body]\nbindings = [{ role = { role = { surface = \"neutral\" }, \
+                 value = \"= mix(role.window.neutral, #000000, 0.5)\" } }]";
+    let top = "[colors.light.surfaces.window]\nneutral = \"absent\"\n\
+               [colors.dark.surfaces.window]\nneutral = \"absent\"\n\
+               [widgets.button.body]\nbindings = [{ role = { role = { surface = \"neutral\" }, \
+               value = \"#ff0000\" } }]";
+    assert_eq!(over(below, top, &decl), NONE);
+}
