@@ -9144,7 +9144,7 @@ to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
 `ThemeChange::Suspend` (GN-3.23; it reaches the CSS transitions, `trigger = "value_change"`, and no `AdwAnimation`, a
-`state_change` trigger with no conditions that does not reverse, S2.7, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
+`state_change` trigger with no conditions whose interruption is `from_drawn`, S2.7, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
 Kirigami's QML behaviours run as Qt Quick runs them (their triggers, S2.7, S4.3, ADD-A125; KWin's Blend Changes
 cross-fade is the compositor's, out of scope, K-P3-15†); `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
 (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
