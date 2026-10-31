@@ -110,6 +110,96 @@ fn gate_fixture_literal_where_derived_fails_perturbed() {
     );
 }
 
+/// A literal where the platform derives from `surface.<role>` fails the
+/// perturbed run: the role is perturbed in every surface set the preset
+/// declares (S17, R4's GN-1.29 form).
+#[test]
+fn gate_fixture_surface_operand_perturbed() {
+    let report = fixture_report("surface_operand");
+    assert!(
+        failing(&report, "Normal:").is_empty(),
+        "{:?}",
+        report.failures
+    );
+    let perturbed = failing(&report, "Perturbed:");
+    assert!(!perturbed.is_empty(), "{:?}", report.failures);
+    assert!(
+        perturbed
+            .iter()
+            .all(|failure| failure.contains("button.body.fill")),
+        "{perturbed:?}"
+    );
+}
+
+/// A derivation nested in a table value (a paint's layer's colour) is a
+/// derivation: a literal there fails the perturbed run (S17).
+#[test]
+fn gate_fixture_nested_derivation_perturbed() {
+    let report = fixture_report("nested_derivation");
+    assert!(
+        failing(&report, "Normal:").is_empty(),
+        "{:?}",
+        report.failures
+    );
+    let perturbed = failing(&report, "Perturbed:");
+    assert!(!perturbed.is_empty(), "{:?}", report.failures);
+    assert!(
+        perturbed
+            .iter()
+            .all(|failure| failure.contains("button.body.fill")),
+        "{perturbed:?}"
+    );
+}
+
+/// A role a derivation reads, whose own fact is a derivation too
+/// (`accent_standalone = "= role.global.accent"`), is not perturbed: it
+/// follows its perturbed operand on both sides, so a preset deriving as the
+/// facts do passes, and the role's own derivation is checked (S17).
+#[test]
+fn gate_fixture_derived_operand_passes() {
+    let report = fixture_report("derived_operand");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// A fact's own `when` on a widget that requires a variant is completed
+/// to a combination the state model draws, so a correct preset passes
+/// rather than failing "not available" (S17).
+#[test]
+fn gate_fixture_requires_variant_own_when() {
+    let report = fixture_report("requires_variant");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.queried > 0, "{report:?}");
+}
+
+/// A field of a part the query does not draw asks no fact, and a fact
+/// that applies there fails, as it states a value the platform draws none
+/// for (S17): the icon's size fact applies only to the flat button.
+#[test]
+fn gate_fixture_part_not_drawn() {
+    let report = fixture_report("part_not_drawn");
+    assert!(
+        failing(&report, "has no fact").is_empty(),
+        "{:?}",
+        report.failures
+    );
+    let failures = failing(&report, "where its part is NotDrawn");
+    assert!(!failures.is_empty(), "{:?}", report.failures);
+    assert_eq!(
+        failures.len(),
+        report.failures.len(),
+        "{:?}",
+        report.failures
+    );
+    assert!(
+        failures
+            .iter()
+            .all(|failure| failure.contains("button.icon.icon.size")
+                && failure.contains("variants: [\"flat\"]")),
+        "{failures:?}"
+    );
+}
+
 /// `gate_fixture_declarations_mismatch_fails`: a preset declaring the
 /// widget's variants or exclusive groups otherwise than its state model
 /// fails the declarations run.

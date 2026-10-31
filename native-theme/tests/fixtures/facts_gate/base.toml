@@ -7,12 +7,35 @@ generation = "probe-1"
 [declare]
 text_styles = ["body"]
 inputs = ["accent"]
+surface_sets = ["window"]
 [inputs.accent]
 light = "#3366cc"
 dark = "#3366cc"
 [colors.light]
-surfaces = {}
 keyed = {}
+[colors.light.surfaces.window]
+foreground = "#202020"
+background = "#f0f0f0"
+background_alternate = "absent"
+foreground_inactive = "= role.window.foreground"
+foreground_active = "absent"
+link = "= role.window.foreground"
+link_visited = "absent"
+negative = "= role.window.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.window.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
 [colors.light.global]
 accent = "#3366cc"
 accent_foreground = "#ffffff"
@@ -34,8 +57,30 @@ info = { fill = "absent", foreground = "absent", standalone = "absent", backgrou
 neutral = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
 destructive = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
 [colors.dark]
-surfaces = {}
 keyed = {}
+[colors.dark.surfaces.window]
+foreground = "#f0f0f0"
+background = "#202020"
+background_alternate = "absent"
+foreground_inactive = "= role.window.foreground"
+foreground_active = "absent"
+link = "= role.window.foreground"
+link_visited = "absent"
+negative = "= role.window.foreground"
+neutral = "absent"
+positive = "absent"
+decoration_focus = "absent"
+decoration_hover = "absent"
+shade = "absent"
+shade_darker = "absent"
+border = "= role.window.foreground"
+background_active = "absent"
+background_link = "absent"
+background_visited = "absent"
+background_negative = "absent"
+background_neutral = "absent"
+background_positive = "absent"
+disabled = { background = "absent", background_alternate = "absent", foreground = "absent", foreground_inactive = "absent", foreground_active = "absent", link = "absent", link_visited = "absent", negative = "absent", neutral = "absent", positive = "absent", decoration_focus = "absent", decoration_hover = "absent", shade = "absent", shade_darker = "absent", border = "absent", background_active = "absent", background_link = "absent", background_visited = "absent", background_negative = "absent", background_neutral = "absent", background_positive = "absent" }
 [colors.dark.global]
 accent = "#3366cc"
 accent_foreground = "#ffffff"

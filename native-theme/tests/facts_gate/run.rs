@@ -71,13 +71,14 @@ pub fn root_inputs() -> RootInputs {
     )
 }
 
-/// The perturbed run's colours (S17 *The perturbed run*): fixed, so the
-/// run is reproducible, and far from any platform's, so a literal where
-/// the platform derives differs. The `n`th operand of a scheme takes the
-/// `n`th, cycling; synthetic.
-pub const PERTURBED: [&str; 8] = [
-    "#13579b", "#9b1357", "#579b13", "#2468ac", "#ac2468", "#68ac24", "#3579bd", "#bd3579",
-];
+/// The perturbed run's colour for its `n`th operand (S17 *The perturbed
+/// run*): `n` times an odd multiplier plus an offset, modulo 2^24, a map
+/// that is one-to-one, so no two operands share a colour, and fixed, so the
+/// run is reproducible; synthetic.
+pub fn perturbed(n: usize) -> String {
+    let rgb = (n as u64 * 0x9e_3779 + 0x13_579b) % (1 << 24);
+    format!("#{rgb:06x}")
+}
 
 /// One of the gate's three runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -530,7 +531,11 @@ fn record(
 ) {
     report.compared += 1;
     match outcome {
-        Ok(Outcome::Agrees | Outcome::NotDrawn) => {}
+        Ok(Outcome::Agrees) => {}
+        Ok(Outcome::NotDrawn) => report.fail(format!(
+            "{pass:?}: `{key}` under {}: {place} applies where its part is not drawn",
+            combination()
+        )),
         Ok(Outcome::Differs { at, theme, fact }) => report.fail(format!(
             "{pass:?}: `{key}` at `{at}` under {}: {} gives {theme}, {place} gives {fact}",
             combination(),
@@ -545,19 +550,20 @@ fn record(
     }
 }
 
-/// The stand-in layer of `pass` (S17): nothing in the normal run; in the
-/// perturbed run, under each scheme, a fixed colour for every declared
-/// input and every colour role a derivation fact names as an operand.
-fn stand_in(pass: Pass, preset: &Preset, keys: &[KeyFacts<'_>]) -> Result<Layer, String> {
-    if pass == Pass::Normal {
-        return Ok(Layer::default());
-    }
+/// The perturbed run's stand-in layer (S17): under each scheme, a fixed
+/// colour for every declared input and every colour role a derivation fact
+/// names as an operand, but a role whose own fact that applies under the
+/// conditions `resolved` decided is a derivation: it follows its perturbed
+/// operands on both sides, so only the derivation graph's leaves, the
+/// preset's own base colours, are perturbed (S17's `read` facts "checked as
+/// derivations").
+fn stand_in(preset: &Preset, keys: &[KeyFacts<'_>], resolved: &Resolved) -> Result<Layer, String> {
     let mut roles: BTreeSet<String> = BTreeSet::new();
     let mut inputs: BTreeSet<String> = preset.inputs().into_iter().collect();
     for key in keys {
         for prepared in &key.facts {
             if let Stated::Value(value) = &prepared.fact.stated {
-                let (named_roles, named_inputs) = FactKey::operands(value);
+                let (named_roles, named_inputs) = preset.operands(value);
                 roles.extend(named_roles);
                 inputs.extend(
                     named_inputs
@@ -567,10 +573,26 @@ fn stand_in(pass: Pass, preset: &Preset, keys: &[KeyFacts<'_>]) -> Result<Layer,
             }
         }
     }
+    roles.retain(|role| {
+        let derived = keys
+            .iter()
+            .filter(|key| key.key.role().as_deref() == Some(role.as_str()))
+            .filter_map(|key| {
+                let mut probe = Report::default();
+                applying(
+                    &key.facts,
+                    |when| resolved.conditions_hold(when),
+                    &mut probe,
+                    &String::new,
+                )
+            })
+            .any(|prepared| prepared.fact.derivation());
+        !derived
+    });
     let mut text = String::new();
     let mut n = 0_usize;
     let mut next = || {
-        let color = PERTURBED[n % PERTURBED.len()];
+        let color = perturbed(n);
         n += 1;
         color
     };
@@ -582,7 +604,7 @@ fn stand_in(pass: Pass, preset: &Preset, keys: &[KeyFacts<'_>]) -> Result<Layer,
         ));
     }
     for scheme in preset.schemes() {
-        let mut by_table: BTreeMap<String, Vec<(String, &str)>> = BTreeMap::new();
+        let mut by_table: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
         for role in &roles {
             let (table, leaf) = role.rsplit_once('.').unwrap_or(("", role));
             by_table
@@ -811,10 +833,9 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
             let keys = prepare(&platform, preset.id(), &repo, &mut report);
             for flavor in flavors {
                 declarations_run(&platform, preset, flavor, &mut report);
-                for pass in [Pass::Normal, Pass::Perturbed] {
-                    check(&platform, preset, flavor, pass, &keys, &mut report);
-                }
-                derivations(preset, flavor, &keys, &mut report);
+                check(&platform, preset, flavor, &keys, &mut report);
+                let entries = model::in_force(&platform.models, preset.id(), flavor);
+                derivations(preset, flavor, &keys, &entries, &mut report);
             }
         }
     }
@@ -962,22 +983,62 @@ pub fn declarations_run(
     }
 }
 
-/// The normal or perturbed run of one preset and flavour.
+/// A fact's own combination completed to one the state model `entry`
+/// draws (S17: the gate also resolves each fact's own `when`): where the
+/// entry requires a variant the `when` names none of, the first required
+/// variant its `when` does not exclude and no variant it holds shares an
+/// `exclusive_variants` group with; `None` where none is left, as the fact
+/// then applies to no element the platform draws.
+fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Option<Combination> {
+    let required = &entry.requires_variants;
+    if required.is_empty() || required.iter().any(|v| combination.variants.contains(v)) {
+        return Some(combination);
+    }
+    let excluded = strings(when.get("not_variants"));
+    let variant = required.iter().find(|variant| {
+        !excluded.contains(variant)
+            && !entry.exclusive_variants.iter().any(|group| {
+                group.contains(variant)
+                    && combination.variants.iter().any(|held| group.contains(held))
+            })
+    })?;
+    combination.variants.push(variant.clone());
+    Some(combination)
+}
+
+/// A state model's `not_drawn` entries read as `when`s (S17), for the
+/// preset: an entry naming another preset left out; one naming what the
+/// model does not hold yet holds on no element the gate queries, which
+/// cannot hold the name either; one the model refuses is a failure.
+fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When> {
+    let mut out = Vec::new();
+    for table in &entry.not_drawn {
+        let item = Value::Table(table.clone());
+        let Some((when, _)) = facts::for_preset(Some(&item), preset) else {
+            continue;
+        };
+        match read_when(when.as_ref()) {
+            Ok(when) => out.push(when),
+            Err(Unread::NotHeld(_)) => {}
+            Err(Unread::Refused(why)) => report.fail(format!(
+                "{}: a `not_drawn` entry of `{}` is refused: {why}",
+                entry.file, entry.widget
+            )),
+        }
+    }
+    out
+}
+
+/// The normal and the perturbed run of one preset and flavour, each
+/// condition vector resolved for both: the perturbed run's stand-in is
+/// decided by the facts that apply under the vector.
 fn check(
     platform: &Platform,
     preset: &Preset,
     flavor: Option<&str>,
-    pass: Pass,
     keys: &[KeyFacts<'_>],
     report: &mut Report,
 ) {
-    let layer = match stand_in(pass, preset, keys) {
-        Ok(layer) => layer,
-        Err(why) => {
-            report.fail(format!("{pass:?}: the stand-in layer is refused: {why}"));
-            return;
-        }
-    };
     let schemes = preset.schemes();
     let entries = model::in_force(&platform.models, preset.id(), flavor);
     let mut planned: Planned = BTreeMap::new();
@@ -995,10 +1056,15 @@ fn check(
             .map(|d| d.variants)
             .unwrap_or_default()
     };
+    let mut not_drawn: BTreeMap<String, Vec<When>> = BTreeMap::new();
     for entry in &entries {
         if !entry.available {
             continue;
         }
+        not_drawn.insert(
+            entry.widget.clone(),
+            not_drawn_whens(entry, preset.id(), report),
+        );
         let mut mentioned = Mentioned::of_model(entry);
         for key in keys
             .iter()
@@ -1014,6 +1080,12 @@ fn check(
         mentioned.states.extend(states);
         mentioned.variants.extend(variants);
         if let Ok(declared) = preset.declared(&entry.widget, flavor) {
+            mentioned
+                .states
+                .extend(declared.exclusive.into_iter().flatten());
+            mentioned
+                .states
+                .extend(declared.recency.into_iter().flat_map(|(_, set)| set));
             mentioned.variants.extend(declared.requires_variants);
             mentioned
                 .variants
@@ -1062,6 +1134,16 @@ fn check(
                 report.combinations_skipped += 1;
                 continue;
             };
+            let combination = match entries
+                .iter()
+                .find(|entry| Some(&entry.widget) == widget.as_ref())
+            {
+                Some(entry) => complete(combination, when, entry),
+                None => Some(combination),
+            };
+            let Some(combination) = combination else {
+                continue;
+            };
             for vector in vectors {
                 match &widget {
                     Some(_) => plan(vector, combination.clone(), &mut planned),
@@ -1077,27 +1159,71 @@ fn check(
     }
     let root = root_inputs();
     for (vector, combinations) in &planned {
-        let resolved = match conditions(vector, flavor) {
-            Ok(conditions) => match preset.resolve(&conditions, &layer) {
-                Ok(resolved) => resolved,
-                Err(why) => {
-                    report.fail(format!(
-                        "{pass:?}: {} does not resolve under {vector:?}: {why}",
-                        preset.id()
-                    ));
-                    continue;
-                }
-            },
-            Err(_) => {
+        let conditions = match conditions(vector, flavor) {
+            Ok(conditions) => conditions,
+            Err(Unread::NotHeld(_)) => {
                 report.combinations_skipped += combinations.len() as u64;
                 continue;
             }
+            Err(Unread::Refused(why)) => {
+                report.fail(format!("the conditions {vector:?} are refused: {why}"));
+                continue;
+            }
         };
-        if global_vectors.contains(vector) {
-            check_globals(&resolved, keys, vector, pass, &root, report);
+        let resolve = |pass: Pass, layer: &Layer, report: &mut Report| match preset
+            .resolve(&conditions, layer)
+        {
+            Ok(resolved) => Some(resolved),
+            Err(why) => {
+                report.fail(format!(
+                    "{pass:?}: {} does not resolve under {vector:?}: {why}",
+                    preset.id()
+                ));
+                None
+            }
+        };
+        let Some(normal) = resolve(Pass::Normal, &Layer::default(), report) else {
+            continue;
+        };
+        let layer = match stand_in(preset, keys, &normal) {
+            Ok(layer) => layer,
+            Err(why) => {
+                report.fail(format!("Perturbed: the stand-in layer is refused: {why}"));
+                continue;
+            }
+        };
+        let perturbed = resolve(Pass::Perturbed, &layer, report);
+        let passes = std::iter::once((Pass::Normal, Some(normal)))
+            .chain(std::iter::once((Pass::Perturbed, perturbed)));
+        for (pass, resolved) in passes {
+            let Some(resolved) = resolved else {
+                continue;
+            };
+            if global_vectors.contains(vector) {
+                check_globals(&resolved, keys, vector, pass, &root, report);
+            }
+            let run = Run {
+                resolved: &resolved,
+                keys,
+                vector,
+                not_drawn: &not_drawn,
+                pass,
+                root: &root,
+            };
+            check_widgets(&run, combinations, report);
         }
-        check_widgets(&resolved, keys, vector, combinations, pass, &root, report);
     }
+}
+
+/// One resolution of a condition vector, for one pass.
+struct Run<'a, 'f> {
+    resolved: &'a Resolved,
+    keys: &'a [KeyFacts<'f>],
+    vector: &'a [String],
+    /// Each widget's `not_drawn` entries.
+    not_drawn: &'a BTreeMap<String, Vec<When>>,
+    pass: Pass,
+    root: &'a RootInputs,
 }
 
 /// Every token, colour-role and input key under one condition vector.
@@ -1143,27 +1269,32 @@ fn check_globals(
 }
 
 /// Every widget key over a condition vector's combinations, each distinct
-/// signature compared once.
-fn check_widgets(
-    resolved: &Resolved,
-    keys: &[KeyFacts<'_>],
-    vector: &[String],
-    combinations: &[Combination],
-    pass: Pass,
-    root: &RootInputs,
-    report: &mut Report,
-) {
+/// signature compared once; a combination a `not_drawn` entry names, as
+/// the query matches it, is not queried (S17).
+fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut Report) {
+    let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
     let metrics = StubMetrics;
     let mut signatures: HashSet<(String, Vec<u32>, Vec<String>)> = HashSet::new();
     for combination in combinations {
         let describe = || format!("{vector:?} {combination:?}");
-        let session = match resolved.session(combination, root, &metrics) {
+        let session = match resolved.session(combination, run.root, &metrics) {
             Ok(session) => session,
-            Err(_) => {
+            Err(Unread::NotHeld(_)) => {
                 report.combinations_skipped += 1;
                 continue;
             }
+            Err(Unread::Refused(why)) => {
+                report.fail(format!("{pass:?}: {why} under {}", describe()));
+                continue;
+            }
         };
+        if run
+            .not_drawn
+            .get(&combination.widget)
+            .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
+        {
+            continue;
+        }
         if let Some(why) = session.unavailable() {
             report.fail(format!(
                 "{pass:?}: not available ({why}) under {}",
@@ -1204,6 +1335,23 @@ fn check_widgets(
         report.queried += 1;
         for (key, fact) in widget_keys.iter().zip(applying_facts) {
             let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
+            if !session.drawn(&key.key) {
+                // A field of a part not drawn: no fact is asked for it, and
+                // one that applies states a value the platform draws none
+                // for (S17).
+                if pass == Pass::Normal
+                    && let Some(prepared) = fact
+                    && matches!(prepared.fact.stated, Stated::Value(_))
+                {
+                    report.fail(format!(
+                        "`{}` has a fact ({place}) under {}, where its part is {}",
+                        key.name,
+                        describe(),
+                        session.answer(&key.key)
+                    ));
+                }
+                continue;
+            }
             let holds = |when: &When, key: &FactKey| session.holds(when, key);
             let whole = composed(
                 key,
@@ -1248,7 +1396,13 @@ fn check_widgets(
 /// inputs under the fact's `when` and the pass's conditions, the fact's
 /// expression evaluated in the key's place compared with the pass's result
 /// within the citation's tolerance.
-fn derivations(preset: &Preset, flavor: Option<&str>, keys: &[KeyFacts<'_>], report: &mut Report) {
+fn derivations(
+    preset: &Preset,
+    flavor: Option<&str>,
+    keys: &[KeyFacts<'_>],
+    entries: &[&Model],
+    report: &mut Report,
+) {
     let root = root_inputs();
     let metrics = StubMetrics;
     let schemes = preset.schemes();
@@ -1271,6 +1425,23 @@ fn derivations(preset: &Preset, flavor: Option<&str>, keys: &[KeyFacts<'_>], rep
                     report.combinations_skipped += 1;
                     continue;
                 };
+                let entry = entries
+                    .iter()
+                    .find(|entry| Some(&entry.widget) == widget.as_ref());
+                let combination = match entry {
+                    Some(entry) => complete(combination, &when, entry),
+                    None => Some(combination),
+                };
+                let Some(combination) = combination else {
+                    report.fail(format!(
+                        "{}: its `when` names no combination the state model draws",
+                        describe()
+                    ));
+                    continue;
+                };
+                let not_drawn = entry
+                    .map(|entry| not_drawn_whens(entry, preset.id(), report))
+                    .unwrap_or_default();
                 let mut text = String::new();
                 for (input, color) in &pass.inputs {
                     text.push_str(&format!(
@@ -1321,12 +1492,31 @@ fn derivations(preset: &Preset, flavor: Option<&str>, keys: &[KeyFacts<'_>], rep
                         ),
                         Some(_) => match resolved.session(&combination, &root, &metrics) {
                             Ok(session) => {
-                                session.compare_pass(&key.key, value, result, &pass.tolerance)
+                                let drawn = session.unavailable().map_or_else(
+                                    || {
+                                        (!not_drawn.iter().any(|when| session.root_holds(when)))
+                                            .then_some(())
+                                            .ok_or_else(|| "named by `not_drawn`".to_owned())
+                                    },
+                                    |why| Err(format!("not available ({why})")),
+                                );
+                                match drawn {
+                                    Ok(()) => session.compare_pass(
+                                        &key.key,
+                                        value,
+                                        result,
+                                        &pass.tolerance,
+                                    ),
+                                    Err(why) => Err(Unread::Refused(format!(
+                                        "the pass's combination {combination:?} is {why}"
+                                    ))),
+                                }
                             }
-                            Err(_) => {
+                            Err(Unread::NotHeld(_)) => {
                                 report.combinations_skipped += 1;
                                 continue;
                             }
+                            Err(Unread::Refused(why)) => Err(Unread::Refused(why)),
                         },
                     };
                     let under = format!("{vector:?}");

@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use native_theme::next::gate::Tolerance;
+use native_theme::next::gate::{Tolerance, is_derivation};
 use toml::{Table, Value};
 
 /// What a fact states: a value, or a pending measurement's register id.
@@ -33,9 +33,10 @@ impl Fact {
         format!("{} fact {}", self.file, self.index + 1)
     }
 
-    /// Whether its value is a derivation: an expression (S17).
+    /// Whether its value is a derivation: an expression, as the value or in
+    /// a leaf of it (S17).
     pub fn derivation(&self) -> bool {
-        matches!(&self.stated, Stated::Value(Value::String(text)) if text.starts_with('='))
+        matches!(&self.stated, Stated::Value(value) if is_derivation(value))
     }
 }
 

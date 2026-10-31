@@ -658,20 +658,77 @@ impl FactKey {
         matches!(self.place, Place::WholePart(_))
     }
 
-    /// The colour roles' paths, below `colors.<scheme>`, that `value`'s
-    /// expression reads as operands, and the inputs it reads (the perturbed
-    /// run's, S17); none for a literal.
+    /// The colour role's path below `colors.<scheme>` the key names
+    /// (`global.accent`, `surfaces.window.foreground`, `keyed.<key>`);
+    /// `None` for any other key.
     #[must_use]
-    pub fn operands(value: &Item) -> (Vec<String>, Vec<String>) {
-        let Some(text) = value.as_str().and_then(|text| text.strip_prefix('=')) else {
-            return (Vec::new(), Vec::new());
-        };
-        let Ok(expr) = Expr::parse(text.trim()) else {
-            return (Vec::new(), Vec::new());
-        };
+    pub fn role(&self) -> Option<String> {
+        match &self.place {
+            Place::Role(_, path) => Some(path.join(".")),
+            Place::WholePart(_)
+            | Place::Part(..)
+            | Place::Values(..)
+            | Place::Token(_)
+            | Place::Input(_)
+            | Place::KdeList(_) => None,
+        }
+    }
+}
+
+/// The expressions a fact's value states: each string leaf of it, nested
+/// in tables and lists too, that starts with `=` (S2.2), without the `=`.
+fn expressions(value: &Item, out: &mut Vec<String>) {
+    match value {
+        Item::String(text) => {
+            if let Some(expression) = text.strip_prefix('=') {
+                out.push(expression.trim().to_owned());
+            }
+        }
+        Item::Array(items) => {
+            for item in items {
+                expressions(item, out);
+            }
+        }
+        Item::Table(table) => {
+            for item in table.values() {
+                expressions(item, out);
+            }
+        }
+        Item::Integer(_) | Item::Float(_) | Item::Boolean(_) | Item::Datetime(_) => {}
+    }
+}
+
+/// Whether a fact's value is a derivation (S17): it states an expression,
+/// as itself or in a leaf of a table or list it is.
+#[must_use]
+pub fn is_derivation(value: &Item) -> bool {
+    let mut out = Vec::new();
+    expressions(value, &mut out);
+    !out.is_empty()
+}
+
+impl Preset {
+    /// The colour roles' paths, below `colors.<scheme>`, that `value`'s
+    /// expressions read as operands, a `surface.<role>` one in every surface
+    /// set the preset declares, as an element's scope may bind any of them
+    /// (S3.3); and the inputs they read (the perturbed run's, S17). None for
+    /// a literal.
+    #[must_use]
+    pub fn operands(&self, value: &Item) -> (Vec<String>, Vec<String>) {
+        let mut texts = Vec::new();
+        expressions(value, &mut texts);
         let mut refs = Vec::new();
-        super::resolve::evaluate::references(&expr, &mut refs);
+        for text in texts {
+            if let Ok(expr) = Expr::parse(&text) {
+                super::resolve::evaluate::references(&expr, &mut refs);
+            }
+        }
         let (mut roles, mut inputs) = (Vec::new(), Vec::new());
+        let add = |list: &mut Vec<String>, name: String| {
+            if !list.contains(&name) {
+                list.push(name);
+            }
+        };
         for reference in refs {
             let reference = match reference {
                 Ref::Active(inner) => *inner,
@@ -679,17 +736,25 @@ impl FactKey {
             };
             match &reference {
                 Ref::Input(path) => {
-                    let name = path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
-                    if !inputs.contains(&name) {
-                        inputs.push(name);
+                    add(
+                        &mut inputs,
+                        path.iter().map(Key::as_str).collect::<Vec<_>>().join("."),
+                    );
+                }
+                Ref::Surface(path) => {
+                    for set in &self.stack.declarations().surface_sets {
+                        let named = Ref::Role {
+                            set: *set,
+                            path: path.clone(),
+                        };
+                        if let Some(path) = role_path(&named) {
+                            add(&mut roles, path.join("."));
+                        }
                     }
                 }
                 other => {
                     if let Some(path) = role_path(other) {
-                        let path = path.join(".");
-                        if !roles.contains(&path) {
-                            roles.push(path);
-                        }
+                        add(&mut roles, path.join("."));
                     }
                 }
             }

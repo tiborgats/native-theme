@@ -1,0 +1,18 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+# The literal `surface.foreground` gives under each scheme, where the platform derives it.
+[[rules]]
+when = { conditions = ["scheme:light"] }
+target = "button.body"
+set = { fill = "#202020" }
+
+[[rules]]
+when = { conditions = ["scheme:dark"] }
+target = "button.body"
+set = { fill = "#f0f0f0" }
