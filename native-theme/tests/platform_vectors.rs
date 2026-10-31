@@ -57,6 +57,16 @@ fn output(cell: &str) -> [f64; 4] {
     channels.try_into().expect(cell)
 }
 
+/// A colour's channels, as the platform functions take them.
+fn channels(c: Color) -> [f32; 4] {
+    [c.r, c.g, c.b, c.a]
+}
+
+/// The colour of a platform function's channels.
+fn from_channels([r, g, b, a]: [f32; 4]) -> Color {
+    Color { r, g, b, a }
+}
+
 fn number(cell: &str) -> f32 {
     cell.parse().expect(cell)
 }
@@ -75,8 +85,13 @@ fn assert_color(got: Color, expected: [f64; 4], row: &HashMap<String, String>) {
 #[test]
 fn vectors_kirigami_lerp() {
     for row in rows("kirigami_lerp") {
-        let got = kirigami_lerp(color(&row["a"]), color(&row["b"]), number(&row["balance"]));
-        assert_color(got, output(&row["result"]), &row);
+        let got = kirigami_lerp(
+            channels(color(&row["a"])),
+            channels(color(&row["b"])),
+            number(&row["balance"]),
+        )
+        .expect("a colour in 16-bit storage");
+        assert_color(from_channels(got), output(&row["result"]), &row);
     }
 }
 
@@ -91,7 +106,7 @@ fn vectors_kde_shade() {
             "shadow" => KdeShadeRole::Shadow,
             other => panic!("no role `{other}`"),
         };
-        let got = kde_shade(color(&row["c"]), role, number(&row["contrast"]));
-        assert_color(got, output(&row["result"]), &row);
+        let got = kde_shade(channels(color(&row["c"])), role, number(&row["contrast"]));
+        assert_color(from_channels(got), output(&row["result"]), &row);
     }
 }

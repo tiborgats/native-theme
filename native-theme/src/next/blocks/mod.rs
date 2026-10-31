@@ -30,6 +30,7 @@ pub mod paint;
 pub mod part_style;
 pub mod shadow;
 pub mod text;
+mod timing;
 pub mod transform;
 
 pub(crate) use merge::{

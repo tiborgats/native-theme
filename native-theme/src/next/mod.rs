@@ -72,7 +72,7 @@ pub mod timing {
     //! among them, and a spring's damping coefficient from its damping ratio
     //! (S2.7).
 
-    pub use super::blocks::motion::{damping_coefficient, evaluate};
+    pub use super::blocks::motion::{damping_coefficient, evaluate, spring_duration};
 }
 
 pub use blocks::focus::{

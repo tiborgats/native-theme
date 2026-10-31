@@ -8,6 +8,7 @@ use super::motion::{
     AdwEasing, Keyframe, Loop, PlatformCurve, PresentationEvent, PresentationKind,
     PresentationStep, PresentationTransition, PropertyGroup, QtEasing, ResolvedKeyframe,
     ResolvedTiming, Timing, Transition, TransitionKind, damping_coefficient, evaluate,
+    spring_duration,
 };
 use super::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Radius, concentric, follow_part, full,
@@ -1622,4 +1623,28 @@ fn timing_curves_steps_and_springs_evaluate_to_their_sources() {
     );
     // Undamped, the motion never ends: no elapsed fraction.
     assert_eq!(evaluate(&spring(0.0, 400.0, false), 0.5), None);
+}
+
+/// A spring's estimated duration is exported (S2.7): a connector turns the
+/// elapsed milliseconds into `evaluate`'s `t` by it; the end value at and
+/// past it, the motion before it; none for an undamped spring or another
+/// timing. Synthetic parameters.
+#[test]
+fn spring_duration_turns_elapsed_time_into_t() {
+    let spring = |damping_ratio: f32| Timing::Spring {
+        mass: 1.0,
+        stiffness: 400.0,
+        damping_ratio,
+        initial_velocity: 0.0,
+        rest_epsilon: 0.001,
+        clamp: false,
+        time_scale: Value::Stated(1.0),
+    };
+    let duration = spring_duration(&spring(0.5));
+    assert!(duration.is_some_and(|ms| ms.0 > 0.0), "{duration:?}");
+    assert_eq!(evaluate(&spring(0.5), 1.0), Some(1.0));
+    let before = evaluate(&spring(0.5), 0.5);
+    assert!(before.is_some_and(|value| value != 1.0), "{before:?}");
+    assert_eq!(spring_duration(&spring(0.0)), None);
+    assert_eq!(spring_duration(&Timing::Linear), None);
 }

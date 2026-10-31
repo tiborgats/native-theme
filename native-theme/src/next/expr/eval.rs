@@ -112,21 +112,27 @@ impl Platform {
                 };
                 let c = c.as_ref().map_or_else(transparent, color);
                 match role {
-                    Some(role) => Val::Color(crate::next::platform::kde_shade::kde_shade(
-                        c,
-                        role,
-                        contrast.as_ref().map_or(0.0, number),
-                    )),
+                    Some(role) => {
+                        Val::Color(from_channels(crate::next::platform::kde_shade::kde_shade(
+                            channels(c),
+                            role,
+                            contrast.as_ref().map_or(0.0, number),
+                        )))
+                    }
                     None => Val::Color(c),
                 }
             }
             Platform::KirigamiLerp => {
                 let (a, b, balance) = (arg(0), arg(1), arg(2));
-                Val::Color(crate::next::platform::kirigami_lerp::kirigami_lerp(
-                    a.as_ref().map_or_else(transparent, color),
-                    b.as_ref().map_or_else(transparent, color),
+                // Qt's invalid colour (a colour outside 16-bit storage, a NaN
+                // balance) has no value in the model: transparent, as a
+                // non-finite result is zero (S2.2's *Totality*).
+                let lerped = crate::next::platform::kirigami_lerp::kirigami_lerp(
+                    channels(a.as_ref().map_or_else(transparent, color)),
+                    channels(b.as_ref().map_or_else(transparent, color)),
                     balance.as_ref().map_or(0.0, number),
-                ))
+                );
+                Val::Color(lerped.map_or_else(transparent, from_channels))
             }
         }
     }
@@ -185,6 +191,17 @@ fn eval(node: &Node, env: &dyn Env) -> Val {
         Node::Platform(func, args) => func.eval(args, env),
         Node::ColorLayer(c) => Val::Paint(color_layer(arith::finite_color(color(&eval(c, env))))),
     }
+}
+
+/// A colour's channels, red, green, blue and alpha, as the platform functions
+/// take them.
+fn channels(c: Color) -> [f32; 4] {
+    [c.r, c.g, c.b, c.a]
+}
+
+/// The colour of a platform function's channels.
+fn from_channels([r, g, b, a]: [f32; 4]) -> Color {
+    Color { r, g, b, a }
 }
 
 /// A paint of one colour layer drawn normally (S2.2).

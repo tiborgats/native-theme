@@ -21,7 +21,7 @@
 use native_theme_derive::ThemeParts;
 
 use super::part_style::{PartStyle, PartStylePatch, ResolvedPartStylePatch};
-use super::{KeyedItem, merge_keyed_by};
+use super::{KeyedItem, merge_keyed_by, timing};
 use crate::next::key::Key;
 use crate::next::selector::{PartRef, StateFlag, StateFlags};
 use crate::next::units::{Fraction, Ms, Px, Scalar};
@@ -162,11 +162,14 @@ pub enum AdwEasing {
 /// libadwaita's `AdwSpringAnimation` from 0 to 1 (`adw-spring-animation.c`),
 /// its damping coefficient from the damping ratio ([`damping_coefficient`],
 /// `adw_spring_params_new`): `t` the elapsed fraction of the spring's own
-/// duration, the one libadwaita estimates from `rest_epsilon` and `clamp`
-/// (`calculate_duration`, `:177-243`), whole milliseconds as it counts them,
-/// and the value its `oscillate` gives there (`:101-153`), the end value at
-/// and past the duration (`:265-282`); `time_scale` scales that duration,
-/// not the curve. A platform curve is computed as the toolkit's own function
+/// duration ([`spring_duration`]), the one libadwaita estimates from
+/// `rest_epsilon` and `clamp` (`calculate_duration`, `:177-243`), whole
+/// milliseconds as it counts them, and the value its `oscillate` gives there
+/// (`:101-153`), the end value at and past the duration (`:265-282`);
+/// `time_scale` scales that duration, not the curve. The curves, the solver
+/// and the spring are the clean room's (the plan's D10), written from
+/// behavioural descriptions of those functions and their vector tables. A
+/// platform curve is computed as the toolkit's own function
 /// computes it; the result may leave `0..=1` where the toolkit's does (Qt's
 /// out-expo scales by 1.001, so it passes 1 just before its end; a spring
 /// overshoots).
@@ -184,66 +187,98 @@ pub fn evaluate(timing: &Timing, t: f64) -> Option<f64> {
         0.0
     };
     match timing {
-        Timing::Linear => Some(t),
-        Timing::CubicBezier(x1, y1, x2, y2) => Some(cubic_bezier(
-            t,
+        Timing::Linear => Some(timing::adw_ease(timing::AdwEasing::Linear, t)),
+        Timing::CubicBezier(x1, y1, x2, y2) => Some(timing::cubic_bezier(
             f64::from(*x1),
             f64::from(*y1),
             f64::from(*x2),
             f64::from(*y2),
+            t,
         )),
         Timing::Steps { count, jump } => steps(t, *count, *jump),
-        Timing::Spring {
-            mass,
-            stiffness,
-            damping_ratio,
-            initial_velocity,
-            rest_epsilon,
-            clamp,
-            ..
-        } => {
-            let spring = Spring::new(
-                f64::from(*mass),
-                f64::from(*stiffness),
-                f64::from(*damping_ratio),
-                f64::from(*initial_velocity),
-                f64::from(*rest_epsilon),
-                *clamp,
-            )?;
-            spring.at_fraction(t)
+        Timing::Spring { .. } => spring(timing)?.value_at_fraction(t),
+        Timing::Platform(PlatformCurve::Qt(easing)) => Some(timing::qt_ease(qt_easing(*easing), t)),
+        Timing::Platform(PlatformCurve::Adw(easing)) => {
+            Some(timing::adw_ease(adw_easing(*easing), t))
         }
-        Timing::Platform(PlatformCurve::Qt(easing)) => Some(qt_easing(*easing, t)),
-        Timing::Platform(PlatformCurve::Adw(easing)) => Some(adw_easing(*easing, t)),
         Timing::Platform(PlatformCurve::KirigamiVelocity) => None,
     }
 }
 
-/// `x_for_t` and `y_for_t` of `adw-easing.c:477-499`: a coordinate of the
-/// cubic Bézier from 0 to 1 with the two control coordinates `c1` and `c2`.
-fn bezier_at(s: f64, c1: f64, c2: f64) -> f64 {
-    let omt = 1.0 - s;
-    3.0 * omt * omt * s * c1 + 3.0 * omt * s * s * c2 + s * s * s
+/// A spring's estimated duration (S2.7): the time libadwaita's
+/// `AdwSpringAnimation` takes from 0 to 1 before it reports its end value,
+/// in whole milliseconds as it counts them, before `time_scale`, which scales
+/// it. A connector gives [`evaluate`] the elapsed time over this duration
+/// times the resolved `time_scale`. `None` for any other timing, for a
+/// spring whose motion never ends (undamped) and for parameters that give no
+/// finite motion.
+#[must_use]
+pub fn spring_duration(timing: &Timing) -> Option<Ms> {
+    let duration = spring(timing)?.duration_ms()?;
+    (duration != timing::SPRING_DURATION_INFINITE).then_some(Ms(duration as f32))
 }
 
-/// `ease_cubic_bezier` (`adw-easing.c:501-541`), the duration 1: the ends
-/// exact, `x(s) = t` solved by thirty bisections (`t_for_x`), then `y(s)`.
-fn cubic_bezier(t: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-    if approx(t, 0.0) {
-        return 0.0;
+/// A spring timing's motion from 0 to 1, its parameters widened to doubles.
+fn spring(timing: &Timing) -> Option<timing::Spring> {
+    let Timing::Spring {
+        mass,
+        stiffness,
+        damping_ratio,
+        initial_velocity,
+        rest_epsilon,
+        clamp,
+        ..
+    } = timing
+    else {
+        return None;
+    };
+    Some(timing::Spring {
+        damping_ratio: f64::from(*damping_ratio),
+        mass: f64::from(*mass),
+        stiffness: f64::from(*stiffness),
+        initial_velocity: f64::from(*initial_velocity),
+        rest_epsilon: f64::from(*rest_epsilon),
+        clamp: *clamp,
+    })
+}
+
+/// The clean-room curve of a Qt easing the model names.
+fn qt_easing(easing: QtEasing) -> timing::QtEasing {
+    match easing {
+        QtEasing::InQuad => timing::QtEasing::InQuad,
+        QtEasing::OutQuad => timing::QtEasing::OutQuad,
+        QtEasing::InOutQuad => timing::QtEasing::InOutQuad,
+        QtEasing::InCubic => timing::QtEasing::InCubic,
+        QtEasing::OutCubic => timing::QtEasing::OutCubic,
+        QtEasing::InOutCubic => timing::QtEasing::InOutCubic,
+        QtEasing::InOutSine => timing::QtEasing::InOutSine,
+        QtEasing::OutExpo => timing::QtEasing::OutExpo,
     }
-    if approx(t, 1.0) {
-        return 1.0;
+}
+
+/// The clean-room curve of a libadwaita easing the model names.
+fn adw_easing(easing: AdwEasing) -> timing::AdwEasing {
+    match easing {
+        AdwEasing::EaseInCubic => timing::AdwEasing::EaseInCubic,
+        AdwEasing::EaseOutCubic => timing::AdwEasing::EaseOutCubic,
+        AdwEasing::EaseInOutSine => timing::AdwEasing::EaseInOutSine,
+        AdwEasing::EaseInExpo => timing::AdwEasing::EaseInExpo,
+        AdwEasing::EaseOutExpo => timing::AdwEasing::EaseOutExpo,
     }
-    let (mut min, mut max) = (0.0_f64, 1.0_f64);
-    for _ in 0..30 {
-        let guess = (min + max) / 2.0;
-        if t < bezier_at(guess, x1, x2) {
-            max = guess;
-        } else {
-            min = guess;
-        }
-    }
-    bezier_at((min + max) / 2.0, y1, y2)
+}
+
+/// The damping coefficient a spring stated by its damping ratio uses:
+/// `damping_ratio · 2·√(mass · stiffness)`, in doubles as libadwaita
+/// computes it, then narrowed. `None` where `mass · stiffness` or the ratio
+/// is negative, or the result is not finite.
+#[must_use]
+pub fn damping_coefficient(mass: f32, stiffness: f32, damping_ratio: f32) -> Option<f32> {
+    let coefficient = timing::damping_coefficient(
+        f64::from(damping_ratio),
+        f64::from(mass),
+        f64::from(stiffness),
+    )?;
+    Some(coefficient as f32).filter(|c| c.is_finite())
 }
 
 /// CSS's step easing function (CSS Easing Functions Level 1, §2.3.2) at the
@@ -266,253 +301,6 @@ fn steps(t: f64, count: u32, jump: StepJump) -> Option<f64> {
         step += 1.0;
     }
     Some(step.clamp(0.0, jumps) / jumps)
-}
-
-/// libadwaita's spring from 0 to 1 (`adw-spring-animation.c`), its damping
-/// from the ratio (`adw-spring-params.c:85-96`).
-struct Spring {
-    damping: f64,
-    mass: f64,
-    stiffness: f64,
-    velocity: f64,
-    epsilon: f64,
-    clamp: bool,
-}
-
-/// `DELTA` and `MAX_ITERATIONS` (`adw-spring-animation.c:15-16`).
-const SPRING_DELTA: f64 = 0.001;
-const SPRING_MAX_ITERATIONS: u32 = 20000;
-
-impl Spring {
-    fn new(
-        mass: f64,
-        stiffness: f64,
-        damping_ratio: f64,
-        velocity: f64,
-        epsilon: f64,
-        clamp: bool,
-    ) -> Option<Spring> {
-        let product = mass * stiffness;
-        if product < 0.0 {
-            return None;
-        }
-        let damping = damping_ratio * (2.0 * product.sqrt());
-        let spring = Spring {
-            damping,
-            mass,
-            stiffness,
-            velocity,
-            epsilon,
-            clamp,
-        };
-        [damping, mass, stiffness, velocity, epsilon]
-            .iter()
-            .all(|x| x.is_finite())
-            .then_some(spring)
-    }
-
-    /// `oscillate` (`:101-153`) from 0 to 1 at `time` whole milliseconds.
-    fn oscillate(&self, time: u32) -> f64 {
-        let (b, m, k, v0) = (self.damping, self.mass, self.stiffness, self.velocity);
-        let t = f64::from(time) / 1000.0;
-        let beta = b / (2.0 * m);
-        let omega0 = (k / m).sqrt();
-        let x0 = -1.0_f64;
-        let envelope = (-beta * t).exp();
-        if (beta - omega0).abs() < f64::from(f32::EPSILON) {
-            return 1.0 + envelope * (x0 + (beta * x0 + v0) * t);
-        }
-        if beta < omega0 {
-            let omega1 = (omega0 * omega0 - beta * beta).sqrt();
-            return 1.0
-                + envelope
-                    * (x0 * (omega1 * t).cos() + ((beta * x0 + v0) / omega1) * (omega1 * t).sin());
-        }
-        let omega2 = (beta * beta - omega0 * omega0).sqrt();
-        1.0 + envelope
-            * (x0 * (omega2 * t).cosh() + ((beta * x0 + v0) / omega2) * (omega2 * t).sinh())
-    }
-
-    /// `get_first_zero` (`:155-175`): the first whole millisecond from 1 at
-    /// which the motion reaches within `epsilon` of its end; 0 past
-    /// `MAX_ITERATIONS`.
-    fn first_zero(&self) -> u32 {
-        let mut i = 1_u32;
-        let mut y = self.oscillate(i);
-        while 1.0 - y > self.epsilon {
-            if i > SPRING_MAX_ITERATIONS {
-                return 0;
-            }
-            i = i.saturating_add(1);
-            y = self.oscillate(i);
-        }
-        i
-    }
-
-    /// `calculate_duration` (`:177-243`) in whole milliseconds; `None` for
-    /// libadwaita's infinite duration (no damping) and a duration no
-    /// millisecond count holds.
-    fn duration(&self) -> Option<u32> {
-        let beta = self.damping / (2.0 * self.mass);
-        if approx(beta, 0.0) || beta < 0.0 {
-            return None;
-        }
-        if self.clamp {
-            return Some(self.first_zero());
-        }
-        let omega0 = (self.stiffness / self.mass).sqrt();
-        let mut x0 = -self.epsilon.ln() / beta;
-        if (beta - omega0).abs() < f64::from(f32::EPSILON) || beta < omega0 {
-            return millis(x0 * 1000.0);
-        }
-        let at = |x: f64| millis(x * 1000.0).map(|ms| self.oscillate(ms));
-        let mut y0 = at(x0)?;
-        let mut m = (at(x0 + SPRING_DELTA)? - y0) / SPRING_DELTA;
-        let mut x1 = (1.0 - y0 + m * x0) / m;
-        let mut y1 = at(x1)?;
-        let mut i = 0_u32;
-        while (1.0 - y1).abs() > self.epsilon {
-            if i > 1000 {
-                return Some(0);
-            }
-            x0 = x1;
-            y0 = y1;
-            m = (at(x0 + SPRING_DELTA)? - y0) / SPRING_DELTA;
-            x1 = (1.0 - y0 + m * x0) / m;
-            y1 = at(x1)?;
-            i = i.saturating_add(1);
-        }
-        millis(x1 * 1000.0)
-    }
-
-    /// `adw_spring_animation_real_calculate_value` (`:265-282`) at the
-    /// elapsed fraction `t` of the duration, whole milliseconds as
-    /// `AdwAnimation` counts them.
-    fn at_fraction(&self, t: f64) -> Option<f64> {
-        let duration = self.duration()?;
-        let time = millis(t * f64::from(duration))?;
-        if time >= duration {
-            return Some(1.0);
-        }
-        Some(self.oscillate(time)).filter(|value| value.is_finite())
-    }
-}
-
-/// A non-negative number of milliseconds truncated to a whole one, as C's
-/// conversion to `guint` truncates it; `None` outside `guint`'s range.
-fn millis(ms: f64) -> Option<u32> {
-    if !(0.0..=f64::from(u32::MAX)).contains(&ms) {
-        return None;
-    }
-    let whole = ms.trunc();
-    // In range and whole, so the conversion is exact.
-    u32::try_from(whole as u64).ok()
-}
-
-/// Qt's easing functions, `qtbase@6.12.0 src/3rdparty/easing/easing.cpp`
-/// (`qreal` a double).
-fn qt_easing(easing: QtEasing, t: f64) -> f64 {
-    match easing {
-        // easing.cpp:48-51.
-        QtEasing::InQuad => t * t,
-        // :59-62.
-        QtEasing::OutQuad => -t * (t - 2.0),
-        // :70-79.
-        QtEasing::InOutQuad => {
-            let t = t * 2.0;
-            if t < 1.0 {
-                t * t / 2.0
-            } else {
-                let t = t - 1.0;
-                -0.5 * (t * (t - 2.0) - 1.0)
-            }
-        }
-        // :99-102.
-        QtEasing::InCubic => t * t * t,
-        // :110-114.
-        QtEasing::OutCubic => {
-            let t = t - 1.0;
-            t * t * t + 1.0
-        }
-        // :122-131.
-        QtEasing::InOutCubic => {
-            let t = t * 2.0;
-            if t < 1.0 {
-                0.5 * t * t * t
-            } else {
-                let t = t - 2.0;
-                0.5 * (t * t * t + 2.0)
-            }
-        }
-        // :275-278.
-        QtEasing::InOutSine => -0.5 * ((std::f64::consts::PI * t).cos() - 1.0),
-        // :309-312: `qPow(2.0f, -10 * t)`, the float base promoted to double.
-        QtEasing::OutExpo => {
-            if t == 1.0 {
-                1.0
-            } else {
-                1.001 * (-(2.0_f64.powf(-10.0 * t)) + 1.0)
-            }
-        }
-    }
-}
-
-/// `G_APPROX_VALUE(a, b, DBL_EPSILON)` as libadwaita tests its ends with it:
-/// `|a − b|` below the double epsilon.
-fn approx(a: f64, b: f64) -> bool {
-    (if a > b { a - b } else { b - a }) < f64::EPSILON
-}
-
-/// libadwaita's easing functions, `libadwaita@1.10.0 src/adw-easing.c`,
-/// called with the duration 1 as `adw_easing_ease` calls them (`:553`).
-fn adw_easing(easing: AdwEasing, t: f64) -> f64 {
-    match easing {
-        // :166-172.
-        AdwEasing::EaseInCubic => t * t * t,
-        // :175-181.
-        AdwEasing::EaseOutCubic => {
-            let p = t - 1.0;
-            p * p * p + 1.0
-        }
-        // :276-281.
-        AdwEasing::EaseInOutSine => -0.5 * ((std::f64::consts::PI * t).cos() - 1.0),
-        // :283-288.
-        AdwEasing::EaseInExpo => {
-            if approx(t, 0.0) {
-                0.0
-            } else {
-                2.0_f64.powf(10.0 * (t - 1.0))
-            }
-        }
-        // :290-295.
-        AdwEasing::EaseOutExpo => {
-            if approx(t, 1.0) {
-                1.0
-            } else {
-                -(2.0_f64.powf(-10.0 * t)) + 1.0
-            }
-        }
-    }
-}
-
-/// The damping coefficient a spring stated by its damping ratio uses:
-/// `damping_ratio · 2·√(mass · stiffness)` (`libadwaita@1.10.0
-/// src/adw-spring-params.c:93-94`). `None` where `mass · stiffness` is
-/// negative or the result is not finite.
-#[must_use]
-pub fn damping_coefficient(mass: f32, stiffness: f32, damping_ratio: f32) -> Option<f32> {
-    let critical = critical_damping(mass, stiffness)?;
-    Some(damping_ratio * critical).filter(|c| c.is_finite())
-}
-
-/// `2·√(mass · stiffness)`, the critical damping; `None` where it is not a
-/// finite number.
-fn critical_damping(mass: f32, stiffness: f32) -> Option<f32> {
-    let product = mass * stiffness;
-    if product < 0.0 {
-        return None;
-    }
-    Some(2.0 * product.sqrt()).filter(|c| c.is_finite())
 }
 
 /// The groups of a part's properties a transition animates. The focus

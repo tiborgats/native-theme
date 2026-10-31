@@ -375,7 +375,12 @@ fn functions_evaluate_over_read_operands() {
     );
     // The platform functions, each as `next::platform` computes it for the
     // same operands.
-    let lerp = crate::next::platform::kirigami_lerp::kirigami_lerp(fg, bg, 0.5);
+    let channels = |c: Color| [c.r, c.g, c.b, c.a];
+    let colour = |[r, g, b, a]: [f32; 4]| Color { r, g, b, a };
+    let lerp = colour(
+        crate::next::platform::kirigami_lerp::kirigami_lerp(channels(fg), channels(bg), 0.5)
+            .unwrap(),
+    );
     assert_eq!(
         call(
             &theme,
@@ -384,11 +389,11 @@ fn functions_evaluate_over_read_operands() {
         ),
         Some(Val::Color(lerp))
     );
-    let shade = crate::next::platform::kde_shade::kde_shade(
-        bg,
+    let shade = colour(crate::next::platform::kde_shade::kde_shade(
+        channels(bg),
         crate::next::platform::kde_shade::KdeShadeRole::Dark,
         4.0,
-    );
+    ));
     assert_eq!(
         call(
             &theme,
