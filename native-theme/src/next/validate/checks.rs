@@ -1535,8 +1535,6 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// A font's stated weight, the CSS and OpenType weight, 1 to 1000
-    /// (S2.8).
     /// A transition's `from` (S2.7, S12): no empty list, no flag twice; a
     /// keyed flag's declaration is its own node's check.
     fn from(&mut self, from: Option<&[StateFlag]>, path: &Path) {
@@ -1569,6 +1567,8 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A font's stated weight, the CSS and OpenType weight, 1 to 1000
+    /// (S2.8).
     fn weight(&mut self, weight: Option<&Value<u16>>, path: &Path) {
         if let Some(Value::Stated(weight)) = weight
             && !(1..=1000).contains(weight)

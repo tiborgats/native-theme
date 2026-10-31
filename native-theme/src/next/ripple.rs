@@ -72,8 +72,10 @@ const RADIUS_FACTOR: f32 = 2.3;
 ///
 /// `AndroidPatterned` (`RippleAnimationSession.java:113-139`, `:150-220`):
 /// from 0 to 0.5 over 450 ms by `(0.4, 0, 0.2, 1)` (`FAST_OUT_SLOW_IN`,
-/// `:47-48`, solved exactly, as `PathInterpolator`'s approximation through
-/// the native `Path.approximate` lies outside the source cache), then from
+/// `:47-48`, solved exactly: `PathInterpolator` approximates the curve
+/// through the native `Path.approximate`, outside the source cache, to its
+/// `PRECISION` of 0.002 (`PathInterpolator.java:54`, `:164`), so Android's
+/// progress differs from this by about 0.001 at most), then from
 /// 0.5 to 1 over 375 ms linearly from the later of the release and the
 /// enter's end (`computeDelay`, `:136-139`), ended there. A non-finite time
 /// is 0 (S2.2's totality).
@@ -106,7 +108,7 @@ pub fn progress(effect: RippleEffect, since_start: Ms, since_release: Option<Ms>
 ///
 /// `AndroidPatterned`: from the first frame's uptime by `MAX_NOISE_PHASE`
 /// (32) over 7000 ms linearly, then held (`RippleAnimationSession.java:181-
-/// 220`; `RippleDrawable.java:997`), in `float` as `ValueAnimator.ofFloat`
+/// 220`; `RippleDrawable.java:999`), in `float` as `ValueAnimator.ofFloat`
 /// evaluates it, so the sparkles differ per press.
 #[must_use]
 pub fn phase(effect: RippleEffect, start_uptime: Ms, since_start: Ms) -> f32 {
@@ -128,8 +130,8 @@ pub fn phase(effect: RippleEffect, start_uptime: Ms, since_start: Ms) -> f32 {
 /// `AndroidPatterned` is `RippleShader.java`'s shader (`:42-122`) with the
 /// uniforms its setters give (`:138-198`) and the inputs Compose gives
 /// `RippleDrawable`: the box's size rounded to whole pixels and its centre
-/// the bounds' integer centre (`RippleHostView.android.kt:173`,
-/// `RippleDrawable.java:891-892`); the radius `max_radius`, else half the
+/// the bounds' integer centre (`RippleHostView.android.kt:178`,
+/// `RippleDrawable.java:895-896`); the radius `max_radius`, else half the
 /// box's diagonal plus `padding`, rounded (`Ripple.android.kt:105`); the
 /// colour with `alpha` replacing its own and the sparkles'
 /// `DEFAULT_EFFECT_COLOR`, each packed in 8 bits as Compose's `Color(…)` and
@@ -169,7 +171,8 @@ fn finite(x: f64) -> f64 {
 }
 
 /// `(0.4, 0, 0.2, 1)` at `x`, solved for its parameter by bisection to the
-/// double's precision.
+/// double's precision; the exact control points, where Android's are the
+/// `float`s nearest them, a difference below the approximation's own.
 fn fast_out_slow_in(x: f64) -> f64 {
     fn at(s: f64, c1: f64, c2: f64) -> f64 {
         let omt = 1.0 - s;
@@ -204,7 +207,9 @@ fn packed(x: f32) -> f32 {
     (x * 255.0 + 0.5).floor() / 255.0
 }
 
-/// Kotlin's `roundToInt` of a float: `floor(x + 0.5)`.
+/// Kotlin's `roundToInt` of a float, as `floor(x + 0.5)`: it differs from
+/// `Math.round` at 0.49999997 and at odd values from 2^23, neither a ripple's
+/// size.
 fn round_half_up(x: f32) -> f32 {
     (x + 0.5).floor()
 }

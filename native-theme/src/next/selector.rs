@@ -450,21 +450,47 @@ impl StateFlag {
         match self {
             StateFlag::Shared(flag) => crate::next::toml::read::Named::name(flag).to_owned(),
             StateFlag::Widget(key) => format!("@{key}"),
-            typed => Self::TYPED
-                .iter()
-                .find(|(_, flag)| flag == typed)
-                .map(|(name, _)| (*name).to_owned())
-                .unwrap_or_default(),
+            StateFlag::Hover => "hover".to_owned(),
+            StateFlag::Pressed => "pressed".to_owned(),
+            StateFlag::Focused => "focused".to_owned(),
+            StateFlag::FocusWithin => "focus_within".to_owned(),
+            StateFlag::FocusVisible => "focus_visible".to_owned(),
+            StateFlag::Disabled => "disabled".to_owned(),
+            StateFlag::Checked => "checked".to_owned(),
+            StateFlag::Selected => "selected".to_owned(),
+            StateFlag::Indeterminate => "indeterminate".to_owned(),
+            StateFlag::Open => "open".to_owned(),
+            StateFlag::Default => "default".to_owned(),
+            StateFlag::Dragged => "dragged".to_owned(),
+            StateFlag::DropTarget => "drop_target".to_owned(),
+            StateFlag::ReadOnly => "read_only".to_owned(),
+            StateFlag::Invalid => "invalid".to_owned(),
+            StateFlag::Visited => "visited".to_owned(),
+            StateFlag::Autofilled => "autofilled".to_owned(),
+            StateFlag::Scrolled => "scrolled".to_owned(),
+            StateFlag::OverDarkContent => "over_dark_content".to_owned(),
+            StateFlag::OpenedByTouch => "opened_by_touch".to_owned(),
+            StateFlag::Overflowing => "overflowing".to_owned(),
+            StateFlag::Redacted => "redacted".to_owned(),
         }
     }
 }
 
 /// A set of state flags (S1): an element's, a sibling's, or those a
 /// transition's `from` is matched against.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Eq)]
 #[non_exhaustive]
 pub struct StateFlags {
     flags: Vec<StateFlag>,
+}
+
+/// Two sets are equal holding the same flags, in whatever order they were
+/// set (S1: a set).
+impl PartialEq for StateFlags {
+    fn eq(&self, other: &Self) -> bool {
+        self.flags.len() == other.flags.len()
+            && self.flags.iter().all(|flag| other.flags.contains(flag))
+    }
 }
 
 impl StateFlags {
@@ -793,5 +819,27 @@ mod tests {
     #[test]
     fn scheme_names_match_variants() {
         assert_eq!(Scheme::ALL.map(Scheme::name), Scheme::NAMES);
+    }
+}
+
+#[cfg(test)]
+mod state_flags_tests {
+    use super::{StateFlag, StateFlags};
+
+    /// A set of flags compares as a set (S1), and every typed flag's name
+    /// reads back as that flag.
+    #[test]
+    fn state_flags_compare_as_sets() {
+        let a = StateFlags::new()
+            .with(StateFlag::Hover)
+            .with(StateFlag::Pressed);
+        let b = StateFlags::new()
+            .with(StateFlag::Pressed)
+            .with(StateFlag::Hover);
+        assert_eq!(a, b);
+        assert_ne!(a, StateFlags::new().with(StateFlag::Hover));
+        for (name, flag) in StateFlag::TYPED {
+            assert_eq!(flag.name(), name);
+        }
     }
 }
