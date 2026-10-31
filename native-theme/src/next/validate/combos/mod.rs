@@ -2137,10 +2137,18 @@ impl Checks<'_, '_> {
                 {
                     continue;
                 }
+                // A step stating the block itself absent leaves no field of
+                // it to check.
+                let whole: Vec<Option<(usize, usize)>> = stack
+                    .effective(world, target, &place)
+                    .into_iter()
+                    .filter(|found| matches!(found.got, Got::Absent))
+                    .map(|found| found.id)
+                    .collect();
                 let absents: Vec<Found<'_>> = stack
                     .effective(world, target, &below(&place, absent))
                     .into_iter()
-                    .filter(|found| matches!(found.got, Got::Absent))
+                    .filter(|found| matches!(found.got, Got::Absent) && !whole.contains(&found.id))
                     .collect();
                 if absents.is_empty() {
                     continue;

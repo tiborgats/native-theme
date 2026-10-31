@@ -1542,3 +1542,12 @@ fn combination_reference_through_an_absent_block() {
         ["tokens.text.roles.body.decoration.thickness: may not be absent"]
     );
 }
+
+/// A block stated absent whole leaves no field to check: an absent glyph
+/// is no glyph whose `fill` is absent beside an absent stroke (S2.9, S6.3,
+/// S12), while a drawn glyph's absent `fill` beside an absent stroke is
+/// still refused (`combination_glyph_fill_absent`).
+#[test]
+fn combination_absent_block_has_no_conditional_field() {
+    assert_eq!(bare("[widgets.button.icon]\nglyph = \"absent\""), NONE);
+}
