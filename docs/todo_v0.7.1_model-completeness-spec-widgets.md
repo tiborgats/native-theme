@@ -57,8 +57,8 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     the next run starts (the value drawn, the old end, an additive blend), its duration and curve, a spring's velocity,
     two stacked changes (a hover, then a press), an appearance and an accent change, a window deactivation and an
     occlusion landing in a run, and reduced motion; the member is added with the measurement, and until then those
-    transitions are pending facts, the presets stating none; and the focus moving between elements (`FocusMove`,
-    X-FO-2, X-MO-1), which no member runs until that measurement adds it (S12);
+    transitions are pending facts, the presets stating none, the focus moving between elements (`FocusMove`, X-FO-2)
+    among them: no member runs a `FocusMove` until that measurement adds one (S12);
   - `windows-11`: whether a theme switch animates the brush transitions and the visual-state storyboards (a brush
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
@@ -215,7 +215,8 @@ Each `### <widget>` section states, in this order:
   (`absent = true`, `"absent"`) is written last, so an application layer's base patch reaches the drawn part or block
   on every preset, beneath each preset's state rules as every base patch is; a `shown` part states `shown = false`
   in its base and `true` by the rules that draw it, its other fields in every state, so a patch reaches it however
-  its `shown` rules are ordered (ADD-A126). A popup's open and close are ADD-A129's (queue #118). A motion the
+  its `shown` rules are ordered (ADD-A126). A `popup` part's opening and closing are ADD-A129's (queue #118), appearing and leaving at
+  once meanwhile (S2.7); an overlay's presentations run as stated. A motion the
   enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
@@ -5451,8 +5452,8 @@ spaces:
     its box's edge, S2.4; one structure with `time_picker.segment_separator`).
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
-    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}` and
-    the platform's motion ADD-A129's, queue #118; W2-04's open animation). `popup_header` and
+    `min_height` (MAT-N16), `transitions` (where a field opens it, it is drawn only `{open}`; its opening and closing:
+    ADD-A129, queue #118). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`
@@ -5463,8 +5464,8 @@ spaces:
   - `headline`, `supporting_text`, in `popup_header` — Material's: `text`.
   - `divider`, in `popup` — Material's: `stroke`.
 - **Widget values:** `placement: Placement` (the popup against the field, its gap the placement's `gap`: W2-03's
-  flyout, K2.23†'s menu, C-5's popover, MAC-N04's calendar overlay; strategies: value phase). The popup's showing and
-  hiding are its `transitions` (above), not an event.
+  flyout, K2.23†'s menu, C-5's popover, MAC-N04's calendar overlay; strategies: value phase). The popup's opening and
+  closing: ADD-A129 (queue #118).
 - **Variants:** typed `text_field` (a segmented text-field date: macOS textField and KDE QDateEdit, which open no
   popup; Windows DatePicker, whose field opens its looping-selector flyout, W2-04),
   `with_popup` (Windows CalendarDatePicker, KDE KDateComboBox and kirigami-addons' date row, iOS compact, Material
@@ -7449,7 +7450,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     time_picker.popup`, whose band and item height are `picker_wheel`'s; one name with `date_picker.popup`), and
     Material's time-picker container, whose colour, shape and elevation are time-picker tokens (MAT-N17, as
     `date_picker.popup` holds the date picker's, MAT-N16): `fill`, `stroke`, `corners`, `shadow`, `transitions`
-    (Windows' flyout drawn only `{open}`, its motion ADD-A129's, queue #118; its open animation, W2-04).
+    (Windows' flyout drawn only `{open}`; its opening and closing: ADD-A129, queue #118).
     `kde-breeze` draws kirigami-addons' popup with another widget: under `variant with_popup cond flavor:kirigami`
     `popup` is `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }` (K-KA-23†, whose fade is the
     dialog's), so one box is drawn, as on `date_picker`.
@@ -7472,7 +7473,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `false` where the platform answers none, never `Absent`);
   `placement: Value<Placement>` (the popup against the field, one name with `date_picker.values.placement`: C-5's
   popover, `UiKitPopover`; W2-04's flyout, its strategy the value phase's).
-  The popup's showing and hiding are its `transitions`, as on `date_picker`, not an event.
+  The popup's opening and closing: ADD-A129 (queue #118).
 - **Variants:** typed `vertical` (Material's vertical layout; horizontal is the base, R25.14, MAT-N17), `with_popup`
   (a field that opens a popup: KTimeComboBox's popup list, K2.24†; kirigami-addons' time row and its time popup,
   K-KA-22†, K-KA-23†; iOS's compact pill, C-5), `text_field` (QTimeEdit, macOS's text field: a segmented text field
