@@ -1418,7 +1418,7 @@ spaces:
     toward the end and leaves the row's size alone); `Inline` centres its margin box on the row's cross axis,
     `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box
     (`body`'s box less its padding, S2.11; ADD-A125). The content's space, at every width, runs from the row's start
-    to `menu_indicator_gap_px` before the indicator's margin box or before its border box, whichever lies further
+    to `menu_indicator_gap_px` before the indicator's margin box or before its box, whichever lies further
     toward the end (ADD-A125): a negative start margin draws the indicator into the gap and leaves the content's space
     as it is (WinUI's chevron, its negative start margin under the label's end margin, W1-102), while a positive one,
     with a matching negative end margin moving the indicator toward the end, gives the content's space the width it
@@ -1427,8 +1427,8 @@ spaces:
     `Frame_FrameWidth`, `:2216-2219`, and centres the text in the rect from the start margin to `Button_ItemSpacing`
     before the arrow, `:5364-5372`, wider than the row less the arrow's margin box and the gap by `Button_MarginWidth`, K1.27); with
     no start margin the two readings agree. Rejected: the margin box alone (Breeze's label half a `Button_MarginWidth`
-    toward the start of where Breeze draws it, at every width); the border box alone with WinUI's values as written
-    (its label would lose the chevron's negative start margin from its space); the border box alone with WinUI's gap
+    toward the start of where Breeze draws it, at every width); the box alone with WinUI's values as written
+    (its label would lose the chevron's negative start margin from its space); the box alone with WinUI's gap
     restated as the drawn distance, `= add(<the label's end margin>, <the chevron's start margin>)`, and its start
     margin zero (one reading, but WinUI's start margin would be stated as a zero its source does not write, which no
     quote holds against its written negative one, where the rule chosen keeps both platforms' written values one to
@@ -1520,7 +1520,7 @@ spaces:
     dialog headers K-KA-17† and MAT-N26, banners, toasts, sheets, teaching tips, a search bar GN-2.21, tabs, KDE's dock
     widget; iOS's system close type), `back` (a navigation back button in its host's bar: GNOME's AdwBackButton,
     WinUI's TitleBar back button, iOS's navigation-bar back button: GN-1.278†, W1-011, C-2), `previous`, `next` (stepping through items or pages: calendars, carousels, page
-    indicators, find bars, Pivot), `overflow` (the more or overflow button of a toolbar, an edit menu or a view
+    indicators, find bars, edit menus, Pivot), `overflow` (the more or overflow button of a toolbar, an edit menu or a view
     switcher: K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1, W2-23, W2-11), `add` (a new-tab or new-item button: WinUI's TabView,
     W1-083; macOS's window tabs, MAC-W09; iOS's system add bar item, `UIBarButtonSystemItemAdd`, its glyph UIKit's,
     in `context toolbar.bar` only, as `done` is: the iOS host drew it there, `forms.<scheme>.bar_system_add`; ADD-A125), `remove` (a chip's or token's remove button: KDE, Q2.24; Windows, W2-43†),
@@ -1531,7 +1531,7 @@ spaces:
     unread, the Open items; ADD-A125; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
     I-2, W1-030, K1.46, MAT-I7; a key sequence's, K-RL02†), `reveal` (a password field's reveal toggle, `checked`
     while revealed: GN-2.23, W2-16, K1.48), `pane_toggle` (the pane or rail toggle: WinUI's TitleBar and NavigationView,
-    W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle), and the media identities
+    W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle; iOS's sidebar toggle, T-13, C-22, C-29), and the media identities
     `play` (`checked` while playing), `volume`, `full_screen`, `frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†),
     `minimize`, `maximize`, `restore` (the caption buttons of a window drawn inside the application, KDE's MDI
     sub-window, K2.11: the meanings `window.caption_button` shares), and `route` (the media output (AirPlay, cast)
@@ -1605,38 +1605,30 @@ spaces:
     `UICTFontTextStyleShortBody`, the host's `run1/index.toml`); and every button a UIKit host draws for itself is that
     element in its host's context, which the connector building the host's elements sets as it builds them, for
     UIKit's own items alone (an application's configured button placed as a bar item's custom view is no bar item)
-    (Nested controls). The state model lists every such context in `axes.contexts`, as the rules spell it:
-    `dialog.action_area` (an alert's or action sheet's actions, DL-5, DL-7, C-11), `toolbar.bar` (a bar button item,
-    its default plain style `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115` in Xcode 26.6: TB-4, TB-6,
-    TB-8, P3-3†, the overflow and sidebar toggle of C-1, C-29 and X-IC-5), `toolbar_editor` (P4-10†),
-    `bottom_tab_bar.bar` (the sidebar toggle, T-13, C-22), `search_field` (C-3), `input` (I-2), the nested chain
-    `[{ widget = "search_field", part = "body" }, { widget = "input" }]` (the search field's clear button, which C-3's
-    and I-2's rules both select, S17's ordered chain), `calendar.header` (C-6), `edit_menu` (C-14), `find_bar` (C-25),
-    `media_controls.bar` (C-42†), `ink_toolbar` (C-40†), `component.document_launch_view`, `status_page.action_area`
-    and `teaching_tip.action_area` (their rows' buttons). In a host context the base's own facts do not apply: they are
-    stated `not_context` every host context, and each host's rows state every key, or a pending fact does (the plain
-    bar item's title, `forms.<scheme>.bar_plain`, read on `ios-13`, unread on `ios-26`; an alert action's
-    padding, unread). The state model's `not_drawn` keeps the gate to what UIKit draws: an element with no
-    configuration style (the base, the forms, every host-drawn button) at `regular` alone, as it holds no
-    `buttonSize`, its facts stated with no size term; the configuration-only variants (`pill`, the corner styles,
-    `@role_primary`, `@indicator_popup`) without a configuration style; in each host context, every configuration
-    style and form but those its rows name (`toolbar.bar`'s `primary`, `done`, `add`, `@share`, `close`, `back`);
-    and `@cancel` and `destructive` outside `dialog.action_area` and `search_field`, `clear_field` outside `input`,
-    `overflow` and `pane_toggle` outside `toolbar.bar` and `bottom_tab_bar.bar`, `previous` and `next` outside
-    `calendar.header` (ADD-A125). Rejected: `requires_variants` on the styles and forms with a host variant beside them
-    (`@host_drawn`: a variant restating the context, whose closed list of hosts refused every other host's button, and
-    widened to every host it would be the context again); a variant per host (a second name for each context). The roles
+    (Nested controls). The host contexts are those the rules name, as they name them: `dialog.action_area` under
+    `variant alert` and under `variant @action_sheet` (an alert's or action sheet's actions, DL-5, DL-7, DL-8, C-11),
+    `toolbar.bar` (a bar button item, its default plain style `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115`
+    in Xcode 26.6: TB-4, TB-6, TB-8, P3-3†, C-1, C-2, C-29), `toolbar_editor` (P4-10†), `bottom_tab_bar.bar` (T-13,
+    C-22), `search_field` (C-3), `input` (I-2), the nested chain `[{ widget = "search_field", part = "body" }, { widget =
+    "input" }]` (the search field's clear button, which C-3's and I-2's rules both select, S17's ordered chain),
+    `calendar.header` (C-6), `edit_menu` (C-14), `find_bar` (C-25), `media_controls.bar` (C-42†), `ink_toolbar`
+    (C-40†), `component.document_launch_view` (C-44†), `status_page.action_area` (C-16) and `teaching_tip.action_area`
+    (C-36†). Which combinations UIKit draws in each, what the base states there and what stays pending is the iOS state
+    model's, from the headers and the host's evidence, checked by the gate (S17) (ADD-A125). Rejected:
+    `requires_variants` on the styles and forms with a host variant beside them (`@host_drawn`: a variant restating
+    the context, whose closed list of hosts refused every other host's button, and widened to every host it would be
+    the context again); a variant per host (a second name for each context). The roles
     `@cancel`, `@role_primary` and `destructive` are one `exclusive_variants` group, as a button holds one
     `UIButton.Role`: `@role_primary` with each configuration style (a product `{ any = [@role_primary] }` beside the
     style's, and on `ios-26` `[{ one = [glass, clear] }, { one = [primary] }, { any = [@role_primary] }]` for the
     prominent glass styles), and `@cancel` and `destructive` set by the connector only in the hosts that draw them
     otherwise (an alert's or action sheet's actions, the search bar's cancel button: DL-7, C-11, C-3), as they draw
     as normal on a standalone button, the base under another name there (the connector setting `@corner_dynamic`
-    likewise); the group's ground is `UIButton.Role` for `@role_primary` and the host's action style for the other two
-    (`UIAlertAction`'s cancel and destructive styles, DL-7, C-11), which no button holds two of (rejected: no role
+    likewise); the group's ground is `UIButton.Role` for `@role_primary` and the hosts' cancel and destructive actions
+    for the other two (DL-7, C-11, C-3), which no button holds two of (rejected: no role
     variants, each host's identity a keyed variant of its own, which would split one meaning, an action's cancel or
-    destructive role, per host), as the host drew them
-    (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
+    destructive role, per host); the iOS host drew the roles on the configuration styles
+    (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`); the role's weight
     rule stated after every rule that states the title's weight (B-13's, and B-3's per-size text where it holds a
     weight), stated without a size and measured at `regular` (UIKit's
     medium), the one size the host drew it at, the others pending (Open items; ADD-A125); the state
@@ -2165,9 +2157,13 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `indication_box` the `box`, no outset; `material-3` takes Compose's Material 3 styling branch's geometry,
-    its box and its check path, and the tokens' colours, as the radio's and the switch's halos do, R1.6, S2.12,
-    MAT-C2, ADD-A125),
+    ripple's `indication_box` the `box`, no outset; `material-3` takes the tokens' colours, R1.6, and where the tokens
+    are silent, Compose's Material 3 styling branch's geometry: the tokens' container (`CheckboxTokens.ContainerSize`) with no padding and the
+    branch's check path, `ComposeMaterial3Flags.kt:40-44`, `Checkbox.kt:518-530`, `:711-718`; the branch is opt-in at
+    the pin, the flag false and experimental, `ComposeMaterial3Flags.kt:38`, `:49`, so an application that does not opt
+    in draws the default branch, Material 2 styling, Compose's own box size and padding, `:1064-1067`, and the tokens'
+    size decides between the two; rejected: the default branch's geometry, which the tokens contradict, and the
+    tokens' box with the default padding, a box no branch draws; MAT-C2, S2.12, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -2693,8 +2689,8 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends the gap before the arrow area
-  as `button`'s `Inline` rule states it, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends the gap before the `arrow_area` part's margin box or its
+  box, whichever is further toward the end, as `button`'s `Inline` rule states it, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
