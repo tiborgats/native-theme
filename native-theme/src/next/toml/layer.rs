@@ -71,6 +71,9 @@ pub(crate) struct PresetFile {
     pub(crate) declarations: Declarations,
     /// The bases and rules.
     pub(crate) layer: Layer,
+    /// `[pending]`: each listed path as S11 spells it, with its register id
+    /// (S17, ADD-A128).
+    pub(crate) pending: Vec<(String, String)>,
 }
 
 /// The preset `text` states (S11), or every problem it has.
@@ -80,16 +83,37 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
     let mut layer = Layer::default();
     let mut header = None;
     let mut declarations = None;
+    // The listed paths are read first: a block built whole may leave them
+    // out (S17, ADD-A128).
+    let pending = file
+        .get("pending")
+        .map(|item| read_pending(item, "pending", &mut cx))
+        .unwrap_or_default();
+    cx.listed = pending
+        .iter()
+        .map(|(path, _)| read::listed_path(path))
+        .collect();
     for (key, item) in &file {
         match key.as_str() {
             "preset" => header = read_header(item, key, &mut cx),
             "declare" => declarations = read_declarations(item, key, &mut cx),
+            "pending" => {}
             "rules" => layer.rules = read_rules(item, key, &mut cx),
             _ => {
                 if !read_base(&mut layer.bases, key, item, key, true, &mut cx) {
                     cx.problem(key, ProblemKind::UnknownKey);
                 }
             }
+        }
+    }
+    for (path, _) in &pending {
+        if crate::next::validate::states(&layer, &read::listed_path(path)) {
+            cx.problem(
+                &join("pending", path),
+                ProblemKind::DuplicateKey {
+                    other: path.clone(),
+                },
+            );
         }
     }
     let header = read::required(header, "preset", &mut cx);
@@ -101,12 +125,49 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
             generation,
             declarations,
             layer,
+            pending,
         }),
         None => Err(LayerError::Invalid(vec![Problem::new(
             "preset",
             ProblemKind::Missing,
         )])),
     }
+}
+
+/// `[pending]` (S11, S17): each listed path, its TOML path quoted, with its
+/// register id, `U` and a number (ADD-A122's form); an entry of another
+/// form is refused.
+fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<(String, String)> {
+    let Some(entries) = table(item, at, cx) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for (path, id) in entries {
+        let at = join(at, path);
+        let Some(id) = id.as_str() else {
+            cx.problem(
+                &at,
+                ProblemKind::Mistyped {
+                    expected: "a register id, `U<n>`",
+                },
+            );
+            continue;
+        };
+        let register = id
+            .strip_prefix('U')
+            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
+        if !register {
+            cx.problem(
+                &at,
+                ProblemKind::Mistyped {
+                    expected: "a register id, `U<n>`",
+                },
+            );
+            continue;
+        }
+        out.push((path.clone(), id.to_owned()));
+    }
+    out
 }
 
 /// `text` as a TOML table, or its parse error.

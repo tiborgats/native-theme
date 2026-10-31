@@ -31,6 +31,22 @@ impl Theme {
         Ok(Theme { preset: id, stack })
     }
 
+    /// The bundled preset `id` with `layers` over it, under `scheme`: the
+    /// facts gate's and S19.1's build test's route while the preset's
+    /// `[pending]` table is not empty (S17, ADD-A128). The preset is
+    /// validated with the layers, added at once as application layers, so
+    /// a listed path they leave unstated is the missing-field problem it is
+    /// through [`Theme::from_preset`].
+    #[doc(hidden)]
+    pub fn from_preset_synthetic(
+        id: PresetId,
+        scheme: Scheme,
+        layers: Vec<Layer>,
+    ) -> Result<Theme, ThemeError> {
+        let stack = synthetic_stack(Some(id), id.source(), scheme, layers)?;
+        Ok(Theme { preset: id, stack })
+    }
+
     /// Switches to the bundled preset `id`, a theme change (S16): the
     /// reader's or stand-in's common part applies to any preset, its
     /// `[for_preset.<id>]` part and preset-conditioned rules to their own;
@@ -146,6 +162,27 @@ impl Theme {
 fn preset_stack(preset: Option<PresetId>, text: &str, scheme: Scheme) -> Result<Stack, ThemeError> {
     let file = read_preset(text).map_err(ThemeError::Preset)?;
     Stack::new(preset, file.declarations, file.layer, scheme).map_err(ThemeError::Preset)
+}
+
+/// The synthetic route's stack of the preset `text` states, `layers` over
+/// it (S17, ADD-A128); `Err(ThemeError::Preset)` where it does not read or
+/// fails validation.
+fn synthetic_stack(
+    preset: Option<PresetId>,
+    text: &str,
+    scheme: Scheme,
+    layers: Vec<Layer>,
+) -> Result<Stack, ThemeError> {
+    let file = read_preset(text).map_err(ThemeError::Preset)?;
+    Stack::synthetic(
+        preset,
+        file.declarations,
+        file.layer,
+        scheme,
+        &file.pending,
+        layers,
+    )
+    .map_err(ThemeError::Preset)
 }
 
 #[cfg(test)]

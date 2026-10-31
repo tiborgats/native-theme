@@ -31,7 +31,7 @@ use crate::next::selector::{
     Selector, SetMatch, SiblingMatch, StateFlag, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
 };
 use crate::next::tokens::ABSENT_PARAM_GROUPS;
-use crate::next::toml::read::{Named, toml_key};
+use crate::next::toml::read::{Named, listed_path, toml_key};
 use crate::next::units::Scalar;
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
 use crate::next::widgets::{
@@ -51,7 +51,15 @@ const KDE_SETS: [&str; 7] = [
 
 /// Every structural problem of `layer` against `cx`.
 pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
-    let mut problems = in_flavor(layer, cx, None);
+    layer_exempt(layer, cx, &[])
+}
+
+/// Every structural problem of `layer` against `cx`, a preset's listed
+/// paths `exempt` (each as `listed_path` gives it) from its completeness
+/// check: the synthetic route's preset, which its layers complete (S17,
+/// ADD-A128).
+pub(super) fn layer_exempt(layer: &Layer, cx: &Context<'_>, exempt: &[String]) -> Vec<Problem> {
+    let mut problems = in_flavor(layer, cx, None, exempt);
     // Under each flavour, the declarations in force are the default
     // section's with that flavour's keys replacing it (S10): the bases are
     // checked against each, a rule against those of the flavours it can
@@ -60,7 +68,7 @@ pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
     if flavors.len() > 1 {
         let union = problems.len();
         for flavor in flavors {
-            for problem in in_flavor(layer, cx, Some(flavor)) {
+            for problem in in_flavor(layer, cx, Some(flavor), exempt) {
                 let flavored = matches!(
                     problem.kind,
                     ProblemKind::Undeclared { .. }
@@ -84,9 +92,15 @@ pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
 /// Every structural problem of `layer` against `cx`, a widget's names
 /// against `flavor`'s declarations where one is given, its rules then only
 /// those that can apply under it.
-fn in_flavor(layer: &Layer, cx: &Context<'_>, flavor: Option<&Key>) -> Vec<Problem> {
+fn in_flavor(
+    layer: &Layer,
+    cx: &Context<'_>,
+    flavor: Option<&Key>,
+    exempt: &[String],
+) -> Vec<Problem> {
     let mut checker = Checker::new(cx, matches!(layer.spelled, Spelled::Toml));
     checker.flavor = flavor;
+    checker.exempt = exempt.to_vec();
     checker.bases(&layer.bases, "");
     for (preset, bases) in &layer.for_preset {
         if cx.preset == Some(*preset) {
@@ -442,6 +456,9 @@ struct Checker<'a> {
     /// Each widget's declarations under the flavours checked against,
     /// computed once.
     widget_decls: Vec<(WidgetKind, Rc<[WidgetDecl]>)>,
+    /// The listed paths a preset's completeness check leaves to the layers
+    /// over it (S17, ADD-A128).
+    exempt: Vec<String>,
 }
 
 impl<'a> Checker<'a> {
@@ -455,6 +472,7 @@ impl<'a> Checker<'a> {
             flavor: None,
             keyed_kind: None,
             widget_decls: Vec::new(),
+            exempt: Vec::new(),
         }
     }
 
@@ -1769,7 +1787,10 @@ impl Visit for Checker<'_> {
                 .collect(),
         };
         for field in missing {
-            self.problem(&path.join(field), ProblemKind::Missing);
+            let at = path.join(field);
+            if !self.exempt.contains(&listed_path(&at)) {
+                self.problem(&at, ProblemKind::Missing);
+            }
         }
     }
 }
@@ -2264,6 +2285,86 @@ impl Uses {
             self.walk(&values);
         }
     }
+}
+
+/// The places a layer's bases state, each as its walk names it: a patch's
+/// set fields, a value, a number, a map's entry; and the values holding
+/// what lies below them whole (a reference, `Absent`, `Auto`).
+#[derive(Default)]
+struct Stated {
+    paths: Vec<String>,
+    wholes: Vec<String>,
+}
+
+impl Visit for Stated {
+    fn check(&mut self, path: &Path, _: Node<'_>) {
+        self.paths.push(path.to_string());
+    }
+
+    fn value(&mut self, path: &Path, form: Form<'_>, _: ExprForm, _: Option<Ty>) {
+        match form {
+            Form::Stated => self.paths.push(path.to_string()),
+            Form::Absent | Form::Auto | Form::Expr(_) => self.wholes.push(path.to_string()),
+        }
+    }
+
+    fn number(&mut self, path: &Path, _: f32, _: Number) {
+        self.paths.push(path.to_string());
+    }
+
+    fn duplicate(&mut self, _: &Path, _: &str, _: &'static str) {}
+
+    fn map_key(&mut self, path: &Path, key: &str, _: &'static str) {
+        self.paths.push(path.join(&toml_key(key)));
+    }
+
+    fn patch(&mut self, path: &Path, _: &'static [&'static str], set: &[&'static str]) {
+        self.paths.extend(set.iter().map(|field| path.join(field)));
+    }
+}
+
+impl Stated {
+    fn walk<T: Walk + ?Sized>(&mut self, root: &str, toml: bool, value: &T) {
+        let mut walker = Walker::new(root, toml, self);
+        walker.walk(value);
+    }
+}
+
+/// Whether `layer`'s bases state the listed path `listed` (as
+/// `listed_path` gives it), or a value holding it whole (S17, ADD-A128).
+pub(super) fn states(layer: &Layer, listed: &str) -> bool {
+    let toml = matches!(layer.spelled, Spelled::Toml);
+    let mut stated = Stated::default();
+    let bases = &layer.bases;
+    for (scheme, roles) in [("light", &bases.colors.light), ("dark", &bases.colors.dark)] {
+        if let Some(roles) = roles {
+            stated.walk(&format!("colors.{scheme}"), toml, roles);
+        }
+    }
+    stated.walk("tokens", toml, &bases.tokens);
+    let WidgetsPatch { button } = &bases.widgets;
+    if let Some(button) = button {
+        let (parts, values) = button.clone().into_parts();
+        for (part, patch) in parts {
+            if let PartPatch::Style(style) = patch {
+                stated.walk(&format!("widgets.button.{}", part.name()), toml, &style);
+            }
+        }
+        if let Some(values) = values {
+            stated.walk("widgets.button.values", toml, &values);
+        }
+    }
+    let exact = stated
+        .paths
+        .iter()
+        .chain(&stated.wholes)
+        .any(|path| listed_path(path) == listed);
+    exact
+        || stated.wholes.iter().any(|path| {
+            listed
+                .strip_prefix(listed_path(path).as_str())
+                .is_some_and(|rest| rest.starts_with('.'))
+        })
 }
 
 /// Each declared keyed name nothing uses (S12): a keyed flag, a system

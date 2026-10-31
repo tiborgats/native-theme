@@ -124,6 +124,19 @@ pub(crate) fn check_preset(
     layer: &Layer,
     preset: Option<PresetId>,
 ) -> Result<(), LayerError> {
+    check_preset_exempt(declarations, layer, preset, &[])
+}
+
+/// [`check_preset`], the listed paths `exempt` (each as
+/// [`listed_path`](crate::next::toml::read::listed_path) gives it) left out
+/// of its completeness check: the synthetic route's preset, which the
+/// layers over it complete ([`listed_unstated`]; S17, ADD-A128).
+pub(crate) fn check_preset_exempt(
+    declarations: &Declarations,
+    layer: &Layer,
+    preset: Option<PresetId>,
+    exempt: &[String],
+) -> Result<(), LayerError> {
     let cx = Context {
         declarations,
         preset,
@@ -131,7 +144,7 @@ pub(crate) fn check_preset(
         reader_accent_left_out: false,
         below: &[],
     };
-    let mut problems: Vec<Problem> = checks::layer(layer, &cx);
+    let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, exempt);
     problems.extend(checks::declarations(declarations));
     problems.extend(checks::unused(declarations, layer, preset));
     let layers = [Stacked {
@@ -144,6 +157,28 @@ pub(crate) fn check_preset(
     } else {
         Err(LayerError::Invalid(problems))
     }
+}
+
+/// Whether `layer`'s bases state the listed path `listed` (as
+/// [`listed_path`](crate::next::toml::read::listed_path) gives it), or a
+/// value holding it whole (a reference, `Absent`): a preset's own layer
+/// stating it lists a path it states (S17, ADD-A128).
+pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
+    checks::states(layer, listed)
+}
+
+/// Each of a preset's listed paths `pending` (as its `[pending]` table
+/// spells them) that none of `layers` states, as S12's missing field: the
+/// synthetic route's completeness (S17, ADD-A128).
+pub(crate) fn listed_unstated(pending: &[(String, String)], layers: &[Layer]) -> Vec<Problem> {
+    pending
+        .iter()
+        .filter(|(path, _)| {
+            let listed = crate::next::toml::read::listed_path(path);
+            !layers.iter().any(|layer| checks::states(layer, &listed))
+        })
+        .map(|(path, _)| Problem::new(path, ProblemKind::Missing))
+        .collect()
 }
 
 /// Every problem a reader's or stand-in's state has (S9.4, S12): a text

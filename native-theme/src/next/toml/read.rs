@@ -35,6 +35,19 @@ pub(crate) struct Reader {
     keys: Vec<(String, String)>,
     /// The shorthands read.
     pub(crate) shorthands: Shorthands,
+    /// A preset's listed paths (S17, ADD-A128), each as [`listed_path`]
+    /// gives it: a block built whole may leave exactly these out.
+    pub(crate) listed: Vec<String>,
+}
+
+/// A path as a listed path compares (S11's `[pending]` key): its last
+/// key's unit suffix left out, so `delay_ms` and `delay` are one field.
+pub(crate) fn listed_path(path: &str) -> String {
+    ["_px", "_ms", "_deg", "_pt"]
+        .iter()
+        .find_map(|suffix| path.strip_suffix(suffix))
+        .unwrap_or(path)
+        .to_owned()
 }
 
 impl Reader {
@@ -329,6 +342,11 @@ pub(crate) fn no_combine<P>(_held: &mut P, _later: P) -> bool {
 /// A field of a block built whole, or a key a table must state: its value,
 /// else missing, unless its value was stated and its problem recorded.
 pub(crate) fn required<T>(value: Option<T>, at: &str, cx: &mut Reader) -> Option<T> {
+    if value.is_none() && cx.listed.contains(&listed_path(at)) {
+        // A preset's listed path left out: the block stays a patch, the
+        // field unstated for S12 to report (S17, ADD-A128).
+        return value;
+    }
     if value.is_none() && !cx.reported_at(at) {
         cx.problem(at, ProblemKind::Missing);
     }

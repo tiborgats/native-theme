@@ -16,7 +16,7 @@ pub use tree::{Tolerance, Tree};
 
 use super::declare::WidgetDecl;
 use super::error::{LayerError, Problem, ProblemKind};
-use super::expr::{Expr, Ref};
+use super::expr::{Expr, Ref, Ty};
 use super::inputs::{Contrast, InputBases, InputName};
 use super::key::Key;
 use super::layer::Layer;
@@ -235,6 +235,101 @@ impl Preset {
             window: conditions.window.clone(),
         })
     }
+}
+
+/// The field a listed path names (S11's `[pending]` key: `tokens.…` or
+/// `widgets.<widget>.<part>.…`, `widgets.<widget>.values.…`), its last
+/// key's unit suffix left out.
+fn listed_field(path: &str) -> Option<&'static registry::FieldInfo> {
+    let path = super::toml::read::listed_path(path);
+    let parts = segments(&path).ok()?;
+    let (head, rest) = parts.split_first()?;
+    let (fields, below): (&'static [registry::FieldInfo], &[String]) = match head.as_str() {
+        "tokens" => (registry::tokens(), rest),
+        "widgets" => {
+            let (widget, rest) = rest.split_first()?;
+            let info = registry::widget(widget)?;
+            let (part, rest) = rest.split_first()?;
+            if part == "values" {
+                (info.values, rest)
+            } else {
+                let part = info.parts.iter().find(|held| held.name == part)?;
+                (part.fields, rest)
+            }
+        }
+        _ => return None,
+    };
+    registry::find(fields, &below.join("."))
+}
+
+/// A synthetic value of the field `info` (S17, ADD-A128): one of two per
+/// type, `second` picking the other, so a value reaching it tells the two
+/// apart. Synthetic, never bundled, no platform's; `None` for a type the
+/// gate has none for yet.
+fn synthetic_value(info: &registry::FieldInfo, second: bool) -> Option<Item> {
+    let pick = |first: &str, other: &str| (if second { other } else { first }).to_owned();
+    let names = |first: &str, other: &str| Item::Array(vec![Item::String(pick(first, other))]);
+    if let Some(ty) = (info.value)() {
+        return match ty {
+            Ty::Duration | Ty::Length | Ty::Angle | Ty::FontSize => {
+                Some(Item::Integer(if second { 2 } else { 1 }))
+            }
+            Ty::Number => Some(Item::Float(if second { 0.75 } else { 0.25 })),
+            Ty::Bool => Some(Item::Boolean(!second)),
+            Ty::Text => Some(Item::String(pick("Synthetic A", "Synthetic B"))),
+            Ty::Color | Ty::Paint => Some(Item::String(pick("#010203", "#030201"))),
+            Ty::Enum(names) => {
+                let (first, other) = (names.variants.first()?, names.variants.get(1)?);
+                Some(Item::String(pick(first, other)))
+            }
+            Ty::Key(_) | Ty::Shadow | Ty::Block(_) => None,
+        };
+    }
+    let registry::FieldType::Leaf(ty) = info.ty else {
+        return None;
+    };
+    let ty: String = ty.chars().filter(|c| !c.is_whitespace()).collect();
+    let map = |key: &str| {
+        let mut table = Table::new();
+        table.insert(key.to_owned(), names("Synthetic A", "Synthetic B"));
+        Item::Table(table)
+    };
+    match ty.as_str() {
+        "Vec<String>" => Some(names("Synthetic A", "Synthetic B")),
+        "Vec<(String,Vec<String>)>" => Some(map("Synthetic")),
+        _ => None,
+    }
+}
+
+/// One layer per listed path of a preset's `[pending]` table, stating it
+/// in its bases with a synthetic value (S17's synthetic route, ADD-A128):
+/// the layers [`Preset`] and S19.1's build test load such a preset with.
+/// `second` picks each type's other synthetic value. A listed path the
+/// model holds no field at, or of a type with no synthetic value yet, is
+/// refused, naming it.
+pub fn synthetic_layers(pending: &[(String, String)], second: bool) -> Result<Vec<Layer>, String> {
+    pending
+        .iter()
+        .map(|(path, id)| {
+            let info = listed_field(path)
+                .ok_or_else(|| format!("`{path}` ({id}): the model holds no field there"))?;
+            let value = synthetic_value(info, second).ok_or_else(|| {
+                format!("`{path}` ({id}): the gate has no synthetic value of its type")
+            })?;
+            let mut item = value;
+            for key in segments(path)
+                .map_err(|unread| format!("`{path}` ({id}): {unread:?}"))?
+                .iter()
+                .rev()
+            {
+                let mut table = Table::new();
+                table.insert(key.clone(), item);
+                item = Item::Table(table);
+            }
+            let text = ::toml::to_string(&item).map_err(|error| error.to_string())?;
+            Layer::from_toml(&text).map_err(|error| format!("`{path}` ({id}): {error}"))
+        })
+        .collect()
 }
 
 /// The typed widgets the model holds, each as S11 writes it.
@@ -1894,6 +1989,35 @@ mod tests {
     /// A value no spelling reads is reported by the spelling whose key the
     /// reader knows: a one-unit field's suffixed key for an expression
     /// (S11), not the bare key's "unknown key".
+    /// A synthetic layer per listed path, its value of the field's type,
+    /// two distinct ones per type (S17, ADD-A128): a duration, a list of
+    /// families, a map of them, an enum; a path the model holds no field
+    /// at, or a type with no synthetic value, is refused naming it.
+    #[test]
+    fn synthetic_layers_state_each_listed_path() {
+        let pending: Vec<(String, String)> = [
+            "tokens.behavior.touch.delay_ms",
+            "tokens.text.fallbacks.families",
+            "tokens.text.fallbacks.per_family",
+            "tokens.icons.sizes.keyed.check.rendering_mode",
+            "widgets.button.icon.icon.rendering_mode",
+        ]
+        .iter()
+        .map(|path| ((*path).to_owned(), "U1".to_owned()))
+        .collect();
+        let first = synthetic_layers(&pending, false).unwrap();
+        let second = synthetic_layers(&pending, true).unwrap();
+        assert_eq!(first.len(), pending.len());
+        for (a, b) in first.iter().zip(&second) {
+            assert_ne!(a.bases, b.bases);
+        }
+        let refused = |path: &str| {
+            synthetic_layers(&[(path.to_owned(), "U1".to_owned())], false).unwrap_err()
+        };
+        assert!(refused("tokens.behavior.bogus_ms").contains("holds no field"));
+        assert!(refused("tokens.focus.shadow").contains("no synthetic value"));
+    }
+
     #[test]
     fn a_refused_leaf_reports_its_known_spelling() {
         let key = parse_key("token.behavior.double_click_time").unwrap();

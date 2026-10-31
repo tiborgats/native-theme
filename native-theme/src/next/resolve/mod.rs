@@ -449,6 +449,60 @@ impl Stack {
         Ok(stack)
     }
 
+    /// The synthetic route's stack (S16's `Theme::from_preset_synthetic`,
+    /// S17, ADD-A128): the preset's declarations and layer, its listed
+    /// paths `pending` left out of its completeness check, with `layers`
+    /// over it as application layers, all validated at once, so a listed
+    /// path none of them states is S12's missing field.
+    pub(crate) fn synthetic(
+        preset: Option<PresetId>,
+        declarations: Declarations,
+        layer: Layer,
+        scheme: Scheme,
+        pending: &[(String, String)],
+        layers: Vec<Layer>,
+    ) -> Result<Stack, LayerError> {
+        let exempt: Vec<String> = pending
+            .iter()
+            .map(|(path, _)| crate::next::toml::read::listed_path(path))
+            .collect();
+        let mut problems =
+            match validate::check_preset_exempt(&declarations, &layer, preset, &exempt) {
+                Ok(()) => Vec::new(),
+                Err(LayerError::Invalid(problems)) => problems,
+                Err(other) => return Err(other),
+            };
+        problems.extend(validate::listed_unstated(pending, &layers));
+        let stack = Stack {
+            preset,
+            declarations,
+            preset_layer: Arc::new(layer),
+            reader: None,
+            layers: layers
+                .into_iter()
+                .map(|layer| (LayerId::next(), Arc::new(layer)))
+                .collect(),
+            accent: None,
+            accent_layer: Arc::default(),
+            picked: None,
+            default_scheme: scheme,
+            contrast: None,
+            flavor: None,
+        };
+        if let Err(LayerError::Invalid(found)) = stack.validate() {
+            for problem in found {
+                if !problems.contains(&problem) {
+                    problems.push(problem);
+                }
+            }
+        }
+        if problems.is_empty() {
+            Ok(stack)
+        } else {
+            Err(LayerError::Invalid(problems))
+        }
+    }
+
     /// The stack of a preset's declarations and its layers, the first the
     /// preset's, a stand-in under `scheme` scaling text by 1, and the
     /// flavour `flavor`, unvalidated: the query alone is tested on it.
