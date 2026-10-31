@@ -3,37 +3,43 @@
 //! while `screencapture -v` records the screen, so the frames show how the
 //! ring comes and goes. The recording's frames are cut out by the workflow
 //! (ffmpeg, at `<stem>.crop`); the probe records when it focused and
-//! unfocused the button, counted from starting the recording.
+//! unfocused the button, counted from starting `screencapture`.
 
 use std::cell::Cell;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
 use objc2::rc::Retained;
-use objc2_app_kit::{NSAppearance, NSAppearanceCustomization, NSResponder, NSScreen};
-use objc2_foundation::{NSOperatingSystemVersion, NSRect};
+use objc2_app_kit::{
+    NSAppearance, NSAppearanceCustomization, NSApplication, NSEventMask, NSResponder, NSScreen,
+};
+use objc2_foundation::{NSDate, NSOperatingSystemVersion, NSRect};
 use toml::Table;
 
 use super::{Pass, SETTLE_STEPS, away_point, push_sheet};
-use crate::macos::{APPEARANCES, PUMP_STEP, ns, pump, rect};
+use crate::macos::{APPEARANCES, ffi, ns, rect};
 use crate::out;
 
 /// The buttons whose ring is recorded.
 const TRANSITION_CASES: [&str; 2] = ["regular-plain", "regular-default"];
 
 /// How long each recording lasts (`screencapture -V`), in seconds.
-const RECORD_SECONDS: u32 = 5;
+const RECORD_SECONDS: u32 = 10;
 
-/// The steps of `PUMP_STEP` the run loop runs after the recording starts
-/// and before the button is focused: time for `screencapture` to begin.
-const LEAD_STEPS: u32 = 30;
+/// When the button is focused, counted from starting `screencapture`: time
+/// for the recording to begin (about 1.5 s on macos-26 in run 41189405926).
+const FOCUS_AT: Duration = Duration::from_secs(3);
 
-/// The steps the button stays focused before it is unfocused.
-const HOLD_STEPS: u32 = 30;
+/// When it is unfocused.
+const UNFOCUS_AT: Duration = Duration::from_secs(6);
 
-/// The most steps the run loop runs after the unfocus while waiting for
-/// `screencapture` to finish its recording.
-const FINISH_STEPS: u32 = 200;
+/// The latest the run loop waits for `screencapture` to end.
+const FINISH_BY: Duration = Duration::from_secs(25);
+
+/// One step of the run loop while recording: short, so the application
+/// draws the ring's animation at the display's pace (the key-window pump's
+/// steps of `PUMP_STEP` drew it once a step, about every 100 ms).
+const FINE_STEP: Duration = Duration::from_millis(5);
 
 /// How far round the button's frame the workflow's crop reaches, in points.
 const CROP_MARGIN: f64 = 12.0;
@@ -121,9 +127,9 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
     t
 }
 
-/// One recording: start `screencapture -v`, focus `responder` after
-/// `LEAD_STEPS`, unfocus it `HOLD_STEPS` later, and wait for the recording
-/// to end; `stem` is the files' path from the output directory.
+/// One recording: start `screencapture -v`, focus `responder` at
+/// `FOCUS_AT`, unfocus it at `UNFOCUS_AT`, and wait for the recording to
+/// end; `stem` is the files' path from the output directory.
 #[allow(clippy::too_many_arguments)]
 fn record(
     pass: &Pass<'_>,
@@ -202,7 +208,7 @@ fn record(
             return t;
         }
     };
-    pump(pass.app, LEAD_STEPS, || false);
+    let lead = pump_until(pass.app, start, FOCUS_AT, || false);
     let focus_at = start.elapsed();
     let made = window.makeFirstResponder(Some(responder));
     let focus_done = start.elapsed();
@@ -216,15 +222,13 @@ fn record(
         "isKeyWindow_focused",
         out::boolean(window.isKeyWindow()),
     );
-    window.displayIfNeeded();
-    pump(pass.app, HOLD_STEPS, || false);
+    let hold = pump_until(pass.app, start, UNFOCUS_AT, || false);
     let unfocus_at = start.elapsed();
     let unmade = window.makeFirstResponder(None);
     let unfocus_done = start.elapsed();
     out::put(&mut t, "makeFirstResponder_nil_after", out::boolean(unmade));
-    window.displayIfNeeded();
     let status: Cell<Option<Result<std::process::ExitStatus, String>>> = Cell::new(None);
-    let finish = pump(pass.app, FINISH_STEPS, || match child.try_wait() {
+    let finish = pump_until(pass.app, start, FINISH_BY, || match child.try_wait() {
         Ok(Some(s)) => {
             status.set(Some(Ok(s)));
             true
@@ -248,12 +252,15 @@ fn record(
             // Reap it, so no zombie outlives the probe; its status says nothing more.
             let _ = child.wait();
             out::unavailable(format!(
-                "screencapture did not finish within {FINISH_STEPS} steps after the unfocus{killed}"
+                "screencapture did not finish within {} s of starting it{killed}",
+                FINISH_BY.as_secs()
             ))
         }
     };
+    for (name, steps) in [("lead", lead), ("hold", hold), ("finish", finish)] {
+        out::put_table(&mut t, &format!("pump_{name}"), steps);
+    }
     out::put(&mut t, "recording", outcome);
-    out::put(&mut t, "finish_steps", out::int(i64::from(finish)));
     out::put(&mut t, "focus_at_ms", ms(focus_at));
     out::put(&mut t, "focus_returned_ms", ms(focus_done));
     out::put(&mut t, "unfocus_at_ms", ms(unfocus_at));
@@ -274,6 +281,42 @@ fn record(
             out::unavailable(format!("cannot read {}: {e}", path.display())),
         ),
     }
+    t
+}
+
+/// Pump the run loop in steps of `FINE_STEP` until `deadline`, counted from
+/// `start`, has passed or `done` returns true (it runs before each step):
+/// the steps taken and the longest time between the starts of two.
+fn pump_until(
+    app: &NSApplication,
+    start: Instant,
+    deadline: Duration,
+    mut done: impl FnMut() -> bool,
+) -> Table {
+    let mode = ffi::default_run_loop_mode();
+    let mut steps: u32 = 0;
+    let mut longest = Duration::ZERO;
+    let mut last = Instant::now();
+    while start.elapsed() < deadline && !done() {
+        let now = Instant::now();
+        longest = longest.max(now.duration_since(last));
+        last = now;
+        let until = NSDate::dateWithTimeIntervalSinceNow(FINE_STEP.as_secs_f64());
+        while let Some(event) = app.nextEventMatchingMask_untilDate_inMode_dequeue(
+            NSEventMask::Any,
+            Some(&until),
+            mode,
+            true,
+        ) {
+            app.sendEvent(&event);
+        }
+        app.updateWindows();
+        steps = steps.saturating_add(1);
+    }
+    let mut t = Table::new();
+    out::put(&mut t, "steps", out::int(i64::from(steps)));
+    out::put(&mut t, "longest_step_ms", ms(longest));
+    out::put(&mut t, "until_ms", ms(start.elapsed()));
     t
 }
 
@@ -305,9 +348,12 @@ fn crop_text(quartz: NSRect, scale: f64) -> Option<String> {
 
 fn method_text() -> String {
     format!(
-        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {} pt right of it; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped {LEAD_STEPS} steps of {} ms; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); {HOLD_STEPS} steps; makeFirstResponder: nil (unfocus_at_ms); the run loop pumped until screencapture exits (up to {FINISH_STEPS} steps); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time)",
+        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {} pt right of it; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of {} ms (pump_lead: the steps and the longest between two starts) until {} ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until {} ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until {} ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's",
         super::CURSOR_AWAY_OFFSET,
         TRANSITION_CASES.join(", "),
-        PUMP_STEP.as_millis(),
+        FINE_STEP.as_millis(),
+        FOCUS_AT.as_millis(),
+        UNFOCUS_AT.as_millis(),
+        FINISH_BY.as_millis(),
     )
 }

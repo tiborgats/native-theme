@@ -288,7 +288,7 @@ jobs:
           log=os-probe-out/button-pass-focus-transition/ffmpeg.txt
           {
             if ! command -v ffmpeg >/dev/null; then
-              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ffmpeg
+              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_COLOR=1 HOMEBREW_NO_EMOJI=1 brew install ffmpeg
               echo "brew install ffmpeg: exit $?"
             fi
             ffmpeg -hide_banner -version | head -n 1

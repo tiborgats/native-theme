@@ -28,17 +28,18 @@ use super::{
 use crate::out;
 
 /// The window's content frame on the screen, in points.
-const SELECTION_FRAME: NSRect = NSRect::new(NSPoint::new(120.0, 240.0), NSSize::new(700.0, 160.0));
+const SELECTION_FRAME: NSRect = NSRect::new(NSPoint::new(40.0, 240.0), NSSize::new(940.0, 160.0));
 
 /// The table's scroll view in the content view.
 const SELECTION_TABLE_FRAME: NSRect =
-    NSRect::new(NSPoint::new(20.0, 20.0), NSSize::new(660.0, 120.0));
+    NSRect::new(NSPoint::new(20.0, 20.0), NSSize::new(900.0, 120.0));
 
 /// Each row's height, in points.
 const ROW_HEIGHT: f64 = 32.0;
 
-/// Each column's width, in points.
-const COLUMN_WIDTH: f64 = 52.0;
+/// Each column's width, in points: wider than the field, so the row's
+/// background shows between the field and the cell's right edge.
+const COLUMN_WIDTH: f64 = 80.0;
 
 /// The rows; the middle one is selected.
 const ROWS: usize = 3;
@@ -51,9 +52,6 @@ const SELECTED_ROW_INDEX: isize = 1;
 
 /// The text field's left edge in its cell, in points.
 const FIELD_INSET: f64 = 4.0;
-
-/// How far in from its cell's right edge a row's background is sampled.
-const BACKGROUND_INSET: f64 = 6.0;
 
 /// The point size of the text fields' font: blocks large enough that their
 /// middle is a whole pixel of the text colour.
@@ -276,7 +274,7 @@ pub(super) fn selection_table(mtm: MainThreadMarker, app: &NSApplication, out_di
             points.push((
                 format!("r{r}_{name}_background"),
                 from_window(NSPoint::new(
-                    cf.origin.x + cf.size.width - BACKGROUND_INSET,
+                    background_x(f, cf),
                     cf.origin.y + cf.size.height / 2.0,
                 )),
             ));
@@ -284,12 +282,17 @@ pub(super) fn selection_table(mtm: MainThreadMarker, app: &NSApplication, out_di
     }
     let row_rect = table.convertRect_toView(table.rectOfRow(SELECTED_ROW_INDEX), None);
     out::put(&mut geometry, "selected_row_window_xywh", rect(row_rect));
-    let strip_cell = cells
+    let strip = cells
         .get(SELECTED_ROW)
-        .and_then(|row| row.get(EDGE_STRIP_COLUMN));
-    if let Some(cell) = strip_cell {
+        .and_then(|row| row.get(EDGE_STRIP_COLUMN))
+        .zip(
+            fields
+                .get(SELECTED_ROW)
+                .and_then(|row| row.get(EDGE_STRIP_COLUMN)),
+        );
+    if let Some((cell, field)) = strip {
         let cf = cell.convertRect_toView(cell.bounds(), None);
-        let x = cf.origin.x + cf.size.width - BACKGROUND_INSET;
+        let x = background_x(field.convertRect_toView(field.bounds(), None), cf);
         for (i, dy) in EDGE_STRIP_PT.iter().enumerate() {
             points.push((
                 format!("r{SELECTED_ROW}_bottom_edge_{i:02}"),
@@ -372,11 +375,19 @@ pub(super) fn selection_table(mtm: MainThreadMarker, app: &NSApplication, out_di
 
 fn method_text() -> String {
     format!(
-        "after the key-window section (the application regular and active): a titled, closable, miniaturizable, resizable NSWindow (empty title) at {}, made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); in it an NSScrollView at {} holding a view-based NSTableView with no header view, rowHeight {ROW_HEIGHT}, gridStyleMask NSTableViewSolidHorizontalGridLineMask and the default style and intercell spacing, {} columns {COLUMN_WIDTH} pt wide (the column keys), {ROWS} rows, row {SELECTED_ROW} selected (selectRowIndexes:byExtendingSelection:); each cell an NSTableCellView whose textField (and only subview) is an NSTextField labelWithString: of three U+2588 FULL BLOCK in systemFontOfSize: {GLYPH_SIZE}, sized to fit, {FIELD_INSET} pt in from the cell's left edge and centred in the row, with setTextColor: the column's NSColor and setEnabled: NO in the _disabled columns; per appearance the window's appearance is set and, per condition, makeFirstResponder: with the table (emphasized) or nil (unemphasized), the window displayed and the run loop pumped {SETTLE_STEPS} steps, the row view and cell states read (row_view: rowViewAtRow:makeIfNecessary: NO, isSelected, isEmphasized, interiorBackgroundStyle; each cell's backgroundStyle) and the window captured with screencapture -x -o -l <windowNumber> to renders/selection/<appearance>-<condition>.png and sampled as the key-window section samples (raw, colorAtXY_sRGB) at sample_points_xy, in points from the window frame's top left: r<row>_<column>_glyph the centre of the field's frame (inside the middle block), r<row>_<column>_background {BACKGROUND_INSET} pt in from the cell's right edge at the row's middle, r{SELECTED_ROW}_bottom_edge_NN in column {EDGE_STRIP_COLUMN}'s background x at the offsets {EDGE_STRIP_PT:?} pt up from the selected row rect's lower side (rectOfRow: in the window); reference: each colour as NSColor resolves it under the appearance (performAsCurrentDrawingAppearance:), in sRGB",
+        "after the key-window section (the application regular and active): a titled, closable, miniaturizable, resizable NSWindow (empty title) at {}, made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); in it an NSScrollView at {} holding a view-based NSTableView with no header view, rowHeight {ROW_HEIGHT}, gridStyleMask NSTableViewSolidHorizontalGridLineMask and the default style and intercell spacing, {} columns {COLUMN_WIDTH} pt wide (the column keys), {ROWS} rows, row {SELECTED_ROW} selected (selectRowIndexes:byExtendingSelection:); each cell an NSTableCellView whose textField (and only subview) is an NSTextField labelWithString: of three U+2588 FULL BLOCK in systemFontOfSize: {GLYPH_SIZE}, sized to fit, {FIELD_INSET} pt in from the cell's left edge and centred in the row, with setTextColor: the column's NSColor and setEnabled: NO in the _disabled columns; per appearance the window's appearance is set and, per condition, makeFirstResponder: with the table (emphasized) or nil (unemphasized), the window displayed and the run loop pumped {SETTLE_STEPS} steps, the row view and cell states read (row_view: rowViewAtRow:makeIfNecessary: NO, isSelected, isEmphasized, interiorBackgroundStyle; each cell's backgroundStyle) and the window captured with screencapture -x -o -l <windowNumber> to renders/selection/<appearance>-<condition>.png and sampled as the key-window section samples (raw, colorAtXY_sRGB) at sample_points_xy, in points from the window frame's top left: r<row>_<column>_glyph the centre of the field's frame (inside the middle block), r<row>_<column>_background midway between the field's right edge and the cell's, at the row's middle, r{SELECTED_ROW}_bottom_edge_NN in column {EDGE_STRIP_COLUMN}'s background x at the offsets {EDGE_STRIP_PT:?} pt up from the selected row rect's lower side (rectOfRow: in the window); reference: each colour as NSColor resolves it under the appearance (performAsCurrentDrawingAppearance:), in sRGB",
         point_text(SELECTION_FRAME.origin),
         rect_text(SELECTION_TABLE_FRAME),
         COLUMNS.len(),
     )
+}
+
+/// Where a cell's background is sampled across: midway between its field's
+/// right edge and its own, both in the window.
+fn background_x(field: NSRect, cell: NSRect) -> f64 {
+    let field_right = field.origin.x + field.size.width;
+    let cell_right = cell.origin.x + cell.size.width;
+    (field_right + cell_right) / 2.0
 }
 
 /// The selected row's view and each cell's background style.
