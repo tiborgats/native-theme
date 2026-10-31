@@ -40,10 +40,63 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
 - `button`: iOS 26's further bar-item roles (none declared yet).
-- `UIButton.Configuration.CornerStyle` (`button` on `ios-*`, B-4): its cases, and so the corner-style variants
-  `@corner_fixed` … `@corner_dynamic` and their `exclusive_variants` group with `pill`, are as the gap map reads Apple's
-  documentation until the iOS lane confirms them against the pinned Xcode's `UIButtonConfiguration.h` (listed as
-  stated; ADD-A122).
+- `role.@highlight` on `macos-*` (`highlightColor`): a literal per scheme, provisional until a probe pass sets an
+  explicit highlight colour other than the accent's and reads it (run 41006842699's accent pass already moved the
+  effective highlight, `selectedTextBackgroundColor`, `os-probe-macos-26/probe.toml:635` against
+  `accent-red/probe.toml:635`, and left `highlightColor` alike); should that move it, it becomes an input (S9.1;
+  ADD-A125).
+- A `material-3` part with rounded corners whose `interaction` states a bounded ripple and that is no Compose `Surface`
+  (which clips its content to its shape, `Surface.kt:564`): the ripple is clipped to the box alone there, where S2.12
+  clips it to the outline too; a square part clips alike either way (`RippleDrawable.java:890-891`), as Compose's plain
+  menu item, a clickable `Row` with no clip (`Menu.kt:2152-2160`; its shaped item is a `Surface`, `:2020-2050`). The
+  value phase records which parts are such; one that is would be a class 2 change (a clip field) (S2.12; ADD-A125).
+- `kde-breeze` under `cond flavor:kirigami`: the window decoration's button fades (K1.8) mix by `KColorUtils::mix`,
+  premultiplied sRGB, whatever the application's flavour (`breeze@6.8.2 kdecoration/breezebutton.cpp:324`, `:360`), where
+  the flavour's token is straight 8-bit sRGB: alike for opaque colours but for truncation, apart under a translucent
+  title bar; a fact that needs it would need the per-transition override S2.7 leaves to a class 2 change (ADD-A125).
+- A Compose colour animation through `Color.lerp` driven by an overshooting spring, which clamps the fraction where
+  the transitions' `Oklab` clamps the components: the toggleable FAB's container and icon colours in the FAB menu's
+  `Morph` presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it would need
+  the per-transition override S2.7 leaves to a class 2 change (ADD-A125).
+- `button` on `ios-*` (ADD-A125): `@role_primary` at `mini`, `small` and `large`, which the host did not draw, its rule
+  stated without a size and pending facts at those sizes; at the content size categories other than L, the styles'
+  title (`UICTFontTextStyleShortBody`, whose curve the model's text roles may not hold), padding and `min_height`
+  (X-DT-2's `uifm_scaled` bases, their text role unread), and the base's title, `UIButton(type: .system)`'s own font,
+  which UIKit may leave unscaled, where the model's `scaling_role: None` gives `body`'s curve: a title UIKit does not
+  scale would be a class 2 change (a scaling role that names no curve), as a radius no text style gives is.
+- The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
+  `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
+  thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
+  `DCompAnimationConversionContextWUC.cpp:79`, `:92`), which would need S2.7's per-transition override.
+- `button` on `ios-*` (ADD-A125, measurements, nothing claimed until they are made): the bar item padding TB-8 names
+  (`isPaddingRemoved` in the gap map) has no UIKit API the iOS lane found in the pinned SDKs' `UIBarButtonItem.h`, so
+  no `@padding_removed` is declared, and one is added with its API where a header check finds it; the dynamic corner
+  style, the non-glass styles' base on both presets and `@corner_dynamic` on the glass styles on `ios-26`, is "adjusted based on
+  dynamic type" with no text style named (`UIButtonConfiguration.h:42-43` in Xcode 16.4, `:43-44` in 26.6, the default `Dynamic`, `:96` and `:102`), so its
+  radius is stated at the default category (L) only until the host draws it at every
+  content size category and the analysis finds the `UIFontMetrics` text style whose scaling it follows (then
+  `= uifm_scaled(<radius at L>, <role>)`; a radius no text style's scaling gives is a class 2 change): the gate builds
+  the default category only (S17's no-reader state), so the L facts claim nothing about the others; and
+  `@corner_dynamic` itself the host drew on `glass` at `regular` only, `clear`, the prominent glass styles and the
+  other sizes unread; the prominent
+  bar item (`UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:31` in Xcode 26.6) is `primary` in `context
+  toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
+  `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done, add and
+  Action items' on `ios-26` (`forms.<scheme>.bar_system_done`, `bar_system_add`,
+  `bar_system_action`, unread there, read on `ios-13`); the default `buttonSize` (U129, the entry's *Default sizes*).
+- `button` on `macos-tahoe` (ADD-A125): the circular bezel's `body.margin` at every size, and the circle's size at
+  `mini` to `regular` (MAC-B08, a register row of its own; the corners U143).
+- `checkbox` and `radio` (ADD-A125, measurements for ADD-A126, which states the mark's and the dot's
+  representation, ledger queue #85): whether AppKit animates the check mark
+  and the radio dot in and out (MAC-X11's recording), and UIKit the multiselect circle's check (CK-2†), each a
+  register row; on `windows-11`, a checked radio's dot while pressed, which two visual-state groups set (the pressed
+  dot's opacity by `Pressed` and `Checked`, `RadioButton_themeresources.xaml:298-300`, `:353`), measured as a
+  register row (W1-041).
+- `macos-*`'s AppKit rendering (ADD-A125): whether AppKit draws its controls differently in an emphasized selected
+  table row (`NSTableCellView`'s background style) is MAC-L17†'s measurement; if it does, the rendering's cache key
+  needs the background style (S15).
+- `combo_box` on every preset (ADD-A125): its content layout, the label, the icon, the arrow area and the arrow,
+  editable and not, sized and drawn: ADD-A127, to come (ledger queue #113).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -139,12 +192,13 @@ Each `### <widget>` section states, in this order:
   one `values()` is queried with (S8): queried with an item *(element)* (a row, a tab, a thumbnail), the events and
   their element data (`move_distance`) are that item's; queried with the widget's own element, they are the widget's
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
-  is keyed (`@event`, declared, S10). A part shown and hidden with a state (a check mark, a radio's dot, a selection
-  pill, a slider's value bubble, a picker's popup) is `Absent` by a rule in the states it is hidden in and needs no
-  event: a part that becomes drawn enters from transparent with its own geometry, and one that becomes absent leaves
-  to transparent, by the `transitions` of the style it goes to or comes from (S2.7), so its fade is its
-  `transitions` (group `Opacity`), and a scale or slide while it is drawn its `transform` per state. A motion the
-  enter rule cannot state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
+  is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event: where its platform
+  draws nothing of it in a state at rest (a check mark unchecked, a radio's dot, a selection pill, a slider's value
+  bubble, a picker's popup), it is `Absent` there by a rule (the check mark's, the radio dot's and a menu
+  item's check glyph's representation ADD-A126's, S2.7; a later rule reviving such a part, ledger queue #110), and how it enters and leaves, faded, drawn on along its
+  path, trimmed or grown, is ADD-A126's (S2.7); a scale or slide while it is drawn is its `transform` per state. A
+  motion
+  no field's transition can state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
   a keyed event whose steps name the part, a part of the widget or of one of its *(element)* parts (S2.7):
   `@indicator_move`, the selection moving to another item, queried with the widget's own element, its step on the
   item's `indicator` (`tab.indicator`), which the step moves from its box in the previously selected item, where the
@@ -201,7 +255,8 @@ Each `### <widget>` section states, in this order:
   entry's `adwaita` variants give the rule); `segmented_control`: `icon_only`, `with_icon`; `bottom_tab_bar.item`:
   `icon_only`, `with_icon`; `menu.item`: `icon_only`; `list.row`: `icon_only`, `with_icon`, `with_subtitle`,
   `three_line`, `with_avatar`, `with_image`, `with_video`; `breadcrumb.crumb`: `with_icon`; `chip`: `with_icon`;
-  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `badge`:
+  `tab`: `with_icon`; `dialog`: `with_icon`, `paged`, `about`; `checkbox`, `radio`: `with_label`; `splitter`: Material's keyed `@clickable` (the `splitter`
+  entry gives the rule); `badge`:
   `custom_color`; `toolbar`: `with_search`, `with_prompt`; `form`: `collapsed` (KDE's form layout when its wide layout
   does not fit); `form.row`: `bitmap_icon`, `activatable`; `rich_text.code_block`: `fenced`; `window`:
   `no_caption_buttons`, `print`, `page_setup`, `app_chooser`; `rubber_band`: `in_canvas`, `dock_target`; `banner`: `vertical` (the actions wrapped below the
@@ -241,8 +296,8 @@ Each `### <widget>` section states, in this order:
   starts in. `pressed` is no member: Compose draws the press ripple apart from the state layer (`Ripple.kt:241-248`,
   `:365-371`), beneath it (`drawRipples()` before `drawStateLayers()`, `:373-377`), so a pressed element hovered or
   focused shows both, two states drawn together (R3). Both are the part's `interaction` block (S2.12), never a paint
-  layer: the base states its alphas (the state layer's 0) and its colours `= surface.foreground`, the content colour
-  that follows every rebinding (MAT-X8), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
+  layer: the base states its alphas (the state layer's 0) and its colours (S2.12: `= surface.foreground`, the content
+  colour that follows every rebinding, on the button, MAT-X8; else each colour's own unselected token), each state-layer rule `state_layer.alpha`, and its `ripple.effect` the press ripple, which the
   press starts (S2.12); the state layer's colour changes at once and its alpha alone is timed, as the ripple node draws
   it in the current colour (`material3-ripple/…/Ripple.kt:373-386`), and the ripple keeps the colour of its first frame (S2.12),
   as Android's patterned `RippleDrawable` fixes it when the ripple first draws (`RippleDrawable.java:986-1018`). It draws over the part's content and beneath its
@@ -1140,7 +1195,8 @@ spaces:
   - `check_indicator` — the check, radio or mixed mark and its column, on every preset (Nested controls: it takes
     the item's states): `glyph` (the mark), `fill`, `stroke`, `corners`, `shadow` (the box or ring behind the mark:
     GNOME's radio ring; Breeze draws it with its check box's and radio button's look, K1.69, Q1.31), `min_width`,
-    `min_height`, `padding`, `margin` (GNOME's margins, one negative, GN-1.73).
+    `min_height`, `padding`, `margin` (GNOME's margins, one negative, GN-1.73); an unchecked item draws no mark, its
+    column kept, and its glyph's rest look is ADD-A126's with the check mark's (ledger queue #85, S2.7).
   - `submenu_arrow` — `glyph`, `opacity`, `min_width` (its box).
   - `separator`, in `group` — the separator item: `stroke` (the line: its width and paint, today's `separator_color`;
     the top edge), `margin` (the line's insets from its ends, Entry format), `min_height` (the item's height).
@@ -1158,8 +1214,9 @@ spaces:
   - `split_divider` — the line between the item and its chevron part (W1-051): `stroke` (the divider's brush and
     width; the start edge), `min_height` (its length).
   - `item_selection_indicator` — WinUI's selection pill on the selected item of a combo box's list (W1-135), in
-    `context combo_box`: `fill`, `corners`, `min_width`, `min_height`, `transform` (its scale per state while drawn),
-    `transitions` (its scale animation; absent outside `{selected}`, it enters from transparent by these, S2.7).
+    `context combo_box` (`Absent` on `windows-11` by its base, drawn by the rules under `{selected} context
+    combo_box`, W1-135): `fill`, `corners`, `min_width`, `min_height`, `transform` (its scale per state while drawn),
+    `transitions` (its scale animation; absent outside `{selected}`, how it enters and leaves ADD-A126's, S2.7).
   - `found_item_pointer` — the pointer macOS draws at a menu item the Help search found (MAC-N33†): `glyph`, `fill`,
     `transitions`.
   - `dismiss_overlay` — WinUI's light-dismiss overlay, beside the box: `fill`.
@@ -1244,7 +1301,7 @@ spaces:
     header, GN-1.75), `scroll_arrow` (`adwaita`, `ios-*`, `material-3`, `windows-11`; `kde-breeze` by rules under
     `@ka_bottom_drawer` and `@ka_dialog`, K-KA-31†), `split_chevron` (all but `windows-11`: WinUI's split menu item,
     W1-051), `split_divider` (all but `windows-11`: WinUI's split menu item, W1-051), `item_selection_indicator` (all
-    but `windows-11`: WinUI's selection pill, W1-135; `windows-11` by a rule outside `{selected}`), `dismiss_overlay`
+    but `windows-11`: WinUI's selection pill, W1-135; `windows-11` by its base, W1-135), `dismiss_overlay`
     (all but `windows-11`: WinUI's light-dismiss overlay, W1-055, W3-11), `arrow` (all but `adwaita`: only GTK's
     popover menus draw a tail; `adwaita` by rules in the contexts where GTK draws its menu without one, GN-1.278†,
     GN-P3-3†, GN-P4-2†, GN-P4-8†), `found_item_pointer` (all but `macos-*`: the pointer at a menu item the Help search
@@ -1376,11 +1433,32 @@ spaces:
     content, `menu_indicator_gap_px` from it, its `margin` a margin in the row as every part's is (S2.11, CSS's: it adds
     to the row's size, a negative one overlapping, so a start margin of `d` with an end margin of `−d` moves the box `d`
     toward the end and leaves the row's size alone); `Inline` centres its margin box on the row's cross axis,
-    `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box.
-    Where the row is wider than its content and indicator need (a stated minimum width, a stretched button), the
-    spare width goes to the content: the indicator keeps the row's end and the content is laid out in the rest as it
-    would be alone, centred where the button centres it (Breeze's push button, the arrow at the contents rect's end
-    and the text centred in the rest, `breeze@6.8.2 kstyle/breezestyle.cpp:5364-5370`; GTK's label menu button, the
+    `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box
+    (`body`'s box less its padding, S2.11; ADD-A125). The content's space, at every width, runs from the row's start
+    to `menu_indicator_gap_px` before the indicator's box where its start margin is positive and its end margin the
+    negative of it (the box moved, not spaced), and before its margin box otherwise (ADD-A125; a lone or partly
+    offset positive start margin is CSS's space between content and indicator, so its margin box ends the content's
+    space): a negative start margin draws the indicator into the gap and leaves the content's space
+    as it is (WinUI's chevron, its negative start margin under the label's end margin, W1-102), while a positive one,
+    with a matching negative end margin moving the indicator toward the end, gives the content's space the width it
+    leaves (Breeze's push button sizes its arrow with both of the button's `Button_MarginWidth` margins, `breeze@6.8.2
+    kstyle/breezestyle.cpp:3546-3556`, then draws it at the end of the contents rect, the button less
+    `Frame_FrameWidth`, `:2216-2219`, and centres the text in the rect from the start margin to `Button_ItemSpacing`
+    before the arrow, `:5364-5372`, wider than the row less the arrow's margin box and the gap by `Button_MarginWidth`, K1.27); with
+    no start margin the two readings agree. Rejected: the margin box alone (Breeze's label half a `Button_MarginWidth`
+    toward the start of where Breeze draws it, at every width); the box alone with WinUI's values as written
+    (its label would lose the chevron's negative start margin from its space); the box alone with WinUI's gap
+    restated as the drawn distance, `= add(<the label's end margin>, <the chevron's start margin>)`, and its start
+    margin zero (one reading, but WinUI's start margin would be stated as a zero its source does not write, which no
+    quote holds against its written negative one, where the rule chosen keeps both platforms' written values one to
+    one; a sum for the gap would itself be fine, as S2.11's padding sums are). A gap the platform writes as the content's end margin is `menu_indicator_gap_px` (WinUI's
+    `AppBarButtonTextLabelOnRightMargin`'s end, W1-102): the label part has no `margin`, and its `padding` is what the
+    platform writes on the label itself, inside it (GTK's label padding beside an arrow, GN-1.39), not a margin outside
+    it, so a written end margin has the gap as its one home. Where the row is wider than its content and indicator need (a stated
+    minimum width, a stretched button), the
+    spare width goes to the content: the indicator keeps the row's end and the content is laid out in its space as it
+    would be alone, centred where the button centres it (Breeze's push button, the text centred in its rect, above;
+    GTK's label menu button, the
     label expanding before the arrow, `gtk@4.24.1 gtk/gtkmenubutton.c:1174-1186`; ADD-A123), except where the
     platform packs the content and indicator into one centred box, the spare width then going around both (GTK's icon
     menu button, its icon and arrow in a box centred in the button, `gtk/gtkmenubutton.c:1050-1051`, `:1061-1063`).
@@ -1461,13 +1539,18 @@ spaces:
     dialog headers K-KA-17† and MAT-N26, banners, toasts, sheets, teaching tips, a search bar GN-2.21, tabs, KDE's dock
     widget; iOS's system close type), `back` (a navigation back button in its host's bar: GNOME's AdwBackButton,
     WinUI's TitleBar back button, iOS's navigation-bar back button: GN-1.278†, W1-011, C-2), `previous`, `next` (stepping through items or pages: calendars, carousels, page
-    indicators, find bars, Pivot), `overflow` (the more or overflow button of a toolbar, an edit menu or a view
-    switcher: K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1, W2-23, W2-11), `add` (a new-tab button: WinUI's TabView,
-    W1-083; macOS's window tabs, MAC-W09), `remove` (a chip's or token's remove button: KDE, Q2.24; Windows, W2-43†),
-    `done` (iOS's done bar item, TB-4; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
+    indicators, find bars, edit menus, Pivot), `overflow` (the more or overflow button of a toolbar, an edit menu or a view
+    switcher: K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1, W2-23, W2-11), `add` (a new-tab or new-item button: WinUI's TabView,
+    W1-083; macOS's window tabs, MAC-W09; iOS's system add bar item, `UIBarButtonSystemItemAdd`, its glyph UIKit's,
+    in `context toolbar.bar` only, as `done` is: the iOS host drew it there, `forms.<scheme>.bar_system_add`; ADD-A125), `remove` (a chip's or token's remove button: KDE, Q2.24; Windows, W2-43†),
+    `done` (iOS's done bar item, TB-4, on `ios-13` the done style and the system Done item; on `ios-26` the done style
+    is the prominent one, `UIBarButtonItemStyleDone … = UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:34` in
+    the Xcode 26.6 SDK, so an item of that style is `primary` in `context toolbar.bar` and `done` is the system Done
+    item, `UIBarButtonSystemItemDone`, `:38`, whose own look the host drew apart, `forms.<scheme>.bar_system_done`,
+    unread, the Open items; ADD-A125; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
     I-2, W1-030, K1.46, MAT-I7; a key sequence's, K-RL02†), `reveal` (a password field's reveal toggle, `checked`
     while revealed: GN-2.23, W2-16, K1.48), `pane_toggle` (the pane or rail toggle: WinUI's TitleBar and NavigationView,
-    W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle), and the media identities
+    W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle; iOS's sidebar toggle, T-13, C-22, C-29), and the media identities
     `play` (`checked` while playing), `volume`, `full_screen`, `frame_step` (GN-2.54†, W2-35, MAC-N30†, K-KA-35†),
     `minimize`, `maximize`, `restore` (the caption buttons of a window drawn inside the application, KDE's MDI
     sub-window, K2.11: the meanings `window.caption_button` shares), and `route` (the media output (AirPlay, cast)
@@ -1513,12 +1596,18 @@ spaces:
     the route button's `@bordered`, `isRoutePickerButtonBordered`, MAC-P3-9†;
     borderless is `flat`, circular `circular`, glass `glass`, help `help`, toolbar `tool`; the disclosure bezels are
     `expander`'s, MAC-B01, MAC-EX01); the 26 border shape `@rounded_rectangle` (capsule is `pill`, circle
-    `circular`, automatic the base). The fills that follow the accent other than the accent itself (a default
-    button's pressed fill, a checked toggle's, `tinted`'s) are `mix` over `input.accent` (S2.2) toward black under `scheme:light` and white
-    under `scheme:dark`, each a measured derivation (S17, `inputs = ["input.accent"]`), no function of their own: a
-    pressed default button is `mix(input.accent, <black or white>, <t>)`, one fraction `<t>` matching within one
-    channel step in both of the probe's accents and appearances (run 41006842699, `button-pass` and
-    `button-pass-accent-red`, sheet `push`, `regular-default`; the macOS verifier, queue #62; ADD-A123).
+    `circular`, automatic the base). The fills that follow the accent other than the accent itself are measured
+    derivations over `input.accent` (S2.2, S17, `inputs = ["input.accent"]`), no function of their own, of two forms:
+    the opaque ones (a default or `primary` button's pressed fill, a checked toggle's, at rest and pressed) `mix`
+    toward black under `scheme:light` and white under `scheme:dark`, a pressed default button
+    `mix(input.accent, <black or white>, <t>)`, one fraction `<t>` matching within one channel step in both of the
+    probe's accents and appearances (run 41006842699, `button-pass` and `button-pass-accent-red`, sheet `push`,
+    `regular-default`; the macOS verifier, queue #62; ADD-A123); and the translucent ones (`tinted`'s at rest, pressed
+    and disabled, a disabled `primary`'s) the accent at an alpha of their own, `alpha(input.accent, <a>)`, one alpha
+    in both appearances, as the probe's solved layers read them (`tiebreak-derivations.toml`,
+    `derivation.tinted_fill_<size>`, `tinted_pressed_fill_<size>` and `tinted_disabled_fill_<size>`: the accent's own
+    hue within a few levels at one alpha per state, the same at every size, under both accents and in both
+    appearances), no mix (ADD-A125).
   - keyed, `ios-*`: `@gray` (UIKit's `plain`, `gray`, `tinted` and `filled` styles are `flat`, `@gray`, `tinted`
     and `primary`; its `borderless`, `bordered`, `borderedTinted` and `borderedProminent` are the same four, the
     connector mapping them: the iOS host drew each pixel-identical to its counterpart in every state, size and scheme
@@ -1526,19 +1615,68 @@ spaces:
     its captures on the lane branch `lane-ios-slice`, so they are no variants
     of their own until a capture shows a difference; the glass styles are `glass` and `clear`, with `primary` for the
     prominent ones; the configuration styles are two `exclusive_variants` groups, `[flat, @gray, tinted, primary]`
-    and `[flat, @gray, tinted, glass, clear]`, so `primary` combines with `glass` and `clear` alone, S10; the state
-    model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
+    and `[flat, @gray, tinted, glass, clear]` (the second on `ios-26`), so `primary` combines with `glass` and `clear`
+    alone, S10, and each group also holds the forms that are no configuration (`@info`, `@contact_add`, `close`,
+    `back`, `done`, `add`, `@share`, `@paste_control`, `route`). The base, with none of them, is `UIButton(type: .system)`
+    with no configuration (the system type, `UIButton.h:21-35`, drawn and measured apart from every style, its title
+    smaller and its padding other than `flat`'s, the host's `forms.<scheme>.system` against `cells.<scheme>.plain.medium`;
+    its title a font of UIKit's own, no text style, `text_style = "CTFontRegularUsage"` against the styles'
+    `UICTFontTextStyleShortBody`, the host's `run1/index.toml`); and every button a UIKit host draws for itself is that
+    element in its host's context, which the connector building the host's elements sets as it builds them, for
+    UIKit's own items alone (an application's configured button placed as a bar item's custom view is no bar item)
+    (Nested controls). The host contexts are those the rules select: `dialog.action_area` under
+    `variant alert` and under `variant @action_sheet` (an alert's or action sheet's actions, DL-5, DL-7, DL-8, C-11,
+    B-11),
+    `toolbar.bar` (a bar button item, its default plain style `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115`
+    in Xcode 26.6: TB-4, TB-6, TB-8, P3-3†, P4-10†, C-1, C-2, C-3, C-29, B-13, X-MO-3), `toolbar_editor` (P4-10†), `bottom_tab_bar.bar` (T-13,
+    C-22), `search_field` (C-3), `input` (I-2), the nested chain `[{ widget = "search_field", part = "body" }, { widget =
+    "input" }]` (the search field's clear button, which C-3's and I-2's rules both select, S17's ordered chain),
+    `calendar.header` (C-6), `edit_menu` (C-14), `find_bar` (C-25), `media_controls.bar` (C-42†), `ink_toolbar`
+    (C-40†), `component.document_launch_view` (C-44†), `status_page.action_area` (C-16) and `teaching_tip.action_area`
+    (C-36†). Which combinations UIKit draws in each, what the base states there and what stays pending is the iOS state
+    model's, from the headers and the host's evidence, checked by the gate (S17) (ADD-A125). Rejected:
+    `requires_variants` on the styles and forms with a host variant beside them (`@host_drawn`: a variant restating
+    the context, whose closed list of hosts refused every other host's button, and widened to every host it would be
+    the context again); a variant per host (a second name for each context). The roles
+    `@cancel`, `@role_primary` and `destructive` are one `exclusive_variants` group, as a button holds one
+    `UIButton.Role`: `@role_primary` with each configuration style (a product `{ any = [@role_primary] }` beside the
+    style's, and on `ios-26` `[{ one = [glass, clear] }, { one = [primary] }, { any = [@role_primary] }]` for the
+    prominent glass styles), and `@cancel` and `destructive` set by the connector only in the hosts that draw them
+    otherwise (an alert's or action sheet's actions, the search bar's cancel button: DL-7, C-11, C-3), as they draw
+    as normal on a standalone button, the base under another name there (the connector setting `@corner_dynamic`
+    likewise); the group's ground is `UIButton.Role` for `@role_primary` and the hosts' cancel and destructive actions
+    for the other two (DL-7, C-11, C-3), which no button holds two of (rejected: no role
+    variants, each host's identity a keyed variant of its own, which would split one meaning, an action's cancel or
+    destructive role, per host); the iOS host drew the roles on the configuration styles
+    (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`); the role's weight
+    rule stated after every rule that states the title's weight (B-13's, and B-3's per-size text where it holds a
+    weight), stated without a size and measured at `regular` (UIKit's
+    medium), the one size the host drew it at, the others pending (Open items; ADD-A125); the state
+    model's `variant_sets` or `variant_products` give the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
     one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium, @corner_large,
-    @corner_dynamic, pill]`, as a configuration holds one `cornerStyle` (B-4, `UIButton.Configuration.CornerStyle`
-    as the gap map reads Apple's documentation, unconfirmed: an Open item until the iOS lane confirms it against the
-    pinned Xcode's `UIButtonConfiguration.h`; ADD-A122),
-    the role `@cancel` (iOS 26's further bar-item roles are an open item, Open items: added
-    here when the facts state them); the system types `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
-    X-IC-5; the close type is the typed `close`); the bar items' `@padding_removed` (TB-8; done is the typed `done`);
-    `@indicator_none`, `@indicator_popup` (the pull-down indicator; automatic is the base); `@menu_on_hold`; the
+    @corner_dynamic, pill]` (`@corner_dynamic` on `ios-26` only, below), as a configuration holds one `cornerStyle` (B-4, `UIButtonConfigurationCornerStyle`: fixed,
+    dynamic, small, medium, large and capsule in both pinned SDKs, `UIButtonConfiguration.h:39-52` in Xcode 16.4,
+    `:40-53` in 26.6, the iOS lane's citations; ADD-A122, confirmed in ADD-A125),
+    `@corner_dynamic` declared on `ios-26` only (the non-glass styles' default, which they draw as the style alone,
+    so on `ios-13`, which has no glass style, it is the base under another name; on `ios-26` the glass styles, whose
+    default is capsule, `pill` there, draw it otherwise; the iOS host's `cells.<scheme>.<style>__corner_style_dynamic`,
+    run 41020880059; so the connector sets `@corner_dynamic` only with `glass` or `clear` and `pill` only with the
+    other styles, each the base under another name elsewhere, and the rules state its corners `@ variants
+    {glass,@corner_dynamic}` and `@ variants {clear,@corner_dynamic}`, the products building those sets alone;
+    ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
+    in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
+    weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
+    draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
+    facts there; iOS 26's further
+    bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
+    `forms.<scheme>.bar_system_action`), in `context toolbar.bar` as `add` is (the share button, its glyph UIKit's,
+    X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
+    `@indicator_popup` (the pop-up indicator, `UIButtonConfigurationIndicatorPopup`, on a pull-down button; automatic is the base, and `none`, which draws as automatic in every
+    style, state and scheme the host captured, is the base under another name, the connector mapping it; ADD-A125);
+    `@menu_on_hold`; the
     pointer effects `@pointer_highlight`, `@pointer_lift`, `@pointer_hover` (`UIPointerEffect`'s styles, X-PH-1);
     `@paste_control` (C-17).
   - keyed, `material-3`: `@elevated`, `@outlined` (container styles; icon buttons too, MAT-N4, MAT-N5), `@square`
@@ -1581,7 +1719,10 @@ spaces:
   (`SmallExtendedFloatingActionButton` …, `:400`, `:467`, `:534`, `:1434-1470`) (MAT-N2; ADD-A123: the unsized one
   had no size under Expressive, where `regular` named the medium one). Default sizes (`default_size_by_variant`,
   S10, ADD-A121): `@fab` and `@extended_fab` `regular` in both flavours, the unsized composables, where the
-  Expressive buttons' default is `small`. Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  Expressive buttons' default is `small`. `ios-*`: the `buttonSize` a configuration takes when the application sets
+  none, which `UIButtonConfiguration.h` states no default for and the iOS host has not read (it sets the size on every
+  specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared as
+  `default_size` from it (ADD-A125). Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
@@ -1616,7 +1757,9 @@ spaces:
     !variants {@arrow_only,@with_arrow}`: GTK shows a menu button's arrow only where the arrow is its only content or
     the button is `.arrow-button`, hiding it for an icon, a label whose direction is `none`, AdwButtonContent and a
     custom child without `always-show-arrow` (`gtk@4.24.1 gtk/gtkmenubutton.c:631`, `:644-647`, `:658-666`; ADD-A123):
-    each preset's rule names only the variants it declares, S12).
+    each preset's rule names only the variants it declares, S12; `ios-*`'s by `@ variants {menu}
+    !variants {@indicator_popup}`, as the automatic indicator, the base, draws none on a button whose menu is no
+    selection, ADD-A125).
   - fields: `body.shadow` (`windows-11`; `adwaita`, `kde-breeze`, `macos-*`, `ios-*`, `material-3` by rules outside
     the states, variants and conditions their rows draw it in: GN-1.25, GN-1.29, GN-1.38, K1.23, MAC-B04 on
     `macos-monterey`, MAC-X01 under `glass` on `macos-tahoe`, B-17, MAT-B1, MAT-N1), `body.cursor` (`adwaita`,
@@ -1695,6 +1838,37 @@ spaces:
     (Compose animates a `RoundedCornerShape` or `CornerBasedShape`, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`,
     `IconButton.kt:1632`, `:1652`): `body.corners` with a `Corners` spring transition (MAT-B11, MAT-X12); `button` has
     no `shape` field, the `MaterialShapes` morph being the loading indicator's (MAT-N24).
+  - `macos-tahoe`'s circular bezel draws a circle inside a frame wider than tall at every size (the probe's
+    `frame_xywh`, run 41006842699 `os-probe-macos-26/button-pass/probe.toml`, with no alignment insets; the circle as
+    wide as the frame is high at `large` and `extra_large`, the macOS lane's reading, `mini` to `regular` unread, U143
+    for the corners; `body.margin` at every size a register row of its own, no fact yet), while
+    `macos-monterey`'s frames are square, with equal alignment insets on every side
+    (`os-probe-macos-15/button-pass/probe.toml`), so there the body's box, the alignment rect as for every bezel, is
+    square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
+    its distance from the frame on each side is `body.margin`, measured as the probe reads the frame and the circle
+    (S2.11's box: the frame is the margin box), so `Full` on the frame's box, a capsule, is never stated (ADD-A125).
+    Rejected: a drawn-box rule beside the box (a second box for one bezel, where `margin` is S2.11's own place for a
+    box inside its frame); `min_width` equal to `min_height` with the box centred in the frame (the frame's width is
+    AppKit's, wider than the circle, and the button's layout takes it).
+  - `material-3`'s menu button follows R1.6's order: the menu-button tokens give its colours, opacities and
+    elevations per state, the state layer's included (`material-web@2.5.0
+    tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:41-68`, `_md-comp-outlined-menu-button.scss`,
+    `_md-comp-standard-menu-button.scss`, MAT-N8), and what the tokens leave out, the motion, the press ripple's effect
+    and the recency of the state layer and the elevation, is Compose's button, as Compose has no menu-button composable
+    and draws its own menu button as a `TextButton` with a trailing arrow (`androidx@e4d933c9
+    compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2556`, "Replace
+    with the official MenuButton when implemented"): the standard form takes `TextButton`'s, as that source does, and
+    the filled and outlined forms `Button`'s and `OutlinedButton`'s by the same rule, an inference their facts cite with
+    both sources, the composable's (`Button.kt`, `OutlinedButton`) and the rule's ground (`DatePicker.kt:2528-2556`),
+    checked where the tokens and `ButtonDefaults` both state a value (the elevations, the state-layer opacities), and
+    recorded in MAT-N8's trace row (rejected: a pending fact until Compose ships a menu button, which leaves the
+    motion of a drawn button unstated with a source to read); the base's
+    `android_patterned` ripple, not material-web's `md-ripple` and `md-elevation`, which draw a browser's (ADD-A125).
+  - Compose animates the border of every toggle form: `ElevatedToggleButton`, `FilledTonalToggleButton` and
+    `OutlinedToggleButton` all pass theirs to `ToggleButton`, which animates its width by `FastSpatial` and its colour by
+    `DefaultEffects` (`ToggleButton.kt:182`, `:301`, `:388`, `:473`, `:1722-1751`), so the `Stroke` and `StrokeWidth`
+    transitions are stated `@ variant toggle`, on every form; the forms whose default border is none state the stroke
+    absent, and the transitions time a border an application layer gives them (MAT-B12, ADD-A125).
   - Material's FAB in the floating toolbar is `button @ variant @fab context any toolbar variant floating`, with its
     sizes (MAT-N25). Material's minimum interactive size round small buttons and icon buttons is
     `body.touch_target` (MAT-X22).
@@ -1808,7 +1982,7 @@ spaces:
     padding would not shorten it), `opacity`, `transitions` (its fade as it hides beside a selected segment,
     GN-1.243).
   - `check` — Material's check glyph in a selected segment (MAT-SG1): `glyph`, `transitions` (its show and width
-    animation, MAT-SG1: absent outside `{selected}`, it enters from transparent by these, S2.7).
+    animation, MAT-SG1: absent outside `{selected}`, how it enters and leaves ADD-A126's, S2.7).
   - `menu_indicator` — AppKit's per-segment menu glyph (MAC-SG07): `glyph`.
 - **Widget values:** `segment_width: Value<SegmentWidth>`, `SegmentWidth { Fit, Fill, FillEqually,
   FillProportionally, EqualToWidest }` — `Fit` each its content's width (AdwToggleGroup's default, AppKit `fit`, the
@@ -1917,7 +2091,8 @@ spaces:
   - `thumb_icon`, in `thumb` — Material's check or close icon on the handle (MAT-SW3): `icon`, `glyph` (the symbol: the check
     under `{checked}`, the close otherwise, MAT-SW3), `opacity` (the disabled icon's opacity, MAT-SW3), `transitions`
     (MAT-SW8's icon transitions).
-  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12),
+  - `state_layer`, in `thumb` — Material's halo (MAT-SW4): `interaction` (its state layer and press ripple, Compose's ripple indication, `Switch.kt:191-198`; S2.12; the
+    ripple's `indication_box` the `thumb` with a zero outset; its colours the tokens', R1.6, MAT-SW4, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
   - `label` — the switch's label text (SW-7, Q1.103): `text`, `opacity` (Kirigami dims the disabled label alone,
     Q1.103).
@@ -1994,15 +2169,25 @@ spaces:
     `min_height`, `min_width` (W1-040), `opacity`, `focus` (where the platform rings indicator and label together,
     GN-1.61), `touch_target` (Material's minimum interactive size, MAT-C9, MAT-X22).
   - `box` — the indicator: `fill`, `stroke`, `corners`, `shadow` (KDE's hover ring and macOS 12–15's bevel are inset
-    layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`.
+    layers, R7), `min_width`, `min_height`, `focus` (where the platform rings the box, K1.57), `transitions`. Its
+    geometry on `material-3` (MAT-C2, MAT-P3-8†): the tokens' container
+    (`CheckboxTokens.ContainerSize`), and where the tokens are silent (the padding, the indication's box, the
+    check path), Compose's Material 3 styling branch: no padding and its check path, `ComposeMaterial3Flags.kt:40-44`, `Checkbox.kt:518-530`, `:711-718`; the branch is opt-in at
+    the pin, the flag false and experimental, `ComposeMaterial3Flags.kt:38`, `:49`, so an application that does not opt
+    in draws the default branch, Material 2 styling, Compose's own box size and padding, `:1064-1067`, and the tokens'
+    size decides between the two; rejected: the default branch's geometry, which the tokens contradict, and the
+    tokens' box with the default padding, a box no branch draws; S2.12, ADD-A125).
   - `mark` — the check mark, the indeterminate dash or dots by rule: `glyph` (GNOME and Material paths, Breeze's
-    `QPainterPath`, Segoe Fluent code points, AppKit's whole-control rendering, iOS's named symbol), `padding` (its
-    inset inside the box, MAC-C06), `opacity` and `transform` (per state while drawn), `transitions` (its entrance and
-    exit: absent while neither checked nor indeterminate, it enters from transparent and leaves to transparent by
-    these, S2.7).
+    `QPainterPath`, WinUI's accept visual's stroked path (its form ADD-A126's with the mark's representation, ledger
+    queue #85; the template's code point WinUI's own fallback, drawn only
+    where the visual cannot be built, `AnimatedIcon.cpp:473-479`, not modelled; W1-039), AppKit's whole-control
+    rendering, iOS's named symbol), `padding` (its inset inside the box, MAC-C06), `opacity` and `transform` (per
+    state while drawn), `transitions` (its entrance and exit: the mark's and the dot's representation, rest look and
+    motion together, is ADD-A126's, ledger queue #85, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
-  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12),
+  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
+    ripple's `indication_box` the `box`, no outset, its geometry the `box`'s, above; its colours the tokens', R1.6; MAT-C2, S2.12, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -2020,7 +2205,7 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`),
+  - parts: `state_layer` (all but `material-3`), `mark` (where and in which form it is not drawn: ADD-A126's, ledger queue #85, S2.7),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
@@ -2072,26 +2257,37 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
+    (its scale animation, W1-041; the mark's and the dot's representation, rest look and motion together, is
+    ADD-A126's, ledger queue #85, S2.7; `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
+    second dot while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
+    `:376`, W1-041).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
-  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12),
+  - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
+    ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`; its colours
+    the tokens', R1.6, MAT-C2, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`.
 - **Variants:** typed `warning` (KDE's neutral highlight: the ring's pen and tint and its hover ring, K1.52, K1.56;
   `checkbox`'s `warning`), the content variant `with_label` (as on `checkbox`, GN-1.61).
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large`. Others none.
-- **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked.
-- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates; CheckStates is
-  `checked`, not a group); others none (states combine; `material-3`'s state layers are a recency set, below);
+- **Flags:** shared none; keyed none; state flags used: hover, pressed, focus_visible, disabled, checked,
+  indeterminate (`adwaita`: GTK's inconsistent check button in a group, which libadwaita draws with the dash,
+  `_checks.scss:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`, GN-1.58; `windows-11`'s empty `Indeterminate`
+  state).
+- **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (RadioButton's CommonStates) and
+  `[indeterminate, checked]` (its CheckStates, `IsChecked` one nullable value, `Indeterminate` where it holds none,
+  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/RadioButton_Partial.cpp:739-746`, the `Indeterminate` state empty
+  and drawn as unchecked, `RadioButton_themeresources.xaml:348`, `:362-363`); others none (states combine; `material-3`'s state layers are a recency set, below);
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`).
+  - parts: `state_layer` (all but `material-3`), `dot` (where and in which form it is not drawn: ADD-A126's, ledger queue #85, S2.7).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
     Q1.21), `ring.shadow` (`kde-breeze` by a rule outside `{hover}`, K1.52; the value phase names the others from the
-    facts); each preset states the form its dot is drawn in, a glyph or a cornered fill, and the others `Absent`:
+    facts); each preset states the form its dot is drawn in, a glyph or a cornered fill, and the others `Absent` (the
+    form ADD-A126's with the dot's representation, ledger queue #85):
     `dot.glyph` (`windows-11`, `material-3`: their dot is a round fill, W1-042, MAT-C1; `kde-breeze` where the value
     phase reads Breeze's dot as a fill, `renderRadioButton`, `hp:995-1075`), `dot.fill` (`adwaita`: its dot is a
     path glyph, GN-P4-7†; `kde-breeze` where the value phase reads Breeze's dot as a glyph), `dot.corners`
@@ -2526,7 +2722,7 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the combo box's content layout: ADD-A127, to come, ledger queue #113); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
@@ -2576,7 +2772,8 @@ spaces:
   `body.opacity @ {disabled}`; `hover_background` → `body.fill @ {hover}`; `disabled_background`,
   `disabled_text_color` → `body.fill`, `label.text.fill @ {disabled}`; `border.*` → `body.stroke`, `body.corners`,
   `body.padding`, `body.shadow`.
-- **Notes:** Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
+- **Notes:** Open: its content layout (the label, the icon, the arrow area and the arrow, editable and not, sized and
+  drawn): ADD-A127, to come (ledger queue #113). Nested controls: the popup is a `menu` in `context combo_box` on every platform (GNOME's menu-style
   popover and GtkDropDown's list, the qqc2 combo's Menu and QComboBox's list, macOS's pop-up menu, iOS's menu,
   Material's exposed drop-down menu, WinUI's ComboBox popup: W1-133–W1-136, GN-1.234, MAC-CB04); the editable combo's
   text is an `input` in `context any combo_box`; GNOME's search entry in the popup is a `search_field` in `context menu`
@@ -2624,7 +2821,7 @@ spaces:
   - `value_label` — GTK's drawn value label (GN-1.102): `text`, `opacity` (dimmed).
   - `value_indicator` — Material's value bubble shown while dragging (MAT-S6): `fill`, `corners`, `min_height`,
     `text`, `transform` (its scale per state while drawn), `transitions` (its show and hide: absent by rule outside
-    the states it shows in, it enters from transparent and leaves to transparent by these, S2.7; restated
+    the states it shows in, how it enters and leaves ADD-A126's, S2.7; restated
     `@ cond reduced_motion`, MAT-S6). WinUI's thumb tooltip is a `tooltip` (Notes).
   - `header` — WinUI's header (W1-072): `text`.
   - `minimum_image`, `maximum_image` — iOS's minimum- and maximum-value images (SL-5): `icon`.
@@ -2748,7 +2945,8 @@ spaces:
     (S2.6), is (0.5, 0.5), the spinner's centre; the spoke's own shape inside that box is the spoke values', and the
     connector rotates the spoke at index i by i of `spoke_count` equal parts of a turn beyond the transform, each
     spoke behind the leading one faded by `spoke_opacity_ramp`.
-  - `icon` — the rotated or animated icon (KDE's process-working icon, GtkSpinner's animated SVG and its
+  - `icon` — the rotated or animated icon (KDE's rotated icons, KBusyIndicatorWidget's `view-refresh`, K1.230, and, under `flavor:kirigami`, the
+    `process-working-symbolic` that qqc2-desktop-style's BusyIndicator rotates, Q1.119; GtkSpinner's animated SVG and its
     reduced-motion replacement) as a glyph: `glyph`, `transform` (its rotation, which the `loop`'s keyframes set:
     K1.230, Q1.119).
 - **Widget values:** `diameter_px: Value<Px>` (the default size; today's `diameter_px`, Q1.120);
@@ -2790,10 +2988,11 @@ spaces:
   `macos-*` by a rule under `!{indeterminate}`, whose value arc is the `indicator`, MAC-SN04; `ios-*` by a rule under
   `!{indeterminate}` outside `context pull_to_refresh`, provisional on C-31, Open items, iOS's pull to refresh drawing
   its spokes as the pull progresses, C-10), `icon` (all
-  but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a; `kde-breeze` by a rule in `context pull_to_refresh
-  {pulling}`, where the arc alone is drawn, Q2.54†; `adwaita` by a rule outside `@gtk_spinner`, AdwSpinner drawing
-  the arc, GN-1.226, GN-1.230), `indicator` (`kde-breeze` by a rule outside `context pull_to_refresh`, where it
-  draws neither arc nor spokes, its spinner being the icon; `adwaita` by a rule under `@gtk_spinner`, whose spinner
+  but `kde-breeze`, `adwaita`; `ios-*` draws none, SP-4a; `kde-breeze` by a rule under `!{indeterminate}` in
+  `context pull_to_refresh {pulling}`, where the arc alone is drawn, Q2.54†; `adwaita` by a rule outside `@gtk_spinner`, AdwSpinner drawing
+  the arc, GN-1.226, GN-1.230), `indicator` (`kde-breeze` by a rule outside `context pull_to_refresh`, where it draws neither arc nor spokes,
+  its spinner being the icon on both flavours, K1.230, Q1.119, and by a rule in `context pull_to_refresh {refreshing}`, where the
+  BusyIndicator's icon alone is drawn, Q2.54†; `adwaita` by a rule under `@gtk_spinner`, whose spinner
   is the icon, GN-1.230; `macos-*` by a rule under `{indeterminate}`, whose indeterminate spinner is spokes, MAC-SN01;
   `ios-*` by a rule under `{indeterminate}` and by a rule in `context pull_to_refresh`, its spinners being spokes,
   SP-1a, C-10, so it is drawn under `!{indeterminate}` elsewhere only, provisional on C-31, Open items); fields:
@@ -3164,8 +3363,8 @@ spaces:
   - `row_selection_indicator` — WinUI's selection pill (W1-107; W1-089 in the sidebar variant; the tree's, W2-12);
     Material's navigation rail and drawer active indicator (MAT-N13, rename row 18): `fill`, `corners`, `min_width`,
     `min_height`, `opacity` (the rail's, zero with the width outside `{selected}`, as Compose grows and fades it in,
-    MAT-N13), `transitions` (absent where the row's state shows none, it enters from transparent and leaves to
-    transparent by these, S2.7; its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
+    MAT-N13), `transitions` (absent where the row's state shows none, how it enters and leaves ADD-A126's,
+    S2.7; its slide between rows is the event `@indicator_move`, `Instant` on `material-3`'s rail, whose items grow and fade
     their own, MAT-N13).
   - `row_separator` *(element)*, in `section` (beside the rows, so they are its siblings; queried in the view's scope
     where no section is drawn, as the rows) — the line between two rows, an element whose previous and next siblings
@@ -3222,7 +3421,8 @@ spaces:
   - `unread_indicator` — kirigami-addons' unread mark on an indicator row (K-KA-39†): `fill`, `min_width`, `padding`.
   - `swipe_area` — the area a swipe reveals (Q1.89, L-13): `fill`, `shadow` (at its edges).
   - `swipe_action` *(element)* — an action button there (L-13, MAC-L12, MAT-L11, Q1.88, W2-29): `fill`, `text`,
-    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `transitions`.
+    `icon`, `corners`, `opacity` (Kirigami's actions fading in on hover, Q1.88), `interaction` (Material's swipe action
+    and revealed icon, icon buttons with state layers in the tokens alone, MAT-L11, S2.12), `transitions`.
   - `swipe_handle` — Kirigami's handle that opens the actions (Q1.88): `icon`.
   - `drop_indicator`, in `section` — the insertion line (and its end circle) between rows (MAC-L11, K1.182,
     GN-1.279†), or the drop zone's area where the platform fills one (Material's drop-zone colour, MAT-L10): `stroke`,
@@ -3303,7 +3503,9 @@ spaces:
   `macos-*` `@full_width` (automatic is the base), `@row_size_small`, `@row_size_medium`, `@row_size_large` (MAC-L08;
   a list
   stating its own row size style has that as a variant), `@dashed_horizontal_grid`, `@browser` (NSBrowser's column
-  browser, which draws its column lines whatever the table grid setting, MAC-N08); `windows-11` `@listbox` (W2-33).
+  browser, which draws its column lines whatever the table grid setting, MAC-N08); `windows-11` `@listbox` (W2-33);
+  `material-3` on `swipe_action` `@revealed` (the list reveal's revealed icon button beside the swipe action's,
+  MAT-L11).
 - **Sizes and densities:** `macos-*`: the row size by variant (above) and by the condition
   `cond container_size:sidebar:small` (and `medium`, `large`) for source lists at the default row size (MAC-SB01),
   the sizes declared in `container_sizes` with the platform's default first (S10), the default from the facts
@@ -3333,8 +3535,8 @@ spaces:
   accessory or reorder handle on their rows, L-12, Q2.43; `kde-breeze` by a rule `cond flavor:widgets`, the handle
   being Kirigami's, Q2.43), `row_inner_border` (all but `windows-11`: W2-13, W2-14), `row_state_layer` (all but `material-3`: MAT-N13;
   `material-3` by a rule outside `variant sidebar context sidebar.pane[compact]`), `row_selection_indicator` (all
-  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` by a rule outside `{selected}`; `material-3` by a
-  rule outside `{selected}` in the drawer, the rail's drawn at rest at zero width and alpha, and outside `sidebar`,
+  but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11`: where it is drawn, and so its absence, ADD-A126's, W1-089, W1-107, W2-12, ledger queue #85, #110;
+  `material-3` by a rule outside `{selected}` in the drawer, the rail's drawn at rest at zero width and alpha, and outside `sidebar`,
   MAT-N13), `nested` (all but `adwaita`: GN-1.260), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
   no line between cells; `adwaita` by a rule outside `column_separators`, GN-1.169; `macos-*` by a rule outside
@@ -3924,7 +4126,10 @@ spaces:
     handle), `min_width`, `min_height` (its thickness, by orientation), `bindings` (Kirigami's Header set, Q1.93),
     `cursor`, `transitions`.
   - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): `fill`, `glyph`,
-    `corners`, `min_width`, `min_height`, `padding`, `shadow`.
+    `corners`, `min_width`, `min_height`, `padding`, `shadow`, `interaction` (Material's drag handle: its hover,
+    focus and dragged state layers, Compose's `ripple()` indication, no press ripple but under `@clickable`,
+    MAT-SP2, MAT-X29, S2.12),
+    `transitions` (the block's fades, MAT-X9).
   - `collapser` *(element)*, in `divider` — KDE's collapser button over the divider (KSplitterCollapserButton,
     K2.17), hovered and pressed on its own, its side a keyed variant: `fill`, `padding`, `opacity` (its fade, K2.17).
     `collapser_arrow` belongs to it.
@@ -3938,12 +4143,16 @@ spaces:
   running across: GTK's row-resize cursor against the side-by-side column-resize one, GN-3.67†; the orientation many
   widgets share). Keyed: `macos-*` `@thin`, `@pane_splitter` (with `wide`: the pane splitter's look beyond the thick
   divider, MAC-SP01, MAC-SP02); `kde-breeze` `@dock`, `@column_view`, and on `collapser` `@left`, `@right`, `@top`,
-  `@bottom` (the side it collapses toward, K2.17).
+  `@bottom` (the side it collapses toward, K2.17); `material-3` the content variant `@clickable` (the drag handle given a
+  click action by its caller, which adds a press ripple; the connector sets it from the caller's semantics, as it sets
+  `with_label`, ADD-A61; MAT-SP2; rejected: the ripple as the connector's limit, R23, which records a model's gap as
+  the toolkit's, and a press ripple always on, which the default semantics do not draw).
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, dragged (MAC-SP03), focus_visible on Material's handle
   (MAT-SP2), disabled (W1-157†).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (SizerBase's states); others none (states combine);
-  precedence: state models (S17).
+  precedence: state models (S17). Recency sets: `material-3`: `state_layer = [dragged, focus_visible, hover]` (the
+  drag handle's state layers, MAT-SP2, MAT-X29; `pressed` combines).
 - **may_be_absent:** parts: `grip` (`adwaita`, `kde-breeze`: no grip on the divider, W1-157†'s cross-checks;
   `macos-*` by a rule outside `wide`, the thick divider's grip, MAC-SP02), `collapser` (`adwaita`, `macos-*`,
   `windows-11`, `ios-*`, `material-3`: KSplitterCollapserButton is KDE's, K2.17; `kde-breeze` by a rule
@@ -4192,7 +4401,7 @@ spaces:
 - **Available:** every preset but `windows-11`, `ios-*`, `material-3` (`available = false`: no about dialog the
   toolkit draws; Windows' `ShellAbout` is out, R1.1).
 - **Parts:**
-  - `body` — the dialog's content box (the root): `padding` (its margins, GN-2.39, K-KA-44†), `bindings`.
+  - `body` — the dialog's content area (the root): `padding` (its margins, GN-2.39, K-KA-44†), `bindings`.
   - `icon` — the application icon: `icon` (its size: GN-2.39, K-P3-8†, Q2.57†, MAC-N32†), `shadow` (GNOME's drop
     shadow), `margin` (the space round it where the panel's gaps differ, MAC-N32†).
   - `name` — the application name: `text`, `margin` (MAC-N32†).
@@ -4808,7 +5017,8 @@ spaces:
     `corners`, `shape`, `shadow` (Material's item elevation, MAT-N18), `min_width`, `max_width` (Material's mask
     changing across its keylines with the scroll position: expressions over `element.scroll_progress`, which it
     declares, ADD-B13, MAT-N18), `transitions` (the page settle: a `Geometry` transition with a spring timing,
-    GNOME's page spring GN-2.38, Material's item settle MAT-N18).
+    GNOME's page spring GN-2.38, Material's item settle MAT-N18), `interaction` (Material's item state layers, the tokens' alone, MAT-N18,
+    S2.12).
 - **Widget values:** `item_gap_px: Value<Px>` (the gap between items or pages: MAT-N18; C-48†'s `interPageSpacing`,
   under `@scroll`); `scroll_timeout_ms: Value<Ms>` (GN-2.38);
   `nav_buttons_visibility: Value<NavButtonsVisibility>` (when its previous and next buttons show, W2-31);
@@ -5250,8 +5460,8 @@ spaces:
     its box's edge, S2.4; one structure with `time_picker.segment_separator`).
   - `popup` — the picker's own flyout, popover or docked container, holding the calendar or the looping selectors
     (one name with `time_picker.popup`): `fill`, `stroke`, `corners` (MAT-N16), `shadow`, `padding`, `min_width`,
-    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}` and
-    enters from transparent and leaves to transparent by these, S2.7; W2-04's open animation). `popup_header` and
+    `min_height` (MAT-N16), `transitions` (its open and close: where a field opens it, it is drawn only `{open}`, how
+    it enters and leaves ADD-A126's, S2.7; W2-04's open animation). `popup_header` and
     `divider` nest in it. `kde-breeze` draws it with another widget under `with_popup`, each flavour its own: under
     `cond flavor:widgets` `popup` is `drawn_as = { widget = "menu", variants = [] }` (KDateComboBox opens a menu,
     K2.23†), under `cond flavor:kirigami` `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }`
@@ -7044,7 +7254,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Available:** every preset but `windows-11`, `material-3` (`available = false`: no such control); `kde-breeze`
   flavour `kirigami` only (PlaceholderMessage, LoadingPlaceholder).
 - **Parts:**
-  - `body` — the page's content box, the root: `fill` (C-16's background), `padding` (the page's margins, GN-2.13),
+  - `body` — the page's content area, the root: `fill` (C-16's background), `padding` (the page's margins, GN-2.13),
     `max_width` (Q2.32), `bindings`.
   - `icon` — `icon` (size, weight: GN-2.13, Q2.30, C-16), `opacity` (GN-2.13; Q2.31; K-KA-16†).
   - `title` — `text`, `opacity` (Q2.31, K-KA-16†).
@@ -7248,7 +7458,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
     time_picker.popup`, whose band and item height are `picker_wheel`'s; one name with `date_picker.popup`), and
     Material's time-picker container, whose colour, shape and elevation are time-picker tokens (MAT-N17, as
     `date_picker.popup` holds the date picker's, MAT-N16): `fill`, `stroke`, `corners`, `shadow`, `transitions`
-    (Windows' flyout drawn only `{open}`, entering and leaving by these, S2.7; its open animation, W2-04).
+    (Windows' flyout drawn only `{open}`, how it enters and leaves ADD-A126's, S2.7; its open animation, W2-04).
     `kde-breeze` draws kirigami-addons' popup with another widget: under `variant with_popup cond flavor:kirigami`
     `popup` is `drawn_as = { widget = "dialog", variants = ["@ka_dialog"] }` (K-KA-23†, whose fade is the
     dialog's), so one box is drawn, as on `date_picker`.
@@ -7918,7 +8128,9 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   - `comment` — `text`, `fill` (its look by message type, below).
 - **Widget values:** none (alignment of icon and text is the layout, `layout.*`).
 - **Variants:** keyed text level `@level_1`, `@level_2`, `@level_3`, `@level_4` (KTitleWidget's four levels, each
-  per its keyed text style of K1.270); keyed
+  its own text style, not Kirigami's `heading_<n>`: K1.270's factors, the label's inherited font's weight, the
+  application font by default, and the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`; not yet stated exactly, ledger
+  queue #130, the KDE lane's, K2.15); keyed
   message type `@plain`, `@info`, `@warning`, `@error` for `comment`, KTitleWidget's `MessageType` (`Plain`, `Info`,
   `Warning`, `Error`, `ktitlewidget.h:115-120`; it has no positive type). The source gives `@info`, `@warning` and
   `@error` one look, a style sheet naming the palette's highlighted-text and highlight colours for the comment's text
@@ -7930,7 +8142,7 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   `@plain`'s comment paints no background, its `fill` `Absent`, a drawing field).
 - **State-model source:** the widget's own code (`kwa ktitlewidget.cpp:30-80`; the message types,
   `ktitlewidget.h:115-120`).
-- **Today's fields:** `text_scale` (partial): the level fonts map to keyed text-ramp entries.
+- **Today's fields:** `text_scale` (partial): the level fonts map to `title.text` per level variant (ledger queue #130).
 
 #### component.multi_tab_bar (kde)
 
@@ -8656,10 +8868,16 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 `system_brown`, `system_gray` (and the four already named, stated as `system_red`, `system_orange`, `system_green`,
 `system_blue`) [MAC-DF03]; `under_page_background`, `text_background` (against `View.background` =
 `controlBackgroundColor`), `selected_control`, `selected_control_secondary`, `selected_control_text` [MAC-DF04,
-MAC-DF05]; `highlight` (the separate highlight setting, an accent input, S9.1) [MAC-DF05]. The accent-derived colours are
-inputs
-(R2.6), and every one of them, `highlight` included, is in the preset's `[declare] accent_inputs` (S9.1: an
-application or palette replacing the accent states the text-selection colour with it).
+MAC-DF05]; `highlight` (`highlightColor`, `NSColor.h:284` in the Xcode 26.6 SDK, the colour `highlightWithLevel:`
+blends toward, which the accent does not change, the probe's main and `accent-red` passes reading it alike in both
+appearances, run 41006842699's `os-probe-macos-26/probe.toml:667`, `:741`, and `accent-red/probe.toml` at the same lines,
+while that pass moved the effective highlight, `selectedTextBackgroundColor`: a literal per scheme, S9.1, provisional
+until a pass sets an explicit highlight colour other than the accent's, the Open items) [MAC-DF05]. The
+colours that follow the accent or the highlight setting are inputs (R2.6, S9.1: `input.highlight`,
+`selectedTextBackgroundColor`, the highlight setting's colour; `input.selected_content_background`,
+`input.keyboard_focus_indicator`, `input.selected_control`), each in the preset's `[declare] accent_inputs` (S9.1: an
+application or palette replacing the accent states the text-selection colour with it), and the roles that show them
+state references to them (ADD-A125).
 
 **iOS (`ios-*`).** Label hierarchy: `label_tertiary`, `label_quaternary` (tertiary no longer conflated with disabled
 text: `role.window.disabled.foreground` states disabled separately) [D-9, X-CO-5]; fills `system_fill`,
@@ -8835,9 +9053,12 @@ whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subti
 `narrow_switcher_label`,
 `badge_label`, `tab_counter` [GN-1.194].
 
-**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size (KTitleWidget's
-levels 1-4
-state the same factors, so one style serves both and its fact cites both sources) [Q1.3, K1.270]; the types per level:
+**KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size, their family,
+style, width, letter and word spacing, decoration, `case`, `axes` and `features` by reference to
+`token.text.roles.body` (every attribute of the default font, `qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28`,
+but the size and weight, `kirigami@6.31.0 src/controls/Heading.qml:14-35`; K3.46), the weight their own (S2.8) [Q1.3, K1.270]; KTitleWidget's
+levels 1-4 state the same factors but keep the label's inherited font's weight and take the size from the
+application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, so they are not these styles, `title_widget`'s entry; the types per level:
 `heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
 `smallest_readable`, a full font (family, style, size) read from `smallestReadableFont`, also Kirigami's `smallFont`
 [K1.271, Q1.2]; the Breeze-derived fonts `flat_group_title`, `command_link_title`, `menu_section` (each derived from
@@ -8877,8 +9098,8 @@ platform default monospace typeface (MAT-X36†).
   `panel`, each a `Value<IconStyle>`, absent on the presets the token absence table names for it, *tokens* below) and
   `keyed: Vec<(Key, IconStyle)>`, so a context also carries
   weight, scale and rendering mode where the platform's context sets them (in a context only `size` is required, every
-  other `IconStyle` `Value` field may be absent, and its lists, `axes`, `symbol_variants`, `status_colors`, are stated,
-  `[]` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9; a `scale` names a key of
+  other `IconStyle` `Value` field may be absent, and its list `symbol_variants` and maps `axes`, `status_colors` are
+  stated, `[]` and `{}` where the context sets none, S4.5; `rendering_mode` is a `Value<RenderingMode>`, S2.9; a `scale` names a key of
   `[declare] symbol_scales`, S10) [D-19, MAC-IC02]. Kirigami: `small`, `small_medium`, `medium`, `large`, `huge`, `enormous`, `for_labels`
   [Q1.1]. Kirigami computes `for_labels` from the default font's height, ascent plus descent (`kirigami_label_icon_size`,
   ADD-A53);
@@ -8991,7 +9212,8 @@ platform's curve is one its toolkit computes by a function of its own (S2.7, R9:
 `ease_out_quad` (`$ease-out-quad`, `libadwaita@1.10.0 src/stylesheet/_common.scss:1`), the CSS keyword curves its
 stylesheet uses (`ease_out`, `ease_in`, `ease_in_out`, `ease`, `linear`) and AdwTimedAnimation's default
 `ease_out_cubic` (`ADW_EASE_OUT_CUBIC`, `adw-timed-animation.c:275`, `Timing::Platform(Adw(EaseOutCubic))`, the polynomial
-`adw-easing.c:175-181` computes, S2.7, ADD-A123) (GN-3.19), and the easings its code applies, each named for its
+`adw-easing.c:175-181` computes, S2.7, ADD-A123) (GN-3.19; `linear`, CSS's keyword and its code's `ADW_LINEAR` alike, is
+`Timing::Linear`, the identity, S2.7, ADD-A125), and the easings its code applies, each named for its
 `AdwEasing` (S4.1 step 1) and a `Timing::Platform(Adw(…))`: `ease_in_cubic` (the tab box's and tab grid's drag
 autoscroll, `adw-tab-box.c:1450`, `adw-tab-grid.c:1473`), `ease_in_out_sine` (AdwSpinner's arc, `adw-spinner-paintable.c:121`,
 `:141`, GN-1.229's `spinner.values.loop`), `ease_in_expo` and `ease_out_expo` (AdwTabOverview's
@@ -9013,7 +9235,8 @@ default easing curve for its timelines (`QTimeLine`'s, `qtbase@6.12.0 src/coreli
 W3-33) and the scroll into view's `scroll_into_view` (measured, W-P4-3†); UIKit's default
 spring, `default` (X-MO-2), the navigation push and pop's `navigation` (measured, X-MO-3), and AppKit's media-timing curves by family (MAC-X11); Material's easing tokens `standard`,
 `standard_accelerate`, `standard_decelerate`, `emphasized`, `emphasized_accelerate`, `emphasized_decelerate`, `legacy`,
-`legacy_accelerate`, `legacy_decelerate`, `linear` (`EasingStandardCubicBezier` …, `MotionTokens.kt:40-68`) and spring
+`legacy_accelerate`, `legacy_decelerate`, `linear` (`EasingStandardCubicBezier` …, `MotionTokens.kt:40-68`; `linear`'s
+Bézier, `(0, 0, 1, 1)`, is the identity, `Timing::Linear`, S2.7, ADD-A125) and spring
 tokens `default_spatial`, `default_effects`, `fast_spatial`, `fast_effects`, `slow_spatial`, `slow_effects`
 (`SpringDefaultSpatialDamping` and `…Stiffness` …, `tokens/StandardMotionTokens.kt:20-31`,
 `ExpressiveMotionTokens.kt:22-33`, the motion scheme the preset draws) (MAT-X13). Every key,
@@ -9022,6 +9245,19 @@ duration or timing, is named by S4.1's rule (ADD-A122): libadwaita's inline spri
 `overlay_split_view_show`, `overlay_split_view_hide`, `carousel` (GN-3.20), and the deprecated AdwFlap's and
 AdwLeaflet's, which applications built on them still draw: `flap_reveal` (`libadwaita@1.10.0 src/adw-flap.c:1598-1599`, clamped at `:1600-1601`)
 and `leaflet_child` (`adw-leaflet.c:2474-2476`, clamped at `:2477-2478`), each the class's spring for that transition.
+
+**token.motion.color_space** (`Value<ColorInterpolation>`, S2.7's *Colour interpolation*, ADD-A125), one per preset, a rule restating it under a condition (Kirigami's flavour),
+from its toolkit's colour interpolation: `adwaita` `premultiplied_srgb` (GTK's CSS transitions, `gtk@4.24.1
+gtk/gtkcsscolorvalue.c:323-329`, `:586-604`; GN-3.18); `kde-breeze` `premultiplied_srgb` (Breeze's fades paint
+`KColorUtils::mix`, `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`) and under `cond flavor:kirigami`
+`straight_srgb8` (QML's `ColorAnimation`, `qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`; K3.31,
+Q3.26); `material-3` `oklab` (Compose's `ColorVectorConverter.kt:30-48`; MAT-X13); `windows-11` its composition
+animations' space, `CompositionColorSpace_Rgb` (`SharedTransitionAnimations.cpp:111`, the brush transitions its
+controls' colours move by, W1-023), whose arithmetic (premultiplied or straight) the compositor holds, not the cache:
+a measurement, the WinUI host capturing a brush transition's middle frame between two colours of different alpha and
+the facts stating the member it matches (a pending fact until then; the Open items); `macos-*` (MAC-X11) and `ios-*`
+(X-MO-1) Core Animation's colour interpolation, which no cached source states: a measurement likewise, the probe and
+the iOS host capturing a colour transition's middle frame. A member is added where none matches (S2.7).
 
 **token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24) and, by the Android reader, on
 `material-3` (the animator duration scale, MAT-X20, `readers (R18)`); a constant elsewhere (the platform has no speed
@@ -9048,7 +9284,10 @@ is not).
 `token.params.shadow.strength` (K3.1, K3.2); `token.params.motion.animation_steps` (K3.31); `token.params.motion.kwin_speed_factor` (K1.17: the speed factor
 KWin and its decoration read, kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', which
 `token.motion.speed_factor` reads alone, and 1 where neither states one, the decoration's default,
-`breeze@6.8.2 kdecoration/breezedecoration.cpp:389`; ADD-A123);
+`breeze@6.8.2 kdecoration/breezedecoration.cpp:389`; ADD-A123): the preset states it `= token.motion.speed_factor`,
+kdeglobals' factor, as KConfig's cascade gives the decoration where kwinrc states none (so it follows the factor's
+1 by default and its 0 under `cond animations_off`, with no rule of its own), and the KDE reader states kwinrc's own
+factor in its layer where kwinrc states one, the one value no preset can know (ADD-A125);
 `token.params.color.contrast` and `token.params.color.frame_contrast` (K3.53, K3.91, Q3.14, Q3.15);
 `token.params.layout.grid_unit` (Q3.29, a length); `token.params.optics.optical_centering` (MAT-X37†: Material's
 unitless optical-centering coefficient, in a group of unit `number` of its own, since `layout` is a group of lengths);
@@ -9122,8 +9361,9 @@ GN-3.32–GN-3.38, GN-3.73†, K3.41–K3.43, W3-24, W-P3-9†, MAC-X12, MAC-X14
 is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 
 **token.text** (S4.4): `roles` and `keyed` as S4.4 states, per platform the styles its facts list; `font_dpi`
-(`Value<f32>`, logical pixels per inch, required on every preset and stated from its platform's facts, the DPI its
-points convert by, S9.4; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
+(`Value<f32>`, logical pixels per inch, required on every preset, the DPI its points convert by, S9.4, stated from
+its platform's facts except on `macos-*` and `ios-*`, where it is 72, the specification's own value, as their point is
+the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
 `forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
 styles one flavour alone uses (Material's `_emphasized` styles, Expressive's) are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as
@@ -9397,8 +9637,8 @@ connector.
 ### system controls
 
 None. No row of group 8 needs `SystemControl` (S15): the AppKit whole-control renderings are the checkbox, radio,
-pop-up, disclosure and push-disclosure rows of the control groups (MAC-C06; MAC-C07, the radio,
-`radio.dot.glyph` as `SystemControl(AppKitRadio)`; MAC-CB01, MAC-EX02, MAC-L10; the push disclosure, `expander @
+pop-up, disclosure and push-disclosure rows of the control groups (MAC-C06; MAC-C07, the radio, its carrying
+part ADD-A126's, ledger queue #85; MAC-CB01, MAC-EX02, MAC-L10; the push disclosure, `expander @
 variant @push_disclosure`, MAC-EX01, ADD-A58). `render_system_control` returns `None` for a control size AppKit lacks on the
 running macOS (`extra_small`; `extra_large` before macOS 26), sizes the `macos-*` presets do not declare (S15, S7.3). The gradient fill of the
 macOS 12 to 15 checkbox (MAC-X09) is a `PaintKind::Linear` and needs no rendering.

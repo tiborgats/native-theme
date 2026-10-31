@@ -105,9 +105,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-B05 | `button.body.fill (Linear gradient layer)` | field |
 | MAC-B05 | `button.body.shadow (inset highlight layer for the bevel)` | field |
 | MAC-B06 | `button.label.text.fill @ variant destructive (and context any dialog where it differs)` | rule |
-| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` | rule |
+| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` (`tinted`'s fills, at rest, pressed and disabled, and a disabled `primary`'s `= alpha(input.accent, <a>)`, the pressed and checked opaque ones `mix` toward black or white, measured derivations, ADD-A125) | rule |
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill` as expressions on `element.color` (bezelColor, contentTintColor; the parts declare it, `data = { body = ["color"], label = ["color"], icon = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-B08 | `button.body.corners @ variant pill / @rounded_rectangle / circular` | rule |
+| MAC-B08 | `button.body.margin @ variant circular cond preset:macos-tahoe` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, readable at `large` and `extra_large`, where the circle is as wide as the frame is high, all of them pending a register row of their own (the margin, not U143's corners); on `macos-monterey` the frames are square, ADD-A125) | rule |
 | MAC-B08 | `button.body.corners @ size small / regular / large / extra_large (automatic shape)` | rule |
 | MAC-B09 | `button.icon.icon.size @ size mini / small / regular / large / extra_large` | rule |
 | MAC-B09 | `button.icon.icon.fill @ {pressed} / {disabled} / {default}` | rule |
@@ -139,7 +140,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-I09† | `input.{body.fill,text.text.fill} @ {autofilled}` | rule |
 | MAC-I10† | `text_area.values.document_margin; text_area.values.line_padding` | field |
 | MAC-I10† | `reader:macos:NSTextView.textContainerInset, textContainer.lineFragmentPadding -> text_area.values.document_margin, line_padding` | reader |
-| MAC-C01 | `checkbox.mark.glyph @ {indeterminate} = SystemControl(AppKitCheckbox)` | system-control |
+| MAC-C01 | `checkbox.mark.glyph @ {indeterminate} = SystemControl(AppKitCheckbox)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | system-control |
 | MAC-C01 | `checkbox.box.fill, checkbox.mark.glyph.size, checkbox.mark.glyph.fill @ {indeterminate}` | rule |
 | MAC-C02 | `checkbox.box.fill @ {pressed} / {checked,pressed}` | rule |
 | MAC-C02 | `radio.ring.fill @ {pressed} / {checked,pressed}` | rule |
@@ -147,12 +148,12 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-C04 | `checkbox.box.fill @ {checked,hover}` | rule |
 | MAC-C05 | `checkbox.box.fill @ cond scheme:dark (Linear gradient)` | rule |
 | MAC-C05 | `checkbox.box.stroke (gradient paint), checkbox.box.shadow (inset bevel layer)` | field |
-| MAC-C06 | `checkbox.mark.glyph = SystemControl(AppKitCheckbox)` | system-control |
-| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke.width} (path and extent; measured)` | field |
+| MAC-C06 | `checkbox.mark.glyph = SystemControl(AppKitCheckbox)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: which part carries the rendering, drawn in every state or not) | system-control |
+| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke.width} (path and extent; measured)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | field |
 | MAC-C06 | `checkbox.mark.padding` (the mark's inset inside the box; measured) | field |
 | MAC-C07 | `radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` | rule |
 | MAC-C07 | `radio.ring.*, radio.dot.* @ cond window_inactive` | rule |
-| MAC-C07 | `radio.dot.glyph = SystemControl(AppKitRadio)` | system-control |
+| MAC-C07 | `radio.dot.glyph = SystemControl(AppKitRadio)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | system-control |
 | MAC-MN01 | `menu.item.corners` | field |
 | MAC-MN01 | `menu.body.padding (highlight inset)` | field |
 | MAC-MN02 | `menu.body.padding (top, bottom)` | field |
@@ -317,7 +318,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L14 | `list.values.focus_visible_when (ADD-A16)` | field |
 | MAC-L15 | `list.header_section.opacity @ {dragged}` | rule |
 | MAC-L16 | `list.view.stroke` | field |
-| MAC-L17† | `button.*, checkbox.*, combo_box.*, progress_bar.* @ context list.row {selected} context list.view {focus_within}` | rule |
+| MAC-L17† | `button.*, checkbox.*, combo_box.*, progress_bar.* @ context list.row {selected} context list.view {focus_within}` (the AppKit rendering's look there an open item, S15) | rule |
 | MAC-L17† | `list.row_background.fill @ {selected} context list.view {disabled}` | rule |
 | MAC-L18† | `list.header_section.fill @ {sorted} (highlighted column)` | rule |
 | MAC-L18† | `list.header_corner (fill, stroke)` | field |
@@ -499,7 +500,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, as it follows neither the accent nor the highlight setting, the probe's accent pass; no input, ADD-A123) | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, run 41006842699's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; while that pass moved the effective highlight, `selectedTextBackgroundColor`, `probe.toml:635` against `accent-red/probe.toml:635`; provisional until a pass sets an explicit highlight colour other than the accent's, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
@@ -719,8 +720,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X10 | `reader:macos:NSColor colorSpace read without clipping to sRGB` | reader |
 | MAC-X11 | `token.motion.durations.<AppKit durations>` | token |
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
+| MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
-| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` | field |
+| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125; whether AppKit animates them is this row's recording, the catalogue's Open items) | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |

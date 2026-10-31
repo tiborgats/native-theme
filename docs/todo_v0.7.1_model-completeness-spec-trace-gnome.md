@@ -175,14 +175,17 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.281† | `input.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` | rule |
 | GN-1.281† | `text_area.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` (declared on `text_area` as on `input`) | rule |
 | GN-1.55 | `checkbox.box.fill @ {pressed} !{checked,indeterminate}` | rule |
-| GN-1.55 | `checkbox.box.stroke @ {pressed} !{checked,indeterminate} (no ring)` | rule |
-| GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked}` | rule |
-| GN-1.56 | `checkbox.box.stroke @ {hover} !{checked,indeterminate}` | rule |
-| GN-1.56 | `radio.ring.stroke @ {hover} !{checked}` | rule |
-| GN-1.57 | `checkbox.box.fill @ {checked,hover} / {checked,pressed} (appended layers; also {indeterminate,hover} / {indeterminate,pressed})` | rule |
-| GN-1.57 | `radio.ring.fill @ {checked,hover} / {checked,pressed}` | rule |
-| GN-1.58 | `checkbox.box.fill @ {indeterminate}` | rule |
+| GN-1.55 | `checkbox.box.stroke @ {pressed} !{checked,indeterminate} (no ring)` (the order argument, stated once: libadwaita's unchecked `:active` `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:42-44`, beats the hover and high-contrast shadows by specificity and order, and its checked and inconsistent `box-shadow: none`, `:52-56`, beats the high-contrast shadow, `:29-31`, so the ring rules of GN-1.56 and GN-1.65 exclude `pressed`, `checked` and `indeterminate`, and their order against GN-1.55's, GN-1.57's and GN-1.58's rows does not matter; the checked hover layer excludes `pressed` as the press's replaces it, `:58-59`; the `{checked}` and `{indeterminate}` fills, GN-1.57, precede GN-1.57's and GN-1.58's appended layers; among themselves GN-1.65 follows GN-1.56, its hover alternative after its base one, as the media query's hover beats both, `:34-38`, ADD-A125) | rule |
+| GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked,indeterminate}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
+| GN-1.56 | `checkbox.box.stroke @ {hover} !{checked,indeterminate,pressed}` (excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
+| GN-1.56 | `radio.ring.stroke @ {hover} !{checked,indeterminate,pressed}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.fill @ {checked} / {indeterminate}; radio.ring.fill @ {checked} / {indeterminate}` (the accent fill, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-54`, written before the appended layers below and GN-1.58's, which sit on it, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.fill @ {checked,hover} !{pressed} / {checked,pressed} (appended layers; also {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked})` (a box both checked and inconsistent taking the checked layer once, GTK setting the two flags apart, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-879`, `:946-952`, and libadwaita one `background-image` for both; the hovered 10 % layer, 10 % of the accent foreground, the box's `color`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:55`, drawn alone, the pressed 20 % one replacing it, one `background-image`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
+| GN-1.57 | `radio.ring.fill @ {checked,hover} !{pressed} / {checked,pressed}` (as the check's, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.stroke @ {checked}; radio.ring.stroke @ {checked}` (no ring on a checked box or radio, the checked and inconsistent `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`; GN-1.55's note, ADD-A125) | rule |
+| GN-1.58 | `checkbox.box.stroke @ {indeterminate}` (the inconsistent box's `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`, as the checked one's, GN-1.57, its fill GN-1.57's, ADD-A125) | rule |
 | GN-1.58 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` | rule |
+| GN-1.58 | `radio.ring.stroke @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked} (appended layers); radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | rule |
 | GN-1.60 | `checkbox.box.corners` | field |
 | GN-1.60 | `radio.ring.corners (Full)` | field |
 | GN-1.61 | `checkbox.body.padding, checkbox.body.corners, checkbox.body.focus` | field |
@@ -196,10 +199,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.63 | `radio.body.corners (GTK's grouped checkbutton is the radio)` | field |
 | GN-1.64 | `checkbox.box.transitions (Fill, Stroke); radio.ring.transitions` | field |
 | GN-1.64 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
-| GN-1.65 | `checkbox.box.stroke @ cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` | rule |
-| GN-1.65 | `checkbox.box.fill @ {pressed} !{checked,indeterminate} cond contrast_high` | rule |
-| GN-1.65 | `radio.ring.stroke @ cond contrast_high / {hover} !{checked} cond contrast_high` | rule |
-| GN-1.65 | `radio.ring.fill @ {pressed} !{checked} cond contrast_high` | rule |
+| GN-1.65 | `checkbox.box.stroke @ !{checked,indeterminate,pressed} cond contrast_high / {hover} !{checked,indeterminate,pressed} cond contrast_high` (excluding `pressed`, `checked` and `indeterminate`, written after GN-1.56, GN-1.55's note, ADD-A125) | rule |
+| GN-1.65 | `checkbox.box.fill @ {pressed} !{checked,indeterminate} cond contrast_high` (written after GN-1.55, whose pressed fill it replaces under high contrast, the nested media rule following `:active`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:42-48`, ADD-A125) | rule |
+| GN-1.65 | `radio.ring.stroke @ !{checked,indeterminate,pressed} cond contrast_high / {hover} !{checked,indeterminate,pressed} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; excluding `pressed`, `checked` and `indeterminate`, written after GN-1.56, GN-1.55's note, ADD-A125) | rule |
+| GN-1.65 | `radio.ring.fill @ {pressed} !{checked,indeterminate} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; written after GN-1.55, the nested media rule following `:active`'s, `:42-48`, ADD-A125) | rule |
 | GN-1.66 | `menu.item.fill @ {pressed}` | rule |
 | GN-1.67 | `menu.item.fill @ {focused} / {hover}` (GTK's `:selected` model button, the keyboard- or pointer-highlighted item, drawn as hover: `focused` or `hover`, never `selected`, S7.2) | rule |
 | GN-1.68 | `menu.item.corners` | field |
@@ -440,7 +443,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.185 | `popover.body.{min_width,max_width} (Auto)` | field |
 | GN-1.286† | `edit_menu.body.{fill,shadow,padding}; edit_menu.arrow.{fill,min_width,min_height}` | field |
 | GN-1.286† | `button.{body,icon} @ variant icon_only context edit_menu.body context any layout variant @linked (the commands: a linked row of image buttons with the touch icons)` | rule |
-| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content box's spacing)` | rule |
+| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content area's spacing)` | rule |
 | GN-1.286† | `edit_menu.values.placement (GtkPopover, anchor_grow)` | placement |
 | GN-1.186 | `splitter.divider.stroke, splitter.divider.min_width @ variant wide` | rule |
 | GN-1.187 | `menu.separator.margin` (the menu's separator item, its margins) | field |
@@ -533,7 +536,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.230 | `spinner.values.loop @ variant @gtk_spinner (the animated SVG's own animation, GN-P3-19†)` | rule |
 | GN-1.231 | `spinner.body.opacity @ {disabled}` | rule |
 | GN-1.232 | `spinner.{body.min_width,body.min_height,values.stroke_weight} @ context any status_page` | rule |
-| GN-1.233 | `combo_box.values.label_arrow_gap` | field |
+| GN-1.233 | `combo_box.values.label_arrow_gap` (the combo box's content layout: ADD-A127, to come, ledger queue #113) | field |
 | GN-1.234 | `menu.body.padding @ context combo_box; menu.item.min_width @ context combo_box` | rule |
 | GN-1.234 | `menu.check_indicator.glyph @ context combo_box; menu.values.check_indicator_side @ context combo_box` | rule |
 | GN-1.235 | `search_field.body.padding @ context menu.body context any combo_box` | rule |
@@ -885,7 +888,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.17 | `role.global.accent_standalone = adw_standalone(...)` | role |
 | GN-3.18 | `token.motion.durations.<transition tokens>` | token |
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
+| GN-3.18 | `token.motion (color_space PremultipliedSrgb: GTK's CSS colour transitions, gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604, S2.7, ADD-A125)` | token |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
+| GN-3.19 | `token.motion.timings.linear (Timing::Linear: CSS's keyword, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity, S2.7, ADD-A125)` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
 | GN-3.20 | `token.motion.timings.flap_reveal, token.motion.timings.leaflet_child (Timing::Spring, clamp true: the deprecated AdwFlap's reveal and AdwLeaflet's child transition, `libadwaita@1.10.0 src/adw-flap.c:1598-1601`, `adw-leaflet.c:2474-2478`)` | token |
 | GN-3.21 | `token.motion.durations.<timed animations defined in code>` | token |
@@ -910,7 +915,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.71† | - | out (R1.1) |
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
-| GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
+| GN-3.28 | `FocusIndicator.transition (grow-in)` (its grow-in and its shrink-out, the ring narrowing and moving out as it fades, pending ADD-A126, ledger queue #85) | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |

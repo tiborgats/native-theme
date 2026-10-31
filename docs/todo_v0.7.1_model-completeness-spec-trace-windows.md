@@ -98,6 +98,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, set in the Checked, CheckedPointerOver and CheckedPressed states, `:255-256`, `:271-272`, `:287-288`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
+| W1-023 | `token.motion (color_space: the composition animations' CompositionColorSpace_Rgb, the brush transitions', microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111, its arithmetic measured, the catalogue's Open items, ADD-A125)` | token |
 | W1-023 | `token.motion.durations.control_faster` | token |
 | W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27) | field |
 | W1-025 | `button.body.focus.offset` | field |
@@ -134,16 +135,16 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-150† | `input.supporting_text.text @ context stepper / context any search_field (NumberBox's and AutoSuggestBox's description; PasswordBox is input variant secure)` | rule |
 | W1-151† | `input.misspelling.text.decoration` (thickness and offset as references to the font's metrics, widget.text.font_underline_thickness and _offset, where the probe shows the line follows the font, S2.8) | field |
 | W1-151† | `input.preedit.{fill,text.fill,text.decoration} @ variant selected_clause (the target clause; the IME's other clause attributes, TF_DISPLAYATTRIBUTE, as keyed preedit variants)` | rule |
-| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.mark.glyph.fill, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` | rule |
-| W1-038 | `checkbox.mark.glyph (FontCodePoint and size) @ {indeterminate}` | rule |
+| W1-037 | `checkbox.box.fill, checkbox.box.stroke, checkbox.mark.glyph, checkbox.label.text.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} / {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled}` (the mark's colour per state, its field, `glyph.fill` or its stroke's paint, ADD-A126's with the mark's and dot's representation, ledger queue #85, ADD-A125: the unchecked foregrounds, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CheckBox_themeresources.xaml:65-68`, `:153-156`, `:241-244`, the colours the mark trims off in) | rule |
+| W1-038 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path, stroked: the accept visual's indeterminate dash)` (`microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:358-370`, placed by `:832-833`, `:846-848`, `:563`: scale 0.735 and the (−24, −24) offset within the 1.05 container, its 4-unit stroke 2.94 units; the visual's size, 48 units, `:1855-1857`; the path data the value phase reads; the form provisional, ADD-A126's with the mark's representation, ledger queue #85, ADD-A125) | rule |
 | W1-038 | `checkbox.box.{fill,stroke} @ {indeterminate}` | rule |
-| W1-039 | `checkbox.mark.glyph (FontCodePoint and size)` | field |
-| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W1-039 | `checkbox.mark.glyph (GlyphSource::Path, stroked: the accept visual's check)` (`microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:372-385`, the resting check's shapes `:777-807`, placed by `:1315-1316`, `:1330-1332` (and `:1343-1344`, `:1358-1360` for its second shape), `:780`: a point p maps to 0.735·p + (24, 22.95), its 4-unit stroke, `:787`, 2.94 units, round caps and join, `:782-785`; the visual's size, 48 units, `:1855-1857`, arranged to the icon's extent by `AnimatedIcon.cpp:153-181`: what WinUI draws, the AnimatedIcon's source, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CheckBox_themeresources.xaml:604-608`; the code point `CheckBoxCheckedGlyph` WinUI's own fallback, drawn only where the visual cannot be inserted, `AnimatedIcon/AnimatedIcon.cpp:473-479`, not modelled; the path data the value phase reads; the form provisional, ADD-A126's with the mark's representation, ledger queue #85, ADD-A125) | field |
+| W1-039 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: the accept visual draws the check on by `TrimEnd` and off by `TrimStart`, `microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:437`, `:470`, `:522-553`) | field |
 | W1-040 | `checkbox.body.min_height, checkbox.body.min_width` | field |
-| W1-041 | `radio.dot.{min_width,min_height} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-041 | `radio.dot.transitions (Geometry: the scale animation)` | field |
+| W1-041 | `radio.dot.{min_width,min_height} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: an unchecked radio shows a second dot while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`, `:376`, and a checked radio's pressed dot is set by two groups, `:298-300`, `:353`, a measurement, the catalogue's Open items) | rule |
+| W1-041 | `radio.dot.transitions (Geometry: the scale animation)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | field |
 | W1-042 | `radio.ring.stroke, radio.ring.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: the pressed unchecked dot's fill `RadioButtonCheckGlyphFill`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:34`, `:92`, `:150`, its border not drawn, a `BorderBrush` but no `BorderThickness`, `:376`) | rule |
 | W1-043 | `radio.{body,ring,dot,label} (the typed radio, stated apart from checkbox)` | field |
 | W1-044 | `menu.item.fill @ {pressed}` | rule |
 | W1-044 | `menu.item_label.text.fill @ {pressed}` | rule |
@@ -255,7 +256,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-088 | `tab.bar.fill (PaintKind::Material @mica_alt)` | field |
 | W1-088 | `tab.pane.fill (a layer over Mica Alt: = role.@layer_on_mica_base_alt_*)` | field |
 | W1-088 | `tab.tab.fill @ {selected} (joined to the pane's fill)` | rule |
-| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` | rule |
+| W1-089 | `list.row_selection_indicator.{fill,corners,min_width,min_height} @ variant sidebar` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | rule |
 | W1-089 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled} variant sidebar` | rule |
 | W1-089 | `list.values.selection_indicator_edge @ variant sidebar` (the pill at the row's leading edge) | rule |
 | W1-090 | `list.values.presentations (event @indicator_move, part row_selection_indicator, PresentationKind::Morph) @ variant sidebar` | rule |
@@ -301,7 +302,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
 | W1-105 | - | preset (R1.3) |
 | W1-106 | `list.row_background.fill, list.row.text.fill @ {pressed} / {selected,hover} / {selected,pressed} / {selected,disabled}` | rule |
-| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` | field |
+| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
 | W1-107 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled}` | rule |
 | W1-107 | `list.row_selection_indicator.transitions` | field |
 | W1-108 | `list.row_background.corners, list.values.row_background_inset` | field |
@@ -367,7 +368,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-134 | `menu.item.padding @ cond input:touch context combo_box / cond input:game_controller context combo_box` | rule |
 | W1-134 | `menu.item.corners @ context combo_box` | rule |
 | W1-135 | `menu.item_selection_indicator.{fill,min_width,min_height,corners} @ {selected} context combo_box` | rule |
-| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (the scale it grows from, and its animation)` | rule |
+| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (its rest scale, ScaleY 1, and the pressed animation's timing)` | rule |
+| W1-135 | `menu.item_selection_indicator.transform @ {selected,pressed} context combo_box` (the pill's `ScaleY` to `ComboBoxItemPillMinScale` while pressed, about its centre, `RenderTransformOrigin="0.5,0.5"`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:356`, `:721-727`, `:326`, its timing, `ComboBoxItemScaleAnimationDuration`, `:330`, with `KeySpline="0,0,0,1"`, the pill's `transitions`, ADD-A125) | rule |
+| W1-135 | `menu.item_selection_indicator (absent = true)` (`windows-11`'s base: no menu item draws the pill but a combo box's selected one, `Opacity="0"` in `ComboBoxItem`'s template, 1 only in its `Selected*` states, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:759`, `:657-739`; the `{selected} context combo_box` rules above bring it back, S6.3; how it enters and leaves is ADD-A126's, S2.7, ADD-A125) | field |
 | W1-136 | `menu.values.presentations @ context combo_box (events Appear, Disappear: ClipReveal { from: Anchor }, the selected row lying over the anchor under over_selected_item)` | rule |
 | W1-136 | `WinUiComboBox (combo_box.values.popup_placement: over_selected_item; ADD-A21, ADD-A22)` | placement |
 | W1-137 | `combo_box.* @ variant editable` | rule |
@@ -446,7 +449,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-04 | `button.{body.fill,icon.glyph,body.transform} @ variant previous context picker_wheel.container / variant next context picker_wheel.container (the up and down buttons)` | rule |
 | W2-04 | `button.body.transform @ {pressed} variant previous context picker_wheel.container / {pressed} variant next context picker_wheel.container (their press scale)` | rule |
 | W2-04 | `button.* @ variant @accept context time_picker / variant @dismiss context time_picker / variant @accept context date_picker / variant @dismiss context date_picker (the accept and dismiss row)` | rule |
-| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation: it enters from transparent by its transitions, S2.7) | rule |
+| W2-04 | `time_picker.popup.transitions, date_picker.popup.transitions; time_picker.popup (absent = true) @ !{open}, date_picker.popup (absent = true) @ !{open} variant text_field` (the flyout's open animation; how it enters and leaves is ADD-A126's, S2.7) | rule |
 | W2-05 | `color_picker.plane.{stroke,min_width,min_height} @ variant @box / variant @ring` | rule |
 | W2-05 | `color_picker.selection_ellipse.{stroke,corners,min_width,min_height}` (the selection ellipse) | field |
 | W2-05 | `color_picker.preview.corners (the previous and current colours)` | field |
@@ -487,7 +490,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-12 | `list.values.indent_per_level` | field |
 | W2-12 | `list.disclosure.glyph; list.disclosure.transitions` | field |
 | W2-12 | `list.disclosure.transform @ {open}` | rule |
-| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` | field |
+| W2-12 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
 | W2-12 | `checkbox.* @ context list.row (the multi-select check box)` | rule |
 | W2-12 | `list.row.min_height` | field |
 | W2-12 | `list.row.min_height @ density compact` | rule |
@@ -693,7 +696,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-28 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
 | W3-28 | `expander.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | field |
 | W3-28 | `button.menu_indicator.transitions @ variant menu (TransitionKind::Keyed per AnimatedIcon state; ADD-A27)` | rule |
-| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` | field |
+| W3-28 | `checkbox.mark.transitions (TransitionKind::Keyed per AnimatedIcon state, the accept animation; ADD-A27)` (its source `AnimatedAcceptVisualSource.cpp`, W1-039; the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125) | field |
 | W3-28 | `button.icon.transitions @ variant back context window.title_bar / variant back context sidebar.header / variant pane_toggle context sidebar.header / variant pane_toggle context window.title_bar` (the back arrow and the hamburger, `TransitionKind::Keyed`, ADD-A27) | rule |
 | W3-28 | `list.leading_icon.transitions @ variant sidebar` (the settings gear, `TransitionKind::Keyed`, ADD-A27) | rule |
 | W3-29 | `link.body.cursor; input.body.cursor; text_area.body.cursor; splitter.divider.cursor; window.resize_zone.cursor (the hand, the I-beam, the resize cursors)` | field |

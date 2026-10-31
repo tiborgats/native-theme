@@ -78,10 +78,10 @@ rationale, each decided in the core's additions register (S22).
 | K1.16 | `cond shaded (ADD-A02)` | condition |
 | K1.16 | `window.frame.corners, window.frame.padding, window.frame.stroke, window.frame.shadow @ cond shaded` | rule |
 | K1.17 | `window.frame.transitions (Shadow; = token.motion.durations.decoration_shadow; = token.motion.timings.out_cubic both ways: the activation runs that curve forward, `breeze@6.8.2 kdecoration/breezedecoration.cpp:197`, `:279`, and the deactivation runs the in-cubic curve backward, `:278-279`, Qt applying the curve to currentTime over duration, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:200-202`, which in S2.7's forward reading is the out-cubic curve)` | field |
-| K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.params.motion.kwin_speed_factor)), the factor the decoration reads: `[KDE] AnimationDurationFactor` from KWin's main configuration, kwinrc, over kdeglobals, `KSharedConfig::openConfig()` inside KWin, which opens `<application name>rc` with kdeglobals included (`FullConfig`), KWin naming itself `kwin`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:379-380`, `kconfig@6.31.0 src/core/ksharedconfig.h:84`, `src/core/kconfig.h:94-100`, `src/core/kconfig.cpp:643-649`, `kwin@6.8.2 src/main.cpp:139`, `:155` (ADD-A123); S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
-| K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123)` | token |
-| K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor` | reader |
-| K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
+| K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.params.motion.kwin_speed_factor)), the factor the decoration reads: `[KDE] AnimationDurationFactor` from KWin's main configuration, kwinrc, over kdeglobals, `KSharedConfig::openConfig()` inside KWin, which opens `<application name>rc` with kdeglobals included (`FullConfig`), KWin naming itself `kwin`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:380-381`, `kconfig@6.31.0 src/core/ksharedconfig.h:84`, `src/core/kconfig.h:94-100`, `src/core/kconfig.cpp:643-649`, `kwin@6.8.2 src/main.cpp:139`, `:155` (ADD-A123); S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
+| K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123: stated `= token.motion.speed_factor`, so it follows kdeglobals' factor under `cond animations_off` too, ADD-A125)` | token |
+| K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor -> token.params.motion.kwin_speed_factor` (the reader's layer states kwinrc's own factor where kwinrc states one, ADD-A125) | reader |
+| K1.17 | `window.title.transitions ([]: the decoration's active-state animation is set to 0 and never runs, so its title colours change at once, no transition being no animation, breeze@6.8.2 kdecoration/breezedecoration.cpp:383-386, :288-296; ADD-A125)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
 | K1.19† | - | out (R1.1) |
 | K1.20 | `button.body.stroke @ {hover} / {focus_visible} / {pressed}` | rule |
@@ -97,7 +97,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.25 | `button.body.fill @ {checked} variant warning` | rule |
 | K1.25 | `button.body.stroke @ variant warning` | rule |
 | K1.26 | `button.body.corners @ variant circular (Ellipse, all four corners, Circular: Breeze's QWidget round button, `_kde_round_button`, drawn with a radius of half its rect's larger side, `breeze@6.8.2 kstyle/breezehelper.cpp:727`, `:738-739`, which Qt clamps per axis to half each side of the frame rect, `qtbase@6.12.0 src/gui/painting/qpainter.cpp:4015-4018`, `qpaintengineex.cpp:745-746`, the path fallback `qpainterpath.cpp:3457-3470`: the rect's inscribed ellipse, a circle where it is square; its shadow the same radius on the shadow's rect, `breezehelper.cpp:729-731`, `:1654-1659`, an ellipse of its own box, S2.5; ADD-A124; Kirigami's RoundButton keeps `Full`, Q2.4)` | rule |
-| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:5365-5371`, the value phase stating the start and end margins that move it there; ADD-A123)` | field |
+| K1.27 | `button.menu_indicator (part: min_width, glyph Path, fill; margin, `Inline`'s margin in the row, S2.11's: the arrow's box at the right of the label's contents rect, which Breeze sizes with the arrow inside its margins, `breeze@6.8.2 kstyle/breezestyle.cpp:3546-3556`, `:2216-2219`, `:5364-5372`, the value phase stating the start and end margins that move it there, ADD-A123; the label centred in the space before the arrow's box less the gap, the catalogue's `Inline` rule, `:5364-5372`, ADD-A125)` | field |
 | K1.27 | `button.values.menu_indicator_gap` | field |
 | K1.28 | `button.icon.icon.size (= token.icons.sizes.small.size)` | field |
 | K1.28 | `button.values.shows_icon` | field |
@@ -141,8 +141,8 @@ rationale, each decided in the core's additions register (S22).
 | K1.54 | `checkbox.box.fill, checkbox.box.stroke @ {checked,hover} / {checked,pressed}` | rule |
 | K1.54 | `checkbox.box.stroke, checkbox.mark.glyph @ {indeterminate,hover}` | rule |
 | K1.54 | `checkbox.box.stroke @ {checked,disabled} (the Disabled set's highlight)` | rule |
-| K1.55 | `checkbox.mark.glyph.draw_extent @ {checked} / {indeterminate}; checkbox.mark.transitions (Glyph)` | rule |
-| K1.55 | `radio.dot.transform @ {checked}; radio.dot.transitions (Transform)` | rule |
+| K1.55 | `checkbox.mark.glyph.draw_extent @ {checked} / {indeterminate}; checkbox.mark.transitions (Glyph)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: `CheckOff` draws nothing, `breeze@6.8.2 kstyle/breezehelper.cpp:942-943`, the check drawn on by a dash pattern `path.length() * animation` toward checked and nothing toward unchecked, `:954-962`) | rule |
+| K1.55 | `radio.dot.transform @ {checked}; radio.dot.transitions (Transform)` (the mark's and dot's representation is ADD-A126's, ledger queue #85, ADD-A125: an unchecked radio draws no dot, `breeze@6.8.2 kstyle/breezehelper.cpp:1075-1076`, its growth `radius * animation`, `:1070-1072`, both ways as the state engine runs back when the flag clears, `kstyle/breezestyle.cpp:4961-4966`, `kstyle/animations/breezewidgetstatedata.cpp:24`) | rule |
 | K1.55 | `checkbox.box.transitions (Fill); radio.ring.transitions` | field |
 | K1.55 | `token.motion.durations.animations, token.motion.speed_factor` | token |
 | K1.56 | `checkbox.box.stroke, checkbox.box.fill @ {checked} variant warning / radio.ring.stroke, radio.ring.fill @ {checked} variant warning` | rule |
@@ -244,7 +244,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.128 | `tab.pane.fill, tab.pane.stroke, tab.pane.corners, tab.pane.padding` | field |
 | K1.128 | `tab.pane.corners @ variant top / variant bottom / variant left / variant right` | rule |
 | K1.129 | `tab.label.focus (Underline) @ {selected,focus_visible}` | rule |
-| K1.129 | `tab.label.focus.transition` | field |
+| K1.129 | `tab.label.focus.transition` (its fade out pending ADD-A126, ledger queue #85) | field |
 | K1.130 | `tab.icon.icon.size` | field |
 | K1.130 | `tab.values.icon_text_gap` | field |
 | K1.131 | `tab.values.alignment` | field |
@@ -342,8 +342,9 @@ rationale, each decided in the core's additions register (S22).
 | K1.224† | `dialog.icon.glyph (ThemeIcon), dialog.icon.icon.size (= token.icons.sizes.keyed.huge.size) @ variants {alert,warning} / variants {alert,info} / variants {alert,error} / variants {alert,@question}` | rule |
 | K1.224† | `dialog.message.text; dialog.values.details_min_lines` | field |
 | K1.224† | `checkbox @ context dialog (the "don't ask again" check box)` | rule |
-| K1.230 | `spinner.icon.glyph (ThemeIcon process-working)` | field |
+| K1.230 | `spinner.icon.glyph (ThemeIcon view-refresh)` (`kwidgetsaddons@6.31.0 src/kbusyindicatorwidget.cpp:34`; under `flavor:kirigami` qqc2-desktop-style's BusyIndicator rotates `process-working-symbolic`, Q1.119's rule; ADD-A125) | field |
 | K1.230 | `spinner.values.loop (rotation and its period)` | field |
+| K1.230 | `spinner.indicator (absent = true) @ not_context any pull_to_refresh` (the busy indicator the rotating icon on both flavours, no arc or spokes, K1.230 and Q1.119, the catalogue's `may_be_absent`; ADD-A125) | rule |
 | K1.240 | `combo_box.body.fill, combo_box.body.stroke @ variant editable / variant editable {hover} / variant editable {focused}` | rule |
 | K1.240 | `combo_box.arrow.glyph.fill @ variant editable / variant editable context combo_box.arrow_area {hover}` (the hover colour only while the pointer is over the arrow sub-control, `SC_ComboBoxArrow`) | rule |
 | K1.240 | `combo_box.arrow_area.min_width @ variant editable; combo_box.arrow_area (absent = true) @ !variant editable` (the arrow sub-control as an element, its drawing fields absent) | rule |
@@ -751,7 +752,7 @@ rationale, each decided in the core's additions register (S22).
 | K2.14 | `component.title_widget.{container.padding,title.text} @ context component.page_view` (the page title header is KTitleWidget, one home) | rule |
 | K2.14 | `component.page_view.header_separator.stroke` | component |
 | K2.14 | `input @ context component.page_view; component.page_view.search_container.padding (its container's margins, per side)` (the search line edit) | component |
-| K2.15 | `component.title_widget.title.text (= token.text.keyed.heading_<n>) @ variant @level_1 … (one per declared level of K1.270)` | component |
+| K2.15 | `component.title_widget.title.text @ variant @level_1 … @level_4` (KTitleWidget's own level style per level, not Kirigami's `heading_<n>`: the label's inherited font's weight, the application font by default, and K1.270's factor of the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`; not yet stated exactly, ledger queue #130, ADD-A125) | component |
 | K2.15 | `component.title_widget.comment.text.fill, component.title_widget.comment.fill @ variant @info / variant @warning / variant @error` (one look for the three, from the palette's highlighted text and highlight as Qt applies the source's style sheet, value phase; `MessageType` has no positive type, `ktitlewidget.h:115-120`) | component |
 | K2.15 | `component.title_widget.icon.icon` | component |
 | K2.16 | `component.multi_tab_bar.tab_button.fill, component.multi_tab_bar.tab_button.padding` | component |
@@ -988,6 +989,7 @@ rationale, each decided in the core's additions register (S22).
 | K3.30 | `cond animations_off (factor 0)` | condition |
 | K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: while the factor is set, = floor(mul(<base>, token.motion.speed_factor)), truncated to whole ms, `breeze@6.8.2 kstyle/breezestyle.cpp:2080`, zero, which a factor below 0.01 gives, turning Breeze's animations off, `:2085`, a positive result turning them on, `:2081-2083`; breezerc AnimationsDuration otherwise)` | token |
 | K3.31 | `token.motion.timings.animations (Steps: its count read from AnimationSteps)` | token |
+| K3.31 | `token.motion (color_space PremultipliedSrgb: Breeze's fades paint KColorUtils::mix, kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166, S2.7, ADD-A125)` | token |
 | K3.31 | `token.motion.durations.animations` (the reader states it zero while kdeglobals sets no `AnimationDurationFactor` and breezerc [Style] AnimationsEnabled is off; a factor set overrides that switch, its product with 100 truncated to whole ms turning Breeze's animations on where positive and off where zero, as a factor below 0.01 gives, `breezestyle.cpp:2076-2085`: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
 | K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled})` | field |
 | K3.31 | `navigation_view.values.presentations (Fade) @ cond system_setting:stacked_widget_transitions (the stacked-widget fade, off by default)` | rule |
@@ -1013,8 +1015,8 @@ rationale, each decided in the core's additions register (S22).
 | K3.23 | `input.body.stroke @ {focused}, combo_box.body.stroke @ {focused}` (the frames' focus colour, as K1.40, K1.243 state it; buttons by `{focus_visible}`, K1.20) | rule |
 | K3.23 | `slider.thumb.stroke @ {focused}` (K1.100); `scrollbar.thumb.fill @ context any scroll_view {focus_within}` (K1.92): the thumbs' focus colour, each on its own part | rule |
 | K3.23 | `role.window.decoration_focus` | role |
-| K3.24 | `FocusIndicator.transition` | field |
-| K3.24 | `PartStyle.transitions group Focus` | field |
+| K3.24 | `FocusIndicator.transition` (its fade out pending ADD-A126, ledger queue #85) | field |
+| K3.24 | `PartStyle.transitions group Focus` (the group's name, which `PropertyGroup` lacks, pending ADD-A126, ledger queue #85) | field |
 | K3.40 | `role.selection.<role> @ cond window_inactive (= kde_effects(kde_selection_inactive(<Selection's inactive input of that role>, <Window's inactive input of that role>, active(role.selection.background), <role kind>), kde_selection_inactive(<Selection's inactive background input>, <Window's inactive background input>, active(role.selection.background), background), inactive, <role kind>): KColorScheme's start for the Selection set's Inactive group, Window's colours (the background tinted toward Selection's) while token.kde.inactive_change_selection_color holds, else Selection's own (kcolorscheme.cpp:304-316, :374-378), with the inactive effects applied over it (:380-391; S2.2, R5.1))` | rule |
 | K3.40 | `token.kde.inactive, token.kde.inactive_change_selection_color, token.kde.inactive_enabled` | token |
 | K3.40 | `reader:kde:kdeglobals [ColorEffects:Inactive] ChangeSelectionColor, Enable` | reader |
@@ -1143,6 +1145,7 @@ rationale, each decided in the core's additions register (S22).
 | Q3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | Q3.25 | `token.motion.durations.* (the floor through max, ADD-A56) @ cond animations_off; the transitions whose duration resolves to zero run instantly; spinner.values.loop @ cond animations_off (Q1.120)` | token |
 | Q3.26 | `token.motion.timings.<key> (one declared timing per easing curve in use)` | token |
+| Q3.26 | `token.motion @ cond flavor:kirigami (color_space StraightSrgb8: QML's ColorAnimation through QVariantAnimation's colour interpolator, qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22, S2.7, ADD-A125)` | rule |
 | Q3.26 | `Timing::Platform(PlatformCurve::KirigamiVelocity)` (SmoothedAnimation by velocity, CONTRA-2) | token |
 | Q3.27 | `token.motion.durations.human_moment (unscaled)` | token |
 | Q3.28 | `tooltip.values.show_delay` | field |
@@ -1293,7 +1296,7 @@ rationale, each decided in the core's additions register (S22).
 | K-P3-13† | `autocomplete.values.placement (KTextEditorCompletion: under the completion's start, its gap = an expression on the font's height; kept inside the window) @ context code_editor` | placement |
 | K-P3-13† | `autocomplete.details_pane @ context code_editor (the argument hints and the documentation tip)` | rule |
 | K-P3-14† | `code_editor.annotation_border.stroke @ {hover}; code_editor.annotation_border.padding` | rule |
-| K-P3-15† | `token.theme_change (the toolkit's own: KWin fades the windows)` | token |
+| K-P3-15† | `token.theme_change (the toolkit's own, measured; KWin's fade is the compositor's, next row)` | token |
 | K-P3-15† | - (KWin's Blend Changes cross-fade of every window) | out (R1.1) |
 | K-P3-16† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
 | K-P3-16† | `token.behavior.key_repeat` (kcminputrc's `KeyRepeat` off, keys never repeating: `none`, `Behavior.key_repeat`'s `None`; ADD-A104) | token |
