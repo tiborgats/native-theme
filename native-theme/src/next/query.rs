@@ -115,6 +115,18 @@ pub struct Sibling<'a> {
     pub states: StateFlags,
 }
 
+impl<'a> Sibling<'a> {
+    /// The sibling of `part`, holding `variants` and `states`.
+    #[must_use]
+    pub fn new(part: PartRef, variants: &'a [VariantRef], states: StateFlags) -> Sibling<'a> {
+        Sibling {
+            part,
+            variants,
+            states,
+        }
+    }
+}
+
 /// The data an element's values may read (S8, R25.3).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
@@ -222,5 +234,70 @@ impl<'a> Element<'a> {
             data: ElementData::default(),
             metrics,
         }
+    }
+
+    /// The element with its variants.
+    #[must_use]
+    pub fn with_variants(mut self, variants: &'a [VariantRef]) -> Element<'a> {
+        self.variants = variants;
+        self
+    }
+
+    /// The element at a control size.
+    #[must_use]
+    pub fn with_size(mut self, size: ControlSize) -> Element<'a> {
+        self.size = Some(size);
+        self
+    }
+
+    /// The element with its own density, passed to its subtree.
+    #[must_use]
+    pub fn with_density(mut self, density: Density) -> Element<'a> {
+        self.density = Some(density);
+        self
+    }
+
+    /// The element with its own direction, passed to its subtree.
+    #[must_use]
+    pub fn with_direction(mut self, direction: Direction) -> Element<'a> {
+        self.direction = Some(direction);
+        self
+    }
+
+    /// The element with its own size classes, passed to its subtree.
+    #[must_use]
+    pub fn with_size_classes(mut self, size_classes: SizeClasses) -> Element<'a> {
+        self.size_classes = Some(size_classes);
+        self
+    }
+
+    /// The element with its language, for icon lookup.
+    #[must_use]
+    pub fn with_language(mut self, language: LanguageTag) -> Element<'a> {
+        self.language = Some(language);
+        self
+    }
+
+    /// The element holding `states`, set in `state_order` (the latest last).
+    #[must_use]
+    pub fn with_states(mut self, states: StateFlags, state_order: &'a [StateFlag]) -> Element<'a> {
+        self.states = states;
+        self.state_order = state_order;
+        self
+    }
+
+    /// The element at `index` among all its `siblings`.
+    #[must_use]
+    pub fn with_siblings(mut self, siblings: &'a [Sibling<'a>], index: usize) -> Element<'a> {
+        self.siblings = siblings;
+        self.index = index;
+        self
+    }
+
+    /// The element with its data.
+    #[must_use]
+    pub fn with_data(mut self, data: ElementData<'a>) -> Element<'a> {
+        self.data = data;
+        self
     }
 }

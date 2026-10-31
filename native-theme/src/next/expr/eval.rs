@@ -264,8 +264,9 @@ fn finite(value: Val) -> Val {
     map_number(value, arith::finite)
 }
 
-/// `value` limited by `bound` where it is a number.
-fn bounded(value: Val, bound: Bound) -> Val {
+/// `value` limited by `bound` where it is a number, a non-finite number or
+/// channel zero (S2.2's *Totality*).
+pub(crate) fn bounded(value: Val, bound: Bound) -> Val {
     match value {
         Val::Color(c) => Val::Color(arith::finite_color(c)),
         other => map_number(other, |x| arith::bound(x, bound)),

@@ -41,7 +41,7 @@ use super::key::Key;
 use super::roles::SurfaceSet;
 use super::units::{Deg, Ms, Px};
 
-pub(crate) use eval::{Env, Val};
+pub(crate) use eval::{Env, Val, bounded};
 pub use parse::{ParseError, ParseErrorKind};
 pub(crate) use ty::{Bound, EnumTy, FieldType, SURFACE_SET, Ty, TypeEnv};
 

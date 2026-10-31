@@ -997,3 +997,36 @@ fn a_field_below_a_reference_composes_lazily() {
         Some(Val::FontSize(Px(10.0)))
     );
 }
+
+/// Task 11a's review: a plain reference to a place-less value is limited as
+/// a call's result is (S2.2's *Totality*): a fraction clamped, a non-finite
+/// number zero; and a font size read from a length is that length.
+#[test]
+fn plain_references_are_total() {
+    let theme = resolved(
+        &[
+            BASE,
+            "[widgets.button.body]\nopacity = \"= element.progress\"\n\
+             [widgets.button.label.text]\nletter_spacing = \"= token.focus.width\"",
+        ],
+        1.5,
+    );
+    let scope = scope();
+    let opacity = |progress: f32| {
+        let mut element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+        element.data.progress = crate::next::units::Fraction(progress);
+        theme
+            .evaluate_part(BODY, &element, &|_| true)
+            .value
+            .and_then(|body| body.opacity)
+    };
+    assert_eq!(opacity(1.5), Some(crate::next::units::Fraction(1.0)));
+    assert_eq!(opacity(f32::NAN), Some(crate::next::units::Fraction(0.0)));
+    let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    let spacing = theme
+        .evaluate_part(LABEL, &element, &|_| true)
+        .value
+        .and_then(|label| label.text)
+        .and_then(|text| text.letter_spacing);
+    assert_eq!(spacing, Some(Px(2.0)));
+}

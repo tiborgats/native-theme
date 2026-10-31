@@ -32,6 +32,7 @@ use crate::next::color::Color;
 use crate::next::declare::ScalarUnit;
 use crate::next::expr::{
     Bound, ElementDatum, Env, Expr, FieldType, Literal, MAX_CHAIN, MAX_DEPTH, Name, Ref, Ty, Val,
+    bounded,
 };
 use crate::next::key::Key;
 use crate::next::query::{Element, Scope};
@@ -1447,7 +1448,15 @@ impl<'t> Cx<'t> {
         match expr {
             Expr::Ref(Ref::Base) => self.value::<X>(below, signed),
             Expr::Ref(reference) => match self.reference(reference, origin)? {
-                Answer::Val(val) => X::from_val(&val),
+                // A value with no place (an element's datum, a metric) is
+                // limited as a call's result is (S2.2's *Totality*).
+                Answer::Val(val) => {
+                    let val = match X::field(signed) {
+                        Some(field) => bounded(val, field.bound),
+                        None => val,
+                    };
+                    X::from_val(&val)
+                }
                 Answer::Place {
                     target,
                     path,
@@ -1643,7 +1652,12 @@ impl<'t> Cx<'t> {
                 cx.font_value(c, size)
             });
         }
-        match value_of::<FontSize>(fold)? {
+        let Some(value) = value_of::<FontSize>(fold) else {
+            // A length where a font size is expected reads as px, not
+            // text-scaled (S2.2).
+            return self.value::<Px>(items, true).map(|px| (px, true));
+        };
+        match value {
             Value::Stated(stated) => {
                 let dpi = self.dpi();
                 Some((convert(*stated, dpi)?, false))
@@ -1786,15 +1800,6 @@ impl<'t> Cx<'t> {
             },
             Value::Expr(_) => None,
         }
-    }
-
-    /// A bare block set whole.
-    pub(crate) fn set_bare<'f, B>(&mut self, items: &[Fold<'f>]) -> Option<B::Resolved>
-    where
-        't: 'f,
-        B: ResolveWhole + Locate,
-    {
-        self.set::<B>(items)
     }
 
     /// An append block's resolved value (S6.1): a paint's.

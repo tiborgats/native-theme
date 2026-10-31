@@ -197,9 +197,9 @@ fn entry_call(map: &MapBlock) -> TokenStream {
         (BlockKind::Set, Wrap::Value) => {
             quote!(|cx, e| ::core::option::Option::Some(cx.set::<#b>(e)))
         }
-        (BlockKind::Set, Wrap::Bare | Wrap::Option) => quote!(|cx, e| cx.set_bare::<#b>(e)),
+        (BlockKind::Set, Wrap::Bare | Wrap::Option) => quote!(|cx, e| cx.set::<#b>(e)),
         (_, Wrap::List) => quote!(|cx, e| cx.list::<#b>(e)),
-        (BlockKind::Fields, Wrap::Option) => quote!(|cx, e| cx.set_bare::<#b>(e)),
+        (BlockKind::Fields, Wrap::Option) => quote!(|cx, e| cx.set::<#b>(e)),
     }
 }
 
@@ -252,7 +252,7 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
                 (BlockKind::Fields, Wrap::Value) => (quote!(cx.block::<#b>(&items)), false),
                 (BlockKind::Fields, Wrap::Bare) => (quote!(cx.block::<#b>(&items)), true),
                 (BlockKind::Set, Wrap::Value) => (quote!(cx.set::<#b>(&items)), false),
-                (BlockKind::Set, Wrap::Bare) => (quote!(cx.set_bare::<#b>(&items)), true),
+                (BlockKind::Set, Wrap::Bare) => (quote!(cx.set::<#b>(&items)), true),
                 (BlockKind::Append, _) => (quote!(cx.append::<#b>(&items)), false),
                 (_, Wrap::List) if field.attrs.keyed => (quote!(cx.keyed::<#b>(&items)), true),
                 (_, Wrap::List) => (quote!(cx.list::<#b>(&items)), true),
