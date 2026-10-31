@@ -2177,165 +2177,110 @@ fn refusal_unused_every_kind() {
     );
 }
 
-/// One fieldless variant per `ProblemKind` variant, of the same name, in
-/// `ProblemKind`'s order: `layer_error_every_variant_triggers` maps each kind
-/// to its own, so the count is the last one's, and two kinds sharing one
-/// fail the test.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum V {
-    Toml,
+/// One fieldless variant per `ProblemKind` variant, of the same name, and
+/// `index`, which maps each kind to its own: both written from one list,
+/// whose `match` names every kind without a wildcard, so a new kind does not
+/// compile until it is listed, no kind can be indexed as another's variant,
+/// and `COUNT` is the list's length.
+macro_rules! kinds {
+    ($($name:ident $(($($tuple:tt)*))? $({ $($fields:tt)* })?),* $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum V {
+            $($name,)*
+        }
+
+        impl V {
+            /// How many there are.
+            const COUNT: usize = [$(V::$name),*].len();
+        }
+
+        /// The kind's own variant of `V`.
+        fn index(kind: &crate::next::error::ProblemKind) -> V {
+            use crate::next::error::ProblemKind as K;
+            match kind {
+                $(K::$name $(($($tuple)*))? $({ $($fields)* })? => V::$name,)*
+            }
+        }
+    };
+}
+
+kinds! {
+    Toml(_),
     UnknownKey,
-    Mistyped,
-    UnknownName,
-    NotAKey,
-    Expression,
+    Mistyped { .. },
+    UnknownName { .. },
+    NotAKey(_),
+    Expression(_),
     Missing,
-    DuplicateKey,
+    DuplicateKey { .. },
     NotFinite,
     PartWithoutWidget,
-    NotAPartField,
+    NotAPartField { .. },
     AppendInBases,
     AbsentNotAllowed,
     AutoNotAllowed,
     CallNotAllowed,
-    OutOfRange,
+    OutOfRange { .. },
     NoLayer,
     MaskAtBottom,
     TooFewStops,
     NoProperties,
     FromNoState,
     RecencyTooSmall,
-    RecencyOrder,
-    NotInRecencySet,
+    RecencyOrder { .. },
+    NotInRecencySet { .. },
     StateLayerWithoutInteraction,
     ZeroDuration,
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
     FollowPartOutsideFocus,
-    RouteDuplicated,
-    KdeAccentArgument,
+    RouteDuplicated { .. },
+    KdeAccentArgument { .. },
     PickWithoutColors,
     TooDeep,
     BaseInBases,
-    ElementOperand,
+    ElementOperand { .. },
     SurfaceInRoles,
-    IllTyped,
-    OtherElementsPart,
-    UndeclaredData,
-    Undeclared,
+    IllTyped { .. },
+    OtherElementsPart { .. },
+    UndeclaredData { .. },
+    Undeclared { .. },
     NotConditions,
-    WidgetUnavailable,
+    WidgetUnavailable { .. },
     AccentInput,
-    ListedTwice,
-    SizeNotTaken,
+    ListedTwice { .. },
+    SizeNotTaken { .. },
     NotABlock,
-    UnitMismatch,
-    FieldsOver,
+    UnitMismatch { .. },
+    FieldsOver { .. },
     DrawnAsCycle,
     TextScaleUnderDynamicType,
-    AbsentOperand,
-    AutoOperand,
+    AbsentOperand { .. },
+    AutoOperand { .. },
     ExpressionCycle,
     ChainTooLong,
-    PartNotDrawn,
-    CornerAtLayout,
-    UnequalOffsets,
+    PartNotDrawn { .. },
+    CornerAtLayout { .. },
+    UnequalOffsets { .. },
+    UnequalInsets { .. },
+    TextRoleShared { .. },
+    TextRoleOrder { .. },
+    ShapeOverCorners,
     EllipseCorners,
     TextScalingNotImplemented,
-    UnequalInsets,
-    TextRoleShared,
-    TextRoleOrder,
-    ShapeOverCorners,
-    EntryCreatedUnset,
-    ElementSizeInLayout,
-    LeftToPreset,
-    Unused,
-}
-
-impl V {
-    /// How many there are: the last one's place, plus one.
-    const COUNT: usize = V::Unused as usize + 1;
+    EntryCreatedUnset { .. },
+    ElementSizeInLayout { .. },
+    LeftToPreset { .. },
+    Unused { .. },
 }
 
 /// Every `LayerError` and `ProblemKind` variant, each triggered by a
 /// fixture: S11's reader's kinds by text it refuses, S12's by a layer or a
 /// stack it refuses. `index` matches every variant without a wildcard,
-/// each to its own `V`, so a new variant does not compile until it is
-/// indexed, and fails here until a fixture triggers it.
+/// each to its own `V` (`kinds!`), so a new variant does not compile until
+/// it is listed, and fails here until a fixture triggers it.
 #[test]
 fn layer_error_every_variant_triggers() {
-    use crate::next::error::ProblemKind as K;
-    fn index(kind: &K) -> V {
-        match kind {
-            K::Toml(_) => V::Toml,
-            K::UnknownKey => V::UnknownKey,
-            K::Mistyped { .. } => V::Mistyped,
-            K::UnknownName { .. } => V::UnknownName,
-            K::NotAKey(_) => V::NotAKey,
-            K::Expression(_) => V::Expression,
-            K::Missing => V::Missing,
-            K::DuplicateKey { .. } => V::DuplicateKey,
-            K::NotFinite => V::NotFinite,
-            K::PartWithoutWidget => V::PartWithoutWidget,
-            K::NotAPartField { .. } => V::NotAPartField,
-            K::AppendInBases => V::AppendInBases,
-            K::AbsentNotAllowed => V::AbsentNotAllowed,
-            K::AutoNotAllowed => V::AutoNotAllowed,
-            K::CallNotAllowed => V::CallNotAllowed,
-            K::OutOfRange { .. } => V::OutOfRange,
-            K::NoLayer => V::NoLayer,
-            K::MaskAtBottom => V::MaskAtBottom,
-            K::TooFewStops => V::TooFewStops,
-            K::NoProperties => V::NoProperties,
-            K::FromNoState => V::FromNoState,
-            K::RecencyTooSmall => V::RecencyTooSmall,
-            K::RecencyOrder { .. } => V::RecencyOrder,
-            K::NotInRecencySet { .. } => V::NotInRecencySet,
-            K::StateLayerWithoutInteraction => V::StateLayerWithoutInteraction,
-            K::ZeroDuration => V::ZeroDuration,
-            K::KeyframesNotIncreasing => V::KeyframesNotIncreasing,
-            K::KeyframeWithoutPart => V::KeyframeWithoutPart,
-            K::FollowPartOutsideFocus => V::FollowPartOutsideFocus,
-            K::RouteDuplicated { .. } => V::RouteDuplicated,
-            K::KdeAccentArgument { .. } => V::KdeAccentArgument,
-            K::PickWithoutColors => V::PickWithoutColors,
-            K::TooDeep => V::TooDeep,
-            K::BaseInBases => V::BaseInBases,
-            K::ElementOperand { .. } => V::ElementOperand,
-            K::SurfaceInRoles => V::SurfaceInRoles,
-            K::IllTyped { .. } => V::IllTyped,
-            K::OtherElementsPart { .. } => V::OtherElementsPart,
-            K::UndeclaredData { .. } => V::UndeclaredData,
-            K::Undeclared { .. } => V::Undeclared,
-            K::NotConditions => V::NotConditions,
-            K::WidgetUnavailable { .. } => V::WidgetUnavailable,
-            K::AccentInput => V::AccentInput,
-            K::ListedTwice { .. } => V::ListedTwice,
-            K::SizeNotTaken { .. } => V::SizeNotTaken,
-            K::NotABlock => V::NotABlock,
-            K::UnitMismatch { .. } => V::UnitMismatch,
-            K::FieldsOver { .. } => V::FieldsOver,
-            K::DrawnAsCycle => V::DrawnAsCycle,
-            K::TextScaleUnderDynamicType => V::TextScaleUnderDynamicType,
-            K::AbsentOperand { .. } => V::AbsentOperand,
-            K::AutoOperand { .. } => V::AutoOperand,
-            K::ExpressionCycle => V::ExpressionCycle,
-            K::ChainTooLong => V::ChainTooLong,
-            K::PartNotDrawn { .. } => V::PartNotDrawn,
-            K::CornerAtLayout { .. } => V::CornerAtLayout,
-            K::UnequalOffsets { .. } => V::UnequalOffsets,
-            K::UnequalInsets { .. } => V::UnequalInsets,
-            K::TextRoleShared { .. } => V::TextRoleShared,
-            K::TextRoleOrder { .. } => V::TextRoleOrder,
-            K::ShapeOverCorners => V::ShapeOverCorners,
-            K::EllipseCorners => V::EllipseCorners,
-            K::TextScalingNotImplemented => V::TextScalingNotImplemented,
-            K::EntryCreatedUnset { .. } => V::EntryCreatedUnset,
-            K::ElementSizeInLayout { .. } => V::ElementSizeInLayout,
-            K::LeftToPreset { .. } => V::LeftToPreset,
-            K::Unused { .. } => V::Unused,
-        }
-    }
     fn problems(result: Result<(), LayerError>) -> Vec<Problem> {
         match result {
             Ok(()) => Vec::new(),
@@ -2885,21 +2830,6 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
     ];
-    // Each variant is one `V`: two kinds the fixtures meet never share one.
-    let mut met: Vec<(std::mem::Discriminant<K>, V)> = Vec::new();
-    for (_, found) in &fixtures {
-        for problem in found {
-            let held = (std::mem::discriminant(&problem.kind), index(&problem.kind));
-            assert!(
-                met.iter().all(|(d, v)| (*d == held.0) == (*v == held.1)),
-                "two variants indexed as {:?}",
-                held.1
-            );
-            if !met.contains(&held) {
-                met.push(held);
-            }
-        }
-    }
     let mut covered = [false; V::COUNT];
     for (expected, found) in &fixtures {
         let kinds: Vec<V> = found.iter().map(|problem| index(&problem.kind)).collect();
