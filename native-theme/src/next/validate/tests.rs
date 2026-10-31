@@ -1049,9 +1049,10 @@ fn refusal_unused() {
     );
 }
 
-/// Keyed variants and device models no rule selects on, and keyed icon
-/// contexts and status colours no base states, are unused (S12); the
-/// variants S12 exempts are not.
+/// Device models no rule selects on, and keyed icon contexts and status
+/// colours no base states, are unused (S12); a declared variant no rule
+/// selects on is not (ADD-A128: it draws as the base, and the facts gate's
+/// declarations run checks it).
 #[test]
 fn refusal_unused_variants_models_and_maps() {
     let rule = "[[rules]]\nwhen = { variants = [\"@pill\"], conditions = \
@@ -1063,7 +1064,6 @@ fn refusal_unused_variants_models_and_maps() {
     assert_eq!(
         preset(head),
         [
-            "declare.widget.button.variants: `@pill` is declared but unused",
             "declare.device_models: `phone_x` is declared but unused",
             "declare.status_colors: `error` is declared but unused",
             "declare.icon_contexts: `menu` is declared but unused",

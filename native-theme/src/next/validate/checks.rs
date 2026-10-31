@@ -2151,10 +2151,6 @@ struct Uses {
     flags: Vec<StateFlag>,
     /// The recency sets `latest` terms name, by the widget they are of.
     recency: Vec<(Option<WidgetKind>, Key)>,
-    /// The variants rules select on or draw a part as, by the widget they
-    /// are of; `None`: a context or sibling matched by variant alone, of
-    /// any widget.
-    variants: Vec<(Option<WidgetKind>, VariantRef)>,
     conditions: Vec<Condition>,
     events: Vec<Key>,
     /// The bases' keyed names, by their declaration (`params` as
@@ -2204,19 +2200,6 @@ impl Uses {
         let conditions = &selector.conditions;
         self.conditions
             .extend(conditions.all_of.iter().chain(&conditions.none_of).cloned());
-        if widget.is_some() {
-            self.variants_of(widget, &selector.variants);
-        }
-        for context in selector.context.iter().chain(&selector.not_context) {
-            let widget = target_widget(context.target.as_ref());
-            self.variants_of(widget, &context.variants);
-        }
-        if let Some(position) = &selector.position {
-            for sibling in [&position.previous, &position.next].into_iter().flatten() {
-                let widget = target_widget(sibling.target.as_ref());
-                self.variants_of(widget, &sibling.variants);
-            }
-        }
         self.recency
             .extend(selector.latest.iter().map(|(set, _)| (widget, set.clone())));
         let mut states = vec![&selector.states];
@@ -2244,32 +2227,11 @@ impl Uses {
             .extend(selector.latest.iter().map(|(_, flag)| flag.clone()));
     }
 
-    fn variants_of(&mut self, widget: Option<WidgetKind>, set: &SetMatch<VariantRef>) {
-        let named = set.all_of.iter().chain(&set.none_of);
-        self.variants
-            .extend(named.map(|variant| (widget, variant.clone())));
-    }
-
-    /// A part's patch: its style's keyed names, the variants a `DrawnAs`
-    /// draws it as.
+    /// A part's patch: its style's keyed names.
     fn part(&mut self, patch: &PartPatch) {
-        match patch {
-            PartPatch::Style(style) => self.walk(style),
-            PartPatch::Absent => {}
-            PartPatch::DrawnAs { target, variants } => {
-                let widget = target_widget(Some(target));
-                self.variants
-                    .extend(variants.iter().map(|variant| (widget, variant.clone())));
-            }
+        if let PartPatch::Style(style) = patch {
+            self.walk(style);
         }
-    }
-
-    /// Whether a rule selects on, or a part is drawn as, `variant` of
-    /// `widget`.
-    fn uses_variant(&self, widget: WidgetKind, variant: &VariantRef) -> bool {
-        self.variants
-            .iter()
-            .any(|(held, used)| held.is_none_or(|held| held == widget) && used == variant)
     }
 
     fn walk<T: Walk + ?Sized>(&mut self, value: &T) {
@@ -2304,12 +2266,15 @@ impl Uses {
     }
 }
 
-/// Each declared keyed name nothing uses (S12): a keyed flag, a keyed
-/// variant, a system setting, a device model, a flavour or a container size
-/// no rule selects on (but the default flavour, each container's default
-/// size, a setting for applications, and the variants `exempt_variant` and
-/// `content_variants` name), a keyed name no base states, an event no
-/// `presentations` list names.
+/// Each declared keyed name nothing uses (S12): a keyed flag, a system
+/// setting, a device model, a flavour or a container size no rule selects
+/// on (but the default flavour, each container's default size and a
+/// setting for applications), a keyed name no base states, an event no
+/// `presentations` list names. A variant a platform preset declares and no
+/// rule selects on is no problem (S12, ADD-A128): it draws as the widget's
+/// base, and the facts gate checks the declared variants both ways against
+/// the state model (S17). Only a preset's declarations reach this check:
+/// an application layer and a palette declare no variants in the model.
 pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId>) -> Vec<Problem> {
     let mut uses = Uses::default();
     uses.bases(&layer.bases);
@@ -2363,15 +2328,6 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
         for (set, _) in section.recency.iter().flatten() {
             if !uses.recency.contains(&(Some(*widget), set.clone())) {
                 unused.push((format!("{at}.recency"), set.to_string()));
-            }
-        }
-        for variant in section.variants.iter().flatten() {
-            if let VariantRef::Keyed(key) = variant
-                && !uses.uses_variant(*widget, variant)
-                && !exempt_variant(decl, *widget, variant)
-                && !content_variants(*widget).any(|name| name == key.as_str())
-            {
-                unused.push((format!("{at}.variants"), format!("@{key}")));
             }
         }
     }
@@ -2451,49 +2407,6 @@ pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId
         .into_iter()
         .map(|(at, name)| Problem::new(&at, ProblemKind::Unused { name }))
         .collect()
-}
-
-/// A variant no rule needs to select on (S12): one `requires_variants`,
-/// `sizes_by_variant` or a breakpoint names, in any section of the widget.
-fn exempt_variant(decl: &Declarations, widget: WidgetKind, variant: &VariantRef) -> bool {
-    let sections = decl.widgets.iter().chain(
-        decl.flavor
-            .iter()
-            .flat_map(|(_, flavor)| flavor.widgets.iter()),
-    );
-    sections
-        .filter(|(held, _)| *held == widget)
-        .any(|(_, section)| {
-            section
-                .requires_variants
-                .iter()
-                .flatten()
-                .any(|held| held == variant)
-                || section
-                    .sizes_by_variant
-                    .iter()
-                    .flatten()
-                    .any(|by| by.variant == *variant)
-                || section
-                    .breakpoints
-                    .iter()
-                    .flatten()
-                    .any(|breakpoint| breakpoint.variant == *variant)
-        })
-}
-
-/// A widget's keyed content variants, its own and its *(element)* parts',
-/// which the connector sets by one platform's rule under every preset (S8;
-/// the catalogue's content-variant pairs, *Entry format*, ADD-A123): no rule
-/// need select on them. A widget declares its parts' variants in its own
-/// section (S10), so every pair exempts; that a name is a content variant
-/// only on the part its pair names is the query's to tell (S8).
-fn content_variants(widget: WidgetKind) -> impl Iterator<Item = &'static str> {
-    registry::widgets()
-        .iter()
-        .filter(move |info| info.kind == widget)
-        .flat_map(|info| info.content_variants)
-        .filter_map(|(_, name)| name.strip_prefix('@'))
 }
 
 /// `at.key`, or `key` at the root.

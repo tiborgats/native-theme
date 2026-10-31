@@ -117,10 +117,11 @@ preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `
 the S10 declarations it states: `available` (alone where false), `variants`, `sizes`, `default_size`,
 `default_size_by_variant`, `densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`,
 `sizes_by_variant`, `sizes_by_context`; `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
-not declarations. A declared variant that only facts left out as their unit is not enabled name is left out of
-`variants` and `exclusive_variants` (off_variants()), as their rules are, since S12 refuses a keyed name no rule selects
-on; one S12 exempts stays (`requires_variants`, `sizes_by_variant`, `default_size_by_variant`, the catalogue's content
-variants). `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
+not declarations. A declared variant that facts name, every one of them left out as a unit it belongs to is not
+enabled (its key's, or a widget its `when` names), is left out of `variants` and `exclusive_variants`
+(off_variants()), as the facts gate leaves it out of the state model it checks the declarations against (S17,
+ADD-A128); a variant no fact names is declared, and one S12 exempts stays (`requires_variants`, `sizes_by_variant`,
+`default_size_by_variant`, the catalogue's content variants). `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
 name, as `@<key>`. The other keyed namespaces S10 declares (`color_roles`, `durations`, `timings`, `params` with their
 units, `text_styles`, `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their
 units or defaults.
@@ -872,9 +873,10 @@ def context_variants(when, widget) -> set:
 
 
 def off_variants(widget, model, facts, content) -> set:
-    """The declared variants of `widget` that only facts left out as their unit is not enabled name: their rules are
-    left out, so the draft declares them neither (S12 refuses a keyed name no rule selects on, "a typo's sign"); they
-    come back with the unit, as the rules do. A variant S12 exempts stays: one `requires_variants`, `sizes_by_variant`
+    """The declared variants of `widget` that facts name and every one of them is left out as a unit it belongs to is
+    not enabled (its key's, or a widget its `when` names): the facts gate leaves such a variant out of the state model
+    it checks the declarations against (S17, ADD-A128), so the draft declares it neither; it comes back with the unit,
+    as its rules do. A variant no fact names is declared. A variant S12 exempts stays: one `requires_variants`, `sizes_by_variant`
     or `default_size_by_variant` names, and a content variant the connector sets (the catalogue's pairs, S8)."""
     declared = {v for v in model.get("variants", []) if isinstance(v, str)}
     exempt = set(content)
@@ -886,7 +888,7 @@ def off_variants(widget, model, facts, content) -> set:
         names = context_variants(f.when, widget)
         if f.kind == "widget" and f.widget == widget:
             names |= named_variants(f.when, widget)
-        if f.status == LEFT_OUT and f.reason.startswith(UNIT_NOT_ENABLED):
+        if f.status == LEFT_OUT and (f.reason == NOT_HELD or f.reason.startswith(UNIT_NOT_ENABLED)):
             named_off |= names
         else:
             named_in |= names
