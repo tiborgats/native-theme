@@ -42,6 +42,8 @@
 #                  clippy (-D warnings, all targets and features) and the
 #                  strict panic lints on
 #                  native-theme and native-theme-derive, their library tests,
+                 next's integration tests, doctests and missing-docs gate,
+#                  next's integration tests, doctests and missing-docs gate,
 #                  CI's two MSRV checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
 #                  their citations, the specification's names, entries and
@@ -464,6 +466,11 @@ if [[ $QUICK_MODE ]]; then
         bash scripts/check_strict_panic.sh -p native-theme-derive --lib
     run_tests "test (native-theme-derive)" cargo test -p native-theme-derive
     run_tests "test (native-theme, library)" cargo test -p native-theme --lib
+    run_tests "test (native-theme, next's layers and vectors)" \
+        cargo test -p native-theme --test next_layers --test platform_vectors
+    run_tests "doctests (native-theme's next module)" cargo test -p native-theme --doc next::
+    run_check "docs and missing docs (native-theme's next module)" \
+        env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
     run_check "the generated widgets match the catalogue" python3 scripts/generate_widgets.py --check
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
