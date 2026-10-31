@@ -1198,8 +1198,9 @@ expressions may name, with the functions the platforms use over them (`pick(hash
 hash and list, cited). Also element data: a colour the application chose
 for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
 font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
-the font's own underline and strikeout position and thickness, from which every target toolkit draws those lines
-(Pango, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite, Android's `Paint`), so a decoration follows the user's
+the font's own underline and strikeout position and thickness, from which the target toolkits draw those lines
+(Pango, AppKit's `NSFont`, DirectWrite, Android's `Paint`; Qt draws its own adjustment of them, a register row,
+R25.16, the specification's S2.8), so a decoration follows the user's
 font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part

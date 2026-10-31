@@ -426,6 +426,7 @@ rationale, each decided in the core's additions register (S22).
 | Q1.12 | `input.values.default_width` | field |
 | Q1.12 | `text_area.values.default_width, text_area.values.default_height` | field |
 | Q1.13 | `text_area.misspelling.text.decoration.paint @ cond flavor:kirigami (= role.view.negative)` | rule |
+| Q1.13 | `text_area.misspelling.text.fill @ cond flavor:kirigami (= role.view.negative: Sonnet's highlighter recolours the word too, `sonnet@6.31.0 src/quick/spellcheckhighlighter.cpp:105`, its colour `TextArea.qml:94`; ADD-A130)` | rule |
 | Q1.14 | `input.caret.min_width @ cond tablet_mode` | rule |
 | Q1.14 | `input.caret.fill @ cond tablet_mode` | rule |
 | Q1.14 | `input.selection_handle.glyph, input.selection_handle.min_width, input.selection_handle.min_height, input.selection_handle.corners (Full), input.selection_handle.fill (= kirigami_tint, ADD-A52) @ cond tablet_mode` | rule |

@@ -1066,8 +1066,8 @@ descent (ADD-A130). That is Pango's low underline, the one GTK's mnemonics take 
 character `PANGO_UNDERLINE_LOW`, `pango@1.58.2 pango/pango-markup.c:494-509`), drawn with its top one underline
 thickness below that run's ink (`pango/pango-renderer.c:383-385`), so `adwaita`'s mnemonic decoration is
 `line = "underline_low"`, `thickness` and `offset` both `= element.font_underline_thickness`, stated on each part whose text takes a
-mnemonic (a button's, a check box's, a menu item's label), which declares `font_underline_thickness` (`data = { label
-= ["font_underline_thickness"] }`, S8), while `adwaita`'s styles and slots state `mnemonic_decoration` absent, as a
+mnemonic (a button's or a check box's `label`, a menu's `item_label`), which declares `font_underline_thickness`
+(`data = { label = ["font_underline_thickness"] }`, `{ item_label = [ … ] }`, S8), while `adwaita`'s styles and slots state `mnemonic_decoration` absent, as a
 token reads no element data (S2.2); the connector takes the run's ink from its
 own glyph extents while drawing, which no font metric and no element datum gives (each decorated run has its own
 ink). A platform that underlines its mnemonic from the font's own position states a plain `Underline` (below);
