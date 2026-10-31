@@ -983,8 +983,20 @@ flag the widget lacks) and a `state_layer` transition only on a part with
 `interaction`; the `interaction` block's keys; `"ellipse"` on all four
 corners of one `when` or none, never with a `continuous` curve; and each
 state model's `exclusive` groups and `recency` sets equal to the catalogue's
-for its widget and preset, members and order (S10, S17). Offline. The docstring states every rule and list. Prints
-one line per finding (file:line: what) and a summary with the counts, and
+for its widget and preset, members and order (S10, S17). A `when` that can
+never hold is a finding (S7's `SetMatch`, S12's exclusions): a name in both a
+list and its `not_` list, two or more sizes, densities or size classes on one
+axis (an element has one, and `when` takes all of them), two values of a
+one-valued condition (two schemes, two presets, both contrast conditions),
+two flags of one `exclusive` group or two variants of one
+`exclusive_variants` group in every state model it can hold under, or
+`latest` flags no one order allows. So is a map (`Vec<(K, V)>`) written as a
+list of pairs, `[["k", v]]` or `[{ key = …, value = … }]`, or an empty one
+written `[]`, where S11 spells a TOML table (`{}` when it has no entry); a
+whole map's table is read with the map's keys and value type, so a map keyed
+by text (`per_family`, `per_language`) takes its text as keys
+(`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`). Offline. The
+docstring states every rule and list. Prints one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
 example facts, each with a broken variant.
@@ -1175,6 +1187,30 @@ Requires Python 3.11.
 python3 scripts/generate_platform_facts.py --out docs/platform-facts.generated.md
 python3 scripts/generate_platform_facts.py --check
 python3 scripts/generate_platform_facts.py --self-test
+```
+
+## generate_preset.py
+
+Generates a draft of a preset's TOML (specification S11) from its verified
+facts, as far as they transcribe: `[declare]` from the state models (S10),
+the facts at rest as bases, every other fact as a rule, facts with an equal
+`when` and target grouped so that the rules keep the facts' order and the
+last matching rule is the last matching fact (S17). It leaves out, and
+counts by reason, pending facts, keys the enabled units do not hold, `read`
+facts, and what S11 cannot spell from a fact alone; S19.2's staged bases
+and the keyed namespaces of `[declare]` are left for hand-writing. Prints
+on stderr the transcription share per widget and per unit (the 0.8.0
+plan's checkpoint D6), the rule count, the pending facts' register ids and
+a round trip: the draft read back gives every combination the value of
+the fact that applies there. Exits 1 on a round-trip mismatch, 2 on an
+input it cannot read. `--self-test` compares a fixture's draft with the
+expected one and runs each rule. Offline; not in `check_release.sh`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_preset.py adwaita --out adwaita.toml
+python3 scripts/generate_preset.py --self-test
 ```
 
 ## update_sources.sh

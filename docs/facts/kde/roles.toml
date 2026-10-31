@@ -6564,7 +6564,7 @@ quote = "targetGroup.writeEntry(entry, accent);"
 
 [[fact]]
 key = "role.global.accent_ramp"
-value = []
+value = {}
 rows = []
 
 [[fact.cite]]

@@ -269,7 +269,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -280,22 +280,28 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.large-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -377,7 +383,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small", "regular", "large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17"]
 
@@ -388,8 +394,30 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["regular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.regular-capsule.radius"
 tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
 
 [[fact.cite]]
 kind = "measured"
@@ -398,22 +426,18 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.large-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -1082,7 +1106,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -1093,22 +1117,28 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.large-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -1190,7 +1220,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small", "regular", "large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17"]
 
@@ -1201,8 +1231,30 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["regular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.regular-capsule.radius"
 tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1211,22 +1263,18 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.large-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -1895,7 +1943,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -1906,22 +1954,28 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.large-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -2003,7 +2057,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small", "regular", "large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17"]
 
@@ -2014,8 +2068,30 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["regular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.regular-capsule.radius"
 tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2024,22 +2100,18 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.large-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -2708,7 +2780,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -2719,22 +2791,28 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.large-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.aqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.large-circle.radius"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_a.darkAqua.normal.extraLarge-circular.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -2816,7 +2894,7 @@ tolerance = 0.5
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small", "regular", "large", "extra_large"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["small"] }
 value = { full = { maximum_px = "absent" } }
 rows = ["MAC-B08", "MAC-X17"]
 
@@ -2827,8 +2905,30 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["regular"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.regular-capsule.radius"
 tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2837,22 +2937,18 @@ tolerance = 0.5
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.small-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.regular-capsule.radius"
-tolerance = 0.5
-
-[[fact.cite]]
-kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.darkAqua.normal.large-capsule.radius"
+tolerance = 0.5
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], sizes = ["extra_large"] }
+value = { full = { maximum_px = "absent" } }
+rows = ["MAC-B08", "MAC-X17"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/tiebreak-corners.toml#key.styles_c.aqua.normal.extraLarge-capsule.radius"
 tolerance = 0.5
 
 [[fact.cite]]
@@ -14055,13 +14151,37 @@ rows = ["MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -14079,7 +14199,19 @@ rows = ["MAC-B08", "MAC-X17"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -14427,13 +14559,37 @@ rows = ["MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -14451,7 +14607,19 @@ rows = ["MAC-B08", "MAC-X17"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -14799,13 +14967,37 @@ rows = ["MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -14823,7 +15015,19 @@ rows = ["MAC-B08", "MAC-X17"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -15171,13 +15375,37 @@ rows = ["MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini", "small", "regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "pressed"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["mini"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["small"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["circular"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -15195,7 +15423,19 @@ rows = ["MAC-B08", "MAC-X17"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large", "extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U143"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["@shadowless_square"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U143"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -37182,19 +37422,37 @@ rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
+
+[[fact]]
+key = "button.body.corners.top_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
@@ -37956,19 +38214,37 @@ rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
+
+[[fact]]
+key = "button.body.corners.top_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
@@ -38364,19 +38640,37 @@ rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
+
+[[fact]]
+key = "button.body.corners.bottom_right"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
@@ -38880,19 +39174,37 @@ rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
-when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular", "large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U142"
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
+
+[[fact]]
+key = "button.body.corners.bottom_left"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["@shadowless_square"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U142"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-X16"]
 

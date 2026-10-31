@@ -1324,7 +1324,7 @@ quote = "$body-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_large.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -1335,7 +1335,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_large.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -1498,7 +1498,7 @@ quote = "$body-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_medium.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -1509,7 +1509,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_medium.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -1672,7 +1672,7 @@ quote = "$body-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_small.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -1683,7 +1683,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_small.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -1846,7 +1846,7 @@ quote = "$display-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_large.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -1857,7 +1857,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_large.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2020,7 +2020,7 @@ quote = "$display-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_medium.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2031,7 +2031,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_medium.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2194,7 +2194,7 @@ quote = "$display-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_small.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2205,7 +2205,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_small.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2368,7 +2368,7 @@ quote = "$headline-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_large.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2379,7 +2379,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_large.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2542,7 +2542,7 @@ quote = "$headline-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_medium.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2553,7 +2553,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_medium.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2716,7 +2716,7 @@ quote = "$headline-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_small.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2727,7 +2727,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_small.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -2890,7 +2890,7 @@ quote = "$label-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_large.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -2901,7 +2901,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_large.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3064,7 +3064,7 @@ quote = "$label-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_medium.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3075,7 +3075,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_medium.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3238,7 +3238,7 @@ quote = "$label-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_small.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3249,7 +3249,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_small.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3412,7 +3412,7 @@ quote = "$title-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_large.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3423,7 +3423,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_large.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3586,7 +3586,7 @@ quote = "$title-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_medium.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3597,7 +3597,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_medium.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3760,7 +3760,7 @@ quote = "$title-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_small.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3771,7 +3771,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_small.font.features"
-value = []
+value = {}
 rows = ["MAT-TS1", "MAT-X16"]
 
 [[fact.cite]]
@@ -3934,7 +3934,7 @@ quote = "$body-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_large_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -3945,7 +3945,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_large_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4108,7 +4108,7 @@ quote = "$body-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_medium_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4119,7 +4119,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_medium_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4282,7 +4282,7 @@ quote = "$body-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.body_small_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4293,7 +4293,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.body_small_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4456,7 +4456,7 @@ quote = "$display-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_large_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4467,7 +4467,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_large_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4630,7 +4630,7 @@ quote = "$display-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_medium_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4641,7 +4641,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_medium_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4804,7 +4804,7 @@ quote = "$display-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.display_small_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4815,7 +4815,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.display_small_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -4978,7 +4978,7 @@ quote = "$headline-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_large_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -4989,7 +4989,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_large_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -5152,7 +5152,7 @@ quote = "$headline-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_medium_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -5163,7 +5163,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_medium_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -5326,7 +5326,7 @@ quote = "$headline-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.headline_small_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -5337,7 +5337,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.headline_small_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -5500,7 +5500,7 @@ quote = "$label-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_large_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -5511,7 +5511,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_large_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -5674,7 +5674,7 @@ quote = "$label-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_medium_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -5685,7 +5685,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_medium_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -5848,7 +5848,7 @@ quote = "$label-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.label_small_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -5859,7 +5859,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.label_small_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -6022,7 +6022,7 @@ quote = "$title-large-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_large_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -6033,7 +6033,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_large_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -6196,7 +6196,7 @@ quote = "$title-medium-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_medium_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -6207,7 +6207,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_medium_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -6370,7 +6370,7 @@ quote = "$title-small-wdth: 'wdth' 100;"
 # the style applies no variation axes (the CRSV, FILL, GRAD, HEXP, opsz, ROND, slnt tokens are not applied)
 [[fact]]
 key = "token.text.keyed.title_small_emphasized.font.axes"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-TS5", "MAT-X16"]
 
 [[fact.cite]]
@@ -6381,7 +6381,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.title_small_emphasized.font.features"
-value = []
+value = {}
 rows = ["MAT-TS4", "MAT-X16"]
 
 [[fact.cite]]
@@ -6570,7 +6570,7 @@ quote = "ProvideTextStyle(value = typography.bodyLarge, content = content)"
 
 [[fact]]
 key = "token.text.keyed.monospace.font.axes"
-value = []
+value = {}
 rows = ["MAT-X36†"]
 
 [[fact.cite]]
@@ -6586,7 +6586,7 @@ absent = ["font-variation-settings"]
 
 [[fact]]
 key = "token.text.keyed.monospace.font.features"
-value = []
+value = {}
 rows = ["MAT-X36†"]
 
 [[fact.cite]]
