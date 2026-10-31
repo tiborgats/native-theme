@@ -1177,6 +1177,30 @@ python3 scripts/generate_platform_facts.py --check
 python3 scripts/generate_platform_facts.py --self-test
 ```
 
+## generate_preset.py
+
+Generates a draft of a preset's TOML (specification S11) from its verified
+facts, as far as they transcribe: `[declare]` from the state models (S10),
+the facts at rest as bases, every other fact as a rule, facts with an equal
+`when` and target grouped so that the rules keep the facts' order and the
+last matching rule is the last matching fact (S17). It leaves out, and
+counts by reason, pending facts, keys the enabled units do not hold, `read`
+facts, and what S11 cannot spell from a fact alone; S19.2's staged bases
+and the keyed namespaces of `[declare]` are left for hand-writing. Prints
+on stderr the transcription share per widget and per unit (the 0.8.0
+plan's checkpoint D6), the rule count, the pending facts' register ids and
+a round trip: the draft read back gives every combination the value of
+the fact that applies there. Exits 1 on a round-trip mismatch, 2 on an
+input it cannot read. `--self-test` compares a fixture's draft with the
+expected one and runs each rule. Offline; not in `check_release.sh`.
+
+Requires Python 3.11.
+
+```sh
+python3 scripts/generate_preset.py adwaita --out adwaita.toml
+python3 scripts/generate_preset.py --self-test
+```
+
 ## update_sources.sh
 
 Fills the source cache, `/run/media/tibi/work/cargo-build/native-theme-sources/`
