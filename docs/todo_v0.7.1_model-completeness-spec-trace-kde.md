@@ -344,6 +344,7 @@ rationale, each decided in the core's additions register (S22).
 | K1.224† | `checkbox @ context dialog (the "don't ask again" check box)` | rule |
 | K1.230 | `spinner.icon.glyph (ThemeIcon process-working)` | field |
 | K1.230 | `spinner.values.loop (rotation and its period)` | field |
+| K1.230 | `spinner.indicator (absent = true) @ not_context any pull_to_refresh` (Breeze's busy indicator the rotating icon, no arc or spokes, the catalogue's `may_be_absent`; ADD-A125) | rule |
 | K1.240 | `combo_box.body.fill, combo_box.body.stroke @ variant editable / variant editable {hover} / variant editable {focused}` | rule |
 | K1.240 | `combo_box.arrow.glyph.fill @ variant editable / variant editable context combo_box.arrow_area {hover}` (the hover colour only while the pointer is over the arrow sub-control, `SC_ComboBoxArrow`) | rule |
 | K1.240 | `combo_box.arrow_area.min_width @ variant editable; combo_box.arrow_area (absent = true) @ !variant editable` (the arrow sub-control as an element, its drawing fields absent) | rule |
