@@ -1407,14 +1407,22 @@ placeholder (QComboBox, GtkComboBox; Kirigami at least 75 and, editable, beside 
 (GtkComboBox's entry, 150 px of text); one basis for all would misstate four platforms, and leaving it to the
 connector would lose a platform rule (R25.3's argument), so `content_width` names it, with QComboBox's empty list
 (seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
-application's policy, not the theme's; so is a measure that depends on the element's history (Kirigami keeps its
+application's policy, not the theme's. Compose measures its resting floating label without the text's padding, and
+bounds the box by a floated label plus the field's content padding on both sides, interpolating between the two as
+the label floats (the outlined field), while its filled field counts the resting label whatever the float: options,
+the label as a third shown text with the text's padding (Compose's width 20 dp too wide), a separate value for the
+label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as `label_padding`, `Some`
+for the outlined form and `None` for the filled; the last is the smallest exact form. So is a measure that depends on
+the element's history (Kirigami keeps its
 floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
 `kquickstyleitem.cpp:126`): the model measures the element's present content.
 
 *The natural height.* Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes
 and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`, `:1786`, `:1904`), 56, where boxes inside the
 padding would give 80; Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame.
-Options: the icon in the content box (Compose's height wrong); the icon's vertical margins on Material restated
+Under the widest-item basis the height is the tallest row's too, as Qt reserves an icon's height when any item has
+one (`qcombobox.cpp:634-635`), and Kirigami's style item ignores the icon's height (`kquickstyleitem.cpp:1189`), its
+icon taking no height by its margins. Options: the icon in the content box (Compose's height wrong); the icon's vertical margins on Material restated
 smaller (its centring then off under the floating label's uneven padding); a value choosing the content box or the
 body's box per preset; the icon, as the end part, always on the body's box, Breeze's top and bottom margins 7 (Qt's 1
 and the frame's 6). The last is chosen: Breeze's even frame centres the edit field on the body, so its icon lands on

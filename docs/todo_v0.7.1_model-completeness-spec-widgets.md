@@ -2751,9 +2751,9 @@ spaces:
     the content's space ending the gap before its box where its start margin is positive and its end margin the
     negative of it, before its margin box otherwise; no preset's arrow margins are of the first kind, so the gap is
     always to the margin box).
-    On `macos-*` the rendering replaces the arrow (S15): the end part is the rendering's arrow area,
+    On `macos-*` outside `editable` the rendering replaces the arrow (S15): the end part is the rendering's arrow area,
     `ControlImage.arrow`, the content's space ending the gap before it, its width `arrow_area.min_width` and its inset
-    from the image's end `body.padding`'s end for the natural width (MAC-CB01's measurements).
+    from the image's end `body.padding`'s end for the natural width (MAC-CB01's measurements); NSComboBox, under `editable`, has no rendering, its arrow the end part as elsewhere.
   - *Spare width* (a stated or stretched width wider than the row needs) goes to the content's space: its text keeps
     the space's start and the arrow the content box's end (Breeze's field, GTK's expanding stack and cell view, WinUI's
     star column, Compose's text box; `ios-*` CB-1's measurement). A text longer than the content's space is cut at
@@ -2776,8 +2776,8 @@ spaces:
     margin box and the padding already): it lies at the end of `body`'s box inset by its `margin`, `min_width` wide,
     on the cross axis `body`'s box less its margins, at most `max_height`, centred (Breeze's `SC_ComboBoxArrow`
     square, K1.240; WinUI's `DropDownOverlay`, W1-137; GTK's entry combo's button, GN-1.238), drawn over the
-    content's space and beneath the `arrow`, which the row places whether or not an area is drawn; on `macos-*` it is
-    the rendering's `ControlImage.arrow`.
+    content's space and beneath the `arrow`, which the row places whether or not an area is drawn; on `macos-*`
+    outside `editable` it is the rendering's `ControlImage.arrow`.
   - *Natural size:* `body`'s box at its content (S2.11, its size limits bounding it): on the main axis the row's
     parts at their natural widths and `body.padding`, the content's space at the width `content_width` names, its
     part's `padding` added, plus `content_slack_px`, the width the platform's size reserves beyond the drawn row
@@ -2785,19 +2785,22 @@ spaces:
     the size is the drawn row, and 0 under every basis but `Widest`); on the cross axis the larger of the content's space's
     margin box with the padding and the icon's and the end part's margin boxes alone, so Compose's field is the
     larger of its boxes and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`). `ContentWidth
-    { Shown, ShownAndHints { label_padding: Value<Px> }, Widest { at_least: Value<Px>, empty: Option<CharRun>,
+    { Shown, ShownAndHints { label_padding: Option<Value<Px>> }, Widest { at_least: Value<Px>, empty: Option<CharRun>,
     or_shown: bool }, Fixed(Value<Px>) }`, `CharRun { ch: char, count: u32 }`: `Shown` the text the content's space shows, the value, the placeholder
     while none is chosen, under `editable` the input's text (GtkDropDown's visible page, GN-1.233; WinUI's
     presenter, W1-132); `ShownAndHints` the largest of the rows at the shown text and at the placeholder
-    and the row whose content's space, with the padding's start and the gap beside it, holds the resting floating
+    and the row whose content's space, without the padding's start and the gaps beside it, holds the resting floating
     label alone (Compose measures it without the text's padding, between the icons' boxes, `TextFieldImpl.kt:612-633`,
-    `:1684-1691`), a floated label bounding the box by its width plus `label_padding` on each side (`:1694-1701`), the
-    two interpolated by the label's float as Compose does (MAT-CB1); `Widest` the largest of whole rows, one per item, one for the placeholder and,
+    `:1684-1691`); with `label_padding` `Some`, that row interpolated away as the label floats and a floated label
+    bounding the box by its width plus `label_padding` on each side (the outlined field, `:1694-1701`), with `None`
+    the resting row counted whatever the float (the filled field, `:1045-1051`) (MAT-CB1); `Widest` the largest of whole rows on both axes (the width and
+    the height, as Qt reserves an icon's height when any item has one, `qtbase@6.12.0
+    src/widgets/widgets/qcombobox.cpp:597-600`, `:634-635`), one per item, one for the placeholder and,
     with no items, one for `empty`'s run (`count` advances of `ch` in the label's font, as the toolkit measures
     them; none where `None`), each row in its own form (`with_icon` where that item has an icon, none for the
     placeholder and the run) under that form's values, its slack included, its text at least `at_least` (not
     applying to the `empty` row); with no items, no placeholder and `empty` `None`, one row at no text, its slack
-    included, so an item's icon is counted once, by its own row (Qt adds `iconSize + 4` per item
+    included and `at_least` not applying to it either (Kirigami's combo created with no items, Q1.124), so an item's icon is counted once, by its own row (Qt adds `iconSize + 4` per item
     with one, `qtbase@6.12.0 src/widgets/widgets/qcombobox.cpp:597-601`), and with `or_shown` the larger of that and
     the row at the shown text without the slack
     (QComboBox, K1.240; GtkComboBox's `fit-model`, GN-1.238; Kirigami's style item beside its text field, Q1.124);
@@ -2856,7 +2859,7 @@ spaces:
   `windows-11`, `adwaita`; the last three by a rule outside `editable`, K1.240, W1-137, GN-1.238); fields:
   `body.fill` (`adwaita` by a rule under `variants {editable,@gtk_combo_box}`, whose body draws no button, its
   entry and its arrow button drawing themselves, GN-1.238), `body.stroke` (as `body.fill`);
-  `arrow.margin` (`macos-*`, the rendering's arrow, S15), `arrow_area.margin` (`macos-*` outside `editable`, the
+  `arrow.margin` (`macos-*` outside `editable`, the rendering's arrow, S15), `arrow_area.margin` (`macos-*` outside `editable`, the
   rendering's `ControlImage.arrow`; its `max_height` there `auto`), `icon.margin` (as `icon`), `label.padding` (as
   `label`); `body.shadow` (`adwaita` by the toolbar rule, GN-1.151, and under `variants {editable,@gtk_combo_box}`, GN-1.238; `kde-breeze`, `macos-*` by a
   rule under `flat`, K1.241, MAC-CB05; the value phase names the others from the facts), `arrow_area.corners`
