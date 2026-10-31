@@ -185,7 +185,8 @@ Each `### <widget>` section states, in this order:
   group). A part nested in a part that answers `NotDrawn` is still queried, in the scope the `NotDrawn` part's
   parent returns (as S8 queries the children of a `NotDrawn` element), and is drawn unless it is absent itself: a list's
   rows nest in `section` and are drawn where no section is; where a nested part is not drawn with its parent (a
-  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. The parts nested in a
+  dialog's title when its header is not drawn), it has its own `may_be_absent` permission. A box an expander reveals is the exception: while `Absent` it takes
+  everything in it with it (S6.3). The parts nested in a
   part a preset draws as another widget (`drawn_as`, below) are still queried, with that widget's element as their
   host: in the scope returned by the query of the substitute's part that holds content (an overlay's box, `body`; a
   control's root), the innermost enclosing part's scope (S8), so `context <substitute>` matches them. Each keeps its
@@ -3540,7 +3541,7 @@ spaces:
   `material-3` by a rule outside `variant sidebar context sidebar.pane[compact]`), `row_selection_indicator` (all
   but `windows-11`, `material-3`: W1-107, MAT-N13; `windows-11` never, hidden by `shown`, W1-107; `material-3` by a
   rule outside `variant sidebar context sidebar.pane[compact]`, the rail's drawn at rest at zero width and alpha, the
-  drawer's selection being `row_background`'s, MAT-SB1, MAT-N13), `nested` (all but `adwaita`: GN-1.260; `adwaita` by a rule `!{open}`, written last, S2.7), `cell` (`windows-11`: no
+  drawer's selection being `row_background`'s, MAT-SB1, MAT-N13), `nested` (all but `adwaita`: GN-1.260; `adwaita` by a rule `!{open}`, written last, in every variant, S2.7), `cell` (`windows-11`: no
   multi-column row among WinUI's lists, W2-12, W2-13, W2-14, W2-33), `column_separator` (`windows-11`, `material-3`:
   no line between cells; `adwaita` by a rule outside `column_separators`, GN-1.169; `macos-*` by a rule outside
   `column_separators` and `@browser`, MAC-L06, MAC-N08; `kde-breeze` by a rule outside `table`, Qt's table grid, K3.53;
@@ -4253,7 +4254,8 @@ spaces:
 - **Kind:** typed widget: the stand-alone expanders: GNOME (GtkExpander), KDE (KCollapsibleGroupBox), macOS (the
   disclosure and push-disclosure buttons, SwiftUI's DisclosureGroup), Windows (Expander). An expandable row is a row
   with a disclosure in its host, one structure for one control: in a list, a `list` row with a `disclosure` and its
-  `nested` box (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure EX-1–EX-3, its styles
+  `nested` box where the platform draws one (`adwaita`, GN-1.260; elsewhere the children are rows of their own,
+  ADD-A129 deciding, queue #118) (Material's expandable list item MAT-L9, MAT-EX1; iOS's outline disclosure EX-1–EX-3, its styles
   `list`'s keyed `@header`, `@cell` on `disclosure`; GNOME's AdwExpanderRow in a plain boxed list, GN-2.09; the
   reveal `list`'s events `@expand`, `@collapse`); in a preferences group, a `form.row` of kind `expander` with its
   `row_arrow` and `row_nested` (AdwExpanderRow in an AdwPreferencesGroup, GN-1.257–GN-1.260; Windows'
@@ -7300,7 +7302,9 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   - `separator` — between the buttons, or between the text and the buttons (GN-2.24, C-4, MAC-N01): `stroke` (the
     line, its start edge between buttons side by side, its top edge between stacked ones).
   - `popup` — Windows' compact spin popup, W2-01: `fill`, `stroke`, `shadow` (drawn while the stepper is `{focused}`,
-    W2-01; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7).
+    W2-01; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7). Under `@compact` the
+    `increment` and `decrement` are drawn in it (NumberBox's only spin buttons there, `NumberBox.xaml:115-166`, the
+    inline ones shown only by `SpinButtonsVisible`, `:26-40`), absent with it.
   - `header` — Windows' header label, W2-01: `text`.
 - **Widget values:** `button_layout: Value<StepperButtonLayout>`,
   `StepperButtonLayout { EndColumn, BothEnds, AboveAndBelow, SideBySide }` (a column at the end, both ends, stacked
@@ -7327,13 +7331,16 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `@inline`, `@compact` (W2-01).
 - **Sizes and densities:** `macos-*`: its control sizes (MAC-N01).
 - **Flags:** none of its own (a half at its limit is `disabled` on its element, C-4, MAC-N01); state flags used: hover
-  (per arrow, K2.3), pressed, disabled, focused, focus_visible, which shows Breeze's keyboard focus frame on `body`
+  (per arrow, K2.3), pressed, disabled, focused (set on the stepper while its text box has focus, NumberBox's
+  `GotFocus` and `LostFocus` bubbling from it, `NumberBox.cpp:43-44`, W2-01), focus_visible, which shows Breeze's keyboard focus frame on `body`
   (K3.20).
 - **Exclusive groups:** `windows-11`: `[disabled, focused, hover]` on `body` (the text box's CommonStates),
   `[disabled, pressed, hover]` on `increment` and `decrement` (the spin buttons' CommonStates); others none (states
   combine); precedence: state models (S17).
 - **may_be_absent:** parts: `popup` (every preset but `windows-11`: NumberBox's compact popup, W2-01; `windows-11`
-  by a rule outside `variant @compact` and one outside `{focused}`, written last, W2-01); `header` (every preset but `windows-11`: NumberBox's header label,
+  by a rule outside `variant @compact` and one outside `{focused}`, written last, W2-01); `increment` (`windows-11` by the
+  popup's rule outside `{focused}` under `@compact`, W2-01); `decrement` (`windows-11`, as for `increment`);
+  `increment_glyph` (`windows-11`, as for `increment`); `decrement_glyph` (`windows-11`, as for `increment`); `header` (every preset but `windows-11`: NumberBox's header label,
   W2-01); `separator` (every preset but `adwaita`, `ios-*`, `macos-*`, whose rows draw the line, GN-2.24, C-4,
   MAC-N01: Breeze's arrow column and NumberBox's spin buttons have none in K2.3 and W2-01). values:
   `popup_offset_x_px` (every preset but `windows-11`, as for `popup`); `popup_offset_y_px` (every preset but

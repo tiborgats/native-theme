@@ -583,11 +583,12 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.258 | `form.row_arrow.transform @ {open} variant expander; list.disclosure.transform @ context list.row {open} variant inset` | rule |
 | GN-1.258 | `form.row_arrow.transitions (Transform) @ variant expander; list.disclosure.transitions (Transform) @ variant inset` | rule |
 | GN-1.259 | `form.values.presentations events @expand, @collapse (queried with the row) @ variant expander; list.values.presentations events @expand, @collapse (queried with the row) @ variant inset` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
-| GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open} variant inset` (written last: the revealer measures its child by its progress, zero collapsed, `gtk@4.24.1 gtk/gtkrevealer.c:635-636`, S2.7) | rule |
+| GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open}` (written last: the revealer measures its child by its progress, zero collapsed, in any list, `gtk@4.24.1 gtk/gtkrevealer.c:612-636`, S2.7) | rule |
 | GN-1.260 | `form.row_nested.fill @ variant expander; list.nested.fill @ variant inset` | rule |
 | GN-1.261 | `expander.header.corners, expander.header.focus` | field |
 | GN-1.261 | `expander.arrow.{glyph,opacity}` | field |
 | GN-1.261 | `expander.arrow.glyph @ {open}` | rule |
+| GN-1.261 | `expander.content (absent = true) @ !{open}` (written last: GtkExpander removes its child collapsed, `gtk@4.24.1 gtk/gtkexpander.c:908-919`, S2.7) | rule |
 | GN-1.261 | `expander.arrow.opacity @ context expander.header {hover} / context expander.header {pressed}` (the title's hover and press raise the arrow's opacity: the arrow nests in the header) | rule |
 | GN-1.262 | `expander.values.drag_hover_delay` | field |
 | GN-1.263 | `expander.arrow.opacity @ {disabled}` | rule |

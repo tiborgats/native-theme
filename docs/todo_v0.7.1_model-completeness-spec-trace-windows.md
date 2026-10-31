@@ -423,7 +423,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @inline` | rule |
 | W2-01 | `stepper.{increment.fill,increment.stroke,decrement.fill,decrement.stroke,increment_glyph.glyph.fill,decrement_glyph.glyph.fill} @ {hover} / {pressed} / {disabled} variant @compact` | rule |
 | W2-01 | `stepper.popup.{fill,stroke,shadow} @ variant @compact` | rule |
-| W2-01 | `stepper.popup (absent = true) @ !{focused} variant @compact` (written last: NumberBox opens it on focus and closes it on focus loss, `microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7) | rule |
+| W2-01 | `stepper.{popup,increment,decrement,increment_glyph,decrement_glyph} (absent = true) @ !{focused} variant @compact` (written last: NumberBox opens its popup on focus and closes it on focus loss, `microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`, and under `Compact` its only spin buttons are the popup's, `NumberBox.xaml:115-166`, `:26-40`; its opening and closing ADD-A129's, queue #118, at once meanwhile, S2.7) | rule |
 | W2-01 | `stepper.values.{popup_offset_x,popup_offset_y,invalid_input}; stepper.header.text` | field |
 | W2-01 | `input.* @ context stepper (the text box)` | rule |
 | W2-02 | `calendar.{day.fill,day.stroke,day_label.text,month.fill,month.stroke,month.text,year.fill,year.stroke,year.text} @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} / {selected,disabled} / {today} / {today,selected} / {@blackout} / {other_month} / {disabled}` | rule |
@@ -613,7 +613,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W2-40† | `form.row_title.text.fill @ context form.card {hover} / context form.card {pressed} / context form.card {disabled}` | rule |
 | W2-40† | `form.card.{stroke,padding,min_width,min_height}; form.row_subtitle.text; form.row_icon.{icon,max_width,max_height,padding}; form.row_arrow.{icon,padding}` | field |
 | W2-40† | `form.values.column_gap (the header to content spacing)` | field |
-| W2-40† | `form.row_nested (absent = true) @ !{open} variant expander` (written last, S2.7) | rule |
+| W2-40† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: SettingsExpander templates `muxc:Expander`, its `ExpanderContent` collapsed at rest, `microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`, S2.7) | rule |
 | W2-40† | `form.* @ variant @right / variant collapsed / variant @right_wrapped_no_icon / variant @left / variant vertical` (RightWrapped is `collapsed`) | rule |
 | W2-40† | `form.values.{collapse,breakpoints} (AtBreakpoints; measured Allocation, width Below the wrap threshold setting `collapsed` and Below the no-icon threshold setting `@right_wrapped_no_icon`, under `@right`)` | field |
 | W2-40† | `form.row_icon.opacity @ {disabled} variant bitmap_icon` (the bitmap header icon dimmed; a glyph icon is recoloured, W3-51†) | rule |
