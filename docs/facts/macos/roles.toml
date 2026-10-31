@@ -2,14 +2,15 @@
 # `[macos.colors.<appearance>]` of the os-probe, run 40969040283), with no accent colour set. Each fact cites the
 # main pass (Reduce Transparency on, the image's setting) and the pass with it off, which read every colour the same,
 # and the Increase Contrast pass where that pass reads the same colour; where it reads another, a fact under
-# `contrast_increased` follows. The accent-dependent NSColors (those the run's accent-red pass changes:
-# controlAccentColor, selectedContentBackgroundColor, alternateSelectedControlColor, selectedTextBackgroundColor,
-# selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor) are inputs (S9.1): `input.accent`
-# (controlAccentColor) and `input.highlight` (selectedTextBackgroundColor, the Highlight colour setting; NSColor's
-# highlightColor, which the red accent leaves unchanged, is the bezels' highlight, not that setting) are stated as
-# values, and the roles that reference them by the SDK's declarations (`read`); the roles that follow the others
-# (selectedContentBackgroundColor, keyboardFocusIndicatorColor, selectedControlColor) are stated as their measured
-# values with the image's accent, as S9.1 names no input for them (the tie-break's report).
+# `contrast_increased` follows. The accent-dependent NSColors (among those the accent-red pass of run
+# 41006842699's macos-26 job changes: controlAccentColor, selectedContentBackgroundColor, alternateSelectedControlColor,
+# selectedTextBackgroundColor, selectedControlColor, keyboardFocusIndicatorColor, textInsertionPointColor): those
+# S9.1 names accent inputs (ADD-A123), `input.accent` (controlAccentColor), `input.highlight`
+# (selectedTextBackgroundColor, the Highlight colour setting), `input.selected_content_background`,
+# `input.keyboard_focus_indicator` and `input.selected_control`, are stated as their measured values, and the roles that take them
+# (`role.global.accent`, `role.global.selection_text_background`, `role.selection.background`,
+# `role.window.decoration_focus`, `role.@selected_control`) as references to them by the SDK's declarations (`read`);
+# highlightColor is `role.@highlight`, a literal per scheme, which the red accent leaves unchanged (no input).
 
 [[fact]]
 # windowBackgroundColor
@@ -633,11 +634,11 @@ tolerance = 0
 # The selected items' background, and in a window that is not key (MAC-X16).
 
 [[fact]]
-# selectedContentBackgroundColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
-key = "role.selection.background"
+# selectedContentBackgroundColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0064e1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -650,10 +651,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#0040dd"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -661,10 +662,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#0059d1"
-rows = []
+rows = ["MAC-L02"]
 
 [[fact.cite]]
 kind = "measured"
@@ -677,15 +678,26 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.selection.background"
+key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#1774da"
-rows = ["MAC-X22"]
+rows = ["MAC-L02", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
 tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.selected_content_background"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:221"
+quote = "NSColor *selectedContentBackgroundColor"
 
 [[fact]]
 # unemphasizedSelectedContentBackgroundColor
@@ -2102,7 +2114,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#b3d7ff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2118,7 +2130,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2129,7 +2141,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3f638b"
-rows = ["MAC-DF05†"]
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2145,7 +2157,7 @@ tolerance = 0
 key = "input.highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#466280"
-rows = ["MAC-DF05†", "MAC-X22"]
+rows = ["MAC-X27", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2200,11 +2212,11 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# keyboardFocusIndicatorColor (it follows the accent, an AppKit-derived input S9.1 names none for: the measured value)
-key = "role.window.decoration_focus"
+# keyboardFocusIndicatorColor (S9.1: an accent input, ADD-A123)
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0067f47f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2217,10 +2229,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#0022af"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2228,10 +2240,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1aa9ff7f"
-rows = []
+rows = ["MAC-X13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2244,10 +2256,10 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.window.decoration_focus"
+key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#469af5"
-rows = ["MAC-X22"]
+rows = ["MAC-X13", "MAC-X22"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2255,8 +2267,19 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-# selectedControlColor (it follows the accent: the measured value)
-key = "role.@selected_control"
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.keyboard_focus_indicator"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact]]
+# selectedControlColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#b3d7ff"
 rows = ["MAC-DF04"]
@@ -2272,7 +2295,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
 value = "#b3c6f5"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -2283,7 +2306,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3f638b"
 rows = ["MAC-DF04"]
@@ -2299,7 +2322,7 @@ evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/
 tolerance = 0
 
 [[fact]]
-key = "role.@selected_control"
+key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
 value = "#466280"
 rows = ["MAC-DF04", "MAC-X22"]
@@ -2307,6 +2330,70 @@ rows = ["MAC-DF04", "MAC-X22"]
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= input.selected_control"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:240"
+quote = "NSColor *selectedControlColor;"
+
+# highlightColor (NSColor.h:284: the colour highlightWithLevel: blends toward; the red accent leaves it unchanged, S9.1)
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#b4b4b4"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -2342,3 +2429,2790 @@ rows = ["MAC-I05"]
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:235"
 quote = "The foreground for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+# The status roles (`role.global.status`): AppKit declares no status colour (U101).
+[[fact]]
+key = "role.global.status.success.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U101"
+rows = []
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Colour roles and inputs (macos-monterey): NSColor values as macOS 15.7.9 resolves them per appearance (sRGB,
+# `[macos.colors.<appearance>]` of the os-probe, run 41006842699's macos-15 job), with no accent colour set, mirroring
+# macos-tahoe's facts above key for key. Each fact cites the main pass (Reduce Transparency on, the image's setting),
+# the pass with it off where it reads the same colour (every colour does), and the Increase Contrast pass where that
+# pass reads the same colour; where it reads another, a fact under `contrast_increased` follows. The references to
+# inputs and other roles cite the macOS 15.5 SDK's declarations (xcode@16.4).
+# The accent inputs S9.1 names (ADD-A123; the tie-break of the monterey slice): selectedContentBackgroundColor,
+# selectedControlColor and keyboardFocusIndicatorColor are stated as `input.selected_content_background`,
+# `input.selected_control` and `input.keyboard_focus_indicator` (their measured values, which the red accent changes),
+# and the roles that take them (`role.selection.background`, `role.@selected_control`, `role.window.decoration_focus`)
+# as references to them (`read`), as `input.accent` and `input.highlight` are; highlightColor is `role.@highlight`, a
+# literal per scheme, which the red accent leaves unchanged, as macos-tahoe's above.
+
+[[fact]]
+# windowBackgroundColor
+key = "role.window.background"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ececec"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.background"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#f6f6f6"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#323232"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact]]
+# labelColor
+key = "role.window.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#000000d8"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.labelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#000000"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.labelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffffd8"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.labelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.labelColor"
+tolerance = 0
+
+[[fact]]
+# secondaryLabelColor
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0000007f"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#000000c1"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff8c"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffffb2"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact]]
+# linkColor
+key = "role.window.link"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0068da"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.linkColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#419cff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.linkColor"
+tolerance = 0
+
+[[fact]]
+# separatorColor
+key = "role.window.border"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000019"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.separatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000059"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.separatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff19"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.separatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff4c"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.separatorColor"
+tolerance = 0
+
+[[fact]]
+# tertiaryLabelColor
+key = "role.window.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000042"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0000008e"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff3f"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff7f"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+# controlBackgroundColor
+key = "role.view.background"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.view.background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#1e1e1e"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.view.background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#202020"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact]]
+# alternateSelectedControlTextColor
+key = "role.selection.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+# findHighlightColor
+key = "role.global.find_highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffff00"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.findHighlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.find_highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffff00"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.findHighlightColor"
+tolerance = 0
+
+[[fact]]
+# shadowColor
+key = "role.global.shadow_reference"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#000000"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.shadowColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.shadow_reference"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#000000"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.shadowColor"
+tolerance = 0
+
+[[fact]]
+# selectedTextColor
+key = "role.global.selection_text_foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#000000"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.selectedTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.selection_text_foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedTextColor"
+tolerance = 0
+
+[[fact]]
+# unemphasizedSelectedTextBackgroundColor
+key = "role.global.selection_text_background_unfocused"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#dcdcdc"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.selection_text_background_unfocused"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#464646"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+# unemphasizedSelectedTextColor
+key = "role.global.selection_text_foreground_unfocused"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#000000"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.selection_text_foreground_unfocused"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact]]
+# selectedContentBackgroundColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_content_background"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0064e1"
+rows = ["MAC-L02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_content_background"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0040dd"
+rows = ["MAC-L02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_content_background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#0059d1"
+rows = ["MAC-L02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_content_background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#1774da"
+rows = ["MAC-L02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.selected_content_background"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:210"
+quote = "NSColor *selectedContentBackgroundColor"
+
+[[fact]]
+key = "role.selection.background"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.@selected_control_secondary"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:211"
+quote = "Alias for +secondarySelectedControlColor"
+
+[[fact]]
+# tertiaryLabelColor
+key = "role.@label_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000042"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0000008e"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff3f"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff7f"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact]]
+# quaternaryLabelColor
+key = "role.@label_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000019"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000059"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff19"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff4c"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact]]
+# quinaryLabelColor
+key = "role.@label_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0000000c"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000026"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff0c"
+rows = ["MAC-DF01"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff26"
+rows = ["MAC-DF01", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact]]
+# systemFillColor
+key = "role.@system_fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000019"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0000007f"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff19"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff7f"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemFillColor"
+tolerance = 0
+
+[[fact]]
+# secondarySystemFillColor
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000014"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000026"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff14"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff26"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+# tertiarySystemFillColor
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0000000c"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000019"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff0c"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff19"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+# quaternarySystemFillColor
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000007"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0000000c"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff07"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff0c"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+# quinarySystemFillColor
+key = "role.@system_fill_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00000002"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#00000007"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff02"
+rows = ["MAC-DF02"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quinary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff07"
+rows = ["MAC-DF02", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact]]
+# systemRedColor
+key = "role.@system_red"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ff3b30"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemRedColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#d70015"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemRedColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ff453a"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemRedColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ff6961"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemRedColor"
+tolerance = 0
+
+[[fact]]
+# systemOrangeColor
+key = "role.@system_orange"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ff9500"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemOrangeColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#c93400"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemOrangeColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ff9f0a"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemOrangeColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffb340"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemOrangeColor"
+tolerance = 0
+
+[[fact]]
+# systemGreenColor
+key = "role.@system_green"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#28cd41"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGreenColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#007d1b"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemGreenColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#32d74b"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemGreenColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#31de4b"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemGreenColor"
+tolerance = 0
+
+[[fact]]
+# systemBlueColor
+key = "role.@system_blue"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBlueColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0040dd"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemBlueColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBlueColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#409cff"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemBlueColor"
+tolerance = 0
+
+[[fact]]
+# systemYellowColor
+key = "role.@system_yellow"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffcc00"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemYellowColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#a05a00"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemYellowColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffd60a"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemYellowColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffd426"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemYellowColor"
+tolerance = 0
+
+[[fact]]
+# systemPurpleColor
+key = "role.@system_purple"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#af52de"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPurpleColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#ad44ab"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemPurpleColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#bf5af2"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPurpleColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#da8fff"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemPurpleColor"
+tolerance = 0
+
+[[fact]]
+# systemPinkColor
+key = "role.@system_pink"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ff2d55"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPinkColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#d30f45"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemPinkColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ff375f"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPinkColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ff6482"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemPinkColor"
+tolerance = 0
+
+[[fact]]
+# systemTealColor
+key = "role.@system_teal"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#59adc4"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemTealColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#008299"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemTealColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#6ac4dc"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemTealColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#5de6ff"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemTealColor"
+tolerance = 0
+
+[[fact]]
+# systemIndigoColor
+key = "role.@system_indigo"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#5856d6"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemIndigoColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#3634a3"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemIndigoColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#5e5ce6"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemIndigoColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#7d7aff"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemIndigoColor"
+tolerance = 0
+
+[[fact]]
+# systemCyanColor
+key = "role.@system_cyan"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#55bef0"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemCyanColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0071a4"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemCyanColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#5ac8f5"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemCyanColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#70d7ff"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemCyanColor"
+tolerance = 0
+
+[[fact]]
+# systemMintColor
+key = "role.@system_mint"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#00c7be"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemMintColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0c817b"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemMintColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#63e6e2"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemMintColor"
+tolerance = 0
+
+[[fact]]
+# systemBrownColor
+key = "role.@system_brown"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#a2845e"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBrownColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#7f6545"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemBrownColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ac8e68"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBrownColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#b59469"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemBrownColor"
+tolerance = 0
+
+[[fact]]
+# systemGrayColor
+key = "role.@system_gray"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#8e8e93"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGrayColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#69696e"
+rows = ["MAC-DF03", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.systemGrayColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#98989d"
+rows = ["MAC-DF03"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemGrayColor"
+tolerance = 0
+
+[[fact]]
+# underPageBackgroundColor
+key = "role.@under_page_background"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#969696e5"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@under_page_background"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#969696"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@under_page_background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#282828"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact]]
+# textBackgroundColor
+key = "role.@text_background"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.textBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@text_background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#1e1e1e"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.textBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@text_background"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#202020"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.textBackgroundColor"
+tolerance = 0
+
+[[fact]]
+# secondarySelectedControlColor
+key = "role.@selected_control_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#dcdcdc"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control_secondary"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#464646"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact]]
+# selectedControlTextColor
+key = "role.@selected_control_text"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#000000d8"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control_text"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffffd8"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control_text"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#ffffff"
+rows = ["MAC-DF05†", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+# controlAccentColor
+key = "input.accent"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#007aff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.controlAccentColor"
+tolerance = 0
+
+[[fact]]
+key = "input.accent"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0040dd"
+rows = ["MAC-DF05†", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.controlAccentColor"
+tolerance = 0
+
+[[fact]]
+key = "input.accent"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#007aff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlAccentColor"
+tolerance = 0
+
+[[fact]]
+key = "input.accent"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#1774da"
+rows = ["MAC-DF05†", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.controlAccentColor"
+tolerance = 0
+
+[[fact]]
+# selectedTextBackgroundColor
+key = "input.highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#b3d7ff"
+rows = ["MAC-X27"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#b3c6f5"
+rows = ["MAC-X27", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#3f638b"
+rows = ["MAC-X27"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "input.highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#466280"
+rows = ["MAC-X27", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedTextBackgroundColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.accent"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:268"
+quote = "NSColor *controlAccentColor"
+
+[[fact]]
+# alternateSelectedControlTextColor
+key = "role.global.accent_foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.accent_foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact]]
+# keyboardFocusIndicatorColor (S9.1: an accent input, ADD-A123)
+key = "input.keyboard_focus_indicator"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0067f47f"
+rows = ["MAC-X13"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "input.keyboard_focus_indicator"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#0022af"
+rows = ["MAC-X13", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "input.keyboard_focus_indicator"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#1aa9ff7f"
+rows = ["MAC-X13"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "input.keyboard_focus_indicator"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#469af5"
+rows = ["MAC-X13", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact]]
+key = "role.window.decoration_focus"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.keyboard_focus_indicator"
+rows = []
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:232"
+quote = "NSColor *keyboardFocusIndicatorColor;"
+
+[[fact]]
+# selectedControlColor (S9.1: an accent input, ADD-A123)
+key = "input.selected_control"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#b3d7ff"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_control"
+when = { conditions = ["preset:macos-monterey", "scheme:light", "contrast_increased"] }
+value = "#b3c6f5"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_control"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#3f638b"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "input.selected_control"
+when = { conditions = ["preset:macos-monterey", "scheme:dark", "contrast_increased"] }
+value = "#466280"
+rows = ["MAC-DF04", "MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@selected_control"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.selected_control"
+rows = ["MAC-DF04"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:229"
+quote = "NSColor *selectedControlColor;"
+
+# highlightColor (NSColor.h:273: the colour all highlights tend toward; the red accent leaves it unchanged, S9.1)
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.@highlight"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#b4b4b4"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/increase-contrast-on/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact]]
+key = "role.global.selection_text_background"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= input.highlight"
+rows = ["MAC-DF05†"]
+
+[[fact.cite]]
+kind = "read"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:222"
+quote = "NSColor *selectedTextBackgroundColor;"
+
+[[fact]]
+key = "role.global.selection_text_background"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.global.selection_text_background_unfocused"
+rows = ["MAC-X15", "MAC-I05"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:223"
+quote = "The background for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+[[fact]]
+key = "role.global.selection_text_foreground"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.global.selection_text_foreground_unfocused"
+rows = ["MAC-I05"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:224"
+quote = "The foreground for unemphasized text selection (e.g. when the associated control/view/window is not key)"
+
+# The status roles (`role.global.status`): AppKit declares no status colour (U101).
+[[fact]]
+key = "role.global.status.success.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.success.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.warning.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.error.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.info.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.neutral.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.foreground"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.standalone"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []
+
+[[fact]]
+key = "role.global.status.destructive.background_solid"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U101"
+rows = []

@@ -4,9 +4,11 @@ the macOS facts (docs/facts/macos/button.toml) cite, replacing the per-row circl
 which the tie-break between the lane and the verifier found unstable (fits of 7.5 to 9.25 px on a 13 px high capsule,
 a different radius per corner of one symmetric button, rms up to 2.6 px).
 
-Run from the repository root (Python 3.11+, the standard library only), after measure_button_layers.py:
+Run from the repository root (Python 3.11+, the standard library only), after measure_button_layers.py, once per
+image folder (IMAGE as measure_button_layers.py takes it: `os-probe-macos-26`, the default, or `os-probe-macos-15`,
+which os-probe-macos-26/ below stands for):
 
-    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_corners.py
+    python3 docs/evidence/os-probe/2026-10-30-run-41006842699/analysis/tiebreak_corners.py [IMAGE]
 
 It reads, under os-probe-macos-26/ of the run, the analysis output `layers-<pass>-<sheet>.toml` (each button's
 `drawn_box` and `fill`, measure_button_layers.py's) and the layers `<pass dir>/<appearance>/[<sheet>/]<state>-layer.png`
@@ -27,10 +29,16 @@ writes `tiebreak-corners.toml`, per `<pass>.<sheet>.<appearance>.<state>.<button
   unmasked pixels' c best by least squares, and `rms` (in coverage, 0..1); `area_px`, the radius of the circle
   whose cut-off area (1 - pi/4) r^2 equals the unmasked pixels' summed missing coverage (a second reading of the
   same pixels);
-- `radius`: the value as a fact spells it: `{ full = { maximum_px = "absent" } }` (a capsule or a circle) where the
-  fit is within 0.75 px of half the box's smaller side on every corner, else, where every corner's rms is at most
-  0.06, the four fits' mean rounded to 0.25 px (`"<r>px"`, `"0px"` under 0.375 px), else "unfit" (the corner is no
-  circle the pixels show: a gradient, a stroke or a shadow over it);
+- `radius`: the value as a fact spells it, only where every corner's rms is at most 0.06 and the four corners' fits
+  spread by at most 1 px (the fit passes), else "unfit" (the corner is no circle the pixels show: a gradient, a stroke
+  or a shadow over it; or the four corners are not one radius, which the mean would hide: before the tie-break of
+  macos-monterey's slice a dark disabled shadowless square bezel's top fits of 4.05 px and bottom fits of 0 px, its
+  top edge line masked, were read as one 2 px corner): where it passes,
+  `{ full = { maximum_px = "absent" } }` (a capsule or a circle) where the fit is within 0.75 px of half the box's
+  smaller side on every corner, else the four fits' mean rounded to 0.25 px (`"<r>px"`, `"0px"` under 0.375 px). The
+  capsule reading needs the fit to pass as any radius does: before the tie-break of macos-monterey's slice it did
+  not, and read a 46 x 16 px mini push bezel of macOS 15 (rms 0.2-0.56, its edge line and shadow over the corner)
+  as a capsule;
 - `spread_px`: the largest difference between the four corners' fits.
 
 The precision the method supports, from the readings themselves: the four corners of one symmetric button agree to
@@ -51,7 +59,11 @@ import zlib
 from math import pi, sqrt
 from pathlib import Path
 
-RUN = Path("docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26")
+IMAGE = sys.argv[1] if len(sys.argv) > 1 else "os-probe-macos-26"
+if IMAGE not in ("os-probe-macos-26", "os-probe-macos-15"):
+    print(f"tiebreak_corners: unknown image folder {IMAGE!r}", file=sys.stderr)
+    sys.exit(2)
+RUN = Path(f"docs/evidence/os-probe/2026-10-30-run-41006842699/{IMAGE}")
 PASSES = {"key": "button-pass", "not_key": "button-pass-not-key", "inactive": "button-pass-inactive",
           "contrast": "button-pass-increase-contrast-on"}
 SHEETS = ("push", "styles_a", "styles_b", "styles_c")
@@ -254,12 +266,12 @@ def main() -> int:
                                 vals = [fits[c]["fit_px"] for c in CORNERS]
                                 res["spread_px"] = round(max(vals) - min(vals), 2)
                                 half = min(w, h) / 2
-                                if all(v >= half - 0.75 for v in vals):
-                                    res["radius"] = {"full": {"maximum_px": "absent"}}
-                                elif all(fits[c]["rms"] <= 0.06 for c in CORNERS):
-                                    res["radius"] = quarter(sum(vals) / 4)
-                                else:
+                                if not all(fits[c]["rms"] <= 0.06 for c in CORNERS) or res["spread_px"] > 1.0:
                                     res["radius"] = "unfit"
+                                elif all(v >= half - 0.75 for v in vals):
+                                    res["radius"] = {"full": {"maximum_px": "absent"}}
+                                else:
+                                    res["radius"] = quarter(sum(vals) / 4)
                             out.setdefault(pname, {}).setdefault(sheet, {}).setdefault(app, {}).setdefault(
                                 state, {})[button] = res
     except Bad as e:

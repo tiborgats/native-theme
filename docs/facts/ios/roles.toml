@@ -1,0 +1,3615 @@
+# Colour roles (ios-13, ios-26): the UIColor class colours as the iOS host's run 41020880059 resolved them
+# (`resolvedColor(with:)` per appearance, contrast and user-interface level; each image's run1/index.toml `[[color]]`,
+# sRGB), mapped to the roles the iOS trace names for them (X-CO-2, D-9 to D-14): the label colours to `window.foreground`,
+# `window.foreground_inactive`, `@label_tertiary`, `@label_quaternary`; the separators to `window.border` and
+# `@separator_opaque`; the backgrounds, fills and system colours to their keyed roles. Increase Contrast is
+# `contrast_increased` (the high contrast trait), the elevated level `elevated` (D-14: the whole window elevated) and,
+# for the backgrounds, the keyed elevated twins (D-14). A fact names a scheme or condition only where the colour
+# differs; the last that holds applies.
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#000000"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.272.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ffffff"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.276.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#3c3c4399"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.280.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ebebf599"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.284.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3c3c43cc"
+rows = ["D-15", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.282.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ebebf5b2"
+rows = ["D-15", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.286.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#3c3c434c"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.288.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ebebf54c"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.292.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3c3c43b2"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.290.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ebebf58c"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.294.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#3c3c432d"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.296.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ebebf528"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.300.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3c3c438c"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.298.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ebebf566"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.302.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#007aff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.304.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#0984ff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.308.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#3c3c434c"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.312.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ebebf54c"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.316.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3c3c43b2"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.314.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ebebf58c"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.318.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#3c3c434a"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.320.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#54545899"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.324.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3c3c435e"
+rows = ["D-12", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.322.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#545458ad"
+rows = ["D-12", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.326.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@separator_opaque"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#c6c6c8"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.328.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@separator_opaque"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#38383a"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.332.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.336.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#000000"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.340.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#1c1c1e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.341.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#242426"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.343.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.344.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.348.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.346.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.350.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#2c2c2e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.349.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#363638"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.351.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.352.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.356.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.358.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#3a3a3c"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.357.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#444446"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.359.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.360.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#000000"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.364.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.362.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#1c1c1e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.365.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#242426"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.367.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.368.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.372.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.374.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.373.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.375.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.376.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.380.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.378.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.382.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "elevated"] }
+value = "#3a3a3c"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.381.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#444446"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.383.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#78788033"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.384.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#7878805c"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.388.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#78788047"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.386.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#78788070"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.390.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#78788029"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.392.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#78788052"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.396.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#7878803d"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.394.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#78788066"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.398.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#7676801f"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.400.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#7676803d"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.404.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#76768033"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.402.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#76768052"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.406.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#74748014"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.408.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#7676802e"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.412.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#74748029"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.410.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#76768042"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.414.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ff3b30"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.120.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ff453a"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.124.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#d70015"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.122.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ff6961"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.126.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ff9500"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.144.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ff9f0a"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.148.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#c93400"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.146.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ffb340"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.150.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffcc00"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.152.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ffd60a"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.156.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#b25000"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.154.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ffd426"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.158.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#34c759"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.128.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#30d158"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.132.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#248a3d"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.130.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#30db5b"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.134.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#00c7be"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.200.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#63e6e2"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.204.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#0c817b"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.202.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#30b0c7"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.176.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#40c8e0"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.180.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#008299"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.178.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#5de6ff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.182.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#32ade6"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.208.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#64d2ff"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.212.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#0071a4"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.210.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#70d7ff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.214.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#007aff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.136.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#0a84ff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.140.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#0040dd"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.138.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#409cff"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.142.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#5856d6"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.184.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#5e5ce6"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.188.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#3634a3"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.186.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#7d7aff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.190.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#af52de"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.168.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#bf5af2"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.172.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#8944ab"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.170.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#da8fff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.174.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ff2d55"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.160.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ff375f"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.164.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#d30f45"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.162.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#ff6482"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.166.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#a2845e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.192.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#ac8e68"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.196.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#7f6545"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.194.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#b59469"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.198.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-13"] }
+value = "#8e8e93"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.216.value.hex"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.220.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#6c6c70"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.218.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#aeaeb2"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.222.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#aeaeb2"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.224.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#636366"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.228.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#8e8e93"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.226.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#7c7c80"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.230.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#c7c7cc"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.232.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#48484a"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.236.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#aeaeb2"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.234.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#545456"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.238.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#d1d1d6"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.240.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.244.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#bcbcc0"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.242.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.246.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#e5e5ea"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.248.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.252.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#d8d8dc"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.250.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.254.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.256.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.260.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.258.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.262.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.337.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.341.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.343.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.345.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.349.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.347.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.351.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.353.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.357.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.359.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.361.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.365.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.363.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.367.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.369.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.373.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.375.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.377.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.381.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.379.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-13", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/run1/index.toml#color.383.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#000000"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.272.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ffffff"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.276.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#3c3c4399"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.280.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ebebf599"
+rows = ["X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.284.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#3c3c43cc"
+rows = ["D-15", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.282.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.foreground_inactive"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ebebf5b2"
+rows = ["D-15", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.286.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#3c3c434c"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.288.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ebebf54c"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.292.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#3c3c43b2"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.290.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ebebf58c"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.294.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#3c3c432d"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.296.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ebebf528"
+rows = ["D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.300.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#3c3c438c"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.298.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@label_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ebebf566"
+rows = ["D-15", "D-9", "X-CO-2", "X-CO-5"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.302.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#007aff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.304.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.link"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#0984ff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.308.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#3c3c434c"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.312.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ebebf54c"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.316.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#3c3c43b2"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.314.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@placeholder"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ebebf58c"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.318.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#3c3c431f"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.320.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.window.border"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#54545880"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.324.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@separator_opaque"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#c6c6c8"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.328.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@separator_opaque"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#38383a"
+rows = ["D-12", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.332.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.336.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#000000"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.340.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#1c1c1e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.341.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#242426"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.343.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.344.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.348.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.346.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.350.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#2c2c2e"
+rows = ["D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.349.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#363638"
+rows = ["D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.351.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.352.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.356.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.358.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#3a3a3c"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.357.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#444446"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.359.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.360.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#000000"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.364.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.362.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#1c1c1e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.365.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#242426"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.367.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.368.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.372.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.374.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.373.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.375.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.376.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.380.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.378.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.382.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "elevated"] }
+value = "#3a3a3c"
+rows = ["D-11", "D-14", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.381.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased", "elevated"] }
+value = "#444446"
+rows = ["D-11", "D-14", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.383.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#78788033"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.384.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#7878805c"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.388.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#78788047"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.386.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#78788070"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.390.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#78788029"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.392.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#78788052"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.396.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#7878803d"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.394.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_secondary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#78788066"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.398.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#7676801f"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.400.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#7676803d"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.404.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#76768033"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.402.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_tertiary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#76768052"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.406.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#74748014"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.408.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#7676802e"
+rows = ["D-10", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.412.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#74748029"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.410.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_fill_quaternary"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#76768042"
+rows = ["D-10", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.414.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ff383c"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.120.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ff4245"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.124.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#e9152d"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.122.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_red"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ff6165"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.126.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ff8d28"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.144.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ff9230"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.148.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#c55300"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.146.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_orange"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ffa056"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.150.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffcc00"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.152.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ffd600"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.156.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#a16a00"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.154.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_yellow"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#fedf43"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.158.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#34c759"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.128.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#30d158"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.132.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#008932"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.130.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_green"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#4ad968"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.134.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#00c8b3"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.200.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#00dac3"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.204.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#008575"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.202.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_mint"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#54dfcb"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.206.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#00c3d0"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.176.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#00d2e0"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.180.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#008198"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.178.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_teal"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#3bddec"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.182.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#00c0e8"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.208.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#3cd3fe"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.212.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#007eae"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.210.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_cyan"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#6dd9ff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.214.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#0088ff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.136.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#0091ff"
+rows = ["X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.140.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#1e6ef4"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.138.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_blue"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#5cb8ff"
+rows = ["D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.142.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#6155f5"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.184.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#6d7cff"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.188.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#564ade"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.186.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_indigo"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#a7aaff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.190.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#cb30e0"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.168.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#db34f2"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.172.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#b02fc2"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.170.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_purple"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ea8dff"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.174.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ff2d55"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.160.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#ff375f"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.164.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#e7124d"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.162.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_pink"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#ff8ac4"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.166.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ac7f5e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.192.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#b78a66"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.196.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#956d51"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.194.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_brown"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#dba679"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.198.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-26"] }
+value = "#8e8e93"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.216.value.hex"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.220.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#6c6c70"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.218.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#aeaeb2"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.222.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#aeaeb2"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.224.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#636366"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.228.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#8e8e93"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.226.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray2"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#7c7c80"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.230.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#c7c7cc"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.232.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#48484a"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.236.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#aeaeb2"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.234.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray3"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#545456"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.238.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#d1d1d6"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.240.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.244.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#bcbcc0"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.242.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray4"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.246.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#e5e5ea"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.248.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.252.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#d8d8dc"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.250.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray5"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.254.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.256.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-13", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.260.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.258.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_gray6"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-13", "D-15", "X-CO-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.262.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.337.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.341.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.343.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.345.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.349.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.347.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.351.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.353.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.357.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.359.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.361.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#1c1c1e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.365.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.363.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#242426"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.367.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#ffffff"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.369.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#2c2c2e"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.373.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_secondary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#363638"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.375.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light"] }
+value = "#f2f2f7"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.377.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark"] }
+value = "#3a3a3c"
+rows = ["D-14"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.381.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:light", "contrast_increased"] }
+value = "#ebebf0"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.379.value.hex"
+tolerance = 0
+
+[[fact]]
+key = "role.@system_grouped_background_tertiary_elevated"
+when = { conditions = ["preset:ios-26", "scheme:dark", "contrast_increased"] }
+value = "#444446"
+rows = ["D-14", "D-15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#color.383.value.hex"
+tolerance = 0
