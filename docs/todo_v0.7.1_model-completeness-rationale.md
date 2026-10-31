@@ -798,18 +798,18 @@ MAT-X13–MAT-X15, X-MO-1).
   token: one of a crossfade of the window with its duration; property transitions suspended for a duration
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
   `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
-  `AdwAnimation`, still runs, `adw-tab.c:857-862`: a suspension reaches the value-driven transitions, ADD-A125; a reached transition running when the suspension starts jumps to its
-  new value, as GTK carries no transition into a style whose transitions are off, `gtk@4.24.1
-  gtk/gtkcssanimatedstyle.c:822-826`, while one started by a state runs on, its ends retargeted, as Breeze's fades mix
-  the live palette's colours); or instant (an instant switch with property transitions as usual, the value-driven
+  `AdwAnimation`, still runs, `adw-tab.c:857-862`: a suspension reaches the value-driven transitions, and a reached
+  one running when it starts jumps to its new value, as GTK carries no transition into a style whose transitions are
+  off, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-826`; the specification's S2.7 states the rest, ADD-A125); or instant (an instant switch with property transitions as usual, the value-driven
   ones running, as Kirigami's QML behaviours do on `kde-breeze`, whose Breeze fades a theme change never starts). Each preset's kind is a fact of its toolkit's own drawing, measured
   where no source states it (`kde-breeze`'s is `Instant` from Breeze's and Qt Quick's code, ADD-A125; KWin's Blend
   Changes cross-fade of every window is the compositor's, out of scope, R1.1). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their value-driven property
-  transitions run as stated (Mica's fade, W3-10, its trigger measured with W-P3-16†), and a state-driven one starts
-  only on those it names (Breeze's decoration shadow on window activation alone, `breeze@6.8.2
-  kdecoration/breezedecoration.cpp:241`, `:275-286`, K1.17; ADD-A125). A state-driven transition may reverse: undone
-  mid-run, it returns from where it is, as Breeze's engines turn a running animation's direction
-  (`kstyle/animations/breezewidgetstatedata.cpp:24-27`), where CSS and Compose start the new one from the value drawn.
+  transitions run as stated, and a state-driven one starts only on those it names (Breeze's decoration shadow on a
+  change of the window's activation, `breeze@6.8.2 kdecoration/breezedecoration.cpp:241`, `:275-286`, K1.17; Mica's
+  fade, W3-10, its trigger measured with W-P3-16†; ADD-A125). A state-driven transition may reverse: undone mid-run,
+  the transition of the new direction is entered where the running one has come to, as Breeze turns a running
+  animation's direction (`kstyle/animations/breezewidgetstatedata.cpp:24-27`, `kdecoration/breezedecoration.cpp:278-279`),
+  where CSS and Compose start the new one from the value drawn (the specification's S2.7).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes
