@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
     Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, parse_key, parse_value, parse_when, set_whole, widgets,
+    Unread, When, content_variants, parse_key, parse_value, parse_when, set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -111,6 +111,10 @@ pub struct Report {
     pub whens_not_held: BTreeMap<String, usize>,
     /// Facts naming a preset no bundled preset is (decision 7).
     pub other_presets: usize,
+    /// State-model variants only facts the gate skips name, each left out
+    /// of its entry's declarations and combinations (ADD-A128), by
+    /// `<file> <widget> <variant>`.
+    pub variants_not_held: BTreeSet<String>,
     /// Facts of the accent run, which this gate does not run.
     pub accent_run: usize,
     /// Combinations skipped: a context or a condition the gate cannot set.
@@ -600,6 +604,167 @@ fn record(
     }
 }
 
+/// The widgets a `when` names as an ancestor or a sibling (S11): its
+/// contexts' (`scope.nearest`'s too) and its position's.
+fn when_widgets(when: &Value) -> Vec<String> {
+    let mut out = Vec::new();
+    let widget = |entry: &Value| {
+        entry
+            .get("widget")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+    };
+    for list in ["context", "not_context"] {
+        for entry in when
+            .get(list)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            out.extend(widget(entry));
+            out.extend(strings(
+                entry.get("scope").and_then(|scope| scope.get("nearest")),
+            ));
+        }
+    }
+    if let Some(position) = when.get("position") {
+        out.extend(strings(position.get("among")));
+        for side in ["previous", "next"] {
+            out.extend(position.get(side).and_then(widget));
+        }
+    }
+    out
+}
+
+/// The variants of `widget` a fact's `when` names: its own lists, for a
+/// fact of the widget's keys, and those of a context or a position's
+/// sibling naming the widget.
+fn when_variants(when: &Value, widget: &str, own: bool) -> Vec<String> {
+    let lists = |entry: &Value| {
+        let mut out = strings(entry.get("variants"));
+        out.extend(strings(entry.get("not_variants")));
+        out
+    };
+    let mut out = if own { lists(when) } else { Vec::new() };
+    let names = |entry: &Value| entry.get("widget").and_then(Value::as_str) == Some(widget);
+    for list in ["context", "not_context"] {
+        for entry in when
+            .get(list)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            if names(entry) {
+                out.extend(lists(entry));
+            }
+        }
+    }
+    if let Some(position) = when.get("position") {
+        for side in ["previous", "next"] {
+            if let Some(entry) = position.get(side).filter(|entry| names(entry)) {
+                out.extend(lists(entry));
+            }
+        }
+    }
+    out
+}
+
+/// The variants of `entry` the gate leaves out for `preset` (each preset's
+/// facts where none is given), ADD-A128: those facts name, every one of
+/// which the gate skips, as a unit it belongs to, its key's or a widget's
+/// its `when` names, is not enabled (S6.1: a unit enters the model in the
+/// commit whose presets state it). A variant no fact names is checked like
+/// any other; a variant S12 exempts from being selected on stays (a content
+/// variant, one `requires_variants`, `sizes_by_variant` or
+/// `default_size_by_variant` names). Each recorded in the report.
+fn skipped_variants(
+    platform: &Platform,
+    entry: &Model,
+    preset: Option<&str>,
+    report: &mut Report,
+) -> Vec<String> {
+    let held = widgets();
+    let (mut named_in, mut named_off) = (BTreeSet::new(), BTreeSet::new());
+    for fact in platform.facts.iter().filter(|fact| !fact.accent_run) {
+        let when = match preset {
+            Some(preset) => match facts::for_preset(fact.when.as_ref(), preset) {
+                Some((when, _)) => when,
+                None => continue,
+            },
+            None => fact.when.clone(),
+        };
+        let Some(when) = when else {
+            continue;
+        };
+        let key_widget = match platform.key(&fact.key) {
+            Some(Ok(key)) => key.widget(),
+            _ => fact.key.split('.').next().map(str::to_owned),
+        };
+        let own = key_widget.as_deref() == Some(entry.widget.as_str());
+        let names = when_variants(&when, &entry.widget, own);
+        if names.is_empty() {
+            continue;
+        }
+        let key_held = matches!(platform.key(&fact.key), Some(Ok(_)));
+        let skipped = !key_held
+            || when_widgets(&when)
+                .iter()
+                .any(|widget| !held.contains(widget));
+        if skipped {
+            named_off.extend(names);
+        } else {
+            named_in.extend(names);
+        }
+    }
+    let mut exempt: BTreeSet<String> = content_variants(&entry.widget).into_iter().collect();
+    exempt.extend(entry.requires_variants.iter().cloned());
+    exempt.extend(
+        entry
+            .sizes_by_variant
+            .iter()
+            .map(|(variant, _)| variant.clone()),
+    );
+    exempt.extend(
+        entry
+            .default_size_by_variant
+            .iter()
+            .map(|(variant, _)| variant.clone()),
+    );
+    let out: Vec<String> = entry
+        .variants
+        .iter()
+        .filter(|variant| {
+            named_off.contains(*variant)
+                && !named_in.contains(*variant)
+                && !exempt.contains(*variant)
+        })
+        .cloned()
+        .collect();
+    for variant in &out {
+        report
+            .variants_not_held
+            .insert(format!("{} {} {variant}", entry.file, entry.widget));
+    }
+    out
+}
+
+/// The entries in force for `preset` and `flavor`, each without the
+/// variants the gate leaves out for the preset (ADD-A128).
+fn projected(
+    platform: &Platform,
+    preset: &Preset,
+    flavor: Option<&str>,
+    report: &mut Report,
+) -> Vec<Model> {
+    model::in_force(&platform.models, preset.id(), flavor)
+        .into_iter()
+        .map(|entry| {
+            let skipped = skipped_variants(platform, entry, Some(preset.id()), report);
+            entry.without(&skipped)
+        })
+        .collect()
+}
+
 /// The perturbed run's stand-in layer (S17): under each scheme, a fixed
 /// colour for every declared input and every colour role a derivation fact
 /// names as an operand, but a role whose own fact that applies under the
@@ -870,6 +1035,8 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
             if !entry.available {
                 continue;
             }
+            let skipped = skipped_variants(&platform, entry, None, &mut report);
+            let entry = &entry.without(&skipped);
             let vectors = model::condition_vectors(
                 &entry.axis_conditions,
                 &["light".to_owned(), "dark".to_owned()],
@@ -894,7 +1061,7 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
             for flavor in flavors {
                 declarations_run(&platform, preset, flavor, &mut report);
                 check(&platform, preset, flavor, &keys, &mut report);
-                let entries = model::in_force(&platform.models, preset.id(), flavor);
+                let entries = projected(&platform, preset, flavor, &mut report);
                 derivations(preset, flavor, &keys, &entries, &mut report);
             }
         }
@@ -912,7 +1079,7 @@ pub fn declarations_run(
     flavor: Option<&str>,
     report: &mut Report,
 ) {
-    let entries = model::in_force(&platform.models, preset.id(), flavor);
+    let entries = projected(platform, preset, flavor, report);
     for widget in widgets() {
         let available = preset
             .declared(&widget, flavor)
@@ -930,7 +1097,7 @@ pub fn declarations_run(
             ));
         }
     }
-    for entry in entries {
+    for entry in &entries {
         let declared = match preset.declared(&entry.widget, flavor) {
             Ok(declared) => declared,
             Err(Unread::NotHeld(_)) => continue,
@@ -1119,7 +1286,7 @@ fn check(
     report: &mut Report,
 ) {
     let schemes = preset.schemes();
-    let entries = model::in_force(&platform.models, preset.id(), flavor);
+    let entries = projected(platform, preset, flavor, report);
     let mut planned: Planned = BTreeMap::new();
     let mut seen: HashSet<(Vec<String>, String)> = HashSet::new();
     let mut plan = |vector: Vec<String>, combination: Combination, planned: &mut Planned| {
@@ -1479,7 +1646,7 @@ fn derivations(
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
-    entries: &[&Model],
+    entries: &[Model],
     report: &mut Report,
 ) {
     let root = root_inputs();

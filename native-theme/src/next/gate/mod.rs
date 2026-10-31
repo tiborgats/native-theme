@@ -246,6 +246,21 @@ pub fn widgets() -> Vec<String> {
         .collect()
 }
 
+/// The content variants of the widget `widget`, as S11 writes them: the
+/// variants its connector sets from the element's content (the catalogue's
+/// pairs, S8), which S12 exempts from being selected on.
+#[must_use]
+pub fn content_variants(widget: &str) -> Vec<String> {
+    registry::widget(widget)
+        .map(|info| {
+            info.content_variants
+                .iter()
+                .map(|(_, variant)| (*variant).to_owned())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// The typed widget `name` names.
 fn widget_kind(name: &str) -> Result<WidgetKind, Unread> {
     registry::widget(name)

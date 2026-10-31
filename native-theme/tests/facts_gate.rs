@@ -434,6 +434,36 @@ fn gate_declarations_each_compared() {
     );
 }
 
+/// The declarations run and the combinations are the state model's
+/// projected onto what the enabled units' facts name (ADD-A128): a variant
+/// only skipped facts name (their `when` names a toolbar, whose unit is not
+/// enabled) is left out and counted, neither failed nor queried; a variant
+/// no fact names is checked like any other, passing where the preset
+/// declares it and failing where it does not.
+#[test]
+fn gate_fixture_variants_of_units_not_enabled() {
+    let skipped = fixture_report("variant_skipped");
+    assert_eq!(skipped.failures, Vec::<String>::new());
+    assert_eq!(
+        skipped.variants_not_held.iter().collect::<Vec<_>>(),
+        ["gnome/state-models.toml button @raised"]
+    );
+    assert!(skipped.queried > 0, "{skipped:?}");
+    let unnamed = fixture_report("variant_unnamed");
+    assert_eq!(unnamed.failures, Vec::<String>::new());
+    assert!(unnamed.variants_not_held.is_empty(), "{unnamed:?}");
+    let undeclared = fixture_report("variant_undeclared");
+    assert!(
+        undeclared
+            .failures
+            .iter()
+            .any(|failure| failure.contains("`button` variants under")),
+        "{:?}",
+        undeclared.failures
+    );
+    assert!(undeclared.variants_not_held.is_empty(), "{undeclared:?}");
+}
+
 /// A pending fact is listed with its register id and its key, apart from
 /// the failures; one a later fact shadows where both hold fails.
 #[test]
@@ -691,7 +721,8 @@ fn facts_gate() {
     eprintln!(
         "facts gate: {} presets, {} keys compared over {} distinct combinations in {:?}; \
          {} pending facts; skipped: {} facts of {} keys the model does not hold, {} whens, \
-         {} accent-run facts, {} facts naming a preset not bundled, {} combinations",
+         {} accent-run facts, {} facts naming a preset not bundled, {} combinations, \
+         {} state-model variants only skipped facts name",
         presets.len(),
         report.compared,
         report.queried,
@@ -703,7 +734,11 @@ fn facts_gate() {
         report.accent_run,
         report.other_presets,
         report.combinations_skipped,
+        report.variants_not_held.len(),
     );
+    for variant in &report.variants_not_held {
+        eprintln!("  variants not held: {variant}");
+    }
     for (why, count) in &report.whens_not_held {
         eprintln!("  whens not held: {count}: {why}");
     }

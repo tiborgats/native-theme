@@ -80,6 +80,9 @@ pub struct Model {
     pub variant_sets: Vec<Vec<String>>,
     pub variant_products: Vec<Vec<Group>>,
     pub not_drawn: Vec<Table>,
+    /// The variants the gate leaves out of this entry for a preset, as only
+    /// facts it skips name them (ADD-A128): no combination holds one.
+    pub skipped_variants: Vec<String>,
 }
 
 impl Model {
@@ -215,7 +218,31 @@ impl Model {
                 .and_then(Value::as_array)
                 .map(|items| items.iter().filter_map(Value::as_table).cloned().collect())
                 .unwrap_or_default(),
+            skipped_variants: Vec::new(),
         }
+    }
+
+    /// The entry without the variants `skipped` (ADD-A128): out of
+    /// `variants` and each `exclusive_variants` group (a group left with
+    /// fewer than two goes, as it excludes nothing), and out of every
+    /// combination, a set holding one dropped whole.
+    pub fn without(&self, skipped: &[String]) -> Model {
+        let mut out = self.clone();
+        out.variants.retain(|variant| !skipped.contains(variant));
+        out.exclusive_variants = self
+            .exclusive_variants
+            .iter()
+            .map(|group| {
+                group
+                    .iter()
+                    .filter(|variant| !skipped.contains(variant))
+                    .cloned()
+                    .collect::<Vec<_>>()
+            })
+            .filter(|group| group.len() >= 2)
+            .collect();
+        out.skipped_variants = skipped.to_vec();
+        out
     }
 }
 
@@ -460,7 +487,7 @@ fn required(model: &Model, set: &[String]) -> bool {
 
 /// The entry's variant options (S17): none, each single variant, each
 /// listed set and each set its products give, less those `requires_variants`
-/// excludes, each once.
+/// excludes and those holding a skipped variant, each once.
 pub fn variant_options(model: &Model) -> Vec<Vec<String>> {
     let mut out: Vec<Vec<String>> = vec![Vec::new()];
     out.extend(model.variants.iter().map(|variant| vec![variant.clone()]));
@@ -476,7 +503,12 @@ pub fn variant_options(model: &Model) -> Vec<Vec<String>> {
             out.push(sorted);
         }
     }
-    out.retain(|set| required(model, set));
+    out.retain(|set| {
+        required(model, set)
+            && !set
+                .iter()
+                .any(|variant| model.skipped_variants.contains(variant))
+    });
     out
 }
 

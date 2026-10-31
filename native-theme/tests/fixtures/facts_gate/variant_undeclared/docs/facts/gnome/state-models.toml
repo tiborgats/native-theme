@@ -1,0 +1,10 @@
+# A synthetic state model (S17): `@raised` is named by no fact; the preset does not declare it.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "@raised"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+rows = []
