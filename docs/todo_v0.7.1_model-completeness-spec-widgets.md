@@ -192,8 +192,8 @@ Each `### <widget>` section states, in this order:
   (a tab strip appearing). A widget lists, per event, the element it presents; every other event
   is keyed (`@event`, declared, S10). A part shown and hidden with a state needs no event: where its platform
   draws nothing of it in a state at rest (a check mark unchecked, a radio's dot, a selection pill, a slider's value
-  bubble, a picker's popup), it is `Absent` there by a rule (the check mark's and the radio dot's
-  representation ADD-A126's, S2.7), and how it enters and leaves, faded, drawn on along its
+  bubble, a picker's popup), it is `Absent` there by a rule (the check mark's, the radio dot's and a menu
+  item's check glyph's representation ADD-A126's, S2.7; a later rule reviving such a part, ledger queue #110), and how it enters and leaves, faded, drawn on along its
   path, trimmed or grown, is ADD-A126's (S2.7); a scale or slide while it is drawn is its `transform` per state. A
   motion
   no field's transition can state (a part sliding in from an edge, an indicator sliding from the old selection to the new) is
@@ -1211,7 +1211,8 @@ spaces:
   - `split_divider` — the line between the item and its chevron part (W1-051): `stroke` (the divider's brush and
     width; the start edge), `min_height` (its length).
   - `item_selection_indicator` — WinUI's selection pill on the selected item of a combo box's list (W1-135), in
-    `context combo_box` only (no other menu item draws one, so no field of it is stated outside that context): `fill`, `corners`, `min_width`, `min_height`, `transform` (its scale per state while drawn),
+    `context combo_box` (`Absent` on `windows-11` by its base, drawn by the rules under `{selected} context
+    combo_box`, W1-135): `fill`, `corners`, `min_width`, `min_height`, `transform` (its scale per state while drawn),
     `transitions` (its scale animation; absent outside `{selected}`, how it enters and leaves ADD-A126's, S2.7).
   - `found_item_pointer` — the pointer macOS draws at a menu item the Help search found (MAC-N33†): `glyph`, `fill`,
     `transitions`.
@@ -1297,7 +1298,7 @@ spaces:
     header, GN-1.75), `scroll_arrow` (`adwaita`, `ios-*`, `material-3`, `windows-11`; `kde-breeze` by rules under
     `@ka_bottom_drawer` and `@ka_dialog`, K-KA-31†), `split_chevron` (all but `windows-11`: WinUI's split menu item,
     W1-051), `split_divider` (all but `windows-11`: WinUI's split menu item, W1-051), `item_selection_indicator` (all
-    but `windows-11`: WinUI's selection pill, W1-135; `windows-11` by a rule outside `{selected}` in `context combo_box`, W1-135; a later rule reviving it, the general case, ledger queue #110), `dismiss_overlay`
+    but `windows-11`: WinUI's selection pill, W1-135; `windows-11` by its base, W1-135), `dismiss_overlay`
     (all but `windows-11`: WinUI's light-dismiss overlay, W1-055, W3-11), `arrow` (all but `adwaita`: only GTK's
     popover menus draw a tail; `adwaita` by rules in the contexts where GTK draws its menu without one, GN-1.278†,
     GN-P3-3†, GN-P4-2†, GN-P4-8†), `found_item_pointer` (all but `macos-*`: the pointer at a menu item the Help search
@@ -1431,8 +1432,10 @@ spaces:
     toward the end and leaves the row's size alone); `Inline` centres its margin box on the row's cross axis,
     `InlineTop` puts it at the row's top, the top margin then the distance from the top of `body`'s content box
     (`body`'s box less its padding, S2.11; ADD-A125). The content's space, at every width, runs from the row's start
-    to `menu_indicator_gap_px` before the indicator's margin box or before its box, whichever lies further
-    toward the end (ADD-A125): a negative start margin draws the indicator into the gap and leaves the content's space
+    to `menu_indicator_gap_px` before the indicator's margin box, or before its box where a negative end margin
+    offsets its positive start margin (the box moved, not spaced), whichever lies further toward the end (ADD-A125;
+    a lone positive start margin is CSS's space between content and indicator, so its margin box ends the content's
+    space): a negative start margin draws the indicator into the gap and leaves the content's space
     as it is (WinUI's chevron, its negative start margin under the label's end margin, W1-102), while a positive one,
     with a matching negative end margin moving the indicator toward the end, gives the content's space the width it
     leaves (Breeze's push button sizes its arrow with both of the button's `Button_MarginWidth` margins, `breeze@6.8.2
@@ -2175,8 +2178,9 @@ spaces:
     `QPainterPath`, WinUI's accept visual's stroked path (the template's code point WinUI's own fallback, drawn only
     where the visual cannot be built, `AnimatedIcon.cpp:473-479`, not modelled; W1-039), AppKit's whole-control
     rendering, iOS's named symbol), `padding` (its inset inside the box, MAC-C06), `opacity` and `transform` (per
-    state while drawn), `transitions` (its entrance and exit: absent while neither checked nor indeterminate; the
-    mark's and the dot's representation, rest look and motion together, is ADD-A126's, ledger queue #85, S2.7).
+    state while drawn), `transitions` (its entrance and exit: absent while neither checked nor indeterminate, as written
+    before ADD-A125, which decides nothing here: the mark's and the dot's representation, rest look and motion
+    together, is ADD-A126's, ledger queue #85, S2.7).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
@@ -2198,7 +2202,7 @@ spaces:
   `state_layer = [focus_visible, hover]` (state layers, MAT-C2; Material's recency sets, above: Compose's ripple,
   `Checkbox.kt:554-579`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`; the mark's and dot's representation is ADD-A126's, ledger queue #85),
+  - parts: `state_layer` (all but `material-3`), `mark` (every preset by a rule `@ !{checked,indeterminate}`; the marks' rest look is ADD-A126's, ledger queue #85, S2.7, so the rule as written before ADD-A125 decides nothing here),
     `label` (`ios-*`: the list's multiselect circle, its only checkbox, has no label, CK-1, CK-2†).
   - fields: `body.fill` (the value phase names the presets from the facts: the rows fill only the box, W1-037,
     GN-1.55, K1.51, MAC-C02, MAT-C3), `body.focus` (`kde-breeze`, `material-3`: Breeze and Material ring the box,
@@ -2250,8 +2254,8 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked; the mark's and the dot's representation, rest look
-    and motion together, is ADD-A126's (ledger queue #85, S2.7): `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
+    (its scale animation, W1-041; absent while unchecked, as written before ADD-A125, which decides nothing here: the
+    mark's and the dot's representation, rest look and motion together, is ADD-A126's, ledger queue #85, S2.7; `adwaita`'s inconsistent radio draws the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:79-81`, GN-1.58, and WinUI's unchecked radio a
     second dot while pressed, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:298-306`,
     `:376`, W1-041).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
@@ -2274,7 +2278,7 @@ spaces:
   precedence: state models (S17). Recency sets: `material-3`: `state_layer = [focus_visible, hover]` (state layers;
   Material's recency sets, above: Compose's ripple, `RadioButton.kt:163-169`; `pressed` combines).
 - **may_be_absent:**
-  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`; the mark's and dot's representation is ADD-A126's, ledger queue #85).
+  - parts: `state_layer` (all but `material-3`), `dot` (every preset by a rule `@ !{checked}`; the marks' rest look is ADD-A126's, ledger queue #85, S2.7, so the rule as written before ADD-A125 decides nothing here).
   - fields: `ring.focus` (`adwaita`: GTK rings indicator and label together, the `body`, GN-1.61; `kde-breeze` under
     `cond flavor:kirigami`, where Kirigami rings the label, Q1.21), `body.focus` (`kde-breeze`: Breeze rings the
     ring, K1.57, K3.20), `label.focus` (all but `kde-breeze`; `kde-breeze` by a rule outside `cond flavor:kirigami`,
@@ -4117,7 +4121,8 @@ spaces:
     `cursor`, `transitions`.
   - `grip` — the grip, dimple or drag handle on the divider (MAC-SP02, MAT-SP1, W1-157†, SP-2): `fill`, `glyph`,
     `corners`, `min_width`, `min_height`, `padding`, `shadow`, `interaction` (Material's drag handle: its hover,
-    focus and dragged state layers, Compose's `ripple()` indication, no press ripple, MAT-SP2, MAT-X29, S2.12),
+    focus and dragged state layers, Compose's `ripple()` indication, no press ripple but under `@clickable`,
+    MAT-SP2, MAT-X29, S2.12),
     `transitions` (the block's fades, MAT-X9).
   - `collapser` *(element)*, in `divider` — KDE's collapser button over the divider (KSplitterCollapserButton,
     K2.17), hovered and pressed on its own, its side a keyed variant: `fill`, `padding`, `opacity` (its fade, K2.17).
@@ -4134,7 +4139,8 @@ spaces:
   divider, MAC-SP01, MAC-SP02); `kde-breeze` `@dock`, `@column_view`, and on `collapser` `@left`, `@right`, `@top`,
   `@bottom` (the side it collapses toward, K2.17); `material-3` the content variant `@clickable` (the drag handle given a
   click action by its caller, which adds a press ripple; the connector sets it from the caller's semantics, as it sets
-  `with_label`, ADD-A61; MAT-SP2).
+  `with_label`, ADD-A61; MAT-SP2; rejected: the ripple as the connector's limit, R23, which records a model's gap as
+  the toolkit's, and a press ripple always on, which the default semantics do not draw).
 - **Sizes and densities:** none.
 - **Flags:** none of its own; state flags used: hover, pressed, dragged (MAC-SP03), focus_visible on Material's handle
   (MAT-SP2), disabled (W1-157†).
