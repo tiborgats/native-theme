@@ -896,7 +896,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
 | GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
-| GN-3.23 | `PartStyle.transitions per part, each transition's suspended_by_theme_change (true on the CSS transitions the provider's `* { transition: none; }` reaches, false on the AdwAnimations, S4.3, ADD-A125)` | field |
+| GN-3.23 | `PartStyle.transitions per part, each transition's trigger (value_change on the CSS transitions, which the provider's `* { transition: none; }` suspends; state_change on the AdwAnimations, which it does not reach, S2.7, S4.3, ADD-A125)` | field |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |

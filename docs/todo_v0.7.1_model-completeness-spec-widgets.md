@@ -50,11 +50,13 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   style is "adjusted based on dynamic type" with no text style named (`UIButtonConfiguration.h:41-44` in Xcode 16.4,
   `:42-45` in 26.6), so its radius is stated at the default category (L) only until the host draws it at every
   content size category and the analysis finds the `UIFontMetrics` text style whose scaling it follows (then
-  `= uifm_scaled(<radius at L>, <role>)`; a radius no text style's scaling gives is a class 2 change); the prominent
+  `= uifm_scaled(<radius at L>, <role>)`; a radius no text style's scaling gives is a class 2 change): the gate builds
+  the default category only (S17's no-reader state), so the L facts claim nothing about the others; the prominent
   bar item (`UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:31` in Xcode 26.6) is `primary` in `context
   toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
-  `forms.<scheme>.bar_prominent`), its values pending a pass that reads them; the default `buttonSize` (U129, the
-  entry's *Default sizes*).
+  `forms.<scheme>.bar_prominent`), its values pending a pass that reads them, as are the system Done item's on
+  `ios-26` and the system add item's (`forms.<scheme>.bar_system_done`, `bar_system_add`, unread); the default
+  `buttonSize` (U129, the entry's *Default sizes*).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -1401,8 +1403,9 @@ spaces:
     toward the start of where Breeze draws it, at every width); the border box alone with WinUI's values as written
     (its label would lose the chevron's negative start margin from its space); the border box alone with WinUI's gap
     restated as the drawn distance, `= add(<the label's end margin>, <the chevron's start margin>)`, and its start
-    margin zero (one reading, but WinUI's start margin would be stated as a zero its source does not write, and its gap
-    as a sum, where the rule chosen keeps both platforms' written values one to one). A gap the platform writes as the content's end margin is `menu_indicator_gap_px` (WinUI's
+    margin zero (one reading, but WinUI's start margin would be stated as a zero its source does not write, which no
+    quote holds against its written negative one, where the rule chosen keeps both platforms' written values one to
+    one; a sum for the gap would itself be fine, as S2.11's padding sums are). A gap the platform writes as the content's end margin is `menu_indicator_gap_px` (WinUI's
     `AppBarButtonTextLabelOnRightMargin`'s end, W1-102): the label part has no `margin`, and its `padding` is what the
     platform writes on the label itself, inside it (GTK's label padding beside an arrow, GN-1.39), not a margin outside
     it, so a written end margin has the gap as its one home. Where the row is wider than its content and indicator need (a stated
@@ -1494,7 +1497,11 @@ spaces:
     switcher: K1.157, Q1.75, MAC-TL06, W1-102, MAT-TA8†, C-1, W2-23, W2-11), `add` (a new-tab or new-item button: WinUI's TabView,
     W1-083; macOS's window tabs, MAC-W09; iOS's system add bar item, `UIBarButtonSystemItemAdd`, its glyph UIKit's,
     in `context toolbar.bar` only, as `done` is: the iOS host drew it there, `forms.<scheme>.bar_system_add`; ADD-A125), `remove` (a chip's or token's remove button: KDE, Q2.24; Windows, W2-43†),
-    `done` (iOS's done bar item, TB-4; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
+    `done` (iOS's done bar item, TB-4, on `ios-13` the done style and the system Done item; on `ios-26` the done style
+    is the prominent one, `UIBarButtonItemStyleDone … = UIBarButtonItemStyleProminent`, `UIBarButtonItem.h:34` in
+    the Xcode 26.6 SDK, so an item of that style is `primary` in `context toolbar.bar` and `done` is the system Done
+    item, `UIBarButtonSystemItemDone`, `:38`, whose own look the host drew apart, `forms.<scheme>.bar_system_done`,
+    unread, the Open items; ADD-A125; macOS's find bar, MAC-N18), `clear_field` (the button that empties its field:
     I-2, W1-030, K1.46, MAT-I7; a key sequence's, K-RL02†), `reveal` (a password field's reveal toggle, `checked`
     while revealed: GN-2.23, W2-16, K1.48), `pane_toggle` (the pane or rail toggle: WinUI's TitleBar and NavigationView,
     W1-011, W1-095; Material's rail menu button, MAT-N13; GNOME's split-view sidebar toggle), and the media identities
@@ -1566,7 +1573,10 @@ spaces:
     alone, S10, and each group also holds the forms that are no configuration (`@system`, `@info`, `@contact_add`,
     `close`, `back`, `done`, `add`, `@share`, `@paste_control`, `route`), which with the styles are `requires_variants`,
     an element being one style or one form (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
-    `exclusive_variants` group, as a button holds one `UIButton.Role` (ADD-A125); the state
+    `exclusive_variants` group, as a button holds one `UIButton.Role`, and each configuration style with a role is a
+    set the state model's `variant_products` gives (a group `{ any = [@cancel, @role_primary, destructive] }` beside
+    the style's), as the host drew them (`cells.<scheme>.<style>__role_*`), the role's weight rule stated after the
+    styles' own weight rules, B-13 (ADD-A125); the state
     model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
@@ -1755,7 +1765,8 @@ spaces:
     no `shape` field, the `MaterialShapes` morph being the loading indicator's (MAT-N24).
   - `macos-tahoe`'s circular bezel draws a circle inside a frame wider than tall at every size (the probe's
     `frame_xywh`, run 41006842699 `os-probe-macos-26/button-pass/probe.toml`, with no alignment insets; the circle as
-    wide as the frame is high at `regular` and up, the macOS lane's reading, mini and small pending, U143), while
+    wide as the frame is high at `large` and `extra_large`, the macOS lane's reading, `mini` to `regular` pending,
+    U143), while
     `macos-monterey`'s frames are square, with equal alignment insets on every side
     (`os-probe-macos-15/button-pass/probe.toml`), so there the body's box, the alignment rect as for every bezel, is
     square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
@@ -2608,7 +2619,8 @@ spaces:
     `transform`, `transitions`.
   - `supporting_text` — Material's select supporting text (as on input, MAT-CB1), WinUI's ComboBox description
     (W1-150†): `text`, `padding`, `opacity`.
-- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233); `header_gap_px`, `supporting_text_gap_px:
+- **Widget values:** `label_arrow_gap_px: Value<Px>` (GN-1.233; the label's space ends the gap before the arrow area
+  as `button`'s `Inline` rule states it, ADD-A125); `header_gap_px`, `supporting_text_gap_px:
   Value<Px>` (W1-137, MAT-CB1); `notch_padding_px`, `floating_label_gap_px: Value<Px>` (as on input: the outline's
   notch round the floated label, the label-to-value gap; MAT-CB1); `popup_placement: Placement` (where its popup goes,
   the host's value by Nested controls: over the selected item, below or above, its width and the number of rows it
@@ -8739,7 +8751,9 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
 `system_blue`) [MAC-DF03]; `under_page_background`, `text_background` (against `View.background` =
 `controlBackgroundColor`), `selected_control`, `selected_control_secondary`, `selected_control_text` [MAC-DF04,
 MAC-DF05]; `highlight` (`highlightColor`, `NSColor.h:284` in the Xcode 26.6 SDK, the colour `highlightWithLevel:`
-blends toward, which neither the accent nor the highlight setting changes: a literal per scheme, S9.1) [MAC-DF05]. The
+blends toward, which the accent does not change, the probe's main and `accent-red` passes reading it alike in both
+appearances, `os-probe-macos-26/probe.toml:667`, `:741`, and `accent-red/probe.toml` at the same lines: a literal per
+scheme, S9.1; whether the highlight setting moves it no pass has measured) [MAC-DF05]. The
 colours that follow the accent or the highlight setting are inputs (R2.6, S9.1: `input.highlight`,
 `selectedTextBackgroundColor`, the highlight setting's colour; `input.selected_content_background`,
 `input.keyboard_focus_indicator`, `input.selected_control`), each in the preset's `[declare] accent_inputs` (S9.1: an
@@ -9129,14 +9143,13 @@ setting; the value phase states it). Rules set it
 to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3.25, W3-37, W3-52†, MAT-X20).
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
-`ThemeChange::Suspend` (GN-3.23; its CSS transitions state `suspended_by_theme_change = true`, its `AdwAnimation`s
-`false`, S4.3, ADD-A125); `kde-breeze` `Suspend` with a zero duration, as Breeze's state engines start no fade on a
-value change (its Breeze transitions `true`, Kirigami's QML behaviours under `cond flavor:kirigami` `false`, S4.3,
-ADD-A125; K-P3-15† measuring whether the toolkit adds a window effect of its own); the presets whose kind is no `Suspend` leave the
-flag out; `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
+`ThemeChange::Suspend` (GN-3.23; it reaches the CSS transitions, `trigger = "value_change"`, and no `AdwAnimation`,
+`"state_change"`, S4.3, ADD-A125); `kde-breeze` `Instant`, as Breeze's state engines start no fade on a theme change and
+Kirigami's QML behaviours run as Qt Quick runs them (their triggers, S2.7, S4.3, ADD-A125; KWin's Blend Changes
+cross-fade is the compositor's, out of scope, K-P3-15†); `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
 (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
-`Crossfade` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero, is not); a
-zero `Suspend` is the change's own frame (S4.3).
+`Crossfade` or `Suspend` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero,
+is not).
 
 **token.elevation** (`Vec<(Key, Vec<ShadowLayer>)>`, S4/R8): the ramp's keys, referred to by `Shadow::Elevation(key)`.
 
@@ -9230,7 +9243,8 @@ is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 
 **token.text** (S4.4): `roles` and `keyed` as S4.4 states, per platform the styles its facts list; `font_dpi`
 (`Value<f32>`, logical pixels per inch, required on every preset and stated from its platform's facts, the DPI its
-points convert by, S9.4; on `macos-*` and `ios-*` 72, as their point is the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
+points convert by, S9.4; on `macos-*` and `ios-*` 72, as their point is the logical pixel, the specification's own value with no fact, S9.4,
+ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
 `forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
 styles one flavour alone uses (Material's `_emphasized` styles, Expressive's) are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as

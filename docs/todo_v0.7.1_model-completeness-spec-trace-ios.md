@@ -209,12 +209,12 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
 | B-11 | `button.label.text.fill @ variant destructive context dialog.action_area` (the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
 | B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
-| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, ADD-A125) | rule |
+| B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, the rule stated after B-13's style weight rules, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
 | B-12 | `button.body.padding, button.label.text @ variant @system` (`UIButton(type: .system)` with no configuration, ADD-A125) | rule |
 | B-12 | `button.body.fill, button.icon.glyph.fill @ {pressed} variant close / {pressed} variant @info / {pressed} variant @contact_add` | rule |
 | B-13 | `button.label.text.font.weight @ variant primary / variant tinted / variant @gray / variant flat` | rule |
-| B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight) | rule |
+| B-13 | `button.label.text.font.weight @ variant done context toolbar.bar / variant primary context toolbar.bar` (the done and prominent bar items' weight; on `ios-26` the done style is `primary`'s, ADD-A125) | rule |
 | B-14 | `button.body.fill, button.label.text.fill @ {disabled} variant flat / @gray / tinted / primary / glass / clear / variants {glass,primary} / variants {clear,primary}` (the disabled look per declared style) | rule |
 | B-15 | `button.body.fill, button.label.text.decoration @ cond button_shapes` | rule |
 | B-15 | `cond button_shapes (S7.1)` | condition |
@@ -396,10 +396,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TB-2 | `toolbar.bar.stroke.top (Edge.snap ToDevicePixel, ADD-A33)` | field |
 | TB-2 | `reader:ios:UIBarAppearance.shadowColor` | readers (R18) |
 | TB-3 | `toolbar.bar.min_height @ v_size_class compact (ADD-A20)` | rule |
-| TB-4 | `button.label.text.font.weight @ variant done context toolbar.bar` (the done item's weight) | rule |
-| TB-4 | `button.body.fill @ variant primary context toolbar.bar` (the prominent item's tinted glass fill) | rule |
+| TB-4 | `button.label.text.font.weight @ variant done context toolbar.bar` (the done item's weight: on `ios-13` the done style's and the system Done item's; on `ios-26` the system Done item's, the done style being the prominent one, `primary`, `UIBarButtonItem.h:34`, ADD-A125) | rule |
+| TB-4 | `button.body.fill @ variant primary context toolbar.bar` (the prominent item's tinted glass fill; on `ios-26` the done style too, which is the prominent one, `UIBarButtonItem.h:34`; its values pending the pass that reads them, ADD-A125) | rule |
 | TB-4 | `reader:ios:UIBarButtonItem.Style, doneButtonAppearance, prominentButtonAppearance` | readers (R18) |
-| TB-4 | `button.icon.glyph @ variant add context toolbar.bar` (the system add bar item, its glyph UIKit's; the prominent item's values, `primary` here, pending the pass that reads them, ADD-A125) | rule |
+| TB-4 | `button.icon.glyph @ variant add context toolbar.bar` (the system add bar item, its glyph UIKit's, its values unread, the catalogue's Open items, ADD-A125) | rule |
 | TB-5 | `toolbar.item_group.{fill,corners,shadow,padding}` (fill a `Material`, corners `Full`) | field |
 | TB-5 | `toolbar.values.group_gap` | field |
 | TB-5 | `reader:ios:UIBarButtonItem.sharesBackground, hidesSharedBackground` | readers (R18) |
