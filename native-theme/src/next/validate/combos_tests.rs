@@ -1048,3 +1048,27 @@ fn combination_problem_below_kept_beside_the_added_layers() {
         ]
     );
 }
+
+/// The offset and inset checks read a side alike (S2.4, S2.10): a side no
+/// layer states is missing, the preset's check, so no difference; an
+/// absent margin is 0.
+#[test]
+fn combination_sides_read_alike() {
+    let focus = |offsets: &str| {
+        format!("[widgets.button.body.focus]\ncorners.top_left = \"follow_part\"\n{offsets}")
+    };
+    let corner = |margins: &str| {
+        format!(
+            "[widgets.button.body]\ncorners.top_left = {{ concentric = {{ minimum_px = 2 }} }}\n\
+             {margins}"
+        )
+    };
+    assert_eq!(bare(&corner("margin.top_px = 2\nmargin.right_px = 2")), NONE);
+    assert_eq!(bare(&focus("offset.top_px = 2\noffset.right_px = 2")), NONE);
+    assert_eq!(
+        bare(&corner(
+            "margin.top_px = \"absent\"\nmargin.left_px = 0\nmargin.right_px = 0"
+        )),
+        NONE
+    );
+}

@@ -17,7 +17,6 @@
 #[cfg(test)]
 mod bench;
 
-use std::fmt::Write as _;
 use std::rc::Rc;
 
 use super::LayerKind;
@@ -1405,13 +1404,74 @@ fn variant(found: &Found<'_>) -> Option<&'static str> {
     }
 }
 
-/// Whether two values found are the same under every input: equal stated
-/// numbers, an absent margin as 0, or one expression stated at one place.
-fn same_value(a: &Found<'_>, b: &Found<'_>) -> bool {
-    match (a.got, b.got) {
-        (Got::Stated(Fact::Number(x)), Got::Stated(Fact::Number(y))) => x == y,
-        (Got::Expr(x), Got::Expr(y)) => x == y && a.id == b.id,
-        _ => false,
+/// One side's length as the inset and offset checks compare it (S2.4,
+/// S2.10).
+#[derive(Debug)]
+enum SideLen<'s> {
+    /// A sum: of stated numbers (an absent side 0), and of expressions,
+    /// each by its step, the same only where stated at one step.
+    Known(f32, Vec<(Option<(usize, usize)>, &'s Expr)>),
+    /// No layer states it: missing, the preset's check (S2.2), so it is no
+    /// difference.
+    Unstated,
+    /// Anything else (`auto`, or values that differ by combination): it can
+    /// differ from any side.
+    Unknown,
+}
+
+impl<'s> SideLen<'s> {
+    /// The length the values found at one place give.
+    fn of(founds: &[Found<'s>]) -> SideLen<'s> {
+        let mut out: Option<SideLen<'s>> = None;
+        for found in founds {
+            let one = match found.got {
+                Got::Stated(Fact::Number(n)) => SideLen::Known(n, Vec::new()),
+                Got::Absent => SideLen::Known(0.0, Vec::new()),
+                Got::Expr(expr) => SideLen::Known(0.0, vec![(found.id, expr)]),
+                Got::Auto | Got::Stated(_) => SideLen::Unknown,
+            };
+            out = match out {
+                None => Some(one),
+                Some(held) if held.same(&one) => Some(held),
+                Some(_) => Some(SideLen::Unknown),
+            };
+        }
+        out.unwrap_or(SideLen::Unstated)
+    }
+
+    /// Two lengths added.
+    fn plus(self, other: SideLen<'s>) -> SideLen<'s> {
+        match (self, other) {
+            (SideLen::Unknown, _) | (_, SideLen::Unknown) => SideLen::Unknown,
+            (SideLen::Unstated, _) | (_, SideLen::Unstated) => SideLen::Unstated,
+            (SideLen::Known(a, mut terms), SideLen::Known(b, more)) => {
+                terms.extend(more);
+                SideLen::Known(a + b, terms)
+            }
+        }
+    }
+
+    /// Whether two known lengths are the same under every input.
+    fn same(&self, other: &SideLen<'_>) -> bool {
+        match (self, other) {
+            (SideLen::Known(a, x), SideLen::Known(b, y)) => {
+                a == b
+                    && x.len() == y.len()
+                    && x.iter().all(|term| {
+                        x.iter().filter(|held| *held == term).count()
+                            == y.iter().filter(|held| *held == term).count()
+                    })
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether the two sides can differ: an unstated side never does.
+    fn can_differ(&self, other: &SideLen<'_>) -> bool {
+        match (self, other) {
+            (SideLen::Unstated, _) | (_, SideLen::Unstated) => false,
+            _ => !self.same(other),
+        }
     }
 }
 
@@ -2223,17 +2283,16 @@ impl Checks<'_, '_> {
                         continue;
                     }
                     let offset = |side: &str| {
-                        stack.effective(world, target, &format!("{focus}.offset.{side}"))
+                        SideLen::of(&stack.effective(
+                            world,
+                            target,
+                            &format!("{focus}.offset.{side}"),
+                        ))
                     };
                     let vertical = offset(corner_side(corner));
-                    // A side no layer states is missing, the preset's check
-                    // (S2.2): only stated offsets are compared.
-                    let differ = ["left", "right"].into_iter().any(|side| {
-                        let horizontal = offset(side);
-                        !vertical
-                            .iter()
-                            .all(|v| horizontal.iter().all(|h| same_value(v, h)))
-                    });
+                    let differ = ["left", "right"]
+                        .into_iter()
+                        .any(|side| vertical.can_differ(&offset(side)));
                     if differ {
                         for found in follows {
                             let corner = corner.to_owned();
@@ -2285,38 +2344,23 @@ impl Checks<'_, '_> {
                     if concentric.is_empty() {
                         continue;
                     }
-                    let inset = |side: &str| -> Option<(f32, Vec<String>)> {
-                        let mut sum = 0.0_f32;
-                        let mut terms: Vec<String> = Vec::new();
-                        for (holder, field) in &chain {
-                            let founds = stack.effective(
-                                world,
-                                Target::Part(*holder),
-                                &format!("{field}.{side}"),
-                            );
-                            let found = match founds.as_slice() {
-                                [] => continue,
-                                [found] => found,
-                                _ => return None,
-                            };
-                            match found.got {
-                                Got::Stated(Fact::Number(n)) => sum += n,
-                                Got::Absent => {}
-                                Got::Expr(expr) => {
-                                    let mut term = String::new();
-                                    let _ = write!(term, "{:?}:{expr}", found.id);
-                                    terms.push(term);
-                                }
-                                Got::Auto | Got::Stated(_) => return None,
-                            }
-                        }
-                        terms.sort();
-                        Some((sum, terms))
+                    let inset = |side: &str| {
+                        chain.iter().fold(
+                            SideLen::Known(0.0, Vec::new()),
+                            |sum, (holder, field)| {
+                                let founds = stack.effective(
+                                    world,
+                                    Target::Part(*holder),
+                                    &format!("{field}.{side}"),
+                                );
+                                sum.plus(SideLen::of(&founds))
+                            },
+                        )
                     };
                     let vertical = inset(corner_side(corner));
                     let differ = ["left", "right"]
                         .into_iter()
-                        .any(|side| vertical.is_none() || inset(side) != vertical);
+                        .any(|side| vertical.can_differ(&inset(side)));
                     if differ {
                         for found in concentric {
                             let corner = corner.to_owned();
