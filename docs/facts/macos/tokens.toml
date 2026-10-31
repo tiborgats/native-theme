@@ -3804,3 +3804,4631 @@ key = "token.text.font_dpi"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U105"
 rows = []
+
+# macos-tahoe fill (preset gaps, pass 1): the text styles' leaves AppKit's text style has no counterpart for. A
+# style is an NSFont (preferredFontForTextStyle:options:, the named fonts), whose class, categories and
+# descriptor (NSFont.h:24-131, :167-182, :184-187; NSFontDescriptor.h:61-99 and the descriptor attributes
+# :101-115, Xcode 26.6) carry no decoration, kerning, word spacing or case transform: those are attributed-string
+# attributes the drawing code sets (NSUnderlineStyleAttributeName, NSKernAttributeName), so the style states
+# none (decoration, letter and word spacing absent, S6.3's marks; case mixed, its no-transform value). macOS
+# uses no mnemonics (NSButtonCell.h:177, NSButton.h:185), so mnemonic_decoration is absent too.
+
+[[fact]]
+key = "token.text.keyed.large_title.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.large_title.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.large_title.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.large_title.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.large_title.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_1.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_1.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_1.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_1.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_1.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_2.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_2.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_2.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_2.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_2.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_3.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_3.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_3.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_3.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_3.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.headline.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.headline.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.headline.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.headline.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.headline.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.subheadline.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.subheadline.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.subheadline.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.subheadline.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.subheadline.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.body.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.body.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.body.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.callout.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.callout.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.callout.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.callout.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.callout.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.footnote.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.footnote.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.footnote.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.footnote.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.footnote.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_1.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_1.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.caption_1.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_1.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_1.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_2.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_2.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.caption_2.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_2.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_2.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.label.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.label.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.label.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.label.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.label.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.message.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.message.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.message.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.message.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.message.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.palette.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.palette.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.palette.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.palette.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.palette.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.menu_bar.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.menu_bar.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.menu_bar.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.menu_bar.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.menu_bar.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.control_content.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.control_content.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.control_content.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.control_content.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.control_content.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.small_system.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.small_system.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.small_system.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.small_system.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.small_system.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS02"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.large_title_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.body_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.mnemonic_decoration"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.letter_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSKernAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSKernAttributeName"]
+
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.word_spacing"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized.case"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "mixed"
+rows = ["MAC-TS01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+

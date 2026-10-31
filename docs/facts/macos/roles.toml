@@ -5216,3 +5216,1992 @@ key = "role.global.status.destructive.background_solid"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U101"
 rows = []
+
+# macos-tahoe fill (preset gaps, pass 1): the surface-set roles AppKit has no colour for. NSColor's class and its
+# deprecated category (NSColor.h:77-401, :403-452, Xcode 26.6) declare no per-region status background, no
+# visited-link, hover-decoration or shade colour, no alternate colour but the content one
+# (alternatingContentBackgroundColors, the view set's, below) and of the disabled looks only text colours, which the
+# catalogue's role record lets every one of these be absent on macos-* (the may_be_absent column).
+
+[[fact]]
+key = "role.window.background_alternate"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_alternate"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.border"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.window.disabled.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_alternate"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.border"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.view.disabled.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_alternate"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_alternate"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.foreground_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.link_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.decoration_hover"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.shade"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.shade_darker"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.border"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_active"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_visited"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_negative"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_neutral"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+[[fact]]
+key = "role.selection.disabled.background_positive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+
+# The view set (controlBackgroundColor's content areas, NSColor.h:220): AppKit gives content one colour per role,
+# the window's, so the set references the window set's roles (the catalogue's policy 4); its alternate row
+# colour is alternatingContentBackgroundColors' second entry, as each pass reads it.
+
+[[fact]]
+key = "role.view.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:201"
+quote = "NSColor *labelColor API_AVAILABLE(macos(10.10)); // Foreground color for static text and related elements"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.view.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.foreground_inactive"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:202"
+quote = "NSColor *secondaryLabelColor API_AVAILABLE(macos(10.10)); // Foreground color for secondary static text and related elements"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.view.link"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.link"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:207"
+quote = "NSColor *linkColor API_AVAILABLE(macos(10.10)); // Foreground color for standard system links"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.view.border"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.border"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:213"
+quote = "Foreground used for separators between sections of content."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.view.disabled.foreground"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.disabled.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:203"
+quote = "NSColor *tertiaryLabelColor API_AVAILABLE(macos(10.10)); // Foreground color for disabled static text and related elements"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.view.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.decoration_focus"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "NSColor *keyboardFocusIndicatorColor; // Keyboard focus ring around controls"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:220"
+quote = "Background for content areas: scroll views, table views, collection views."
+
+
+[[fact]]
+key = "role.selection.decoration_focus"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.window.decoration_focus"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:243"
+quote = "NSColor *keyboardFocusIndicatorColor; // Keyboard focus ring around controls"
+
+
+# alternatingContentBackgroundColors[1] (aqua)
+[[fact]]
+key = "role.view.background_alternate"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = "#f4f5f5"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+
+# alternatingContentBackgroundColors[1] (darkAqua)
+[[fact]]
+key = "role.view.background_alternate"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
+value = "#ffffff0c"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+
+[[fact]]
+key = "role.view.background_alternate"
+when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"] }
+value = "#ebebeb"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+
+[[fact]]
+key = "role.view.background_alternate"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"] }
+value = "#ffffff19"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
