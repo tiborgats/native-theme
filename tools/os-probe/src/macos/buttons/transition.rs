@@ -9,11 +9,13 @@ use std::cell::Cell;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
+use objc2::MainThreadOnly;
 use objc2::rc::Retained;
 use objc2_app_kit::{
-    NSAppearance, NSAppearanceCustomization, NSApplication, NSEventMask, NSResponder, NSScreen,
+    NSAppearance, NSAppearanceCustomization, NSApplication, NSBox, NSBoxType, NSColor, NSEventMask,
+    NSResponder, NSScreen, NSTitlePosition, NSView,
 };
-use objc2_foundation::{NSDate, NSOperatingSystemVersion, NSRect};
+use objc2_foundation::{NSDate, NSOperatingSystemVersion, NSPoint, NSRect, NSSize};
 use toml::Table;
 
 use super::{Pass, SETTLE_STEPS, away_point, push_sheet};
@@ -44,6 +46,56 @@ const FINE_STEP: Duration = Duration::from_millis(5);
 /// How far round the button's frame the workflow's crop reaches, in points.
 const CROP_MARGIN: f64 = 12.0;
 
+/// The ticker's frame in the push sheet's content view: a small box in its
+/// top right corner, far from the recorded buttons and outside their crops,
+/// whose fill flips between black and white at every step of the run loop
+/// while recording, so the screen changes all the time and the recording
+/// keeps a frame wherever the screen does (run 41192705332's recordings,
+/// with a still screen, kept one about every 100 ms while the ring moved).
+const TICKER_FRAME: NSRect = NSRect::new(
+    NSPoint::new(
+        super::BUTTON_CONTENT_SIZE.width - 16.0,
+        super::BUTTON_CONTENT_SIZE.height - 16.0,
+    ),
+    NSSize::new(8.0, 8.0),
+);
+
+/// The ticker box and how often it flipped.
+struct Ticker {
+    view: Retained<NSBox>,
+    on: Cell<bool>,
+    flips: Cell<u32>,
+}
+
+impl Ticker {
+    fn new(pass: &Pass<'_>, content: &NSView) -> Self {
+        let view = NSBox::initWithFrame(NSBox::alloc(pass.mtm), TICKER_FRAME);
+        view.setBoxType(NSBoxType::Custom);
+        view.setTitlePosition(NSTitlePosition::NoTitle);
+        view.setBorderWidth(0.0);
+        view.setFillColor(&NSColor::blackColor());
+        content.addSubview(&view);
+        Self {
+            view,
+            on: Cell::new(false),
+            flips: Cell::new(0),
+        }
+    }
+
+    /// Flip the fill.
+    fn flip(&self) {
+        let on = !self.on.get();
+        self.on.set(on);
+        let fill = if on {
+            NSColor::whiteColor()
+        } else {
+            NSColor::blackColor()
+        };
+        self.view.setFillColor(&fill);
+        self.flips.set(self.flips.get().saturating_add(1));
+    }
+}
+
 /// `[macos.button_pass.focus_transition]`.
 pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersion) -> Table {
     let mut t = Table::new();
@@ -56,6 +108,8 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
         }
     };
     let window = &sheet.window;
+    let ticker = Ticker::new(pass, &sheet.content);
+    out::put(&mut t, "ticker_frame_xywh", rect(TICKER_FRAME));
     let other = pass.present(window, &mut t);
     let scale = NSScreen::mainScreen(pass.mtm).map(|s| s.backingScaleFactor());
     match scale {
@@ -107,6 +161,7 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
             let r = record(
                 pass,
                 &sheet.window,
+                &ticker,
                 responder,
                 frame,
                 scale,
@@ -134,6 +189,7 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
 fn record(
     pass: &Pass<'_>,
     window: &Retained<objc2_app_kit::NSWindow>,
+    ticker: &Ticker,
     responder: &NSResponder,
     frame: NSRect,
     scale: Option<f64>,
@@ -208,7 +264,11 @@ fn record(
             return t;
         }
     };
-    let lead = pump_until(pass.app, start, FOCUS_AT, || false);
+    let flips_before = ticker.flips.get();
+    let lead = pump_until(pass.app, start, FOCUS_AT, || {
+        ticker.flip();
+        false
+    });
     let focus_at = start.elapsed();
     let made = window.makeFirstResponder(Some(responder));
     let focus_done = start.elapsed();
@@ -222,23 +282,34 @@ fn record(
         "isKeyWindow_focused",
         out::boolean(window.isKeyWindow()),
     );
-    let hold = pump_until(pass.app, start, UNFOCUS_AT, || false);
+    let hold = pump_until(pass.app, start, UNFOCUS_AT, || {
+        ticker.flip();
+        false
+    });
     let unfocus_at = start.elapsed();
     let unmade = window.makeFirstResponder(None);
     let unfocus_done = start.elapsed();
     out::put(&mut t, "makeFirstResponder_nil_after", out::boolean(unmade));
     let status: Cell<Option<Result<std::process::ExitStatus, String>>> = Cell::new(None);
-    let finish = pump_until(pass.app, start, FINISH_BY, || match child.try_wait() {
-        Ok(Some(s)) => {
-            status.set(Some(Ok(s)));
-            true
-        }
-        Ok(None) => false,
-        Err(e) => {
-            status.set(Some(Err(format!("could not be waited for: {e}"))));
-            true
+    let finish = pump_until(pass.app, start, FINISH_BY, || {
+        ticker.flip();
+        match child.try_wait() {
+            Ok(Some(s)) => {
+                status.set(Some(Ok(s)));
+                true
+            }
+            Ok(None) => false,
+            Err(e) => {
+                status.set(Some(Err(format!("could not be waited for: {e}"))));
+                true
+            }
         }
     });
+    out::put(
+        &mut t,
+        "ticker_flips",
+        out::int(i64::from(ticker.flips.get().saturating_sub(flips_before))),
+    );
     let ended_at = start.elapsed();
     let outcome = match status.into_inner() {
         Some(Ok(s)) if s.success() => out::text("exit 0"),
@@ -348,10 +419,11 @@ fn crop_text(quartz: NSRect, scale: f64) -> Option<String> {
 
 fn method_text() -> String {
     format!(
-        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {} pt right of it; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of {} ms (pump_lead: the steps and the longest between two starts) until {} ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until {} ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until {} ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's",
+        "the push sheet's window presented as in the key mode (made key, the application active) and the cursor parked {} pt right of it; per appearance (the window's appearance set, the run loop pumped {SETTLE_STEPS} steps) and per button ({}): makeFirstResponder: nil and the run loop pumped {SETTLE_STEPS} steps; `screencapture -x -v -V{RECORD_SECONDS} <appearance>/transition-<button>.mov` started (the whole main display); the run loop pumped in steps of {} ms, before each the ticker (an NSBox, custom, no border, no title, at {} in the content view, outside every crop) filled black or white in turn, so the screen changes at every step (ticker_flips) (pump_lead: the steps and the longest between two starts) until {} ms after starting screencapture; makeFirstResponder: with the button (focus_at_ms, counted from starting screencapture); pumped until {} ms (pump_hold); makeFirstResponder: nil (unfocus_at_ms); pumped until screencapture exits (pump_finish, at most until {} ms); <appearance>/transition-<button>.crop holds ffmpeg's crop=w:h:x:y in pixels for the button's frame grown by {CROP_MARGIN} pt, in the display's pixels (frame_quartz_xywh times mainScreen_backingScaleFactor), which the workflow cuts each frame of the recording to (<stem>-frames/NNNNN.png, their times in <stem>-frames.csv, ffprobe's pts_time); the recording starts some time after screencapture does, so its times are not the probe's",
         super::CURSOR_AWAY_OFFSET,
         TRANSITION_CASES.join(", "),
         FINE_STEP.as_millis(),
+        crate::macos::rect_text(TICKER_FRAME),
         FOCUS_AT.as_millis(),
         UNFOCUS_AT.as_millis(),
         FINISH_BY.as_millis(),
