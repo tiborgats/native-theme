@@ -1106,6 +1106,19 @@ researched = "2026-10-29"
 proof = "curl -s https://archive.archlinux.org/repos/2026/10/29/extra/os/x86_64/extra.db.tar.gz | tar -tzf - (and core.db): the packages each entry's `arch` names; curl https://archive.archlinux.org/repos/2026/10/29/lastupdate"
 note = "The first snapshot with Plasma 6.8.2 (2026/10/28 has 6.8.1) and the newest when read. 2026/10/30, which could carry kirigami-addons 1.16.0, did not exist at 2026-10-29 22:37 UTC (HTTP 404), so kirigami-addons stays at 1.15.0 (its entry). qt6-base 6.12.0-4 is in the snapshot's extra-staging only; extra has 6.12.0-3."
 
+[[source]]
+id = "hig-typography@2026-02-09"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20260209114706id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json"
+file = "typography.json"
+sha256 = "522df0c4e97731464c3bbc386a572b4b4e6ca7e4745cf0343a3e1fde295d397d"
+describes = ["macOS 26", "iOS 26"]
+generations = ["macos-tahoe", "ios-26"]
+researched = "2026-10-31"
+proof = "the Wayback Machine's capture of 2026-02-09 11:47:06 UTC (the `id_` form, the archived JSON unchanged), in macOS 26's and iOS 26's lifetime (D12); sha256sum of the saved file"
+note = "The HIG's Typography page as its DocC JSON. The macOS tracking table is at #/primaryContentSections/0/content/83 (rows /rows/<n>/1/0/inlineContent/0/text); the captures of 2025-10-01 and 2026-07-07 carry the same macOS table. Its 1/1000 em column equals iOS's SF Pro column at every size; the points column differs at 52 and 53 pt (0.31 and 0.33 swapped)."
+
 # Documentation sites the documents cite. `method`: "repository", the site's public source repositories are pinned
 # above (`sources`); "snapshot", each cited page is to be saved with its date and SHA-256 (a later M0 step adds the
 # snapshot entries and update_sources.sh fetches and verifies them). `project` is the name scripts/citations.py
