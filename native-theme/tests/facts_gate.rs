@@ -18,7 +18,7 @@ mod run;
 use std::path::{Path, PathBuf};
 
 use native_theme::next::PresetId;
-use native_theme::next::gate::Preset;
+use native_theme::next::gate::{Combination, Preset};
 
 /// The platform directory each preset's facts are in (S17 *Generations*).
 const DIRECTORIES: [(&str, &str); 8] = [
@@ -396,6 +396,11 @@ fn gate_declarations_each_compared() {
             "recency",
             "recency = { lift = [\"pressed\", \"hover\"] }\n".to_owned(),
             String::new(),
+        ),
+        (
+            "recency",
+            "recency = { lift = [\"pressed\", \"hover\"] }\n".to_owned(),
+            "recency = { lift = [\"hover\", \"pressed\"] }\n".to_owned(),
         ),
         (
             "requires_variants",
@@ -935,6 +940,48 @@ fn gate_fixture_measured_derivation() {
         "{:?}",
         report.failures
     );
+}
+
+/// A fact's own combination completed to one the state model draws (S17):
+/// the first required variant its `when` does not exclude by
+/// `not_variants`, and none sharing an `exclusive_variants` group with a
+/// variant it holds; `None` where none is left.
+#[test]
+fn own_combination_completed_by_the_filters() {
+    let models = model::Model::read(
+        "probe",
+        "[[model]]\nwidget = \"button\"\navailable = true\n\
+         variants = [\"flat\", \"primary\", \"@x\"]\nsizes = []\ndensities = []\nexclusive = []\n\
+         exclusive_variants = [[\"flat\", \"@x\"]]\nrequires_variants = [\"flat\", \"primary\"]\n\
+         rows = []\n",
+    )
+    .unwrap();
+    let entry = &models[0];
+    let when = |text: &str| -> toml::Value { toml::from_str(text).unwrap() };
+    let completed = |variants: &[&str], when: &toml::Value| {
+        let mut combination = Combination::new("button");
+        combination.variants = variants.iter().map(|v| (*v).to_owned()).collect();
+        run::complete(combination, when, entry).map(|c| c.variants)
+    };
+    let plain = when("");
+    assert_eq!(completed(&[], &plain), Some(vec!["flat".to_owned()]));
+    let not_flat = when("not_variants = [\"flat\"]");
+    assert_eq!(completed(&[], &not_flat), Some(vec!["primary".to_owned()]));
+    assert_eq!(
+        completed(&["@x"], &plain),
+        Some(vec!["@x".to_owned(), "primary".to_owned()])
+    );
+    let neither = when("not_variants = [\"primary\"]");
+    assert_eq!(completed(&["@x"], &neither), None);
+}
+
+/// The perturbed run's colours are one-to-one over many operands (S17): no
+/// two of the first thousand share a colour, beyond the eight an earlier
+/// map cycled through.
+#[test]
+fn perturbed_colours_are_distinct() {
+    let colours: std::collections::BTreeSet<String> = (0..1000).map(run::perturbed).collect();
+    assert_eq!(colours.len(), 1000);
 }
 
 /// `facts_gate`: the gate over `docs/facts` and every bundled preset; none

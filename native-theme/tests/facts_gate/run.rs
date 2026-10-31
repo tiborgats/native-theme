@@ -1344,7 +1344,7 @@ pub fn declarations_run(
 /// variant its `when` does not exclude and no variant it holds shares an
 /// `exclusive_variants` group with; `None` where none is left, as the fact
 /// then applies to no element the platform draws.
-fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Option<Combination> {
+pub fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Option<Combination> {
     let required = &entry.requires_variants;
     if required.is_empty() || required.iter().any(|v| combination.variants.contains(v)) {
         return Some(combination);

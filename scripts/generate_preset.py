@@ -380,10 +380,23 @@ def spell(name, typ, dim, value):
     return name, value
 
 
+def takes_suffix(typ, suffix) -> bool:
+    """Whether a key of type `typ` is spelled with the unit suffix `suffix` (spell()): a length's, duration's or
+    angle's own, a font size's `_px` or `_pt`, a `Radius` corner's `_px`; a key of no such type keeps a name that ends
+    so as it is (a map's key `edge_px` of a unitless value)."""
+    t = check_facts.strip_type(typ) if typ else None
+    if t == "Radius":
+        return suffix == "_px"
+    dim = check_facts.KEY_DIMS.get(t) if t else None
+    if dim == "font_size":
+        return suffix in ("_px", "_pt")
+    return SUFFIX_OF.get(dim) == suffix
+
+
 def unspell(name, value, typ):
     """(the fact's last key segment, the fact's value) of a TOML key and value: spell()'s inverse."""
     for suffix, unit in UNIT_OF_SUFFIX.items():
-        if name.endswith(suffix):
+        if name.endswith(suffix) and takes_suffix(typ, suffix):
             base = name[:-len(suffix)]
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 return base, f"{value}{unit}"
@@ -665,6 +678,12 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      ctx.content_variants)
     bases += covering_bases(facts, models, tree)
+    # a covering base can state a set-whole block's leaf alone: split again, the base dropped (its rules stay)
+    split = split_blocks(ctx, bases, [])
+    for f in split:
+        if f.status == "base":
+            f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
+    bases = [b for b in bases if b[5] not in split]
     listed = pending_table(ctx, facts, bases)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
                  listed)
@@ -757,11 +776,10 @@ def set_whole_block(ctx, f: Fact):
     if f.kind not in ("token", "widget") or len(f.ckey) < 2:
         return None
     parent = ".".join(f.key.split(".")[:-1])
-    try:
-        info = check_facts.key_info(ctx, parent)
-    except Exception:   # a key the core does not type: no block
+    info = check_facts.key_info(ctx, parent)
+    if info[0] is not None:   # a key the core does not type: no block
         return None
-    typ = info[4] if info else None
+    typ = info[4]
     m = re.fullmatch(r"Option<\s*(\w+)\s*>", typ or "")
     fields = ctx.structs.get(m.group(1)) if m else None
     return tuple(fields) if isinstance(fields, dict) else None
@@ -1898,6 +1916,15 @@ def self_test() -> int:
         got = split_blocks(None, bases, rules, repeat_block)
         if [f.key for f in got] != [f.key for f in want]:
             failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
+    # unspell: a suffix only where the key's type takes it; element_size: the size an element holds
+    if unspell("edge_px", 1, "Value<Scalar>") != ("edge_px", 1) or unspell("gap_px", 6, "Value<Px>") != ("gap", "6px"):
+        failures.append("unspell: a suffix stripped where the type takes none, or kept where it takes one")
+    sized_model = {"sizes": ["small", "regular"], "default_size": "regular",
+                   "default_size_by_variant": [{"variant": "flat", "size": "small"}]}
+    got = [element_size({}, sized_model), element_size({"variants": ["flat"]}, sized_model),
+           element_size({"sizes": ["small"]}, sized_model), element_size({}, {"sizes": []})]
+    if got != [["regular"], ["small"], ["small"], []]:
+        failures.append(f"element_size: {got}")
     # pending_table: a pending leaf of a set-whole block lists the block; a pending fact with a base beneath, or its
     # block's, lists nothing
     class _Item:
