@@ -481,7 +481,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
 | GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
-| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; GtkSwitch's own code, not CSS, which slides first and sets the switch active as it ends, a second activation restarting it, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:779-809`: its engine and the switch's activation order are the GNOME lane's to add with its facts, the catalogue's Open items, ADD-A126)` | field |
+| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; engine GtkSwitch, the switch's own code, not CSS: an activation slides it from the end it rests at and sets the switch's state as the slide ends, a second activation restarting it, a drag and a change made in code moving it at once, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:262-319`, `:779-809`; its curve GTK's ease_out_cubic, `gtk/gtkprogresstracker.c:246-251`, a PlatformCurve member with its fact; S2.7, ADD-A126)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
 | GN-1.205 | `switch.track.fill @ {checked} context any variant @osd (any widget, R25.9)` | rule |

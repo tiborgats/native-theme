@@ -793,7 +793,7 @@ MAT-X13–MAT-X15, X-MO-1).
   - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
     but native fidelity and cover-everything-visible admit none where the source states the rule.
   - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
-    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`), each implemented once in
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `WinUi`, `GtkSwitch`), each implemented once in
     native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
     an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
     transition: Breeze's test, quoted from its `updateState` call, and whether AdwEntryRow's title replays. The value
@@ -801,10 +801,17 @@ MAT-X13–MAT-X15, X-MO-1).
     ends; `from` stays ADD-A124's, the flags held before, as no fact reads otherwise under "a flag cleared" (ADD-A125's
     attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
     where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
-    GTK delays one and Compose's `updateTransition` replaces an interrupted one. Apple's toolkits, whose
+    GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
+    two engines, the governing one's draws it. Breeze's ends keep every flag but the test's own, so a fade a flag's
+    style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and fill, its header)
+    are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
+    rejected, as Breeze draws a line edit's focus fading out as it is disabled and a disabled tab's hover fade
+    (`kstyle/breezehelper.cpp:146-155`, `:1498-1499`). Apple's toolkits, whose
     code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
-    change, a deactivation and reduced motion landing in a run) and get their member with the measurement; WinUI's
-    theme switch and its compositor's velocity likewise. A presentation interrupted (a popover dismissed while it
+    change, a deactivation, an occlusion and reduced motion landing in a run) and get their member with the
+    measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
+    member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
+    likewise. A presentation interrupted (a popover dismissed while it
     appears) is a presentation event's matter, not settled here.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced

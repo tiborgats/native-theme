@@ -55,21 +55,19 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     and disappearance, the switch's knob and fill, the segmented selection, the scroller's fade, the sidebar
     selection), the probe and the iOS host interrupting each at about 0.3, 0.5 and 0.7 of its run and recording where
     the next run starts (the value drawn, the old end, an additive blend), its duration and curve, a spring's velocity,
-    two stacked changes (a hover, then a press), an appearance and an accent change and a window deactivation landing
-    in a run, and reduced motion; the member is added with the measurement, and until then those transitions are
-    pending facts;
+    two stacked changes (a hover, then a press), an appearance and an accent change, a window deactivation and an
+    occlusion landing in a run, and reduced motion; the member is added with the measurement, and until then those
+    transitions are pending facts, the presets stating none;
   - `windows-11`: whether a theme switch animates the brush transitions and the visual-state storyboards (a brush
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
-    `WinUi`;
+    `WinUi` (a pending fact, the preset stating no transition, until then);
+  - `kde-breeze` under `flavor:kirigami`, `material-3` and `windows-11`: what Qt Quick's behaviours, Compose's
+    animations and WinUI's transitions do while their element is not drawn (hidden, scrolled out, its window
+    minimised) and as it is drawn again (S2.7);
   - `adwaita`: whether a running CSS transition ends in the frame `gtk-enable-animations` turns off or at the
     element's next style update (`gtk@4.24.1 gtk/gtkcsswidgetnode.c:127-128`);
-  - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2);
-  - `switch` on `adwaita`: GtkSwitch's slide (GN-1.203) is the switch's own code, not CSS: an activation slides the
-    thumb from the end it rests at and sets the switch active only as the slide ends, a second activation restarting
-    the slide, while a change made in code moves the thumb at once (`gtk/gtkswitch.c:182-216`, `:242-259`, `:779-809`),
-    so its track's CSS fade starts as the slide ends; neither an engine nor the switch's activation order states that
-    yet, which the GNOME lane adds with its facts (an engine member and a switch value).
+  - every lane but `adwaita` and `kde-breeze`: whether the toolkit keeps the focus flags in an inactive window (S7.2).
 - The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
   `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
   thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
@@ -2285,7 +2283,7 @@ spaces:
     host: Kirigami's search dialog field, Q1.118; a GTK linked box's overlap, each entry's negative start or top
     margin, GN-1.42), `min_width`, `min_height`, `max_width`, `opacity` (today's
     `disabled_opacity`), `focus`, `cursor`, `bindings` (GNOME's error, warning and success classes rebind the accent
-    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†), `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
+    for the subtree), `transitions` (the editable label's title-to-field change, RL-2†); no `interaction`, as Compose's text field draws no hover layer (MAT-I11, S2.12; ADD-A126).
   - `text` — the entered text: `text`, `transitions` (RL-2†).
   - `placeholder` — the placeholder text: `text`, `transitions` (macOS's centred search placeholder moving to the
     leading edge on focus, MAC-N02).
@@ -2634,7 +2632,7 @@ spaces:
   - `body` — the trigger box (the root): `fill`, `stroke` (per state), `corners`, `shadow` (Breeze's button shadow on
     the non-flat, non-editable combo), `padding`, `margin` (a GTK linked box's overlap, the drop-down's button's
     negative start or top margin, GN-1.42), `min_width`, `min_height`, `opacity`, `focus`, `bindings` (Kirigami:
-    Button set, View set when editable), `transitions`, `interaction` (the filled field's tokens' hover layer, Material's, S2.12, MAT-I11; drawn beneath the field's content, as material-web draws it, `field/internal/field.ts:134-150`).
+    Button set, View set when editable), `transitions`; no `interaction`, as Compose's exposed dropdown field draws no hover layer (MAT-CB1, S2.12; ADD-A126).
   - `label` — the current value's text: `text`.
   - `placeholder` — WinUI's placeholder text: `text`.
   - `icon` — the leading icon (Material's), or the current item's icon (Qt's `CE_ComboBoxLabel`, Q1.122; AppKit's

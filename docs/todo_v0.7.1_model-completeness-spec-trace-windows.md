@@ -645,7 +645,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-09 | `role.@layer_fill_default, role.@layer_fill_alt, role.@layer_on_acrylic_fill_default, role.@layer_on_accent_acrylic_fill_default, role.@layer_on_mica_base_alt_*` | role |
 | W3-09 | `PartStyle.fill (a Color layer over the backdrop's Material: the content and commanding layers, Paint.layers)` | field |
 | W3-10 | `window.content.fill @ cond window_inactive (PaintKind::Material @mica to Material.fallback)` | rule |
-| W3-10 | `window.content.transitions (the material to colour crossfade; its engine, the system backdrop's or WinUi, measured, the catalogue's Open items, ADD-A126)` | field |
+| W3-10 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, until its engine, the system backdrop's or WinUi, is measured, S2.7, S17, the catalogue's Open items, ADD-A126)` | field |
 | W3-11 | `role.global.scrim` | role |
 | W3-11 | `dialog.scrim.fill` | field |
 | W3-11 | `menu.dismiss_overlay.fill; popover.dismiss_overlay.fill (the light-dismiss overlays when enabled)` | field |
@@ -725,7 +725,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-33 | `PresentationKind::Keyed { key: connected_animation } with its parameters (ADD-A26)` | field |
 | W3-33 | `token.motion.durations.connected_service, token.motion.timings.connected_service (S4.1's step 2: ConnectedAnimationService's default duration and cubic Bézier, microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:26-28)` | token |
 | W3-33 | `PartStyle.transform (translate as an expression on element.scroll_offset: ParallaxView, R25.3, ADD-B13)` | field |
-| W3-34 | `PartStyle.transitions and widget presentation transitions per control (engine WinUi: brush transitions and visual-state storyboards, handed off from the value drawn, a GoToState into the current state doing nothing, `src/dxaml/xcp/components/vsm/CVisualStateManager2.cpp:104-118`; S2.7, ADD-A126)` | field |
+| W3-34 | `PartStyle.transitions and widget presentation transitions per control (engine WinUi: brush transitions and visual-state storyboards, handed off from the value drawn, a GoToState into the current state doing nothing, or, without transitions, snapping a running storyboard to its end, `src/dxaml/xcp/components/vsm/CVisualStateManager2.cpp:104-118`; S2.7, ADD-A126)` | field |
 | W3-34 | `token.motion.durations.*` | token |
 | W3-52† | `token.behavior.scroll (wheel_step_duration, wheel_step_timing, deceleration, overscroll, overscroll_effect, overscroll_extent, snap: the wheel animation, inertia, overpan and snap settle)` | token |
 | W3-52† | `token.behavior.scroll @ cond animations_off` | rule |

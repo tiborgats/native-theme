@@ -850,7 +850,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
-| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change landing in it, S2.7, the catalogue's Open items, ADD-A126) | field |
+| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change, a deactivation and an occlusion landing in it; until then the transitions are pending facts, the preset stating none, S2.7, S17, the catalogue's Open items, ADD-A126) | field |
 | X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |

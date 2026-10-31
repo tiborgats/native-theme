@@ -87,8 +87,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-I9 | `input.icon.icon.fill @ context input.body {invalid} / context input.body {invalid,hover} / context input.body {invalid,focused}` | rule |
 | MAT-I10 | `input.{text.text.fill,floating_label.text.fill} @ {hover} / {focused}` | rule |
 | MAT-I11 | `input.body.{fill,corners,stroke} @ variant @filled` | rule |
-| MAT-I11 | `input.body.interaction.state_layer.alpha @ {hover} variant @filled; input.body.interaction.ripple.effect (absent)` (the tokens' hover layer, S2.12, which Compose's container colour lacks, `TextFieldDefaults.kt:2012-2018`; no press ripple) | rule |
-| MAT-I11 | `input.body.transitions (StateLayer: a zero duration)` (material-web switches the hover layer by `visibility` with no transition, `material-web@2.5.0 field/internal/_filled-field.scss:67-73`; the container's `Fill` keeps its own, MAT-I14) | rule |
+| MAT-I11 | `input.body.transitions (Fill: the container's colour, engine ComposeAnimatable, its animateColorAsState, `TextFieldDefaults.kt:244-251`, MAT-I14's; no StateLayer transition and no interaction block, as Compose's filled text field draws no hover layer: its container colour has no hovered state, `TextFieldDefaults.kt:2011-2018`, and its text-field code reads no hover, `TextFieldDefaults.kt`, `TextField.kt`, `internal/TextFieldImpl.kt`; the tokens' hover layer is material-web's, `material-web@2.5.0 field/internal/_filled-field.scss:67-73`, not drawn as material-3 follows Compose's code, R1.6, ledger queue #96) @ variant @filled` (S2.7, S2.12, ADD-A126) | rule |
 | MAT-I11 | `input.body.stroke (bottom edge: the active indicator) @ variant @filled; @ {hover} / {focused} / {invalid} / {disabled}, each variant @filled` | rule |
 | MAT-I11 | `input.body.fill @ {disabled} variant @filled` | rule |
 | MAT-I12 | `token.caret.{width,blink_on,blink_off}` | token |
@@ -401,7 +400,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-SW5 | `switch.track.fill, switch.track.stroke @ {focus_visible} / {pressed} / {checked,focus_visible} / {checked,pressed}` | rule |
 | MAT-SW6 | `switch.thumb.fill @ {disabled,checked} / {disabled} !{checked} (colour and opacity, the opacity as the paint's alpha: the thumb lists no opacity)` | rule |
 | MAT-SW7 | `switch.thumb.shadow = Shadow::Elevation(<key>) (its layers' colour the shadow colour)` | field |
-| MAT-SW8 | `switch.thumb.transitions (Geometry: the handle's travel; timing = token.motion.timings.<key>, a cubic Bézier that overshoots; engine ComposeAnimatable, which animates the thumb's offset and diameter by animateTo, snapped while pressed, so a toggle reaching it mid-travel without a press starts from the place drawn at the running velocity, `material3/…/Switch.kt:307-317`, S2.7, ADD-A126)` | field |
+| MAT-SW8 | `switch.thumb.transitions (Geometry: the handle's travel; timing = token.motion.timings.fast_spatial, Compose's FastSpatial spring, `material3/…/Switch.kt:188`, `MotionScheme.kt:143-147`, not material-web's overshooting curve, as material-3's motion follows Compose's code, R1.6; engine ComposeAnimatable, which animates the thumb's offset and diameter by animateTo, snapped while pressed, so a toggle reaching it mid-travel without a press starts from the place drawn at the running velocity, `Switch.kt:307-317`, S2.7, ADD-A126)` | field |
 | MAT-SW8 | `switch.thumb.transitions (Geometry, Fill); switch.track.transitions (Fill, Stroke); switch.thumb_icon.transitions` | field |
 | MAT-SW9 | `switch.track.focus.offset` | field |
 | MAT-DG1 | `dialog.{header,message,action_area}.padding` | field |
@@ -431,8 +430,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-CB1 | `combo_box.body.stroke @ {hover} / {focused} / {invalid} / {disabled} (colour and width)` | rule |
 | MAT-CB1 | `combo_box.body.transitions (Fill: = token.motion.timings.fast_effects; Stroke: = token.motion.timings.fast_effects; StrokeWidth: = token.motion.timings.fast_spatial; then Stroke and StrokeWidth from {disabled}: a zero duration); combo_box.body.transitions (Stroke, StrokeWidth: a zero duration) @ {disabled}` (the exposed dropdown's text field, as MAT-I14's, `TextFieldDefaults.kt:244-248`, `internal/TextFieldImpl.kt:2114-2143`) | rule |
 | MAT-CB1 | `combo_box.{floating_label.text.fill,supporting_text.text.fill,icon.icon.fill} @ {hover} / {focused} / {invalid} / {disabled}; combo_box.floating_label.{text,transform} @ {empty} / {focused} / {open}` (the label resting inside an empty select, floated otherwise) | rule |
-| MAT-CB1 | `combo_box.body.{fill,corners,stroke} @ variant @filled; combo_box.body.interaction.state_layer.alpha @ {hover} variant @filled; combo_box.body.interaction.ripple.effect (absent)` (as MAT-I11's) | rule |
-| MAT-CB1 | `combo_box.body.transitions (StateLayer: a zero duration)` (as MAT-I11's) | rule |
+| MAT-CB1 | `combo_box.body.{fill,corners,stroke} @ variant @filled` (as MAT-I11's: the exposed dropdown's field is Compose's text field, `TextFieldDefaults.kt:244-248`, with no hover layer, so no interaction block; ADD-A126) | rule |
+| MAT-CB1 | `combo_box.body.transitions (Fill: engine ComposeAnimatable, as MAT-I11's; no StateLayer transition) @ variant @filled` (S2.7, ADD-A126) | rule |
 | MAT-CB2 | `combo_box.arrow.glyph.fill @ {hover} / {focused} / {invalid} / {disabled} (the combo box's states, which its arrow takes; the disabled opacity as the paint's alpha)` | rule |
 | MAT-CB3 | `combo_box.arrow.transform @ {open}` | rule |
 | MAT-CB3 | `combo_box.arrow.transitions` | field |

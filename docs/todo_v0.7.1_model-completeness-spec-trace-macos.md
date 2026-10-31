@@ -743,7 +743,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `drag_image.values.presentations event @cancel (the failed drop sliding back)` | field |
 | MAC-X11 | `button.values.presentations, list.values.presentations event @spring_load` | field |
 | MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
-| MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each transition's engine measured, interrupted at three points of its run, S2.7, the catalogue's Open items, ADD-A126) | field |
+| MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each transition's engine measured, interrupted at three points of its run; until then the transitions are pending facts, the preset stating none, S2.7, S17, the catalogue's Open items, ADD-A126) | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |
