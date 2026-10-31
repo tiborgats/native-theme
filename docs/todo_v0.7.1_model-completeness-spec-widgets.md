@@ -72,12 +72,14 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
     the next run starts (the value drawn, the old end, an additive blend), its duration and curve, a spring's velocity,
     two stacked changes (a hover, then a press), an appearance and an accent change, a window deactivation and an
     occlusion landing in a run, and reduced motion; the member is added with the measurement, and until then those
-    transitions are pending facts, the presets stating none, the focus moving between elements (`FocusMove`, X-FO-2)
+    transitions are pending facts, the presets stating none, each path listed in the preset's `[pending]` table (register
+    U181, S17, ADD-A128), the focus moving between elements (`FocusMove`, X-FO-2)
     among them: no member runs a `FocusMove` until that measurement adds one (S12);
   - `windows-11`: whether a theme switch animates the brush transitions and the visual-state storyboards (a brush
     swapped, or a colour changed in place, W-P3-16†), whether the compositor's handoff keeps a velocity, and whether
     Mica's change to its fallback colour in an inactive window (W3-10) runs on the compositor's system backdrop or on
-    `WinUi` (a pending fact, the preset stating no transition, until then);
+    `WinUi` (a pending fact, the preset stating no transition, the path listed in its `[pending]` table, register U184,
+    until then);
   - `windows-11`: what WinUI's transitions do under each presence (S2.7's `Presence`) and as the element is painted again, a change
     made meanwhile included, and as animations turn off, a running AnimatedIcon segment's included (the segments
     started after it jumping, from its source, S2.7);
@@ -2305,7 +2307,8 @@ spaces:
   and disabled states, measured; `windows-11`: CheckBox's CombinedStates (12 states); `material-3`: the checkbox
   tokens (selected, unselected, indeterminate × enabled, hover, focus, pressed, disabled × error).
 - **Today's fields:** `background_color` → `body.fill`; `font` → `label.text.font`; `indicator_color` →
-  `mark.glyph.fill`; `indicator_width` → `box.min_width`, `box.min_height` (on `kde-breeze` the cell:
+  `mark.glyph.stroke.paint` on a stroked mark (`windows-11`, `material-3`, `kde-breeze`'s check, S2.9), `mark.glyph.fill`
+  on a filled one (above); `indicator_width` → `box.min_width`, `box.min_height` (on `kde-breeze` the cell:
   `values.indicator_cell`, K1.53); `check_mark_stroke_width` → `mark.glyph.stroke.width`; `label_gap` →
   `values.label_gap`; `checked_background` → `box.fill @ {checked}`; `disabled_opacity` → `body.opacity @
   {disabled}`; `hover_background` → `box.fill @ {hover}`; `disabled_background` → `box.fill @ {disabled}`;
@@ -3859,7 +3862,8 @@ spaces:
   `kde-breeze` by a rule outside `{dragged}` under `@ka_table`, K-KA-36†), `header_separator.cursor` (all but
   `macos-*`: MAC-X20), `row_background.stroke` (every preset: a row at rest paints nothing on most platforms, and the
   states' rules state it), `row_background.shadow` (every preset: the same), `row_background.fill` (every preset: the
-  same), `row_background.focus` (`kde-breeze` by a rule `!cond system_setting:view_draw_focus_indicator`, K1.175;
+  same; where a state's rule appends over a rest that draws nothing, the rest's fill is stated drawn, as an `Append` over
+  `Absent` appends to nothing, S6.1), `row_background.focus` (`kde-breeze` by a rule `!cond system_setting:view_draw_focus_indicator`, K1.175;
   `macos-*` where the ring is the table's own, on `view`, MAC-L14; the value phase names the others from the facts,
   where the indicator is on `view` or on the row's control);
   values: `filler_row_height_px` (all but `ios-*`: L-17), `check_box_placement` (all but `windows-11`: W1-109,

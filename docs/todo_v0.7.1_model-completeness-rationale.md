@@ -884,7 +884,8 @@ MAT-X13–MAT-X15, X-MO-1).
     (`kstyle/breezehelper.cpp:146-155`, `:1498-1499`). Apple's toolkits, whose
     code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
     change, a deactivation, an occlusion and reduced motion landing in a run) and get their member with the
-    measurement, their transitions pending facts the presets state none of meanwhile, with no placeholder member (a
+    measurement, their transitions pending facts the presets state none of meanwhile, each path in the preset's `[pending]` table
+    (S17, ADD-A128; never a placeholder `[]` or `Absent`), with no placeholder member (a
     member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
     likewise. A presentation interrupted (a popover dismissed while it
     appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118), meanwhile cut, the state after

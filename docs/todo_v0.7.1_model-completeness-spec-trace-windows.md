@@ -40,7 +40,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-005 | `window.content.fill (PaintKind::Material @mica: tint, luminosity, saturation, blur_radius, noise_opacity, fallback)` | field |
 | W1-005 | `window.content.fill @ variant @mica_alt` | rule |
 | W1-005 | `window.content.fill @ cond window_inactive / cond window_inactive variant @mica_alt (Material.fallback: the base and base-alt solid fills)` | rule |
-| W1-005 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating `[]` with its pending id, as W3-10's, S2.7, S17, ADD-A126)` | field |
+| W1-005 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, the path listed in its `[pending]` table (register U184), as W3-10's, S2.7, S17, ADD-A126)` | field |
 | W1-006 | `window.title_bar.min_height` | field |
 | W1-006 | `window.title_bar.min_height @ variant @tall / variant @collapsed / variant @titlebar_control_expanded` | rule |
 | W1-006 | `reader:windows:AppWindowTitleBar.Height` | reader |
@@ -147,7 +147,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-041 | `radio.dot.{min_width,min_height} (the pressed glyph's template size); radio.dot.transitions (Geometry: ControlFastAnimationDuration on ControlFastOutSlowInKeySpline, engine WinUi; then Geometry from {pressed, checked}: a zero duration, engine WinUi)` (the hidden dot: the pressed dot grows from its template's size, `:376`, to the pressed state's, `RadioButton_themeresources.xaml:301-306`, and is gone at once as the press ends unchecked or the radio is unchecked, its storyboard stopping and its checked glyph hidden with `Duration="0"`, `:348-353`; S2.7's *A part not shown at rest*, ADD-A126) | field |
 | W1-041 | `radio.dot.transitions (Geometry, engine WinUi) @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (each common state's key frame moving the checked glyph's width and height, `:292-296`, `:338-343`, so a press released into checked grows on from the pressed dot; after the base's zero, which it overrides) | rule |
 | W1-042 | `radio.ring.stroke, radio.ring.fill @ {hover} / {pressed} / {disabled} / {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` | rule |
-| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (the pressed unchecked dot, `shown` there by W1-041's rule, ADD-A126: its fill `RadioButtonCheckGlyphFill`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:34`, `:92`, `:150`, its border not drawn, a `BorderBrush` but no `BorderThickness`, `:376`; ADD-A125) | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled}` (ADD-A125) | rule |
+| W1-042 | `radio.dot.fill, radio.dot.stroke @ {pressed} !{checked}` (the pressed unchecked dot, `shown` there by W1-041's rule, ADD-A126: its fill `RadioButtonCheckGlyphFill`, which the `Pressed` state does not retarget on `PressedCheckGlyph`, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RadioButton_themeresources.xaml:34`, `:92`, `:150`, `:298-306`, its border not drawn, a `BorderBrush` but no `BorderThickness`, `:376`; ADD-A125) | rule |
 | W1-043 | `radio.{body,ring,dot,label} (the typed radio, stated apart from checkbox)` | field |
 | W1-044 | `menu.item.fill @ {pressed}` | rule |
 | W1-044 | `menu.item_label.text.fill @ {pressed}` | rule |
@@ -313,7 +314,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-107 | `list.row_selection_indicator.{shown,opacity,transform} (false; 0; scale_y 0 about the centre); list.row_selection_indicator.{shown,opacity,transform} @ {selected} (true; 1; scale_y 1); list.row_selection_indicator.transitions (Opacity: the presenter's `opacityAnimationDuration`, Linear, engine WinUi; Transform: a zero duration delayed by that duration, engine WinUi); list.row_selection_indicator.transitions (Opacity: as the base; Transform: the presenter's `scaleAnimationDuration`, CubicBezier(0.167, 0.167, 0, 1), engine WinUi) @ {selected}` (a `ListViewItem`'s pill, not the sidebar's, W1-089: it fades in and out on the default linear timing, removed only as the fade-out completes, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ListViewBaseItemPresenter_Partial.cpp:943-955`, `:1047-1054`; selected, its Y scale grows from 0 about the centre on that curve, `:957-983`, `src/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp:2843-2849`; deselected, no scale key frame runs, `:957`, so the hidden scale is a zero delayed by the fade; a fade-in from the drawn value, `:950-953`, WinUI's handoff measurement, the catalogue's Open items; S2.7's *A part not shown at rest*, ADD-A126) | rule |
 | W1-108 | `list.row_background.corners, list.values.row_background_inset` | field |
 | W1-109 | `checkbox.{box.fill,box.stroke,box.corners,mark.glyph} @ context list.row` | rule |
-| W1-109 | `checkbox.{box.fill,box.stroke,mark.glyph.fill} @ context list.row {selected} / context list.row {hover} / context list.row {pressed}` | rule |
+| W1-109 | `checkbox.{box.fill,box.stroke,mark.glyph.stroke} @ context list.row {selected} / context list.row {hover} / context list.row {pressed}` | rule |
 | W1-109 | `list.values.check_box_placement (ListViewItemCheckMode: inline or overlay)` | field |
 | W1-110 | `list.{row.opacity,row.transform} @ {dragged} / {@reorder_target}` | rule |
 | W1-110 | `list.{row_background.fill,row.text.fill} @ {dragged}` | rule |
@@ -656,7 +657,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-09 | `role.@layer_fill_default, role.@layer_fill_alt, role.@layer_on_acrylic_fill_default, role.@layer_on_accent_acrylic_fill_default, role.@layer_on_mica_base_alt_*` | role |
 | W3-09 | `PartStyle.fill (a Color layer over the backdrop's Material: the content and commanding layers, Paint.layers)` | field |
 | W3-10 | `window.content.fill @ cond window_inactive (PaintKind::Material @mica to Material.fallback)` | rule |
-| W3-10 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, until its engine, the system backdrop's or WinUi, is measured, S2.7, S17, the catalogue's Open items, ADD-A126)` | field |
+| W3-10 | `window.content.transitions (the material to colour crossfade: a pending fact, the preset stating none, the path listed in its `[pending]` table (register U184), until its engine, the system backdrop's or WinUi, is measured, S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128)` | field |
 | W3-11 | `role.global.scrim` | role |
 | W3-11 | `dialog.scrim.fill` | field |
 | W3-11 | `menu.dismiss_overlay.fill; popover.dismiss_overlay.fill (the light-dismiss overlays when enabled)` | field |

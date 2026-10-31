@@ -854,7 +854,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-MO-1 | `token.motion.timings.*` | token |
 | X-MO-1 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
-| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change, a deactivation and an occlusion landing in it; until then the transitions are pending facts, the preset stating none, S2.7, S17, the catalogue's Open items, ADD-A126) | field |
+| X-MO-1 | `Transition.engine` (UIKit's and Core Animation's, measured: where an interrupted animation starts, its duration and curve, a spring's velocity, stacked changes, a theme change, a deactivation and an occlusion landing in it; until then the transitions are pending facts, the preset stating none, each path listed in its `[pending]` table (register U181), S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128) | field |
 | X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |
 | X-MO-3 | `navigation_view.edge_shadow.{fill,opacity}, navigation_view.scrim.{fill,opacity}` (the edge shadow or dim) | field |
@@ -927,7 +927,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-SE-3 | `list.row_background.fill @ {pressed} / {selected}` (the grey touch highlight against the tint selection; per context by `context` rules) | rule |
 | X-FO-1 | `PartStyle.focus kind Ring (halo shape, position, width, colour)` | field |
 | X-FO-2 | `list.row_background.fill @ {focus_visible} (cell focus highlight)` | rule |
-| X-FO-2 | `FocusIndicator.transition` (UIKit's focus moving between elements, `FocusMove`, ADD-A19: pending with X-MO-1's engine, the preset stating `"absent"` with the pending id, S17, ADD-A126) | field |
+| X-FO-2 | `FocusIndicator.transition` (UIKit's focus moving between elements, `FocusMove`, ADD-A19: pending with X-MO-1's engine, the preset stating none, the path listed in its `[pending]` table (register U181), S17, ADD-A126, ADD-A128) | field |
 | X-PH-1 | `PartStyle.transform @ {hover} (pointer lift)` | rule |
 | X-PH-1 | `PartStyle.shadow @ {hover}` | rule |
 | X-PH-1 | `PartStyle.fill @ {hover} (highlight)` | rule |
