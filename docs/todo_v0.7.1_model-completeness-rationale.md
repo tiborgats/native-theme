@@ -200,12 +200,7 @@ Expressive tokens and agrees with Compose (the pressed state layer's opacity is 
 older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
 silent, Compose Material 3 is the reference, cited at a pinned commit, experimental or not (for some
 Expressive behaviour it is Google's only implementation); material-web's components, built on the older
-token set, only where Compose has no such component. Where the tokens and Compose's own Material 3 drawing disagree (the
-checkbox's halo colours under Compose's Material 3 styling, which its flag's documentation names so,
-`androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ComposeMaterial3Flags.kt:40-44`),
-the drawing decides and the facts record the tokens' value as the difference (ADD-A125): *the tokens* would draw a
-halo no Compose branch draws; *the drawing* is the look this decision describes, the tokens being its source because
-they agree with it.
+token set, only where Compose has no such component.
 
 ### R2 — The model's shape
 

@@ -50,6 +50,10 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   clips it to the outline too; a square part clips alike either way (`RippleDrawable.java:890-891`), as Compose's plain
   menu item, a clickable `Row` with no clip (`Menu.kt:2152-2160`; its shaped item is a `Surface`, `:2020-2050`). The
   value phase records which parts are such; one that is would be a class 2 change (a clip field) (S2.12; ADD-A125).
+- `kde-breeze` under `cond flavor:kirigami`: the window decoration's button fades (K1.8) mix by `KColorUtils::mix`,
+  premultiplied sRGB, whatever the application's flavour (`breeze@6.8.2 kdecoration/breezebutton.cpp:324`, `:360`), where
+  the flavour's token is straight 8-bit sRGB: alike for opaque colours but for truncation, apart under a translucent
+  title bar; a fact that needs it would need the per-transition override S2.7 leaves to a class 2 change (ADD-A125).
 - A Compose colour animation through `Color.lerp` driven by an overshooting spring, which clamps the fraction where
   the transitions' `Oklab` clamps the components: the toggleable FAB's container and icon colours in the FAB menu's
   `Morph` presentation (`FloatingActionButtonMenu.kt:456-461`, `:584`, `:615`, MAT-N3); a fact that needs it would need
@@ -1599,25 +1603,42 @@ spaces:
     smaller and its padding other than `flat`'s, the host's `forms.<scheme>.system` against `cells.<scheme>.plain.medium`;
     its title a font of UIKit's own, no text style, `text_style = "CTFontRegularUsage"` against the styles'
     `UICTFontTextStyleShortBody`, the host's `run1/index.toml`); and every button a UIKit host draws for itself is that
-    element in its host's context, which the connector building the host's elements sets as it builds them (Nested
-    controls) and the state model lists in `axes.contexts`, its look the context's rules: an alert's or action sheet's
-    action (DL-5, DL-7, C-11), a bar button item with no configuration (its default plain style,
-    `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115` in Xcode 26.6; TB-6, TB-8, P3-3†, P4-10†, the overflow
-    and sidebar toggle of C-1, T-13, C-22, C-29 and X-IC-5), the search bar's and text field's buttons (C-3, I-2), the
-    date picker's, edit menu's and find bar's buttons (C-6, C-14, C-25), the media controls and the ink toolbar's tools
-    (C-42†, C-40†); the host contexts take no size (`sizes_by_context`), as their buttons hold no `buttonSize`
-    (ADD-A125). Rejected: `requires_variants` on the styles and forms with a host variant beside them (`@host_drawn`:
-    a variant restating the context, whose closed list of hosts refused every other host's button, and widened to
-    every host it would be the context again); a variant per host (a second name for each context). The roles
+    element in its host's context, which the connector building the host's elements sets as it builds them, for
+    UIKit's own items alone (an application's configured button placed as a bar item's custom view is no bar item)
+    (Nested controls). The state model lists every such context in `axes.contexts`, as the rules spell it:
+    `dialog.action_area` (an alert's or action sheet's actions, DL-5, DL-7, C-11), `toolbar.bar` (a bar button item,
+    its default plain style `UIBarButtonItemStylePlain`, `UIBarButtonItem.h:23`, `:115` in Xcode 26.6: TB-4, TB-6,
+    TB-8, P3-3†, the overflow and sidebar toggle of C-1, C-29 and X-IC-5), `toolbar_editor` (P4-10†),
+    `bottom_tab_bar.bar` (the sidebar toggle, T-13, C-22), `search_field` (C-3), `input` (I-2), the nested chain
+    `[{ widget = "search_field", part = "body" }, { widget = "input" }]` (the search field's clear button, which C-3's
+    and I-2's rules both select, S17's ordered chain), `calendar.header` (C-6), `edit_menu` (C-14), `find_bar` (C-25),
+    `media_controls.bar` (C-42†), `ink_toolbar` (C-40†), `component.document_launch_view`, `status_page.action_area`
+    and `teaching_tip.action_area` (their rows' buttons). In a host context the base's own facts do not apply: they are
+    stated `not_context` every host context, and each host's rows state every key, or a pending fact does (the plain
+    bar item's title, `forms.<scheme>.bar_plain`, read on `ios-13`, unread on `ios-26`; an alert action's
+    padding, unread). The state model's `not_drawn` keeps the gate to what UIKit draws: an element with no
+    configuration style (the base, the forms, every host-drawn button) at `regular` alone, as it holds no
+    `buttonSize`, its facts stated with no size term; the configuration-only variants (`pill`, the corner styles,
+    `@role_primary`, `@indicator_popup`) without a configuration style; in each host context, every configuration
+    style and form but those its rows name (`toolbar.bar`'s `primary`, `done`, `add`, `@share`, `close`, `back`);
+    and `@cancel` and `destructive` outside `dialog.action_area` and `search_field`, `clear_field` outside `input`,
+    `overflow` and `pane_toggle` outside `toolbar.bar` and `bottom_tab_bar.bar`, `previous` and `next` outside
+    `calendar.header` (ADD-A125). Rejected: `requires_variants` on the styles and forms with a host variant beside them
+    (`@host_drawn`: a variant restating the context, whose closed list of hosts refused every other host's button, and
+    widened to every host it would be the context again); a variant per host (a second name for each context). The roles
     `@cancel`, `@role_primary` and `destructive` are one `exclusive_variants` group, as a button holds one
     `UIButton.Role`: `@role_primary` with each configuration style (a product `{ any = [@role_primary] }` beside the
     style's, and on `ios-26` `[{ one = [glass, clear] }, { one = [primary] }, { any = [@role_primary] }]` for the
     prominent glass styles), and `@cancel` and `destructive` set by the connector only in the hosts that draw them
     otherwise (an alert's or action sheet's actions, the search bar's cancel button: DL-7, C-11, C-3), as they draw
     as normal on a standalone button, the base under another name there (the connector setting `@corner_dynamic`
-    likewise), as the host drew them
+    likewise); the group's ground is `UIButton.Role` for `@role_primary` and the host's action style for the other two
+    (`UIAlertAction`'s cancel and destructive styles, DL-7, C-11), which no button holds two of (rejected: no role
+    variants, each host's identity a keyed variant of its own, which would split one meaning, an action's cancel or
+    destructive role, per host), as the host drew them
     (`cells.<scheme>.<style>__role_*`, `prominent_glass+role_*`, `prominent_clear_glass+role_*`), the role's weight
-    rule stated after the styles' own weight rules, B-13, stated without a size and measured at `regular` (UIKit's
+    rule stated after every rule that states the title's weight (B-13's, and B-3's per-size text where it holds a
+    weight), stated without a size and measured at `regular` (UIKit's
     medium), the one size the host drew it at, the others pending (Open items; ADD-A125); the state
     model's `variant_sets` or `variant_products` give the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
@@ -2144,8 +2165,9 @@ spaces:
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus` (where Kirigami
     rings the label, Q1.21).
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `Checkbox.kt:554-579`; S2.12; the
-    ripple's `indication_box` the `box`, no outset; `material-3` follows Compose's Material 3 styling branch whole, its
-    box, ripple colours, disabled checkmark and check path, `Checkbox.kt:500-530`, `:711-718`, R1.6, S2.12, ADD-A125),
+    ripple's `indication_box` the `box`, no outset; `material-3` takes Compose's Material 3 styling branch's geometry,
+    its box and its check path, and the tokens' colours, as the radio's and the switch's halos do, R1.6, S2.12,
+    MAT-C2, ADD-A125),
     `corners` (its shape), `min_width`, `min_height`, `transitions` (the block's fades, MAT-X9).
 - **Widget values:** `label_gap_px: Value<Px>`; `indicator_cell_px: Value<Px>` (the cell the drawn box is centred
   in, K1.53); `presentations: Vec<PresentationTransition>`: event `Appear` (iOS's selection column sliding in when
@@ -2215,7 +2237,8 @@ spaces:
   - `dot` — the inner dot: `glyph`, `fill`, `corners` (its round outline when drawn as a fill; the list is normative,
     and a preset states the form its platform draws, the other `Absent` where `may_be_absent` allows), `min_width`,
     `min_height` (growing by state, W1-041), `stroke`, `transform` (its scale per state while drawn), `transitions`
-    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7).
+    (its scale animation, W1-041; absent while unchecked, it enters from transparent by these, S2.7's transparent, on
+    `windows-11` the platform's own `#00FFFFFF` as a stated paint once WinUI's arithmetic is measured).
   - `label` — the text: `text`, `opacity` (Kirigami dims the disabled label alone, Q1.22), `focus`.
   - `state_layer` — Material's halo (MAT-C2): `interaction` (its state layer and press ripple, Compose's ripple indication, `RadioButton.kt:163-169`; S2.12; the
     ripple's `indication_box` the `ring` grown by Compose's `RadioButtonPadding`, `RadioButton.kt:318-319`, ADD-A125),
@@ -4337,7 +4360,7 @@ spaces:
 - **Available:** every preset but `windows-11`, `ios-*`, `material-3` (`available = false`: no about dialog the
   toolkit draws; Windows' `ShellAbout` is out, R1.1).
 - **Parts:**
-  - `body` — the dialog's content box (the root): `padding` (its margins, GN-2.39, K-KA-44†), `bindings`.
+  - `body` — the dialog's content area (the root): `padding` (its margins, GN-2.39, K-KA-44†), `bindings`.
   - `icon` — the application icon: `icon` (its size: GN-2.39, K-P3-8†, Q2.57†, MAC-N32†), `shadow` (GNOME's drop
     shadow), `margin` (the space round it where the panel's gaps differ, MAC-N32†).
   - `name` — the application name: `text`, `margin` (MAC-N32†).
@@ -7189,7 +7212,7 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
 - **Available:** every preset but `windows-11`, `material-3` (`available = false`: no such control); `kde-breeze`
   flavour `kirigami` only (PlaceholderMessage, LoadingPlaceholder).
 - **Parts:**
-  - `body` — the page's content box, the root: `fill` (C-16's background), `padding` (the page's margins, GN-2.13),
+  - `body` — the page's content area, the root: `fill` (C-16's background), `padding` (the page's margins, GN-2.13),
     `max_width` (Q2.32), `bindings`.
   - `icon` — `icon` (size, weight: GN-2.13, Q2.30, C-16), `opacity` (GN-2.13; Q2.31; K-KA-16†).
   - `title` — `text`, `opacity` (Q2.31, K-KA-16†).

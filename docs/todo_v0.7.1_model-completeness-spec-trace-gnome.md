@@ -440,7 +440,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.185 | `popover.body.{min_width,max_width} (Auto)` | field |
 | GN-1.286† | `edit_menu.body.{fill,shadow,padding}; edit_menu.arrow.{fill,min_width,min_height}` | field |
 | GN-1.286† | `button.{body,icon} @ variant icon_only context edit_menu.body context any layout variant @linked (the commands: a linked row of image buttons with the touch icons)` | rule |
-| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content box's spacing)` | rule |
+| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content area's spacing)` | rule |
 | GN-1.286† | `edit_menu.values.placement (GtkPopover, anchor_grow)` | placement |
 | GN-1.186 | `splitter.divider.stroke, splitter.divider.min_width @ variant wide` | rule |
 | GN-1.187 | `menu.separator.margin` (the menu's separator item, its margins) | field |
