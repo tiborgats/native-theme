@@ -735,7 +735,8 @@ MAT-X13–MAT-X15, X-MO-1).
   Breeze runs neither fade on a disabled button. Rejected: a transition per (from, to) pair of states, XAML's form (the style
   entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
-  that appears interpolates from its colour at zero alpha, and one that disappears to it, a stroke that becomes
+  that appears interpolates from transparent black, and one that disappears to it (ADD-A125: Compose and Qt Quick
+  fade to `#00000000` in their straight spaces, and in premultiplied sRGB every zero-alpha colour is that one), a stroke that becomes
   absent likewise, to zero width; layers are matched by their position in the stack; the `interaction` block's
   colours change at once and its alphas move (R3); colours interpolate in the space the preset's toolkit interpolates
   in, one of a closed set implemented once in native-theme to each source, as platform curves are (ADD-A125): GTK's
@@ -748,8 +749,14 @@ MAT-X13–MAT-X15, X-MO-1).
   does): simplest, but Compose's and Qt Quick's transitions would draw intermediate colours their platforms do not.
   *A space on every transition*: exact, but each transition states what one toolkit fixes for all of its own, and
   the facts cite it again each time. *A motion token per preset*, which rules can restate by condition (Kirigami's
-  flavour): exact for every source read, one fact per preset. **Decision:** the token; a toolkit found to mix spaces
-  within one preset and condition is a class 2 change to a per-transition override. A material that gives
+  flavour): exact for every source read, one fact per preset. WinUI holds two interpolators, its compositor's
+  (`CompositionColorSpace_Rgb`, which its brush transitions use, `microsoft-ui-xaml@2.5.1
+  src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111`) and a UI-thread straight 8-bit one for
+  storyboard animations it does not convert (`src/dxaml/xcp/core/animation/ColorAnimation.cpp:51-131`); its controls'
+  colour changes take the first, so one token still states them, and the second needs an override only if a fact
+  shows a control on it. **Decision:** the token, measured where the toolkit's arithmetic is not in a source (WinUI's
+  compositor, Core Animation); a toolkit found to mix spaces within one preset and condition is a class 2 change to a
+  per-transition override. A material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
@@ -786,8 +793,10 @@ MAT-X13–MAT-X15, X-MO-1).
   (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
   `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
   `AdwAnimation`, still runs, `adw-tab.c:857-862`, and the preset states which transitions a suspension
-  reaches; a transition already running when the suspension starts finishes); or instant (an instant switch
-  with property transitions as usual). Each preset's kind is a fact, measured where no source states it
+  reaches; a transition already running when the suspension starts finishes; a suspension of no duration
+  reaches only the transitions the change itself triggers, which states Breeze, whose state engines start fades
+  only on state flips, `breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-29`, ADD-A125); or instant (an
+  instant switch with property transitions as usual). Each preset's kind is a fact, measured where no source states it
   (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
   transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:

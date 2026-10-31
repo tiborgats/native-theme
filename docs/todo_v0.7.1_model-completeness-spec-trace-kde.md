@@ -81,7 +81,6 @@ rationale, each decided in the core's additions register (S22).
 | K1.17 | `token.motion.durations.decoration_shadow (= floor(mul(<the decoration's base>, token.params.motion.kwin_speed_factor)), the factor the decoration reads: `[KDE] AnimationDurationFactor` from KWin's main configuration, kwinrc, over kdeglobals, `KSharedConfig::openConfig()` inside KWin, which opens `<application name>rc` with kdeglobals included (`FullConfig`), KWin naming itself `kwin`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:379-380`, `kconfig@6.31.0 src/core/ksharedconfig.h:84`, `src/core/kconfig.h:94-100`, `src/core/kconfig.cpp:643-649`, `kwin@6.8.2 src/main.cpp:139`, `:155` (ADD-A123); S4.1's rule naming it after Breeze's Decoration class: the product, a float, truncated to whole ms by `QVariantAnimation::setDuration(int)`, `breeze@6.8.2 kdecoration/breezedecoration.cpp:389`, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.h:51`; ADD-A122)` | token |
 | K1.17 | `token.params.motion.kwin_speed_factor (the decoration's and KWin's factor: kwinrc's `[KDE] AnimationDurationFactor` where it states one, else kdeglobals', as KConfig cascades KWin's main configuration over kdeglobals; ADD-A123: stated `= token.motion.speed_factor`, so it follows kdeglobals' factor under `cond animations_off` too, ADD-A125)` | token |
 | K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor -> token.params.motion.kwin_speed_factor` (the reader's layer states kwinrc's own factor where kwinrc states one, ADD-A125) | reader |
-| K1.17 | `reader:kde:kwinrc [KDE] AnimationDurationFactor` | reader |
 | K1.17 | `window.title.transitions (Text cross-fade; duration as the decoration states it, value phase)` | field |
 | K1.18 | `window.frame.shadow @ cond window_inactive (layers at half strength)` | rule |
 | K1.19† | - | out (R1.1) |
@@ -985,11 +984,12 @@ rationale, each decided in the core's additions register (S22).
 | K3.15† | - | out (R1.1) |
 | K3.16† | - | out (R1.1) |
 | K3.30 | `token.motion.speed_factor` | token |
-| K3.31 | `token.motion (color_space PremultipliedSrgb: Breeze's fades paint KColorUtils::mix, kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166, S2.7, ADD-A125)` | token |
 | K3.30 | `reader:kde:kdeglobals [KDE] AnimationDurationFactor` | reader |
 | K3.30 | `cond animations_off (factor 0)` | condition |
 | K3.31 | `token.motion.durations.animations (Breeze's Animations class, S4.1: while the factor is set, = floor(mul(<base>, token.motion.speed_factor)), truncated to whole ms, `breeze@6.8.2 kstyle/breezestyle.cpp:2080`, zero, which a factor below 0.01 gives, turning Breeze's animations off, `:2085`, a positive result turning them on, `:2081-2083`; breezerc AnimationsDuration otherwise)` | token |
 | K3.31 | `token.motion.timings.animations (Steps: its count read from AnimationSteps)` | token |
+| K3.31 | `token.motion (color_space PremultipliedSrgb: Breeze's fades paint KColorUtils::mix, kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166, S2.7, ADD-A125)` | token |
+| K3.31 | `token.theme_change (Suspend with a zero duration: the state engines start a fade only on a state flip, breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-29, so a theme change runs none; each Breeze transition suspended_by_theme_change true, Kirigami's QML behaviours false, S4.3, ADD-A125)` | token |
 | K3.31 | `token.motion.durations.animations` (the reader states it zero while kdeglobals sets no `AnimationDurationFactor` and breezerc [Style] AnimationsEnabled is off; a factor set overrides that switch, its product with 100 truncated to whole ms turning Breeze's animations on where positive and off where zero, as a factor below 0.01 gives, `breezestyle.cpp:2076-2085`: Breeze's own switch stops only the Breeze engines the widgets flavour's parts use, not the Kirigami animations that `cond animations_off`, the global factor's condition, K3.30, stops) | token |
 | K3.31 | `PartStyle.transitions per part (each Breeze engine's parts in the rows above; the enable/disable cross-fade a transition on {disabled})` | field |
 | K3.31 | `navigation_view.values.presentations (Fade) @ cond system_setting:stacked_widget_transitions (the stacked-widget fade, off by default)` | rule |

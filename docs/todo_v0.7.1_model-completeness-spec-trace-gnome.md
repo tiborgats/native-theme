@@ -914,7 +914,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
 | GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
-| GN-3.28 | `PartStyle.focus at rest (the ring zero wide, transparent, further out by the mixin's constant, the focus-ring mixin's rest outline, which the transition grows from, S2.10, ADD-A125)` | field |
+| GN-3.28 | `PartStyle.focus at rest (the ring zero wide, transparent, its offset greater than the focused one by the ring's width and the mixin's constant, or by the constant alone for an outer ring, the focus-ring mixin's rest outline, which the transition grows from, S2.10, ADD-A125)` | field |
 | GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |

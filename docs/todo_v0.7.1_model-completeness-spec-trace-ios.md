@@ -207,9 +207,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button flag @loading` (`ios-*`) | flag |
 | B-10 | `spinner.{spoke.fill,values.loop} @ context button {@loading}` (the activity indicator in the button: a `spinner` element, Nested controls; its own colour) | rule |
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
-| B-11 | `button.label.text.fill @ variant destructive` | rule |
+| B-11 | `button.label.text.fill @ variant destructive context dialog.action_area` (the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
 | B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
-| B-11 | `button.label.text @ variant @cancel` (the cancel role, as normal on a standalone button; iOS 26's further roles are an open item of the catalogue, not declared) | rule |
 | B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
 | B-12 | `button.body.padding, button.label.text @ variant @system` (`UIButton(type: .system)` with no configuration, ADD-A125) | rule |
@@ -849,6 +848,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | X-CR-4 | `token.params.display.corner_radius_{top_left,top_right,bottom_right,bottom_left} @ cond device_model:<key>` (per device model; an unlisted model's `Absent`, S4.6, R25.11, ADD-A83) | rule |
 | X-MO-1 | `token.motion.durations.*` | token |
 | X-MO-1 | `token.motion.timings.*` | token |
+| X-MO-1 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | X-MO-1 | `Transition.delay` (S2.7) | field |
 | X-MO-2 | `token.motion.timings.default (Timing::Spring; S4.1's rule drops spring)` | token |
 | X-MO-3 | `navigation_view.values.presentations events @push, @pop` (a `PresentationKind::Keyed` parallax slide, ADD-A26) | field |

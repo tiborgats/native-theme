@@ -40,6 +40,10 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `avatar.fallback_icon` on `adwaita` (AdwAvatar's icon fallback, which GN-2.14 does not name; listed absent until the
   facts state it).
 - `button`: iOS 26's further bar-item roles (none declared yet).
+- The colour space, `token.motion`'s `color_space`, on `windows-11`, `macos-*` and `ios-*` (ADD-A125): measured as the entry says; and on
+  `windows-11`, whether any control's storyboard colour animation (ToggleSwitch's, ProgressBar's) runs on the UI
+  thread's straight 8-bit interpolator rather than the compositor's (`ColorAnimation.cpp:51-131` against
+  `DCompAnimationConversionContextWUC.cpp:79`, `:92`), which would need S2.7's per-transition override.
 - `button` on `ios-*` (ADD-A125, measurements, nothing claimed until they are made): the bar item padding TB-8 names
   (`isPaddingRemoved` in the gap map) has no UIKit API the iOS lane found in the pinned SDKs' `UIBarButtonItem.h`, so
   no `@padding_removed` is declared, and one is added with its API where a header check finds it; the dynamic corner
@@ -51,10 +55,6 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
   toolbar.bar` (TB-4), drawn by the host but unread (hosted by SwiftUI, its Liquid Glass platter no single layer,
   `forms.<scheme>.bar_prominent`), its values pending a pass that reads them; the default `buttonSize` (U129, the
   entry's *Default sizes*).
-- `UIButton.Configuration.CornerStyle` (`button` on `ios-*`, B-4): its cases, and so the corner-style variants
-  `@corner_fixed` … `@corner_dynamic` and their `exclusive_variants` group with `pill`, are as the gap map reads Apple's
-  documentation until the iOS lane confirms them against the pinned Xcode's `UIButtonConfiguration.h` (listed as
-  stated; ADD-A122).
 - `time_picker` on `macos-*`: whether `NSDatePicker`'s graphical style with time elements alone draws the clock face
   alone (MAC-N04; `inline` not declared there until the probe shows it).
 - `spinner` on `ios-*` under `!{indeterminate}` (SwiftUI's determinate circular ProgressView, C-31, to verify): whether
@@ -1394,13 +1394,18 @@ spaces:
     as it is (WinUI's chevron, its negative start margin under the label's end margin, W1-102), while a positive one,
     with a matching negative end margin moving the indicator toward the end, gives the content's space the width it
     leaves (Breeze's push button sizes its arrow with both of the button's `Button_MarginWidth` margins, `breeze@6.8.2
-    kstyle/breezestyle.cpp:3546-3556`, then draws it at the contents rect's end and centres the text in the rect from
-    the start margin to `Button_ItemSpacing` before the arrow, `:5364-5370`, wider than the row less the arrow's
-    margin box by `Button_MarginWidth`, K1.27); with no start margin the two readings agree. Rejected: the margin box
-    alone (Breeze's label half a `Button_MarginWidth` toward the start of where Breeze draws it, at every width) and the
-    border box alone (WinUI's label would lose the chevron's negative start margin from its space). A gap the platform writes as the content's end margin is `menu_indicator_gap_px` (WinUI's
-    `AppBarButtonTextLabelOnRightMargin`'s end, W1-102): the label part has no `margin`, so its spacing toward the
-    indicator has the gap as its one home. Where the row is wider than its content and indicator need (a stated
+    kstyle/breezestyle.cpp:3546-3556`, then draws it at the end of the contents rect, the button less
+    `Frame_FrameWidth`, `:2216-2219`, and centres the text in the rect from the start margin to `Button_ItemSpacing`
+    before the arrow, `:5364-5372`, wider than the row less the arrow's margin box by `Button_MarginWidth`, K1.27); with
+    no start margin the two readings agree. Rejected: the margin box alone (Breeze's label half a `Button_MarginWidth`
+    toward the start of where Breeze draws it, at every width); the border box alone with WinUI's values as written
+    (its label would lose the chevron's negative start margin from its space); the border box alone with WinUI's gap
+    restated as the drawn distance, `= add(<the label's end margin>, <the chevron's start margin>)`, and its start
+    margin zero (one reading, but WinUI's start margin would be stated as a zero its source does not write, and its gap
+    as a sum, where the rule chosen keeps both platforms' written values one to one). A gap the platform writes as the content's end margin is `menu_indicator_gap_px` (WinUI's
+    `AppBarButtonTextLabelOnRightMargin`'s end, W1-102): the label part has no `margin`, and its `padding` is what the
+    platform writes on the label itself, inside it (GTK's label padding beside an arrow, GN-1.39), not a margin outside
+    it, so a written end margin has the gap as its one home. Where the row is wider than its content and indicator need (a stated
     minimum width, a stretched button), the
     spare width goes to the content: the indicator keeps the row's end and the content is laid out in its space as it
     would be alone, centred where the button centres it (Breeze's push button, the text centred in its rect, above;
@@ -1557,15 +1562,19 @@ spaces:
     its captures on the lane branch `lane-ios-slice`, so they are no variants
     of their own until a capture shows a difference; the glass styles are `glass` and `clear`, with `primary` for the
     prominent ones; the configuration styles are two `exclusive_variants` groups, `[flat, @gray, tinted, primary]`
-    and `[flat, @gray, tinted, glass, clear]`, so `primary` combines with `glass` and `clear` alone, S10; the state
+    and `[flat, @gray, tinted, glass, clear]` (the second on `ios-26`), so `primary` combines with `glass` and `clear`
+    alone, S10, and each group also holds the forms that are no configuration (`@system`, `@info`, `@contact_add`,
+    `close`, `back`, `done`, `add`, `@share`, `@paste_control`, `route`), which with the styles are `requires_variants`,
+    an element being one style or one form (ADD-A125); the roles `@cancel`, `@role_primary` and `destructive` are one
+    `exclusive_variants` group, as a button holds one `UIButton.Role` (ADD-A125); the state
     model's `variant_sets` lists the sets of styles the platform draws, `[glass, primary]` (`prominentGlass`) and
     `[clear, primary]` (`prominentClearGlass`), and each further set the facts capture, a configuration style with a
     corner style or with `toggle`, S17, never every combination of the declared variants), the corner
     styles `@corner_fixed`, `@corner_small`, `@corner_medium`, `@corner_large`, `@corner_dynamic` (capsule is `pill`),
     one `exclusive_variants` group with `pill`, `[@corner_fixed, @corner_small, @corner_medium, @corner_large,
-    @corner_dynamic, pill]` (`@corner_dynamic` on `ios-26` only, below), as a configuration holds one `cornerStyle` (B-4, `UIButton.Configuration.CornerStyle`
-    as the gap map reads Apple's documentation, unconfirmed: an Open item until the iOS lane confirms it against the
-    pinned Xcode's `UIButtonConfiguration.h`; ADD-A122),
+    @corner_dynamic, pill]` (`@corner_dynamic` on `ios-26` only, below), as a configuration holds one `cornerStyle` (B-4, `UIButtonConfigurationCornerStyle`: fixed,
+    dynamic, small, medium, large and capsule in both pinned SDKs, `UIButtonConfiguration.h:39-52` in Xcode 16.4,
+    `:40-53` in 26.6, the iOS lane's citations; ADD-A122, confirmed in ADD-A125),
     `@corner_dynamic` declared on `ios-26` only (the non-glass styles' default, which they draw as the style alone,
     so on `ios-13`, which has no glass style, it is the base under another name; on `ios-26` the glass styles, whose
     default is capsule, `pill` there, draw it otherwise; the iOS host's `cells.<scheme>.<style>__corner_style_dynamic`,
@@ -1577,7 +1586,7 @@ spaces:
     bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types
     `@system` (`UIButton(type: .system)` with no configuration, the form before `UIButton.Configuration`, drawn and
     measured apart from every style, its title smaller and its padding other than `flat`'s, the host's
-    `forms.<scheme>.system` against `cells.<scheme>.plain.medium`; a form that is no configuration, in the configuration styles' exclusive group and in
+    `forms.<scheme>.system` against `cells.<scheme>.plain.medium`; a form that is no configuration, in the configuration styles' exclusive groups and in
     `requires_variants`, as `@info` is; ADD-A125), `@info`, `@contact_add`, `@share` (the share button, its glyph UIKit's,
     X-IC-5; the close type is the typed `close`; the add bar item the typed `add`); done is the typed `done`;
     `@indicator_popup` (the pull-down indicator; automatic is the base, and `none`, which draws as automatic in every
@@ -1744,20 +1753,25 @@ spaces:
     (Compose animates a `RoundedCornerShape` or `CornerBasedShape`, `Button.kt:1921-1938`, `ToggleButton.kt:1714-1717`,
     `IconButton.kt:1632`, `:1652`): `body.corners` with a `Corners` spring transition (MAT-B11, MAT-X12); `button` has
     no `shape` field, the `MaterialShapes` morph being the loading indicator's (MAT-N24).
-  - macOS's circular bezel draws a circle inside a frame wider than tall (at `regular`, `large` and `extra_large`
-    the frame is wider than its height, the probe's `frame_xywh`, run 41006842699 `button-pass/probe.toml`, and the
-    circle as wide as the frame is high, the macOS lane's reading): `body`'s box is the drawn circle, its `corners` `Full` on that box, and
+  - `macos-tahoe`'s circular bezel draws a circle inside a frame wider than tall at every size (the probe's
+    `frame_xywh`, run 41006842699 `os-probe-macos-26/button-pass/probe.toml`, with no alignment insets; the circle as
+    wide as the frame is high at `regular` and up, the macOS lane's reading, mini and small pending, U143), while
+    `macos-monterey`'s frames are square, with equal alignment insets on every side
+    (`os-probe-macos-15/button-pass/probe.toml`), so there the body's box, the alignment rect as for every bezel, is
+    square and `Full` on it a circle. On `macos-tahoe` `body`'s box is the drawn circle, its `corners` `Full` on that box, and
     its distance from the frame on each side is `body.margin`, measured as the probe reads the frame and the circle
     (S2.11's box: the frame is the margin box), so `Full` on the frame's box, a capsule, is never stated (ADD-A125).
-  - `material-3`'s menu button follows Compose (R1.6): its values are the menu-button tokens
-    (`material-web@2.5.0 tokens/versions/latest/sass/_md-comp-filled-menu-button.scss`, `_md-comp-outlined-menu-button.scss`,
-    `_md-comp-standard-menu-button.scss`, MAT-N8), and what the tokens leave out, its state layer, press ripple,
-    elevation and their motion, is Compose's button that a Compose menu button is: Compose has no menu-button
-    composable and draws its own menu button as a `TextButton` with a trailing arrow (`androidx@e4d933c9
+  - `material-3`'s menu button follows R1.6's order: the menu-button tokens give its colours, opacities and
+    elevations per state, the state layer's included (`material-web@2.5.0
+    tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:41-68`, `_md-comp-outlined-menu-button.scss`,
+    `_md-comp-standard-menu-button.scss`, MAT-N8), and what the tokens leave out, the motion, the press ripple's effect
+    and the recency of the state layer and the elevation, is Compose's button, as Compose has no menu-button composable
+    and draws its own menu button as a `TextButton` with a trailing arrow (`androidx@e4d933c9
     compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/DatePicker.kt:2528-2556`, "Replace
-    with the official MenuButton when implemented"), so the filled, outlined and standard forms take `Button`'s,
-    `OutlinedButton`'s and `TextButton`'s, the base's `android_patterned` ripple among them, not material-web's
-    `md-ripple` and `md-elevation`, which draw a browser's (ADD-A125).
+    with the official MenuButton when implemented"): the standard form takes `TextButton`'s, as that source does, and
+    the filled and outlined forms `Button`'s and `OutlinedButton`'s by the same rule, an inference the facts check where
+    the tokens and `ButtonDefaults` both state a value (the elevations, the state-layer opacities); the base's
+    `android_patterned` ripple, not material-web's `md-ripple` and `md-elevation`, which draw a browser's (ADD-A125).
   - Compose animates the border of every toggle form: `ElevatedToggleButton`, `FilledTonalToggleButton` and
     `OutlinedToggleButton` all pass theirs to `ToggleButton`, which animates its width by `FastSpatial` and its colour by
     `DefaultEffects` (`ToggleButton.kt:182`, `:301`, `:388`, `:473`, `:1722-1751`), so the `Stroke` and `StrokeWidth`
@@ -9101,9 +9115,13 @@ from its toolkit's colour interpolation: `adwaita` `premultiplied_srgb` (GTK's C
 gtk/gtkcsscolorvalue.c:323-329`, `:586-604`; GN-3.18); `kde-breeze` `premultiplied_srgb` (Breeze's fades paint
 `KColorUtils::mix`, `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`) and under `cond flavor:kirigami`
 `straight_srgb8` (QML's `ColorAnimation`, `qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`; K3.31,
-Q3.26); `material-3` `oklab` (Compose's `ColorVectorConverter.kt:30-48`; MAT-X13); `windows-11`, `macos-*` and
-`ios-*` from their facts, which read the toolkit's colour interpolation at its source or measure an intermediate frame
-(W3-30, MAC-X11, X-MO-1), a member added where none fits (S2.7).
+Q3.26); `material-3` `oklab` (Compose's `ColorVectorConverter.kt:30-48`; MAT-X13); `windows-11` its composition
+animations' space, `CompositionColorSpace_Rgb` (`SharedTransitionAnimations.cpp:111`, the brush transitions its
+controls' colours move by, W1-023), whose arithmetic (premultiplied or straight) the compositor holds, not the cache:
+a measurement, the WinUI host capturing a brush transition's middle frame between two colours of different alpha and
+the facts stating the member it matches (a pending fact until then; the Open items); `macos-*` (MAC-X11) and `ios-*`
+(X-MO-1) Core Animation's colour interpolation, which no cached source states: a measurement likewise, the probe and
+the iOS host capturing a colour transition's middle frame. A member is added where none matches (S2.7).
 
 **token.motion.speed_factor** (`Value<f32>`): read on KDE (K3.30, K3.90, Q3.24) and, by the Android reader, on
 `material-3` (the animator duration scale, MAT-X20, `readers (R18)`); a constant elsewhere (the platform has no speed
@@ -9112,10 +9130,13 @@ to zero under `AnimationsOff` where the platform's switch does that (GN-3.25, Q3
 
 **token.theme_change** (S4.3), one kind per preset, measured where no source states it: `adwaita`
 `ThemeChange::Suspend` (GN-3.23; its CSS transitions state `suspended_by_theme_change = true`, its `AdwAnimation`s
-`false`; every other preset's transitions leave it out while their kind is no `Suspend`, S4.3, ADD-A125); `kde-breeze` (K-P3-15†), `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
+`false`, S4.3, ADD-A125); `kde-breeze` `Suspend` with a zero duration, as Breeze's state engines start no fade on a
+value change (its Breeze transitions `true`, Kirigami's QML behaviours under `cond flavor:kirigami` `false`, S4.3,
+ADD-A125; K-P3-15† measuring whether the toolkit adds a window effect of its own); the presets whose kind is no `Suspend` leave the
+flag out; `windows-11` (W-P3-16†, which also covers the accent change), `macos-*`
 (MAC-P4-9†, accent and highlight change), `ios-*` (X-MO-11†), `material-3` (MAT-P3-18†). A stated zero duration on
-`Crossfade` or `Suspend` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero,
-is not).
+`Crossfade` is refused, as that change is `Instant` (S12; a computed zero, under a speed factor of zero, is not); a
+zero `Suspend` is the change's own frame (S4.3).
 
 **token.elevation** (`Vec<(Key, Vec<ShadowLayer>)>`, S4/R8): the ramp's keys, referred to by `Shadow::Elevation(key)`.
 
@@ -9208,9 +9229,8 @@ GN-3.32–GN-3.38, GN-3.73†, K3.41–K3.43, W3-24, W-P3-9†, MAC-X12, MAC-X14
 is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 
 **token.text** (S4.4): `roles` and `keyed` as S4.4 states, per platform the styles its facts list; `font_dpi`
-(`Value<f32>`, logical pixels per inch, stated from its platform's facts on every preset that states a size in
-points, the DPI its points convert by, S9.4, and `Absent` on `macos-*` and `ios-*`, whose points are logical pixels
-and whose facts state px, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
+(`Value<f32>`, logical pixels per inch, required on every preset and stated from its platform's facts, the DPI its
+points convert by, S9.4; on `macos-*` and `ios-*` 72, as their point is the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
 `forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
 styles one flavour alone uses (Material's `_emphasized` styles, Expressive's) are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as

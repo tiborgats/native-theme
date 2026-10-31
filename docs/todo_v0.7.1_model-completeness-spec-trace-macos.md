@@ -720,6 +720,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X10 | `reader:macos:NSColor colorSpace read without clipping to sRGB` | reader |
 | MAC-X11 | `token.motion.durations.<AppKit durations>` | token |
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
+| MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
 | MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |

@@ -98,6 +98,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {checked} / {checked,hover} / {checked,pressed} / {checked,disabled} variant toggle` (the stroke's `fill_clip` `box` while checked and enabled, `ToggleButtonCheckedStateBackgroundSizing`, `ToggleButton_themeresources.xaml:6`, set in the Checked, CheckedPointerOver and CheckedPressed states, `:255-256`, `:271-272`, `:287-288`; `inner_edge` under `{checked,disabled}`, whose `CheckedDisabled` state sets none, `:292-304`; ADD-A122) | rule |
 | W1-022 | `button.{body.fill,label.text.fill,body.stroke} @ {indeterminate} / {indeterminate,hover} / {indeterminate,pressed} / {indeterminate,disabled} variant toggle` | rule |
 | W1-023 | `button.body.transitions (Fill)` | field |
+| W1-023 | `token.motion (color_space: the composition animations' CompositionColorSpace_Rgb, the brush transitions', microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111, its arithmetic measured, the catalogue's Open items, ADD-A125)` | token |
 | W1-023 | `token.motion.durations.control_faster` | token |
 | W1-024 | `button.icon.transitions` (its AnimatedIcon states: a `TransitionKind::Keyed` transition of group `Icon` per state, ADD-A27) | field |
 | W1-025 | `button.body.focus.offset` | field |
