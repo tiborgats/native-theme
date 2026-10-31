@@ -3849,8 +3849,13 @@ once per flavour, each with its flavour's entries. An entry with
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
 `rows`. **While 0.8.0 is built** (ADD-A128), the 0.8.0 plan enables its units one by one, a unit entering the model
 in the commit whose presets state it (S6.1). A fact belongs to the unit of its key and to the unit of every widget its
-`when` names, and the gate skips it while any of those units is not enabled (a fact whose key the model does not hold
-yet, *The gate*, below, being one case), and with it every combination where it applies, so that no earlier fact
+`when`'s positive lists name (`context`, its `scope.nearest`, a `widget`), and the gate skips it while any of those
+units is not enabled. Its negative lists (`not_context`, `not_variants`) never add a unit: `not_context X` applies
+everywhere but inside X, and where X's unit is not enabled no X exists, so the negation holds and the fact applies
+everywhere, in its key's unit alone, as the gate already reads a negation naming a widget the model does not hold
+(the macOS and iOS button facts stated with a `not_context` and no positive context, 1868 and 1574 of them). A skipped fact (a
+fact whose key the model does not hold yet, *The gate*, below, being one case) takes with it every combination where
+it applies, so that no earlier fact
 applies there in its place (as `generate_preset.py` leaves such a fact's combinations out); a combination that holds
 a skipped variant, or a set holding one, or a context naming a widget whose unit is not enabled is skipped too. The
 declarations check skips a state-model variant only where facts name it
