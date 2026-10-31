@@ -538,6 +538,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | SP-4a | `spinner.spoke.fill` | field |
 | SP-5a | `spinner.values.presentations (Appear, Disappear)` | field |
 | CB-1 | `combo_box.arrow.glyph` (the pop-up button's indicator, its `.popup` up/down chevron pair, in the base: its identity, colour and weight; iOS's pull-down button is `button @ variant menu`, B-18†) | field |
+| CB-1 | `combo_box.values.label_arrow_gap` (the pop-up button's label to its indicator, the content row `button`'s: the `UIButton` menu configuration with the `.popup` indicator, as the iOS host measured `button.values.menu_indicator_gap` for it, 4, `docs/facts/ios/button.toml:27768-27792`, on `ios-13`; ADD-A125) | field |
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |

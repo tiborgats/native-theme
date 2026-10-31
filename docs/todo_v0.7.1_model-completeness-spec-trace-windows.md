@@ -302,7 +302,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-104 | `toolbar.values.presentations (events @expand, @collapse)` | field |
 | W1-105 | - | preset (R1.3) |
 | W1-106 | `list.row_background.fill, list.row.text.fill @ {pressed} / {selected,hover} / {selected,pressed} / {selected,disabled}` | rule |
-| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
+| W1-107 | `list.row_selection_indicator.{fill,corners,min_width,min_height}` (the pill's representation, where it is drawn, its `opacity` and how it enters, is ADD-A126's, ledger queue #85, #110, ADD-A125) | field |
 | W1-107 | `list.row_selection_indicator.fill @ {hover} / {pressed} / {disabled}` | rule |
 | W1-107 | `list.row_selection_indicator.transitions` | field |
 | W1-108 | `list.row_background.corners, list.values.row_background_inset` | field |
@@ -359,7 +359,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-131 | `combo_box.{label,placeholder}.text.fill @ {pressed} / {focused}` | rule |
 | W1-131 | `combo_box.body.stroke (gradient paint) @ {hover} / {pressed}` | rule |
 | W1-132 | `combo_box.arrow.glyph.fill` | field |
-| W1-132 | `combo_box.values.label_arrow_gap` (the label in the template's star column with no end padding, `ComboBoxPadding`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:566`, `:577`, the chevron right-aligned in the 38-wide column at 12 wide with an end margin of 14, `:567`, `:582`: the gap 38 less 12 less 14, so 12, before the chevron's box; the chevron's end margin the body's end padding, the arrow at the end of the body's content box, ADD-A125) | field |
+| W1-132 | `combo_box.arrow.margin; combo_box.values.label_arrow_gap` (the content row `button`'s, the catalogue: the label in the star column, the padding's end 0 as `ComboBoxPadding` writes it, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:341`, `:566`, `:577`; the chevron right-aligned in the 38-wide column, 12 wide, its end margin 14, `:567`, `:582`, so the gap 12 before its box; centred on the body's box vertically, `VerticalAlignment="Center"` in the template's whole row, `:582`; the body's padding gaining no border, its presenter the bordered `Border`'s sibling, `:571`, `:577`, not inside it, ADD-A125) | field |
 | W1-132 | `combo_box.arrow.glyph.fill @ {disabled} / {focused} / {focused,pressed}` | rule |
 | W1-132 | `combo_box.arrow.transitions (TransitionKind::Keyed per AnimatedIcon state, AnimatedChevronDownSmall; ADD-A27)` | field |
 | W1-133 | `menu.body.{fill,stroke,padding,corners,shadow,min_width} @ context combo_box (fill PaintKind::Material @acrylic)` | rule |
@@ -369,7 +369,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W1-134 | `menu.item.padding @ cond input:touch context combo_box / cond input:game_controller context combo_box` | rule |
 | W1-134 | `menu.item.corners @ context combo_box` | rule |
 | W1-135 | `menu.item_selection_indicator.{fill,min_width,min_height,corners} @ {selected} context combo_box` | rule |
-| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (the scale it grows from, and its animation)` | rule |
+| W1-135 | `menu.item_selection_indicator.{transform,transitions} @ {selected} context combo_box (its rest scale, ScaleY 1, and the pressed animation's timing)` | rule |
 | W1-135 | `menu.item_selection_indicator.transform @ {selected,pressed} context combo_box` (the pill's `ScaleY` to `ComboBoxItemPillMinScale` while pressed, about its centre, `RenderTransformOrigin="0.5,0.5"`, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:356`, `:721-727`, `:326`, its timing, `ComboBoxItemScaleAnimationDuration`, `:330`, with `KeySpline="0,0,0,1"`, the pill's `transitions`, ADD-A125) | rule |
 | W1-135 | `menu.item_selection_indicator (absent = true)` (`windows-11`'s base: no menu item draws the pill but a combo box's selected one, `Opacity="0"` in `ComboBoxItem`'s template, 1 only in its `Selected*` states, `microsoft-ui-xaml@2.5.1 src/controls/dev/ComboBox/ComboBox_themeresources.xaml:759`, `:657-739`; the `{selected} context combo_box` rules above bring it back, S6.3; how it enters and leaves is ADD-A126's, S2.7, ADD-A125) | field |
 | W1-136 | `menu.values.presentations @ context combo_box (events Appear, Disappear: ClipReveal { from: Anchor }, the selected row lying over the anchor under over_selected_item)` | rule |
@@ -760,7 +760,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
 | W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
 | W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
-| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` | rule |
+| W3-39 | `input.body.{min_height,padding}, text_area.body.{min_height,padding}, list.row.min_height, combo_box.body.{min_height,padding}, date_picker.field.padding, time_picker.field.padding @ density compact` (the combo box's compact padding's end 0 as written, `microsoft-ui-xaml@2.5.1 src/controls/dev/dll/DensityStyles/Compact.xaml:22`, the chevron's end inset its margin, W1-132, unchanged, ADD-A125) | rule |
 | W3-39 | `list.row.min_height @ variant sidebar density compact (the nav item height)` | rule |
 | W3-39 | `picker_wheel.item.padding @ density compact context date_picker.popup / density compact context time_picker.popup (the picker flyouts)` | rule |
 | W3-40 | `menu.item.padding @ context menu.body {opened_by_touch}` | rule |
