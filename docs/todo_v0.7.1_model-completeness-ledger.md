@@ -201,6 +201,8 @@ Values that could not be measured: the Id (`U` and a number, never reused; S17's
 combination, the attempts and their evidence, the options; each is the maintainer's decision, and the Decision cell
 stays empty until the maintainer decides (`check_ledger.py --final` fails an empty one).
 
+Retired ids (their rows removed once measured or split; never reused): U2 (the macOS umbrella row, split into U101–U103, de9d0c8e), U73 (Compose's incoming elevation curve, stated from animation-core, ab321618), U119 (ios-26's fill under `@loading`, measured, 54e40d48).
+
 | Id | Key and combination | Attempts and evidence | Options | Decision |
 |---|---|---|---|---|
 | U1 | `windows-11` slice: `primary`, `tool` and the dialog's default button (`default` in `dialog.action_area`, which takes the accent style): stroke width and padding for `primary` and the dialog's default button, padding only for `tool` (its stroke width is settled from source in f50c8186: AppBarButton 0px, AppBarToggleButton 1px; neither app-bar template uses Padding, so the open question for `tool` is how its content margins are stated as a padding), the focus offset for `primary` and the dialog's default button only (both app-bar styles set `FocusVisualMargin -3`, `AppBarButton_themeresources.xaml:135`, `AppBarToggleButton_themeresources.xaml:223`) — whether the default style's setters reach `AccentButtonStyle` and the tool styles (the Windows reconciliation, 2026-10-30) | the XAML at the pin leaves it open | a WinUI host measurement (spike W's host); pending the host's pass | |
