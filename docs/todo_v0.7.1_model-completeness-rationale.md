@@ -727,7 +727,8 @@ MAT-X13–MAT-X15, X-MO-1).
   which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
   as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
   the style after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or exit, styled
+  (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
+  exit (an unmeasured motion `Absent` meanwhile; a popup's presence and an expander's content queue #118's), styled
   in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
   the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
   under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
@@ -898,7 +899,9 @@ MAT-X13–MAT-X15, X-MO-1).
     every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
     part, which is the layer's statement, not an accident. Rejected: refusing a *dead patch*, one meeting `Absent`
     wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent` part for a
-    later `Present` to draw, so a patch latent under one combination is not dead.
+    later `Present` to draw, so a patch latent under one combination is not dead; for a block, the one spelling
+    (below) keeps every base patch live, and a narrower rule meeting an `Absent` block wherever it applies is the
+    layer's own choice, which refusing would make it restate the preset's selectors.
   - *Spelling a block drawn by state* (ADD-A126's twelfth check): (a) one spelling on every preset, the base stating
     it drawn, its state rules patching it, the rule hiding it last; (b) each preset its own spelling, the catalogue
     documenting that a layer's base patch reaches the block only where the base draws it; (c) an S12 check of the
@@ -1032,10 +1035,10 @@ focus-visible state. The base states it, by reference to the platform's token wh
 indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
 becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
-indicator of the style without the flag, its paint and shadow transparent, so libadwaita's ring grows in from and
-shrinks out to its rest outline, zero wide and transparent at a larger offset (`libadwaita@1.10.0
-src/stylesheet/_drawing.scss:12-27`), its other end the indicator of the style without the flag under the element's other flags after the
-change, and an indicator `Absent` there appears and leaves at once: Breeze's tab line, drawn in the tab's base and
+indicator of the style without the flag under the element's other flags after the change, its paint and shadow
+transparent, so libadwaita's ring grows in from and shrinks out to its rest outline, zero wide and transparent at a
+larger offset (`libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` there appears and
+leaves at once: Breeze's tab line, drawn in the tab's base and
 `Absent` off `{selected}`, fades in on a newly selected tab from `{selected}`'s transparent line and is gone at once
 from the tab left (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
 no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest

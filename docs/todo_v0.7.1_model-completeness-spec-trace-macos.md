@@ -165,7 +165,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN05 | `menu.check_indicator.glyph (NamedSystemImage); menu.check_indicator.glyph @ {indeterminate} (NamedSystemImage)` (the on-state check in the base and the mixed image a patch of it, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
-| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / context any combo_box` (no mark in the combo list whatever its selection, the combo list's chosen value's glyph the macOS lane's open item, nothing claimed until it is made, K1.245's; an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (MAC-MN05), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box; menu.check_indicator.glyph @ {selected} context any combo_box (pending)` (no mark on a combo list's other items; whether AppKit's pop-up marks its selected item, `NSPopUpButtonCell.altersStateOfSelectedItem`, not in the cached headers, is a pending fact, stated `"absent"` with its pending id meanwhile, S17, a register row; an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MAC-MN05), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |
@@ -569,7 +569,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-N04 | `calendar.clock_face.{fill,stroke}, calendar.clock_hand.stroke` | field |
 | MAC-N04 | `calendar.* @ context date_picker.popup (the calendar overlay, presentsCalendarOverlay)` | rule |
 | MAC-N04 | `date_picker.popup.{fill,corners,shadow,padding} @ variant text_field` | rule |
-| MAC-N04 | `date_picker.popup (absent = true) @ !{open} variant text_field` (the popup drawn only open, written last; its open and close ADD-A129, queue #118, ADD-A126) | rule |
 | MAC-N04 | `date_picker.values.placement (AppKitPopover, to verify; the calendar overlay)` | placement |
 | MAC-N05 | `color_button.body.{fill,stroke,corners}, color_button.swatch.{corners,stroke,min_width,min_height} @ variant @minimal / @expanded` (the default style is the base) | rule |
 | MAC-N05 | `color_button.swatch_ring.stroke @ {open}` | rule |

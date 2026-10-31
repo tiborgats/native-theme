@@ -273,7 +273,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-5 | `menu.item_trailing_icon.icon` | field |
 | MN-6 | `menu.check_indicator.glyph` (the checkmark, in the base, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | field |
 | MN-6 | `menu.check_indicator.glyph @ {indeterminate}` (the mixed mark, a patch of the base's) | rule |
-| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, written after the lane's own glyph rules (MN-6, CB-3), so a later rule's or layer's patch of the glyph's fields leaves it absent, S2.2, and only a whole glyph `Set` draws it; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MN-6, CB-3), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
@@ -539,7 +539,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | CB-2 | `combo_box.{body.fill,body.stroke,body.corners,label.text.fill} @ variant flat / variant @gray / variant tinted / variant primary / variant glass / variant clear` (every B-1 style the trigger takes: the configurations, tinted and prominent, and iOS 26's glass styles) | rule |
 | CB-3 | `combo_box.body.fill, combo_box.arrow.{glyph,transform} @ {open}` | rule |
 | CB-3 | `menu.body.fill, menu.item.fill @ context combo_box` (the opened menu, MN-*) | rule |
-| CB-3 | `menu.check_indicator.glyph @ context combo_box` (the checkmark on the current item, the base's, drawn where MN-6's absent rule's `!{selected} context any combo_box` leaves it: a combo list's chosen value is `selected`, S7.2) | rule |
 | CB-4 | `combo_box.label.text.fill` | field |
 | SG-1 | `segmented_control.indicator.{fill,stroke,corners,shadow}` | field |
 | SG-1 | `segmented_control.track.padding (the indicator's inset)` | field |
@@ -620,7 +619,6 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | C-5 | `time_picker.field.{fill,corners,padding}, time_picker.field_label.text, time_picker.popup.{fill,corners,shadow} @ variant with_popup` (the `.time` mode's pill, its text in the accent, and its popover: a time picker, gap map "time picker") | rule |
 | C-5 | `time_picker.field.fill, time_picker.field_label.text.fill @ {pressed} variant with_popup` | rule |
 | C-5 | `time_picker.values.placement (UiKitPopover)` | placement |
-| C-5 | `date_picker.popup (absent = true) @ !{open}; time_picker.popup (absent = true) @ !{open} variant with_popup` (the popup drawn only open, written last; its open and close ADD-A129, queue #118, ADD-A126) | rule |
 | C-5 | - | readers (R18) |
 | C-6 | `calendar.header.padding, calendar.weekday_label.text, calendar.time_row.{text,padding}, calendar.decoration.{fill,corners,icon,min_width,min_height}` | field |
 | C-6 | `button.icon.glyph @ variant previous context calendar.header / variant next context calendar.header` (the navigation chevrons) | rule |

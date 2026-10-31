@@ -129,6 +129,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-C9 | `checkbox.body.touch_target; radio.body.touch_target (ADD-A72)` | field |
 | MAT-M1 | `menu.{item.fill,item_label.text.fill,item_icon.icon.fill,item_trailing_icon.icon.fill} @ {selected} context combo_box / {checked}` (the chosen option of a select menu, `selected` in `context combo_box`; an item chosen in a selectable menu outside one, toggled on, `checked`: S7.2; the keyboard highlight is the focus state layer) | rule |
 | MAT-M1 | `menu.item.transitions (Fill: = token.motion.timings.fast_effects)` (the selectable item's container animated by `FastEffects`, `Menu.kt:2016-2019`) | field |
+| MAT-M1 | `menu.check_indicator (absent = true)` (Compose's checkable item draws no mark of its own: its checked state shows the application's `checkedLeadingIcon` and the fill above, `material3/…/Menu.kt:553-560`; ADD-A126) | field |
 | MAT-M2 | `menu.item.interaction.state_layer @ latest state_layer:focus_visible` | rule |
 | MAT-M2 | `menu.item_label.text.fill @ {focus_visible} / {pressed}` | rule |
 | MAT-M3 | `menu.{item_icon,item_trailing_icon}.icon.fill @ {hover} / {focus_visible} / {pressed} / {disabled}` | rule |
@@ -533,7 +534,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N15 | `list.view.corners @ context search_field.view variants {@contained,@docked} cond flavor:expressive; search_field.values.results_gap @ variants {@contained,@docked} cond flavor:expressive` (the contained docked view's results shape, on the results list's own surface, and the gap between the bar and the results) | rule |
 | MAT-N15 | `search_field.values.presentations (events @view_show, @view_hide)` | field |
 | MAT-N16 | `date_picker.popup.{fill,corners,shadow,min_width,min_height} @ variant with_popup / variant @modal / variant @input` | rule |
-| MAT-N16 | `date_picker.popup (absent = true) @ !{open} variant with_popup` (the popup drawn only open, written last; its open and close ADD-A129, queue #118, ADD-A126) | rule |
 | MAT-N16 | `date_picker.popup_header.{min_width,min_height}, date_picker.headline.text, date_picker.supporting_text.text, date_picker.divider.stroke @ variant @modal / variant @input` (the header container holding the headline and supporting text, inside the popup: the modal and input pickers' `header-container-*`, `header-headline-*`, `header-supporting-text-*` tokens; the docked picker's tokens state no such header) | rule |
 | MAT-N16 | `date_picker.{popup_header,headline,supporting_text,divider} (absent = true) @ !{open}; date_picker.{popup_header,headline,supporting_text} (absent = true) @ !variants {@modal,@input}` (nested in the popup, they are absent with it) | rule |
 | MAT-N16 | `calendar.weekday_label.text; calendar.day.{min_width,min_height,corners}; calendar.year.{min_width,min_height,corners,text}` | field |
@@ -548,7 +548,6 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-N17 | `time_picker.{selector_cell,period_selector}.{fill,stroke,corners,min_width,min_height,text} @ {selected}, each variant @dial; time_picker.{selector_cell,period_selector}.interaction.state_layer @ latest state_layer:hover / latest state_layer:focus_visible / {selected} latest state_layer:hover / {selected} latest state_layer:focus_visible, each variant @dial; time_picker.{selector_cell,period_selector}.text.fill @ {hover} / {pressed} / {focus_visible} / {selected,hover} / {selected,pressed} / {selected,focus_visible}, each variant @dial` (the period selector also under `variant @input`; the selectors a `Surface` with `onClick` and a `TextButton`, their ripples, `TimePicker.kt:3089-3095`, `:3018`; the input's hour and minute fields are `input` elements, below) | rule |
 | MAT-N17 | `time_picker.headline.text, time_picker.time_separator.text` | field |
 | MAT-N17 | `time_picker.popup.{fill,corners,shadow}` (the time picker's container: its colour, shape and elevation tokens, `_md-comp-time-picker.scss:84-89`) | field |
-| MAT-N17 | `time_picker.popup (absent = true) @ !{open}` (the popup drawn only open, written last; its open and close ADD-A129, queue #118, ADD-A126) | rule |
 | MAT-N17 | `input.{body.stroke,floating_label.text,supporting_text.text} @ context time_picker.body[@input]` (the time input fields, their outline, label and supporting text: `input` elements, Nested controls) | rule |
 | MAT-N18 | `carousel.item.{fill,corners,shadow,stroke}; carousel.values.item_gap` | field |
 | MAT-N18 | `carousel.item.fill.append (state layer) @ {hover} / {pressed} / {focus_visible}` | rule |
