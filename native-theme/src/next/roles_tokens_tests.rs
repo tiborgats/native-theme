@@ -20,7 +20,7 @@ use super::selector::Scheme;
 use super::tokens::{
     Behavior, BehaviorPatch, Caret, IconSizeTokens, IconTokens, KdeEffects, KdeTokens, KeyRepeat,
     MaterialScheme, MaterialVariant, Mnemonics, PointerTokens, SizeClassThreshold,
-    SizeClassThresholdPatch, TextRendering, ThemeChange, Tokens, TokensPatch, TouchBehavior,
+    SizeClassThresholdPatch, TextRendering, TokensPatch, TouchBehavior,
 };
 use super::units::{Ms, Scalar};
 use super::value::{SchemeMap, SurfaceMap, Value};
@@ -76,32 +76,14 @@ fn token_paths(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>
     }
 }
 
-fn kde_effects(prefix: &str) -> Vec<String> {
-    [
-        "intensity",
-        "intensity_amount",
-        "color",
-        "color_amount",
-        "color_color",
-        "contrast",
-        "contrast_amount",
-    ]
-    .iter()
-    .map(|path| join(prefix, path))
-    .collect()
-}
-
 /// Every token path S4 states, down to S2's blocks; `Behavior.scroll` is
-/// staged with the `scroll_view` unit (S6.1).
+/// staged with the `scroll_view` unit (S6.1), and `theme_change`, `pointer`,
+/// `kde` and `material` with theirs (the M1a design, decision 9).
 fn token_spec_paths() -> Vec<String> {
     let mut out: Vec<String> = [
         "motion.durations",
         "motion.timings: Timing",
         "motion.speed_factor",
-        "theme_change",
-        "theme_change.crossfade.duration",
-        "theme_change.crossfade.timing: Timing",
-        "theme_change.suspend.duration",
         "elevation: ShadowLayer",
     ]
     .map(str::to_owned)
@@ -192,24 +174,6 @@ fn token_spec_paths() -> Vec<String> {
             "size_classes.horizontal",
             "size_classes.vertical",
             "params",
-            "pointer.theme",
-            "pointer.size",
-            "pointer.color",
-            "pointer.drag_cursors",
-        ]
-        .map(str::to_owned),
-    );
-    out.extend(kde_effects("kde.disabled"));
-    out.extend(kde_effects("kde.inactive"));
-    out.extend(
-        [
-            "kde.inactive_enabled",
-            "kde.inactive_change_selection_color",
-            "kde.tint_factor",
-            "kde.titlebar_is_accent_colored",
-            "material.variant",
-            "material.spec_version",
-            "material.contrast_level",
         ]
         .map(str::to_owned),
     );
@@ -235,7 +199,6 @@ fn tokens_registry_has_slice_groups() {
         "icons.sizes.keyed.main_toolbar.size",
         "size_classes.compact.horizontal",
         "behavior.focus_visible_when.keyboard.timeout",
-        "theme_change.instant",
     ] {
         assert!(registry::find(registry::tokens(), path).is_some(), "{path}");
     }
@@ -326,10 +289,10 @@ fn every_s3_role_path_resolves_in_the_registry() {
     );
 }
 
-/// Holds the KDE and Material fields S4.8 and S9 state as their types.
-fn kde_and_material_types(tokens: Tokens, kde: KdeTokens, effects: KdeEffects, bases: InputBases) {
-    let _: Value<KdeTokens> = tokens.kde;
-    let _: Value<MaterialScheme> = tokens.material;
+/// Holds the KDE and Material fields S4.8 and S9 state as their types;
+/// `Tokens.kde` and `Tokens.material` are staged to M1b (the M1a design,
+/// decision 9).
+fn kde_and_material_types(kde: KdeTokens, effects: KdeEffects, bases: InputBases) {
     let _: KdeEffects = kde.disabled;
     let _: KdeEffects = kde.inactive;
     let _: Value<bool> = kde.inactive_enabled;
@@ -361,7 +324,7 @@ fn material_types(material: MaterialScheme, value: InputValue, accent: Accent) {
 
 #[test]
 fn kde_and_material_fields_present_as_types() {
-    let _ = kde_and_material_types as fn(Tokens, KdeTokens, KdeEffects, InputBases);
+    let _ = kde_and_material_types as fn(KdeTokens, KdeEffects, InputBases);
     let _ = material_types as fn(MaterialScheme, InputValue, Accent);
     assert_eq!(
         KdeSchemeKey::ALL.map(KdeSchemeKey::name),
@@ -389,14 +352,14 @@ fn kde_and_material_fields_present_as_types() {
             ("decoration_hover", "decoration_hover"),
         ]
     );
-    for path in [
-        "kde.disabled.intensity",
-        "kde.inactive.color_color",
-        "kde.tint_factor",
-        "material.variant",
-        "material.contrast_level",
-    ] {
-        assert!(registry::find(registry::tokens(), path).is_some(), "{path}");
+    for path in ["disabled.intensity", "inactive.color_color", "tint_factor"] {
+        assert!(registry::find(KdeTokens::FIELDS, path).is_some(), "{path}");
+    }
+    for path in ["variant", "contrast_level"] {
+        assert!(
+            registry::find(MaterialScheme::FIELDS, path).is_some(),
+            "{path}"
+        );
     }
     let bases = InputBases::default();
     assert_eq!(bases.kde_groups.get(Scheme::Light), None);
@@ -1033,49 +996,25 @@ fn kde_tokens_patch_by_set_or_fields() {
         tint_factor: None,
         titlebar_is_accent_colored: Value::Stated(false),
     };
-    let mut earlier = TokensPatch {
-        kde: Some(BlockPatch::Set(Value::Stated(kde))),
-        theme_change: Some(ThemeChange::Instant),
-        ..TokensPatch::default()
-    };
-    let later = TokensPatch {
-        kde: Some(BlockPatch::Fields(super::tokens::KdeTokensPatch {
-            tint_factor: Some(Some(Value::Stated(0.5))),
-            inactive: Some(super::tokens::KdeEffectsPatch {
-                contrast_amount: Some(Value::Stated(0.6)),
-                ..Default::default()
-            }),
+    let mut earlier = BlockPatch::Set(Value::Stated(kde));
+    let later = BlockPatch::Fields(super::tokens::KdeTokensPatch {
+        tint_factor: Some(Some(Value::Stated(0.5))),
+        inactive: Some(super::tokens::KdeEffectsPatch {
+            contrast_amount: Some(Value::Stated(0.6)),
             ..Default::default()
-        })),
-        theme_change: Some(ThemeChange::Suspend {
-            duration: ms(200.0),
         }),
-        ..TokensPatch::default()
-    };
+        ..Default::default()
+    });
     assert_eq!(earlier.merge(later), Ok(()));
-    let Some(BlockPatch::Set(Value::Stated(kde))) = earlier.kde else {
+    let BlockPatch::Set(Value::Stated(kde)) = earlier else {
         panic!("a Fields patch over set KDE tokens applies to them");
     };
     assert_eq!(kde.tint_factor, Some(Value::Stated(0.5)));
     assert_eq!(kde.inactive.contrast_amount, Value::Stated(0.6));
     assert_eq!(kde.disabled.contrast_amount, Value::Stated(0.4));
-    assert_eq!(
-        earlier.theme_change,
-        Some(ThemeChange::Suspend {
-            duration: ms(200.0)
-        })
-    );
 
-    let mut absent = TokensPatch {
-        material: Some(BlockPatch::Set(Value::Absent)),
-        ..TokensPatch::default()
-    };
-    let fields = TokensPatch {
-        material: Some(BlockPatch::Fields(
-            super::tokens::MaterialSchemePatch::default(),
-        )),
-        ..TokensPatch::default()
-    };
+    let mut absent: BlockPatch<MaterialScheme> = BlockPatch::Set(Value::Absent);
+    let fields = BlockPatch::Fields(super::tokens::MaterialSchemePatch::default());
     assert!(absent.merge(fields).is_err());
 }
 
@@ -1087,31 +1026,27 @@ fn token_maps_of_blocks_patch_each_entry() {
         super::tokens::IconSizeTokensPatch::default().keyed;
     let _: Option<Vec<(Key, super::blocks::paint::PaintPatch)>> =
         super::blocks::icon::IconStylePatch::default().status_colors;
-    let _: Option<Vec<(super::selector::SizeClass, BlockPatch<SizeClassThreshold>)>> =
-        TokensPatch::default().size_classes;
 
     let threshold = |px: f32| SizeClassThresholdPatch {
         horizontal: Some(Some(Value::Stated(super::units::Px(px)))),
         ..SizeClassThresholdPatch::default()
     };
     let compact = super::selector::SizeClass::Compact;
-    let mut earlier = TokensPatch {
-        size_classes: Some(vec![(compact, BlockPatch::Fields(threshold(1.0)))]),
-        ..TokensPatch::default()
-    };
-    let later = TokensPatch {
-        size_classes: Some(vec![(
-            compact,
-            BlockPatch::Fields(SizeClassThresholdPatch {
-                vertical: Some(None),
-                ..SizeClassThresholdPatch::default()
-            }),
-        )]),
-        ..TokensPatch::default()
-    };
-    assert_eq!(earlier.merge(later), Ok(()));
+    let mut earlier: Option<Vec<(super::selector::SizeClass, BlockPatch<SizeClassThreshold>)>> =
+        Some(vec![(compact, BlockPatch::Fields(threshold(1.0)))]);
+    let later = Some(vec![(
+        compact,
+        BlockPatch::Fields(SizeClassThresholdPatch {
+            vertical: Some(None),
+            ..SizeClassThresholdPatch::default()
+        }),
+    )]);
     assert_eq!(
-        earlier.size_classes,
+        super::blocks::merge_slot_entries(&mut earlier, later),
+        Ok(())
+    );
+    assert_eq!(
+        earlier,
         Some(vec![(
             compact,
             BlockPatch::Fields(SizeClassThresholdPatch {
@@ -1156,9 +1091,10 @@ fn token_maps_of_blocks_patch_each_entry() {
 
 /// The token fields that may be `Absent`, in table order: every `TextRendering`
 /// field, `Caret.secondary`, `shown_in_read_only` and `solid_while_typing`,
-/// every `Value` field of `Behavior`, `TouchBehavior` and `PointerTokens`,
+/// every `Value` field of `Behavior` and `TouchBehavior`,
 /// `IconTokens.theme_fallback` (S6.3), and the catalogue's table (*Colour roles
-/// and tokens*): `icons.theme`, the icon-size contexts, `kde` and `material`.
+/// and tokens*): `icons.theme` and the icon-size contexts. `PointerTokens`,
+/// `kde` and `material` are staged (the M1a design, decision 9).
 const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "text.rendering.engine",
     "text.rendering.antialiasing",
@@ -1197,11 +1133,6 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "behavior.touch.double_tap_slop",
     "behavior.touch.delay",
     "behavior.focus_visible_when",
-    "pointer.theme",
-    "pointer.size",
-    "pointer.color",
-    "kde",
-    "material",
 ];
 
 #[test]

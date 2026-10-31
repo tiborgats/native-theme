@@ -2789,10 +2789,11 @@ pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
 
 /// On `kde-breeze`, a mapping palette (one stating no `kde_scheme` input:
 /// a port converts to them, S14) at `palette` in the stack leaving an
-/// accent-dependent role (S9.1's list, every other key of every declared set
-/// too wherever `token.kde.tint_factor` can be `Some`) or an inactive input
-/// role to a layer below it, under some combination, for a scheme it
-/// states (S9.2, S12, S14).
+/// accent-dependent role (S9.1's list) or an inactive input role to a layer
+/// below it, under some combination, for a scheme it states (S9.2, S12,
+/// S14). Every other key of every declared set wherever
+/// `token.kde.tint_factor` can be `Some` enters with `token.kde` (M1b; the
+/// M1a design, decision 9).
 pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem> {
     let mut problems = Vec::new();
     let Some(layer) = stack.layers.get(palette).map(|stacked| stacked.layer) else {
@@ -2818,20 +2819,6 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
     if port {
         return problems;
     }
-    let tints = {
-        let seeds = vec![Seed::Field(
-            Target::Tokens,
-            "kde.tint_factor".to_owned(),
-            false,
-        )];
-        let worlds = stack.worlds(seeds);
-        worlds.iter().any(|world| {
-            stack
-                .effective(world, Target::Tokens, "kde.tint_factor")
-                .iter()
-                .any(|found| !matches!(found.got, Got::Stated(Fact::Nothing) | Got::Absent))
-        })
-    };
     let mut roles: Vec<String> = Vec::new();
     for set in &decl.surface_sets {
         use crate::next::inputs::KdeSchemeKey as K;
@@ -2852,9 +2839,6 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
             S::Button => keys.push(K::BackgroundAlternate),
             S::Header => keys.extend([K::BackgroundNormal, K::ForegroundNormal]),
             _ => {}
-        }
-        if tints {
-            keys = K::ALL.to_vec();
         }
         for key in keys {
             let role = format!("surfaces.{}.{}", set.name(), key.role().path());

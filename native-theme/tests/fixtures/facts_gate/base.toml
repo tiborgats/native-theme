@@ -58,9 +58,6 @@ neutral = { fill = "absent", foreground = "absent", standalone = "absent", backg
 destructive = { fill = "absent", foreground = "absent", standalone = "absent", background = "absent", background_solid = "absent" }
 
 [tokens]
-theme_change = "instant"
-kde = "absent"
-material = "absent"
 elevation = {}
 size_classes = {}
 params = {}
@@ -173,11 +170,6 @@ paging_slop_px = "absent"
 double_tap_time_ms = "absent"
 double_tap_slop_px = "absent"
 delay_ms = "absent"
-[tokens.pointer]
-theme = "absent"
-size_px = "absent"
-color = "absent"
-drag_cursors = {}
 [widgets.button.body]
 fill = "#e0e0e0"
 stroke = "absent"

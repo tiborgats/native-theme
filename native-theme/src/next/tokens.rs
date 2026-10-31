@@ -2,7 +2,11 @@
 //! parts refer to as `token.<path>`.
 //!
 //! `Behavior.scroll` and its `ScrollPhysics` and `ScrollDecay` are staged:
-//! they enter with the unit holding the `scroll_view` widget (S6.1).
+//! they enter with the unit holding the `scroll_view` widget (S6.1). So are
+//! four of `Tokens`' fields, which the slice reads nowhere and its facts do
+//! not state (the M1a design, decision 9), their types already here: `kde`
+//! and `material` enter at M1b, `theme_change` with the unit S4.3 places it
+//! in, `pointer` with the first unit that reads it.
 //!
 //! The marks of what may be absent are S6.3's: the core's marks of these
 //! blocks' fields, and the catalogue's token table for the tokens no block
@@ -38,9 +42,6 @@ pub struct Tokens {
     /// Durations, timings (keyed) and the speed factor (S4.1).
     #[parts(block = "fields")]
     pub motion: MotionTokens,
-    /// How a theme change is drawn (S4.3).
-    #[parts(block = "set")]
-    pub theme_change: ThemeChange,
     /// The platform's elevation ramp, keyed, or empty (R8).
     #[parts(block = "fields")]
     pub elevation: Vec<(Key, Vec<ShadowLayer>)>,
@@ -67,15 +68,6 @@ pub struct Tokens {
     /// names may be `Absent`.
     #[expect(clippy::type_complexity, reason = "S4's type, as the spec writes it")]
     pub params: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,
-    /// The pointer (S4.7).
-    #[parts(block = "fields")]
-    pub pointer: PointerTokens,
-    /// KDE's colour effects and scheme options (S4.8); `kde-breeze` only.
-    #[parts(block = "fields", may_be_absent)]
-    pub kde: Value<KdeTokens>,
-    /// Material's dynamic scheme (S4.8); `material-3` only.
-    #[parts(block = "fields", may_be_absent)]
-    pub material: Value<MaterialScheme>,
 }
 
 /// The keyed scalar groups whose keys may be `Absent` (S4.6, S6.3):

@@ -23,7 +23,7 @@ use crate::next::error::{LayerError, Problem};
 use crate::next::expr::{Expr, Func, MAX_DEPTH, Ref};
 use crate::next::layer::Layer;
 use crate::next::roles::{ColorRolesPatch, GlobalRolesPatch};
-use crate::next::tokens::{MotionTokensPatch, ThemeChange, TokensPatch};
+use crate::next::tokens::{MotionTokensPatch, TokensPatch};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::{Fraction, Ms, Px};
 use crate::next::value::Value;
@@ -410,23 +410,6 @@ fn refusal_state_layer_without_interaction() {
         ]
     );
     assert_eq!(bare(&on("body")), NONE);
-}
-
-#[test]
-fn refusal_zero_duration() {
-    let change = |ms: f32| {
-        tokens(TokensPatch {
-            theme_change: Some(ThemeChange::Suspend {
-                duration: Value::Stated(Ms(ms)),
-            }),
-            ..TokensPatch::default()
-        })
-    };
-    assert_eq!(
-        bare(&change(0.0)),
-        ["tokens.theme_change.suspend.duration: a zero duration is `instant`"]
-    );
-    assert_eq!(bare(&change(200.0)), NONE);
 }
 
 #[test]
@@ -1340,13 +1323,6 @@ fn problem_paths_spell_the_layer() {
         bare(&toml("[widgets.button.body]\nfocus.kind = \"@reveal\"")),
         ["widgets.button.body.focus.kind: `@reveal` is not declared in `focus_kinds`"]
     );
-    // A theme change's duration below its variant.
-    assert_eq!(
-        bare(&toml(
-            "[tokens]\ntheme_change = { suspend = { duration_ms = 0 } }"
-        )),
-        ["tokens.theme_change.suspend.duration_ms: a zero duration is `instant`"]
-    );
 }
 
 /// A shorthand is one key: one fault in it is one problem, at the key as
@@ -1920,11 +1896,6 @@ fn refusal_undeclared_every_kind() {
             "tokens.text.rendering.lcd_filter: `light` is not declared in `lcd_filters`",
             "lcd_filters = [\"light\"]",
         ),
-        (
-            toml("[tokens.material]\nspec_version = \"spec2025\""),
-            "tokens.material.spec_version: `spec2025` is not declared in `spec_versions`",
-            "spec_versions = [\"spec2025\"]",
-        ),
     ];
     // The near miss over a preset stating the same, so no map entry is
     // created (S12).
@@ -2056,17 +2027,6 @@ fn refusal_other_items() {
         )])),
         NONE
     );
-    // A crossfade's zero duration is `instant`.
-    let crossfade = |ms: &str| {
-        toml(&format!(
-            "[tokens]\ntheme_change = {{ crossfade = {{ duration_ms = {ms}, timing = \"linear\" }} }}"
-        ))
-    };
-    assert_eq!(
-        bare(&crossfade("0")),
-        ["tokens.theme_change.crossfade.duration_ms: a zero duration is `instant`"]
-    );
-    assert_eq!(bare(&crossfade("250")), NONE);
     // KDE's lists: a set or a key listed twice, a name that is no scheme
     // key.
     let decl = declare(
@@ -2232,7 +2192,6 @@ kinds! {
     RecencyOrder { .. },
     NotInRecencySet { .. },
     StateLayerWithoutInteraction,
-    ZeroDuration,
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
     FollowPartOutsideFocus,
@@ -2347,12 +2306,6 @@ fn layer_error_every_variant_triggers() {
         },
         blend: BlendMode::Normal,
     }]));
-    let suspend = tokens(TokensPatch {
-        theme_change: Some(ThemeChange::Suspend {
-            duration: Value::Stated(Ms(0.0)),
-        }),
-        ..TokensPatch::default()
-    });
     let keyframes = {
         let keyframes = [0.5, 0.5]
             .into_iter()
@@ -2560,7 +2513,6 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
-        (V::ZeroDuration, over(&suspend, &none, &[])),
         (V::KeyframesNotIncreasing, over(&keyframes, &none, &[])),
         (
             V::KeyframeWithoutPart,

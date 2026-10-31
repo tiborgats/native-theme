@@ -237,9 +237,6 @@ pub enum ProblemKind {
     /// A `StateLayer` transition on a part whose fields lack `interaction`
     /// (S2.7, S2.12, S12).
     StateLayerWithoutInteraction,
-    /// A `ThemeChange::Crossfade` or `Suspend` stating a zero duration,
-    /// which is `Instant` (S4.3, S12).
-    ZeroDuration,
     /// A loop's keyframes' `at` do not increase, or repeat a value (S2.7,
     /// S12).
     KeyframesNotIncreasing,
@@ -483,7 +480,6 @@ impl fmt::Display for ProblemKind {
             ProblemKind::StateLayerWithoutInteraction => {
                 f.write_str("a `state_layer` transition on a part without `interaction`")
             }
-            ProblemKind::ZeroDuration => f.write_str("a zero duration is `instant`"),
             ProblemKind::KeyframesNotIncreasing => {
                 f.write_str("the keyframes' `at` do not increase")
             }

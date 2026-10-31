@@ -61,7 +61,8 @@ The units: `scripts/widget_units.toml` maps each enabled unit to its entries (`s
 defers to a later unit (`button.values.menu_placement`, until M3's placement unit; the M1a design's decision 1),
 and `[hand_written]`, `<unit> = <enabled>`, the units written by hand, which hold no entries here.
 scripts/generate_widgets.py checks the deferrals' units; any other shape is an input error. The slice unit holds, besides its widgets, the colour roles and the slice's tokens (SLICE_EXTRA: the
-plan's M1a scope, S4.1 motion, S4.2 caret and behaviour, S4.4 text, S4.5 icons, the focus indicator, and S4.6's
+plan's M1a scope, S4.1 motion, S4.2 caret and behaviour, S4.4 text, S4.5 icons, the focus indicator, the elevation
+ramp and the size classes' thresholds, which S2.5's shadows and S8's query read (the M1a design, decision 9), and S4.6's
 groups the plan names, `pointer_repeat`, `color`, `opacity`), and keeps `token.behavior.scroll` staged to the
 `scroll_view` unit (SLICE_STAGED; spec ADD-A120). Until the file exists the units are SLICE alone, with button's two
 `Placement` values deferred.
@@ -84,6 +85,7 @@ UNITS = Path("scripts/widget_units.toml")
 SLICE_NAME = "slice"
 SLICE_WIDGETS = ("button",)
 SLICE_EXTRA = ("role", "token.motion", "token.caret", "token.behavior", "token.text", "token.icons", "token.focus",
+               "token.elevation", "token.size_classes",
                "token.params.pointer_repeat", "token.params.color", "token.params.opacity")
 SLICE_STAGED = ("token.behavior.scroll",)
 SLICE_DEFERRED = {"button": ("menu_placement", "scaffold_placement")}

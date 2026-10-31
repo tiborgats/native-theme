@@ -149,3 +149,15 @@ vacuously, and each preset then states every field the model holds.
    count.
 8. **`check_facts.py`'s existing presets** move to `native-theme/src/next/presets/` (P1) before the lanes' facts are
    merged.
+9. **Token groups outside the slice are staged** (the orchestrator, 2026-10-31; the implementer's reading for two of
+   them). The plan's M1a code line (`todo_v0.7.1_model-completeness-plan.md:450-453`) names S4.1, S4.2, S4.4, S4.5 and
+   S4.6's groups the button and the roles use, not S4.3 or S4.7; S4.8's `token.kde` and `token.material` are M1b's
+   (`:473-474`); no gnome or macos fact names them. S6.1's staging rule (spec `:1717-1719`, ADD-A120: "a hand-written
+   token field a later unit's type needs is staged with that unit") covers them: `Tokens.kde` and `Tokens.material`
+   are staged to M1b, `theme_change` to the unit ADD-A126 places S4.3 in, `pointer` to the first unit that reads it,
+   their types kept (`kde_and_material_fields_present_as_types`). What only these fields reach goes with them:
+   `ProblemKind::ZeroDuration` (S12's zero theme-change duration, as decision 4 keeps the refusal test exhaustive),
+   the `drag_cursors` and `spec_versions` declaration slots, and the mapping-palette check's tint case. `elevation`
+   and `size_classes` stay: S2.5's elevation shadows and S8's `size_classes` query read them, both in M1a's scope
+   (the plan's "S2's blocks in full", "S8 without S13"), so the slice is the first unit that reads them and each
+   preset states them from its facts (`check_facts_trace.py`'s `SLICE_EXTRA` lists them).

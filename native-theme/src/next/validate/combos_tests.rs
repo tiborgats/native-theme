@@ -695,7 +695,7 @@ fn combination_mapping_palette() {
     let roles = "[colors.light.surfaces.window]\nforeground_active = \"#000001\"\n\
                  link = \"#000002\"\ndecoration_focus = \"#000003\"\ndecoration_hover = \"#000004\"\n\
                  background = \"#000005\"";
-    let preset = toml(&format!("{roles}\n[tokens]\nkde = \"absent\""));
+    let preset = toml(roles);
     let problems = |palette: &str, preset: &Layer| {
         let palette = toml(palette);
         let layers = [
@@ -742,14 +742,6 @@ fn combination_mapping_palette() {
             "inputs.inactive.window.foreground_active: `inputs.inactive.window.foreground_active` \
              left to the preset's value under the palette"
         ]
-    );
-    // Wherever the scheme can tint, every key of every set.
-    let tinting = toml(&format!("{roles}\n[tokens.kde]\ntint_factor = 0.5"));
-    let left = problems(&whole, &tinting);
-    assert!(
-        left.iter()
-            .any(|p| p.starts_with("colors.light.surfaces.window.background:")),
-        "{left:?}"
     );
     // A port states the scheme inputs: no mapping, not checked here.
     let port =

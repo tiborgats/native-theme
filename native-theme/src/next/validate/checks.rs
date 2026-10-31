@@ -331,20 +331,13 @@ const fn row(
 
 /// The keyed names' declarations by the slot holding them (S10). One table
 /// for the checks, for what a preset uses and for a key field's type.
-const DECLARATIONS: [Declaration; 25] = [
+const DECLARATIONS: [Declaration; 23] = [
     row("ColorRoles", "keyed", Decl::ColorRoles, false, true),
     row("GlobalRoles", "accent_ramp", Decl::AccentRamp, false, true),
     row("TextTokens", "keyed", Decl::TextStyles, false, true),
     row("Tokens", "elevation", Decl::Elevation, false, true),
     row("MotionTokens", "durations", Decl::Durations, false, true),
     row("MotionTokens", "timings", Decl::Timings, false, true),
-    row(
-        "PointerTokens",
-        "drag_cursors",
-        Decl::DragCursors,
-        false,
-        true,
-    ),
     row(
         "IconStyle",
         "status_colors",
@@ -380,13 +373,6 @@ const DECLARATIONS: [Declaration; 25] = [
         "TextRendering",
         "lcd_filter",
         Decl::LcdFilters,
-        false,
-        false,
-    ),
-    row(
-        "MaterialScheme",
-        "spec_version",
-        Decl::SpecVersions,
         false,
         false,
     ),
@@ -1739,10 +1725,6 @@ impl Visit for Checker<'_> {
         }
         let signed = path.marks().signed;
         let field = path.last_field();
-        if number == Number::Duration && field == Some(("ThemeChange", "duration")) && n == 0.0 {
-            self.problem(&at, ProblemKind::ZeroDuration);
-            return;
-        }
         let expected = match (number, field) {
             (Number::Fraction, _) if !(0.0..=1.0).contains(&n) => Some("0..=1"),
             (Number::Length | Number::FontSize, _) if n < 0.0 && !signed => Some("at least zero"),
@@ -3135,7 +3117,6 @@ mod table_tests {
             ("IconSizeTokens", "keyed"),
             ("ColorRoles", "surfaces"),
             ("Tokens", "params"),
-            ("ThemeChange", "duration"),
             ("Material", "saturation"),
             ("TextTokens", "font_dpi"),
             ("TransitionKind", "params"),
