@@ -483,7 +483,7 @@ if [[ $QUICK_MODE ]]; then
     run_tests "test (native-theme, library)" cargo test -p native-theme --lib
     run_tests "test (native-theme, next's layers and vectors)" \
         cargo test -p native-theme --test next_layers --test platform_vectors
-    run_tests "doctests (native-theme's next module)" cargo test -p native-theme --doc next::
+    run_tests "doctests (native-theme's next module, key! among them)" cargo test -p native-theme --doc src/next/
     run_check "docs and missing docs (native-theme's next module)" \
         env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
