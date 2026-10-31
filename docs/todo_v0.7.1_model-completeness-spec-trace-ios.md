@@ -209,8 +209,8 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | B-10 | `button flag @loading` (`ios-*`) | flag |
 | B-10 | `spinner.{spoke.fill,values.loop} @ context button {@loading}` (the activity indicator in the button: a `spinner` element, Nested controls; its own colour) | rule |
 | B-10 | `button.icon @ {@loading}` (`absent = true`: the image swapped out for the indicator; `icon` may be absent on `ios-*`) | rule |
-| B-11 | `button.label.text.fill @ variant destructive context dialog.action_area` (the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
-| B-11 | `button.label.text.font.weight @ variant @cancel context dialog.action_area` (its weight in alerts and action sheets) | rule |
+| B-11 | `button.label.text @ variant destructive context dialog.action_area` (DL-7's rule, stated once there: the destructive action's colour in alerts and action sheets; a standalone button with the role draws as normal, ADD-A125) | rule |
+| B-11 | `button.label.text @ variant @cancel context dialog.action_area` (DL-7's rule, stated once there: its weight in alerts and action sheets, ADD-A125) | rule |
 | B-11 | `button.label.text.font.weight @ variant @role_primary` (the primary role's heavier title, weight trait 0.3, every style, the rule stated after B-13's style weight rules and without a size, measured at `regular` and pending at `mini`, `small` and `large`, ADD-A125) | rule |
 | B-12 | `button.icon.glyph, button.body.fill, button.body.min_width, button.body.min_height @ variant close / variant @info / variant @contact_add` | rule |
 | B-12 | `button.body.padding, button.label.text, button.label.text.fill` (the base at rest, UIButton(type: .system) with no configuration, the host's forms.<scheme>.system; its title a font of UIKit's own, its Dynamic Type scaling the catalogue's Open items; where its facts reach the host contexts the iOS state model's, ADD-A125) | field |

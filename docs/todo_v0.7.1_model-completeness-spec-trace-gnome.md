@@ -197,9 +197,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.63 | `radio.body.corners (GTK's grouped checkbutton is the radio)` | field |
 | GN-1.64 | `checkbox.box.transitions (Fill, Stroke); radio.ring.transitions` | field |
 | GN-1.64 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
-| GN-1.65 | `checkbox.box.stroke @ cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` | rule |
+| GN-1.65 | `checkbox.box.stroke @ !{checked,indeterminate} cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` (the high-contrast shadow losing to the checked and inconsistent `box-shadow: none` by specificity, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:29-31`, `:52-56`, ADD-A125) | rule |
 | GN-1.65 | `checkbox.box.fill @ {pressed} !{checked,indeterminate} cond contrast_high` | rule |
-| GN-1.65 | `radio.ring.stroke @ cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
+| GN-1.65 | `radio.ring.stroke @ !{checked,indeterminate} cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, the high-contrast shadow losing to the checked and inconsistent `box-shadow: none`, `:29-31`, `:52-56`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
 | GN-1.65 | `radio.ring.fill @ {pressed} !{checked,indeterminate} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
 | GN-1.66 | `menu.item.fill @ {pressed}` | rule |
 | GN-1.67 | `menu.item.fill @ {focused} / {hover}` (GTK's `:selected` model button, the keyboard- or pointer-highlighted item, drawn as hover: `focused` or `hover`, never `selected`, S7.2) | rule |
