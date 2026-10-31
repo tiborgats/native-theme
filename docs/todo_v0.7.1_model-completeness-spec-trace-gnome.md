@@ -210,6 +210,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
+| GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, so a later layer's patch of the glyph's fields is refused, S12, never drawn, and a whole glyph it sets is its own; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio cond contrast_high` | rule |
@@ -743,7 +744,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.30 | `menu.body.{padding,corners} @ context any menu_bar (the submenu popovers)` | rule |
 | GN-2.30 | `menu_bar.item.fill @ {open} / {hover}; menu_bar.item.stroke @ cond contrast_high` | rule |
 | GN-2.31 | `banner.body.fill @ variant @info_bar / variants {@info_bar,info} / variants {@info_bar,@question} / variants {@info_bar,warning} / variants {@info_bar,error}` (the first: a GtkInfoBar of `GTK_MESSAGE_OTHER`, no severity, its fill as `_deprecated.scss:150-191` states it) | rule |
-| GN-2.31 | `banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant) | rule |
+| GN-2.31 | `banner.edge_line (absent = false), banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant; the line drawn again over GN-2.11's absent base by `absent = false`, as a field patch does not bring it back, S6.3, ADD-A126) | rule |
 | GN-2.31 | `button.body.fill @ {hover} context banner.action_area variant @info_bar / {pressed} context banner.action_area variant @info_bar` | rule |
 | GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner variant @info_bar (round, flat)` | rule |
 | GN-2.32 | `group_box.body.stroke, group_box.body.corners, group_box.values.title_margin` | field |

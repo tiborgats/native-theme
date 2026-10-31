@@ -255,10 +255,10 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | TA-4 | `text_area.writing_tools_glow.{fill,shadow,transitions}` | field |
 | TA-5 | `link.text.text @ variant inline context text_area` | rule |
 | TA-5 | - | readers (R18) |
-| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage) @ variant selection` | rule |
+| CK-1 | `checkbox.box.corners (Full), checkbox.mark.glyph (NamedSystemImage), checkbox.mark.shown (false) @ variant selection` (the check hidden unselected, S2.7's *A part not shown at rest*, ADD-A126) | rule |
 | CK-1 | `list.accessory.glyph @ variant @checkmark` (the list checkmark accessory) | rule |
 | CK-2† | `checkbox.box.stroke, checkbox.box.min_width, checkbox.box.min_height @ variant selection` | rule |
-| CK-2† | `checkbox.box.fill, checkbox.mark.glyph @ {checked} variant selection` | rule |
+| CK-2† | `checkbox.box.fill, checkbox.mark.{glyph,shown} @ {checked} variant selection` (shown, true, while selected, ADD-A126) | rule |
 | CK-2† | `checkbox.box.*, checkbox.mark.* @ {disabled} variant selection` | rule |
 | CK-2† | `checkbox.box.transitions, checkbox.mark.transitions @ variant selection` (the fill transition when selected; the mark hidden unselected, `shown = false`, and whether UIKit animates its check in a register row, the catalogue's Open items, its entry stated as S2.7's *A part not shown at rest* has it once measured, ADD-A126) | rule |
 | CK-2† | `checkbox.values.presentations event Appear @ variant selection` (the column sliding in with edit mode) | rule |
@@ -273,6 +273,7 @@ is `Appear`, `Disappear` or `Move` (typed) or `@event` (keyed, declared by the w
 | MN-5 | `menu.item_trailing_icon.icon` | field |
 | MN-6 | `menu.check_indicator.glyph @ {checked}` | rule |
 | MN-6 | `menu.check_indicator.glyph @ {indeterminate}` | rule |
+| MN-6 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and, where the platform draws one, its box or ring, but no mark: the glyph `Absent` there by rule, so a later layer's patch of the glyph's fields is refused, S12, never drawn, and a whole glyph it sets is its own; the combo list's chosen value by `selected`, S7.2; S6.3, ADD-A126) | rule |
 | MN-6 | `menu.values.check_column` | field |
 | MN-7 | `menu.{item_label.text.fill,item_trailing_icon.icon.fill} @ variant destructive` | rule |
 | MN-8 | `menu.item.fill @ {pressed} (touch highlight)` | rule |
