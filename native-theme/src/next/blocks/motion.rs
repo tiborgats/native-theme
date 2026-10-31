@@ -4,16 +4,26 @@
 //! The query is stateless: the connector compares successive query results
 //! per element and part, and a transition starts when a property's resolved
 //! value changes; the transition stated by the style after the change governs,
-//! both directions. A property whose group has no transition takes its new
-//! value at once: no transition is no animation, never a toolkit's default
-//! one.
+//! both directions: among its transitions for the property's group that apply
+//! from the element's kept flags before the change (`Transition.from`), the
+//! later in stated order ([`governing`]). A property whose group has no such
+//! transition takes its new value at once: no transition is no animation,
+//! never a toolkit's default one.
+//!
+//! Appearing layers interpolate from zero alpha, layers match by stack
+//! position, colours interpolate in premultiplied sRGB. A stroke or an edge
+//! whose width becomes absent (the whole stroke stated `Absent`, or the
+//! edge) interpolates to zero width and its paint to zero alpha, and one that
+//! appears from them, a width interpolated to zero or below ending it; an
+//! edge whose paint alone becomes absent keeps its width, its paint
+//! interpolating to zero alpha.
 
 use native_theme_derive::ThemeParts;
 
 use super::part_style::{PartStyle, PartStylePatch, ResolvedPartStylePatch};
 use super::{KeyedItem, merge_keyed_by};
 use crate::next::key::Key;
-use crate::next::selector::{PartRef, StateFlag};
+use crate::next::selector::{PartRef, StateFlag, StateFlags};
 use crate::next::units::{Fraction, Ms, Px, Scalar};
 use crate::next::value::Value;
 
@@ -361,6 +371,35 @@ pub(crate) fn same_flags(a: Option<&[StateFlag]>, b: Option<&[StateFlag]>) -> bo
         (None, None) => true,
         (Some(a), Some(b)) => a.iter().all(|f| b.contains(f)) && b.iter().all(|f| a.contains(f)),
         (None, Some(_)) | (Some(_), None) => false,
+    }
+}
+
+/// The transition governing a change of `group`'s properties (S2.7): among
+/// `transitions`, the style's after the change, the last in stated order
+/// that lists the group and applies from `before`, the element's kept flags
+/// before the change (no `from`, or at least one of its flags held). For
+/// [`PropertyGroup::StrokeWidth`], the stroke's widths, the `Stroke`
+/// transition governs where no `StrokeWidth` one applies, as `Stroke` times
+/// every field of the stroke but where a `StrokeWidth` transition applies.
+/// `None`: the new value at once.
+#[must_use]
+pub fn governing(
+    transitions: &[ResolvedTransition],
+    group: PropertyGroup,
+    before: StateFlags,
+) -> Option<&ResolvedTransition> {
+    let last = |group: PropertyGroup| {
+        transitions.iter().rev().find(|transition| {
+            transition.properties.contains(&group)
+                && transition
+                    .from
+                    .as_ref()
+                    .is_none_or(|from| from.iter().any(|flag| before.contains(flag)))
+        })
+    };
+    match group {
+        PropertyGroup::StrokeWidth => last(group).or_else(|| last(PropertyGroup::Stroke)),
+        _ => last(group),
     }
 }
 

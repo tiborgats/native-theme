@@ -457,6 +457,68 @@ impl StateFlag {
     }
 }
 
+/// A set of state flags (S1): an element's, a sibling's, or those a
+/// transition's `from` is matched against.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct StateFlags {
+    flags: Vec<StateFlag>,
+}
+
+impl StateFlags {
+    /// The empty set.
+    #[must_use]
+    pub fn new() -> StateFlags {
+        StateFlags::default()
+    }
+
+    /// The set with `flag` added.
+    #[must_use]
+    pub fn with(mut self, flag: StateFlag) -> StateFlags {
+        self.insert(flag);
+        self
+    }
+
+    /// Adds `flag`.
+    pub fn insert(&mut self, flag: StateFlag) {
+        if !self.flags.contains(&flag) {
+            self.flags.push(flag);
+        }
+    }
+
+    /// Removes `flag`.
+    pub fn remove(&mut self, flag: &StateFlag) {
+        self.flags.retain(|held| held != flag);
+    }
+
+    /// Whether `flag` is in the set.
+    #[must_use]
+    pub fn contains(&self, flag: &StateFlag) -> bool {
+        self.flags.contains(flag)
+    }
+
+    /// The flags, in the order they were added.
+    pub fn iter(&self) -> impl Iterator<Item = &StateFlag> {
+        self.flags.iter()
+    }
+
+    /// Whether the set is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.flags.is_empty()
+    }
+}
+
+impl FromIterator<StateFlag> for StateFlags {
+    fn from_iter<I: IntoIterator<Item = StateFlag>>(iter: I) -> StateFlags {
+        let mut out = StateFlags::new();
+        for flag in iter {
+            out.insert(flag);
+        }
+        out
+    }
+}
+
 /// A flag two or more platforms draw on a typed widget (the catalogue's
 /// *Shared flags*).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]

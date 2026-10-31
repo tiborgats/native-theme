@@ -1381,3 +1381,90 @@ fn resolved_keyframe(keyframe: ResolvedKeyframe) {
     let _: Option<Sides<Option<Px>>> = patch.padding;
     let _: Option<Vec<super::part_style::ResolvedBinding>> = patch.bindings;
 }
+
+/// `transitions::governing` (S2.7, ADD-A124): the last that lists the group
+/// and applies from the flags before the change; the stroke's widths by a
+/// `StrokeWidth` transition, else by `Stroke`'s. The rest style's shadow of
+/// S2.7's Compose example: 150 ms from a press or focus, 120 ms from hover.
+#[test]
+fn governing_picks_the_last_that_applies() {
+    use crate::next::blocks::motion::governing;
+    use crate::next::selector::{StateFlag, StateFlags};
+    let resolved = |groups: Vec<PropertyGroup>, ms: f32, from: Option<Vec<StateFlag>>| {
+        crate::next::ResolvedTransition {
+            properties: groups,
+            kind: crate::next::ResolvedTransitionKind::Interpolate,
+            duration: Some(Ms(ms)),
+            delay: Some(Ms(0.0)),
+            timing: Some(crate::next::ResolvedTiming::Linear),
+            suspended_by_theme_change: false,
+            from,
+        }
+    };
+    let rest = vec![
+        resolved(
+            vec![PropertyGroup::Shadow],
+            150.0,
+            Some(vec![StateFlag::Pressed, StateFlag::FocusVisible]),
+        ),
+        resolved(
+            vec![PropertyGroup::Shadow],
+            120.0,
+            Some(vec![StateFlag::Hover]),
+        ),
+        resolved(vec![PropertyGroup::Stroke], 90.0, None),
+    ];
+    let from = |flags: &[StateFlag]| flags.iter().cloned().collect::<StateFlags>();
+    let ms = |found: Option<&crate::next::ResolvedTransition>| found.and_then(|t| t.duration);
+    assert_eq!(
+        ms(governing(
+            &rest,
+            PropertyGroup::Shadow,
+            from(&[StateFlag::Pressed])
+        )),
+        Some(Ms(150.0))
+    );
+    assert_eq!(
+        ms(governing(
+            &rest,
+            PropertyGroup::Shadow,
+            from(&[StateFlag::Hover])
+        )),
+        Some(Ms(120.0))
+    );
+    // Hovered and pressed both left: the later in stated order.
+    assert_eq!(
+        ms(governing(
+            &rest,
+            PropertyGroup::Shadow,
+            from(&[StateFlag::Hover, StateFlag::Pressed])
+        )),
+        Some(Ms(120.0))
+    );
+    assert_eq!(
+        governing(&rest, PropertyGroup::Shadow, StateFlags::new()),
+        None
+    );
+    assert_eq!(
+        ms(governing(
+            &rest,
+            PropertyGroup::StrokeWidth,
+            StateFlags::new()
+        )),
+        Some(Ms(90.0))
+    );
+    let mut widths = rest.clone();
+    widths.push(resolved(vec![PropertyGroup::StrokeWidth], 60.0, None));
+    assert_eq!(
+        ms(governing(
+            &widths,
+            PropertyGroup::StrokeWidth,
+            StateFlags::new()
+        )),
+        Some(Ms(60.0))
+    );
+    assert_eq!(
+        ms(governing(&widths, PropertyGroup::Stroke, StateFlags::new())),
+        Some(Ms(90.0))
+    );
+}

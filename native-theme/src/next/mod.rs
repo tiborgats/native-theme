@@ -56,6 +56,12 @@ pub mod shapes {
     };
 }
 
+pub mod transitions {
+    //! Which of a style's transitions governs a change (S2.7).
+
+    pub use super::blocks::motion::governing;
+}
+
 pub mod timing {
     //! A timing's value at an elapsed fraction, the platforms' own curves
     //! among them, and a spring's damping coefficient from its damping ratio
@@ -133,8 +139,8 @@ pub use selector::{
     Breakpoint, Combine, Comparison, Condition, ContextMatch, ContextScope, ControlSize, Density,
     Direction, Idiom, InputKind, Measured, Parity, PartRef, PositionMatch, Posture, Rule, RuleBody,
     Scheme, Selector, SetMatch, SharedFlag, SiblingMatch, SiblingScope, SizeClass, SizeClassMatch,
-    SizeClasses, SizeMatch, StateFlag, TiledEdges, ValuesPatch, VariantRef, WidgetOrPart,
-    WidgetRef,
+    SizeClasses, SizeMatch, StateFlag, StateFlags, TiledEdges, ValuesPatch, VariantRef,
+    WidgetOrPart, WidgetRef,
 };
 pub use tokens::{
     Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
