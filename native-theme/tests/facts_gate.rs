@@ -201,6 +201,36 @@ fn gate_fixture_tolerance_edge() {
     );
 }
 
+/// A block S6.1 sets whole (`Option<KeyRepeat>`) has its facts stated per
+/// leaf (S17): the gate composes the leaves' applying facts into one value
+/// per combination. The preset stating both leaves passes; one stating
+/// another interval fails at that leaf; a leaf with no fact fails as a key
+/// with no fact.
+#[test]
+fn gate_fixture_set_whole_composed() {
+    let report = fixture_report("set_whole");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.unread.is_empty(), "{:?}", report.unread);
+    let differs = fixture_report("set_whole_differs");
+    let failures = failing(&differs, "Normal:");
+    assert!(!failures.is_empty(), "{:?}", differs.failures);
+    assert!(
+        failures
+            .iter()
+            .all(|failure| failure.contains("token.behavior.key_repeat.interval")),
+        "{failures:?}"
+    );
+    let missing = fixture_report("set_whole_missing");
+    let failures = failing(&missing, "has no fact under");
+    assert!(
+        failures
+            .iter()
+            .any(|failure| failure.contains("`token.behavior.key_repeat.interval`")),
+        "{:?}",
+        missing.failures
+    );
+}
+
 /// A measured derivation is evaluated over each evidence pass, its varied
 /// input stated by the stand-in, against the pass's result (S17 *A
 /// measured derivation*): the pass whose result is one 8-bit step off the

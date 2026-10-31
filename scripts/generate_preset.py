@@ -49,6 +49,10 @@ What is left out, and why (each counted by reason)
 - an input whose `when` is not a base (S9: an input has per-scheme and per-contrast bases and no rules): anything but
   at most one `scheme:` and one of `contrast_increased`, `contrast_high` in `conditions`; and a per-contrast base one
   of whose schemes no transcribed fact gives (S11: `[inputs.<name>.contrast.<c>]` states `light` and `dark`).
+- a set-whole block's leaf its siblings do not join: a leaf of an `Option<B>` struct block (`token.behavior.key_repeat`),
+  which S6.1 sets whole and S11 states as one table, whose base table or rule would not state every leaf, as the
+  leaves' facts have different `when`s (split_blocks()); S17 composes per-leaf facts into one value per combination,
+  which the gate does, and this draft writes it only where the leaves fall in one base or rule.
 - shadowed: a fact that never applies, as a later fact of its key holds wherever it does (covers(): the later `when`'s
   every term is one of the earlier's), so the preset needs no rule for it. Counted apart: it is transcribed exactly by
   stating nothing.
@@ -175,6 +179,7 @@ KEYED_SEGMENT = "keyed segment outside role.@"
 BASE_CLASH = "block and its leaf in one base table"
 INPUT_WHEN = "input under a when S9 gives no base"
 INPUT_CONTRAST = "per-contrast input lacking a scheme"
+SET_WHOLE_SPLIT = "a set-whole block's leaf its siblings do not join"
 
 
 class InputError(Exception):
@@ -611,9 +616,57 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             continue
         bases += [(f.section, s, f.header, tuple(dotted), v, f) for s, dotted, v in entries]
     rules = group_rules([f for f in facts if f.status == "rule"])
+    while True:
+        split = split_blocks(ctx, bases, rules)
+        if not split:
+            break
+        for f in split:
+            f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
+        bases = [b for b in bases if b[5] not in split]
+        rules = group_rules([f for f in facts if f.status == "rule"])
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      getattr(ctx, "content_variants", {}))
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped)
+
+
+def set_whole_block(ctx, f: Fact):
+    """The leaves of the block S6.1 sets whole that `f`'s key is a leaf of (an `Option<B>` of a struct `B`), or None."""
+    if f.kind not in ("token", "widget") or len(f.ckey) < 2:
+        return None
+    parent = ".".join(f.key.split(".")[:-1])
+    try:
+        info = check_facts.key_info(ctx, parent)
+    except Exception:   # a key the core does not type: no block
+        return None
+    typ = info[4] if info else None
+    m = re.fullmatch(r"Option<\s*(\w+)\s*>", typ or "")
+    fields = ctx.structs.get(m.group(1)) if m else None
+    return tuple(fields) if isinstance(fields, dict) else None
+
+
+def split_blocks(ctx, bases, rules, block_of=None) -> list:
+    """The facts whose set-whole block (an `Option<B>` struct, which S6.1 sets whole and S11 states as one table) a
+    base table or a rule's `set` states with a leaf missing: the leaves stated per leaf in the facts (S17) join into one
+    table only where they fall in one base or one rule, so such a fact is left out and reported, never written with
+    its block incomplete."""
+    block_of = block_of or set_whole_block
+    groups = {}
+    for b in bases:
+        f = b[5]
+        leaves = block_of(ctx, f)
+        if leaves:
+            groups.setdefault(("base", b[0], b[1], b[2], tuple(b[3][:-1])), (leaves, []))[1].append(f)
+    for i, r in enumerate(rules):
+        for f in r.facts:
+            leaves = block_of(ctx, f)
+            if leaves:
+                groups.setdefault(("rule", i, f.rel[:-1]), (leaves, []))[1].append(f)
+    out = []
+    for leaves, fs in groups.values():
+        stated = {f.ckey[-1] for f in fs}
+        if not set(leaves) <= stated:
+            out += fs
+    return out
 
 
 def remove(tree: dict, path: tuple):
@@ -1643,6 +1696,26 @@ def self_test() -> int:
             failures.append(f"spell({name!r}, {typ!r}, {value!r}): {got!r}, expected {want!r}")
         elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(canonical(value, typ)):
             failures.append(f"unspell({want[0]!r}, {want[1]!r}): not {value!r}")
+    # a set-whole block's leaves: whole in one base, or in one rule; split between a base and a rule, both left out
+    def leaf(name, rel):
+        return Fact(None, f"token.behavior.key_repeat.{name}", ("token", "behavior", "key_repeat", name), {}, "token",
+                    None, None, "duration", rel=rel)
+
+    def repeat_block(_ctx, f):
+        return ("delay", "interval") if f.ckey[:3] == ("token", "behavior", "key_repeat") else None
+
+    delay, interval = leaf("delay", ("behavior", "key_repeat", "delay_ms")), leaf("interval", ("behavior", "key_repeat",
+                                                                                               "interval_ms"))
+    def base(f):
+        return "tokens", None, ("behavior",), ("key_repeat", f.rel[-1]), 1, f
+
+    whole_rule = Rule({}, "tokens", [delay, interval])
+    cases = [([base(delay), base(interval)], [], []), ([], [whole_rule], []),
+             ([base(delay)], [Rule({"states": ["hover"]}, "tokens", [interval])], [delay, interval])]
+    for bases, rules, want in cases:
+        got = split_blocks(None, bases, rules, repeat_block)
+        if [f.key for f in got] != [f.key for f in want]:
+            failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")

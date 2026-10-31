@@ -8,8 +8,8 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
-    Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, Tolerance, Unread,
-    When, parse_key, parse_value, parse_when,
+    Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
+    Unread, When, parse_key, parse_value, parse_when, set_whole,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -204,6 +204,9 @@ struct Prepared<'f> {
     fact: &'f Fact,
     when: When,
     value: Option<FactValue>,
+    /// A set-whole block's leaf's value as the fact states it, composed
+    /// with its siblings' per combination ([`composed`]).
+    leaf: Option<Value>,
     tolerance: Tolerance,
     /// A measured derivation's passes, each with its result read for the
     /// key.
@@ -214,6 +217,8 @@ struct Prepared<'f> {
 struct KeyFacts<'f> {
     name: String,
     key: FactKey,
+    /// The set-whole block the key is a leaf of (S6.1, S17).
+    set_whole: Option<SetWhole>,
     facts: Vec<Prepared<'f>>,
 }
 
@@ -289,6 +294,7 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
             }
         }
         if let Stated::Value(value) = &fact.stated
+            && set_whole(&fact.key).is_none()
             && let Err(Unread::NotHeld(why) | Unread::Refused(why)) = parse_value(key, value)
         {
             report.unread.push(format!(
@@ -322,8 +328,14 @@ fn prepare<'f>(
         let Ok(when) = read_when(when.as_ref()) else {
             continue;
         };
+        let block = set_whole(&fact.key);
+        let leaf = match (&fact.stated, &block) {
+            (Stated::Value(value), Some(_)) => Some(value.clone()),
+            _ => None,
+        };
         let value = match &fact.stated {
             Stated::Pending(_) => None,
+            Stated::Value(_) if block.is_some() => None,
             Stated::Value(value) => match parse_value(key, value) {
                 Ok(value) => Some(value),
                 Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
@@ -356,6 +368,7 @@ fn prepare<'f>(
             fact,
             when,
             value,
+            leaf,
             tolerance: facts::tolerance(fact, repo, preset),
             passes,
         };
@@ -364,6 +377,7 @@ fn prepare<'f>(
             None => out.push(KeyFacts {
                 name: fact.key.clone(),
                 key: key.clone(),
+                set_whole: block,
                 facts: vec![prepared],
             }),
         }
@@ -411,6 +425,7 @@ fn verdict<'p>(
     key: &str,
     whole_part: bool,
     fact: Option<&'p Prepared<'_>>,
+    composed: Option<&'p FactValue>,
     pass: Pass,
     report: &mut Report,
     combination: &dyn Fn() -> String,
@@ -437,9 +452,72 @@ fn verdict<'p>(
             (_, Some(value)) if pass == Pass::Normal || prepared.fact.derivation() => {
                 Verdict::Compare(value, &prepared.tolerance)
             }
+            (_, None) if pass == Pass::Normal || prepared.fact.derivation() => match composed {
+                Some(value) => Verdict::Compare(value, &prepared.tolerance),
+                None => Verdict::Done,
+            },
             _ => Verdict::Done,
         },
     }
+}
+
+/// A set-whole block's value where `fact`, a leaf's, applies (S17): each
+/// leaf's applying fact, as `applies` finds it, composed into one value; a
+/// leaf with no fact fails as a key with no fact, a pending one composes
+/// nothing (it is listed as pending).
+fn composed(
+    key: &KeyFacts<'_>,
+    fact: Option<&Prepared<'_>>,
+    applies: &dyn Fn(&str) -> Option<Option<Value>>,
+    pass: Pass,
+    report: &mut Report,
+    combination: &dyn Fn() -> String,
+) -> Option<FactValue> {
+    let block = key.set_whole.as_ref()?;
+    fact?.leaf.as_ref()?;
+    let mut values = Vec::new();
+    for (leaf, _, _) in &block.leaves {
+        match applies(leaf) {
+            None => {
+                if pass == Pass::Normal {
+                    report.fail(format!("`{leaf}` has no fact under {}", combination()));
+                }
+                return None;
+            }
+            Some(None) => return None,
+            Some(Some(value)) => values.push(value),
+        }
+    }
+    let refs: Vec<&Value> = values.iter().collect();
+    match block.compose(&refs) {
+        Ok(value) => Some(value),
+        Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
+            report.fail(format!(
+                "`{}` composed from its leaves under {} is refused: {why}",
+                block.block,
+                combination()
+            ));
+            None
+        }
+    }
+}
+
+/// The value as stated of the fact `holds` makes apply to the key `name`:
+/// `None` where none applies, `Some(None)` where a pending one does.
+fn leaf_value(
+    keys: &[KeyFacts<'_>],
+    name: &str,
+    holds: &dyn Fn(&When, &FactKey) -> bool,
+) -> Option<Option<Value>> {
+    let key = keys.iter().find(|key| key.name == name)?;
+    let mut probe = Report::default();
+    let fact = applying(
+        &key.facts,
+        |when| holds(when, &key.key),
+        &mut probe,
+        &String::new,
+    )?;
+    Some(fact.leaf.clone())
 }
 
 fn record(
@@ -1040,9 +1118,24 @@ fn check_globals(
             &combination,
         );
         let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
-        if let Verdict::Compare(value, tolerance) =
-            verdict(&key.name, false, fact, pass, report, &combination)
-        {
+        let holds = |when: &When, _: &FactKey| resolved.conditions_hold(when);
+        let whole = composed(
+            key,
+            fact,
+            &|leaf| leaf_value(keys, leaf, &holds),
+            pass,
+            report,
+            &combination,
+        );
+        if let Verdict::Compare(value, tolerance) = verdict(
+            &key.name,
+            false,
+            fact,
+            whole.as_ref(),
+            pass,
+            report,
+            &combination,
+        ) {
             let outcome = resolved.compare_global(&key.key, value, root, tolerance);
             record(outcome, &key.name, &place, report, &combination, pass);
         }
@@ -1111,10 +1204,20 @@ fn check_widgets(
         report.queried += 1;
         for (key, fact) in widget_keys.iter().zip(applying_facts) {
             let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
+            let holds = |when: &When, key: &FactKey| session.holds(when, key);
+            let whole = composed(
+                key,
+                fact,
+                &|leaf| leaf_value(keys, leaf, &holds),
+                pass,
+                report,
+                &describe,
+            );
             match verdict(
                 &key.name,
                 key.key.whole_part(),
                 fact,
+                whole.as_ref(),
                 pass,
                 report,
                 &describe,

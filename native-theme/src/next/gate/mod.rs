@@ -760,24 +760,135 @@ fn spellings(last: &str, value: &Item) -> Vec<(String, Item)> {
 }
 
 /// A rule's body stating `value` at `path` below `target`, as the first of
-/// S11's spellings the reader takes.
+/// S11's spellings the reader takes. Where none does, the problems of the
+/// first spelling whose key the reader knows (a one-unit field's suffixed
+/// key for an expression, S11), else the first's.
 fn rule_at(target: &str, path: &[String], value: &Item) -> Result<RuleBody, Unread> {
     let Some((last, outer)) = path.split_last() else {
         return Err(Unread::Refused("an empty key".to_owned()));
     };
-    let mut first = None;
+    let mut tried: Vec<Vec<Problem>> = Vec::new();
     for (key, spelled) in spellings(last, value) {
         let mut inner = Table::new();
         inner.insert(key, spelled);
         let set = nested(outer, Item::Table(inner));
         match read_rule_body(target, &set) {
             Ok(body) => return Ok(body),
-            Err(problems) => {
-                first.get_or_insert(problems);
-            }
+            Err(problems) => tried.push(problems),
         }
     }
-    Err(Unread::of(&first.unwrap_or_default()))
+    let known = tried.iter().position(|problems| {
+        !problems
+            .iter()
+            .any(|problem| problem.kind == ProblemKind::UnknownKey)
+    });
+    let chosen = known.and_then(|index| tried.get(index)).or(tried.first());
+    Err(Unread::of(chosen.map(Vec::as_slice).unwrap_or_default()))
+}
+
+/// A leaf of a block S6.1 sets whole, an `Option<B>` struct block
+/// (`token.behavior.key_repeat.delay`): its facts are stated per leaf
+/// (S17), and the gate composes the leaves' applying facts into one value
+/// of the block per combination.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct SetWhole {
+    /// The block's key (`token.behavior.key_repeat`).
+    pub block: String,
+    /// The block's leaves: each one's key and its field's name and unit
+    /// suffix (S11).
+    pub leaves: Vec<(String, String, &'static str)>,
+    key: FactKey,
+}
+
+/// The table of the place `key` names below, and the place's path.
+fn place_fields(key: &FactKey) -> Option<(&'static [registry::FieldInfo], &[String])> {
+    match &key.place {
+        Place::Token(path) => Some((registry::tokens(), path)),
+        Place::Values(widget, path) => {
+            let name = widget_name(&WidgetRef::Typed(*widget));
+            registry::widget(&name).map(|info| (info.values, path.as_slice()))
+        }
+        Place::Part(part, path) => part.info().map(|info| (info.fields, path.as_slice())),
+        Place::WholePart(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => None,
+    }
+}
+
+/// The unit suffix S11 spells a field of type `ty` with, for a value with
+/// no unit of its own (an expression): `Value<Ms>`'s `_ms`, …
+fn suffix_of(ty: &str) -> &'static str {
+    match ty {
+        "Value<Ms>" => "_ms",
+        "Value<Px>" => "_px",
+        "Value<Deg>" => "_deg",
+        _ => "",
+    }
+}
+
+/// The set-whole block `key` is a leaf of, if any (S6.1, S17).
+#[must_use]
+pub fn set_whole(key: &str) -> Option<SetWhole> {
+    let parsed = parse_key(key).ok()?;
+    let (fields, path) = place_fields(&parsed)?;
+    let (_, above) = path.split_last()?;
+    let depth = (1..=above.len()).find(|n| {
+        above.get(..*n).is_some_and(|head| {
+            matches!(
+                registry::find(fields, &head.join(".")).map(|info| info.ty),
+                Some(registry::FieldType::Block {
+                    ty,
+                    form: registry::BlockForm::Struct,
+                    ..
+                }) if ty.starts_with("Option<")
+            )
+        })
+    })?;
+    let head = above.get(..depth)?;
+    let info = registry::find(fields, &head.join("."))?;
+    let registry::FieldType::Block { fields: inner, .. } = info.ty else {
+        return None;
+    };
+    let below = path.len().checked_sub(depth)?;
+    let block = segments(key).ok().and_then(|all| {
+        let keep = all.len().checked_sub(below)?;
+        all.get(..keep).map(|head| head.join("."))
+    })?;
+    let leaves = inner
+        .iter()
+        .map(|leaf| {
+            let ty = match leaf.ty {
+                registry::FieldType::Leaf(ty)
+                | registry::FieldType::Block { ty, .. }
+                | registry::FieldType::Patch { ty, .. } => ty,
+            };
+            (
+                format!("{block}.{}", leaf.path),
+                leaf.path.to_owned(),
+                suffix_of(ty),
+            )
+        })
+        .collect();
+    let key = parse_key(&block).ok()?;
+    Some(SetWhole { block, leaves, key })
+}
+
+impl SetWhole {
+    /// The block's value composed from each leaf's value as its fact
+    /// states it (S17: `"500ms"`, an expression), in the leaves' order.
+    pub fn compose(&self, values: &[&Item]) -> Result<FactValue, Unread> {
+        let mut table = Table::new();
+        for ((_, name, suffix), value) in self.leaves.iter().zip(values) {
+            let (spelled, item) = match value.as_str().and_then(with_unit) {
+                Some(_) => spellings(name, value)
+                    .into_iter()
+                    .next()
+                    .unwrap_or_else(|| (name.clone(), (*value).clone())),
+                None => (format!("{name}{suffix}"), (*value).clone()),
+            };
+            table.insert(spelled, item);
+        }
+        parse_value(&self.key, &Item::Table(table))
+    }
 }
 
 /// A fact's value read for `key` (S11, S17).
@@ -1607,5 +1718,50 @@ fn rule_body(value: Option<&FactValue>) -> Result<&RuleBody, Unread> {
     match value.map(|value| &value.body) {
         Some(Body::Rule(body)) => Ok(body),
         _ => Err(Unread::Refused("a field's fact states no value".to_owned())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+
+    use super::*;
+
+    /// A value no spelling reads is reported by the spelling whose key the
+    /// reader knows: a one-unit field's suffixed key for an expression
+    /// (S11), not the bare key's "unknown key".
+    #[test]
+    fn a_refused_leaf_reports_its_known_spelling() {
+        let key = parse_key("token.behavior.double_click_time").unwrap();
+        let Err(Unread::Refused(why)) = parse_value(&key, &Item::String("= div(1ms,".to_owned()))
+        else {
+            panic!("an expression that does not parse is refused");
+        };
+        assert!(why.contains("double_click_time_ms"), "{why}");
+        assert!(!why.contains("unknown key"), "{why}");
+    }
+
+    /// A leaf of `Option<KeyRepeat>`, which S6.1 sets whole, names its
+    /// block and every leaf with its unit suffix (S17).
+    #[test]
+    fn a_set_whole_leaf_names_its_block() {
+        let block = set_whole("token.behavior.key_repeat.delay").unwrap();
+        assert_eq!(block.block, "token.behavior.key_repeat");
+        assert_eq!(
+            block.leaves,
+            [
+                (
+                    "token.behavior.key_repeat.delay".to_owned(),
+                    "delay".to_owned(),
+                    "_ms"
+                ),
+                (
+                    "token.behavior.key_repeat.interval".to_owned(),
+                    "interval".to_owned(),
+                    "_ms"
+                ),
+            ]
+        );
+        assert!(set_whole("token.behavior.double_click_time").is_none());
     }
 }
