@@ -305,7 +305,10 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// A synthetic value of the type `ty`, written as the model writes it, of
 /// the field `info` or of an entry of its map (S17, ADD-A128), with the
 /// unit suffix S11 spells its key with. Synthetic, never bundled, no
-/// platform's: an empty list or map, a list of two halves, 1 in the
+/// platform's: an empty list or map, but a list validation refuses empty
+/// holding one element (a paint's layers the colour `#010203`, a
+/// transition's properties `fill`, S12) and an `Option` of a list `none`
+/// (a transition's `from`: any state); a list of two halves, 1 in the
 /// type's unit, `#010203`, the text `Synthetic`, an enum's first variant,
 /// a glyph's named system image `synthetic`; a struct block's every field
 /// so, `absent` where a field may be absent; an enum block's first unit
@@ -314,6 +317,9 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// synthetic name is, so a listed key is refused by name until the layers
 /// take the preset's declarations.
 fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, Item)> {
+    if ty.starts_with("Option<Vec<") {
+        return Some(("", Item::String("none".to_owned())));
+    }
     let wrapped = ["Option<", "Value<"]
         .iter()
         .find_map(|wrap| ty.strip_prefix(wrap)?.strip_suffix('>'));
@@ -323,8 +329,13 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
     if registry::key_levels(ty) > 0 {
         return Some(("", Item::Table(Table::new())));
     }
-    if ty.starts_with("Vec<") {
-        return Some(("", Item::Array(Vec::new())));
+    if let Some(element) = ty.strip_prefix("Vec<") {
+        let one = match element.strip_suffix('>') {
+            Some("PaintLayer") => vec![Item::String("#010203".to_owned())],
+            Some("PropertyGroup") => vec![Item::String("fill".to_owned())],
+            _ => Vec::new(),
+        };
+        return Some(("", Item::Array(one)));
     }
     match ty {
         "(f32,f32)" => return Some(("", Item::Array(vec![Item::Float(0.5), Item::Float(0.5)]))),
@@ -2314,7 +2325,7 @@ mod tests {
                     Some("Vec<(LanguageTag") => "x-synth",
                     Some("Vec<(SizeClass") => "compact",
                     Some("Vec<(IconRole") => "action_save",
-                    Some("Vec<(AxisTag") => "wght",
+                    Some("Vec<(AxisTag") => "GRAD",
                     Some("Vec<(FeatureTag") => "liga",
                     _ if inner.starts_with("SurfaceMap<") => "window",
                     _ => "synthetic",
@@ -2348,13 +2359,33 @@ mod tests {
         }
     }
 
+    /// Whether a problem is the fixture preset's surroundings of a listed
+    /// path, not the synthetic value at its slot: a map key the fixture
+    /// does not declare or hold, so the layer creates the entry with its
+    /// other fields unset, or an enclosing value the fixture states
+    /// `absent`, which a preset listing a path below it states as a block.
+    fn surroundings(kind: &ProblemKind) -> bool {
+        matches!(
+            kind,
+            ProblemKind::Undeclared { .. }
+                | ProblemKind::EntryCreatedUnset { .. }
+                | ProblemKind::FieldsOver { .. }
+        )
+    }
+
     /// A synthetic layer reads for every path the generator can write
     /// into `[pending]`, of every type the model holds there, each spelled
-    /// as its type takes it (S11, S17, ADD-A128): a type with no synthetic
-    /// value fails here until it has one. A path the model holds no field
-    /// at is refused, naming it.
+    /// as its type takes it, and loads through the synthetic route over the
+    /// facts gate's fixture preset with the path in its `[pending]` table,
+    /// so validation takes its value at its slot (S11, S17, ADD-A128): a
+    /// type with no synthetic value, or one validation refuses, fails here
+    /// until it has one; a refusal of the fixture's surroundings
+    /// ([`surroundings`]) is not the value's. A map's key is one validation
+    /// takes (an axis no field routes). A path the model holds no field at
+    /// is refused, naming it.
     #[test]
     fn synthetic_layers_state_every_listable_type() {
+        let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
         let mut paths = Vec::new();
         listable("tokens", registry::tokens(), &mut paths);
         listable("colors.light", registry::colors(), &mut paths);
@@ -2383,11 +2414,56 @@ mod tests {
                 failures.push(format!("{path}: no spelling names its field"));
                 continue;
             };
-            if let Err(why) = synthetic_layers(&[(spelled, vec!["U1".to_owned()])]) {
-                failures.push(why);
-            }
+            let pending = [(spelled.clone(), vec!["U1".to_owned()])];
+            let layers = match synthetic_layers(&pending) {
+                Ok(layers) => layers,
+                Err(why) => {
+                    failures.push(why);
+                    continue;
+                }
+            };
+            let file = read_preset(&format!("[pending]\n\"{spelled}\" = \"U1\"\n{base}")).unwrap();
+            let Err(LayerError::Invalid(problems)) = crate::next::resolve::Stack::synthetic(
+                None,
+                file.declarations,
+                file.layer,
+                crate::next::selector::Scheme::Light,
+                &file.pending,
+                layers,
+            ) else {
+                continue;
+            };
+            failures.extend(
+                problems
+                    .iter()
+                    .filter(|problem| !surroundings(&problem.kind))
+                    .map(|problem| format!("{spelled}: {problem}")),
+            );
         }
-        assert_eq!(failures, Vec::<String>::new());
+        // S12's conservative reading takes each leaf a synthetic layer
+        // states as any value of its type, each on its own: a listed whole
+        // focus indicator reads `follow_part` corners beside offsets that
+        // can differ, a listed whole edge an absent `dash` beside a drawn
+        // `width` and `paint`. No synthetic value avoids either, so such a
+        // path is refused on any preset; a ledger row is pending.
+        let corners = ["top_left", "top_right", "bottom_right", "bottom_left"];
+        let edges = ["top", "right", "bottom", "left"];
+        let conservative: Vec<String> = corners
+            .iter()
+            .map(|corner| {
+                format!(
+                    "tokens.focus: tokens.focus.corners.{corner}: `follow_part` on `{corner}`, \
+                     whose sides' offsets can differ"
+                )
+            })
+            .chain(edges.iter().map(|edge| {
+                format!(
+                    "widgets.button.body.stroke.{edge}: widgets.button.body.stroke.{edge}.dash: \
+                     may not be absent"
+                )
+            }))
+            .collect();
+        assert_eq!(failures, conservative);
         let refused =
             synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])])
                 .unwrap_err();

@@ -2331,8 +2331,9 @@ impl Stated {
 }
 
 /// Whether `layer`'s bases state the listed path `listed` (as
-/// `listed_path` gives it), or a value holding it whole: a reference,
-/// `Absent`, a part stated `Absent` or drawn as another (S17, ADD-A128).
+/// `listed_path` gives it), an element of it where it is a list, or a
+/// value holding it whole: a reference, `Absent`, a part stated `Absent`
+/// or drawn as another (S17, ADD-A128).
 /// Its inputs state no listed path, which names a field of the colour
 /// roles, the tokens or a typed widget (the reader refuses any other).
 pub(super) fn states(layer: &Layer, listed: &str) -> bool {
@@ -2372,7 +2373,14 @@ pub(super) fn states(layer: &Layer, listed: &str) -> bool {
         .iter()
         .chain(&stated.wholes)
         .any(|path| listed_path(path) == listed);
+    // A list's element stated states the list (a paint's `layers`), which a
+    // layer's bases set whole (S6.1).
+    let element = stated.paths.iter().any(|path| {
+        path.strip_prefix(listed)
+            .is_some_and(|rest| rest.starts_with('['))
+    });
     exact
+        || element
         || stated.wholes.iter().any(|path| {
             listed
                 .strip_prefix(listed_path(path).as_str())
