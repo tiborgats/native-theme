@@ -38,7 +38,8 @@ An item with no words is a finding of its own: no row can name it.
 catalogue (docs/todo_v0.7.1_model-completeness-spec-widgets.md): each line
 starting `- ` in `## Open items` (to the next `## ` line), under the heading
 `## Open items`, named by the line's first backticked span, backticks
-included; a bullet without one is an input the rule cannot read.
+included, its words the line's after the dash; a bullet without a backticked
+span is an input the rule cannot read. Several items may share a name.
 
 ROADMAP.md: in `## Later — the connectors`, each `### ` line (Item
 `(subsection)`) and each line starting `- ` after it, its words the line's
@@ -52,8 +53,9 @@ by heading line and label, each an item while its heading line is in the
 file (a missing file has none).
 
 Matching. A row names an item when Source and Heading are equal and the row's
-opening words are the item's first words (a catalogue item: its name, whole);
-a labelled row names the item with that label.
+opening words are the item's first words (a catalogue item also when they are
+its name alone, whole, so items sharing a name are told apart by longer
+opening words); a labelled row names the item with that label.
 
 Findings: an item without a row, or with several (a row naming several items
 counts for none); a row naming no item (closed or moved: remove or update the
@@ -172,7 +174,7 @@ class Item(NamedTuple):
     line: int
     words: tuple[str, ...] = ()
     label: str = ""
-    exact: bool = False
+    name: str = ""
 
 
 class Row(NamedTuple):
@@ -260,7 +262,7 @@ def catalogue_items(text: str) -> list[Item]:
         m = NAME.search(line)
         if not m:
             raise InputError(f"line {n}: an Open items bullet without a backticked name")
-        out.append(Item("catalogue", "## Open items", n, (m.group(0),), exact=True))
+        out.append(Item("catalogue", "## Open items", n, tuple(line[2:].split()), name=m.group(0)))
     return out
 
 
@@ -319,14 +321,16 @@ def names(opening: tuple[str, ...] | None, label: str, row: Row, item: Item) -> 
         return item.label == label
     if item.label:
         return False
-    if item.exact:
-        return item.words == opening
+    if item.name and opening == (item.name,):
+        return True
     return bool(opening) and item.words[:len(opening)] == opening
 
 
 def describe(item: Item) -> str:
     if item.label:
         return f"{item.heading} {item.label}"
+    if item.name:
+        return f"{item.heading} “{item.name}”"
     words = " ".join(item.words[:6])
     return f"{item.heading} “{words}{' …' if len(item.words) > 6 else ''}”"
 
@@ -538,6 +542,8 @@ def self_test() -> int:
 - `context_help`: whether Breeze's shadow
   applies, continued
 - `ink_toolbar` and `ink_part`: whether
+- `button` on `ios-*`: one
+- `button` on `macos-*`: two
 ## Entry
 """
     roadmap = """## Later — the connectors
@@ -599,6 +605,9 @@ Prose with | a bar.
 | docs/todo.md | ### Alpha | Research the thing | lane kde | |
 | docs/todo.md | ### Beta | “[`docs/x.md`](docs/x.md) needs” | M0 | |
 | docs/todo.md | ### Beta | “[the guide](g.md) is” | M0 | |
+| catalogue | ## Open items | “`button` on `ios-*`:” | lane ios | |
+| catalogue | ## Open items | “`button`” | lane macos | |
+| catalogue | ## Open items | “`button` on `macos-*`:” | lane macos | |
 
 After the table.
 """
@@ -615,8 +624,10 @@ After the table.
         ("docs/todo.md", "### Beta", 14, "[`docs/x.md`](docs/x.md) needs"),
         ("docs/todo.md", "### Beta", 15, "[the guide](g.md)"),
         ("docs/todo.md", "### Beta", 16, ""),
-        ("catalogue", "## Open items", 5, "`context_help`"),
-        ("catalogue", "## Open items", 7, "`ink_toolbar`"),
+        ("catalogue", "## Open items", 5, "`context_help`: whether"),
+        ("catalogue", "## Open items", 7, "`ink_toolbar` and"),
+        ("catalogue", "## Open items", 8, "`button` on"),
+        ("catalogue", "## Open items", 9, "`button` on"),
         ("ROADMAP.md", "### Sub one", 5, "(subsection)"),
         ("ROADMAP.md", "### Sub one", 9, "first bullet"),
         ("ROADMAP.md", "### Sub one", 10, "second bullet"),
@@ -627,7 +638,7 @@ After the table.
     if got_items != want_items:
         failures.append(f"items: got {got_items}, want {want_items}")
     rows = triage_rows(ledger)
-    if rows[9].reason != "The | model carries it." or len(rows) != 22:
+    if rows[9].reason != "The | model carries it." or len(rows) != 25:
         failures.append(f"rows: got {len(rows)}, the tenth {rows[9]}")
     got = problems("L", rows, items)
     todo_md, cat_md = str(SOURCES["docs/todo.md"]), str(SOURCES["catalogue"])
@@ -647,6 +658,7 @@ After the table.
                   "(closed or moved: remove or update the row)"),
         ("L", 35, "unknown source 'docs/elsewhere.md'"),
         ("L", 36, "item 'Research the thing' is neither “opening words” nor a (label)"),
+        ("L", 40, "names 2 items of catalogue (lines 8, 9): lengthen its opening words"),
         (todo_md, 9, "2 triage rows: ### Alpha “Deeper heading keeps the alpha heading”"),
         (todo_md, 13, "no triage row: ### Beta “Beta item without a row”"),
         (todo_md, 16, "an open item with no words under '### Beta': no row can name it (write it out or remove it)"),

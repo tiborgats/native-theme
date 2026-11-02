@@ -277,7 +277,7 @@ Checked, no gap: a QTextEdit's frame hover/focus outline is Breeze's frame-shado
 
 | ID | Element | What is missing | Source | Model today |
 |---|---|---|---|---|
-| K1.230 | spinner · rotation | `KBusyIndicatorWidget`: `process-working` icon rotated, period 2000 ms | pub `kwa kbusyindicatorwidget.cpp:23`, `:103` | partial: icon-level `TransformAnimation::Spin`; no `spinner` period |
+| K1.230 | spinner · rotation | `KBusyIndicatorWidget`: `view-refresh` icon rotated, period 2000 ms | pub `kwa kbusyindicatorwidget.cpp:23`, `:34`, `:103` | partial: icon-level `TransformAnimation::Spin`; no `spinner` period |
 
 ### Combo box
 

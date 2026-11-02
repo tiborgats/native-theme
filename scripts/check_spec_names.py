@@ -782,6 +782,9 @@ OLD_NAMES += [
 
 # `{selected}` on a menu item outside `context combo_box`: a menu item's highlight is `focused` or `hover` (S7.2)
 MENU_ITEM = r"\bmenu\.(?:\{[^}]*\bitem|item)"
+# a selector whose context is the combo box, in any of S7's spellings (`context`, `context any`,
+# `context nearest {…} =`); `not_context combo_box` is the opposite match and does not count
+COMBO_CONTEXT = r"(?<![\w])context\s+(?:any\s+|nearest\s+\{[^}]*\}\s*=\s*)?combo_box\b"
 
 
 def menu_selected_problem(t):
@@ -792,7 +795,7 @@ def menu_selected_problem(t):
     for alt in alts:
         for m in re.finditer(r"(?<![!\w])\{([^{}]*)\}", alt):
             flags = [x.strip() for x in m.group(1).split(",")]
-            if "selected" in flags and "context combo_box" not in alt and "context combo_box" not in tail:
+            if "selected" in flags and not re.search(COMBO_CONTEXT, alt) and not re.search(COMBO_CONTEXT, tail):
                 return True
     return False
 
@@ -1050,6 +1053,9 @@ SELF_TEST_TRACE = """
 | R-7 | `reader:kde:nope.nope` | reader |
 | R-8 | - (nope.nope) | out (R1.1) |
 | R-9 | `button.nope` | field |
+| R-10 | `menu.item.fill @ {selected} context any combo_box` | rule |
+| R-11 | `menu.item.fill @ {selected} context nearest {popup} = combo_box` | rule |
+| R-12 | `menu.item.fill @ {selected} not_context combo_box` | rule |
 """
 
 SELF_TEST_BAD_CATALOGUE = """
@@ -1089,7 +1095,8 @@ def self_test() -> int:
     got = [(p[1], p[2], p[3]) for p in ck.problems]
     want = [(5, "old-name", r"\bTextSlot\b"), (6, "follow-part", "FollowPart outside a focus indicator"),
             (8, "menu-selected", "{selected} on a menu item outside context combo_box (S7.2)"),
-            (12, "part", "button.nope")]
+            (12, "part", "button.nope"),
+            (15, "menu-selected", "{selected} on a menu item outside context combo_box (S7.2)")]
     if got != want:
         failures.append(f"trace: got {got}, want {want}")
     bad = Checker(core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE + SELF_TEST_BAD_CATALOGUE)
