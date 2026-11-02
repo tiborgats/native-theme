@@ -700,7 +700,8 @@ fn gate_fixture_not_drawn_context() {
 /// run (S17: `not_drawn` entries are `when`s, which state `sizes`, S11):
 /// the preset's wrong value at the small size is never queried where the
 /// entry names pressed, and fails where hover is drawn; the count leaves
-/// out the small size's pressed combinations alone.
+/// out the small size's pressed combinations alone, and a named density's
+/// likewise.
 #[test]
 fn gate_fixture_not_drawn_sizes() {
     let report = fixture_report("not_drawn_sizes");
@@ -739,6 +740,29 @@ fn gate_fixture_not_drawn_sizes() {
             "not_drawn = [{ states = [\"pressed\"], not_sizes = [\"small\"] }]\n"
         )),
         3
+    );
+    // Densities likewise: none and each declared one, an entry naming one
+    // leaving out its pressed combination, one naming it in
+    // `not_densities` every other density's.
+    let densities = |not_drawn: &str| {
+        state_model(not_drawn).replacen(
+            "sizes = [\"small\", \"regular\"]\ndensities = []",
+            "sizes = []\ndensities = [\"compact\", \"spacious\"]",
+            1,
+        )
+    };
+    assert_eq!(count(&densities("")), 6);
+    assert_eq!(
+        count(&densities(
+            "not_drawn = [{ states = [\"pressed\"], densities = [\"compact\"] }]\n"
+        )),
+        5
+    );
+    assert_eq!(
+        count(&densities(
+            "not_drawn = [{ states = [\"pressed\"], not_densities = [\"compact\"] }]\n"
+        )),
+        4
     );
 }
 

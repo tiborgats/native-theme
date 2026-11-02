@@ -1305,14 +1305,16 @@ fn reads_of_synthetic_layers_are_recorded() {
 /// Each place evaluation reads a synthetic layer's step through records it
 /// at the field evaluated (S17's synthetic route, ADD-A128): a plain field,
 /// an `Option`'s `None`, a list, a keyed list, an `Option` block, a map
-/// stated empty, the text scaling a font size is scaled by, the text
-/// frame's `font_size`, `line_height` and font metrics, an enclosing part's
-/// bindings (the icon's, read from the body through `widget.icon.…`) and an
-/// outer scope entry whose bindings read one. A synthetic layer is the
-/// stack's third place: the preset, the stand-in, then it.
+/// stated empty, a surface map stated empty, the text scaling a font size
+/// is scaled by, the text frame's `font_size`, `line_height` and font
+/// metrics, an enclosing part's bindings (the icon's, read from the body
+/// through `widget.icon.…`) and an outer scope entry whose bindings read
+/// one. A synthetic layer is the stack's third place: the preset, the
+/// stand-in, then it.
 #[test]
 fn each_recording_site_records_a_synthetic_read() {
     use crate::next::resolve::evaluate::Resolve;
+    use crate::next::roles::SurfaceRoles;
     use crate::next::tokens::{KeyRepeat, MotionTokens, TextScaling};
     use crate::next::units::Ms;
     let scope = scope();
@@ -1380,6 +1382,19 @@ fn each_recording_site_records_a_synthetic_read() {
             }
         ),
         "a map"
+    );
+    let surfaces = theme(&[BASE, "[colors.light]\nsurfaces = {}\n"]);
+    let reached = surfaces.evaluate_in(&scope, None, &|_| true, Target::Roles, None, |cx| {
+        cx.follow(Target::Roles, field("surfaces"), false, |cx, folds| {
+            cx.surfaces::<SurfaceRoles>(folds)
+        });
+        cx.reached().to_vec()
+    });
+    assert!(
+        reached
+            .iter()
+            .any(|held| held.meets(Target::Roles, &field("surfaces"))),
+        "a surface map"
     );
     let part = |layers: &[&str], scope: &Scope, part: TypedPart, path: &str| {
         let theme = theme(layers);
