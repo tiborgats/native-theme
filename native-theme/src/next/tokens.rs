@@ -30,7 +30,7 @@ use super::blocks::text::ResolvedTextStyle;
 use super::blocks::text::{LanguageTag, TextStyle};
 use super::color::Color;
 use super::key::Key;
-use super::selector::SizeClass;
+use super::selector::{Condition, SizeClass};
 use super::units::{Ms, Px, Scalar};
 use super::value::Value;
 use crate::{IconRole, IconSet};
@@ -134,10 +134,18 @@ pub enum ThemeChange {
         #[parts(block = "set")]
         timing: Value<Timing>,
     },
-    /// Suspends the transitions marked `suspended_by_theme_change`.
+    /// Stops the `GtkCss` transitions on a change that suspends: each running
+    /// one ends at its new value and none starts until `duration` has passed
+    /// since the change; the other engines run as under `Instant` (S4.3).
+    /// Staged with `Tokens.theme_change` to M3's tokens unit (S4's remaining
+    /// groups and conditions): no token holds it yet, and no resolution
+    /// reports a suspension.
     Suspend {
-        /// How long they are suspended.
+        /// How long the `GtkCss` transitions are suspended.
         duration: Value<Ms>,
+        /// Further conditions whose change suspends too (libadwaita's reduced
+        /// motion).
+        conditions: Vec<Condition>,
     },
     /// No window effect: the property transitions the change triggers run as
     /// stated.

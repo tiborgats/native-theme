@@ -10,7 +10,7 @@ use crate::next::blocks::BlockPatch;
 use crate::next::blocks::focus::FocusIndicatorPatch;
 use crate::next::blocks::icon::IconStylePatch;
 use crate::next::blocks::motion::{
-    Keyframe, Loop, PropertyGroup, StepJump, Timing, Transition, TransitionKind,
+    Keyframe, Loop, PropertyGroup, StepJump, Timing, Transition, TransitionEngine, TransitionKind,
 };
 use crate::next::blocks::outline::{CornersPatch, Radius};
 use crate::next::blocks::paint::{BlendMode, Paint, PaintKind, PaintLayer, PaintPatch, Stop};
@@ -146,7 +146,7 @@ fn transition(properties: Vec<PropertyGroup>, timing: Timing) -> Transition {
         duration: Value::Stated(Ms(100.0)),
         delay: Value::Stated(Ms(0.0)),
         timing: Value::Stated(timing),
-        suspended_by_theme_change: false,
+        engine: TransitionEngine::GtkCss,
         from: None,
     }
 }
@@ -368,7 +368,7 @@ fn refusal_transition_from() {
         toml(&format!(
             "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
              \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", \
-             suspended_by_theme_change = true, from = {from} }}]"
+             engine = \"gtk_css\", from = {from} }}]"
         ))
     };
     assert_eq!(
@@ -394,6 +394,118 @@ fn refusal_transition_from() {
     assert_eq!(found(&from("[\"@spin\", \"hover\"]"), &declared), NONE);
 }
 
+/// A Breeze test's flags and conditions are read as a `when` writes them
+/// and walked as a rule's are: a keyed flag the widget declares, a keyed
+/// condition the preset declares (S2.7, S10, S11, S12; ADD-A126).
+#[test]
+fn breeze_test_reads_and_walks() {
+    let breeze = |test: &str| {
+        format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", \
+             engine = {{ breeze = {{ {test} }} }} }}]"
+        )
+    };
+    let at = "widgets.button.body.transitions[0].engine.breeze";
+    let unknown = Layer::from_toml(&breeze(
+        "any = [\"hover\"], none = [], conditions = [\"shiny\"]",
+    ));
+    let Err(LayerError::Invalid(problems)) = unknown else {
+        panic!("the reader takes an unknown condition");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        [format!("{at}.conditions[0]: unknown name \"shiny\"")]
+    );
+    let keyed = toml(&breeze(
+        "any = [\"@spin\"], none = [\"disabled\"], conditions = [\"system_setting:glow\", \
+         \"window_inactive\"]",
+    ));
+    assert_eq!(
+        bare(&keyed),
+        [
+            format!("{at}.any[0]: `@spin` is not declared in `widget.button.flags`"),
+            format!("{at}.conditions[0]: `glow` is not declared in `conditions`"),
+        ]
+    );
+    let declared =
+        declare("conditions = [\"@glow\"]\n[declare.widget.button]\nflags = [\"@spin\"]");
+    assert_eq!(found(&keyed, &declared), NONE);
+    let tab_bar = toml(
+        &breeze("any = [], none = [\"@spin\"], conditions = []")
+            .replace("{ breeze =", "{ breeze_tab_bar ="),
+    );
+    assert_eq!(
+        bare(&tab_bar),
+        [
+            "widgets.button.body.transitions[0].engine.breeze_tab_bar.none[0]: `@spin` is not declared \
+          in `widget.button.flags`"
+        ]
+    );
+}
+
+/// A focus indicator's transition times the whole indicator: its
+/// `properties` is empty, in a part's `focus` and in `token.focus` (S2.10,
+/// S11, S12; ADD-A126).
+#[test]
+fn focus_transition_empty_properties_accepted() {
+    let focus = "transition = { properties = [], kind = \"interpolate\", duration_ms = 100, \
+                 delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = \"none\" }";
+    assert_eq!(bare(&toml(&format!("[tokens.focus]\n{focus}"))), NONE);
+    assert_eq!(
+        bare(&toml(&format!("[widgets.button.body.focus]\n{focus}"))),
+        NONE
+    );
+    assert_eq!(
+        bare(&toml(&format!(
+            "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
+             set = {{ focus.{focus} }}"
+        ))),
+        NONE
+    );
+}
+
+/// A focus indicator's transition naming a group is refused, in a part's
+/// `focus`, in `token.focus` and in a rule's patch; elsewhere a transition
+/// naming none still is (S2.10, S12; ADD-A126).
+#[test]
+fn refusal_focus_transition_properties_non_empty() {
+    let focus = |properties: &str| {
+        format!(
+            "transition = {{ properties = {properties}, kind = \"interpolate\", duration_ms = \
+             100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = \"none\" }}"
+        )
+    };
+    let named = focus("[\"fill\"]");
+    let refused = "a focus indicator's transition names no property group";
+    assert_eq!(
+        bare(&toml(&format!("[tokens.focus]\n{named}"))),
+        [format!("tokens.focus.transition.properties: {refused}")]
+    );
+    assert_eq!(
+        bare(&toml(&format!("[widgets.button.body.focus]\n{named}"))),
+        [format!(
+            "widgets.button.body.focus.transition.properties: {refused}"
+        )]
+    );
+    assert_eq!(
+        bare(&toml(&format!(
+            "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
+             set = {{ focus.{named} }}"
+        ))),
+        [format!(
+            "rules[0].set.focus.transition.properties: {refused}"
+        )]
+    );
+    assert_eq!(
+        bare(&toml(
+            "[widgets.button.body]\ntransitions = [{ properties = [], kind = \"interpolate\", \
+             duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }]"
+        )),
+        ["widgets.button.body.transitions[0].properties: a transition of no property group"]
+    );
+}
+
 /// A `StateLayer` transition times the part's `interaction`, so a part
 /// without it may not state one (S2.7, S2.12, S12).
 #[test]
@@ -402,7 +514,7 @@ fn refusal_state_layer_without_interaction() {
         toml(&format!(
             "[widgets.button.{part}]\ntransitions = [{{ properties = [\"state_layer\"], kind = \
              \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", \
-             suspended_by_theme_change = false }}]"
+             engine = \"gtk_css\" }}]"
         ))
     };
     assert_eq!(
@@ -1636,7 +1748,7 @@ fn refusal_ill_typed() {
     let referenced = toml(
         "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \
          \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"= token.motion.timings.fast\", \
-         suspended_by_theme_change = false }]",
+         engine = \"gtk_css\" }]",
     );
     assert_eq!(found(&referenced, &decl), NONE);
 }
@@ -2202,6 +2314,7 @@ kinds! {
     MaskAtBottom,
     TooFewStops,
     NoProperties,
+    FocusTransitionProperties,
     FromNoState,
     RecencyTooSmall,
     RecencyOrder { .. },
@@ -2531,6 +2644,14 @@ fn layer_error_every_variant_triggers() {
                 &[],
             ),
         ),
+        (
+            V::FocusTransitionProperties,
+            read(
+                "[widgets.button.body]\nfocus.transition = { properties = [\"fill\"], kind = \
+                 \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine \
+                 = \"gtk_css\", from = \"none\" }",
+            ),
+        ),
         (V::KeyframesNotIncreasing, over(&keyframes, &none, &[])),
         (
             V::KeyframeWithoutPart,
@@ -2748,7 +2869,7 @@ fn layer_error_every_variant_triggers() {
             V::FromNoState,
             over(
                 &toml(
-                    "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true, from = [] }]",
+                    "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = [] }]",
                 ),
                 &Declarations::default(),
                 &[],
@@ -2758,7 +2879,7 @@ fn layer_error_every_variant_triggers() {
             V::StateLayerWithoutInteraction,
             over(
                 &toml(
-                    "[widgets.button.label]\ntext.fill = \"#000000\"\n[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\nset = { transitions = [{ properties = [\"state_layer\"], kind = \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = false }] }",
+                    "[widgets.button.label]\ntext.fill = \"#000000\"\n[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\nset = { transitions = [{ properties = [\"state_layer\"], kind = \"interpolate\", duration_ms = 15, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }] }",
                 ),
                 &Declarations::default(),
                 &[],
@@ -2956,9 +3077,9 @@ fn refusal_text_scaling_not_implemented() {
 fn token_transition_keyed_flag_declared() {
     let layer = |flag: &str| {
         toml(&format!(
-            "[tokens.focus]\ntransition = {{ properties = [\"fill\"], kind = \"interpolate\", \
+            "[tokens.focus]\ntransition = {{ properties = [], kind = \"interpolate\", \
              duration_ms = 100, delay_ms = 0, timing = \"linear\", \
-             suspended_by_theme_change = false, from = [\"{flag}\"] }}"
+             engine = \"gtk_css\", from = [\"{flag}\"] }}"
         ))
     };
     let decl = declare("[declare.widget.button]\nflags = [\"@armed\"]");

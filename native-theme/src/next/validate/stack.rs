@@ -12,7 +12,8 @@ use super::combos::World;
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
-    PresentationEvent, PresentationTransition, PropertyGroup, Transition, same_flags,
+    BreezeTest, PresentationEvent, PresentationTransition, PropertyGroup, Transition, same_flags,
+    same_test,
 };
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
@@ -202,9 +203,9 @@ const KEYED_LISTS: [&str; 3] = ["bindings", "transitions", "presentations"];
 /// What a keyed list's item is keyed by there (S6.1).
 #[derive(Clone, Debug)]
 pub(super) enum ItemKey {
-    /// A transition's property group and `from` set: a transition listing
-    /// several groups is split per group first.
-    Group(PropertyGroup, Option<Vec<StateFlag>>),
+    /// A transition's property group, `from` set and Breeze test: a
+    /// transition listing several groups is split per group first.
+    Group(PropertyGroup, Option<Vec<StateFlag>>, Option<BreezeTest>),
     /// A presentation's event.
     Event(PresentationEvent),
     /// A binding's role.
@@ -213,13 +214,15 @@ pub(super) enum ItemKey {
     Surface,
 }
 
-/// Two keys are one where they name one group and `from` sets of the same
-/// flags, or one event.
+/// Two keys are one where they name one group, `from` sets of the same
+/// flags and Breeze tests of the same flags and conditions, or one event.
 impl PartialEq for ItemKey {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (ItemKey::Group(a, x), ItemKey::Group(b, y)) => {
-                a == b && same_flags(x.as_deref(), y.as_deref())
+            (ItemKey::Group(a, x, s), ItemKey::Group(b, y, t)) => {
+                a == b
+                    && same_flags(x.as_deref(), y.as_deref())
+                    && same_test(s.as_ref(), t.as_ref())
             }
             (ItemKey::Event(a), ItemKey::Event(b)) => a == b,
             (ItemKey::Role(a), ItemKey::Role(b)) => a == b,
@@ -259,13 +262,17 @@ fn items<T>(list: &str, source: usize, held: &[T], keys: impl Fn(&T) -> Vec<Item
         .collect()
 }
 
-/// A part's transitions, keyed by property group.
+/// A part's transitions, keyed by property group, `from` set and Breeze
+/// test.
 fn transition_items(at: &str, source: usize, held: &[Transition]) -> Vec<Item> {
     items(&below(at, "transitions"), source, held, |transition| {
         transition
             .properties
             .iter()
-            .map(|group| ItemKey::Group(*group, transition.from.clone()))
+            .map(|group| {
+                let test = transition.merge_test().cloned();
+                ItemKey::Group(*group, transition.from.clone(), test)
+            })
             .collect()
     })
 }

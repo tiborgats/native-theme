@@ -1451,6 +1451,26 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A transition's `properties` (S2.7, S12): a list naming no group
+    /// animates nothing, but in a `FocusIndicator.transition`, which times the
+    /// whole indicator, it is empty and a non-empty one is refused (S2.10).
+    fn properties(&mut self, properties: Option<&[PropertyGroup]>, path: &Path) {
+        let Some(properties) = properties else {
+            return;
+        };
+        let focus = path.last_field() == Some(("FocusIndicator", "transition"));
+        match (focus, properties.is_empty()) {
+            (false, true) => self.problem(&path.join("properties"), ProblemKind::NoProperties),
+            (true, false) => {
+                self.problem(
+                    &path.join("properties"),
+                    ProblemKind::FocusTransitionProperties,
+                );
+            }
+            (false, false) | (true, true) => {}
+        }
+    }
+
     /// A timing's own constraints (S2.7); a number that is not finite is
     /// reported where the walk reaches it, as that one problem.
     fn timing(&mut self, timing: &Timing, path: &Path) {
@@ -1632,9 +1652,7 @@ impl Visit for Checker<'_> {
                 }
             }
             Node::Transition(transition) => {
-                if transition.properties.is_empty() {
-                    self.problem(&path.join("properties"), ProblemKind::NoProperties);
-                }
+                self.properties(Some(&transition.properties), path);
                 self.from(transition.from.as_deref(), path);
                 self.state_layer(&transition.properties, path);
             }
@@ -1651,9 +1669,7 @@ impl Visit for Checker<'_> {
                 Region::Roles => {}
             },
             Node::TransitionPatch(transition) => {
-                if transition.properties.as_ref().is_some_and(Vec::is_empty) {
-                    self.problem(&path.join("properties"), ProblemKind::NoProperties);
-                }
+                self.properties(transition.properties.as_deref(), path);
                 self.from(transition.from.as_ref().and_then(Option::as_deref), path);
                 if let Some(properties) = &transition.properties {
                     self.state_layer(properties, path);
@@ -1702,6 +1718,7 @@ impl Visit for Checker<'_> {
             }
             Node::Scalar(scalar) => self.scalar_unit(path, scalar),
             Node::Key(key) => self.declared_leaf(path, key),
+            Node::Condition(condition) => self.condition(condition, &at),
             Node::SurfaceSet(set) => self.surface_set(set, &at),
         }
     }
@@ -3120,7 +3137,7 @@ mod table_tests {
             duration: Value::Absent,
             delay: Value::Absent,
             timing: Value::Stated(Timing::Linear),
-            suspended_by_theme_change: false,
+            engine: crate::next::blocks::motion::TransitionEngine::GtkCss,
             from: None,
         });
         w.walk(&PresentationTransition {

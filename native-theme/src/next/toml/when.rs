@@ -224,6 +224,15 @@ impl FromToml for StateFlag {
     }
 }
 
+/// A condition as a value (a Breeze test's, a theme change's): its name, as
+/// a `when`'s `conditions` writes it (S11).
+impl FromToml for Condition {
+    fn read(item: &Item, _: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
+        let name = text(item, at, cx)?;
+        condition(name, at, cx)
+    }
+}
+
 /// `context` and `not_context`: arrays of ancestor matches.
 fn contexts(item: &Item, at: &str, cx: &mut Reader) -> Vec<ContextMatch> {
     let Some(items) = read::array(item, at, cx) else {

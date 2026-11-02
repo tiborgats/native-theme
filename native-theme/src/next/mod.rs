@@ -79,12 +79,13 @@ pub use blocks::interaction::{
     StateLayerStylePatch,
 };
 pub use blocks::motion::{
-    AdwEasing, EdgeSide, Keyframe, KeyframePatch, Loop, LoopPatch, PlatformCurve,
-    PresentationEvent, PresentationKind, PresentationStep, PresentationStepPatch,
-    PresentationTransition, PresentationTransitionPatch, PropertyGroup, QtEasing, ResolvedKeyframe,
-    ResolvedLoop, ResolvedPlatformCurve, ResolvedPresentationKind, ResolvedPresentationStep,
-    ResolvedPresentationTransition, ResolvedTiming, ResolvedTransition, ResolvedTransitionKind,
-    RevealOrigin, StepJump, Timing, Transition, TransitionKind, TransitionPatch,
+    AdwEasing, BreezeTest, BreezeTestPatch, EdgeSide, Keyframe, KeyframePatch, Loop, LoopPatch,
+    PlatformCurve, PresentationEvent, PresentationKind, PresentationStep, PresentationStepPatch,
+    PresentationTransition, PresentationTransitionPatch, PropertyGroup, QtEasing,
+    ResolvedBreezeTest, ResolvedKeyframe, ResolvedLoop, ResolvedPlatformCurve,
+    ResolvedPresentationKind, ResolvedPresentationStep, ResolvedPresentationTransition,
+    ResolvedTiming, ResolvedTransition, ResolvedTransitionEngine, ResolvedTransitionKind,
+    RevealOrigin, StepJump, Timing, Transition, TransitionEngine, TransitionKind, TransitionPatch,
 };
 pub use blocks::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Edge, EdgePatch, FillClip, LineCap, LineJoin,

@@ -1159,7 +1159,7 @@ fn keyed_kind_and_material_params_typed_by_their_unit() {
     let parts = r##"
 [widgets.button.body]
 fill = { layers = [{ kind = { material = { identity = "mica", blur_radius_px = "absent", tint = "absent", saturation = "absent", luminosity = "absent", noise_opacity = "absent", fallback = "#000000", params = { depth = "= add(1px, 2px)" } } }, blend = "normal" }] }
-transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", params = { amplitude = "= add(2px, 2px)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", suspended_by_theme_change = true }]
+transitions = [{ properties = ["fill"], kind = { keyed = { key = "bounce", params = { amplitude = "= add(2px, 2px)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", engine = "gtk_css" }]
 [widgets.button.values]
 presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = { key = "wipe", params = { lag = "= add(10ms, 20ms)" } } }, duration_ms = 100, delay_ms = 0, timing = "linear", stagger_ms = 0 }] }]
 "##;

@@ -429,7 +429,7 @@ fn spelling_tuple() {
     let style = body_of(
         "transform = { origin = [0.5, 0.25] }\ntransitions = [{ properties = [\"fill\"], kind = \
          \"interpolate\", duration_ms = 100, delay_ms = 0, timing = { cubic_bezier = [0.2, 0, 0, \
-         1] }, suspended_by_theme_change = true }]",
+         1] }, engine = \"gtk_css\" }]",
     );
     let Some(BlockPatch::Fields(transform)) = style.transform else {
         panic!("fields");
@@ -1337,6 +1337,99 @@ fn toml_key_escapes_as_toml_does() {
     }
 }
 
+/// A transition's `engine` is spelt as an enum block's variant, every list
+/// of a Breeze test stated (S11, ADD-A126): one case per S11 form; a
+/// transition stating none misses it.
+#[test]
+fn transition_engine_spellings() {
+    use crate::next::blocks::motion::{BreezeTest, TransitionEngine};
+    use crate::next::selector::{Condition, StateFlag};
+    let item = |engine: &str| {
+        format!(
+            "transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
+             100, delay_ms = 0, timing = \"linear\"{engine} }}]"
+        )
+    };
+    let engine = |engine: &str| {
+        let transitions = body_of(&item(&format!(", engine = {engine}"))).transitions;
+        transitions.and_then(|list| list.first().map(|t| t.engine.clone()))
+    };
+    let test = |any: Vec<StateFlag>, none: Vec<StateFlag>, conditions: Vec<Condition>| BreezeTest {
+        any,
+        none,
+        conditions,
+    };
+    let breeze = test(
+        vec![StateFlag::Hover],
+        vec![StateFlag::Focused, StateFlag::Disabled],
+        Vec::new(),
+    );
+    for (text, expected) in [
+        ("\"gtk_css\"", TransitionEngine::GtkCss),
+        ("\"qt_quick\"", TransitionEngine::QtQuick),
+        (
+            "\"compose_animatable\"",
+            TransitionEngine::ComposeAnimatable,
+        ),
+        (
+            "\"compose_transition\"",
+            TransitionEngine::ComposeTransition,
+        ),
+        ("\"win_ui\"", TransitionEngine::WinUi),
+        ("\"gtk_switch\"", TransitionEngine::GtkSwitch),
+        ("\"compose_held\"", TransitionEngine::ComposeHeld),
+        (
+            "{ win_ui_animated_icon = { visual = \"accept\" } }",
+            TransitionEngine::WinUiAnimatedIcon {
+                visual: key!("accept"),
+            },
+        ),
+        (
+            "{ adw_animation = { replays = false } }",
+            TransitionEngine::AdwAnimation { replays: false },
+        ),
+        (
+            "{ breeze = { any = [\"hover\"], none = [\"focused\", \"disabled\"], conditions = [] \
+             } }",
+            TransitionEngine::Breeze(breeze.clone()),
+        ),
+        (
+            "{ breeze_tab_bar = { any = [\"hover\"], none = [\"focused\", \"disabled\"], \
+             conditions = [] } }",
+            TransitionEngine::BreezeTabBar(breeze),
+        ),
+        (
+            "{ breeze = { any = [], none = [], conditions = [\"window_inactive\"] } }",
+            TransitionEngine::Breeze(test(
+                Vec::new(),
+                Vec::new(),
+                vec![Condition::WindowInactive],
+            )),
+        ),
+    ] {
+        assert_eq!(engine(text), Some(expected), "{text}");
+    }
+    let at = "widgets.button.body.transitions[0]";
+    assert_eq!(
+        problems(&format!("[widgets.button.body]\n{}", item(""))),
+        [format!("{at}.engine: missing")]
+    );
+    assert_eq!(
+        problems(&format!(
+            "[widgets.button.body]\n{}",
+            item(", engine = { breeze = { any = [\"hover\"], none = [] } }")
+        )),
+        [format!("{at}.engine.breeze.conditions: missing")]
+    );
+    assert_eq!(
+        problems(&format!(
+            "[widgets.button.body]\n{}",
+            item(", engine = \"breeze_style\"")
+        )),
+        [format!("{at}.engine: unknown name \"breeze_style\"")]
+    );
+}
+
 /// A transition's `from` is a list of flags; left out of a `transitions`
 /// item it is `None`, and in a single `Value<Transition>` `"none"` is any
 /// state (S11, ADD-A124).
@@ -1345,7 +1438,7 @@ fn spelling_transition_from() {
     let item = |from: &str| {
         format!(
             "transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
-             100, delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true{from} }}]"
+             100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\"{from} }}]"
         )
     };
     let style = body_of(&item(", from = [\"hover\", \"focus_visible\", \"@spin\"]"));
@@ -1360,8 +1453,8 @@ fn spelling_transition_from() {
     );
     assert_eq!(body_of(&item("")).transitions.unwrap()[0].from, None);
     let focus = body_of(
-        "focus.transition = { properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, \
-         delay_ms = 0, timing = \"linear\", suspended_by_theme_change = true, from = \"none\" }",
+        "focus.transition = { properties = [], kind = \"interpolate\", duration_ms = 100, \
+         delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = \"none\" }",
     );
     let Some(BlockPatch::Fields(focus)) = focus.focus else {
         panic!("fields");

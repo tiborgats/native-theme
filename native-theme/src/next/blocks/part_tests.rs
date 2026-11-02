@@ -7,8 +7,8 @@ use super::interaction::{Interaction, RippleStyle, StateLayerStyle};
 use super::motion::{
     AdwEasing, Keyframe, Loop, PlatformCurve, PresentationEvent, PresentationKind,
     PresentationStep, PresentationTransition, PropertyGroup, QtEasing, ResolvedKeyframe,
-    ResolvedTiming, Timing, Transition, TransitionKind, damping_coefficient, evaluate,
-    spring_duration,
+    ResolvedTiming, Timing, Transition, TransitionEngine, TransitionKind, damping_coefficient,
+    evaluate, spring_duration,
 };
 use super::outline::{
     CornerCurve, Corners, CornersPatch, DashPattern, Radius, concentric, follow_part, full,
@@ -142,7 +142,19 @@ fn transition_paths(prefix: &str) -> Vec<String> {
     out.extend(under(&join(prefix, "kind"), &["keyed.key", "keyed.params"]));
     out.extend(under(prefix, &["duration", "delay"]));
     out.extend(timing(&join(prefix, "timing")));
-    out.extend(under(prefix, &["suspended_by_theme_change", "from"]));
+    out.extend(engine(&join(prefix, "engine")));
+    out.extend(under(prefix, &["from"]));
+    out
+}
+
+/// S2.7's transition engine: an enum block, its data variants' fields.
+fn engine(prefix: &str) -> Vec<String> {
+    let mut out = vec![prefix.to_owned()];
+    out.extend(under(prefix, &["adw_animation.replays"]));
+    for breeze in ["breeze", "breeze_tab_bar"] {
+        out.extend(under(&join(prefix, breeze), &["any", "none", "conditions"]));
+    }
+    out.extend(under(prefix, &["win_ui_animated_icon.visual"]));
     out
 }
 
@@ -635,7 +647,7 @@ fn transition(groups: Vec<PropertyGroup>, ms: f32) -> Transition {
         duration: Value::Stated(Ms(ms)),
         delay: Value::Stated(Ms(0.0)),
         timing: Value::Stated(Timing::Linear),
-        suspended_by_theme_change: false,
+        engine: TransitionEngine::GtkCss,
         from: None,
     }
 }
@@ -950,6 +962,81 @@ fn transitions_merge_by_group_and_from() {
     );
     Transition::merge_keyed(&mut list, vec![from(Some(vec![StateFlag::Hover]), 15.0)]);
     assert_eq!(list.len(), 3);
+}
+
+/// Transitions merge by property group, `from` set and Breeze test: two
+/// tests of the same flags and conditions one key; a transition of another
+/// engine, or a stated zero, keyed with no test (S6.1, ADD-A126).
+#[test]
+fn transitions_merge_keyed_by_breeze_test() {
+    use super::motion::BreezeTest;
+    use crate::next::selector::{Condition, StateFlag};
+    let test = |any: Vec<StateFlag>, conditions: Vec<Condition>| BreezeTest {
+        any,
+        none: vec![StateFlag::Disabled],
+        conditions,
+    };
+    let engine = |engine: TransitionEngine, ms: f32| Transition {
+        engine,
+        ..transition(vec![PropertyGroup::Fill], ms)
+    };
+    let breeze = |any, conditions, ms| engine(TransitionEngine::Breeze(test(any, conditions)), ms);
+    let hover = || vec![StateFlag::Hover, StateFlag::Focused];
+    let inactive = || vec![Condition::WindowInactive];
+
+    let mut list = vec![
+        breeze(hover(), Vec::new(), 150.0),
+        breeze(vec![StateFlag::Pressed], Vec::new(), 100.0),
+        engine(TransitionEngine::GtkCss, 120.0),
+    ];
+    Transition::merge_keyed(
+        &mut list,
+        vec![
+            breeze(vec![StateFlag::Focused, StateFlag::Hover], Vec::new(), 90.0),
+            breeze(hover(), inactive(), 60.0),
+        ],
+    );
+    assert_eq!(
+        list,
+        vec![
+            breeze(vec![StateFlag::Pressed], Vec::new(), 100.0),
+            engine(TransitionEngine::GtkCss, 120.0),
+            breeze(vec![StateFlag::Focused, StateFlag::Hover], Vec::new(), 90.0),
+            breeze(hover(), inactive(), 60.0),
+        ]
+    );
+
+    // The tab bar's engine with the same test is the same key.
+    Transition::merge_keyed(
+        &mut list,
+        vec![engine(
+            TransitionEngine::BreezeTabBar(test(vec![StateFlag::Pressed], Vec::new())),
+            80.0,
+        )],
+    );
+    assert_eq!(list.len(), 4);
+    assert_eq!(
+        list.last(),
+        Some(&engine(
+            TransitionEngine::BreezeTabBar(test(vec![StateFlag::Pressed], Vec::new())),
+            80.0
+        ))
+    );
+
+    // A stated zero is keyed with no test, so it replaces the `GtkCss`
+    // transition of its group and `from` set.
+    let zero = Transition {
+        engine: TransitionEngine::Breeze(BreezeTest {
+            any: Vec::new(),
+            none: Vec::new(),
+            conditions: Vec::new(),
+        }),
+        ..transition(vec![PropertyGroup::Fill], 0.0)
+    };
+    Transition::merge_keyed(&mut list, vec![zero.clone()]);
+    assert_eq!(list.len(), 4);
+    assert!(!list.contains(&engine(TransitionEngine::GtkCss, 120.0)));
+    assert_eq!(list.last(), Some(&zero));
 }
 
 #[test]
@@ -1401,7 +1488,7 @@ fn governing_picks_the_last_that_applies() {
             duration: Some(Ms(ms)),
             delay: Some(Ms(0.0)),
             timing: Some(crate::next::ResolvedTiming::Linear),
-            suspended_by_theme_change: false,
+            engine: crate::next::ResolvedTransitionEngine::GtkCss,
             from,
         }
     };
@@ -1487,7 +1574,7 @@ fn glyph_draw_governs_glyph_path() {
             duration: Some(Ms(ms)),
             delay: Some(Ms(0.0)),
             timing: Some(crate::next::ResolvedTiming::Linear),
-            suspended_by_theme_change: false,
+            engine: crate::next::ResolvedTransitionEngine::GtkCss,
             from,
         }
     };

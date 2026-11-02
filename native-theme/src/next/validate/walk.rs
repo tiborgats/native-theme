@@ -27,7 +27,7 @@ use crate::next::expr::{EnumTy, Expr, SURFACE_SET, Ty};
 use crate::next::key::Key;
 use crate::next::registry::FieldInfo;
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
-use crate::next::selector::{PartRef, StateFlag, VariantRef, WidgetRef};
+use crate::next::selector::{Condition, PartRef, StateFlag, VariantRef, WidgetRef};
 use crate::next::toml::read::{MapKey, toml_key};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides, ViewBox};
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
@@ -138,6 +138,8 @@ pub(crate) enum Node<'a> {
     SurfaceSet(SurfaceSet),
     /// A state flag: a value.
     StateFlag(&'a StateFlag),
+    /// A condition: a value.
+    Condition(&'a Condition),
 }
 
 /// One step of a path.
@@ -907,6 +909,14 @@ impl Walk for Key {
 impl Walk for StateFlag {
     fn walk(&self, w: &mut Walker<'_>) {
         w.check(Node::StateFlag(self));
+    }
+}
+
+/// A condition as a value (a Breeze test's): a keyed one is a name the
+/// preset declares (S10).
+impl Walk for Condition {
+    fn walk(&self, w: &mut Walker<'_>) {
+        w.check(Node::Condition(self));
     }
 }
 

@@ -10,8 +10,9 @@ use crate::next::key::Key;
 use crate::next::units::{Ms, Px, Sides};
 use crate::next::value::Value;
 
-/// A part's focus indicator, drawn only while the element has
-/// `FocusVisible`; a part with no indicator states its `focus` `Absent`.
+/// A part's focus indicator, drawn while the element has `FocusVisible`
+/// and, after the flag clears, while its transition out runs; a part with no
+/// indicator states its `focus` `Absent`.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -45,7 +46,8 @@ pub struct FocusIndicator {
     /// layer.
     #[parts(block = "set", may_be_absent)]
     pub shadow: Value<Shadow>,
-    /// The indicator's own motion.
+    /// The indicator's own motion, timing every field of the indicator, so
+    /// its `properties` is empty (S2.10, S12).
     #[parts(block = "fields", may_be_absent)]
     pub transition: Value<Transition>,
 }

@@ -24,7 +24,7 @@ use native_theme_derive::ThemeParts;
 use super::part_style::{PartStyle, PartStylePatch, ResolvedPartStylePatch};
 use super::{KeyedItem, merge_keyed_by, timing};
 use crate::next::key::Key;
-use crate::next::selector::{PartRef, StateFlag, StateFlags};
+use crate::next::selector::{Condition, PartRef, StateFlag, StateFlags};
 use crate::next::units::{Fraction, Ms, Px, Scalar};
 use crate::next::value::Value;
 
@@ -381,9 +381,11 @@ pub struct Transition {
     /// The timing: a timing, or a reference to a timing token.
     #[parts(block = "set")]
     pub timing: Value<Timing>,
-    /// A theme change suspends it (libadwaita's CSS transitions are, its
-    /// `AdwAnimation`s are not).
-    pub suspended_by_theme_change: bool,
+    /// The toolkit code that runs it, a stated zero's included: what starts
+    /// it, where it starts from while a value it times is moving, and what a
+    /// theme change does to it are that code's rules (S2.7, S4.3).
+    #[parts(block = "set")]
+    pub engine: TransitionEngine,
     /// The states it applies from: a change where the element held at least
     /// one of these flags before it, taken after the exclusive groups' drop
     /// ([`ResolvedTheme::kept_states`](crate::next::ResolvedTheme::kept_states), S8); `None`:
@@ -391,16 +393,49 @@ pub struct Transition {
     pub from: Option<Vec<StateFlag>>,
 }
 
-/// A list of transitions merges by property group and `from` set (S6.1),
-/// two sets of the same flags one key.
+impl Transition {
+    /// The Breeze test the transition is keyed by in a list (S6.1): its
+    /// engine's, a `Breeze` or `BreezeTabBar` one's; `None` for another
+    /// engine and for a stated zero, whose test reads none.
+    pub(crate) fn merge_test(&self) -> Option<&BreezeTest> {
+        if self.duration == Value::Stated(Ms(0.0)) {
+            return None;
+        }
+        self.engine.breeze_test()
+    }
+}
+
+/// A list of transitions merges by property group, `from` set and Breeze
+/// test (S6.1), two sets of the same flags one key.
 impl KeyedItem for Transition {
     fn merge_keyed(earlier: &mut Vec<Self>, later: Vec<Self>) {
         let mut held = split_by_group(std::mem::take(earlier));
         merge_keyed_by(&mut held, split_by_group(later), |a, b| {
-            a.properties == b.properties && same_flags(a.from.as_deref(), b.from.as_deref())
+            a.properties == b.properties
+                && same_flags(a.from.as_deref(), b.from.as_deref())
+                && same_test(a.merge_test(), b.merge_test())
         });
         *earlier = held;
     }
+}
+
+/// Whether two Breeze tests are one key: each list the same flags or
+/// conditions as a set; `None`, no test, only matches itself.
+pub(crate) fn same_test(a: Option<&BreezeTest>, b: Option<&BreezeTest>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => {
+            same_flags(Some(&a.any), Some(&b.any))
+                && same_flags(Some(&a.none), Some(&b.none))
+                && same_set(&a.conditions, &b.conditions)
+        }
+        (None, Some(_)) | (Some(_), None) => false,
+    }
+}
+
+/// Whether two lists hold the same items, as sets.
+fn same_set<T: PartialEq>(a: &[T], b: &[T]) -> bool {
+    a.iter().all(|x| b.contains(x)) && b.iter().all(|x| a.contains(x))
 }
 
 /// Whether two `from` sets hold the same flags; `None`, any state, only
@@ -408,7 +443,7 @@ impl KeyedItem for Transition {
 pub(crate) fn same_flags(a: Option<&[StateFlag]>, b: Option<&[StateFlag]>) -> bool {
     match (a, b) {
         (None, None) => true,
-        (Some(a), Some(b)) => a.iter().all(|f| b.contains(f)) && b.iter().all(|f| a.contains(f)),
+        (Some(a), Some(b)) => same_set(a, b),
         (None, Some(_)) | (Some(_), None) => false,
     }
 }
@@ -461,6 +496,79 @@ fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
         }));
     }
     out
+}
+
+/// The toolkit code that runs a transition (S2.7): a closed set, each
+/// member implemented once in native-theme to its source. A member is added,
+/// implemented to its source, with the fact that needs it.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+pub enum TransitionEngine {
+    /// GTK's CSS transitions.
+    GtkCss,
+    /// An `AdwAnimation` a libadwaita widget's code plays.
+    AdwAnimation {
+        /// The widget plays it again on every change of the element's flags,
+        /// of the window's activity and of its own replay inputs, its end
+        /// unchanged included (AdwEntryRow's title); without it, only as its
+        /// value changes.
+        replays: bool,
+    },
+    /// A QML `Behavior` (Kirigami, qqc2-desktop-style).
+    QtQuick,
+    /// A Breeze state engine, or its decoration's shadow animation.
+    Breeze(#[parts(block = "fields")] BreezeTest),
+    /// Breeze's tab-bar and header-view engines.
+    BreezeTabBar(#[parts(block = "fields")] BreezeTest),
+    /// Compose's `Animatable.animateTo` (`animate*AsState`, the state layer,
+    /// the elevation).
+    ComposeAnimatable,
+    /// A child animation of Compose's `updateTransition`.
+    ComposeTransition,
+    /// `ButtonGroup`'s press fraction, its run back held.
+    ComposeHeld,
+    /// WinUI's brush transitions and visual-state storyboards.
+    WinUi,
+    /// WinUI's `AnimatedIcon` player (a `Keyed` icon transition).
+    WinUiAnimatedIcon {
+        /// Its source, a `token.icons.animated_visuals` entry.
+        visual: Key,
+    },
+    /// `GtkSwitch`'s own slide of its thumb.
+    GtkSwitch,
+}
+
+impl TransitionEngine {
+    /// The engine's Breeze test: a `Breeze` or `BreezeTabBar` engine's.
+    pub(crate) fn breeze_test(&self) -> Option<&BreezeTest> {
+        match self {
+            TransitionEngine::Breeze(test) | TransitionEngine::BreezeTabBar(test) => Some(test),
+            TransitionEngine::GtkCss
+            | TransitionEngine::AdwAnimation { .. }
+            | TransitionEngine::QtQuick
+            | TransitionEngine::ComposeAnimatable
+            | TransitionEngine::ComposeTransition
+            | TransitionEngine::ComposeHeld
+            | TransitionEngine::WinUi
+            | TransitionEngine::WinUiAnimatedIcon { .. }
+            | TransitionEngine::GtkSwitch => None,
+        }
+    }
+}
+
+/// A Breeze engine's own test, quoted from its `updateState` call (S2.7): it
+/// holds while one of `any` or of `conditions` holds and none of `none`
+/// does. All three are empty on a stated zero, which reads none.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+#[non_exhaustive]
+pub struct BreezeTest {
+    /// The flags one of which holds it.
+    pub any: Vec<StateFlag>,
+    /// The flags none of which may hold.
+    pub none: Vec<StateFlag>,
+    /// The conditions one of which holds it.
+    pub conditions: Vec<Condition>,
 }
 
 /// How a transition draws a change.

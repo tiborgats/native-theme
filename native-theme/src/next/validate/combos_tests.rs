@@ -1013,7 +1013,7 @@ fn combination_keyed_item_replaced() {
         format!(
             "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
              \"interpolate\", duration_ms = 100, delay_ms = {delay}, timing = \"linear\", \
-             suspended_by_theme_change = true }}]"
+             engine = \"gtk_css\" }}]"
         )
     };
     let below = format!(
@@ -1030,6 +1030,41 @@ fn combination_keyed_item_replaced() {
     assert_eq!(
         over(&below, kept, &Declarations::default()),
         ["widgets.button.body.transitions[0].delay_ms: `values.repeat_delay` can be `absent` here"]
+    );
+}
+
+/// A keyed list's transitions are keyed by their Breeze test too (S6.1,
+/// ADD-A126): a later transition of the same test replaces the earlier, so
+/// its `duration` is never evaluated; one of another test leaves it.
+#[test]
+fn combination_keyed_item_replaced_by_breeze_test() {
+    let transition = |duration: &str, any: &str| {
+        format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+             \"interpolate\", duration_ms = {duration}, delay_ms = 0, timing = \"linear\", \
+             engine = {{ breeze = {{ any = [{any}], none = [], conditions = [] }} }} }}]"
+        )
+    };
+    let below = format!(
+        "{}\n[widgets.button.values]\nrepeat_delay_ms = 400",
+        transition(
+            "\"= add(values.repeat_delay, 10ms)\"",
+            "\"hover\", \"pressed\""
+        )
+    );
+    let top = |any: &str| {
+        format!(
+            "{}\n[widgets.button.values]\nrepeat_delay_ms = \"absent\"",
+            transition("100", any)
+        )
+    };
+    let decl = Declarations::default();
+    assert_eq!(over(&below, &top("\"pressed\", \"hover\""), &decl), NONE);
+    assert_eq!(
+        over(&below, &top("\"hover\""), &decl),
+        [
+            "widgets.button.body.transitions[0].duration_ms: `values.repeat_delay` can be `absent` here"
+        ]
     );
 }
 

@@ -215,6 +215,9 @@ pub enum ProblemKind {
     /// A `Transition` with an empty `properties` list: it would animate
     /// nothing (S2.7, S12).
     NoProperties,
+    /// A `FocusIndicator.transition` whose `properties` list is not empty:
+    /// it times the whole indicator, so it names no group (S2.10, S12).
+    FocusTransitionProperties,
     /// A `Transition.from` that is an empty list: it would apply from no
     /// state (S2.7, S12).
     FromNoState,
@@ -469,6 +472,9 @@ impl fmt::Display for ProblemKind {
             ProblemKind::MaskAtBottom => f.write_str("its bottom layer is a mask"),
             ProblemKind::TooFewStops => f.write_str("a gradient has at least two stops"),
             ProblemKind::NoProperties => f.write_str("a transition of no property group"),
+            ProblemKind::FocusTransitionProperties => {
+                f.write_str("a focus indicator's transition names no property group")
+            }
             ProblemKind::FromNoState => f.write_str("a transition applying from no state"),
             ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),
             ProblemKind::RecencyOrder { set } => {

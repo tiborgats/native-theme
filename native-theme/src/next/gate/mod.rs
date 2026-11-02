@@ -420,8 +420,9 @@ fn unit_suffix(info: &registry::FieldInfo) -> &'static str {
 
 /// The synthetic value of a listed path (S17, ADD-A128), its last key
 /// spelled with the unit suffix of the value: `absent` where the field may
-/// be absent, else [`synthetic_of`] its type, or its map's value type where
-/// the path names an entry; an input's, `#010203` under each scheme
+/// be absent, an empty list at a focus indicator's transition's
+/// `properties`, else [`synthetic_of`] its type, or its map's value type
+/// where the path names an entry; an input's, `#010203` under each scheme
 /// (S9.1's `[inputs.<name>]`), which replaces the preset's whole (S9).
 fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
     if super::toml::read::listed_input(path).is_some() {
@@ -441,6 +442,8 @@ fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
     }
     let (suffix, item) = if levels == 0 && info.may_be_absent {
         (unit_suffix(info), Item::String("absent".to_owned()))
+    } else if focus_properties(path) {
+        ("", Item::Array(Vec::new()))
     } else {
         synthetic_of(ty, info)
             .ok_or_else(|| format!("the gate has no synthetic value of `{ty}`"))?
@@ -451,6 +454,15 @@ fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
         *last = format!("{}{suffix}", super::toml::read::listed_path(last));
     }
     Ok((keys, item))
+}
+
+/// Whether a listed path is a `FocusIndicator.transition`'s `properties`,
+/// empty as the transition times the whole indicator (S2.10, S12): the
+/// indicator is every `focus` field's.
+fn focus_properties(path: &str) -> bool {
+    super::toml::read::key_segments(path).is_some_and(|keys| {
+        keys.ends_with(&["focus", "transition", "properties"].map(String::from))
+    })
 }
 
 /// A map's value type, as the model writes it: `Vec<(K,V)>`'s and
