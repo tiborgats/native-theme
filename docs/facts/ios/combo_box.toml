@@ -1,0 +1,785 @@
+# combo_box (ios-13, ios-26): the content row of iOS's pop-up button (CB-1, ADD-A127), the `UIButton` menu
+# configuration with the `.popup` indicator, which the iOS host's run 41020880059 drew as each style with a menu as
+# its primary action and the pop-up indicator (`cells.<scheme>.<style>__menu_primary_action__indicator_popup`, the
+# facts' `button @ variants {menu,@indicator_popup}`) at `medium` (the model's `regular`) only (the other sizes U120's): its content insets
+# (the body's padding), the gap from the title's frame to the indicator's (`label_arrow_gap`) and the indicator's start
+# and end margins (analysis/read_buttons.py's docstring is the method). Each preset states its own facts from its own
+# image. Unmeasured, pending: the indicator's top and bottom margins (U121), the title's own padding inside the row
+# (U257), whether the width follows the selected title and its slack (U173), where a wider pop-up puts the spare
+# width (U174, no key: the catalogue's rule) and how a long title is cut (U175).
+
+# ---- ios-13 ----
+
+# the content insets (leading is left: the captures are left to right)
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+# the gap from the title's frame to the indicator's
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+# the indicator's start and end margins (no space set before the trailing inset)
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-13"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U173"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U173"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
+pending = "U175"
+rows = ["CB-1"]
+
+# ---- ios-26 ----
+
+# the content insets (leading is left: the captures are left to right)
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_top"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.top"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.right"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "7px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_bottom"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.bottom"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "12px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.padding_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.body.padding.left"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.padding.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U257"
+rows = ["CB-1"]
+
+# the gap from the title's frame to the indicator's
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "4px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_gap"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.values.label_arrow_gap"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+# the indicator's start and end margins (no space set before the trailing inset)
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_left"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.left"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+value = "0px"
+rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__menu_primary_action__indicator_popup.medium.normal.menu_indicator_margin_right"
+tolerance = 0
+
+[[fact]]
+key = "combo_box.arrow.margin.right"
+when = { conditions = ["preset:ios-26"], not_sizes = ["regular"] }
+pending = "U120"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.top"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.arrow.margin.bottom"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U121"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_width"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U173"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.values.content_slack"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U173"
+rows = ["CB-1"]
+
+[[fact]]
+key = "combo_box.label.text.elision"
+when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
+pending = "U175"
+rows = ["CB-1"]
