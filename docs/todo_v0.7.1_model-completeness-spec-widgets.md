@@ -1798,8 +1798,10 @@ spaces:
   (`:78-80`, `:639-641`; S10, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in the default toolbar
   (`toolbarStyle` automatic, size mode regular, `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml:49141-49143`)
   `extra_large`, a `sizes_by_context` entry `{ context = { scope = "any", widget = "toolbar", part = "bar" }, … }`
-  with that `default_size` (the probe's `view_*_controlSize_raw` 4, `:49155-49158`; the entry's sizes, the other
-  toolbar styles and modes and a variant keeping its own size there U94, the macOS lane's; ADD-A131);
+  with that `default_size` (the probe's `view_*_controlSize_raw` 4, `:49155-49158`), its `sizes` every size the button
+  takes (`mini` … `extra_large`), removing none, until U94 decides whether the toolbar restricts an explicit size,
+  the facts at each size there being U94's pending facts, so the release stays blocked; the other toolbar styles and
+  modes and a variant keeping its own size there U94's too, the macOS lane's; ADD-A131);
   `macos-monterey`: no context default (its toolbar leaves `view_*_controlSize_raw` 0,
   `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no variant default. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
@@ -2094,7 +2096,8 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large` (MAC-SG10†). `material-3` flavour
   `expressive`: the button groups' sizes by variant (`sizes_by_variant`, S10), `@standard_group` and `@connected`
   each `extra_small`, `small`, `regular`, `large`, `extra_large` (MAT-N6), so a plain segmented button declares no
-  size (R15). `ios-*`: no sizes; the height
+  size (R15). Default sizes: each entry's own `default_size`, the widget having none (S10, S12; ADD-A131), the
+  Material lane's to state from Compose's button groups, not yet stated. `ios-*`: no sizes; the height
   follows Dynamic Type (`token.text.scaling`, S9.4; `uifm_scaled`, R10, SG-9†). Densities: none from these rows.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, selected (S7.2: a chosen segment is the
   current choice among its siblings, `selected` on every platform; under `@select_any` each chosen segment is
