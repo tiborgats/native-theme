@@ -85,6 +85,11 @@ pub(super) enum Shape {
     /// A `Vec` of pairs: merged by key; its values a block's where the field
     /// is marked `block`, each entry then patched by its block's patch.
     Map(Option<MapBlock>),
+    /// A `Value` of a map, `Value<Vec<(K, V)>>` (`Font.axes`, S6.1): a stated
+    /// map merged by key over a stated one, so no patch removes an entry; a
+    /// reference, `Absent` or `Auto` replacing it whole; a stated map over a
+    /// reference composed lazily (S2.2).
+    ValueMap(ValueMap),
     /// A `Vec` of pairs whose values are `Vec`s of pairs: merged by key, an
     /// entry held on both sides merged by key in turn (S6.1: every `Vec` of
     /// pairs).
@@ -101,6 +106,22 @@ pub(super) enum Shape {
     /// A compound value (`Sides<T>`, `Axes<T>`), patched member by member
     /// (S6.1).
     Compound(Compound),
+}
+
+/// A `Value` of a map's key and value types.
+pub(super) struct ValueMap {
+    pub(super) key: Box<Type>,
+    pub(super) value: Box<Type>,
+}
+
+impl ValueMap {
+    /// The type a reference to the map has (S2.2): a map of its key and
+    /// value types, by their names as written.
+    pub(super) fn ty(&self) -> TokenStream {
+        let key = type_string(&self.key);
+        let value = type_string(&self.value);
+        quote!(crate::next::expr::Ty::Map { key: #key, value: #value })
+    }
 }
 
 /// A compound value of the model: its type's name, its members, and the type
@@ -142,6 +163,7 @@ pub(super) struct BlockField {
 enum MergeKind {
     Replace,
     ByKey,
+    ValueMap,
     Entries,
     ByKeyNested,
     Surfaces,
@@ -160,6 +182,7 @@ impl BlockField {
             Shape::Leaf => MergeKind::Replace,
             Shape::Map(Some(map)) if map.entry_patch().is_some() => MergeKind::Entries,
             Shape::Map(_) => MergeKind::ByKey,
+            Shape::ValueMap(_) => MergeKind::ValueMap,
             Shape::NestedMap => MergeKind::ByKeyNested,
             Shape::Surfaces(_) => MergeKind::Surfaces,
             Shape::Block {
@@ -234,7 +257,11 @@ impl BlockField {
                 let entry = map.entry_patch();
                 quote!(::std::vec::Vec<(#key, #entry)>)
             }
-            Shape::Leaf | Shape::Map(_) | Shape::NestedMap | Shape::Block { .. } => {
+            Shape::Leaf
+            | Shape::Map(_)
+            | Shape::ValueMap(_)
+            | Shape::NestedMap
+            | Shape::Block { .. } => {
                 let ty = &self.ty;
                 quote!(#ty)
             }
@@ -256,6 +283,7 @@ impl BlockField {
             }
             Shape::Leaf
             | Shape::Map(_)
+            | Shape::ValueMap(_)
             | Shape::NestedMap
             | Shape::Surfaces(_)
             | Shape::Block { .. } => (TokenStream::new(), Vec::new()),
@@ -266,7 +294,11 @@ impl BlockField {
         match &self.shape {
             Shape::Block { block, .. } | Shape::Surfaces(block) => Some(block),
             Shape::Map(Some(map)) => Some(&map.block),
-            Shape::Leaf | Shape::Map(None) | Shape::NestedMap | Shape::Compound(_) => None,
+            Shape::Leaf
+            | Shape::Map(None)
+            | Shape::ValueMap(_)
+            | Shape::NestedMap
+            | Shape::Compound(_) => None,
         }
     }
 
@@ -302,6 +334,7 @@ impl BlockField {
             Shape::Leaf if generic_arg(&self.ty, "Value").is_some() && !self.attrs.keyed => {
                 quote!(#b::created_value(#ident, #marked, inner, #path)?)
             }
+            Shape::ValueMap(_) => quote!(#b::created_value(#ident, #marked, inner, #path)?),
             Shape::Compound(compound) => {
                 let (name, members) = self.members();
                 if generic_arg(&compound.inner, "Value").is_some() {
@@ -511,6 +544,15 @@ impl BlockField {
                 Some((_, value)) => quote!(<#value as #w::Walk>::ty),
                 None => quote!(#r::no_type),
             },
+            Shape::ValueMap(map) => {
+                let ty = map.ty();
+                quote! {{
+                    fn ty() -> ::core::option::Option<crate::next::expr::Ty> {
+                        ::core::option::Option::Some(#ty)
+                    }
+                    ty
+                }}
+            }
             Shape::Compound(_) => quote!(#r::no_type),
             Shape::Leaf | Shape::Surfaces(_) | Shape::Block { .. } => {
                 let ty = &self.ty;
@@ -781,7 +823,13 @@ pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
             }
             (None, Some((_, value))) if map_pair(value).is_some() => Shape::NestedMap,
             (None, Some(_)) => Shape::Map(None),
-            (None, None) => Shape::Leaf,
+            (None, None) => match generic_arg(&ty, "Value").and_then(map_pair) {
+                Some((key, value)) => Shape::ValueMap(ValueMap {
+                    key: Box::new(key.clone()),
+                    value: Box::new(value.clone()),
+                }),
+                None => Shape::Leaf,
+            },
         }
     };
     Ok(BlockField {
@@ -966,6 +1014,9 @@ fn expand_fields(
         match f.merge_kind() {
             MergeKind::Replace => quote!(#b::replace_slot(&mut self.#ident, #ident);),
             MergeKind::ByKey => quote!(#b::merge_slot_by_key(&mut self.#ident, #ident);),
+            MergeKind::ValueMap => quote! {
+                #b::merge_slot_value_map(&mut self.#ident, #ident).map_err(|c| c.under(#path))?;
+            },
             MergeKind::Entries => quote! {
                 #b::merge_slot_entries(&mut self.#ident, #ident).map_err(|c| c.under(#path))?;
             },
@@ -1002,6 +1053,11 @@ fn expand_fields(
             },
             MergeKind::ByKey => quote! {
                 if let ::core::option::Option::Some(entries) = #ident { #b::merge_by_key(&mut self.#ident, entries); }
+            },
+            MergeKind::ValueMap => quote! {
+                if let ::core::option::Option::Some(value) = #ident {
+                    #b::apply_value_map(&mut self.#ident, value).map_err(|c| c.under(#path))?;
+                }
             },
             MergeKind::Entries => quote! {
                 if let ::core::option::Option::Some(entries) = #ident {
@@ -1140,7 +1196,7 @@ fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> Tok
     let members = fields.iter().map(|f| {
         let ident = &f.ident;
         let key = ident.as_ref().map(Ident::to_string).unwrap_or_default();
-        let found = super::resolve::patch_locate(f, &quote!(value));
+        let found = super::resolve::patch_locate(f, &quote!(value), &quote!(&patch.#ident));
         let (call, required) = super::resolve::resolve_call(name, f);
         let call = if required {
             call

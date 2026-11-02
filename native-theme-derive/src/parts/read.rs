@@ -63,6 +63,15 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
                 finished: None,
             }
         }
+        Shape::ValueMap(map) => {
+            let (key, value) = (&map.key, &map.value);
+            Reading {
+                read: quote!(#t::read_value_map::<#key, #value>(item, &at, cx)),
+                spellings: bare,
+                combine: quote!(#t::no_combine),
+                finished: None,
+            }
+        }
         Shape::Surfaces(block) => Reading {
             read: {
                 let block = &block.ty;
@@ -395,7 +404,11 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStrea
                 }
             }
         }
-        Shape::Leaf | Shape::Map(_) | Shape::NestedMap | Shape::Block { .. } => {
+        Shape::Leaf
+        | Shape::Map(_)
+        | Shape::ValueMap(_)
+        | Shape::NestedMap
+        | Shape::Block { .. } => {
             if is_option(&f.ty) {
                 quote!(#t::optional(#ident, options_none, #at, cx))
             } else {
@@ -600,7 +613,7 @@ fn tuple_variant(
         [only] => {
             let ty = &only.ty;
             let read = match &only.shape {
-                Shape::Map(_) | Shape::NestedMap => {
+                Shape::Map(_) | Shape::ValueMap(_) | Shape::NestedMap => {
                     let reading = reading(&only.shape, &quote!(#ty), ty);
                     let read = reading.read;
                     quote! {{
@@ -622,7 +635,10 @@ fn tuple_variant(
                 .enumerate()
                 .map(|(i, (f, member))| {
                     let ty = &f.ty;
-                    if matches!(f.shape, Shape::Map(_) | Shape::NestedMap) {
+                    if matches!(
+                        f.shape,
+                        Shape::Map(_) | Shape::ValueMap(_) | Shape::NestedMap
+                    ) {
                         return Err(Error::new_spanned(
                             ty,
                             "a tuple variant of several fields holds no map",

@@ -615,6 +615,25 @@ pub(crate) fn walk_map<K: MapKey + PartialEq, V: Walk>(map: &[(K, V)], w: &mut W
     }
 }
 
+/// A `Value` of a map (`Font.axes`, S6.1): a stated map walked as a map, a
+/// reference typed as the map `ty`, its expression a reference only (S2.2).
+pub(crate) fn walk_value_map<K: MapKey + PartialEq, V: Walk>(
+    value: &Value<Vec<(K, V)>>,
+    ty: Ty,
+    w: &mut Walker<'_>,
+) {
+    let expr = ExprForm::ReferenceOnly;
+    match value {
+        Value::Stated(map) => {
+            w.value(Form::Stated, expr, None);
+            walk_map(map, w);
+        }
+        Value::Expr(e) => w.value(Form::Expr(e), expr, Some(ty)),
+        Value::Absent => w.value(Form::Absent, expr, None),
+        Value::Auto => w.value(Form::Auto, expr, None),
+    }
+}
+
 /// A map of maps: each level a map.
 pub(crate) fn walk_nested_map<K: MapKey + PartialEq, L: MapKey + PartialEq, V: Walk>(
     map: &[(K, Vec<(L, V)>)],

@@ -28,7 +28,7 @@ use crate::next::blocks::paint::{
 use crate::next::blocks::part_style::{Binding, PartStyle, ResolvedBinding, RoleRef};
 use crate::next::blocks::shadow::{ResolvedShadow, Shadow, ShadowLayer};
 use crate::next::blocks::text::{Font, ResolvedFont, ResolvedTextStyle, TextStyle};
-use crate::next::blocks::{Block, BlockPatch, FieldsBlock, KeyedItem};
+use crate::next::blocks::{Block, BlockPatch, FieldsBlock, KeyedItem, merge_by_key};
 use crate::next::color::Color;
 use crate::next::declare::ScalarUnit;
 use crate::next::expr::{
@@ -775,6 +775,39 @@ fn paint_step(fold: Fold<'_>) -> Option<PaintStep<'_>> {
             (None, None) => return None,
         },
     })
+}
+
+/// What a `Value` of a map's step is to its place (S6.1).
+enum MapStep<'f, K, V> {
+    /// The value a whole block states: it replaces what lies below.
+    Whole(&'f Value<Vec<(K, V)>>),
+    /// A patch's: a stated map merges by key, anything else replaces.
+    Patch(&'f Value<Vec<(K, V)>>),
+    /// A reference above the place.
+    Through(&'f Expr, usize),
+    /// `Absent` or `Auto` above the place.
+    Gone,
+}
+
+impl<K, V> MapStep<'_, K, V> {
+    /// Whether the step sets the map, rather than merging entries into it.
+    fn sets(&self) -> bool {
+        !matches!(self, MapStep::Patch(Value::Stated(_)))
+    }
+}
+
+/// A `Value` of a map's step at `fold`: a patch's held in its `Option`
+/// (the derive locates it so), a whole block's held bare.
+fn map_step<'f, K: 'static, V: 'static>(fold: Fold<'f>) -> Option<MapStep<'f, K, V>> {
+    match fold.found {
+        Found::Through { expr, rest } => Some(MapStep::Through(expr, rest)),
+        Found::Gone => Some(MapStep::Gone),
+        Found::Missing => None,
+        found => match found.get::<Option<Value<Vec<(K, V)>>>>() {
+            Some(held) => held.as_ref().map(MapStep::Patch),
+            None => found.get::<Value<Vec<(K, V)>>>().map(MapStep::Whole),
+        },
+    }
 }
 
 impl<'t> Cx<'t> {
@@ -2521,6 +2554,75 @@ impl<'t> Cx<'t> {
             out.push((key, value));
         }
         Some(out)
+    }
+
+    /// A `Value` of a map's resolved value (`Font.axes`, S6.1): the last step
+    /// that sets it, each stated map a patch states after it merged in by
+    /// key, a reference composed lazily with them (S2.2); `None`: absent, or
+    /// nothing states it.
+    pub(crate) fn value_map<'f, K, V>(&mut self, items: &[Fold<'f>]) -> Option<Vec<(K, V)>>
+    where
+        't: 'f,
+        K: PartialEq + Clone + 'static,
+        V: Clone + 'static,
+    {
+        let steps: Vec<(usize, MapStep<'f, K, V>)> = items
+            .iter()
+            .enumerate()
+            .filter_map(|(index, fold)| map_step(*fold).map(|step| (index, step)))
+            .collect();
+        let set = self.decider(
+            steps.iter().map(|(index, step)| (*index, step.sets())),
+            items,
+        );
+        let (mut map, from) = match set {
+            None => (None, 0),
+            Some(at) => {
+                let fold = *items.get(at)?;
+                let (_, step) = steps.iter().find(|(index, _)| *index == at)?;
+                let value = match step {
+                    MapStep::Through(expr, rest) => {
+                        return self.through(expr, *rest, items, at, fold.target, |cx, c| {
+                            cx.value_map::<K, V>(c)
+                        });
+                    }
+                    MapStep::Gone => return None,
+                    MapStep::Whole(value) | MapStep::Patch(value) => value,
+                };
+                let map = match value {
+                    Value::Stated(map) => map.clone(),
+                    Value::Absent | Value::Auto => return None,
+                    Value::Expr(Expr::Ref(Ref::Base)) => {
+                        self.value_map::<K, V>(items.get(..at).unwrap_or_default())?
+                    }
+                    Value::Expr(Expr::Ref(reference)) => {
+                        return match self.reference(reference, fold.target)? {
+                            Answer::Place {
+                                target,
+                                path,
+                                bases_only,
+                            } => self.follow(target, path, bases_only, |cx, referenced| {
+                                let composed = compose::composed(referenced, items, at);
+                                cx.value_map::<K, V>(&composed)
+                            }),
+                            Answer::Val(_) => None,
+                        };
+                    }
+                    Value::Expr(_) => return None,
+                };
+                (Some(map), at.saturating_add(1))
+            }
+        };
+        for (at, step) in &steps {
+            if *at < from {
+                continue;
+            }
+            if let MapStep::Patch(Value::Stated(entries)) = step {
+                self.touch(items.get(*at)?.pos);
+                merge_by_key(map.get_or_insert_with(Vec::new), entries.clone());
+            }
+        }
+        map
     }
 
     /// A map of a struct block per surface set (S3), each set's entry

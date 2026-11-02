@@ -147,6 +147,31 @@ mod tests {
         assert!(!style.contains("cx . unscaled"), "{style}");
     }
 
+    /// A `Value` of a map (S6.1): patched as a `Value`, merged by its own
+    /// rule, resolved as a map, its reference typed as the map.
+    #[test]
+    fn value_map_expands_its_own_kind() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                pub axes: Value<Vec<(AxisTag, AxisValue)>>,
+            }
+        });
+        for expected in [
+            "pub axes : :: core :: option :: Option < Value < Vec < (AxisTag , AxisValue) > > >",
+            "pub axes : :: core :: option :: Option < :: std :: vec :: Vec < (AxisTag , AxisValue) > >",
+            "crate :: next :: blocks :: merge_slot_value_map (& mut self . axes , axes)",
+            "crate :: next :: blocks :: apply_value_map (& mut self . axes , value)",
+            "cx . value_map :: < AxisTag , AxisValue > (& items)",
+            "crate :: next :: validate :: walk :: walk_value_map",
+            "crate :: next :: toml :: read :: read_value_map :: < AxisTag , AxisValue >",
+            "crate :: next :: expr :: Ty :: Map { key : \"AxisTag\" , value : \"AxisValue\" }",
+            "crate :: next :: resolve :: compose :: leaf (& self . axes , rest)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+    }
+
     #[test]
     fn auto_value_px_resolves_to_length() {
         let out = expand(syn::parse_quote! {

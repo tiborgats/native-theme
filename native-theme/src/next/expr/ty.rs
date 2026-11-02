@@ -50,6 +50,15 @@ pub(crate) enum Ty {
     /// (`TextStyle.scaling_role`, `max_lines`, S6.1): reached by reference
     /// only, from a field holding the same option.
     Option(Box<Ty>),
+    /// A map held in a `Value` (`Font.axes`, `Font.features`, S6.1), by its
+    /// key's and value's types as the model writes them: reached by
+    /// reference only, from a field holding the same map.
+    Map {
+        /// The key's type (`AxisTag`).
+        key: &'static str,
+        /// The value's type (`AxisValue`).
+        value: &'static str,
+    },
 }
 
 impl Ty {
@@ -376,6 +385,7 @@ impl fmt::Display for Ty {
             Ty::Paint => f.write_str("paint"),
             Ty::Block(name) => f.write_str(name),
             Ty::Option(ty) => write!(f, "option<{ty}>"),
+            Ty::Map { key, value } => write!(f, "map<{key}, {value}>"),
         }
     }
 }
@@ -545,7 +555,7 @@ impl Expr {
     /// Types the expression against the field it is stated on (S2.2): a
     /// field of type `T` takes a literal `T`, a reference to a token or
     /// field of type `T`, and, for scalar and colour fields only, a call; a
-    /// block, shadow or option field a reference only; a length is accepted
+    /// block, shadow, option or map field a reference only; a length is accepted
     /// where a font size is expected, and a colour expression on a paint
     /// field.
     ///
@@ -558,7 +568,10 @@ impl Expr {
         env: &dyn TypeEnv,
     ) -> Result<TypedExpr, TypeError> {
         match (&field.ty, self) {
-            (Ty::Block(_) | Ty::Shadow | Ty::Option(_), Expr::Lit(_) | Expr::Call(..)) => {
+            (
+                Ty::Block(_) | Ty::Shadow | Ty::Option(_) | Ty::Map { .. },
+                Expr::Lit(_) | Expr::Call(..),
+            ) => {
                 return Err(TypeError::ReferenceOnly {
                     field: field.ty.clone(),
                 });

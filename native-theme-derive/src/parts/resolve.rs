@@ -39,6 +39,7 @@ pub(super) fn whole_locate(field: &BlockField, value: &TokenStream) -> TokenStre
     }
     match &field.shape {
         Shape::Leaf
+        | Shape::ValueMap(_)
         | Shape::Block {
             wrap: Wrap::List | Wrap::Option,
             ..
@@ -61,14 +62,24 @@ fn map_locate(map: &MapBlock, value: &TokenStream) -> TokenStream {
 }
 
 /// Where `rest` leads below `value`, what a patch of the block sets the
-/// field to.
-pub(super) fn patch_locate(field: &BlockField, value: &TokenStream) -> TokenStream {
+/// field to, `held` the patch's `Option` holding it: a `Value` of a map is
+/// found as that `Option`, so its step is told from a whole block's, whose
+/// stated map replaces where a patch's merges (S6.1).
+pub(super) fn patch_locate(
+    field: &BlockField,
+    value: &TokenStream,
+    held: &TokenStream,
+) -> TokenStream {
     let c = compose();
     let locate = quote!(#c::Locate::locate(#value, rest));
     if field.attrs.patch {
         return locate;
     }
     match &field.shape {
+        Shape::ValueMap(_) => quote! {{
+            let _ = #value;
+            #c::leaf(#held, rest)
+        }},
         Shape::Leaf
         | Shape::Block {
             wrap: Wrap::List | Wrap::Option,
@@ -117,7 +128,7 @@ pub(super) fn struct_locate(
     let patch_arms = fields.iter().map(|f| {
         let ident = &f.ident;
         let key = name_of(f);
-        let found = patch_locate(f, &quote!(value));
+        let found = patch_locate(f, &quote!(value), &quote!(&self.#ident));
         quote! {
             #key => match &self.#ident {
                 ::core::option::Option::Some(value) => #found,
@@ -291,6 +302,10 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
                 quote!(cx.map::<#key, #value, #entry_patch, _>(&items, #lv, #lp, #entry)),
                 true,
             )
+        }
+        Shape::ValueMap(map) => {
+            let (key, value) = (&map.key, &map.value);
+            (quote!(cx.value_map::<#key, #value>(&items)), false)
         }
         Shape::Map(None) => match map_pair(ty) {
             Some((key, value)) => {

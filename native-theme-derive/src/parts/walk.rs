@@ -51,6 +51,18 @@ fn field_walk(f: &BlockField, value: &TokenStream, optional: bool) -> TokenStrea
         Shape::NestedMap => Some(quote!(#w::walk_nested_map)),
         _ => None,
     };
+    if let Shape::ValueMap(map) = &f.shape {
+        let ty = map.ty();
+        return if optional {
+            quote! {
+                if let ::core::option::Option::Some(value) = #value {
+                    #w::walk_value_map(value, #ty, w);
+                }
+            }
+        } else {
+            quote!(#w::walk_value_map(#value, #ty, w);)
+        };
+    }
     let inner = match call {
         Some(call) if optional => quote! {
             if let ::core::option::Option::Some(map) = #value {
@@ -73,7 +85,7 @@ fn field_walk(f: &BlockField, value: &TokenStream, optional: bool) -> TokenStrea
 fn suffix(f: &BlockField, value: &TokenStream) -> TokenStream {
     let w = walk();
     match &f.shape {
-        Shape::Map(_) | Shape::NestedMap => quote!(""),
+        Shape::Map(_) | Shape::ValueMap(_) | Shape::NestedMap => quote!(""),
         _ => quote!(#w::Walk::suffix(#value)),
     }
 }

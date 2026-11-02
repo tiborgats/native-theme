@@ -751,23 +751,10 @@ impl<T: FromToml> FromToml for Value<T> {
     }
 
     fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
-        if let Item::String(text) = item
-            && T::forms(spelling)
+        if T::forms(spelling)
+            && let Some(read) = unstated(item, T::AUTO, at, cx)
         {
-            if let Some(expression) = text.strip_prefix('=') {
-                return match Expr::parse(expression) {
-                    Ok(expr) => Some(Value::Expr(expr)),
-                    Err(error) => {
-                        cx.problem(at, ProblemKind::Expression(error));
-                        None
-                    }
-                };
-            }
-            match text.as_str() {
-                "auto" if T::AUTO => return Some(Value::Auto),
-                "absent" => return Some(Value::Absent),
-                _ => {}
-            }
+            return read;
         }
         T::read(item, spelling, at, cx).map(Value::Stated)
     }
@@ -784,6 +771,43 @@ impl<T: FromToml> FromToml for Value<T> {
             Value::Stated(value) => Value::Stated(value.finish(at, cx)),
             other => other,
         }
+    }
+}
+
+/// A `Value` that `item` states other than by its value: `"= <expression>"`,
+/// `"auto"` where `auto` (a length's) or `"absent"`; `None` for any other
+/// item, the value stated, and `Some(None)` for an expression that does not
+/// parse, its problem recorded.
+fn unstated<T>(item: &Item, auto: bool, at: &str, cx: &mut Reader) -> Option<Option<Value<T>>> {
+    let Item::String(text) = item else {
+        return None;
+    };
+    if let Some(expression) = text.strip_prefix('=') {
+        return Some(match Expr::parse(expression) {
+            Ok(expr) => Some(Value::Expr(expr)),
+            Err(error) => {
+                cx.problem(at, ProblemKind::Expression(error));
+                None
+            }
+        });
+    }
+    match text.as_str() {
+        "auto" if auto => Some(Some(Value::Auto)),
+        "absent" => Some(Some(Value::Absent)),
+        _ => None,
+    }
+}
+
+/// A `Value` of a map (`Font.axes`, S6.1, S11): `"= <reference>"`,
+/// `"absent"`, or the map as a table, `{}` an empty one.
+pub(crate) fn read_value_map<K: MapKey + PartialEq, V: FromToml>(
+    item: &Item,
+    at: &str,
+    cx: &mut Reader,
+) -> Option<Value<Vec<(K, V)>>> {
+    match unstated(item, false, at, cx) {
+        Some(read) => read,
+        None => read_map::<K, V>(item, at, cx).map(Value::Stated),
     }
 }
 

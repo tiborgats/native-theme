@@ -1702,12 +1702,13 @@ impl Visit for Checker<'_> {
                 }
             }
             Node::Font(font) => {
-                self.routes(&font.axes, &font.features, &["wght", "wdth"], path);
+                let (axes, features) = (stated_map(&font.axes), stated_map(&font.features));
+                self.routes(axes, features, &["wght", "wdth"], path);
                 self.weight(Some(&font.weight), path);
             }
             Node::FontPatch(font) => {
-                let axes = font.axes.as_deref().unwrap_or_default();
-                let features = font.features.as_deref().unwrap_or_default();
+                let axes = font.axes.as_ref().map_or(&[][..], stated_map);
+                let features = font.features.as_ref().map_or(&[][..], stated_map);
                 self.routes(axes, features, &["wght", "wdth"], path);
                 self.weight(font.weight.as_ref(), path);
             }
@@ -1813,6 +1814,15 @@ impl Visit for Checker<'_> {
                 self.problem(&at, ProblemKind::Missing);
             }
         }
+    }
+}
+
+/// The entries a `Value` of a map states; none for a reference, `Absent` or
+/// `Auto`, whose entries the stack resolves (S6.1).
+fn stated_map<K, V>(value: &Value<Vec<(K, V)>>) -> &[(K, V)] {
+    match value {
+        Value::Stated(map) => map,
+        Value::Expr(_) | Value::Absent | Value::Auto => &[],
     }
 }
 

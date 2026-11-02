@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use super::{Cx, Reached, Refusal};
 use crate::next::blocks::part_style::RoleRef;
-use crate::next::blocks::text::ResolvedFont;
+use crate::next::blocks::text::{AxisTag, AxisValue, ResolvedFont};
 use crate::next::color::Color;
 use crate::next::declare::Declarations;
 use crate::next::expr::{Bound, Expr, FieldType, Name, Ty, Val};
@@ -1569,4 +1569,146 @@ fn text_style_value_leaves_resolve() {
     assert_eq!(referenced.wrap, Some(Wrap::Char));
     assert_eq!(referenced.max_lines, Some(Some(2)));
     assert_eq!(referenced.scaling_role, Some(Some(TextRole::Caption)));
+}
+
+/// `(tag, AxisValue::Fixed(value))` pairs, synthetic.
+fn axes(pairs: &[(&str, f32)]) -> Vec<(AxisTag, AxisValue)> {
+    pairs
+        .iter()
+        .map(|(tag, value)| (AxisTag::new(tag).unwrap(), AxisValue::Fixed(*value)))
+        .collect()
+}
+
+/// The body slot's font axes stated as `table` in a layer's bases.
+fn body_axes(table: &str) -> String {
+    format!("[tokens.text.roles.body.font]\naxes = {table}\n")
+}
+
+/// The label's font axes, resolved over `layers`.
+fn label_axes(layers: &[&str]) -> Option<Vec<(AxisTag, AxisValue)>> {
+    label_text(layers).font.axes
+}
+
+/// A `Value` of a map merges by key where both are stated (S6.1): a later
+/// layer's entry replaces the earlier entry of its key and adds the others,
+/// patches merged as applied; a rule's map merges too.
+#[test]
+fn value_map_merges_by_key() {
+    use crate::next::blocks::Merge;
+    use crate::next::blocks::text::FontPatch;
+    use crate::next::value::Value;
+
+    let first = body_axes("{ GRAD = { fixed = 1 }, opsz = \"follows_size\" }");
+    let second = body_axes("{ GRAD = { fixed = 2 }, XTRA = { fixed = 3 } }");
+    let opsz = (AxisTag::new("opsz").unwrap(), AxisValue::FollowsSize);
+    let merged = |xtra| {
+        let mut out = axes(&[("GRAD", 2.0)]);
+        out.push(opsz);
+        out.extend(axes(&[("XTRA", xtra)]));
+        out
+    };
+    assert_eq!(label_axes(&[BASE, &first, &second]), Some(merged(3.0)));
+
+    let rule = "[[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"tokens\"\n\
+                set = { text.roles.body.font.axes = { XTRA = { fixed = 4 } } }\n";
+    let ruled = format!("{BASE}{rule}");
+    assert_eq!(label_axes(&[&ruled, &first, &second]), Some(merged(4.0)));
+
+    let patch = |map: Vec<_>| FontPatch {
+        axes: Some(Value::Stated(map)),
+        ..FontPatch::default()
+    };
+    let mut earlier = patch(axes(&[("GRAD", 1.0), ("XTRA", 1.0)]));
+    earlier
+        .merge(patch(axes(&[("XTRA", 3.0), ("YOPQ", 5.0)])))
+        .unwrap();
+    assert_eq!(
+        earlier.axes,
+        Some(Value::Stated(axes(&[
+            ("GRAD", 1.0),
+            ("XTRA", 3.0),
+            ("YOPQ", 5.0)
+        ])))
+    );
+    let mut value = Value::Stated(axes(&[("GRAD", 1.0)]));
+    crate::next::blocks::apply_value_map(&mut value, Value::Stated(axes(&[("XTRA", 2.0)])))
+        .unwrap();
+    assert_eq!(value, Value::Stated(axes(&[("GRAD", 1.0), ("XTRA", 2.0)])));
+}
+
+/// `{}` in a patch on a `Value` of a map is no change (S6.1, S11): no patch
+/// on the map itself removes an entry; in the preset's bases, and where
+/// nothing lies below, it is the empty map, not nothing.
+#[test]
+fn value_map_empty_patch_is_no_change() {
+    use crate::next::value::Value;
+
+    let stated = body_axes("{ GRAD = { fixed = 1 } }");
+    let empty = body_axes("{}");
+    assert_eq!(
+        label_axes(&[BASE, &stated, &empty]),
+        Some(axes(&[("GRAD", 1.0)]))
+    );
+    assert_eq!(label_axes(&[BASE]), Some(Vec::new()));
+    assert_eq!(label_axes(&[BASE, &empty]), Some(Vec::new()));
+
+    let mut value = Value::Stated(axes(&[("GRAD", 1.0)]));
+    crate::next::blocks::apply_value_map(&mut value, Value::Stated(Vec::new())).unwrap();
+    assert_eq!(value, Value::Stated(axes(&[("GRAD", 1.0)])));
+    let mut slot = Some(Value::Stated(axes(&[("GRAD", 1.0)])));
+    crate::next::blocks::merge_slot_value_map(&mut slot, Some(Value::Stated(Vec::new()))).unwrap();
+    assert_eq!(slot, Some(Value::Stated(axes(&[("GRAD", 1.0)]))));
+}
+
+/// A reference replaces a `Value` of a map whole, as a whole-block `Set` of
+/// the text style holding it does (S6.1): no entry stated below it is kept.
+#[test]
+fn value_map_reference_replaces_whole() {
+    use crate::next::blocks::MergeConflict;
+    use crate::next::value::Value;
+
+    let preset = format!("{BASE}{}", text_style("tokens.text.keyed.x"));
+    let x = "[tokens.text.keyed.x.font]\naxes = { XTRA = { fixed = 3 } }\n";
+    let stated = body_axes("{ GRAD = { fixed = 1 } }");
+    let referenced = body_axes("\"= token.text.keyed.x.font.axes\"");
+    assert_eq!(
+        label_axes(&[&preset, x, &stated, &referenced]),
+        Some(axes(&[("XTRA", 3.0)]))
+    );
+    let whole = text_style("tokens.text.roles.body");
+    assert_eq!(label_axes(&[&preset, &stated, &whole]), Some(Vec::new()));
+
+    let reference = Value::Expr(Expr::parse("token.text.keyed.x.font.axes").unwrap());
+    let mut value = Value::Stated(axes(&[("GRAD", 1.0)]));
+    crate::next::blocks::apply_value_map(&mut value, reference.clone()).unwrap();
+    assert_eq!(value, reference);
+    // A stated map over the reference is kept on it, composed lazily.
+    assert_eq!(
+        crate::next::blocks::apply_value_map(&mut value, Value::Stated(axes(&[("GRAD", 1.0)]))),
+        Err(MergeConflict::new(crate::next::blocks::Below::Reference))
+    );
+}
+
+/// A stated map over a reference composes lazily (S2.2, S6.1): the
+/// referenced map's own bases first, a later layer's included, then the
+/// stated map, before every rule; a rule on the referenced map still
+/// reaches the slot.
+#[test]
+fn value_map_over_reference_composes_lazily() {
+    let preset = format!("{BASE}{}", text_style("tokens.text.keyed.x"));
+    let referenced = body_axes("\"= token.text.keyed.x.font.axes\"");
+    let stated = body_axes("{ GRAD = { fixed = 1 }, XTRA = { fixed = 1 } }");
+    let later =
+        "[tokens.text.keyed.x.font]\naxes = { XTRA = { fixed = 3 }, YOPQ = { fixed = 5 } }\n";
+    assert_eq!(
+        label_axes(&[&preset, &referenced, &stated, later]),
+        Some(axes(&[("XTRA", 1.0), ("YOPQ", 5.0), ("GRAD", 1.0)]))
+    );
+    let rule = "[[rules]]\nwhen = { conditions = [\"scheme:light\"] }\ntarget = \"tokens\"\n\
+                set = { text.keyed.x.font.axes = { XTRA = { fixed = 7 } } }\n";
+    let ruled = format!("{preset}{rule}");
+    assert_eq!(
+        label_axes(&[&ruled, &referenced, &stated, later]),
+        Some(axes(&[("XTRA", 7.0), ("YOPQ", 5.0), ("GRAD", 1.0)]))
+    );
 }

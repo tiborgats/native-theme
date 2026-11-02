@@ -247,6 +247,48 @@ pub(crate) fn apply_entries<K: PartialEq, V: Entry<P>, P>(
     Ok(())
 }
 
+/// A `Value` of a map (`Font.axes`, S6.1).
+type ValueMap<K, V> = Value<Vec<(K, V)>>;
+
+/// A later patch of a `Value` of a map merged over the earlier, as
+/// [`apply_value_map`] applies it.
+pub(crate) fn merge_slot_value_map<K: PartialEq, V>(
+    earlier: &mut Option<ValueMap<K, V>>,
+    later: Option<ValueMap<K, V>>,
+) -> Result<(), MergeConflict> {
+    let Some(later) = later else { return Ok(()) };
+    match earlier.as_mut() {
+        Some(held) => apply_value_map(held, later),
+        None => {
+            *earlier = Some(later);
+            Ok(())
+        }
+    }
+}
+
+/// A `Value` of a map patched (S6.1): a stated map merges by key into a
+/// stated one, so no patch removes an entry (`{}` is no change); a
+/// reference, `Absent` or `Auto` replaces the map whole; a stated map over a
+/// reference composes lazily ([`Below::Reference`], which the resolver
+/// does); over `Absent` or `Auto` it meets what a `Fields` patch meets
+/// there ([`MergeConflict::over`]).
+pub(crate) fn apply_value_map<K: PartialEq, V>(
+    value: &mut ValueMap<K, V>,
+    patch: ValueMap<K, V>,
+) -> Result<(), MergeConflict> {
+    match (value, patch) {
+        (Value::Stated(held), Value::Stated(entries)) => {
+            merge_by_key(held, entries);
+            Ok(())
+        }
+        (held, Value::Stated(_)) => MergeConflict::over(held).map_or(Ok(()), Err),
+        (held, other) => {
+            *held = other;
+            Ok(())
+        }
+    }
+}
+
 /// A later setting replaces the earlier.
 pub(crate) fn replace_slot<T>(earlier: &mut Option<T>, later: Option<T>) {
     if later.is_some() {

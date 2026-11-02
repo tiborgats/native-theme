@@ -31,11 +31,13 @@ pub struct Font {
     /// only route for it: `axes` may not hold `wdth` (S12).
     #[parts(may_be_absent)]
     pub width: Value<f32>,
-    /// Variation axes.
-    pub axes: Vec<(AxisTag, AxisValue)>,
-    /// OpenType features and their values; never `smcp`: small caps is
-    /// [`TextCase::SmallCaps`] (S12).
-    pub features: Vec<(FeatureTag, u32)>,
+    /// Variation axes; a `Value`, as a platform derives them (Kirigami's
+    /// headings take the default font's, S2.8), merged by key where both
+    /// are stated, a reference replacing them whole (S6.1).
+    pub axes: Value<Vec<(AxisTag, AxisValue)>>,
+    /// OpenType features and their values, a `Value` as `axes`; never
+    /// `smcp`: small caps is [`TextCase::SmallCaps`] (S12).
+    pub features: Value<Vec<(FeatureTag, u32)>>,
 }
 
 /// A font's style.

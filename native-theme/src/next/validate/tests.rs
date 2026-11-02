@@ -650,7 +650,10 @@ fn refusal_route_duplicated() {
             label: Some(PartPatch::Style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
-                        axes: Some(vec![(AxisTag::new(tag).unwrap(), AxisValue::Fixed(1.0))]),
+                        axes: Some(Value::Stated(vec![(
+                            AxisTag::new(tag).unwrap(),
+                            AxisValue::Fixed(1.0),
+                        )])),
                         ..FontPatch::default()
                     }),
                     ..TextStylePatch::default()
@@ -841,6 +844,46 @@ fn scaling_role_reference_types() {
     assert_eq!(
         bare(&label("max_lines = \"= max(1, 2)\"")),
         ["widgets.button.label.text.max_lines: takes a literal or a reference, not a call"]
+    );
+}
+
+/// A reference to a `Value` of a map is that map's type (S2.2, S6.1): a
+/// part's text takes its style's `font.axes` and `font.features` by
+/// reference; one map is refused where the other is, as any other type is;
+/// a literal or a call on a map is refused, its expression a reference
+/// only.
+#[test]
+fn font_axes_reference_types() {
+    let label = |set: &str| toml(&format!("[widgets.button.label.text]\n{set}"));
+    for set in [
+        "font.axes = \"= token.text.roles.body.font.axes\"",
+        "font.features = \"= token.text.roles.caption.font.features\"",
+        "font.axes = {}\nfont.features = {}",
+    ] {
+        assert_eq!(bare(&label(set)), NONE, "{set}");
+    }
+    assert_eq!(
+        bare(&label(
+            "font.axes = \"= token.text.roles.body.font.features\""
+        )),
+        [
+            "widgets.button.label.text.font.axes: the expression does not type: a \
+             map<FeatureTag, u32> where a map<AxisTag, AxisValue> is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&label("font.features = \"= token.motion.speed_factor\"")),
+        [
+            "widgets.button.label.text.font.features: the expression does not type: a number \
+             where a map<FeatureTag, u32> is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&label("font.axes = \"= 2\"")),
+        [
+            "widgets.button.label.text.font.axes: the expression does not type: a \
+             map<AxisTag, AxisValue> field's expression is a reference only"
+        ]
     );
 }
 
@@ -2181,10 +2224,10 @@ fn refusal_other_items() {
             label: Some(PartPatch::Style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
-                        features: Some(vec![(
+                        features: Some(Value::Stated(vec![(
                             crate::next::blocks::text::FeatureTag::new(tag).unwrap(),
                             1,
-                        )]),
+                        )])),
                         ..FontPatch::default()
                     }),
                     ..TextStylePatch::default()
@@ -2592,7 +2635,10 @@ fn every_variant_triggers() {
             label: Some(PartPatch::Style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
-                        axes: Some(vec![(AxisTag::new("wght").unwrap(), AxisValue::Fixed(1.0))]),
+                        axes: Some(Value::Stated(vec![(
+                            AxisTag::new("wght").unwrap(),
+                            AxisValue::Fixed(1.0),
+                        )])),
                         ..FontPatch::default()
                     }),
                     ..TextStylePatch::default()

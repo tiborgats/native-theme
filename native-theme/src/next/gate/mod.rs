@@ -366,7 +366,7 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
                 .first()
                 .map(|first| ("", Item::String((*first).to_owned())));
         }
-        Some(Ty::Shadow | Ty::Block(_) | Ty::Option(_)) | None => None,
+        Some(Ty::Shadow | Ty::Block(_) | Ty::Option(_) | Ty::Map { .. }) | None => None,
     };
     if leaf.is_some() {
         return leaf;
