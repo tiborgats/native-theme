@@ -321,8 +321,9 @@ Each `### <widget>` section states, in this order:
   `exclusive_variants` group (S10, ADD-A121); others combine.
 - **Sizes and densities** per platform (`ControlSize`, S7.3; Material Expressive's xsmall is `extra_small`); sizes a
   variant alone takes are declared by `sizes_by_variant` (S10: Material's FAB, MAT-N1), and a size a variant does not
-  declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by
-  `default_size_by_variant` (S10, ADD-A121).
+  declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by its
+  `sizes_by_variant` entry's `default_size` (S10, ADD-A121, ADD-A131); sizes a container restricts, and the default
+  size it gives an element that states none, by a `sizes_by_context` entry (S10, ADD-A131: `macos-tahoe`'s toolbar).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
@@ -1785,12 +1786,26 @@ spaces:
   `:877-928`, `:1472-1482`, `tokens/ExtendedFabPrimaryTokens.kt:64`), and declared under flavour `expressive` only
   `small`, `large` and `extra_large`, Expressive's small, medium and large extended FABs
   (`SmallExtendedFloatingActionButton` …, `:400`, `:467`, `:534`, `:1434-1470`) (MAT-N2; ADD-A123: the unsized one
-  had no size under Expressive, where `regular` named the medium one). Default sizes (`default_size_by_variant`,
-  S10, ADD-A121): `@fab` and `@extended_fab` `regular` in both flavours, the unsized composables, where the
+  had no size under Expressive, where `regular` named the medium one). Default sizes (a `sizes_by_variant` entry's
+  `default_size`, S10, ADD-A121, ADD-A131): `@fab` and `@extended_fab` `regular` in both flavours (the widget's default under baseline, their entries'
+  `default_size` under `expressive`), the unsized composables, where the
   Expressive buttons' default is `small`. `ios-*`: the `buttonSize` a configuration takes when the application sets
   none, which `UIButtonConfiguration.h` states no default for and the iOS host has not read (it sets the size on every
-  specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared as
-  `default_size` from it (ADD-A125). Others: none. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared from it as
+  the `default_size` of each configuration style's `sizes_by_variant` entry where it differs from `regular`, pending
+  meanwhile (`default_size = { pending = "U129" }` in each entry; ADD-A125, ADD-A131). `sizes` is `["regular"]` and
+  `default_size` `regular`, the one size of a button with no configuration style, which has no `buttonSize` (the
+  lane's name for that size, not a reading, `docs/facts/ios/state-models.toml:40-41`), each configuration style's
+  `mini` … `large` in its `sizes_by_variant` entry, in place of the state models' three size `not_drawn` lines
+  (`:78-80`, `:639-641`; S10, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in the default toolbar
+  (`toolbarStyle` automatic, size mode regular, `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml:49141-49143`)
+  `extra_large`, a `sizes_by_context` entry `{ context = { scope = "any", widget = "toolbar", part = "bar" }, … }`
+  with that `default_size` (the probe's `view_*_controlSize_raw` 4, `:49155-49158`), its `sizes` every size the button
+  takes (`mini` … `extra_large`), removing none, until U94 decides whether the toolbar restricts an explicit size,
+  the facts at each size there being U94's pending facts, so the release stays blocked; the other toolbar styles and
+  modes and a variant keeping its own size there U94's too, the macOS lane's; ADD-A131);
+  `macos-monterey`: no context default (its toolbar leaves `view_*_controlSize_raw` 0,
+  `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no variant default. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
@@ -2083,7 +2098,8 @@ spaces:
 - **Sizes and densities:** `macos-*`: `mini`, `small`, `regular`, `large` (MAC-SG10†). `material-3` flavour
   `expressive`: the button groups' sizes by variant (`sizes_by_variant`, S10), `@standard_group` and `@connected`
   each `extra_small`, `small`, `regular`, `large`, `extra_large` (MAT-N6), so a plain segmented button declares no
-  size (R15). `ios-*`: no sizes; the height
+  size (R15). Default sizes: each entry's own `default_size`, the widget having none (S10, S12; ADD-A131), the
+  Material lane's to state from Compose's button groups, not yet stated. `ios-*`: no sizes; the height
   follows Dynamic Type (`token.text.scaling`, S9.4; `uifm_scaled`, R10, SG-9†). Densities: none from these rows.
 - **Flags:** shared none; keyed none; state flags used: hover, pressed, selected (S7.2: a chosen segment is the
   current choice among its siblings, `selected` on every platform; under `@select_any` each chosen segment is
