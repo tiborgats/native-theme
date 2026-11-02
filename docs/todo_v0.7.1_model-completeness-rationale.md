@@ -194,13 +194,24 @@ in places (the focus indicator, K3.20 against Q3.30); Material 3 has its baselin
 
 **Decision:** flavours. `kde-breeze`: `widgets` (default; most KDE applications) and `kirigami`;
 `material-3`: `baseline` (default) and `expressive`. `material-3` describes the Material 3 design system
-as Google currently publishes it, the look Android's own Material 3 (Compose) draws: its token set
+as Google currently publishes it, the published token set, which Android's own Material 3 (Compose) draws save
+where the facts record otherwise: its token set
 `tokens/versions/latest/` in material-web, at a pinned commit, which holds the baseline and the
 Expressive tokens and agrees with Compose (the pressed state layer's opacity is 0.1 in both, where the
 older `v0_192/` set says 0.12, which the map's MAT-X8 records as web against Compose). Where the tokens are
 silent, Compose Material 3 is the reference, cited at a pinned commit, experimental or not (for some
 Expressive behaviour it is Google's only implementation); material-web's components, built on the older
-token set, only where Compose has no such component.
+token set, only where Compose has no such component. Where the tokens and Compose disagree, the tokens decide
+(ADD-A126): a look the tokens state that Compose does not draw stays, as the published system is the preset's
+reference and Compose's omission no statement (the filled text field's and select's hover layer,
+`_md-comp-filled-text-field.scss:141`, `:143`, MAT-I11), and a motion no token states is Compose's (its engines,
+its interruptions, the switch handle's spring, MAT-SW8), with no transition where no source times a look the tokens
+add. Weighed: following Android's drawing wherever it departs from the tokens (fidelity to the one implementation
+users meet, but the preset would no longer be the published design system, and the tokens' agreement with Compose,
+the reason for choosing them, would decide nothing); the tokens alone, Compose never (no engines, no motion for most
+transitions). A look the tokens add that Compose lacks takes its states from material-web's component, which
+the tokens were written for, where it states them (the filled field's layer shown only on an enabled field,
+`material-web@2.5.0 field/internal/_filled-field.scss:71-73`).
 
 ### R2 — The model's shape
 
@@ -525,6 +536,9 @@ so the preset must state {checked, hover}.
   measurements under each appearance; iOS's are measured under each appearance and the default tint until
   its reader exists, its tint-dependent roles being inputs (R2.6).
 
+- **Parts not drawn** (ADD-A130): where the preset does not draw a part, the gate compares none of its fields and
+  fails no field's fact that holds there; whether the part is drawn is checked once, by the part's own key (R25.17).
+
 There is no model inheritance for the gate to trust (R20).
 
 ### R5 — Colours (C04, C05, C08, C28)
@@ -541,7 +555,8 @@ fill and stroke tiers.
 - *Typed surface sets with a common role record, global accent and status roles, and a keyed set of the
   platform's own roles* (Material's ladder, WinUI's tiers).
 
-**Decision:** the third (principle 4).
+**Decision:** the third (principle 4). A role the platform does not have is absent there, as macOS's status roles
+are (AppKit declares none, R25.17).
 
 **Groups.** The window being inactive holds for a whole window, so an inactive group is a colour-role rule under the
 inactive condition; being disabled is per element, so each surface set also holds disabled roles, which parts'
@@ -603,6 +618,41 @@ R9). A platform whose arithmetic differs gets its own function; a function is
 added only when a platform's rule needs it. Composition over the value beneath is a paint layer appended over
 `base` (R6), not a colour function. Evaluation follows dependencies; a cycle is an error when its layer is added
 (R2.8).
+
+*libadwaita's standalone colours* (the specification's ADD-A128, ledger queue #105). The stylesheet writes them as
+GTK's CSS relative colour, the background colour in OKLab with its lightness limited (at most 0.5 light, at least
+0.85 dark), and GTK computes an sRGB colour from it at once, unclamped, which every later CSS function and
+`gtk_widget_get_color` read (and `GtkTextView`'s text); the renderer draws a label's and an entry's text,
+backgrounds, borders and shadows from the OKLab coordinates by a single-precision conversion of its own, premultiplies,
+and the 8-bit store clamps. Which form the function is:
+
+- *libadwaita's C function `adw_rgba_to_standalone`* (the first reading, spike G's table). For: a public API, a table
+  already generated. Against: the stylesheet does not call it, and it clamps each channel, where GTK keeps them;
+  most of libadwaita's documented standalone colours leave the gamut, which its documentation notes are clipped
+  only before display (`libadwaita@1.10.0 doc/css-variables.md:89-92`, `:96-99`), so an
+  `alpha` over it differs from what GTK draws, visibly on the focus ring (a `mix` such as the visited link's by at
+  most one step of 255).
+- *GTK's computed sRGB colour, unclamped, one function.* For: the value the style holds and the icon palette, the
+  links, every later CSS function and GTK's public colour API read; the model's extended sRGB holds it (R5.5).
+  Against: a label's and an entry's text, backgrounds, borders and shadows are drawn by the renderer's own conversion, within 7.9·10⁻⁴ (0–255)
+  in gamut on spike G's grid, which no check can see (a vector compares this form, a published fact the same
+  function, a capture rounds to 8 bits).
+- *Two functions, a form per drawing path.* For: each path's arithmetic. Against: the renderer's conversion is a
+  drawing step, not a theme value; one role is drawn both ways (a destructive button's standalone colour is its label's
+  text and its symbolic icon's colour), so each role would split in two, differing once drawn by less than a capture shows, which no connector's
+  toolkit draws apart.
+- *The renderer's form alone.* Against: no later CSS function reads it, and out of the gamut it mirrors negative
+  channels where the computed form keeps the linear piece.
+
+**Decision:** GTK's computed sRGB colour, one function, unclamped; a channel outside the gamut is clamped where the
+colour is drawn, as GTK clamps it, not by the function (which changes an `alpha` or `mix` over it) nor at the end
+of resolution (which clamps a translucent colour before GTK's renderer premultiplies it). The connector's hand-over
+follows GTK: premultiplied, then clamped, where the toolkit takes premultiplied colours (egui's `Color32`); the
+unclamped value where it takes float colours and premultiplies them itself; a straight clamp, a recorded limit,
+in the third case (straight 8-bit colours, or floats the toolkit clamps first), as that clamp brings back the end-of-resolution error (on the dark accents' focus ring up to 34 steps of 255 (13 to 34 for blue, orange, red, pink and purple; about 2 for yellow; 0 for teal, green and slate, in gamut)); `color::composite_over` draws as the hand-over does. Its vectors come from GTK
+itself, through `gtk_widget_get_color` with libadwaita's stylesheet loaded, so the reference is the stylesheet's own path; the
+conversion follows CSS Color 4, and GTK's constants and per-step precision, which the vectors' 1e-3 needs, come from
+the clean room (D10).
 
 **R5.5 — Representation (C28).** macOS and iOS define system colours beyond sRGB (Display P3; MAC-X10, D-17);
 `Rgba` and the macOS reader's conversion to sRGB clip them. HDR appears only in the colour well's content
@@ -696,7 +746,8 @@ MAT-X13–MAT-X15, X-MO-1).
   WinUI's pressed knob stretching (W1-120) and its chevron (W1-132).
 - **Timing:** a cubic Bézier, linear, steps, or a spring stated physically (mass, stiffness, damping, with the
   initial velocity, rest threshold and clamping libadwaita's `AdwSpringAnimation` states), as libadwaita and
-  Material state springs; Apple's response and damping fraction convert to it exactly; a curve the toolkit computes
+  Material state springs; Apple's response and damping fraction convert to it exactly; the identity, however a source
+  writes it, is `Linear` (ADD-A125); any other curve the toolkit computes
   by a function of its own is one of a closed set of platform curves, each implemented once in native-theme to its
   cited source (`Timing::Platform`, R25.6): a curve is code, as a placement strategy is (R16). The set holds
   Kirigami's velocity-dependent animations (Q3.26, CONTRA-2) and Qt's and libadwaita's easing functions (CONTRA-7),
@@ -712,12 +763,22 @@ MAT-X13–MAT-X15, X-MO-1).
 - **Property transitions:** each style (a part's base, or a rule's patch) may state how properties move into
   it, per property group, with duration, delay and timing. A transition starts when a property's resolved
   value changes, for an element whose matched rules changed or whose values changed beneath them (an
-  input), except during a theme change, which the theme-change token governs; the transition of the style
-  after the change governs, in both directions, as in CSS and GTK
-  (`gtkcssanimatedstyle.c`). A transition may name the states it applies from (`from`, a set of flags): one with
+  input), except during a theme change, which the theme-change token governs, and except under Breeze's engines,
+  which start on their own test, GtkSwitch's slide, which starts on an activation, ButtonGroup's press, which starts
+  as `pressed` becomes kept, and WinUI's AnimatedIcon, which starts on a change of its key (below); the transition of
+  the style after the change governs, in both directions, as in CSS and GTK
+  (`gtkcssanimatedstyle.c`); a part hidden at rest is a `shown` part exactly when its source animates its entrance or
+  exit (an unmeasured motion `Absent` meanwhile; a `popup` part's opening and closing queue #118's, its presence ordinary state; an expander's collapsed content (its presence, layout and query scope) and its reveal wholly #118's, a layout and presentation question for ADD-A129's survey; one rule for every interim of #118: a deferred subject whose motion needs machinery the model lacks, or whose row states no presentation, appears and leaves at once until ADD-A129; so a `popup` part drawn as itself opens and closes at once, one drawn as another widget presents as that widget, and every other stated presentation runs, R25.6, but an expander's reveal, a layout change no presentation kind makes; rejected: deciding the expanders here, where `shown` keeps a layout box every source collapses and an `Absent` box leaves its rows and controls drawn or unqueried (checks 18 to 23); counting the overlays as popups, whose line read either way (their parts, a substitute); and no presentation until ADD-A129, which would undo R25.6 for a deferral), styled
+  in every state and hidden by `shown` (below), and otherwise `Absent` where hidden, appearing and gone at once, as
+  the style after states nothing for it (ADD-A126; rejected: a part becoming drawn entering from transparent black
+  under the style it enters, the ninth check's form: a part's entry is stated by its hidden style (`shown`), so it
+  never enters from a style the preset did not state, while the indicator, a block, takes its other end from the
+  style it is in without the flag, S2.10; rejected too:
+  timing it by the style it leaves, ADD-A125's reading, under which Breeze's tab focus line could not both fade out as
+  the focus leaves a selected tab and vanish as another tab is selected, both ways leaving one style). A transition may name the states it applies from (`from`, a set of flags): one with
   none applies from any state, and one with a set only where the element held one of its flags before the change,
   after the exclusive groups' drop (R3); where several transitions that apply state one for the same property, the
-  later in stated order wins. Two platforms need `from`. Compose chooses an elevation's spec by the interaction
+  later in stated order wins (Breeze's runs rank instead, below). Two platforms need `from`. Compose chooses an elevation's spec by the interaction
   entered, or, moving to rest, by the one left (150 ms from press or focus, and drag on cards and chips; 120 ms from
   hover), and snaps from none and into disabled (`androidx@e4d933c9
   compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/Elevation.kt:46-113`,
@@ -735,11 +796,169 @@ MAT-X13–MAT-X15, X-MO-1).
   Breeze runs neither fade on a disabled button. Rejected: a transition per (from, to) pair of states, XAML's form (the style
   entered already names `to`, so the pair adds nothing `from` does not, and no WinUI row needs one); exit
   transitions on the style left (they need a second precedence rule against the entered style's). A paint layer
-  that appears interpolates from its colour at zero alpha, and one that disappears to it, a stroke that becomes
+  that appears interpolates from transparent black, and one that disappears to it (ADD-A125: Compose and Qt Quick
+  fade to `#00000000` in their straight spaces, and in premultiplied sRGB every zero-alpha colour is that one), a stroke that becomes
   absent likewise, to zero width; layers are matched by their position in the stack; the `interaction` block's
-  colours change at once and its alphas move (R3); colours interpolate in premultiplied sRGB, as `mix` does; a material that gives
+  colours change at once and its alphas move (R3); colours interpolate in the space the preset's toolkit interpolates
+  in, one of a closed set implemented once in native-theme to each source, as platform curves are (ADD-A125): GTK's
+  CSS transitions and Breeze's `KColorUtils::mix` in premultiplied sRGB (`gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604`,
+  `kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166`), Qt Quick's `ColorAnimation` in straight 8-bit sRGB
+  (`qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`), Compose in Oklab with straight alpha
+  (`androidx@e4d933c9 compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:30-48`),
+  so a fade passes through other colours in Oklab than in sRGB, and, between colours of different alpha, other
+  colours in straight than in premultiplied sRGB. *One space for all* (premultiplied sRGB, as `mix`
+  does): simplest, but Compose's and Qt Quick's transitions would draw intermediate colours their platforms do not.
+  *A space on every transition*: exact, but each transition states what one toolkit fixes for all of its own, and
+  the facts cite it again each time. *A motion token per preset*, which rules can restate by condition (Kirigami's
+  flavour): exact for every source read, one fact per preset. WinUI holds two interpolators, its compositor's
+  (`CompositionColorSpace_Rgb`, which its brush transitions use, `microsoft-ui-xaml@2.5.1
+  src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111`) and a UI-thread straight 8-bit one for
+  storyboard animations it does not convert (`src/dxaml/xcp/core/animation/ColorAnimation.cpp:51-131`); its controls'
+  brush transitions take the first, so one token states them; whether a control's storyboard colour animation takes
+  the second is open (the specification's catalogue, Open items), and needs an override only if a fact shows one. **Decision:** the token, measured where the toolkit's arithmetic is not in a source (WinUI's
+  compositor, Core Animation); a toolkit found to mix spaces within one preset and condition is a class 2 change to a
+  per-transition override. A material that gives
   way to a colour crossfades between them over the transition stated (Mica's fade in an inactive window,
   W3-10).
+- **Engines** (ADD-A126; ledger queue #85, #95, #103): what starts a transition, where the next one starts while a
+  value moves, a spring's velocity, how several on one value combine and what a theme change does to them are the
+  rules of the code that runs it, and they differ within one preset: GTK's CSS transitions start from the value drawn,
+  cut a running one where the style after has none, take a value's curve by its property id (`gtk@4.24.1
+  gtk/gtkcssanimatedstyle.c:822-882`), and are what libadwaita's theme switch suspends (`libadwaita@1.10.0
+  src/adw-style-manager.c:227-239`), while its `AdwAnimation`s, which widget code plays from the value shown
+  (`src/adw-tab.c:124-133`), are not; Breeze's state engines follow a test of their own, turn where they are on an undo, rank
+  by a fixed order and mix the live state's colours (`breeze@6.8.2 kstyle/animations/breezewidgetstatedata.cpp:12-30`,
+  `breezewidgetstateengine.h:45-103`, `kstyle/breezehelper.cpp:142-166`), its tab bar's restart on every change in
+  two places per bar (`breezetabbardata.cpp:54-119`), while Kirigami's `Behavior`s start from the value drawn and
+  animate a theme switch (`qtdeclarative@6.12.0 src/quick/util/qquickbehavior.cpp:361-426`); Compose's `Animatable`
+  carries a spring's velocity (`androidx@e4d933c9 …/animation/core/Animatable.kt:227-243`) and its
+  `updateTransition` replaces an interrupted tween by a spring (`Transition.kt:1615-1659`). The options weighed:
+  - *One rule for every transition* (from the value drawn, ADD-A124's implicit one): simplest, but Breeze's turns,
+    restarts and ranks, Compose's velocity and interruption spring and GTK's cut are lost, each visible within a
+    transition's run (a line edit hovered and clicked, a tab left mid-fade, a switch toggled twice).
+  - *A trigger field* (`ValueChange | StateChange { conditions }`, ADD-A125's form) with an interruption field: exact
+    for when Breeze's engines and its decoration's shadow start, but ADD-A125's eight checks on it patched each toolkit in turn
+    without converging (Breeze's rank, its tab bar's restart, a spring's velocity), and libadwaita's `AdwAnimation`s
+    and Compose's state layer start on a change of their own value too, so the trigger no longer told libadwaita's
+    suspended transitions from the rest.
+  - *Orthogonal kinds* (an interruption kind, a velocity, an interrupted timing, a rank, slots and a theme-change lane,
+    the survey's grouping): each exact only with the sub-rules of one toolkit (GTK's cut and its curve index, the tab
+    bar's two places, the decoration's live ends, AdwEntryRow's replay), six fields where each engine uses one
+    combination, and a combination no toolkit has stays expressible.
+  - *A per-preset engine*: `adwaita`, `kde-breeze` and `material-3` each run two engines whose rules differ.
+  - *A preset default with a per-transition override*: two homes for one fact.
+  - *An engine per part* (stated once on a part, rules restating it, Breeze's test per transition): it saves the
+    `engine` repeated on each transition; but a part runs two engines on its groups (Compose's segment, its press
+    `ComposeHeld` and its state layer `ComposeAnimatable`, MAT-N6, MAT-X9; its check mark, its drawn fraction
+    `ComposeTransition` and its colour `ComposeAnimatable`, MAT-C8), a rule changes a group's engine (Q3.26's
+    `QtQuick` under `flavor:kirigami`), the focus indicator's runs on its own, and Breeze's test and the AnimatedIcon's
+    visual, the engines' data, are per transition anyway, so the part's engine would be a second home beside the
+    transition it governs.
+  - *A gate check in place of Breeze's reduction* (S12 proving, for every combination of flags, the style under the
+    kept flags equal to the style under the reduced ones, so the connector draws the kept flags): a simpler runtime,
+    but each preset would restate Breeze's precedence as rules for every combination a test excludes (a hovered
+    disabled control, a focused selected tab), the run's ends need the reduction with its own test excepted, which
+    the cascade has no rule for, and the precedence is Breeze's code (`if (animated) … else if (test)`), which the
+    engine implements once, as it does Breeze's curves.
+  - *Stated limitations*: Breeze's differ for at most its duration (100 ms by default, `kstyle/breeze.kcfg:53-55`),
+    but native fidelity and cover-everything-visible admit none where the source states the rule.
+  - **Decision**: *the engine*, `Transition.engine`, a closed set of the toolkits' engines (`GtkCss`, `AdwAnimation`,
+    `QtQuick`, `Breeze`, `BreezeTabBar`, `ComposeAnimatable`, `ComposeTransition`, `ComposeHeld`, `WinUi`,
+    `WinUiAnimatedIcon`, `GtkSwitch`), each implemented once in
+    native-theme to its source, as the platform curves, the ripple effect and the scroll decelerations are: a curve's,
+    an effect's and a deceleration's rules are code, and so are an engine's. Its data is only what the code takes per
+    transition: Breeze's test, quoted from its `updateState` call, whether AdwEntryRow's title replays, and the
+    AnimatedIcon's visual, whose duration and markers `token.icons.animated_visuals` states once per visual. The value
+    engines start from the value drawn; Breeze's turn where they are or restart, ranked in stated order with live
+    ends; `from` stays ADD-A124's, the flags held before, as no fact reads otherwise under "a flag cleared" (ADD-A125's
+    attempt) and the one case that needs two ways out of a style told apart, Breeze's tab focus line, is stated by
+    where the line is drawn; a theme change's suspension reaches `GtkCss` alone; a stated zero names the engine that makes it instant, as
+    GTK delays one and Compose's `updateTransition` replaces an interrupted one; where one group's transitions name
+    two engines, the governing transition's engine draws it, one hand-off rule deciding the update where it changes
+    (a value engine leaving ending at the value drawn, Breeze's runs going on hidden, a value engine taking over from
+    there, Breeze taking over at its rest value; a Breeze zero is Breeze governing). Breeze's group draws its flags reduced by its tests, at rest, under a
+    zero and at a run's two ends alike (each failing test's `any` flags dropped, the run's own test excepted, but those a passing test names), so a
+    fade a flag's style makes invisible is not seen, and the fades Breeze hides under an excluded flag (its pen and
+    fill, its header) are hidden by a stated zero in that flag's style; a rule hiding every run while an excluded flag holds was
+    rejected, as Breeze draws a line edit's focus fading out as it is disabled and a disabled tab's hover fade
+    (`kstyle/breezehelper.cpp:146-155`, `:1498-1499`). Apple's toolkits, whose
+    code is not in the cache, are measured (interrupted at three points, a spring's velocity, stacked changes, a theme
+    change, a deactivation, an occlusion and reduced motion landing in a run) and get their member with the
+    measurement, their transitions pending facts the presets state none of meanwhile, each path in the preset's `[pending]` table
+    (S17, ADD-A128; never a placeholder `[]` or `Absent`), with no placeholder member (a
+    member with no source would be an invented rule); WinUI's theme switch, its compositor's velocity and Mica's engine
+    likewise. A presentation interrupted (a popover dismissed while it
+    appears) is a presentation event's matter, not settled here: ADD-A129 (queue #118), meanwhile cut, the state after
+    drawn at once (S2.7's one rule).
+- **A part not shown at rest, drawn on, grown or trimmed off** (ADD-A126; ledger queue #85): Breeze draws its check
+  on by a dash and grows its radio dot both ways, WinUI's accept visual trims its check on and off and its pressed
+  radio dot grows, Compose draws its check by a fraction and grows its dot by its radius, GTK swaps the icon at once,
+  and macOS's dot is measured.
+  - *`Absent` at rest*, for a part the platform animates in or out (ADD-A125's form): the rest look by the part decision, which S6.3 now keeps under a later
+    layer's field patch (#110, below), but an absent part answers `NotDrawn` and vanishes at once, so the motion has
+    no values to move from or to; letting every absent part enter from and leave to the fields beneath it would
+    change every part the platforms remove at once.
+  - *Hidden values alone* (a zero extent or size in every state, check 17's form): plain transitions, but an extent
+    has no reading on a code point, a theme icon or a system rendering, and GTK's swap has no value to zero.
+  - *`opacity` 0*: a later patch of the opacity shows the part, and a fade runs where the platform draws on.
+  - *A hidden look on the transition*: one patch per transition, but it cannot follow the state the mark trims off in
+    (WinUI's per-state foregrounds, Compose's unselected colour), and it is a second home for values the rules state.
+  - *A `Keyed` transition per platform*: the motion out of the model's terms, which a connector cannot draw from the
+    theme; right only where the platform's own asset is an animation (WinUI's AnimatedIcon).
+  - *WinUI's check as one stroked path* (`draw_extent` on, `draw_start` off): the accept visual is a composition of
+    visibility-switched layers trimmed per segment, which one path's extents do not reproduce.
+  - **Decision**: *`PartStyle.shown`*, a field listed only on the parts a platform hides by state and animates in
+    or out (the check mark, the radio dot, a value bubble, WinUI's list selection pill): the part is styled in every state,
+    `shown = false` where nothing is drawn at rest, laid out as styled, so a later layer's patch of another field
+    leaves it hidden and its look is kept in every state; it is
+    drawn while `shown` holds or while it leaves (the runs running as `shown` became false), a run started while it
+    is hidden drawing nothing, so its hidden style, its style where `shown` is false, is what it enters from and
+    leaves to under the transition that governs, one rule for every engine; a part removed at once stays `Absent`. `GlyphDraw` times a glyph's path and drawn span apart from its colour, as `StrokeWidth` does a
+    stroke's widths, for Compose's check, whose spatial and effects motions differ; a path moves to one of the same
+    commands point by point (the check pulled to the dash), and any other source change is discrete. WinUI's mark
+    stays the AnimatedIcon's, its visual's duration and markers in `token.icons.animated_visuals` and its frames the
+    Windows lane's asset; AppKit's and UIKit's motion is measured.
+- **A later patch over a conditionally absent part** (ADD-A126; ledger queue #110): under ADD-A123's S6.3 a `Style`
+  patch after an `Absent` brought the part back, and every layer's rules apply after the preset's, so an
+  application's `@ {hover}` colour drew a title bar in full screen (GN-P3-5†, W-P3-2†) or WinUI's combo-box pill on
+  unselected items (W1-135), as it would an unchecked mark; a field made `Absent` by a rule (the menu's check glyph,
+  Breeze's tab focus line) met the same patch as a refused merge conflict.
+  - *`shown` on every part a condition can hide*: robust, but every such part would state it, and an absent part
+    leaves the layout while a hidden one keeps it, so a title bar in full screen still needs `Absent`.
+  - *An S12 refusal of a later rule that can match where a part is conditionally absent*: it refuses an
+    application's ordinary rule instead of keeping the part absent.
+  - *Documented only*: the defect stays.
+  - *For fields*: (a) every field a rule hides made a nested part (the menu's check glyph a `check_mark` part), so
+    the part rule covers it: a part per such field, its widget's structure changed for a presence; (c) `shown` on
+    the field's part: it hides the whole part, while the menu's column and Breeze's box or ring stay drawn; (b) the
+    part rule for block fields too.
+  - **Decision**: *presence by its own patches* (S6.3): a part's presence changes only by `Absent`, `DrawnAs` or
+    `Present` (`absent = false`), a patch that states none setting fields only, so no later field rule restores an
+    absent part; and a block field's only by a `Set`, a `Fields` patch over an `Absent` block leaving it absent
+    (S2.2), the smallest form and the part rule's own; a paint follows the same rule, an `Append` over an `Absent`
+    paint appending to nothing, so outside a keyframe only a `Set` draws it again (S6.1; in a keyframe's patch any
+    patch of an absent field, a `Set` included, is `None`, S2.7), and a preset whose state rules append over a rest
+    paint states that rest drawn, as the platform does (adwaita's list rows keep GTK's initial transparent
+    `background-color`, GN-1.158). `Present` is needed beyond the presets (GtkInfoBar's edge line,
+    GN-2.31, could be restated by narrower selectors): an application layer that draws a part its preset hides
+    cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
+    every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
+    part, which is the layer's statement, not an accident. Rejected: refusing a *dead patch*, one meeting `Absent`
+    wherever its rule applies (ADD-A126's tenth check): S6.3 keeps a patch's fields beneath an `Absent` part for a
+    later `Present` to draw, so a patch latent under one combination is not dead; for a block, the one spelling
+    (below) keeps every base patch live, and a narrower rule meeting an `Absent` block wherever it applies is the
+    layer's own choice; refusing it would make a layer's validity hang on each preset's selectors (the eleventh check's
+    withdrawal). Rejected for paints: an `Append` over an `Absent` paint giving a paint of the appended layers (S6.1's
+    rule until commit 8a567e44), which CSS's `background-image` matches, GTK drawing an element's image layers whether or not
+    a colour lies beneath them (`gtk@4.24.1 gtk/gtkrenderbackground.c:266-311`): a later layer's `Append @ {hover}`
+    would draw a paint a condition made absent, the defect #110 removes for parts and blocks, and a paint would be the
+    one field a patch stating no presence could bring back.
+  - *Spelling a block drawn by state* (ADD-A126's twelfth check): (a) one spelling on every preset, the base stating
+    it drawn, its state rules patching it, the rule hiding it last; (b) each preset its own spelling, the catalogue
+    documenting that a layer's base patch reaches the block only where the base draws it; (c) an S12 check of the
+    spelling. (b) makes one application layer act on one preset and not on another; (c) checks what (a) states once.
+    **Decision**: (a), stated in the catalogue's Entry format, so an application layer's base patch reaches the drawn
+    block on every preset, beneath each preset's state rules as every base patch is.
 - **Presentation transitions:** an element appearing, disappearing or moving (a popover opening, a dialog's
   entrance, a page pushed, a sheet presented), keyed by event per widget, which rules can change (reduced
   motion, flavours); the kinds are an open list in the specification, from the map's rows: fade, slide from an
@@ -750,7 +969,7 @@ MAT-X13–MAT-X15, X-MO-1).
   lifecycle, the release's exit included, is the effect's own (R3); its origin is the point pressed where it is bounded,
   which the toolkit has from the press itself, and the box's centre where it is not. Compose on Android draws it with the framework's `RippleDrawable` in its patterned style (MAT-X9),
   whose shader draws a wave with sparkles, so the ripple is that effect, implemented to its source, not a circle with
-  stated durations. One transition governs a property group per change, as in CSS; the state layer has a group of its own,
+  stated durations. One transition governs a property group per change, as in CSS (Breeze's engines rank their runs instead, ADD-A126); the state layer has a group of its own,
   so it does not time the container (R3). A stroke's widths may be timed by a group of their own,
   `StrokeWidth`, which overrides `Stroke` for them where stated, as Compose moves a text field's indicator and an outlined toggle's border colour and width by
   different springs and CSS transitions `border-color` and `border-width` apart; a transition naming fields within a
@@ -764,20 +983,26 @@ MAT-X13–MAT-X15, X-MO-1).
   convert some of them approximately.
 - **Tokens and the speed factor:** the platform's published durations and curves, referred to by parts; a global
   speed factor (KDE's `AnimationDurationFactor`, K3.30) read by the reader. Which durations the factor scales is
-  the platform's, so each scaled duration is stated as a derivation, a token times the factor (Breeze's
+  the platform's, so each scaled duration is stated as a derivation, a token times the factor, but under an engine
+  that scales its own play time, Compose's, whose durations are plain, the factor applying once (ADD-A126) (Breeze's
   animations are its factor times 100 ms while `AnimationDurationFactor` is set, and breezerc's
   `AnimationsDuration` otherwise, both of which the reader reads), and an unscaled one as a plain duration
   (Qt's own 250 ms tab move is not scaled). At a factor of zero a spring jumps to its end, as a curve does.
 - **Theme changes:** what the platform does when the colour scheme, the accent or another input, a contrast
   setting, a palette or the preset changes (Appendix B's kind K57; GN-3.23, W-P3-16†) is the theme-change
   token: one of a crossfade of the window with its duration; property transitions suspended for a duration
-  (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:237-239`,
-  `:298-300`, with no crossfade; it reaches CSS transitions only, so the tab's 150 ms close-button fade, an
-  `AdwAnimation`, still runs, `adw-tab.c:857-862`, and the preset states which transitions a suspension
-  reaches; a transition already running when the suspension starts finishes); or instant (an instant switch
-  with property transitions as usual). Each preset's kind is a fact, measured where no source states it
-  (`kde-breeze`'s among them). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: their property
-  transitions run as stated (Breeze's decoration shadow, K1.17; Mica's fade, W3-10).
+  (libadwaita turns CSS transitions off for 250 ms on every style update, `adw-style-manager.c:236-239`,
+  `:296-299`, with no crossfade; it reaches the `GtkCss` engine's transitions only, so the tab's 150 ms close-button
+  fade, an `AdwAnimation`, still runs, `adw-tab.c:854-862`, and a CSS transition running when the suspension starts
+  ends at its new value, as GTK carries none into a style whose transitions are all zero,
+  `gtkcssanimatedstyle.c:822-826`; libadwaita also suspends on a reduced-motion change, which the token names,
+  `adw-style-manager.c:412`, and on the application's own scheme choice, `adw_style_manager_set_color_scheme`,
+  `:979-991`, the model's `pick`; ADD-A126); or instant (an instant switch with each engine's transitions as for any
+  change). Each preset's kind is a fact, measured where no source states it (`kde-breeze`'s is `Instant`, from
+  Breeze's and Qt Quick's code, which stop nothing and add no window effect, ADD-A126). Other condition changes (a window becoming inactive, maximised or tiled) are not theme changes: they start the value
+  engines' transitions of the values they move and turn the Breeze tests that name them, so Breeze's decoration
+  shadow fades on activation alone and changes at once on a maximise (K1.17), and Mica's fade runs as its engine
+  does (W3-10).
 - **Reduced motion and animations off:** rules under these conditions stating what the platform does instead:
   libadwaita swaps a bottom sheet's slide for a crossfade under reduced motion, and under animations off jumps to
   the end (GN-3.25), which the preset states as a rule setting the speed factor to zero. The model never zeroes
@@ -793,7 +1018,9 @@ gains letter spacing (tracking, which SF Pro states per size, D-1), its own line
 and paint: the spell-check and IME underlines, mnemonic underlines, a link's underline; K1.49†, W1-151†,
 GN-1.281†), and **elision and wrapping** (where a platform truncates, at the end or the middle, fades the text out under
 another part, as AdwTab fades its title under its close button with a mask whose strength follows the
-button's opacity, GN-1.129, or wraps).
+button's opacity, GN-1.129, or wraps). The colour, elision, wrapping and line limit are what a widget does with the
+text, so a named style states them only where the platform's style sets them, and the parts that draw text state
+them otherwise; a low underline is placed from the ink of the run it marks, as Pango draws a mnemonic's (R25.17).
 
 **Text roles:** today four `text_scale` entries besides the body font; macOS and iOS have eleven styles, Material
 fifteen and fifteen emphasized (MAT-TS4), WinUI eight, libadwaita about nine.
@@ -814,7 +1041,8 @@ non-linear font scaling (MAT-X19) are not a single factor: those platforms' read
 
 **Points.** A size stated in points becomes logical pixels before any of this, at the platform's font DPI, which is not
 one constant across the platforms (today's `ResolutionContext::font_dpi`): the preset states its platform's DPI as a
-token, from its facts, and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
+token, from its facts, or 72 where the platform's point is the logical pixel, the model's own value (Apple's; the
+specification's S9.4, ADD-A125), and the reader reports the system's where the platform has a setting (KDE's forced font DPI on
 X11, then `Xft.dpi`, as the facts record them); a change of it is a theme change (R9). Folding the DPI into the
 text-scaling factor was rejected: that factor also scales sizes stated in pixels and is 1 where the platform scales by
 the font size itself, so it would scale pixel-stated fonts wrongly; a fixed DPI in the code was rejected as false on
@@ -824,7 +1052,8 @@ some platforms and as dropping the user's KDE setting.
 
 **Icon style:** size (the existing `defaults.icon_sizes` contexts become its tokens), fill (the recolouring of
 symbolic icons, a paint, so vibrant icons blend, MAC-X03), rendering mode (SF Symbols' monochrome, hierarchical,
-"palette" in Apple's sense, multicolour), weight and scale, and a per-state effect where the platform changes an
+"palette" in Apple's sense, multicolour; and, where the platform decides per icon, as GTK and KDE do, the icon's own
+kind, R25.17), weight and scale, and a per-state effect where the platform changes an
 icon by state (KDE's disabled and active effects, K3.60). Mirroring in right-to-left layouts is a property of
 each icon role (MAT-FM04†). Symbol effects are transitions.
 
@@ -844,8 +1073,11 @@ backing scale and the control's pixel size, with the window's key state, and cac
 appearance, key state and scale, as the SF Symbols loader renders symbols today. Called off the main thread, or
 off macOS (a `macos-*` preset used on another platform), the rendering is absent and the modelled parts stand;
 a toolkit that cannot use the rendering records that limit (R23). For a toolkit that composites it, the rendering replaces the parts it covers (the checkbox's box and mark
-together); the modelled box (its measured fill, stroke and corners, R6, R7) remains for a toolkit that cannot,
-while the mark has no model of its own. The rendering uses the system's accent: an application's accent cannot
+together, the rendering stated on the box, drawn in every state, ADD-A126); the modelled box (its measured fill,
+stroke and corners, R6, R7) remains for a toolkit that cannot, and the radio's dot (its measured diameter and its
+colour, a cornered fill) likewise, while the checkbox's mark has no model of its own, so without the rendering no
+mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement
+(MAC-C01), the limit recorded where it is (R23). The rendering uses the system's accent: an application's accent cannot
 reach it, which the connector records (R23). Measuring the mark's geometry from renders was weighed and rejected:
 its outline can only be traced from a picture, which the project's asset rule forbids; its size and colour are
 still measured. Elsewhere a glyph's size, stroke width and fill are its values.
@@ -857,9 +1089,19 @@ none), stroke, offset, corners (concentric with its part unless stated), shadow 
 focus-visible state. The base states it, by reference to the platform's token where the platform has one
 indicator, or its own where a part differs (KDE's focus line under tab labels, K3.21). A focus that only changes a
 fill is a {focus visible} rule, not a kind. Today's three `focus_ring_*` fields become the token; when focus
-becomes visible is a widget behaviour (R17).
+becomes visible is a widget behaviour (R17). The indicator is drawn while focus is visible and while its transition out runs; its other end is the
+indicator of the style without the flag under the element's other flags after the change, its paint and shadow
+transparent, so libadwaita's ring grows in from and shrinks out to its rest outline, zero wide and transparent at a
+larger offset (`libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`), and an indicator `Absent` there appears and
+leaves at once: Breeze's tab line, drawn in the tab's base and
+`Absent` off `{selected}`, fades in on a newly selected tab from `{selected}`'s transparent line and is gone at once
+from the tab left (ADD-A126, ledger queue #85). Weighed: the rest style's ring with its own paint (a meaning for a value
+no platform draws at rest); every preset stating its rest ring transparent, with no rule (every focusable part's rest
+style restating the ring, one left at the focused paint jumping in); an entering geometry on the block (a repeat of
+the rest style). The focus flags are the toolkit's in an inactive window, which GTK and Qt clear (S7.2).
 
-**Caret:** colour, width, shape (bar, block in overwrite mode; K1.47†, KDE file), the secondary caret in
+**Caret:** colour, width (a token where the platform has one width; where it follows each line, as GTK's does, the
+caret parts', R25.17), shape (bar, block in overwrite mode; K1.47†, KDE file), the secondary caret in
 mixed-direction text (GN-SF03†), blink on and off times and timeout, read where the platform has a setting (GNOME,
 GN-3.32–GN-3.38; Windows; KDE; macOS's blink period, MAC-X14), and when it hides (while text is selected,
 GN-3.73†, GNOME file).
@@ -947,8 +1189,10 @@ rules, while a light source does not turn with the text.
 ### R17 — Timings, behaviours and the pointer (C21, C22)
 
 Timings and behaviours that apply everywhere form a behaviour record among the tokens: double-click time and
-distance, drag threshold, hover-open delay, key repeat, scroll distance per step, and whether the pointer hides
-while typing. Those that belong to one widget are its values: when its focus becomes visible (Breeze after keyboard
+distance, drag threshold, the time a held press takes to start a drag and the earliest a drag may start, the system's
+hover time, key repeat, whether a disabled element shows its mnemonic, and whether the pointer hides while typing;
+the distance a wheel step scrolls, in lines or pixels, belongs with the rest of a wheel step's motion in the scroll
+physics (R25.17). Those that belong to one widget are its values: when its focus becomes visible (Breeze after keyboard
 focus, K3.20; macOS text fields on any focus, its buttons only with Full Keyboard Access); the tooltip's show, hide
 and reshow beside today's `tooltip.show_delay_ms`; the menu's submenu delay and sloppy-close timeout (K-RV2†); the
 scroll bar's auto-hide and what a click in its trough does (K-RV1†, MAC-P3-2†); a toast's duration. Each is read
@@ -1165,8 +1409,9 @@ expressions may name, with the functions the platforms use over them (`pick(hash
 hash and list, cited). Also element data: a colour the application chose
 for the element that derived values follow (a badge's custom colour, Q2.26), the width of a character of the part's
 font as the toolkit measures it (GTK's `max-width-chars`, KMessageBox's widths in characters, GN-1.283†, K-P3-7†),
-the font's own underline and strikeout position and thickness, from which every target toolkit draws those lines
-(Pango, Qt's `QFontMetrics`, AppKit's `NSFont`, DirectWrite, Android's `Paint`), so a decoration follows the user's
+the font's own underline and strikeout position and thickness, from which the target toolkits draw those lines
+(Pango, AppKit's `NSFont`, DirectWrite, Android's `Paint`; Qt draws its own adjustment of them, a register row,
+R25.17, the specification's S2.8), so a decoration follows the user's
 font rather than one measured number (R10),
 and the display's corner radius, a root input rather than per-element data (R25.11). A value may also follow another resolved field of the same part (Compose's
 optical centring by the corner radius, MAT-X37†). **Decision:** element data in the query, as plain values each part
@@ -1322,6 +1567,13 @@ Amended in place by the specification's batch ADD-A124 (2026-10-30), decided fro
   `state_layer` parts holding the block, their per-state opacity dropped; Material's navigation items' ripple pill as a part of its own; the stroke's widths a
   property group that overrides `Stroke` where stated; a stroke becoming absent interpolating to zero width.
 
+Amended in place by the specification's batch ADD-A128 (2026-10-31), decided from the sources in the ledger's queue
+#105:
+
+- R5.4: libadwaita's standalone colours are the colour GTK computes for its stylesheet, unclamped, one function for
+  every role; a colour outside the gamut is clamped where it is drawn, premultiplied first, the connector's hand-over
+  following GTK's.
+
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
 
@@ -1332,6 +1584,188 @@ states its scaling function, Android 14's `FontScaleConverter` (MAT-X19) or Appl
 applied to the stand-in's factor or content-size category; a reader that reads each style's size
 reports a factor of one, so nothing is scaled twice. The alternative, the application stating every size, moves a
 platform rule into every application.
+
+**R25.16 — The combo box's content layout (extends R16; ADD-A127).** Every platform lays its combo trigger out as
+one row, [icon] [the content's space] gap [the arrow], the content start-aligned and taking any spare width, the arrow
+keeping the end; they differ in four ways the model must state, each surveyed at the pins form by form (Breeze's and
+Kirigami's editable and non-editable combos with and without an icon, GtkDropDown and GtkComboBox with and without an
+entry, WinUI's at both densities and editable, Compose's and material-web's select with and without a leading icon,
+the iOS pop-up button, AppKit's pop-up and combo box). The catalogue's `combo_box` entry states the result once.
+
+*The row.* Options: a rule of the combo box's own; `button`'s content form with the arrow as `button`'s
+`menu_indicator` under `Inline`; that form with the arrow area as the end part where one is drawn (ADD-A125's).
+The second is chosen: it places the icon, takes written values one to one (WinUI's `ComboBoxPadding` end 0 and its
+chevron's `0,0,14,0`; Breeze's glyph centred in its 20 px square as a margin of 5; Compose's 24 dp icon in its 48 dp
+box as a margin of 12, with the text's own end padding 4 the gap), and needs only `margin` on the arrow and icon and
+`padding` on the label (GTK's cell renderer's 2 px, which in the body's padding would break S2.11's GTK minimum, an
+expression over that padding; Breeze's text pixel). The third fails WinUI, whose chevron sits in its 38 px column by
+its own margin, not centred in the 30 px overlay that is its editable arrow area, and Breeze, whose edit field runs
+2 px into the arrow's square rather than ending before it. So the arrow area, where drawn, is a box at the body's end
+by its own `margin`, `min_width` and `max_height`, taking no layout space (each platform's arrow column is already
+the gap, the arrow's margin box and the padding), and the arrow is placed by the row whether or not an area is drawn;
+on `macos-*`, where the rendering replaces the arrow, its `ControlImage.arrow` is the end part.
+
+*The cross axis.* WinUI centres its chevron on the whole row under an uneven padding (`12,5,0,7`), Compose its
+trailing box on the field's height; `Inline` centres on the content box. Options: `Inline`'s with WinUI's chevron
+given margins 1 and −1; the body's box. The body's box keeps written values and agrees with `Inline` under every even
+padding; Breeze's 20 px minimum content height, which under it no longer reaches the padding, is `body.min_height`,
+stated from its own terms.
+
+*The natural width.* A size hint is visible. Breeze sizes the content plus 38 but its drawn row holds 28: 10 px
+(the end `ComboBox_FrameWidth` and `Button_ItemSpacing`) are sized and never placed, 11 with an icon, 8 editable, 14
+frameless editable; Kirigami's style item 10, 7 with an icon, and editable a larger-of between its style item and its
+text field's own width. Options: (a) the gap widened by the slack (natural width and positions right, a long text cut
+10 px early); (b) the gap as drawn and the slack dropped (the width 10 px short at every size); (c) the slack in the
+label's padding (cut early); (d) the slack as the arrow's margin moved under `Inline` (start d, end −d), which keeps
+the row's size and moves the box: exact for one measure, but Kirigami's editable width is the larger of the style
+item's (with the slack) and the text field's (without), which a margin on the arrow, counted in both, cannot give,
+and Breeze's arrow would carry size terms where its source writes a centring; (e) a `min_width` over the content's
+width, which S8 forbids; (f) a value, `content_slack_px`, added to the content's space at its natural width only. (f)
+is the smallest form exact for every surveyed form: the positions and the cut stay the drawn row's, the size the
+platform's. Under the widest-item basis the slack differs by form (Breeze 10 without an icon, 11 with one) and Qt adds
+an icon's `iconSize + 4` per item, so the measure is the largest of whole rows, one per item (and for the
+placeholder and the empty run), each in its own form with that form's slack: an item's icon is counted once, by its
+own row, and a list mixing iconed and plain items comes out as Qt sizes it; measuring texts and adding the current
+item's icon would count an icon twice or for the wrong item. The slack is nonzero only under that basis, so it could
+be a field of `Widest`; it stays a value of its own because it varies by form (with an icon, editable, frameless,
+under Kirigami) and a rule restating one length is smaller than a rule restating the whole basis with its floor, run
+and `or_shown`, and because each whole row reads it under its own form's rules, as it reads the gaps; it is stated 0
+under the other bases. What the content's space is measured at differs too, visibly: the shown text (GtkDropDown, WinUI), the
+shown text with the placeholder and the floating label (Compose), the widest item, each in its own form, with the
+placeholder (QComboBox, GtkComboBox; Kirigami at least 75 and, editable, beside its text field), and a fixed width
+(GtkComboBox's entry, 150 px of text); one basis for all would misstate four platforms, and leaving it to the
+connector would lose a platform rule (R25.3's argument), so `content_width` names it, with QComboBox's empty list
+(seven advances of `x`) as data. When a toolkit measures again (Qt's default takes the width at the first show) is the
+application's policy, not the theme's. Compose measures its resting floating label without the text's padding, and
+bounds the box by a floated label plus the field's content padding on both sides, interpolating between the two as
+the label floats (the outlined field), while its filled field pads its label as its text and measures it at its
+current, interpolated size, a third shown text (`TextFieldImpl.kt:423-432`, `:1950-1951`): options, one form for
+both (the outlined field's 20 dp too wide at rest, 8 with a leading icon, or the filled field's label short by the padding), a separate
+value for the label's padding (a value read only by one basis), or the padding inside `ShownAndHints` as
+`label_padding`, `Some` for the outlined form and `None`, the label a third shown text, for the filled; the last is
+the smallest exact form. So is a measure that depends on
+the element's history (Kirigami keeps its
+floor of 75 for a combo emptied after holding items, while one created empty measures nothing,
+`kquickstyleitem.cpp:126`): the model measures the element's present content.
+
+*The natural height.* Compose centres its 48 dp icon boxes on the field's height and takes the larger of those boxes
+and its text with its vertical padding (`TextFieldImpl.kt:1709-1745`, `:1786`, `:1904`), 56, where boxes inside the
+padding would give 80; Breeze centres its icon in the edit field and reserves Qt's `iconSize + 2` inside the frame.
+Under the widest-item basis the height is the tallest row's too, as Qt reserves an icon's height when any item has
+one (`qcombobox.cpp:634-635`), and Kirigami's style item ignores the icon's height (`kquickstyleitem.cpp:1189`), its
+icon taking no height by its margins. Options: the icon in the content box (Compose's height wrong); the icon's vertical margins on Material restated
+smaller (its centring then off under the floating label's uneven padding); a value choosing the content box or the
+body's box per preset; the icon, as the end part, always on the body's box, Breeze's top and bottom margins 7 (Qt's 1
+and the frame's 6). The last is chosen: Breeze's even frame centres the edit field on the body, so its icon lands on
+the same pixels, the 7 keeps Qt's reserve on the frameless editable combo too, whose field has no frame, and no
+surveyed form needs the content box for the icon, so the value would decide nothing. Breeze cuts the icon at its edit field
+(`breezestyle.cpp:5800`; editable QCommonStyle's, `qcommonstyle.cpp:2193`), the widget's box less its frame of 6, 0 on
+the frameless editable field, reached only under Kirigami, whose content (`fontHeight + 2`, at least 20,
+`breezestyle.cpp:3363`) can be shorter than its icon. Options: the cut at the content box (wrong under Kirigami's
+editable combo, whose padding is qqc2's 5); at `body.padding` (the same value, and 6 where the frameless editable clip
+is 0); no cut (a tall icon drawn past the field, as Breeze never draws it); a value, `icon_clip_inset_px`, the inset
+from the body's box. No stated value gives the field's inset on every form, so the value is the smallest exact form.
+The editable forms' inputs take
+the vertical padding that makes the height Qt's (`fontHeight + 2` inside Breeze's frame, `qcombobox.cpp:632`,
+`breezestyle.cpp:3366-3370`): 1 at the top and bottom on Breeze, 2 under Kirigami inside qqc2's 5, the frameless
+editable combo keeping the 6 of the framed one; their text is centred, so nothing drawn moves.
+
+*The editable input.* Breeze, Kirigami, Compose and GTK place the input in the content's space beside the arrow
+(Kirigami's editable end padding of 24 is the 2 px gap, the 20 px square and the 2 px frame, so the row counts the column
+once); WinUI's text box spans the whole body with `11,5,38,6`, its padding holding the arrow's column, and appears
+only while the combo is focused, or under a game controller from the popup's opening until focus leaves, which the
+label's absence rules state, the input drawn where the label is not (the game controller's history, the box staying
+after the popup closes, approximated by the popup's `open`). Options: WinUI's input in the row with its padding restated (its written 38 becoming
+an unwritten 1); `input_placement`, `Row` or `Body`. The second keeps every written value and counts each column
+once.
+
+*Left to measurement:* the macOS pop-up's and combo box's content row per control size and the iOS pop-up's width
+basis, spare width and cut, which no pinned source states (register rows); a measured result outside these forms
+(a packed iOS title and indicator) is a model change its row records.
+
+**R25.17 — The slice's model gaps (2026-10-31; amends R4, R5, R10, R11, R12, R17; the specification's ADD-A130).**
+Stating every field of `adwaita` and `macos-tahoe` (M1a) found fields the model could not state from the sources.
+Each is decided from the pinned sources; the specification cites them.
+
+- *The caret's width.* GTK's stem is the caret's height times the aspect-ratio setting, plus one, in whole pixels,
+  and the height is the run's extents rounded outward to pixels, unhinted under GTK's default automatic font
+  rendering, so it depends on where the baseline falls and changes from line to line. Options: a number in the token
+  (invented: GTK states none); a token expression evaluated where used, as a text style's `font_size` is (the caret
+  has no font, so it would read another part's, which a token cannot name); the token absent where the width follows
+  the line, each caret part stating the expression over a font metric (the font height is off by one where the
+  rounding crosses a step, the line height holds leading the caret leaves out); the token absent and each caret part
+  stating the expression over the height of the caret its toolkit draws, element data the connector reports (one home
+  per part, checked: a part keeping the absent token as its base is refused). **Decision:** the last.
+- *The wheel step.* GTK's step is a power of the view's page size, already a `scroll_view` value; the lines and
+  pixels per step read by KDE, Windows and Android are read only by widgets of later units (the scroll view, Qt's
+  slider). Options: keep both in the
+  behaviour record and state them now (their readers come later, and GTK's absence would be checked by nothing);
+  stage the two fields one by one (the step's distance apart from its duration and from the touchpad's factor); move
+  them into the scroll physics, which is staged with the scroll view already. **Decision:** the last.
+- *Drag start.* Qt's start-drag time starts a drag from a press held still; GTK's 100 ms is the earliest a drag that
+  movement starts may begin. Options: one field with either meaning (the other platform loses its value, and the two
+  are opposite); two fields. **Decision:** two, `drag_time` Qt's and `drag_min_delay` GTK's, each absent or zero
+  where the platform has none.
+- *The hover time.* The record's "hover-open delay" matched no platform's value: Windows has one hover time, of which
+  WinUI's tooltip delays are multiples, while GTK hard-codes each widget's delay (the tooltip's, a submenu's).
+  Options: drop the field (Windows' reader would compute WinUI's multiples in its code, out of the gate's sight); make
+  it the submenu delay (the menu's own value already); the system's hover time, the tooltip values expressions on
+  it, absent where there is none. **Decision:** the last, renamed `hover_time`.
+- *Mnemonics.* Pango draws a mnemonic's underline a line thickness below the ink of the character it marks, which no
+  font metric gives; GTK draws none on a disabled label or beside a disabled target. Options for the position: an
+  element datum for the ink's bottom (one value per query, where every decorated run has its own ink); a fixed
+  offset (wrong for a descender); an origin field on every decoration, the baseline or the run's ink (a field every
+  lane's decorations would state, and an ink origin an overline could take, which no platform draws); Pango's own
+  line kind, a low underline whose offset is measured from the run's ink, the connector taking the ink from its
+  glyphs (exact for GTK's mnemonic, the one lane that draws it; Qt's drawn underline is a register row). For the disabled case: a `{disabled}` rule on every part whose text takes a
+  mnemonic (one fact restated per widget, and a label beside a disabled target is not disabled itself); a behaviour
+  flag the connector applies with the mnemonics setting. **Decision:** the low underline, and the flag.
+- *Rendering by icon.* GTK recolours an icon whose file is symbolic, and in any SVG the paths given symbolic paints,
+  drawing the rest as they are, and KDE recolours an SVG's colour-scheme stylesheet classes; the field was required, with no value for "the icon decides".
+  Options: `Absent` (which means not drawn); `Template` always (a full-colour icon would be recoloured); a content
+  variant naming each icon's kind on every widget that draws icons (the connector already holds the icon and its
+  kind); a rendering mode for the per-icon rule. **Decision:** the last, `FromIcon`, the icon's own colouring path by path, on `adwaita` and
+  `kde-breeze`, each mark beyond the foreground an entry of the icon style's colour map under the platform's own name
+  (libadwaita's accent beside its three statuses, KDE's seven stylesheet classes), the map renamed `symbolic_colors`
+  as it holds more than statuses; a context that recolours whatever
+  the file, libadwaita's check box, states `Template`. The tab button's icon, which libadwaita names itself, is a glyph
+  by its icon name, with a content variant for the form it shows from a hundred tabs.
+- *A paintable's motion.* libadwaita's status page shows a spinner paintable, which loops for ever. Options: an icon
+  animation on an icon context (its keyframes could move only the icon, while the spinner's arc grows and shrinks);
+  a reference from the context to the spinner's loop (a token reads no widget value); the spinner element in the
+  status page's context, its loop the spinner's. **Decision:** the last, as the catalogue already places it.
+- *Styles and drawn text.* Every keyed text style, and so every slot, held a colour, elision, wrapping and a line limit, which most
+  platforms' styles do not set (libadwaita's classes and AppKit's styles are fonts; GtkLabel's defaults are a
+  widget's), while WinUI's styles set trimming and wrapping. Options: each style states its platform's label defaults
+  (another widget's values, and a part that forgot to restate them would pass with the style's); move the four leaves
+  onto the part (WinUI's styles would lose their one home, and every text path would move); keep them in the style,
+  each absent where the platform's style does not set it, every part that draws text stating all four in its base
+  table, by value or by reference to the style's leaf, which validation enforces. **Decision:** the last. The text-scaling role stays the style's, a `Value` so a part references it: on iOS each of Apple's
+  styles has its curve; where no curve is read (every scaling but Dynamic Type, `macos-tahoe`'s included, AppKit's styles taking no
+  size category) it is stated as none.
+- *A misspelled word holding the caret.* Kirigami's spell checker gives that word a faint negative background, by a
+  comparison of its own (the word's place in its paragraph against the caret's, or the selection end's, in the whole
+  document). Options: a register row until a state exists (the look stays unstated); a state flag of the text widget
+  (it is per word, and the widget holds several); a connector-set keyed flag on the misspelling, made an *(element)*
+  part per word on every text widget, as a code editor's current line carries its mark flags, the connector computing
+  it as Sonnet does, its first-paragraph quirk included. **Decision:** the last, `@holds_caret`.
+- *Font width on macOS.* AppKit's width trait runs from −1 to 1, the model's width is OpenType's percent, and no pinned
+  source maps one to the other. Options: a conversion of our own (invented); a table from the four named widths (the
+  SDK declares them without values); the font's own `wdth` axis, measured with its scale (OpenType's percent, which no source here pins), the register
+  deciding how the reading becomes the width. **Decision:**
+  the measurement.
+- *macOS's status colours.* AppKit declares no status colour, and its selection no outline colour. Options: map
+  statuses to the system palette (no Apple source maps them; it would invent the platform's meaning); leave them absent
+  there, every route that reads them checked. **Decision:** absent: the global status roles, the sets' status text
+  colours and the Selection set's outline may be absent on `macos-*`; macOS's destructive buttons keep their system red,
+  its level indicator its own fills.
+- *Parts not drawn.* The gate compared no field of a part the preset does not draw but failed a field's fact that
+  held there, so a field's facts had to restate where their part is drawn (eleven fields of GNOME's menu arrow, and as
+  two facts each, since the arrow is drawn under either of two variants). Options: keep the failure (no check gained:
+  the part's own key already fails a preset that drops or adds the part, being expected drawn wherever no part fact
+  applies); compare and fail nothing there.
+  **Decision:** the second; a measured derivation's pass whose part is not drawn still fails, as its evidence
+  measured the part drawn.
 
 ## 4. What the specification decides
 

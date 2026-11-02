@@ -1,0 +1,10 @@
+# windows-11's window facts. Written by the Windows facts lane.
+
+
+# Mica's change to its fallback colour in an inactive window (W1-005, W3-10): its engine, the compositor's system
+# backdrop or WinUI's own (S2.7's `WinUi`), is in no cached source, so the transition is a pending fact and the
+# preset states none, the path listed in its `[pending]` table (S2.7, S17, ADD-A126, ADD-A128; register U184).
+[[fact]]
+key = "window.content.transitions"
+pending = "U184"
+rows = ["W1-005", "W3-10"]

@@ -20415,15 +20415,467 @@ rows = []
 
 [[fact]]
 key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "circular"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-plain.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-default.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_off.corner_curve"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_on.corner_curve"
+tolerance = 0
+
+[[fact]]
+key = "button.body.focus.corners.curve"
 when = { conditions = ["preset:macos-tahoe"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
 rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.body.focus.corners.curve"
-when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U100"
 rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.corners.curve"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-toggle_on.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-plain.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-default.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-toggle_off.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-toggle_on.dash"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.dash"
@@ -20433,9 +20885,323 @@ rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.body.focus.dash"
-when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U100"
 rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.dash"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.mini-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.small-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.regular-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.large-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.aqua.extraLarge-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.mini-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.small-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.regular-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.large-toggle_on.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-plain.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-default.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-toggle_off.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/focus-ring.toml#focus_ring.darkAqua.extraLarge-toggle_on.shadow"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.shadow"
@@ -20445,7 +21211,115 @@ rows = ["MAC-X16"]
 
 [[fact]]
 key = "button.body.focus.shadow"
-when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@badge"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U100"
+rows = []
+
+[[fact]]
+key = "button.body.focus.shadow"
+when = { conditions = ["preset:macos-tahoe"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U100"
 rows = []
 
@@ -20458,7 +21332,7 @@ rows = ["MAC-X16"]
 [[fact]]
 key = "button.body.focus.transition"
 when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U100"
+pending = "U182"
 rows = []
 
 [[fact]]
@@ -21151,11 +22025,12 @@ when = { conditions = ["preset:macos-tahoe"], not_context = [{ scope = "any", wi
 pending = "U90"
 rows = ["MAC-B08"]
 
-# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames (U103).
+# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames, and no
+# source states Core Animation's engine: pending (U181, spec S2.7, S17; ADD-A126).
 [[fact]]
 key = "button.body.transitions"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U103"
+pending = "U181"
 rows = ["MAC-X11"]
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -42310,11 +43185,12 @@ when = { conditions = ["preset:macos-monterey"], not_variants = ["menu"], not_co
 pending = "U140"
 rows = []
 
-# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames (U103).
+# The press and release animations (MAC-X11; the glass bounce on macos-tahoe): the passes capture still frames, and no
+# source states Core Animation's engine: pending (U181, spec S2.7, S17; ADD-A126).
 [[fact]]
 key = "button.body.transitions"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U103"
+pending = "U181"
 rows = ["MAC-X11"]
 
 # macos-tahoe fill (preset gaps, pass 1): the label text's leaves NSButton's title has no counterpart for (as the
@@ -42422,6 +43298,16 @@ quote = "Mnemonics, which are underlined characters in the button title that can
 kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:338"
 quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:186"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:178"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
 
 
 [[fact]]
@@ -42608,3 +43494,653 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSFontDescriptor (NSFontDescriptor_TextStyles)"
 absent = []
 
+
+# ---------------------------------------------------------------------------------------------------------------------
+# macos-tahoe: ADD-A125-ADD-A130 alignment (the facts lane, 2026-11-02). The label states the drawn-text leaves
+# itself (S2.8, ADD-A130): its elision, wrapping and line limit the push button's title cell's, unread (U178);
+# its `scaling_role` none (the system font at the control size, systemFontOfSize:, no text style).
+# Its font from the button pass's P1 reads (fonts.toml `button_pass`): upright, `opsz` following the size, no
+# feature; its line height the laid-out line of the control size's system font (P2), 11, 13 and 16 points
+# at mini, small and regular or large, and at extra_large the 13-point font of regular (same `fontName` and
+# `pointSize`).
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-plain.style"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+value = { opsz = "follows_size" }
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-plain.axes"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:macos-tahoe"] }
+value = {}
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-plain.features"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.font.width"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U177"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["mini"] }
+value = "11px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.mini-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.mini.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["small"] }
+value = "13px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.small-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.small.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["regular"] }
+value = "16px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.regular-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.regular.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["large"] }
+value = "16px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.large-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.large.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-tahoe"], sizes = ["extra_large"] }
+value = "16px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-toggle_on.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.scaling_role"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:47"
+quote = "+ (NSFont *)systemFontOfSize:(CGFloat)fontSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "+ (NSFont *)preferredFontForTextStyle:(NSFontTextStyle)style options:(NSDictionary<NSFontTextStyleOptionKey, id> *)options API_AVAILABLE(macos(11.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:59"
+quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE(macos(11.0));"
+
+# the circular bezel's circle is body's box inside a wider frame: its margin unread (U159, ADD-A125)
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+pending = "U159"
+rows = ["MAC-B08"]
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+pending = "U159"
+rows = ["MAC-B08"]
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+pending = "U159"
+rows = ["MAC-B08"]
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+pending = "U159"
+rows = ["MAC-B08"]
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# macos-monterey: the tahoe fill's facts above, each SDK citation at Xcode 16.4 (the macOS 15.5 SDK, the
+# run 41006842699 macos-15 job's header copy): the label's decoration, mnemonic decoration, word spacing and case (letter spacing pending U237).
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:236-239"
+quote = "@interface NSFontDescriptor (NSFontDescriptor_TextStyles)"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = ["setTitleWithMnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = ["setTitleWithMnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:174"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:180"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:336"
+quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:181"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:175"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U237"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.word_spacing"
+when = { conditions = ["preset:macos-monterey"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:236-239"
+quote = "@interface NSFontDescriptor (NSFontDescriptor_TextStyles)"
+absent = []
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["preset:macos-monterey"] }
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:24-131"
+quote = "@interface NSFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:167-182"
+quote = "@interface NSFont (NSFont_Deprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "@interface NSFont (NSFont_TextStyles)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:61-99"
+quote = "@interface NSFontDescriptor: NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:101-115"
+quote = "/* Predefined font attributes not defined in NSAttributedString.h */"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:236-239"
+quote = "@interface NSFontDescriptor (NSFontDescriptor_TextStyles)"
+absent = []
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# macos-monterey: ADD-A125-ADD-A130 alignment (the facts lane, 2026-11-02). The label states the drawn-text leaves
+# itself (S2.8, ADD-A130): its elision, wrapping and line limit the push button's title cell's, unread (U178);
+# its `scaling_role` none (the system font at the control size, systemFontOfSize:, no text style).
+# Its font's descriptor and line height were read on macOS 26 only: pending (U236).
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U236"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U236"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U236"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.font.width"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U177"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U236"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "button.label.text.elision"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.wrap"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U178"
+rows = []
+
+[[fact]]
+key = "button.label.text.scaling_role"
+when = { conditions = ["preset:macos-monterey"] }
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:47"
+quote = "+ (NSFont *)systemFontOfSize:(CGFloat)fontSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:184-187"
+quote = "+ (NSFont *)preferredFontForTextStyle:(NSFontTextStyle)style options:(NSDictionary<NSFontTextStyleOptionKey, id> *)options API_AVAILABLE(macos(11.0));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:59"
+quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE(macos(11.0));"

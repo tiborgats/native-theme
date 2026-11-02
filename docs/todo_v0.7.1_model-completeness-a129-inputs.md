@@ -689,3 +689,117 @@ Where:
        hidden until the measurement decides (MAC-X11, CK-2†), and a part a presentation reveals (a popup's open and
        close, an expander's content by `@expand`/`@collapse`) is `Absent` where closed until ADD-A129 (queue #118)."
      - Add the expander's content to #118, or state its absence collapsed.
+
+## Added from check 17 (ADD-A126 at 8a2e9766)
+
+- **`stepper.popup` has no closed state.** W2-01 states `stepper.popup.{fill,stroke,shadow} @ variant @compact`, and the popup's only absent rule is "outside `variant @compact`", so the `windows-11` stepper draws its spin popup at rest. NumberBox opens the popup on focus and closes it on focus loss: `popup.IsOpen(true)` under `Compact` in `OnNumberBoxGotFocus`, `popup.IsOpen(false)` in `OnNumberBoxLostFocus` (`microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.cpp:415-439`). Its closed state is ADD-A129's (check 17 finding 4); ADD-A126 leaves W2-01 as it is.
+- **MAT-M1's selected icon.** With a selected icon and no leading icon, Compose brings it in and out with `AnimatedVisibility`, `expandHorizontally` + `fadeIn` and `shrinkHorizontally` + `fadeOut` (`material3/…/Menu.kt:2071-2081`), on `FastSpatial` and `FastEffects` (`:2013-2014`); the same pattern as the chip icons (`Chip.kt:3453-3500`). Deferred with them (queue #118).
+
+## Added from check 20 (ADD-A126 at the twentieth check's commit)
+
+- **`stepper.popup`'s closed state is settled in ADD-A126**, so the check 17 entry above no longer applies. W2-01 now states `stepper.popup (absent = true) @ !{focused} variant @compact`, written last (`NumberBox.cpp:415-439`). Only its opening and closing motion is #118's.
+- **Expanders' reveals: all of them are #118's.** ADD-A126 makes the revealed box (`expander.content`, `form.row_nested`, `list.nested`) `Absent` outside `{open}` on every preset, laid out at zero height, and no preset writes `@expand` or `@collapse` until ADD-A129. ADD-A129 states each reveal from these rows and sources, with a survey:
+  - K1.251 and K3.37: KCollapsibleGroupBox animates its height only, `contentSize().height() * value` (`kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:49-51`, `:123`). Its duration is reset to `qMax(1, styleHint(SH_Widget_Animation_Duration))` before each start (`:112-117`); the 500 at `:48` is only the constructor's, so gap-map-kde's "500 ms `QTimeLine`" is false (check 20, finding 11).
+  - K-KA-7†: the rows' height and opacity, the content `visible: opacity > 0` (`kirigami-addons@1.15.0 src/formcard/FormDelegateCollapsible.qml:111-112`).
+  - W1-142: WinUI's Expander slides its content. The `ExpanderContent` border is `Collapsed` at rest and at the collapse's end (`microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`, `:53`, `:82`).
+  - W2-40†: SettingsExpander restyles `muxc:Expander` with `TranslateY` splines, 0.333 s expanding and 0.167 s collapsing (`CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:149-200`, `:177-178`). No row states it.
+  - GN-1.259: AdwExpanderRow's `GtkRevealer` measures its child times its progress (`gtk@4.24.1 gtk/gtkrevealer.c:612-636`) and unmaps it closed (`:228`, `:954`). GtkExpander appends and removes its child at once (`gtk/gtkexpander.c:900-921`): nothing to animate.
+  - MAC-X11 (`list.values.presentations events @expand, @collapse`, T-mac:730): pending its measurement, MAC-X11:747. No macOS row names `expander.values.presentations`.
+  - EX-2 (T-ios:569, "the child rows' insertion") and X-MO-6 (T-ios:874).
+  - MAT-L9: Material publishes no motion, and Compose has no such component at the pin.
+  - The interaction with `Presence`: the content's elements report `Unmapped` (AdwExpanderRow), `Removed` (GtkExpander) or `Hidden` (kirigami-addons) while collapsed, and the engines key their runs to that (S2.7).
+  - **The `list.nested` box question (check 20, finding 5).** `list.nested` is `Absent` on all but `adwaita` (W:3541). But the expander entry says Material's expandable item (MAT-L9, MAT-EX1) and iOS's outline disclosure (EX-1–EX-3) are "a `list` row with a `disclosure` and its `nested` box" (W:4253-4255). On `ios-*` and `macos-*` the children are rows the list inserts and removes (EX-2, MAC-X11:730), with no box. ADD-A129 decides it with the reveal: children as rows of their own on `ios-*`, `macos-*` and `material-3`, and the `nested` box on `adwaita` alone.
+- **Q1.111's rise also sinks** on exit (`kirigami@6.31.0 src/dialogs/Dialog.qml:303`, `:306-311`). ADD-A126 states it. A plain `QQC2.Dialog` under the `kirigami` flavour (an application's own) has no variant that tells it from Kirigami's `Dialog`. That is a limit of the variants, left open (check 20, finding 3).
+
+## Added from check 21
+
+- **K1.185† (QTreeView's expand animation)** is a `list` reveal like the eight rows above. ADD-A126 marks it as written by no preset until ADD-A129. The row states `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled; = token.motion.timings.in_out_quad)`, from `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153` and `src/widgets/itemviews/qtreeview.cpp:3148`, with `qtreeview_p.h:89` (check 21, finding 2).
+- **K1.251 and K3.37** state KCollapsibleGroupBox's reveal once now: K1.251 points at K3.37's duration and timing (check 21, finding 10).
+
+
+## Added from check 23: the expanders, moved out of ADD-A126 whole
+
+ADD-A126 now says only this (S2.7): "An expander's collapsed content (its presence, layout and query scope) and its reveal are ledger queue #118's (ADD-A129); the expander rows state them as before this batch." Every expander row and catalogue entry is back at its pre-ADD-A126 text (base `2b0b1eee`). The arrow engines on W1-142 and W3-28 stay, since they are transitions, not the reveal. Below are the texts removed and the findings of checks 18 to 23 on them. ADD-A129 decides it all with its survey.
+
+### Removed spec text (ADD-A126 at daf5fbc4)
+
+S2.7:
+An expander's reveal (the `@expand` and
+`@collapse` of `expander`, `form` and `list`) is wholly queue #118's: no preset writes those events until ADD-A129,
+and the box holding the revealed content, where a platform draws one (`expander.content`, `form.row_nested`,
+`list.nested`), is `Absent` outside `{open}` on every preset, written last, so it is given no box, as any `Absent` part,
+which is the zero height every source lays it out at (`kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:60`, `microsoft-ui-xaml@2.5.1
+src/controls/dev/Expander/Expander.xaml:114`, `gtk@4.24.1 gtk/gtkrevealer.c:635-636`, `gtk/gtkexpander.c:908-919`,
+`kirigami-addons@1.15.0 src/formcard/FormDelegateCollapsible.qml:111-112`) and appears and leaves at once; what it
+holds is not drawn with it (S6.3), its elements reporting the presence the preset's toolkit gives them, the
+connector's report, which no preset states (`adwaita`'s GtkExpander `Removed`, its AdwExpanderRow `Unmapped`;
+`kde-breeze`'s KCollapsibleGroupBox `Unpainted`, its children laid out at full height and clipped,
+`kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:290`, `:317-332`; kirigami-addons' and `windows-11`'s `Hidden`,
+`FormDelegateCollapsible.qml:112`, `Expander.xaml:114`, SettingsExpander's own template,
+`CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:270-279`;
+`macos-*`'s measured, the unmeasured register's row with MAC-X11), which the engines key their runs to. 
+
+S6.3:
+ One exception, a box an expander reveals (`expander.content`, `form.row_nested`, `list.nested`,
+S2.7): while it resolves `Absent`, nothing in it is drawn or laid out (the parts nested in it and the widgets
+queried in its scope, the application's controls among them, given no box), though its elements are still queried,
+in the scope S8 gives a `NotDrawn` part's children, and updated with the presence S2.7 names, so each engine keys its
+runs to that presence as its toolkit does, as every source unmaps, removes, hides or clips the whole subtree (S2.7), where a title bar's
+parts are each removed by their own rule.
+
+The `Presence` definition (S2.7) kept its five values, because things outside the expanders use them: a stack page and a closed `GtkRevealer`'s child for `Unmapped`, a scrolled-out or occluded element for `Unpainted`, and Compose's leaving the composition for `Removed`. Its expander examples were dropped: "a collapsed `AdwExpanderRow`'s content" and "a collapsed `GtkExpander`'s content, which it removes and appends again, `gtk/gtkexpander.c:908-919`".
+
+The catalogue entries that were reverted: the Nesting exception, the expander's `content` in may_be_absent, the `presentations` gloss, `list`'s `@expand`/`@collapse` gloss, `nested`'s `adwaita` rule, the expandable-row wording at W:4256-4258 (the `nested` box on `adwaita` alone, the children elsewhere rows of their own), `form`'s `@expand`/`@collapse` gloss and `row_nested`'s rule under `expander`.
+
+### Removed or reverted trace rows
+
+changed: | GN-1.259 | `form.values.presentations events @expand, @collapse (queried with the row) @ variant expander; list.values.presentations events @expand, @collapse (queried with the row) @ variant inset` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
+removed: | GN-1.259 | `form.row_nested (absent = true) @ !{open} variant expander; list.nested (absent = true) @ !{open}` (written last: the revealer measures its child by its progress, zero collapsed, in any list, `gtk@4.24.1 gtk/gtkrevealer.c:612-636`, S2.7; unscoped, as a `nested` box is an expander row's alone, while the arrow and fill stay under `inset`, AdwExpanderRow being modelled in a boxed list, GN-2.09, since an unscoped `list.disclosure` rule would restyle every list's disclosure, GN-1.173) | rule |
+removed: | GN-1.261 | `expander.content (absent = true) @ !{open}` (written last: GtkExpander removes its child collapsed, `gtk@4.24.1 gtk/gtkexpander.c:908-919`, S2.7) | rule |
+changed: | EX-2 | `list.values.presentations events @expand, @collapse` (the child rows' insertion; ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+changed: | X-MO-6 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse` (the outline disclosure; `@expand`, `@collapse`: ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+changed: | K1.185† | `list.values.presentations (@expand, @collapse: Slide; = token.motion.durations.variant, QVariantAnimation's own default, 250, unscaled, S4.1's rule, `qtbase@6.12.0 src/corelib/animation/qvariantanimation.cpp:153`; = token.motion.timings.in_out_quad, `src/widgets/itemviews/qtreeview_p.h:89`; drawn only while the style hint, `token.motion.durations.animations`, is above 0 when the view is made, `qtreeview.cpp:3148`)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+changed: | K1.251 | `expander.values.presentations (@expand, @collapse: the content's height; K3.37's duration and timing)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+changed: | K3.37 | `expander.values.presentations (@expand, @collapse: the collapsible group; = max(<the source's floor>, token.motion.durations.animations), the style hint's duration, kcollapsiblegroupbox.cpp:114-116; = token.motion.timings.in_out_sine)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+changed: | K-KA-7† | `form.values.presentations (@expand, @collapse: the rows' height and opacity; = token.motion.durations.long, its timing) @ variant @ka_form_card` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | rule |
+changed: | K-KA-7† | `form.row_separator @ prev form.row variant expander {open} (under the open header row)` (inside `row_nested`, absent with it collapsed, `FormDelegateCollapsible.qml:101-103`) | rule |
+removed: | K1.251 | `expander.content (absent = true) @ !{open}` (written last: KCollapsibleGroupBox fixed at its header's height collapsed, `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:60`, S2.7) | rule |
+removed: | K-KA-7† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: the collapsed rows invisible, `kirigami-addons@1.15.0 src/formcard/FormDelegateCollapsible.qml:111-112`, S2.7) | rule |
+changed: | MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted; `@expand`, `@collapse`: ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+removed: | MAC-EX01 | `expander.content (absent = true) @ !{open}; form.row_nested (absent = true) @ !{open} variant expander` (written last: the disclosed content not drawn collapsed, its presence and motion MAC-X11's measurement, the unmeasured register's row, ADD-A129 (queue #118), S2.7) | rule |
+changed: | W1-142 | `expander.values.presentations (events @expand, @collapse: the content's eased slide)` (ADD-A129 (queue #118): no preset writes it until then, the content revealed at once, S2.7) | field |
+removed: | W1-142 | `expander.content (absent = true) @ !{open}` (written last: `ExpanderContent` collapsed at rest, `microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`, S2.7) | rule |
+removed: | W2-40† | `form.row_nested (absent = true) @ !{open} variant expander` (written last: SettingsExpander restyles its `muxc:Expander` with its own template, whose `ExpanderContent` is collapsed at rest, `CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:85`, `:270-279`, S2.7) | rule |
+
+### The findings, checks 18 to 23 (each verified at its pin by the checker)
+
+- **Sources of the collapsed state.** Each source gives the content no height in its parent's layout:
+  - `kwidgetsaddons@6.31.0 src/kcollapsiblegroupbox.cpp:60` fixes the height at the header's; the layout stays at full height and is clipped, `:290`; collapse changes only the children's focus policy, `:317-332`; the duration is reset before each start, `:112-117`.
+  - `microsoft-ui-xaml@2.5.1 src/controls/dev/Expander/Expander.xaml:114`: `ExpanderContent` is `Collapsed` at rest, and the storyboards end `Collapsed` at `:53` and `:82`.
+  - SettingsExpander uses its own template: `CommunityToolkit-Windows@8.2.251219 components/SettingsControls/src/SettingsExpander/SettingsExpander.xaml:85`, `:125-139`, `ExpanderContent` `Collapsed` at `:270-279`, its storyboards at `:149-221`.
+  - `gtk@4.24.1 gtk/gtkrevealer.c:612-636`: the child is measured times the progress, so zero closed; it is unmapped, `:228`, `:948-954`.
+  - `gtk/gtkexpander.c:900-921`: the child is appended and removed at once.
+  - `kirigami-addons@1.15.0 src/formcard/FormDelegateCollapsible.qml:111-112`: `opacity: 0`, `visible: opacity > 0`. The inner separator `:101-103` is a sibling of the content's layout, bound to its opacity, not inside it.
+- **Presences per toolkit** (check 21, finding 4; check 22, verified): GtkExpander `Removed`; AdwExpanderRow `Unmapped`; KCollapsibleGroupBox `Unpainted`; kirigami-addons and WinUI `Hidden`; macOS unmeasured.
+- **Why `shown` fails** (check 20, finding 1): a `shown` part keeps its layout box (S2.2), against every source's zero-height collapse. And `Motion` draws no presentation, so `@collapse` cannot keep the box drawn (check 20, finding 2).
+- **Why `Absent` alone fails** (checks 21-23):
+  - Nesting and S6.3 lay out an `Absent` part's children in the parent's place, so the content is still drawn (check 21, finding 1).
+  - An exception that leaves the content unqueried freezes a `QtQuick` behaviour and misses GTK's unseen transitions and libadwaita's at-once changes (check 22, finding 1).
+  - Queried content that has no box has no `rect_before`/`rect_after` and no `Geometry` rule; QML layouts keep laying out children whose own `visible` is unset (`qtdeclarative@6.12.0 src/quicklayouts/qquicklayout.cpp:883-886`) (check 23, finding 3).
+  - The catalogue nests expander rows' nested rows in `card` and `section`, not in `row_nested` or `nested`, so no exception reaches them (check 23, finding 1).
+- **The rows that state a reveal:** K1.185† (QTreeView, `qvariantanimation.cpp:153`, `qtreeview_p.h:89`, `qtreeview.cpp:3148`), K1.251 and K3.37 (one fact stated twice; K3.37's form is the source's), K-KA-7†, W1-142, GN-1.259, MAC-X11:730 (pending its measurement, MAC-X11:747), EX-2 and X-MO-6. W2-40† and MAT-L9 state none. SettingsExpander slides (`SettingsExpander.xaml:149-200`), and Material publishes no motion.
+- **`list.nested` and `row_nested`:**
+  - `nested` is drawn only on `adwaita`. The expandable-row text claims a `nested` box for Material and iOS, whose children are rows of their own (EX-2, MAC-X11:730) (check 20, finding 5; check 22, finding 10).
+  - `row_nested`'s provenance names only GNOME and Windows (check 23, finding 9).
+  - No macOS form expander row is modelled.
+  - libadwaita styles `row.expander` in any list (`libadwaita@1.10.0 src/stylesheet/widgets/_lists.scss:367-416`), while GN-1.257, GN-1.258 and GN-1.260 are scoped to `inset`. An unscoped `list.disclosure` rule would restyle GN-1.173's tree disclosure (check 22, finding 9; check 23, finding 6).
+- **The query scope changes at the reveal** (check 23, finding 10).
+- **gap-map-kde:300's "500 ms `QTimeLine`" is false at the pin** (check 20, finding 11).
+
+### The compact NumberBox (with the popup parts; check 23, finding 4)
+
+The source states all of these; none needs a measurement.
+- **The indicator glyph.** `PopupIndicator` (an `&#xEC8F;` 12 px glyph in the text box's column 2) is shown by `SpinButtonsPopup` (`microsoft-ui-xaml@2.5.1 src/controls/dev/NumberBox/NumberBox.xaml:336-339`, `:365`). `UpdateSpinButtonPlacement` enters that state from the placement mode alone (`NumberBox.cpp:659-679`), so the glyph shows whenever the box is compact, focused or not. Its foreground is `NumberBoxPopupIndicatorForeground` (`NumberBox_themeresources.xaml:5`, `:13`, `:21`) and its margin `NumberBoxPopupIndicatorMargin` `0,0,8,0` (`:35`).
+- **The popup's layout.** `Padding="6"` and `OverlayCornerRadius` (`NumberBox.xaml:116`). Two stacked rows, the up button with `Margin="0,0,0,4"` (`:117-120`, `:163-164`). `NumberBoxPopupSpinButtonStyle` is 36 × 36, with a 16 px glyph and `ControlCornerRadius` (`:193-205`); the inline buttons are `MinWidth` 32 with a 12 px glyph (`:182-192`).
+- **What the model needs.** A `stepper.popup_indicator` part (`glyph`, `margin`), `popup.padding` and `popup.corners`, the `@compact` button sizes and `button_layout`, with W2-01 rows.
+- **What ADD-A126 states.** The popup and both spin buttons are absent outside `{focused}` under `@compact` (W2-01).

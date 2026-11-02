@@ -131,8 +131,10 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   - `kotlin` (Compose): `Color(r, g, b[, a])` and `Color(red = r, green = g, blue = b[, alpha = a])` (Int arguments,
     decimal or `0x`, are bytes; Float ones, with an `f`, fractions), an eight-digit `0xAARRGGBB` integer (ARGB, as in
     `Color(0xFF5C77FF)`; other `0x` integers read nothing), and `[-]<n>.dp`, `[-]<n>.sp` (px) and `<n>.em` (no
-    literal); a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit, and in `cpp` its `f` or `F` suffix
-    C++'s (`0.7f`);
+    literal); a number's `f`, `F` or `L` suffix is Kotlin's type, not a unit, and in `cpp` its type suffix C++'s
+    (CPP_FLOAT_SUFFIX_RX, CPP_INT_SUFFIX_RX): a floating literal's `f`, `F`, `l` or `L` (`0.7f`), an integer
+    literal's `u` or `U` and `l`, `L`, `ll` or `LL`, alone or together in either order (`TimeSpan{ 4833333L }` is
+    4833333, S17's `ticks_to_ms` bullet);
   - on a source that serves only Apple's presets (Run.apple_only: an `sdk` or `snapshot` entry whose generations are
     all `macos-*` and `ios-*`, a snapshot of an Apple documentation site serving none, or measured evidence of an
     image mapped to such a preset): `<n> pt`, `<n>pt`, `<w>x<h> pt` and `<w> × <h> pt` are logical points, px (two
@@ -159,8 +161,9 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   previous item); everywhere else `pt` is a typographic point.
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
   `percent_to_fraction` (÷ 100), `byte_to_fraction` (÷ 255), `complement` (1 − x), `seconds_to_ms` (× 1000, the
-  result a duration), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the model's outward
-  focus offset of 3px, the ledger's queue #38), `ns_font_weight` (an AppKit `NSFontWeight`, −1..1, to S2.8's CSS
+  result a duration), `ticks_to_ms` (÷ 10 000, the result a duration: a WinRT `TimeSpan`'s 100 ns ticks, S17, an
+  AnimatedVisual source's `duration`), `negate` (− x: WinUI's `FocusVisualMargin="-3"`, an inward margin, is the
+  model's outward focus offset of 3px, the ledger's queue #38), `ns_font_weight` (an AppKit `NSFontWeight`, −1..1, to S2.8's CSS
   weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
   and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
   WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
@@ -209,6 +212,7 @@ CONVERSIONS = {
     "byte_to_fraction": lambda x: x / 255,
     "complement": lambda x: 1 - x,
     "seconds_to_ms": lambda x: x * 1000,
+    "ticks_to_ms": lambda x: x / 10000,
     "negate": lambda x: -x,
     "ns_font_weight": lambda x: 100 * (1 + sum(t <= x for t in NS_WEIGHT_THRESHOLDS)),
 }
@@ -334,6 +338,10 @@ KT_HEX_RX = re.compile(r"\b0x([0-9A-Fa-f]+)(?:[uU]?L)?\b")
 KT_UNIT_RX = re.compile(r"(?<![\w.])(-?\d+(?:\.\d+)?)\.(dp|sp|em)\b")
 APPLE_PT_RX = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)(?:\s*[x×]\s*(\d+(?:\.\d+)?))?\s*pt\b")
 NUMBER_RX = re.compile(rf"(?<![\w.])(-(?=[\d.]))?(\d+(?:\.\d+)?{EXP}|\.\d+{EXP})([A-Za-z]*)(?!\w)")
+# C++'s type suffixes, no unit (S17 *The quote check*): an integer literal's (`u`/`U` with `l`/`L`/`ll`/`LL`, either
+# order or alone), a floating literal's (`f`, `F`, `l`, `L`)
+CPP_INT_SUFFIX_RX = re.compile(r"(?:[uU](?:ll|LL|[lL])?|(?:ll|LL|[lL])[uU]?)")
+CPP_FLOAT_SUFFIX_RX = re.compile(r"[fFlL]")
 NAMES_RX = re.compile(r"(?<![\w-])(black|white|transparent)(?![\w-])")
 
 
@@ -493,8 +501,10 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
             continue
         x = float((m.group(1) or "") + m.group(2))
         unit = m.group(3)
-        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")) or (notation == "cpp"
-                                                                             and unit in ("f", "F")):
+        integer = not any(c in m.group(2) for c in ".eE")
+        if not unit or (notation == "kotlin" and unit in ("f", "F", "L")) or (
+                notation == "cpp" and (CPP_FLOAT_SUFFIX_RX.fullmatch(unit)
+                                       or (integer and CPP_INT_SUFFIX_RX.fullmatch(unit)))):
             found.append((m.start(), Lit("num", None, x)))
         elif unit in UNITS and UNITS[unit] is not None:
             dim, factor = UNITS[unit]
@@ -558,7 +568,7 @@ def convert(lits, names) -> list:
         x, dim = lit.value, None
         for n in names:
             x = CONVERSIONS[n](x)
-            if n == "seconds_to_ms":
+            if n in ("seconds_to_ms", "ticks_to_ms"):
                 dim = "duration"
         out.append(Lit("num", dim, x))
     return out
@@ -1884,6 +1894,11 @@ SELF_TEST_NOTATIONS = [
     ("cpp", "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background",
      ["srgb(239, 240, 241, 255)"]),
     ("cpp", "{ 239, 240, 241 }, // Background", ["239", "240", "241"]),
+    # C++'s integer type suffixes (S17's `ticks_to_ms`: AnimatedChevronDownSmallVisualSource.cpp's `TimeSpan{ 4833333L }`),
+    # either order, and a floating literal's `l`/`L`; a suffix that is no type (`2Lx`, a float's `u`) makes no literal
+    ("cpp", "TimeSpan{ 4833333L } 7u 8UL 9ull 10LLU 11lu 1.5L 2.5l", ["4.83333e+06", "7", "8", "9", "10", "11", "1.5",
+                                                                       "2.5"]),
+    ("cpp", "2Lx 1.5u 3lul 4LLL", []),
     ("cpp", "{ 1, 2, 3 } QColor c{ 4, 5, 6 };", ["1", "2", "3", "srgb(4, 5, 6, 255)"]),
     ("cpp", "QColor::fromRgbF(0.5f, 0, 1.0f, 0.25f); QColor::fromRgbF(1, 1, 1); qreal x = 0.7f; 2.F",
      ["srgb(127.5, 0, 255, 63.75)", "srgb(255, 255, 255, 255)", "0.7", "2"]),
@@ -1974,7 +1989,7 @@ def self_test() -> int:
                 failures.append(f"{notation}{' (Apple)' if apple else ''} {text!r}: got {got}, want {want}")
     for names, x, want in ((["percent_to_fraction"], 50, "0.5"), (["byte_to_fraction"], 255, "1"),
                            (["byte_to_fraction", "complement"], 51, "0.8"), (["seconds_to_ms"], 0.25, "250ms"),
-                           (["negate"], -3, "3")):
+                           (["ticks_to_ms"], 4833333, "483.333ms"), (["negate"], -3, "3")):
         got = [str(v) for v in convert([Lit("num", None, x)], names)]
         if got != [f"{x:g}", want]:
             failures.append(f"conversion {names}: got {got}")
@@ -1996,7 +2011,7 @@ def self_test() -> int:
         if got != want:
             failures.append(f"ns_font_weight {x!r}: got {got}, want {want}")
     if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "ns_font_weight", "percent_to_fraction",
-                               "seconds_to_ms"]:
+                               "seconds_to_ms", "ticks_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),

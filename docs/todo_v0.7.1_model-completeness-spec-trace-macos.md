@@ -81,7 +81,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-W11† | `popover.body, popover.arrow @ context window.title (the rename and location popover)` | rule |
 | MAC-W12† | `window.title_bar.fill (fullScreenUI material) @ cond full_screen` | rule |
 | MAC-W12† | `window.values.full_screen_title_bar_reveal (PointerAtTopEdge)` | field |
-| MAC-W12† | `window.values.presentations event @title_bar_show` | field |
+| MAC-W12† | `window.values.presentations event @title_bar_show` (the reveal's motion: ADD-A129 (queue #118), pending MAC-X32†'s measurement, none stated meanwhile, appearing at once, S2.7) | field |
 | MAC-W12† | `window.frame.{corners,stroke} @ cond full_screen` | rule |
 | MAC-W12† | `menu_bar.values.presentations event Appear @ cond full_screen` (the menu bar coming in with the title bar's reveal at the top edge, as iPadOS's hidden bar does, C-37†) | rule |
 | MAC-W12† | - (the divider between two windows in a full-screen Split View, which the system draws between the two windows) | out (R1.1) |
@@ -105,9 +105,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-B05 | `button.body.fill (Linear gradient layer)` | field |
 | MAC-B05 | `button.body.shadow (inset highlight layer for the bevel)` | field |
 | MAC-B06 | `button.label.text.fill @ variant destructive (and context any dialog where it differs)` | rule |
-| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` | rule |
+| MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill @ variant tinted / variant primary / variants {glass,tinted}` (`tinted`'s fills, at rest, pressed and disabled, and a disabled `primary`'s `= alpha(input.accent, <a>)`, the pressed and checked opaque ones `mix` toward black or white, measured derivations, ADD-A125) | rule |
 | MAC-B07 | `button.body.fill, button.icon.icon.fill, button.label.text.fill` as expressions on `element.color` (bezelColor, contentTintColor; the parts declare it, `data = { body = ["color"], label = ["color"], icon = ["color"] }`; R25.3, ADD-B16) | field |
 | MAC-B08 | `button.body.corners @ variant pill / @rounded_rectangle / circular` | rule |
+| MAC-B08 | `button.body.margin @ variant circular cond preset:macos-tahoe` (the drawn circle is the body's box inside the wider frame, its corners `Full` on it, readable at `large` and `extra_large`, where the circle is as wide as the frame is high, all of them pending U159 (the margin, not U143's corners); on `macos-monterey` the frames are square, ADD-A125) | rule |
 | MAC-B08 | `button.body.corners @ size small / regular / large / extra_large (automatic shape)` | rule |
 | MAC-B09 | `button.icon.icon.size @ size mini / small / regular / large / extra_large` | rule |
 | MAC-B09 | `button.icon.icon.fill @ {pressed} / {disabled} / {default}` | rule |
@@ -139,20 +140,20 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-I09† | `input.{body.fill,text.text.fill} @ {autofilled}` | rule |
 | MAC-I10† | `text_area.values.document_margin; text_area.values.line_padding` | field |
 | MAC-I10† | `reader:macos:NSTextView.textContainerInset, textContainer.lineFragmentPadding -> text_area.values.document_margin, line_padding` | reader |
-| MAC-C01 | `checkbox.mark.glyph @ {indeterminate} = SystemControl(AppKitCheckbox)` | system-control |
-| MAC-C01 | `checkbox.box.fill, checkbox.mark.glyph.size, checkbox.mark.glyph.fill @ {indeterminate}` | rule |
+| MAC-C01 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (the mixed state rendered with the rest, MAC-C06's rendering) | system-control |
+| MAC-C01 | `checkbox.box.fill @ {indeterminate}` (the mixed box's fill unmeasured, the gap map's "accent?", a new render, the catalogue's Open items; the dash itself unmodelled, as the check is, MAC-C06; its extent and colour a new render's, `todo_v0.7.1_model-completeness-gap-map-macos.md:145`, ADD-A126) | rule |
 | MAC-C02 | `checkbox.box.fill @ {pressed} / {checked,pressed}` | rule |
 | MAC-C02 | `radio.ring.fill @ {pressed} / {checked,pressed}` | rule |
-| MAC-C03 | `checkbox.box.fill, checkbox.mark.glyph.fill @ {checked,disabled}` | rule |
+| MAC-C03 | `checkbox.box.fill @ {checked,disabled}` (the mark unmodelled, MAC-C06) | rule |
 | MAC-C04 | `checkbox.box.fill @ {checked,hover}` | rule |
 | MAC-C05 | `checkbox.box.fill @ cond scheme:dark (Linear gradient)` | rule |
 | MAC-C05 | `checkbox.box.stroke (gradient paint), checkbox.box.shadow (inset bevel layer)` | field |
-| MAC-C06 | `checkbox.mark.glyph = SystemControl(AppKitCheckbox)` | system-control |
-| MAC-C06 | `checkbox.mark.glyph.{source,size,stroke.width} (path and extent; measured)` | field |
-| MAC-C06 | `checkbox.mark.padding` (the mark's inset inside the box; measured) | field |
-| MAC-C07 | `radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}` | rule |
+| MAC-C06 | `checkbox.box.glyph = SystemControl { control: AppKitCheckbox, replaces: [box, mark] }` (AppKit's rendering on the box, a part drawn in every state, so an unchecked control is rendered too; S15, R11, ADD-A126) | system-control |
+| MAC-C06 | `checkbox.mark (absent = true)` (in every state, the base: AppKit names no image for the mark and its outline could only be traced from a render, R11, so the model draws none; the rendering on the box draws it, and without the rendering, off the main thread, off macOS or in a toolkit that cannot composite it, no mark is drawn and a checked and a mixed checkbox differ only where their box fills do, the mixed one a measurement, MAC-C01, the model's limit, R23; no later field patch brings the part back, S6.3, ADD-A126) | field |
+| MAC-C06 | `checkbox.mark` (its measured inset inside the box kept in the facts with its measured extent and colour, R11, the part `Absent` and drawn by no model glyph, the row above, ADD-A126) | field |
+| MAC-C07 | `radio.dot.{corners,min_width,min_height,fill} (Full; the measured diameter, `docs/platform-facts.md:1241`, `radio_dot_diameter`; `indicator_color`, `:1232`, stated there unsourced, so a measurement, register row U192); radio.ring.fill @ {pressed}; radio.dot.fill @ {checked,disabled}; radio.dot (absent = true) @ !{checked}` (the dot modelled as the cornered fill AppKit draws, measured and shipped today, kept for a connector without the rendering, which replaces it where composited, MAC-C07's rendering; `Absent` unchecked, written last, until MAC-X11's recording says whether AppKit animates it in and out, which would make it a `shown` part, S2.7, ADD-A126) | rule |
 | MAC-C07 | `radio.ring.*, radio.dot.* @ cond window_inactive` | rule |
-| MAC-C07 | `radio.dot.glyph = SystemControl(AppKitRadio)` | system-control |
+| MAC-C07 | `radio.ring.glyph = SystemControl { control: AppKitRadio, replaces: [ring, dot] }` (on the ring, a part drawn in every state; the dot's glyph absent, its form a fill; S15, R11, ADD-A126) | system-control |
 | MAC-MN01 | `menu.item.corners` | field |
 | MAC-MN01 | `menu.body.padding (highlight inset)` | field |
 | MAC-MN02 | `menu.body.padding (top, bottom)` | field |
@@ -161,9 +162,10 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-MN04 | `menu.accelerator.text.fill @ {hover} / {disabled}` | rule |
 | MAC-MN04 | `menu.values.{accelerator_gap,accelerator_alignment}` | field |
 | MAC-MN04 | `menu.accelerator.text.letter_spacing` (the modifier-glyph spacing; the capture decides whether AppKit spaces the glyphs as text or lays modifiers and key in columns, which would make it a value) | field |
-| MAC-MN05 | `menu.check_indicator.glyph @ {checked} / {indeterminate} (NamedSystemImage)` | rule |
+| MAC-MN05 | `menu.check_indicator.glyph (NamedSystemImage); menu.check_indicator.glyph @ {indeterminate} (NamedSystemImage)` (the on-state check in the base and the mixed image a patch of it, the catalogue's one spelling of a block drawn by state: the base states it drawn, its state rules patch its fields, the `Absent` rule last, ADD-A126) | rule |
 | MAC-MN05 | `menu.check_indicator.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN05 | `menu.values.{check_column,check_column_width}` | field |
+| MAC-MN05 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / context any combo_box` (no mark in the combo list meanwhile: whether AppKit's pop-up marks its selected item, `NSPopUpButtonCell.altersStateOfSelectedItem`, not in the cached headers, the facts state as a pending fact under `{selected}` in the `NSPopUpButton` list, not `@pull_down` (`pending = "U194"`, S17's *A pending measurement*), meanwhile this rule's `context any combo_box` alternative, which has no state guard, leaving the mark absent in every state of the combo list, a value beneath the pending fact, so the path is no listed path (S17, ADD-A128); outside the combo list an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (MAC-MN05), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | MAC-MN06 | `menu.submenu_arrow.glyph` | field |
 | MAC-MN06 | `menu.submenu_arrow.glyph.fill @ {hover} / {disabled}` | rule |
 | MAC-MN06 | `menu.item.fill @ {open}` | rule |
@@ -317,7 +319,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-L14 | `list.values.focus_visible_when (ADD-A16)` | field |
 | MAC-L15 | `list.header_section.opacity @ {dragged}` | rule |
 | MAC-L16 | `list.view.stroke` | field |
-| MAC-L17† | `button.*, checkbox.*, combo_box.*, progress_bar.* @ context list.row {selected} context list.view {focus_within}` | rule |
+| MAC-L17† | `button.*, checkbox.*, combo_box.*, progress_bar.* @ context list.row {selected} context list.view {focus_within}` (the AppKit rendering's look there an open item, S15) | rule |
 | MAC-L17† | `list.row_background.fill @ {selected} context list.view {disabled}` | rule |
 | MAC-L18† | `list.header_section.fill @ {sorted} (highlighted column)` | rule |
 | MAC-L18† | `list.header_corner (fill, stroke)` | field |
@@ -368,6 +370,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-CB01 | `combo_box.arrow.glyph @ variant @pull_down` | rule |
 | MAC-CB01 | `combo_box.arrow_area.{fill,stroke,corners} @ variant editable` | rule |
 | MAC-CB01 | `input.body @ context combo_box variant editable` | rule |
+| MAC-CB01 | `combo_box.body.padding; combo_box.label.padding; combo_box.icon.margin; combo_box.arrow_area.min_width; combo_box.values.{icon_text_gap,label_arrow_gap,content_width,content_slack,input_placement}` (the content row, the catalogue: outside `editable` the rendering replaces the arrow, its arrow area `ControlImage.arrow` the end part, S15; the probe read `NSPopUpButtonCell`'s title, drawing and image rects and the control's intrinsic and fitted sizes, every control size, macOS 14, 15 and 26, `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:603-620` (`mini`), `:863-880` (`small`), `:1235-1252` (`regular`), `:1655-1672` (`large`), the same lines in `os-probe-macos-15/probe.toml` and `os-probe-macos-26/probe.toml`: the label's start and its place on the cross axis per size, the value phase's; left open, register rows U167–U171 per control size: the label's gap to `ControlImage.arrow`, the arrow area's width and its inset from the image's end, the image's margins and gap (no item image was read), the width's basis over items of different widths, and the cut of a long title; ADD-A127) | field |
+| MAC-CB01 | `combo_box.arrow_area.{min_width,max_height,margin}, combo_box.values.{label_arrow_gap,input_placement} @ variant editable; combo_box.label (absent = true) @ variant editable` (NSComboBox's field and arrow button, drawn by the model, no rendering; its text the field's, the `input` of the row above, so no `label` beside it; the probe read `NSComboBoxCell`'s title rect, the text's place, and the control's intrinsic size, which reports no width, at every size, `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-14/probe.toml:622-640`, `:882-900`, `:1270-1288`, `:1674-1692`, and macOS 15's and 26's same lines (on macOS 14 and 15 the `large` NSComboBox reads as `regular`, 23 tall, its title rect 0 tall, `os-probe-macos-14/probe.toml:1674-1692`, `os-probe-macos-15/probe.toml:1674-1692`, so the `large` form is unread there); left open, register rows U172 and U176 per control size: the arrow button's box, its gap to the text, the natural width's make-up, and the `large` text box on macOS 14 and 15; ADD-A127) | rule |
+| MAC-CB01 | `combo_box.arrow.{glyph,margin} @ variant editable` (NSComboBox's arrow button's glyph and its place in the button, drawn by the model, the `AppKitPopUp` rendering not covering it; the probe has not read it: register row U172, per control size; ADD-A127) | rule |
 | MAC-CB02 | `combo_box.arrow_area.fill` | field |
 | MAC-CB02 | `combo_box.arrow_area.fill @ cond window_inactive` | rule |
 | MAC-CB03 | `combo_box.arrow.glyph.fill @ {pressed} / {disabled}` | rule |
@@ -499,7 +504,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-DF05† | `reader:macos:NSColor.selectedControlTextColor` | reader |
 | MAC-DF05† | `role.@selected_control_text` | role |
 | MAC-DF05† | `reader:macos:NSColor.highlightColor` | reader |
-| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, as it follows neither the accent nor the highlight setting, the probe's accent pass; no input, ADD-A123) | role |
+| MAC-DF05† | `role.@highlight` (`NSColor.highlightColor`, the colour `highlightWithLevel:` blends toward, `NSColor.h:284-286`: a literal per scheme, run 41006842699's accent pass leaving it unchanged, `os-probe-macos-26/probe.toml:667`, `:741` against `accent-red/probe.toml`; while that pass moved the effective highlight, `selectedTextBackgroundColor`, `probe.toml:635` against `accent-red/probe.toml:635`; provisional until a pass sets an explicit highlight colour other than the accent's, the catalogue's Open items; no input, ADD-A123, ADD-A125) | role |
 | MAC-DF05† | `reader:macos:NSColor.currentControlTint` | reader |
 | MAC-DF05† | `input.accent` | input |
 | MAC-TS03† | `token.text.keyed.large_title_tight` | token |
@@ -719,13 +724,14 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X10 | `reader:macos:NSColor colorSpace read without clipping to sRGB` | reader |
 | MAC-X11 | `token.motion.durations.<AppKit durations>` | token |
 | MAC-X11 | `token.motion.timings.<curves and springs>` | token |
+| MAC-X11 | `token.motion (color_space: Core Animation's colour interpolation, measured from a transition's middle frame, the catalogue's Open items, ADD-A125)` | token |
 | MAC-X11 | `button.body.transitions (press and release; the glass bounce on macos-tahoe)` | field |
-| MAC-X11 | `checkbox.mark.transitions, radio.dot.transitions (the toggle)` | field |
+| MAC-X11 | `checkbox.box.transitions, radio.ring.transitions (the toggle)` (the parts that carry AppKit's rendering where the connector composites it, S15; the dot styled from its measurements and `Absent` unchecked, the mark unmodelled, MAC-C06, MAC-C07; whether AppKit animates the dot in and out is this row's recording, the catalogue's Open items, the input S2.7's rule takes to make it a `shown` part or keep it `Absent`, ADD-A126) | field |
 | MAC-X11 | `switch.thumb.transitions (Geometry: the knob's slide); switch.track.transitions (the cross-fade)` | field |
 | MAC-X11 | `segmented_control.values.presentations event @indicator_move (part indicator)` | field |
 | MAC-X11 | `slider.thumb.transitions` | field |
 | MAC-X11 | `list.disclosure.transitions; list.values.presentations events @expand, @collapse, Appear, Disappear` (queried with the row: its children revealed, a row inserted and deleted) | field |
-| MAC-X11 | `FocusIndicator.transition (the ring's appearance)` | field |
+| MAC-X11 | `FocusIndicator.transition (the ring's appearance and disappearance, their geometry and engine measured, S2.10, the catalogue's Open items, ADD-A126)` | field |
 | MAC-X11 | `menu.values.presentations events Appear, Disappear, @submenu_expand; menu.values.activation_flash` | field |
 | MAC-X11 | `popover.values.presentations events Appear, Disappear` | field |
 | MAC-X11 | `dialog.values.presentations events Appear @ variant alert / Appear, Disappear @ variant @sheet` | rule |
@@ -741,7 +747,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X11 | `drag_image.values.presentations event @cancel (the failed drop sliding back)` | field |
 | MAC-X11 | `button.values.presentations, list.values.presentations event @spring_load` | field |
 | MAC-X11 | `glass_container.surface.transitions (glass morphing)` | field |
-| MAC-X11 | `PartStyle.transitions and widget presentation transitions` | field |
+| MAC-X11 | `PartStyle.transitions and widget presentation transitions` (each `PartStyle.transitions` engine measured, interrupted at three points of its run; until then those transitions are pending facts, the preset stating none, each path listed in its `[pending]` table (register U181); a presentation transition names no engine and is stated, as the rows above state the presentations, S2.7, S17, the catalogue's Open items, ADD-A126, ADD-A128) | field |
 | MAC-X11 | `PartStyle.transitions @ cond reduced_motion` | rule |
 | MAC-X11 | `window.values.presentations events Appear, Disappear` (the base) `@ variant dialog / variant utility` (window open and close per NSWindow.AnimationBehavior, which the application chooses) | rule |
 | MAC-X11 | - (the minimise effect, which the Dock draws; the full-screen enter and exit, which the window server animates) | out (R1.1) |
@@ -957,7 +963,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-P3-16† | - | out (R1.1) |
 | MAC-P3-17† | `scroll_view.values.wheel_step` (NSScrollView's `horizontalLineScroll`, `verticalLineScroll`: a distance per axis) | field |
 | MAC-P3-17† | `scroll_view.values.page_overlap` (`horizontalPageScroll`, `verticalPageScroll`: what a page scroll keeps visible) | field |
-| MAC-P3-17† | `token.behavior.scroll_lines_per_step` (the user's scrolling-speed setting, to verify) | token |
+| MAC-P3-17† | `token.behavior.scroll.wheel_step_lines` (the user's scrolling-speed setting, to verify; ADD-A130) | token |
 | MAC-P3-17† | `reader:macos:NSScrollView line and page scroll properties` | reader |
 | MAC-P4-1† | `menu.* @ context window.title (title pop-up menu)` | rule |
 | MAC-P4-1† | `window.values.title_menu_placement (AppKitMenu)` | placement |
