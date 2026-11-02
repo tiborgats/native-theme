@@ -577,7 +577,7 @@ class Draft:
     bases: list               # (section, scheme or None, header, dotted, value, fact)
     declare: list             # (header, [(key, value)], item)
     conditions: list          # `[declare] conditions`
-    models: dict              # widget: the state model's data the round trip reduces by
+    models: dict              # (widget, flavour or None): the state model's data the round trip reduces by
     left_models: list         # (widget, item): entries of widgets the model does not hold
     staged: int
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
@@ -671,10 +671,6 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule"])
-    pending_blocks = {f.ckey[:-1] for f in facts if f.status == PENDING and set_whole_block(ctx, f)}
-    for f in facts:
-        if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
-            f.reason = SET_WHOLE_PENDING
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      ctx.content_variants)
     bases += covering_bases(facts, models, tree)
@@ -684,6 +680,10 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         if f.status == "base":
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
     bases = [b for b in bases if b[5] not in split]
+    pending_blocks = {f.ckey[:-1] for f in facts if f.status == PENDING and set_whole_block(ctx, f)}
+    for f in facts:
+        if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
+            f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
                  listed)
@@ -700,15 +700,35 @@ def unsuffixed(path: tuple) -> tuple:
     return path
 
 
+def based_paths(bases) -> list:
+    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent`, `drawn_as`) the part's,
+    which holds every field of it (S6.3)."""
+    out = []
+    for section, scheme, header, dotted, _, _ in bases:
+        whole = section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))
+        out.append(unsuffixed((section,) + ((scheme,) if scheme else ()) + header + (() if whole else tuple(dotted))))
+    return out
+
+
+def alive(f: Fact, facts) -> tuple:
+    """The schemes a fact applies in somewhere, no later fact of its key covering it there (S17 *Which fact
+    applies*: the last in file order)."""
+    same = [g for g in facts if g.ckey == f.ckey]
+    at = next((i for i, g in enumerate(same) if g is f), len(same))
+    later = same[at + 1:]
+    return tuple(s for s in slots_of(f.when) if not any(covers(g.when, f.when, s) for g in later))
+
+
 def pending_table(ctx, facts, bases, block_of=None) -> list:
     """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
-    pending fact of the preset states where the draft writes no base at it, above it (a block stated whole) or below
-    it, so the preset's own layer leaves it unstated where that fact applies; a colour role's per scheme the fact holds
-    in; a pending leaf of a set-whole block lists the block, which its bases cannot state without it. Each with the
-    first such fact's register id: [(path, id, fact)], the path spelled as S11 writes its key, unit suffix included."""
+    pending fact of the preset states where it applies (no later fact covering it everywhere) and the draft writes no
+    base at it, above it (a block stated whole, a whole part) or below it, so the preset's own layer leaves it unstated
+    where that fact applies; a colour role's per scheme the fact applies in; a pending leaf of a set-whole block lists
+    the block, which its bases cannot state without it. Each with the first such fact's register id: [(path, id,
+    fact)], the path spelled as S11 writes its key, unit suffix included. A pending input is no listed path (S11:
+    the reader takes a field of the colour roles, the tokens or a widget): pending_inputs() reports it."""
     block_of = block_of or set_whole_block
-    based = [unsuffixed((section,) + ((scheme,) if scheme else ()) + header + tuple(dotted))
-             for section, scheme, header, dotted, _, _ in bases]
+    based = based_paths(bases)
     out, seen = [], set()
     for f in facts:
         if f.status != PENDING or f.kind == "input":
@@ -717,8 +737,11 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
             place(f)
         except Untranscribable:
             continue
+        slots = alive(f, facts)
+        if not slots:
+            continue
         below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
-        schemes = slots_of(f.when) if f.kind == "role" else (None,)
+        schemes = slots if f.kind == "role" else (None,)
         for scheme in schemes:
             path = (f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
             key = unsuffixed(path)
@@ -727,6 +750,22 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
                 continue
             seen.add(key)
             out.append((dotted_key(path), f.item.data["pending"], f))
+    return out
+
+
+def pending_inputs(facts, bases) -> list:
+    """The pending inputs that apply with no base of their input: [(the input's key, register id, fact)]. No
+    `[pending]` table lists an input (pending_table()), so the draft states no value for it, reported."""
+    based = {tuple(header) for section, _, header, _, _, _ in bases if section == "inputs"}
+    out, seen = [], set()
+    for f in facts:
+        if f.status != PENDING or f.kind != "input" or not alive(f, facts):
+            continue
+        name = tuple(f.ckey[1:])
+        if name in based or name in seen:
+            continue
+        seen.add(name)
+        out.append((f.key, f.item.data["pending"], f))
     return out
 
 
@@ -757,7 +796,7 @@ def covering_bases(facts, models, tree) -> list:
         if all(per_scheme):
             chosen = per_scheme[0]
         elif rules and rules[0].kind == "widget":
-            model = models.get(rules[0].widget) or {}
+            model = models.get((rules[0].widget, None)) or {}
             sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
             per_size = {z: alone({"sizes": [z]}) for z in sizes}
             if sizes and all(per_size.values()):
@@ -924,8 +963,7 @@ def declarations(items, platform, preset, units, facts, content):
                 kvs = [(k, without_variants(k, v, off)) for k, v in kvs]
                 dropped.append((widget, sorted(off)))
             declare.append((header, kvs, it))
-            if flavor is None:
-                models[widget] = d
+            models[(widget, flavor)] = d
             axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
             settings += [c for c in axes.get("conditions", []) if isinstance(c, str)]
     for f in facts:
@@ -1267,13 +1305,17 @@ def round_trip(draft: Draft, text: str) -> Trip:
                 for s in f.base_slots:
                     if normal(got["base"].get(s if f.kind == "role" else None)) != normal(fact_value(f)):
                         trip.mismatches.append(f"{f.where}: {f.key}: the base reads back otherwise")
-        model = draft.models.get(fs[0].widget) if fs[0].widget else None
-        groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
-        recency = check_facts.recency_of(model) if model else {}
+        def reduced_by(when):
+            model = model_of(draft.models, fs[0].widget, when)
+            groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
+            return model, groups, check_facts.recency_of(model) if model else {}
+
         for f in fs:
+            model, groups, recency = reduced_by(f.when)
             if slots_of(f.when) and all(minimal(f.when, s, groups, recency, model) is None for s in SCHEMES):
                 trip.impossible += 1
         for when in whens[group_of(fs[0])]:
+            model, groups, recency = reduced_by(when)
             for s in SCHEMES:
                 c = minimal(when, s, groups, recency, model)
                 if c is None:
@@ -1300,6 +1342,16 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
     return trip
+
+
+def model_of(models: dict, widget, when: dict):
+    """The state model a combination of `when` is reduced by: its flavour's entry where it names a flavour the
+    widget has one for (S10), else the widget's own; None for no widget."""
+    if not widget:
+        return None
+    conds = when.get("conditions", []) if isinstance(when.get("conditions"), list) else []
+    flavor = next((c[7:] for c in conds if isinstance(c, str) and c.startswith("flavor:")), None)
+    return models.get((widget, flavor)) or models.get((widget, None))
 
 
 def back_value(f: Fact, node):
@@ -1361,6 +1413,10 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if draft.pending:
         out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
             f"{path} ({uid})" for path, uid, _ in draft.pending))
+    inputs = pending_inputs(draft.facts, draft.bases)
+    if inputs:
+        out.append(f"# [pending]: {len(inputs)} pending inputs with nothing beneath, which no table lists (S11), "
+                   f"left without a value: " + ", ".join(f"{key} ({uid})" for key, uid, _ in inputs))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     for w, vs in draft.dropped:
@@ -1940,6 +1996,39 @@ def self_test() -> int:
         ("tokens", None, ("behavior",), ("touch", "delay_ms"), 1, touch)], repeat_block)]
     if got != [("tokens.behavior.key_repeat", "U3")]:
         failures.append(f"pending_table: {got}, expected the key repeat block alone")
+    # a base above the path (a block stated whole, a whole part) or below it lists nothing; a colour role is listed
+    # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input is reported
+    def any_fact(key, uid, kind, when=None, widget=None, status=PENDING):
+        f = Fact(_Item(uid), key, tuple(key.split(".")), when or {}, kind, widget, None, None, status=status)
+        if status != PENDING:
+            f.item.data = {"value": 1}
+        return f
+
+    families = any_fact("token.text.fallbacks.families", "U5", "token")
+    caret = any_fact("token.caret", "U6", "token")
+    status = any_fact("role.global.status", "U7", "role")
+    drag = any_fact("token.behavior.drag_time", "U8", "token")
+    later = any_fact("token.behavior.drag_time", "", "token", status="rule")
+    mode = any_fact("button.icon.icon.rendering_mode", "U9", "widget", widget="button")
+    accent, scheme = any_fact("input.accent", "U10", "input"), any_fact("input.scheme", "U11", "input")
+    bases = [("tokens", None, ("text",), ("fallbacks",), {}, families),
+             ("tokens", None, ("caret",), ("width_px",), 1, caret),
+             ("colors", "light", ("global",), ("status",), {}, status),
+             ("widgets", None, ("button", "icon"), ("absent",), True, mode),
+             ("inputs", None, ("scheme",), ("light",), "#000000", scheme)]
+    facts = [families, caret, status, drag, later, mode, accent, scheme]
+    got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
+    if got != [("colors.dark.global.status", "U7")]:
+        failures.append(f"pending_table: {got}, expected the dark scheme's status role alone")
+    got = [(key, uid) for key, uid, _ in pending_inputs(facts, bases)]
+    if got != [("input.accent", "U10")]:
+        failures.append(f"pending_inputs: {got}, expected the accent alone")
+    # the round trip reduces a flavour's combinations by its own state model
+    flavored = {("button", None): {"exclusive": []}, ("button", "compact"): {"exclusive": [["pressed"]]}}
+    got = [model_of(flavored, "button", {"conditions": ["flavor:compact"]}), model_of(flavored, "button", {}),
+           model_of(flavored, "button", {"conditions": ["flavor:other"]}), model_of(flavored, None, {})]
+    if got != [{"exclusive": [["pressed"]]}, {"exclusive": []}, {"exclusive": []}, None]:
+        failures.append(f"model_of: {got}")
     # off_variants: a variant only skipped facts name is left out (a key not held, a unit not enabled, an accent-run
     # fact naming nothing), one a kept fact names too stays, as does one S12 exempts (requires_variants,
     # sizes_by_variant, an element part's content variant); without_variants trims an exclusive group
@@ -1972,7 +2061,7 @@ def self_test() -> int:
                  for x, v in (("light", 24), ("dark", 25))]
     by_size = [rule_fact("button.body.min_width", {"sizes": [z]}, v) for z, v in (("small", 20), ("regular", 30))]
     partial = [rule_fact("button.body.margin", {"sizes": ["small"]}, 1)]
-    sized = {"button": {"sizes": ["small", "regular"], "default_size": "regular"}}
+    sized = {("button", None): {"sizes": ["small", "regular"], "default_size": "regular"}}
     got = [(b[3], b[4]) for b in covering_bases(by_scheme + by_size + partial, sized, {})]
     if got != [(("min_height_px",), 24), (("min_width_px",), 30)]:
         failures.append(f"covering_bases: {got}, expected light's min_height and the default size's min_width")
