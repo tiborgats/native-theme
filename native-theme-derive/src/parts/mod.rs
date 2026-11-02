@@ -214,7 +214,7 @@ mod tests {
             #[parts(block)]
             pub struct Probe {
                 #[parts(block = "append")]
-                pub status_colors: Vec<(Key, Value<Paint>)>,
+                pub symbolic_colors: Vec<(Key, Value<Paint>)>,
                 #[parts(block = "fields")]
                 pub keyed: Vec<(Key, TextStyle)>,
                 #[parts(block = "set")]
@@ -222,12 +222,12 @@ mod tests {
             }
         });
         for expected in [
-            "pub status_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) > >",
+            "pub symbolic_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) > >",
             "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: next :: blocks :: BlockPatch < TextStyle >) > >",
             "pub timings : :: core :: option :: Option < Vec < (Key , Timing) > >",
-            "pub status_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
-            "crate :: next :: blocks :: merge_slot_entries (& mut self . status_colors , status_colors) \
-             . map_err (| c | c . under (\"status_colors\")) ?",
+            "pub symbolic_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
+            "crate :: next :: blocks :: merge_slot_entries (& mut self . symbolic_colors , symbolic_colors) \
+             . map_err (| c | c . under (\"symbolic_colors\")) ?",
             "crate :: next :: blocks :: apply_entries (& mut self . keyed , entries)",
             "crate :: next :: blocks :: merge_slot_by_key (& mut self . timings , timings)",
             "fields : < Paint as crate :: next :: blocks :: Table > :: FIELDS",

@@ -181,8 +181,8 @@ enum Decl {
     Timings,
     /// `drag_cursors`: the drag cursors.
     DragCursors,
-    /// `status_colors`: an icon's status colours.
-    StatusColors,
+    /// `symbolic_colors`: an icon's symbolic colours, by mark name.
+    SymbolicColors,
     /// `icon_contexts`: the keyed icon contexts.
     IconContexts,
     /// `params`: the parameter groups.
@@ -223,7 +223,7 @@ impl Decl {
         Decl::Durations,
         Decl::Timings,
         Decl::DragCursors,
-        Decl::StatusColors,
+        Decl::SymbolicColors,
         Decl::IconContexts,
         Decl::Params,
         Decl::SymbolScales,
@@ -250,7 +250,7 @@ impl Decl {
             Decl::Durations => "durations",
             Decl::Timings => "timings",
             Decl::DragCursors => "drag_cursors",
-            Decl::StatusColors => "status_colors",
+            Decl::SymbolicColors => "symbolic_colors",
             Decl::IconContexts => "icon_contexts",
             Decl::Params => "params",
             Decl::SymbolScales => "symbol_scales",
@@ -284,7 +284,7 @@ impl Decl {
             Decl::Durations => &decl.durations,
             Decl::Timings => &decl.timings,
             Decl::DragCursors => &decl.drag_cursors,
-            Decl::StatusColors => &decl.status_colors,
+            Decl::SymbolicColors => &decl.symbolic_colors,
             Decl::IconContexts => &decl.icon_contexts,
             Decl::SymbolScales => &decl.symbol_scales,
             Decl::IconStateEffects => &decl.icon_state_effects,
@@ -354,8 +354,8 @@ const DECLARATIONS: [Declaration; 23] = [
     row("MotionTokens", "timings", Decl::Timings, false, true),
     row(
         "IconStyle",
-        "status_colors",
-        Decl::StatusColors,
+        "symbolic_colors",
+        Decl::SymbolicColors,
         false,
         true,
     ),

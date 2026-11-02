@@ -66,8 +66,8 @@ pub(crate) struct Declarations {
     pub(crate) durations: Vec<Key>,
     /// The icon contexts.
     pub(crate) icon_contexts: Vec<Key>,
-    /// The icon status colours' keys.
-    pub(crate) status_colors: Vec<Key>,
+    /// The icon symbolic colours' keys: the platform's mark names.
+    pub(crate) symbolic_colors: Vec<Key>,
     /// The drag cursors' keys; staged with the pointer tokens, so the reader
     /// refuses the key until their unit enters.
     pub(crate) drag_cursors: Vec<Key>,

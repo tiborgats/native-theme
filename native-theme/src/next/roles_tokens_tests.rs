@@ -150,7 +150,7 @@ fn token_spec_paths() -> Vec<String> {
             "behavior.double_click_time",
             "behavior.double_click_distance",
             "behavior.drag_threshold",
-            "behavior.hover_open_delay",
+            "behavior.hover_time",
             "behavior.key_repeat.delay",
             "behavior.key_repeat.interval",
             "behavior.scroll_lines_per_step",
@@ -471,7 +471,7 @@ fn icon_size_context_fields_but_size_may_be_absent() {
                 "{path}"
             );
         }
-        for list in ["axes", "symbol_variants", "status_colors"] {
+        for list in ["axes", "symbol_variants", "symbolic_colors"] {
             assert!(
                 !marked(IconSizeTokens::FIELDS, &format!("{context}.{list}")),
                 "{list}"
@@ -1025,7 +1025,7 @@ fn token_maps_of_blocks_patch_each_entry() {
     let _: Option<Vec<(Key, BlockPatch<IconStyle>)>> =
         super::tokens::IconSizeTokensPatch::default().keyed;
     let _: Option<Vec<(Key, super::blocks::paint::PaintPatch)>> =
-        super::blocks::icon::IconStylePatch::default().status_colors;
+        super::blocks::icon::IconStylePatch::default().symbolic_colors;
 
     let threshold = |px: f32| SizeClassThresholdPatch {
         horizontal: Some(Some(Value::Stated(super::units::Px(px)))),
@@ -1120,7 +1120,7 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "behavior.double_click_time",
     "behavior.double_click_distance",
     "behavior.drag_threshold",
-    "behavior.hover_open_delay",
+    "behavior.hover_time",
     "behavior.scroll_lines_per_step",
     "behavior.scroll_px_per_step",
     "behavior.hide_pointer_while_typing",

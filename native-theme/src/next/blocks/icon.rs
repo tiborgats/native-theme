@@ -44,9 +44,10 @@ pub struct IconStyle {
     pub state_effect: Value<Key>,
     /// SF Symbols' variants (`.fill`, `.circle`, …).
     pub symbol_variants: Vec<Key>,
-    /// A symbolic icon's status colours (success, warning, error).
+    /// The colours an icon's marked paths take beyond `fill`, keyed by the
+    /// platform's mark names (`success`, `accent`, KDE's `highlight`, …).
     #[parts(block = "append")]
-    pub status_colors: Vec<(Key, Value<Paint>)>,
+    pub symbolic_colors: Vec<(Key, Value<Paint>)>,
     /// A repeating icon animation.
     #[parts(block = "fields", may_be_absent)]
     pub animation: Value<Loop>,

@@ -44,7 +44,7 @@ pub(crate) fn read_declarations(item: &Item, at: &str, cx: &mut Reader) -> Optio
             "device_models" => out.device_models = keys(cx),
             "durations" => out.durations = keys(cx),
             "icon_contexts" => out.icon_contexts = keys(cx),
-            "status_colors" => out.status_colors = keys(cx),
+            "symbolic_colors" => out.symbolic_colors = keys(cx),
             "accent_ramp" => out.accent_ramp = keys(cx),
             "rendering_engines" => out.rendering_engines = keys(cx),
             "lcd_filters" => out.lcd_filters = keys(cx),

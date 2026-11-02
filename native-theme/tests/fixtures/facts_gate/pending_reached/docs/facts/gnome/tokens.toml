@@ -29,7 +29,7 @@ quote = "synthetic"
 
 # Reads the listed blink time through min: skipped.
 [[fact]]
-key = "token.behavior.hover_open_delay"
+key = "token.behavior.hover_time"
 value = "= min(token.caret.blink_on, 0ms)"
 rows = []
 

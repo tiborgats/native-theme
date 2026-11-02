@@ -328,7 +328,7 @@ fn pending_exemption_is_the_listed_leaves() {
         format!(
             "[pending]\n{listed}\n{}\n[tokens.icons.sizes.keyed.check]\nsize_px = 16\n\
              fill = \"#000000\"\nscale = \"absent\"\naxes = {{}}\nstate_effect = \"absent\"\n\
-             symbol_variants = []\nstatus_colors = {{}}\nanimation = \"absent\"\n{entry}",
+             symbol_variants = []\nsymbolic_colors = {{}}\nanimation = \"absent\"\n{entry}",
             base.replace("keyed = {}\n[tokens.focus]", "[tokens.focus]")
         )
     };

@@ -1084,7 +1084,7 @@ fn gate_fixture_pending_reached_through_functions() {
             "input.accent",
             "role.global.drop_highlight",
             "role.global.scrim",
-            "token.behavior.hover_open_delay",
+            "token.behavior.hover_time",
             "token.behavior.long_press",
             "token.text.rendering.contrast",
             "token.text.rendering.gamma",

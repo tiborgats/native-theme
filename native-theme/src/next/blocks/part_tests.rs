@@ -220,7 +220,7 @@ fn part_style_paths() -> Vec<String> {
             "symbol_variants",
         ],
     ));
-    out.extend(paint("icon.status_colors"));
+    out.extend(paint("icon.symbolic_colors"));
     out.push("icon.animation.period".to_owned());
     out.extend(timing("icon.animation.timing"));
     out.extend(under("icon.animation.keyframes", &["at", "part"]));

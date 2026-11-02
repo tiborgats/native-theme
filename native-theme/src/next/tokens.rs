@@ -247,9 +247,11 @@ pub struct Behavior {
     /// The distance the pointer moves before a drag starts.
     #[parts(may_be_absent)]
     pub drag_threshold: Value<Px>,
-    /// How long the pointer hovers before a hovered item opens.
+    /// The system's one hover time: how long the pointer rests on an
+    /// element before it counts as hovering, where the platform derives its
+    /// hover delays from one setting; absent where it has none.
     #[parts(may_be_absent)]
-    pub hover_open_delay: Value<Ms>,
+    pub hover_time: Value<Ms>,
     /// Key repeat; `None`: keys never repeat (the user turned it off).
     #[parts(block = "set")]
     pub key_repeat: Option<KeyRepeat>,

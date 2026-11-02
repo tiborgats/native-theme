@@ -1060,14 +1060,14 @@ fn refusal_unused_variants_models_and_maps() {
     let rule = "[[rules]]\nwhen = { variants = [\"@pill\"], conditions = \
                 [\"device_model:phone_x\"] }\ntarget = \"button.body\"\nset = { opacity = 0.5 }";
     let head = "[declare]\ndevice_models = [\"phone_x\"]\nicon_contexts = [\"menu\"]\n\
-                status_colors = [\"error\"]\n[declare.widget.button]\nvariants = [\"@pill\", \
+                symbolic_colors = [\"error\"]\n[declare.widget.button]\nvariants = [\"@pill\", \
                 \"@with_arrow\", \"@tall\", \"@fab\"]\nrequires_variants = [\"@tall\"]\n\
                 sizes_by_variant = [{ variant = \"@fab\", sizes = [\"regular\"] }]";
     assert_eq!(
         preset(head),
         [
             "declare.device_models: `phone_x` is declared but unused",
-            "declare.status_colors: `error` is declared but unused",
+            "declare.symbolic_colors: `error` is declared but unused",
             "declare.icon_contexts: `menu` is declared but unused",
         ]
     );
@@ -1091,7 +1091,7 @@ fn refusal_unused_variants_models_and_maps() {
     layer.bases.widgets.button = Some(ButtonPatch {
         icon: Some(PartPatch::Style(PartStylePatch {
             icon: Some(BlockPatch::Fields(IconStylePatch {
-                status_colors: Some(vec![(key!("error"), error)]),
+                symbolic_colors: Some(vec![(key!("error"), error)]),
                 ..IconStylePatch::default()
             })),
             ..PartStylePatch::default()

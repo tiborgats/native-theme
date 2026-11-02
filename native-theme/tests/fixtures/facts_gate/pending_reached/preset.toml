@@ -30,7 +30,7 @@ set = { fill = "#00000000" }
 
 [[rules]]
 target = "tokens"
-set = { behavior.long_press_ms = "= max(token.caret.blink_on, 100ms)", behavior.hover_open_delay_ms = "= min(token.caret.blink_on, 0ms)", text.rendering.gamma = "= floor(token.motion.speed_factor)", text.rendering.contrast = "= round(token.motion.speed_factor)" }
+set = { behavior.long_press_ms = "= max(token.caret.blink_on, 100ms)", behavior.hover_time_ms = "= min(token.caret.blink_on, 0ms)", text.rendering.gamma = "= floor(token.motion.speed_factor)", text.rendering.contrast = "= round(token.motion.speed_factor)" }
 
 [[rules]]
 target = "colors"
