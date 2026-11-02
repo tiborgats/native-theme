@@ -394,6 +394,55 @@ fn refusal_transition_from() {
     assert_eq!(found(&from("[\"@spin\", \"hover\"]"), &declared), NONE);
 }
 
+/// `SurfaceRoles.border` may be absent in the `Selection` set alone, a
+/// mark of that place (S6.3, the catalogue's role record; ADD-A130): in a
+/// base, a rule and an entry an application layer creates.
+#[test]
+fn refusal_border_absent_outside_selection() {
+    let decl = declare("surface_sets = [\"selection\", \"window\", \"view\"]");
+    // The entries' other fields, which this layer creates unset, are the
+    // entry check's, below.
+    let absence = |layer: &Layer| -> Vec<String> {
+        found(layer, &decl)
+            .into_iter()
+            .filter(|problem| !problem.contains("can create the entry"))
+            .collect()
+    };
+    let border = |set: &str| {
+        toml(&format!(
+            "[colors.light.surfaces.{set}]\nborder = \"absent\""
+        ))
+    };
+    assert_eq!(absence(&border("selection")), NONE);
+    assert_eq!(
+        absence(&border("window")),
+        ["colors.light.surfaces.window.border: may not be absent"]
+    );
+    let rule = |set: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ conditions = [\"scheme:dark\"] }}\ntarget = \"colors\"\n\
+             set = {{ surfaces.{set}.border = \"absent\" }}"
+        ))
+    };
+    assert_eq!(absence(&rule("selection")), NONE);
+    assert_eq!(
+        absence(&rule("view")),
+        ["rules[0].set.surfaces.view.border: may not be absent"]
+    );
+    // An application layer creating an entry leaves `border` unset only
+    // where it may be absent.
+    let created = |set: &str| {
+        let layer = toml(&format!(
+            "[colors.light.surfaces.{set}]\nbackground = \"#000000\""
+        ));
+        found(&layer, &decl)
+            .iter()
+            .any(|problem| problem.ends_with("with `border` unset"))
+    };
+    assert!(!created("selection"));
+    assert!(created("window"));
+}
+
 /// A Breeze test's flags and conditions are read as a `when` writes them
 /// and walked as a rule's are: a keyed flag the widget declares, a keyed
 /// condition the preset declares (S2.7, S10, S11, S12; ADD-A126).

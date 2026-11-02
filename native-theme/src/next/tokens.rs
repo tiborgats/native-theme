@@ -106,16 +106,19 @@ pub struct MotionTokens {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
 #[parts(toml)]
 pub enum ColorInterpolation {
-    /// Each channel times its alpha, and the alpha, interpolated apart, each
-    /// clamped to `0..=1`, then the channels divided by the alpha (GTK's CSS
-    /// transitions).
+    /// Each channel times its alpha, and the alpha, interpolated apart
+    /// (extrapolated outside `0..=1`), each clamped to `0..=1`, then the
+    /// channels divided by the alpha (GTK's CSS transitions).
     PremultipliedSrgb,
     /// Each 8-bit channel and the alpha interpolated apart without
     /// premultiplying, clamped to `0..=255` and truncated toward zero (Qt's
     /// colour interpolator, QML's `ColorAnimation`).
     StraightSrgb8,
-    /// L, a, b and the straight alpha interpolated apart and clamped, held
-    /// as half floats with a 10-bit alpha (Compose's `animateColorAsState`).
+    /// L, a, b and the straight alpha interpolated apart and clamped to
+    /// `0..=1`, `±0.5`, `±0.5` and `0..=1`, every Oklab value held as half
+    /// floats with a 10-bit alpha, then converted back to sRGB, each channel
+    /// and the alpha clamped to `0..=1` and rounded to 8 bits (Compose's
+    /// `animateColorAsState`).
     Oklab,
 }
 

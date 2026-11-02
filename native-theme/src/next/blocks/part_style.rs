@@ -9,7 +9,8 @@
 //! is the box less its `padding`, and its margin box the box grown by its
 //! `margin`. The stroke takes no layout space: it is drawn in the box
 //! (`Inside`, over the padding), across its edge (`Center`) or outside it
-//! (`Outside`), so a stroke's width or its change never moves the content;
+//! (`Outside`, past its `outset`), so a stroke's width or its change never
+//! moves the content;
 //! a platform whose border adds to the layout states the padding as its
 //! padding plus the border's width on that side, and one whose size limits
 //! bound less than the box states them plus what lies between.

@@ -10,14 +10,14 @@
 //! transition takes its new value at once: no transition is no animation,
 //! never a toolkit's default one.
 //!
-//! Appearing layers interpolate from zero alpha, layers match by stack
-//! position, colours interpolate in the space `token.motion.color_space`
-//! names. A stroke or an edge
-//! whose width becomes absent (the whole stroke stated `Absent`, or the
-//! edge) interpolates to zero width and its paint to zero alpha, and one that
-//! appears from them, a width interpolated to zero or below ending it; an
-//! edge whose paint alone becomes absent keeps its width, its paint
-//! interpolating to zero alpha.
+//! Appearing layers interpolate from transparent black (`#00000000`) and
+//! vanishing ones to it, layers match by stack position, colours
+//! interpolate in the space `token.motion.color_space` names. A stroke or an
+//! edge whose width becomes absent (the whole stroke stated `Absent`, or the
+//! edge) interpolates to zero width and its paint to transparent black, and
+//! one that appears from them, a width interpolated to zero or below ending
+//! it; an edge whose paint alone becomes absent keeps its width, its paint
+//! interpolating to transparent black.
 
 use native_theme_derive::ThemeParts;
 
@@ -576,8 +576,9 @@ pub struct BreezeTest {
 #[parts(block, check)]
 pub enum TransitionKind {
     /// The old value interpolated to the new: layers matched by stack
-    /// position, appearing layers from zero alpha, colours in the space
-    /// `token.motion.color_space` names.
+    /// position, appearing layers from transparent black (`#00000000`) and
+    /// vanishing ones to it, colours in the space `token.motion.color_space`
+    /// names.
     Interpolate,
     /// The focus indicator travelling between elements.
     FocusMove,

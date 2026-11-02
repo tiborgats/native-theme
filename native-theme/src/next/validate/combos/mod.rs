@@ -2729,8 +2729,12 @@ impl Checks<'_, '_> {
                     .iter()
                     .copied()
                     .filter(|field| {
-                        registry::find(table(source.target), &below(&op.path, field))
-                            .is_none_or(|info| !info.may_be_absent)
+                        let path = below(&op.path, field);
+                        let marked = matches!(source.target, Target::Roles(_))
+                            && registry::role_entry_may_be_absent(&path);
+                        !marked
+                            && registry::find(table(source.target), &path)
+                                .is_none_or(|info| !info.may_be_absent)
                     })
                     .collect();
                 if required.is_empty() {

@@ -25,7 +25,7 @@ use crate::next::blocks::text::{Font, FontPatch, LanguageTag};
 use crate::next::color::Color;
 use crate::next::expr::{EnumTy, Expr, SURFACE_SET, Ty};
 use crate::next::key::Key;
-use crate::next::registry::FieldInfo;
+use crate::next::registry::{self, FieldInfo};
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
 use crate::next::selector::{Condition, PartRef, StateFlag, VariantRef, WidgetRef};
 use crate::next::toml::read::{MapKey, toml_key};
@@ -444,6 +444,7 @@ impl<'v> Walker<'v> {
         if let Some(required) = self.path.place {
             marks.may_be_absent |= !required.contains(&name);
         }
+        marks.may_be_absent |= self.in_absent_entry(owner, name);
         let (part, place) = (self.path.part.take(), self.path.place.take());
         self.path.steps.push(Step::Field {
             owner,
@@ -455,6 +456,25 @@ impl<'v> Walker<'v> {
         self.path.steps.pop();
         self.path.part = part;
         self.path.place = place;
+    }
+
+    /// Whether the field `name` of `owner`, walked next, lies in a map's
+    /// entry whose place marks it may be `Absent` (S6.3,
+    /// [`registry::ENTRY_ABSENT`]).
+    fn in_absent_entry(&self, owner: &str, name: &str) -> bool {
+        let mut steps = self.path.steps.iter().rev();
+        let (
+            Some(Step::Key { key, .. }),
+            Some(Step::Field {
+                owner: map_owner,
+                name: map,
+                ..
+            }),
+        ) = (steps.next(), steps.next())
+        else {
+            return false;
+        };
+        registry::ENTRY_ABSENT.contains(&(*map_owner, *map, key.as_str(), owner, name))
     }
 
     /// Walks the variant `name` of the enum `owner` by `walk`; `folded`: TOML

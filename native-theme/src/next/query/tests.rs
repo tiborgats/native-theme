@@ -698,6 +698,31 @@ fn data_needs_declared_full_corner_and_box() {
     );
 }
 
+/// `element.caret_height` (S2.2, S8; ADD-A130): a part declaring it needs
+/// it, and the query reads it from the element's data, not another datum.
+#[test]
+fn element_caret_height_evaluates() {
+    let theme = theme_with(
+        &DECLARE.replace(
+            "data = { label = [\"char_width\"] }",
+            "data = { label = [\"caret_height\"] }",
+        ),
+        &["[widgets.button.label]\npadding.top_px = \"= element.caret_height\""],
+    );
+    assert_eq!(
+        theme.data_needs(LABEL).data,
+        [DataName::Element(ElementDatum::CaretHeight)]
+    );
+    let scope = root(&theme, Direction::Ltr);
+    let element = Element::new(LABEL, &scope, &Metrics).with_data(super::ElementData {
+        caret_height: Px(17.0),
+        move_distance: Px(3.0),
+        ..super::ElementData::default()
+    });
+    let (label, _) = drawn(&theme, &element);
+    assert_eq!(label.padding.top, Some(Px(17.0)));
+}
+
 /// The returned scope (S8): the entry of the part with its kept variants,
 /// flags and size, its bindings, and the element's own density, direction
 /// and language passed on; a context matches the entry's widget.

@@ -589,7 +589,6 @@ fn surface_roles_marks_by_the_catalogue() {
             "decoration_hover",
             "shade",
             "shade_darker",
-            "border",
             "background_active",
             "background_link",
             "background_visited",
@@ -611,19 +610,24 @@ fn disabled_roles_may_all_be_absent() {
 
 /// `macos-*` states no set's `negative`, no `Selection` border and no status
 /// colour (the catalogue's role record and `StatusRoles`; ADD-A130): the
-/// registry holds the union per path (the M1a design, decision 6).
+/// registry holds the union per path (the M1a design, decision 6), and
+/// `border`'s mark is the `Selection` entry's alone (S6.3's place mark).
 #[test]
 fn macos_roles_may_be_absent() {
     assert!(marked(SurfaceRoles::FIELDS, "negative"));
-    assert!(marked(SurfaceRoles::FIELDS, "border"));
+    assert!(!marked(SurfaceRoles::FIELDS, "border"));
     for set in SurfaceSet::NAMES {
-        for role in ["negative", "border"] {
-            let path = format!("surfaces.{set}.{role}");
-            assert!(
-                registry::find(registry::colors(), &path).is_some_and(|field| field.may_be_absent),
-                "{path}"
-            );
-        }
+        let path = format!("surfaces.{set}.negative");
+        assert!(
+            registry::find(registry::colors(), &path).is_some_and(|field| field.may_be_absent),
+            "{path}"
+        );
+        let border = format!("surfaces.{set}.border");
+        assert_eq!(
+            registry::role_entry_may_be_absent(&border),
+            set == "selection",
+            "{border}"
+        );
     }
     let mut paths = Vec::new();
     leaves("", StatusRoles::FIELDS, &mut paths);

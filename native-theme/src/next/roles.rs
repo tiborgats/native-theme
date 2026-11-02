@@ -150,10 +150,9 @@ pub struct SurfaceRoles {
     /// The set's darker shade (libadwaita's `headerbar_darker_shade_color`).
     #[parts(may_be_absent)]
     pub shade_darker: Value<Color>,
-    /// The set's stroke colour, translucent where the platform's is; absent
-    /// only in `macos-*`'s `Selection` set, as AppKit declares no colour for
-    /// a selection's outline (the facts gate checks the place).
-    #[parts(may_be_absent)]
+    /// The set's stroke colour, translucent where the platform's is; may be
+    /// absent in the `Selection` set alone (`macos-*`, as AppKit declares no
+    /// colour for a selection's outline), a mark of that place (S6.3).
     pub border: Value<Color>,
     /// KDE's computed active background, tinted from the set's foreground roles.
     #[parts(may_be_absent)]

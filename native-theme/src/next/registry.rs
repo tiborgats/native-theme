@@ -169,6 +169,33 @@ impl WidgetInfo {
     }
 }
 
+/// A field that may be `Absent` in one entry of a map alone (S6.3's place
+/// marks): the map's block and field, the entry's key, then the field's
+/// block and name. `SurfaceRoles.border` in the `Selection` set
+/// (`macos-*`, where AppKit declares no colour for a selection's outline;
+/// the catalogue's role record).
+pub(crate) const ENTRY_ABSENT: [(&str, &str, &str, &str, &str); 1] = [(
+    "ColorRoles",
+    "surfaces",
+    "selection",
+    "SurfaceRoles",
+    "border",
+)];
+
+/// Whether the colour roles' field at `path` (`surfaces.selection.border`)
+/// may be `Absent` by an [`ENTRY_ABSENT`] mark.
+pub(crate) fn role_entry_may_be_absent(path: &str) -> bool {
+    ENTRY_ABSENT.iter().any(|(owner, map, key, _, field)| {
+        *owner == "ColorRoles"
+            && path
+                .strip_prefix(map)
+                .and_then(|rest| rest.strip_prefix('.'))
+                .and_then(|rest| rest.strip_prefix(key))
+                .and_then(|rest| rest.strip_prefix('.'))
+                == Some(field)
+    })
+}
+
 /// A field's info before a place's mark; the placeholder [`absent_but`]
 /// overwrites, slot by slot.
 const UNSET: FieldInfo = FieldInfo {
