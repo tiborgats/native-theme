@@ -726,6 +726,14 @@ def alive(f: Fact, facts) -> tuple:
     return tuple(s for s in slots_of(f.when) if not any(covers(g.when, f.when, s) for g in later))
 
 
+def ruled_beneath(f: Fact, facts, scheme) -> bool:
+    """Whether an earlier rule of the fact's key holds wherever the fact holds under the scheme (covers()), so the
+    preset's own layer states the key beneath it there (S17: a listed path has "no fact or base beneath")."""
+    same = [g for g in facts if g.ckey == f.ckey]
+    at = next((i for i, g in enumerate(same) if g is f), len(same))
+    return any(g.status == "rule" and covers(g.rule_when or {}, f.when, scheme) for g in same[:at])
+
+
 def pending_table(ctx, facts, bases, block_of=None) -> list:
     """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
     pending fact of the preset states where it applies (no later fact covering it everywhere) and the draft writes no
@@ -734,7 +742,11 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     the block, which its bases cannot state without it. Each with its pending facts' register id, or the list of
     their distinct ids in fact order where they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the
     leaves of a field set whole pending under different ids), and the first such fact: [(path, id or ids, fact)],
-    the path spelled as S11 writes its key, unit suffix included. A pending input with no base of the input is
+    the path spelled as S11 writes its key, unit suffix included. An earlier rule of the key holding wherever the
+    pending fact does is beneath it too (ruled_beneath()), in that scheme. The list of ids is broader than S11's
+    letter ("a list of ids where a field S6.1 sets whole has leaves pending under different ids"): every path whose
+    pending facts carry several ids takes one, as a plain field pending under different ids per combination has no
+    other encoding (iOS's and macOS's drafts); a spec row is pending to state it. A pending input with no base of the input is
     listed too, as `inputs.<name>` (S17: a listed path is any "path that, in some combination, has only pending
     facts on that preset and no fact or base beneath them"; S11 writes an input's table `[inputs.<name>]`), an
     input's bases being the input's whole (S9)."""
@@ -753,7 +765,7 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
                 place(f)
             except Untranscribable:
                 continue
-            slots = alive(f, facts)
+            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
             paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
@@ -2040,7 +2052,8 @@ def self_test() -> int:
         failures.append(f"pending_table: {got}, expected the key repeat block with U2 and U3")
     # a base above the path (a block stated whole, a whole part) or below it lists nothing; a colour role is listed
     # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input with no base
-    # of its own is listed whole
+    # of its own is listed whole; one under an earlier rule of its key holding wherever it does lists nothing, one
+    # under an earlier rule holding in less is listed
     def any_fact(key, uid, kind, when=None, widget=None, status=PENDING):
         f = Fact(_Item(uid), key, tuple(key.split(".")), when or {}, kind, widget, None, None, status=status)
         if status != PENDING:
@@ -2059,10 +2072,17 @@ def self_test() -> int:
              ("colors", "light", ("global",), ("status",), {}, status),
              ("widgets", None, ("button", "icon"), ("absent",), True, mode),
              ("inputs", None, ("scheme",), ("light",), "#000000", scheme)]
-    facts = [families, caret, status, drag, later, mode, accent, scheme]
+    earlier = any_fact("token.text.caret_blink", "", "token", {"states": ["focus"]}, status="rule")
+    earlier.rule_when = earlier.when
+    under = any_fact("token.text.caret_blink", "U12", "token", {"states": ["focus", "hover"]})
+    narrower = any_fact("token.behavior.double_click", "", "token", {"states": ["focus", "hover"]}, status="rule")
+    narrower.rule_when = narrower.when
+    over = any_fact("token.behavior.double_click", "U13", "token", {"states": ["focus"]})
+    facts = [families, caret, status, drag, later, mode, accent, scheme, earlier, under, narrower, over]
     got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
-    if got != [("colors.dark.global.status", "U7"), ("inputs.accent", "U10")]:
-        failures.append(f"pending_table: {got}, expected the dark scheme's status role and the accent input")
+    if got != [("colors.dark.global.status", "U7"), ("inputs.accent", "U10"), ("tokens.behavior.double_click", "U13")]:
+        failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input and the "
+                        f"double click under a narrower rule")
     # a pending field of a part its base states absent is reported where a `present` fact draws the part again
     got = [(key, uid) for key, uid, _ in redrawn_pending(facts, bases)]
     if got:
