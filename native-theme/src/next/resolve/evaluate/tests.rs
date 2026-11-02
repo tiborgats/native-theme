@@ -1211,6 +1211,27 @@ presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = 
     );
 }
 
+/// A synthetic layer's step decides whether a part is drawn only where it
+/// changes what the steps before it make the part (S6.3, S17, ADD-A128): a
+/// `Style` over a part a lower step leaves absent draws it again, and over
+/// a part drawn as itself decides nothing; an `Absent` decides; a later
+/// step of another layer decides over it.
+#[test]
+fn synthetic_steps_decide_presence_only_by_changing_it() {
+    let style = "[widgets.button.body]\nopacity = 1\n";
+    let absent = "[widgets.button.body]\nabsent = true\n";
+    // The stack's places: the preset, the stand-in, then the layers.
+    let decides = |layers: &[&str], synthetic: usize| {
+        let mut theme = resolved(layers, 1.0);
+        theme.synthetic = vec![synthetic];
+        theme.shown_by_synthetic(BODY, |_| true)
+    };
+    assert!(!decides(&[BASE, style], 2));
+    assert!(decides(&[BASE, absent, style], 3));
+    assert!(decides(&[BASE, absent], 2));
+    assert!(!decides(&[BASE, absent, style], 2));
+}
+
 /// What evaluation records it read of the synthetic route's layers (S17,
 /// ADD-A128), a place by the field evaluated outside every reference: a
 /// step deciding a reference's place itself, directly; a reference through

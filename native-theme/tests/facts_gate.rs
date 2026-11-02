@@ -948,6 +948,29 @@ fn gate_fixture_pending_map() {
     );
 }
 
+/// A listed field of a part skips no fact of a sibling field (S17: only
+/// "every fact whose evaluation reaches a synthetic value"): where no
+/// preset rule on the part applies, the synthetic layer's step is the last
+/// kept one, yet it changes nothing of whether the part is drawn, so the
+/// opacity, other than its fact, fails there too.
+#[test]
+fn gate_fixture_pending_sibling_field() {
+    let report = fixture_report("pending_sibling");
+    let failures = failing(&report, "button.body.opacity");
+    assert!(
+        failures
+            .iter()
+            .any(|failure| failure.contains("states: []") && failure.contains("variants: []")),
+        "{:?}",
+        report.failures
+    );
+    assert!(report.synthetic.is_empty(), "{:?}", report.synthetic);
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe button.body.min_width"]
+    );
+}
+
 /// A fact reading a listed path through a function that maps many values
 /// to one (`max`, `min`, `floor`, `round`, a `mix` all the way to its
 /// second colour, a `pick`) is skipped and reported (S17, ADD-A128): its

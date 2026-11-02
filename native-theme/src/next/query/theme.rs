@@ -219,11 +219,12 @@ impl ResolvedTheme {
         }
         let evaluated = self.evaluate_part(matched.part, element, &applies);
         let bindings = ["bindings".to_owned()];
-        let synthetic = shown_step.is_some_and(|step| self.synthetic.contains(&step.pos.layer))
-            || evaluated
-                .reached
-                .iter()
-                .any(|held| held.meets(Target::Part(matched.part), &bindings));
+        let synthetic = self.shown_by_synthetic(matched.part, |step| {
+            step.selector.as_ref().is_none_or(applies)
+        }) || evaluated
+            .reached
+            .iter()
+            .any(|held| held.meets(Target::Part(matched.part), &bindings));
         let Some(mut style) = evaluated.value else {
             return Styled::NotDrawn;
         };

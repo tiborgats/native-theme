@@ -2136,8 +2136,8 @@ impl Session<'_> {
             .is_some_and(|(_, _, reached)| Reach::of(&reached, target, path).decides))
     }
 
-    /// Whether the step deciding whether `part` is drawn for the element
-    /// (its last kept step, S6.3) is a synthetic layer's (S17, ADD-A128).
+    /// Whether a synthetic layer's step decides whether `part` is drawn
+    /// for the element (S6.3, S17, ADD-A128; `shown_by_synthetic`).
     fn shown_synthetic(&self, part: TypedPart) -> bool {
         let Some(queried) = self.queried(part) else {
             return false;
@@ -2147,16 +2147,11 @@ impl Session<'_> {
             let Ok(matched) = Matched::new(theme, element) else {
                 return false;
             };
-            theme
-                .part_steps(part)
-                .iter()
-                .rev()
-                .find(|step| {
-                    step.selector
-                        .as_ref()
-                        .is_none_or(|selector| matched.matches(selector))
-                })
-                .is_some_and(|step| theme.synthetic.contains(&step.pos.layer))
+            theme.shown_by_synthetic(part, |step| {
+                step.selector
+                    .as_ref()
+                    .is_none_or(|selector| matched.matches(selector))
+            })
         })
     }
 

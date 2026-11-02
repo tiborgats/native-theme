@@ -1131,6 +1131,33 @@ impl ResolvedTheme {
             .map(|(_, steps)| steps.as_slice())
             .unwrap_or_default()
     }
+
+    /// Whether a synthetic layer's step decides whether `part` is drawn
+    /// (S17, ADD-A128), `kept` telling the steps the element keeps: the
+    /// last kept step is a synthetic layer's and changes what the steps
+    /// before it make the part, as a `Style` does only over a last kept
+    /// other step that leaves the part absent or drawn as another widget
+    /// (S6.3). A synthetic `Style` over a part drawn as itself decides
+    /// nothing of its presence.
+    pub(crate) fn shown_by_synthetic(
+        &self,
+        part: TypedPart,
+        kept: impl Fn(&Step<PartPatch>) -> bool,
+    ) -> bool {
+        let mut steps = self.part_steps(part).iter().rev().filter(|step| kept(step));
+        let Some(last) = steps.next() else {
+            return false;
+        };
+        if !self.synthetic.contains(&last.pos.layer) {
+            return false;
+        }
+        if !matches!(last.patch, PartPatch::Style(_)) {
+            return true;
+        }
+        steps
+            .find(|step| !self.synthetic.contains(&step.pos.layer))
+            .is_some_and(|step| !matches!(step.patch, PartPatch::Style(_)))
+    }
 }
 
 fn step<P>(pos: Pos, selector: Option<Selector>, patch: P) -> Step<P> {
