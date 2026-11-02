@@ -949,7 +949,7 @@ MAT-X13–MAT-X15, X-MO-1).
     (below) keeps every base patch live, and a narrower rule meeting an `Absent` block wherever it applies is the
     layer's own choice; refusing it would make a layer's validity hang on each preset's selectors (the eleventh check's
     withdrawal). Rejected for paints: an `Append` over an `Absent` paint giving a paint of the appended layers (S6.1's
-    rule until the merged spec's second cross-batch check), which CSS's `background-image` matches, GTK drawing an element's image layers whether or not
+    rule until commit 8a567e44), which CSS's `background-image` matches, GTK drawing an element's image layers whether or not
     a colour lies beneath them (`gtk@4.24.1 gtk/gtkrenderbackground.c:266-311`): a later layer's `Append @ {hover}`
     would draw a paint a condition made absent, the defect #110 removes for parts and blocks, and a paint would be the
     one field a patch stating no presence could bring back.

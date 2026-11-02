@@ -732,6 +732,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-P3-6† | `window.launch_screen.fill` | field |
 | MAT-P3-6† | `window.launch_icon.{icon,fill}` | field |
 | MAT-P3-6† | `window.values.presentations event @launch_exit` | field |
+| MAT-P3-7† | `input.body.fill` (transparent outside `@filled`: the outlined field's container colour is transparent in every state, `androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextFieldDefaults.kt:1545-1548`, the filled field's being MAT-I11's; stated drawn so the autofilled highlight's append draws over it, as Compose draws the highlight over the field's bounds whatever its container, `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/input/internal/TextFieldDecoratorModifier.kt:428-435`, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | field |
 | MAT-P3-7† | `input.body.fill.append @ {autofilled}` | rule |
 | MAT-P3-8† | `checkbox.mark.glyph (GlyphSource::Path from Compose drawCheck, the Material 3 styling branch's points (0.25, 0.5), (0.4, 0.65), (0.75, 0.3), Checkbox.kt:711-718, the geometry S2.12 takes; stroked, its fill absent: `drawPath(…, style = stroke)`, `material3/…/Checkbox.kt:736`, the colours on `glyph.stroke`, MAT-C5, MAT-C6, MAT-C7, MAT-C8, S2.9, ADD-A126)` | field |
 | MAT-P3-8† | `checkbox.mark.glyph @ {indeterminate} (the same path pulled to the centre line)` | rule |
