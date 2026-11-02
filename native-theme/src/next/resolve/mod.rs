@@ -341,6 +341,9 @@ pub struct ResolvedTheme {
     /// layer's that states the input, its per-contrast base where a contrast
     /// condition holds and it states one (S9).
     pub(crate) inputs: Vec<(InputName, Value<Color>)>,
+    /// The layer each input in force was taken from, its place in the
+    /// stack: what a synthetic layer's input is told apart by (S17).
+    pub(crate) input_layers: Vec<(InputName, usize)>,
     /// KDE's three lists under the scheme in force, the last layer's for it
     /// (S9.1).
     pub(crate) kde_lists: KdeLists,
@@ -915,6 +918,7 @@ impl Stack {
             scheme,
             colors: Vec::new(),
             inputs: Vec::new(),
+            input_layers: Vec::new(),
             kde_lists: KdeLists::default(),
             tokens: Vec::new(),
             parts: Vec::new(),
@@ -1047,7 +1051,7 @@ impl ResolvedTheme {
         if let Some(colors) = bases.colors.get(scheme) {
             self.colors.push(step(pos, None, colors.clone()));
         }
-        self.inputs(&bases.inputs, scheme, contrast, drop_accent);
+        self.inputs(&bases.inputs, pos.layer, scheme, contrast, drop_accent);
         if bases.tokens != TokensPatch::default() {
             self.tokens.push(step(pos, None, bases.tokens.clone()));
         }
@@ -1063,6 +1067,7 @@ impl ResolvedTheme {
     fn inputs(
         &mut self,
         inputs: &InputBases,
+        layer: usize,
         scheme: Scheme,
         contrast: Option<Contrast>,
         drop_accent: bool,
@@ -1076,6 +1081,8 @@ impl ResolvedTheme {
             if let Some(value) = input_value(value, scheme, contrast) {
                 self.inputs.retain(|(held, _)| held != name);
                 self.inputs.push((name.clone(), value));
+                self.input_layers.retain(|(held, _)| held != name);
+                self.input_layers.push((name.clone(), layer));
             }
         }
         let lists = &mut self.kde_lists;

@@ -10,6 +10,7 @@ use crate::next::blocks::{BlockPatch, FieldsBlock};
 use crate::next::color::Color;
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{Expr, Ty};
+use crate::next::inputs::InputName;
 use crate::next::key::Key;
 use crate::next::layer::Shorthands;
 use crate::next::registry::{self, FieldInfo, FieldType};
@@ -72,6 +73,18 @@ pub(crate) fn key_segments(key: &str) -> Option<Vec<String>> {
     }
     out.push(current);
     (!quoted && !out.iter().any(String::is_empty)).then_some(out)
+}
+
+/// The input a listed path names (S11's `[pending]` key, S17, ADD-A128):
+/// `inputs.<name>`, an input as S11 writes its table, the model's path
+/// `input.<name>` (S9.1); `None` for any other path.
+pub(crate) fn listed_input(path: &str) -> Option<InputName> {
+    let segments = key_segments(path)?;
+    let (head, name) = segments.split_first()?;
+    if head != "inputs" || name.is_empty() {
+        return None;
+    }
+    InputName::new(&name.join(".")).ok()
 }
 
 /// What a listed path names (S11's `[pending]` key, S17, ADD-A128): a

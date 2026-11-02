@@ -2340,10 +2340,13 @@ pub(super) fn states(layer: &Layer, listed: &str) -> bool {
     let mut stated = Stated::default();
     let Bases {
         colors,
-        inputs: _,
+        inputs,
         tokens,
         widgets,
     } = &layer.bases;
+    if let Some(input) = crate::next::toml::read::listed_input(listed) {
+        return inputs.entries.iter().any(|(name, _)| *name == input);
+    }
     for (scheme, roles) in [("light", &colors.light), ("dark", &colors.dark)] {
         if let Some(roles) = roles {
             stated.walk(&format!("colors.{scheme}"), toml, roles);

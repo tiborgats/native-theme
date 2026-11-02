@@ -191,9 +191,11 @@ fn synthetic_layer(text: &str) -> Layer {
 
 /// The reader reads `[pending]` with its register ids (S11), one or a list
 /// of distinct ones, and leaves a listed path out of a block built whole;
-/// it refuses an entry whose id is not `U<n>` or whose list is empty or
-/// repeats one, or whose path names no field of `colors`, `tokens` or a
-/// typed widget (an input, a rule's key, a field the model lacks) or is
+/// it reads an input's (S17: a listed path is any path the preset leaves
+/// unstated); it refuses an entry whose id is not `U<n>` or whose list is
+/// empty or repeats one, or whose path names no field of `colors`, `tokens`
+/// or a typed widget and no input (a rule's key, a field the model lacks,
+/// an input's name that does not read) or is
 /// spelled with a unit suffix its field's type does not take (S17,
 /// ADD-A128). A path the preset states too it reads: the facts gate fails
 /// that entry.
@@ -250,7 +252,7 @@ fn pending_table_read() {
         "tokens.behavior.bogus_ms",
         "tokens.behavior.touch.delay_px",
         "tokens.behavior.touch.delay",
-        "inputs.accent",
+        "inputs.Accent",
         "rules[0].target",
         "widgets.button.bogus.fill",
     ] {
@@ -277,6 +279,8 @@ fn pending_table_read() {
             "{path}"
         );
     }
+    let input = read_preset(&format!("[pending]\n\"inputs.accent\" = \"U1\"\n{base}")).unwrap();
+    assert_eq!(input.pending.len(), 1);
 }
 
 /// The reader's exemption covers exactly the listed leaves: a map entry

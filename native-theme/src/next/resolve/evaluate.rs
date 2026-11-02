@@ -1217,17 +1217,28 @@ impl<'t> Cx<'t> {
                     }
                     _ => None,
                 };
-                let value = extra.or_else(|| {
-                    theme
-                        .inputs
-                        .iter()
-                        .find(|(name, _)| name.segments() == path.as_slice())
-                        .map(|(_, value)| value)
-                })?;
+                // The input's own layer, so a synthetic layer's is told
+                // apart (S17); the value evaluated in its place, none.
+                let (value, layer) = match extra {
+                    Some(value) => (value, 0),
+                    None => {
+                        let value = theme
+                            .inputs
+                            .iter()
+                            .find(|(name, _)| name.segments() == path.as_slice())
+                            .map(|(_, value)| value)?;
+                        let layer = theme
+                            .input_layers
+                            .iter()
+                            .find(|(name, _)| name.segments() == path.as_slice())
+                            .map_or(0, |(_, layer)| *layer);
+                        (value, layer)
+                    }
+                };
                 let fold = Fold {
                     pos: Pos {
                         rule: false,
-                        layer: 0,
+                        layer,
                         index: 0,
                     },
                     target: Target::Roles,

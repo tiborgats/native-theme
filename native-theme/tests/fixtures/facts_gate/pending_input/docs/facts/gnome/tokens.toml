@@ -1,0 +1,17 @@
+# Synthetic facts (S17, ADD-A128): the accent input pending with nothing beneath, so the preset lists
+# it, as S11 writes its table.
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "input.accent"
+pending = "U9"
+rows = []

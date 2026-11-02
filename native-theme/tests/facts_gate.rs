@@ -964,6 +964,34 @@ fn gate_fixture_pending_ids() {
     );
 }
 
+/// An input listed as pending is found (S17: a listed path is any path
+/// that "has only pending facts on that preset and no fact or base beneath
+/// them"; S11 writes an input's as `inputs.<name>`); listed while the
+/// preset states it, it fails.
+#[test]
+fn gate_fixture_pending_input() {
+    let report = fixture_report("pending_input");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe input.accent"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U9"])
+    );
+    let stated = fixture_report_with("pending_input", "stated.toml");
+    assert_eq!(
+        failing(&stated, "[pending]"),
+        [
+            &"probe: `inputs.accent` (U9) is in its [pending] table, and the preset states it"
+                .to_owned()
+        ],
+        "{:?}",
+        stated.failures
+    );
+}
+
 /// A whole map listed as pending is found (S17: "U150's
 /// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
 /// synthetic value is empty, so reading it reads the synthetic layer's step

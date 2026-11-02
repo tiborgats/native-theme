@@ -586,7 +586,7 @@ class Draft:
     left_models: list         # (widget, item): entries of widgets the model does not hold
     staged: int
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
-    pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id, the pending fact)
+    pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id or ids, the first pending fact)
     unfacted: list = field(default_factory=list)  # the facts whose covering base shows where no fact applies
 
 
@@ -735,25 +735,31 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     the block, which its bases cannot state without it. Each with its pending facts' register id, or the list of
     their distinct ids in fact order where they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the
     leaves of a field set whole pending under different ids), and the first such fact: [(path, id or ids, fact)],
-    the path spelled as S11 writes its key, unit suffix included. A pending input is no listed path (S11:
-    the reader takes a field of the colour roles, the tokens or a widget): pending_inputs() reports it."""
+    the path spelled as S11 writes its key, unit suffix included. A pending input with no base of the input is
+    listed too, as `inputs.<name>` (S17: a listed path is any "path that, in some combination, has only pending
+    facts on that preset and no fact or base beneath them"; S11 writes an input's table `[inputs.<name>]`), an
+    input's bases being the input's whole (S9)."""
     block_of = block_of or set_whole_block
     based = based_paths(bases)
+    inputs = {tuple(header) for section, _, header, _, _, _ in bases if section == "inputs"}
     out, seen = [], {}
     for f in facts:
-        if f.status != PENDING or f.kind == "input":
+        if f.status != PENDING:
             continue
-        try:
-            place(f)
-        except Untranscribable:
-            continue
-        slots = alive(f, facts)
-        if not slots:
-            continue
-        below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
-        schemes = slots if f.kind == "role" else (None,)
-        for scheme in schemes:
-            path = (f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
+        if f.kind == "input":
+            name = tuple(f.ckey[1:])
+            paths = [] if name in inputs or not alive(f, facts) else [("inputs",) + name]
+        else:
+            try:
+                place(f)
+            except Untranscribable:
+                continue
+            slots = alive(f, facts)
+            below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
+            schemes = slots if f.kind == "role" else (None,)
+            paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
+                     for scheme in (schemes if slots else ())]
+        for path in paths:
             key = unsuffixed(path)
             beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
             if beneath:
@@ -766,22 +772,6 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
             seen[key] = [dotted_key(path), [uid], f]
             out.append(seen[key])
     return [(path, uids[0] if len(uids) == 1 else uids, f) for path, uids, f in out]
-
-
-def pending_inputs(facts, bases) -> list:
-    """The pending inputs that apply with no base of their input: [(the input's key, register id, fact)]. No
-    `[pending]` table lists an input (pending_table()), so the draft states no value for it, reported."""
-    based = {tuple(header) for section, _, header, _, _, _ in bases if section == "inputs"}
-    out, seen = [], set()
-    for f in facts:
-        if f.status != PENDING or f.kind != "input" or not alive(f, facts):
-            continue
-        name = tuple(f.ckey[1:])
-        if name in based or name in seen:
-            continue
-        seen.add(name)
-        out.append((f.key, f.item.data["pending"], f))
-    return out
 
 
 def covering_bases(facts, models, tree) -> tuple:
@@ -1439,10 +1429,6 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if draft.pending:
         out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
             f"{path} ({uid if isinstance(uid, str) else ', '.join(uid)})" for path, uid, _ in draft.pending))
-    inputs = pending_inputs(draft.facts, draft.bases)
-    if inputs:
-        out.append(f"# [pending]: {len(inputs)} pending inputs with nothing beneath, which no table lists (S11), "
-                   f"left without a value: " + ", ".join(f"{key} ({uid})" for key, uid, _ in inputs))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     for w, vs in draft.dropped:
@@ -2033,7 +2019,8 @@ def self_test() -> int:
     if got != [("tokens.behavior.key_repeat", ["U2", "U3"])]:
         failures.append(f"pending_table: {got}, expected the key repeat block with U2 and U3")
     # a base above the path (a block stated whole, a whole part) or below it lists nothing; a colour role is listed
-    # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input is reported
+    # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input with no base
+    # of its own is listed whole
     def any_fact(key, uid, kind, when=None, widget=None, status=PENDING):
         f = Fact(_Item(uid), key, tuple(key.split(".")), when or {}, kind, widget, None, None, status=status)
         if status != PENDING:
@@ -2054,11 +2041,8 @@ def self_test() -> int:
              ("inputs", None, ("scheme",), ("light",), "#000000", scheme)]
     facts = [families, caret, status, drag, later, mode, accent, scheme]
     got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
-    if got != [("colors.dark.global.status", "U7")]:
-        failures.append(f"pending_table: {got}, expected the dark scheme's status role alone")
-    got = [(key, uid) for key, uid, _ in pending_inputs(facts, bases)]
-    if got != [("input.accent", "U10")]:
-        failures.append(f"pending_inputs: {got}, expected the accent alone")
+    if got != [("colors.dark.global.status", "U7"), ("inputs.accent", "U10")]:
+        failures.append(f"pending_table: {got}, expected the dark scheme's status role and the accent input")
     # the round trip reduces a flavour's combinations by its own state model
     flavored = {("button", None): {"exclusive": []}, ("button", "compact"): {"exclusive": [["pressed"]]}}
     got = [model_of(flavored, "button", {"conditions": ["flavor:compact"]}), model_of(flavored, "button", {}),

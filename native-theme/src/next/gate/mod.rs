@@ -277,10 +277,13 @@ impl Preset {
 /// `button.icon.icon.size`, `colors.light.global.status` and
 /// `colors.dark.global.status` are `role.global.status`,
 /// `colors.light.surfaces.window.background` is `role.window.background`,
-/// `colors.light.keyed.badge` is `role.@badge`); `None` for a path of no
-/// field the gate reads.
+/// `colors.light.keyed.badge` is `role.@badge`, `inputs.accent` is
+/// `input.accent`); `None` for a path of no field the gate reads.
 #[must_use]
 pub fn listed_key(path: &str) -> Option<String> {
+    if let Some(input) = super::toml::read::listed_input(path) {
+        return Some(format!("input.{input}"));
+    }
     let path = super::toml::read::listed_path(path);
     if let Some(rest) = path.strip_prefix("tokens.") {
         return Some(format!("token.{rest}"));
@@ -407,8 +410,18 @@ fn unit_suffix(info: &registry::FieldInfo) -> &'static str {
 /// The synthetic value of a listed path (S17, ADD-A128), its last key
 /// spelled with the unit suffix of the value: `absent` where the field may
 /// be absent, else [`synthetic_of`] its type, or its map's value type where
-/// the path names an entry.
+/// the path names an entry; an input's, `#010203` under each scheme
+/// (S9.1's `[inputs.<name>]`), which replaces the preset's whole (S9).
 fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
+    if super::toml::read::listed_input(path).is_some() {
+        let keys = super::toml::read::key_segments(path)
+            .ok_or_else(|| "a key that does not read".to_owned())?;
+        let mut schemes = Table::new();
+        for scheme in Scheme::ALL {
+            schemes.insert(scheme.name().to_owned(), Item::String("#010203".to_owned()));
+        }
+        return Ok((keys, Item::Table(schemes)));
+    }
     let (info, levels) = super::toml::read::listed_field(path)
         .ok_or_else(|| "the model holds no field there".to_owned())?;
     let mut ty = written(info);
@@ -1430,12 +1443,19 @@ impl Resolved {
                 }
                 Place::Input(name) => {
                     let reference = Ref::Input(name.segments().to_vec());
+                    // The input's own value decides where a synthetic layer
+                    // states it, a listed input (S17); what it reads
+                    // decides nothing of it.
+                    let decides = extra.is_none()
+                        && theme
+                            .input_layers
+                            .iter()
+                            .find(|(held, _)| held == name)
+                            .is_some_and(|(_, layer)| theme.synthetic.contains(layer));
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(&reference));
-                        // An input is never listed: what it reads is no
-                        // synthetic value of its own.
                         let reach = Reach {
-                            decides: false,
+                            decides,
                             ..Reach::whole(cx.reached())
                         };
                         (tree, reach)

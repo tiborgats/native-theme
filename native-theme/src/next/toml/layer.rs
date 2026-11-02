@@ -133,7 +133,8 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
 /// register id, `U` and a number (ADD-A122's form), or a list of distinct
 /// ones (a field S6.1 sets whole whose leaves are pending under different
 /// ids); an entry of another form is refused, and so is a path naming no
-/// field of `colors`, `tokens` or a typed widget, or spelled with a unit
+/// field of `colors`, `tokens` or a typed widget and no input
+/// (`inputs.<name>`, [`read::listed_input`]), or spelled with a unit
 /// suffix its field's type does not take ([`read::listed_field`], the
 /// model's path it maps to).
 fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
@@ -171,7 +172,7 @@ fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
             );
             continue;
         };
-        if read::listed_field(path).is_none() {
+        if read::listed_field(path).is_none() && read::listed_input(path).is_none() {
             cx.problem(&at, ProblemKind::UnknownKey);
             continue;
         }
