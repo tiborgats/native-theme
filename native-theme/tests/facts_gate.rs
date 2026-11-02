@@ -1021,6 +1021,30 @@ fn gate_fixture_measured_derivation() {
     );
 }
 
+/// The derivations run refuses a pass it cannot evaluate where its fact
+/// says (S17 *A measured derivation*, task 15): a fact whose `when` names
+/// no combination the state model draws, and one whose combination the
+/// state model's `not_drawn` names.
+#[test]
+fn gate_fixture_measured_derivation_refused() {
+    let report = fixture_report("derivation_refused");
+    assert!(
+        report.failures.iter().any(
+            |failure| failure.contains("its `when` names no combination the state model draws")
+        ),
+        "{:?}",
+        report.failures
+    );
+    assert!(
+        report
+            .failures
+            .iter()
+            .any(|failure| failure.contains("is named by `not_drawn`")),
+        "{:?}",
+        report.failures
+    );
+}
+
 /// A fact's own combination completed to one the state model draws (S17):
 /// the first required variant its `when` does not exclude by
 /// `not_variants`, and none sharing an `exclusive_variants` group with a

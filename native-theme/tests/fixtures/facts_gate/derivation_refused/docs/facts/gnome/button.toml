@@ -1,0 +1,108 @@
+# Synthetic facts (S17): every key the preset states, by the combinations it draws; two measured
+# derivations whose passes the derivations run refuses: one where the state model draws no part
+# (`not_drawn`), one whose `when` names no combination the state model draws.
+
+[[fact]]
+key = "button.body.fill"
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/derivations.toml#derivation.fill"
+tolerance = 0.5
+inputs = ["input.accent"]
+
+[[fact]]
+key = "button.body.min_width"
+value = "40px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+value = "44px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+when = { states = ["hover"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The parts the base leaves out (S17, ADD-A130: a part with no part fact is expected drawn).
+[[fact]]
+key = "button.icon"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Measured where the state model draws nothing (`not_drawn`): its passes are refused.
+[[fact]]
+key = "button.body.fill"
+when = { states = ["pressed"] }
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/derivations.toml#derivation.fill"
+tolerance = 0.5
+inputs = ["input.accent"]
+
+# Measured under a variant the state model's every combination lacks: no combination is drawn.
+[[fact]]
+key = "button.body.fill"
+when = { not_variants = ["flat"] }
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/derivations.toml#derivation.fill"
+tolerance = 0.5
+inputs = ["input.accent"]
