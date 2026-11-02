@@ -1,0 +1,28 @@
+# Facts of `radio` on macos-tahoe and macos-monterey ahead of its unit (the 0.8.0 plan enables it later; until then
+# the gate and generate_preset.py skip these facts, spec S17 *While 0.8.0 is built*). Only what the spec batches
+# ADD-A126 and ADD-A127 ask of the macOS lane is stated here: the checked dot's colour in a key window and the dot's motion (MAC-C07, MAC-X11). The widget's state model and its other
+# facts are its unit's lane's.
+
+[[fact]]
+key = "radio.dot.fill"
+when = { conditions = ["preset:macos-tahoe"], states = ["checked"], not_conditions = ["window_inactive"] }
+pending = "U192"
+rows = ["MAC-C07"]
+
+[[fact]]
+key = "radio.dot.transitions"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U160"
+rows = ["MAC-C07", "MAC-X11"]
+
+[[fact]]
+key = "radio.dot.fill"
+when = { conditions = ["preset:macos-monterey"], states = ["checked"], not_conditions = ["window_inactive"] }
+pending = "U192"
+rows = ["MAC-C07"]
+
+[[fact]]
+key = "radio.dot.transitions"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U160"
+rows = ["MAC-C07", "MAC-X11"]
