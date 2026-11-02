@@ -11,46 +11,149 @@
 # - Conditions: the schemes; the idiom (the iPhone's facts; the iPad's styles at medium and rest read alike in
 #   focus1/index.toml, the rest pending U114); Increase Contrast, Bold Text and Button Shapes are not captured
 #   (pending U116-U118).
+# - The base (ADD-A125, the catalogue): an element with none of the styles and forms is `UIButton(type: .system)` with
+#   no configuration (analysis.toml `forms.<scheme>.system`); no `requires_variants`. Every button a UIKit host draws
+#   for itself is the base, or one of its forms or identities, in its host's context (`axes.contexts`, the contexts
+#   the trace's rules select: an alert's and an action sheet's actions, the bar items, the toolbar editor's Done, the
+#   bottom tab bar's sidebar toggle, the search field's and the text field's buttons, the calendar header's, the edit
+#   menu's, the find bar's, AVKit's media controls', the ink toolbar's, the document launch view's, the status page's
+#   and the teaching tip's). The search field's clear button is the chain `[search_field.body, input]` S17 allows,
+#   which scripts/check_facts.py does not read yet (`axes.contexts[i] is not a table`): its combinations are
+#   `context search_field` ones until the checker takes a chain (the lane's report).
 # - Variants: one configuration style each (two exclusive groups on 26, so `primary` pairs with `glass` and `clear`
-#   alone), or one of the forms that are no configuration (the system types, the bar items, the paste control, the
-#   route picker); one corner style, content and pointer effect each. Collapsed, as UIKit draws them alike (each read
-#   the same in every key, state and scheme the run drew): the roles destructive and cancel (as normal on a standalone
-#   button, and the cancel bar item as a plain one), the indicator `none` (as automatic: no indicator), the corner style
-#   dynamic on the non-glass styles (their default) and capsule on glass (its default). The role `primary` does draw
-#   differently (its title semibold, weight trait 0.3, analysis.toml `cells.<scheme>.<style>__role_primary`), but the
-#   catalogue has no variant for it (the typed `primary` is the filled style): not stated (the tie-break's report).
+#   alone), or one of the forms that are no configuration (the system types, the bar items with `add` the system add
+#   item, the paste control, the route picker) or a host's identity (`clear_field`, `overflow`, `pane_toggle`,
+#   `previous`, `next`, `tool`); one corner style, content and pointer effect each; one role (`UIButton.Role`):
+#   `@role_primary` (the title's weight trait 0.3 in every style, analysis.toml `cells.<scheme>.<style>__role_primary`,
+#   drawn with each configuration style), `@cancel` and `destructive` (drawn as normal on a standalone button, the
+#   run's `<style>__role_cancel` and `__role_destructive` cells: variants only in the hosts that draw them, an alert's
+#   or action sheet's actions and the search field's cancel button). Collapsed, as UIKit draws them alike (each read
+#   the same in every key, state and scheme the run drew): the indicator `none` (as automatic: no indicator), the
+#   corner style dynamic on the non-glass styles (their default) and capsule on glass (its default).
 # - Variant sets (the products): each set is one UIKit draws differently from every set it contains: a style with any
 #   corner style (the bezel's radius), content (the image), `toggle` (the checked state) and pointer effect (the hover
 #   effect), and the menu buttons' sets (`menu` the trigger, `@indicator_popup` the indicator, `@menu_on_hold` the long
 #   press; no `toggle`: a selection menu is a pop-up button, `combo_box`); `flat` takes a corner style only with
 #   `toggle`, as plain draws a bezel only while checked (analysis.toml `cells.<scheme>.plain.<size>.selected`; no
-#   bezel at rest, pressed, disabled or toggled off).
-# - Context: a bar item or a back button is a `button` in `context toolbar.bar`.
+#   bezel at rest, pressed, disabled or toggled off); each configuration style with `@role_primary` (the sets the run
+#   drew, `<style>__role_primary`, the prominent glass ones on 26 too).
+# - Not drawn: an element with no configuration style at `mini`, `small` or `large` (no `buttonSize`: one size,
+#   `regular`, whose facts state no size term); the configuration-only variants without a style (the corner styles,
+#   `@role_primary`, `@indicator_popup`; `@corner_dynamic` only with the glass styles and `pill` only with the others on
+#   26, each the style's default under another name elsewhere); `@menu_on_hold` without `menu`; each host-only form or
+#   identity outside its hosts, `@cancel` and `destructive` outside theirs (and `@cancel` in the text field, the search
+#   field's clear button's host, `destructive` in the search field); the configuration styles in the hosts whose
+#   buttons are UIKit's own items (an application's configured button placed in a bar is a custom view, no bar item),
+#   but `primary` in `toolbar.bar` on 26 (the prominent item, and the done style); `primary` in a bar on 13
+#   (`UIBarButtonItemStyleProminent` is iOS 26's); the base in the hosts whose rows name no plain button (the text
+#   field, the search field, the bottom tab bar, the ink toolbar, the toolbar editor).
 # - Not declared (the lane's report): `default_size` (no reading of a configuration's default `buttonSize`: the host
-#   sets it on every specimen and UIButtonConfiguration.h states no default; U129), `@padding_removed`, the system add
-#   bar item, iOS 26's `prominent` bar item style beyond `primary`, and the legacy `UIButton(type: .system)` with no
-#   configuration (drawn, analysis.toml `forms.<scheme>.system`, but the catalogue names no variant for it and does not
-#   say what iOS's base is, so `requires_variants` keeps every element to a style or a form).
+#   sets it on every specimen and UIButtonConfiguration.h states no default; U129); the states the host rows name
+#   beside the button's (`default` in an alert, DL-5 and DL-7; `selected` on a bar item, P3-3†, which the facts state as
+#   `checked` with `toggle`, the run's toggle; `dragged` and `drop_target`, P4-10† and P3-11†; the route button's
+#   `route_active`): their rows' facts are the host units'.
 [[model]]
 when = { conditions = ["preset:ios-13"] }
 widget = "button"
 available = true
-variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
+variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
 sizes = ["mini", "small", "regular", "large"]
 densities = []
 flags = ["@loading"]
-axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 exclusive = []
-exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"]]
-requires_variants = ["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"]
+exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
   [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
 ]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["focus_visible"], conditions = ["idiom:phone"] }, { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary"] }]
+not_drawn = [
+  { states = ["checked"], not_variants = ["toggle"] },
+  { states = ["focus_visible"], conditions = ["idiom:phone"] },
+  { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { sizes = ["mini"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { sizes = ["small"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { sizes = ["large"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@corner_fixed"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@corner_small"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@corner_medium"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@corner_large"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["pill"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@role_primary"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@indicator_popup"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@menu_on_hold"], not_variants = ["menu"] },
+  { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["add"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["overflow"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["pane_toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["clear_field"], not_context = [{ scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }] },
+  { variants = ["previous"], not_context = [{ scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }] },
+  { variants = ["next"], not_context = [{ scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }] },
+  { variants = ["tool"], not_context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["@cancel"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "search_field" }] },
+  { variants = ["destructive"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["@cancel"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["destructive"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { context = [{ scope = "any", widget = "input" }], not_variants = ["clear_field"] },
+  { context = [{ scope = "any", widget = "search_field" }], not_variants = ["@cancel", "clear_field", "icon_only"] },
+  { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_variants = ["pane_toggle"] },
+  { context = [{ scope = "any", widget = "ink_toolbar" }], not_variants = ["tool"] },
+  { context = [{ scope = "any", widget = "toolbar_editor" }], not_variants = ["done"] },
+]
 rows = ["B-1", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†"]
 
 # the four `buttonSize` values (medium is the model's `regular`)
@@ -89,13 +192,13 @@ kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:21-35"
 quote = "typedef NS_ENUM(NSInteger, UIButtonType) {"
 
-# the roles: destructive and cancel draw as normal on a standalone button (no variant); primary makes the title semibold, which no catalogue variant names (the cells `<style>__role_*`)
+# the roles (one exclusive group): `@role_primary` the heavier title in every style (the cells `<style>__role_primary`); cancel and destructive draw as normal on a standalone button (the cells `<style>__role_cancel`, `__role_destructive`), so `@cancel` and `destructive` are drawn only in the hosts that draw them otherwise
 [[model.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:37-42"
 quote = "typedef NS_ENUM(NSInteger, UIButtonRole) { UIButtonRoleNormal, UIButtonRolePrimary, UIButtonRoleCancel, UIButtonRoleDestructive }"
 
-# `done` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar`
+# `done`, `add` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar` (`done` also in the toolbar editor)
 [[model.cite]]
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:28-55"
@@ -508,26 +611,136 @@ tolerance = 0
 when = { conditions = ["preset:ios-26"] }
 widget = "button"
 available = true
-variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
+variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
 sizes = ["mini", "small", "regular", "large"]
 densities = []
 flags = ["@loading"]
-axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 exclusive = []
-exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"]]
-requires_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "@share", "@paste_control", "route"]
+exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
   [{ one = ["@gray", "tinted", "primary"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { one = ["toggle"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["@gray", "tinted", "primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["flat"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["flat", "@gray", "tinted", "primary"] }, { any = ["@role_primary"] }],
   [{ one = ["glass", "clear"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["toggle"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
   [{ one = ["glass", "clear"] }, { one = ["primary"] }, { one = ["menu"] }, { any = ["@indicator_popup"] }, { any = ["@menu_on_hold"] }, { any = ["@corner_fixed", "@corner_dynamic", "@corner_small", "@corner_medium", "@corner_large"] }, { any = ["with_icon", "icon_only"] }, { any = ["@pointer_highlight", "@pointer_lift", "@pointer_hover"] }],
+  [{ one = ["glass", "clear"] }, { any = ["@role_primary"] }],
+  [{ one = ["glass", "clear"] }, { one = ["primary"] }, { any = ["@role_primary"] }],
 ]
-not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["focus_visible"], conditions = ["idiom:phone"] }, { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] }]
+not_drawn = [
+  { states = ["checked"], not_variants = ["toggle"] },
+  { states = ["focus_visible"], conditions = ["idiom:phone"] },
+  { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { sizes = ["mini"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { sizes = ["small"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { sizes = ["large"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_fixed"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_small"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_medium"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_large"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["pill"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_dynamic"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@role_primary"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@indicator_popup"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
+  { variants = ["@corner_dynamic"], not_variants = ["glass", "clear"] },
+  { variants = ["pill"], not_variants = ["flat", "@gray", "tinted", "primary"] },
+  { variants = ["@menu_on_hold"], not_variants = ["menu"] },
+  { variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["add"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@share"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["overflow"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["pane_toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["clear_field"], not_context = [{ scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }] },
+  { variants = ["previous"], not_context = [{ scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }] },
+  { variants = ["next"], not_context = [{ scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }] },
+  { variants = ["tool"], not_context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["@cancel"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "search_field" }] },
+  { variants = ["destructive"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["@cancel"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["destructive"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "toolbar_editor" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "search_field" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "input" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "calendar", part = "header" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "edit_menu" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "find_bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "media_controls", part = "bar" }] },
+  { variants = ["flat"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["@gray"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["tinted"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["primary"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["glass"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { variants = ["clear"], context = [{ scope = "any", widget = "ink_toolbar" }] },
+  { context = [{ scope = "any", widget = "input" }], not_variants = ["clear_field"] },
+  { context = [{ scope = "any", widget = "search_field" }], not_variants = ["@cancel", "clear_field", "icon_only"] },
+  { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_variants = ["pane_toggle"] },
+  { context = [{ scope = "any", widget = "ink_toolbar" }], not_variants = ["tool"] },
+  { context = [{ scope = "any", widget = "toolbar_editor" }], not_variants = ["done"] },
+]
 rows = ["B-1", "B-2", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†"]
 
 # the four `buttonSize` values (medium is the model's `regular`)
@@ -572,13 +785,13 @@ kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:21-35"
 quote = "typedef NS_ENUM(NSInteger, UIButtonType) {"
 
-# the roles: destructive and cancel draw as normal on a standalone button (no variant); primary makes the title semibold, which no catalogue variant names (the cells `<style>__role_*`)
+# the roles (one exclusive group): `@role_primary` the heavier title in every style (the cells `<style>__role_primary`); cancel and destructive draw as normal on a standalone button (the cells `<style>__role_cancel`, `__role_destructive`), so `@cancel` and `destructive` are drawn only in the hosts that draw them otherwise
 [[model.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:37-42"
 quote = "typedef NS_ENUM(NSInteger, UIButtonRole) { UIButtonRoleNormal, UIButtonRolePrimary, UIButtonRoleCancel, UIButtonRoleDestructive }"
 
-# `done` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar`
+# `done`, `add` and `@share` are bar button items' system items (and `back` a navigation bar's): drawn only in `context toolbar.bar` (`done` also in the toolbar editor)
 [[model.cite]]
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:37-64"
