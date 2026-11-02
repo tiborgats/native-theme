@@ -1255,7 +1255,7 @@ spaces:
     state elsewhere (WinUI's pill and selected colours mark it, W1-135; Breeze's combo delegate draws none, K1.69; `macos-*`'s glyph `@ {selected}` pending, MAC-MN05), the base stating the drawn mark, the lane's state rules patching its fields and the
     absent rule written last (Entry format's one spelling), so an unchecked item draws the column
     and any box or ring but no mark, and a later patch of the glyph's fields leaves it absent, only a whole `Set`
-    drawing it, S2.2, S6.3, ADD-A126), `fill`, `stroke`, `corners`, `shadow` (the box or ring behind the mark:
+    drawing it outside a keyframe, S2.2, S2.7, S6.3, ADD-A126), `fill`, `stroke`, `corners`, `shadow` (the box or ring behind the mark:
     GNOME's radio ring; Breeze draws it with its check box's and radio button's look, K1.69, Q1.31), `min_width`,
     `min_height`, `padding`, `margin` (GNOME's margins, one negative, GN-1.73); an unchecked item draws no mark, its
     column kept, the mark appearing and leaving at once (S2.7).
@@ -3862,8 +3862,8 @@ spaces:
   `kde-breeze` by a rule outside `{dragged}` under `@ka_table`, K-KA-36†), `header_separator.cursor` (all but
   `macos-*`: MAC-X20), `row_background.stroke` (every preset: a row at rest paints nothing on most platforms, and the
   states' rules state it), `row_background.shadow` (every preset: the same), `row_background.fill` (every preset: the
-  same; where a state's rule appends over a rest that draws nothing, the rest's fill is stated drawn, as an `Append` over
-  `Absent` appends to nothing, S6.1), `row_background.focus` (`kde-breeze` by a rule `!cond system_setting:view_draw_focus_indicator`, K1.175;
+  same; where a state's rule appends over a rest fill that would resolve `Absent`, the rest's fill is stated drawn
+  (`adwaita`'s transparent, GN-1.158), as an `Append` over a paint that resolves `Absent` appends to nothing, S6.1), `row_background.focus` (`kde-breeze` by a rule `!cond system_setting:view_draw_focus_indicator`, K1.175;
   `macos-*` where the ring is the table's own, on `view`, MAC-L14; the value phase names the others from the facts,
   where the indicator is on `view` or on the row's control);
   values: `filler_row_height_px` (all but `ios-*`: L-17), `check_box_placement` (all but `windows-11`: W1-109,

@@ -378,6 +378,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.157 | `toolbar.values.item_gap @ variant bottom` | rule |
 | GN-1.157 | `toolbar.bar.fill @ cond window_inactive variant bottom` | rule |
 | GN-1.157 | `toolbar.content.opacity @ cond window_inactive variant bottom` (the bar's content, as one group) | rule |
+| GN-1.158 | `list.row_background.fill` (transparent at rest: adwaita's list row, `libadwaita@1.10.0 src/stylesheet/widgets/_lists.scss:16-19`, `:47-95`, its boxed-list row, `:343-365`, its sidebar row, `src/stylesheet/widgets/_sidebars.scss:126-147`, and its grid child, `src/stylesheet/widgets/_views.scss:52-66`, state a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the state rules' appends here and in GN-1.141, GN-1.165 and GN-1.174 draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | field |
 | GN-1.158 | `list.row_background.fill.append @ {pressed}` | rule |
 | GN-1.159 | `list.row_background.fill @ {selected,hover} / {selected,pressed}` | rule |
 | GN-1.160 | `list.row_background.fill @ {context_menu_open} / {selected,context_menu_open}` | rule |

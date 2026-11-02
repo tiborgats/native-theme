@@ -356,10 +356,10 @@ A field whose type is a block is a `Value` of that block where the model types i
 example, are plain blocks (a block field not wrapped in `Value`; a map's such values are its bare blocks), stated per leaf or as a full table and patched per field (S6.1's compound fields), never
 by a reference; a `Value` block field's expression may only be a reference to a token or field of that type (`= token.focus`, `= token.text.keyed.body`,
 `= token.motion.timings.standard`). A `Value` struct block field's patch is `Set(Value<T>)` (a whole block, a
-reference or `Absent`) or `Fields(TPatch)`, which applies its fields over the block below (over an `Absent` value it
+reference or `Absent`) or `Fields(TPatch)`, which applies its fields over the block below (over a block that resolves `Absent` it
 sets nothing and leaves the block absent, as a part patch that states no presence leaves an absent part absent, in a
-keyframe's patch too, where a `Set` over it is `None` as well, S2.7; outside a keyframe only a `Set` states the block
-drawn again, S6.3, ADD-A126; no block is ever `Auto`, `Auto`
+keyframe's patch too, where a `Set` over it is `None` as well, S2.7; outside a keyframe only a `Set` draws the block
+again, S6.3, ADD-A126; no block is ever `Auto`, `Auto`
 being on length fields only, S6.3; and for enum blocks, S6.1 defining and listing them, such as `Timing`, which are patched whole): the token's focus indicator with only its kind
 changed (R2.1). In TOML (S11), a table fills the type its position holds in S11's TOML (where the preset layer's bases state a table at a `Value`
 block or paint field, the TOML reader fills `Set(Value::Stated(..))`; a plain block's table fills each field it states; a
@@ -399,11 +399,12 @@ rule's position. So a base never comes after a rule: a reader's font patch on a 
 a preset's `Tokens` rule on the keyed text style the slot references (iOS's Bold Text on `font.weight`, a contrast
 rule), which therefore still reaches every slot that references the style and every part whose leaves reference the slot (S2.8).
 A reference changes nothing here: where it resolves `Absent`, a `Fields` patch over it leaves it absent
-(above). **Against the merge** (S6.1, ADD-A122): a `Fields` patch, an `Append` or a stated map that meets a reference is
+(above) and an `Append` over it appends to nothing (S6.1). **Against the merge** (S6.1, ADD-A122): a `Fields` patch, an `Append` or a stated map that meets a reference is
 never a merge conflict. The merge keeps it on the reference with its position (a base's, in layer order, or its rule's place in the
 stack's order), since evaluation interleaves it with the referenced value's own rules by that position; a later `Set`
 replaces the reference and every patch kept on it. Over a value, a `Fields` patch meeting an `Absent` value directly is
-no conflict either (it leaves the block absent, above), nor is an `Append` over `Absent` (S6.1); a merge conflict is a map
+no conflict either (it leaves the block absent, above), nor is an `Append` meeting an `Absent` paint directly (it
+appends to nothing, S6.1); a merge conflict is a map
 entry created with a field unset that may not be `Absent` (S6.1) (a bare block's map entry set to a reference,
 `Absent` or `Auto` is no conflict but an ill-typed patch, S6.1, ADD-A123); one a
 reference can bring is S12's conservative check, as the merge does not see where the reference leads, so the merge
@@ -3052,12 +3053,13 @@ takes the patch's position, not the replaced one's: for the transitions, whose o
 (S2.7), a rule's transition so comes after the base's, and a layer that restates one transition of a style moves it
 after that style's others, so it restates those it must stay before as well; any other list (`stops`, `layers`
 set with `Set`, `symbol_variants`, `fallbacks`) is replaced whole, an empty one included; `Append` adds paint layers over `base` (R6), and
-over an `Absent` paint appends to nothing, the paint staying absent, in a keyframe's patch too (S2.7), as a patch that
-states no presence never draws again what is absent (S6.3, ledger queue #110): only a `Set` draws an absent paint again,
-so a preset whose state rules append over a rest that draws nothing states the rest's paint drawn, as the platform
-states it (GTK's initial `background-color`, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`), or each
-state's paint whole; over a reference it composes lazily, as a `Fields` patch
-does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is, outside a keyframe's patch (S2.7). The merge conflict is one: a map entry created over a value with a field unset that may not be `Absent` (above), as a `Fields` patch meeting an `Absent` value directly leaves it absent (S2.2, ADD-A126) and no block is `Auto` (S6.3); it is refused when the layer is added (S12), so resolution never meets it (S8). A keyframe's patch is not applied by the merge: resolution applies it over its
+over a paint that resolves `Absent` appends to nothing, the paint staying absent, as a patch that states no presence
+never draws again what is absent (S6.3, ledger queue #110): outside a keyframe only a `Set` draws an absent paint again,
+a keyframe's patch of it, a `Set` included, being `None` (S2.7); so a preset whose state rules would append over a rest
+paint that resolves `Absent` states that rest drawn instead, as the platform states it (GTK's initial
+`background-color`, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; adwaita's list rows, GN-1.158),
+or sets each state's paint whole; over a reference it composes lazily, as a `Fields` patch
+does, and neither is a merge conflict there, the merge keeping it on the reference with its position (S2.2, ADD-A122); `Append` in a layer's bases is an error, as `base` is, outside a keyframe's patch (S2.7). The merge conflict is one: a map entry created over a value with a field unset that may not be `Absent` (above), as a `Fields` patch meeting an `Absent` value directly leaves it absent (S2.2, ADD-A126), an `Append` meeting one appends to nothing (above), and no block is `Auto` (S6.3); it is refused when the layer is added (S12), so resolution never meets it (S8). A keyframe's patch is not applied by the merge: resolution applies it over its
 part's resolved style, and over a field that resolves `Absent` it is `None` in that query (S2.7; ADD-A125).
 
 **S6.2** Inheritance code goes: `inherit_from`, `theme_inherit`, the `[uniform]`, `[per_platform]` and
@@ -3086,9 +3088,10 @@ absent (the title bar in full screen, GN-P3-5†, W-P3-2†; WinUI's combo-box s
 W1-135), and a rule or a layer that draws a part a broader patch made absent states `absent = false` (an
 application drawing a part its preset hides, whose selectors it cannot restate; GtkInfoBar's edge line under
 `@info_bar`, GN-2.31); the fields stated before an `Absent` or `DrawnAs` are kept beneath it. A block field follows
-the same rule (S2.2): a `Fields` patch over an `Absent` block leaves it absent, and only a `Set` draws it again (the
+the same rule (S2.2): a `Fields` patch over a block that resolves `Absent` leaves it absent, and outside a keyframe,
+whose patch of it is `None`, a `Set`'s included (S2.7), only a `Set` draws it again (the
 menu's check glyph outside its checked states; Breeze's tab focus line in the base, K1.129); so does a paint, an
-`Append` over an `Absent` paint appending to nothing (S6.1) (ADD-A123, ADD-A126;
+`Append` over a paint that resolves `Absent` appending to nothing (S6.1) (ADD-A123, ADD-A126;
 ledger queue #110). A part that resolves `Absent` (the query's `NotDrawn`) is not laid out: the connector gives it no
 box and lays its siblings out without it, as a part hidden by `shown` keeps its box (S2.7). The parts nested in it
 are still queried and laid out in its parent's place (the catalogue's Nesting), so a part removed with its content
@@ -4041,8 +4044,9 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
 - an expression mistypes, refers to an unknown name, forms a cycle (through bindings too), or can meet an absent
   operand under any binding and rule it can apply under (a keyframe's field whose value resolves `Absent`, a block, a paint
   or any other field, or a keyframe on a part that resolves `NotDrawn` or `DrawnAs`, is not evaluated under that
-  combination, S2.7; nor is a field of a rule's `Fields` patch, one reading `base` included, under a combination where
-  the block it patches resolves `Absent`, as the patch sets nothing there, S2.2); a call can meet an operand that resolves `Auto` (S2.2:
+  combination, S2.7; nor is a field of a `Fields` patch or a layer of an `Append`, in a base or a rule, one reading `base` included,
+  under a combination where what it patches resolves `Absent`, as the patch sets or appends nothing there, S2.2,
+  S6.1); a call can meet an operand that resolves `Auto` (S2.2:
   exempt the part's `line_height` operand and `widget.<part>.line_height`, each the line spacing under `auto`, and a
   plain reference on a field that allows `Auto`), or a plain
   reference can bring `Auto` to a field that does not allow it; a `TextStyle`
@@ -4115,7 +4119,7 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `ContrastIncreased`, `ContrastHigh`, S4.3), `Preset(_)` or `ContainerSize` (ADD-A126);
 - an expression nests deeper than 32, or a chain of references is longer than 32;
 - `base` or `Append` appears in a layer's bases outside a keyframe's patch (a `Fields` patch is never refused for what
-  lies below it: over an `Absent` block, under any combination of the rules before it and through references, it leaves it
+  lies below it: over a block that resolves `Absent`, under any combination of the rules before it and through references, it leaves it
   absent, S2.2, S6.3, ADD-A126, and no block is `Auto`, S6.3);
 - a patch sets an entry of a map of bare blocks (`token.text.keyed`, `token.icons.sizes.keyed`, `ColorRoles.surfaces`,
   `token.motion.timings`, S6.1) to a reference, `Absent` or `Auto`, in a base or a rule: an ill-typed patch, refused

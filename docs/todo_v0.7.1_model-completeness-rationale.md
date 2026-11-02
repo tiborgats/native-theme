@@ -935,7 +935,11 @@ MAT-X13–MAT-X15, X-MO-1).
   - **Decision**: *presence by its own patches* (S6.3): a part's presence changes only by `Absent`, `DrawnAs` or
     `Present` (`absent = false`), a patch that states none setting fields only, so no later field rule restores an
     absent part; and a block field's only by a `Set`, a `Fields` patch over an `Absent` block leaving it absent
-    (S2.2), the smallest form and the part rule's own. `Present` is needed beyond the presets (GtkInfoBar's edge line,
+    (S2.2), the smallest form and the part rule's own; a paint follows the same rule, an `Append` over an `Absent`
+    paint appending to nothing, so outside a keyframe only a `Set` draws it again (S6.1; in a keyframe's patch any
+    patch of an absent field, a `Set` included, is `None`, S2.7), and a preset whose state rules append over a rest
+    paint states that rest drawn, as the platform does (adwaita's list rows keep GTK's initial transparent
+    `background-color`, GN-1.158). `Present` is needed beyond the presets (GtkInfoBar's edge line,
     GN-2.31, could be restated by narrower selectors): an application layer that draws a part its preset hides
     cannot restate the preset's selectors, so it says so. One rule for every part and block, base or conditional, in
     every layer; a whole `Set` stated for every state draws the block in every state, as `absent = false` does a
@@ -944,7 +948,11 @@ MAT-X13–MAT-X15, X-MO-1).
     later `Present` to draw, so a patch latent under one combination is not dead; for a block, the one spelling
     (below) keeps every base patch live, and a narrower rule meeting an `Absent` block wherever it applies is the
     layer's own choice; refusing it would make a layer's validity hang on each preset's selectors (the eleventh check's
-    withdrawal).
+    withdrawal). Rejected for paints: an `Append` over an `Absent` paint giving a paint of the appended layers (S6.1's
+    rule until the merged spec's second cross-batch check), which CSS's `background-image` matches, GTK drawing an element's image layers whether or not
+    a colour lies beneath them (`gtk@4.24.1 gtk/gtkrenderbackground.c:266-311`): a later layer's `Append @ {hover}`
+    would draw a paint a condition made absent, the defect #110 removes for parts and blocks, and a paint would be the
+    one field a patch stating no presence could bring back.
   - *Spelling a block drawn by state* (ADD-A126's twelfth check): (a) one spelling on every preset, the base stating
     it drawn, its state rules patching it, the rule hiding it last; (b) each preset its own spelling, the catalogue
     documenting that a layer's base patch reaches the block only where the base draws it; (c) an S12 check of the
