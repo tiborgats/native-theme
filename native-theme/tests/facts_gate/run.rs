@@ -1163,9 +1163,13 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
 /// The preset's `[pending]` table against the listed paths the run found
 /// (S17, ADD-A128): an entry the preset's bases state is no listed path and
 /// fails; so does an entry no combination leaves to a pending fact with
-/// nothing beneath, and one whose register id is not that fact's. A listed
-/// path the table lacks is S12's missing field, which the preset's own
-/// loading refuses.
+/// nothing beneath, and one whose register ids are not that path's pending
+/// facts' set. A listed path the table lacks is S12's missing field, which
+/// the preset's own loading refuses. An entry's list of ids is read on any
+/// path, broader than S11's letter ("a list of ids where a field S6.1 sets
+/// whole has leaves pending under different ids"): a plain field pending
+/// under different ids per combination has no other encoding; a spec row
+/// is pending to state it.
 fn listed_paths(preset: &Preset, report: &mut Report) {
     for (path, ids) in preset.pending() {
         let id = ids.join(", ");

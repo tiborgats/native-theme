@@ -77,8 +77,8 @@ pub(crate) struct PresetFile {
 }
 
 /// A listed path as S11 spells it and its register ids: one, or several
-/// where a field S6.1 sets whole has leaves pending under different ids
-/// (S11, S17).
+/// where its pending facts carry several (S11, S17; broader than S11's
+/// letter, [`read_pending`]).
 pub(crate) type Listed = (String, Vec<String>);
 
 /// The preset `text` states (S11), or every problem it has.
@@ -131,12 +131,15 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
 
 /// `[pending]` (S11, S17): each listed path, its TOML path quoted, with its
 /// register id, `U` and a number (ADD-A122's form), or a list of distinct
-/// ones (a field S6.1 sets whole whose leaves are pending under different
-/// ids); an entry of another form is refused, and so is a path naming no
+/// ones; an entry of another form is refused, and so is a path naming no
 /// field of `colors`, `tokens` or a typed widget and no input
 /// (`inputs.<name>`, [`read::listed_input`]), or spelled with a unit
 /// suffix its field's type does not take ([`read::listed_field`], the
-/// model's path it maps to).
+/// model's path it maps to). A list is read on any path, broader than
+/// S11's letter ("a list of ids where a field S6.1 sets whole has leaves
+/// pending under different ids"): a plain field pending under different
+/// ids per combination (iOS's and macOS's drafts) has no other encoding; a
+/// spec row is pending to state it.
 fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
     let Some(entries) = table(item, at, cx) else {
         return Vec::new();
