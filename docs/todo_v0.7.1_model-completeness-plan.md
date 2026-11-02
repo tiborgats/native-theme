@@ -486,7 +486,12 @@ placement unit, spec ADD-A120); S7; S8 without
 
 ## M2 — The model's core, complete (after D6; in series)
 
-1. **The four connectors on the slice,** gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;
+1. **The four connectors on the slice,** preceded by their own task, `native_theme::transitions`' runtime (spec
+   S2.7, ADD-A131): `interpolate_color` with a vector table per `ColorInterpolation` member, and `Motion`, `Places`,
+   `Presence`, `Drawn` and `MotionUpdate` with the engines the slice's presets state (at the facts'
+   state on 2026-11-02 `GtkCss`, `Breeze`, `ComposeAnimatable`, `WinUi` and `WinUiAnimatedIcon`; the facts decide), each to its source (D10's
+   clean room for the LGPL and GPL ones) with a test per clause of S2.7; an engine no slice preset states comes with
+   the M3 unit whose facts first state it. Then the connectors, gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;
    its spinner and animated-icon code removed (`AnimatedIcon` is gone; busy indicators return with the indicators
    unit's connector task, drawn from the `spinner` widget); everything the model holds then mapped from the query, or
    listed as what the toolkit cannot draw; its contract test (S21.3). The showcases are unlinked from their crates
