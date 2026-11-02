@@ -774,6 +774,30 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     return [(path, uids[0] if len(uids) == 1 else uids, f) for path, uids, f in out]
 
 
+def redrawn_pending(facts, bases) -> list:
+    """The pending facts of a part's field whose part the draft's base states whole (`absent = true` or `drawn_as`)
+    and that a fact draws again (`"present"`, S6.3's `absent = false`): no listed path, as the whole base states the
+    field (based_paths()), and no stated value, so loading refuses the field as S12's missing one "judged under each
+    combination in which its part resolves drawn" where that fact draws it. S17 gives such a field no encoding (task
+    15c's review, minor 10): reported, the draft stating nothing for it. [(key, register id, fact)]"""
+    wholes = {tuple(header) for section, _, header, dotted, _, _ in bases
+              if section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))}
+    present = {f.ckey for f in facts if f.kind == "widget" and f.status not in (PENDING, SHADOWED)
+               and f.item.data.get("value") == "present"}
+    out = []
+    for f in facts:
+        if f.status != PENDING or f.kind != "widget" or not alive(f, facts):
+            continue
+        try:
+            place(f)
+        except Untranscribable:
+            continue
+        part = f.ckey[:len(f.target.split("."))]
+        if len(f.ckey) > len(part) and tuple(f.header) in wholes and part in present:
+            out.append((f.key, f.item.data["pending"], f))
+    return out
+
+
 def covering_bases(facts, models, tree) -> tuple:
     """The bases of keys whose facts are all rules that together cover an axis (S11, S8): a widget's or a token's key
     with no fact at rest, one fact under each scheme alone (`{ conditions = ["scheme:<s>"] }`), or for a widget one
@@ -1429,6 +1453,11 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     if draft.pending:
         out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
             f"{path} ({uid if isinstance(uid, str) else ', '.join(uid)})" for path, uid, _ in draft.pending))
+    redrawn = redrawn_pending(draft.facts, draft.bases)
+    if redrawn:
+        out.append(f"# [pending]: {len(redrawn)} pending fields of a part the base states whole and a `present` fact "
+                   f"draws again, which S17 gives no encoding, left without a value: "
+                   + ", ".join(f"{key} ({uid}, {f.where})" for key, uid, f in redrawn))
     for w, it in draft.left_models:
         out.append(f"# [declare] left out: {w} ({it.file}:{it.line}), a widget the model does not hold")
     for w, vs in draft.dropped:
@@ -2043,6 +2072,15 @@ def self_test() -> int:
     got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
     if got != [("colors.dark.global.status", "U7"), ("inputs.accent", "U10")]:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role and the accent input")
+    # a pending field of a part its base states absent is reported where a `present` fact draws the part again
+    got = [(key, uid) for key, uid, _ in redrawn_pending(facts, bases)]
+    if got:
+        failures.append(f"redrawn_pending: {got}, expected none without a `present` fact")
+    present = any_fact("button.icon", "", "widget", {"states": ["checked"]}, widget="button", status="rule")
+    present.item.data = {"value": "present"}
+    got = [(key, uid) for key, uid, _ in redrawn_pending(facts + [present], bases)]
+    if got != [("button.icon.icon.rendering_mode", "U9")]:
+        failures.append(f"redrawn_pending: {got}, expected the icon's rendering mode")
     # the round trip reduces a flavour's combinations by its own state model
     flavored = {("button", None): {"exclusive": []}, ("button", "compact"): {"exclusive": [["pressed"]]}}
     got = [model_of(flavored, "button", {"conditions": ["flavor:compact"]}), model_of(flavored, "button", {}),
