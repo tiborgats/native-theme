@@ -850,6 +850,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W-P3-12† | `token.behavior.touch.double_tap_slop (the touch and pen tolerances, to verify)` | token |
 | W-P3-12† | `reader:windows:SM_CXDOUBLECLK, SM_CYDOUBLECLK` | reader |
 | W-P3-13† | `PartStyle.stroke (each Edge.snap a PixelSnap, ADD-A33: WinUI's layout rounding of thin lines)` | field |
+| W-P3-13† | `token.text.font_dpi` (96, the DPI a font's points convert by, S9.4: Windows' base DPI, `USER_DEFAULT_SCREEN_DPI` (Learn *GetDpiForWindow*), over which WinUI's rasterization scale is the window's DPI, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/DesktopWindowImpl.cpp:195-196`, so a view pixel is 1/96 inch and a point, 1/72 inch (Learn *Fonts*, the UX guide), 96/72 of them; the fact and its three citations `docs/facts/windows/tokens.toml:2319-2337`; ADD-A103, ADD-A125) | token |
 | W-P3-13† | - (the display scale per monitor: the windowing system's) | out (R1.1) |
 | W-P3-14† | - | newest (R1.5) |
 | W-P3-15† | - | preset (R1.3) |

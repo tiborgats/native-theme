@@ -1802,8 +1802,9 @@ spaces:
   with it, `breeze@6.8.2 kstyle/breezestyle.cpp:4518`, `:4577`, and `Button.qml` passes `highlighted` as focus, so a
   `@highlighted` button keeps its pen after focus leaves it by Tab; the connector sets it from its toolkit's focus
   reason, Q1.8, Q1.9; ADD-A122); state flags used: hover,
-  pressed, focused, focus_visible, disabled, checked, indeterminate (WinUI's toggle), selected (a selected bar item,
-  P3-3†, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
+  pressed, focused, focus_visible, disabled, checked (iOS's selected bar item, `UIBarButtonItem.isSelected`, a toggle's on state,
+  `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle), selected (macOS's selected toolbar item, the one
+  `NSToolbar.selectedItemIdentifier` names among its selectable items, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
   toolbar item dragged in the customization, MAC-P3-6†, P4-10†), over_dark_content (on `clear`: the clear glass's
   dimming layer where the content beneath is bright, X-MT-10).
 - **Exclusive groups:** `windows-11`: `[disabled, pressed, hover]` (the CommonStates of the Button, ToggleButton,
@@ -9370,9 +9371,9 @@ whose size is `mul(token.text.roles.body.font.size, <factor>)`: `smaller` (subti
 **KDE.** Kirigami `Heading` levels `heading_1` .. `heading_5` as factors of the default font size, their family,
 style, width, letter and word spacing, decoration, `case`, `axes` and `features` by reference to
 `token.text.roles.body` (every attribute of the default font, `qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28`,
-but the size and weight, `kirigami@6.31.0 src/controls/Heading.qml:14-35`; K3.46), the weight their own (S2.8) [Q1.3, K1.270]; KTitleWidget's
+but the size and weight, `kirigami@6.31.0 src/controls/Heading.qml:14-35`; K3.46), the weight their own (S2.8) [Q1.3]; KTitleWidget's
 levels 1-4 state the same factors but keep the label's inherited font's weight and take the size from the
-application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, so they are not these styles, `title_widget`'s entry; the types per level:
+application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:53-54`, so they are not these styles but `component.title_widget.title.text` under its variants `@level_1` to `@level_4`, `title_widget`'s entry [K1.270, K2.15]; the types per level:
 `heading_<n>_primary` (the primary type's weight) and `heading_<n>_secondary` (text fill at reduced alpha) [Q1.4];
 `smallest_readable`, a full font (family, style, size) read from `smallestReadableFont`, also Kirigami's `smallFont`
 [K1.271, Q1.2]; the Breeze-derived fonts `flat_group_title`, `command_link_title`, `menu_section` (each derived from

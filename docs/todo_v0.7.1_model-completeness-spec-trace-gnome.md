@@ -1005,7 +1005,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.56 | `token.text.rendering.engine (font-rendering: automatic or manual, keyed; ADD-B04)` | token |
 | GN-3.56 | `reader:gnome:org.gnome.desktop.interface font-antialiasing, font-hinting, font-rgba-order, font-rendering` | reader |
 | GN-3.57 | `PartStyle.icon.weight per part (S2.9)` | field |
-| GN-3.58 | `PartStyle.icon.symbolic_colors (the icon palette's success, warning, error and accent, `_common.scss:18-21`; keys declared `[declare] symbolic_colors`; ADD-A37, ADD-A130)` | field |
+| GN-3.58 | `PartStyle.icon.symbolic_colors (the icon palette's success, warning, error and accent, `_common.scss:19-22`; keys declared `[declare] symbolic_colors`; ADD-A37, ADD-A130)` | field |
 | GN-3.58 | `IconStyle.fill` | field |
 | GN-3.58 | `PartStyle.icon.rendering_mode (from_icon: the icon's own colouring, path by path, a symbolic file's or a path's symbolic paint taking the style's colours; the check context's template, its images recoloured whatever their files, S2.9; ADD-A130)` | field |
 | GN-3.58 | `role.global.status.*` | role |
@@ -1018,6 +1018,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.61 | `cond contrast_high` | condition |
 | GN-3.63 | `text_scale (the S2.2 operand, ADD-A55)` | field |
 | GN-3.63 | `length bases in sp: = mul(<length>, text_scale)` | field |
+| GN-3.63 | `token.text.font_dpi` (96, the DPI a font's points convert by before text scaling, S9.4: GTK's `-gtk-dpi` initial value, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:880-885`, which the `gtk-xft-dpi` setting replaces only where it is set, `gtk/gtkcssinitialvalue.c:49-60`, the reader's `ReaderState.font_dpi`; the fact `docs/facts/gnome/tokens.toml:5558-5566`; ADD-A103, ADD-A125) | token |
 | GN-3.70† | - | out (R1.1) |
 | GN-SF01† | `code_editor.* bases: the Adwaita and Adwaita-dark schemes the adwaita preset carries (ADD-A64)` | field |
 | GN-SF01† | `code_editor.* @ variant @classic (GtkSourceView's default scheme when the application sets none; ADD-A64, R25.11)` | rule |

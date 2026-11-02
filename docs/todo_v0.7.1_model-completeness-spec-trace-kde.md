@@ -405,10 +405,10 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | K1.260† | `link.text.text.decoration (Absent) @ variants {@url_label,@float}; link.text.text.decoration @ {hover} variants {@url_label,@float}` | rule |
 | K1.260† | `link.icon.icon @ {hover} variant @url_label (the alternate pixmap)` | rule |
 | K1.260† | `link.body.cursor @ variant @url_label` | rule |
-| K1.270 | `token.text.keyed.heading_1` | token |
-| K1.270 | `token.text.keyed.heading_2` | token |
-| K1.270 | `token.text.keyed.heading_3` | token |
-| K1.270 | `token.text.keyed.heading_4` | token |
+| K1.270 | `component.title_widget.title.text @ variant @level_1` (KTitleWidget's level 1: its size `= mul(round(token.text.roles.body.font.size), 1.35)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round()` working in points; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_2` (KTitleWidget's level 2: its size `= mul(round(token.text.roles.body.font.size), 1.20)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round()` working in points; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_3` (KTitleWidget's level 3: its size `= mul(round(token.text.roles.body.font.size), 1.15)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round()` working in points; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
+| K1.270 | `component.title_widget.title.text @ variant @level_4` (KTitleWidget's level 4: its size `= mul(round(token.text.roles.body.font.size), 1.10)`, the level's factor times the application font's whole point size, `kwidgetsaddons@6.31.0 src/ktitlewidget.cpp:36-54`, S2.2's `round()` working in points; the weight the label's inherited font's; ledger queue #130, ADD-A125; Kirigami's `Heading` levels the row names too are Q1.3's `token.text.keyed.heading_<n>`) | component |
 | K1.271 | `token.text.keyed.smallest_readable` | token |
 | K1.271 | `reader:kde:kdeglobals [General] smallestReadableFont (family, style, size)` | reader |
 | K1.272 | `token.text.keyed.flat_group_title` | token |
