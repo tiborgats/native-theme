@@ -372,6 +372,23 @@ impl<E: Named + Clone> Leaf for E {
     }
 }
 
+/// An `Option` held in a `Value` (`Value<Option<u32>>`, S6.1), reached by a
+/// plain reference only: a value of `T` as an operand is `Some`, and no
+/// operand is its `None`, which no call reads (S2.2).
+impl<T: Leaf> Leaf for Option<T> {
+    fn from_val(val: &Val) -> Option<Self> {
+        T::from_val(val).map(Some)
+    }
+
+    fn to_val(&self) -> Val {
+        self.as_ref().map_or(Val::Absent, Leaf::to_val)
+    }
+
+    fn field(_: bool) -> Option<FieldType> {
+        None
+    }
+}
+
 /// A place a reference names, or the value it gives itself.
 enum Answer {
     /// A place of a target: its steps, the bases' alone where `bases_only`
@@ -2137,6 +2154,20 @@ impl<'t> Cx<'t> {
                 Some((px, !unscaled))
             }
         }
+    }
+
+    /// A `Value` struct block field's resolved value (S2.2): `None` where no
+    /// step states it, as a `Value` nothing states; else [`Cx::block`]'s.
+    pub(crate) fn value_block<'f, B>(&mut self, items: &[Fold<'f>]) -> Option<B::Resolved>
+    where
+        't: 'f,
+        B: Resolve + FieldsBlock + Locate,
+        B::Patch: Locate,
+    {
+        if !items.iter().any(|fold| block_step::<B>(*fold).is_some()) {
+            return None;
+        }
+        self.block::<B>(items)
     }
 
     /// A struct block's resolved value (S2.2): the last step that sets it,

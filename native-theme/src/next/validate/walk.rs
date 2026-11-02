@@ -52,7 +52,7 @@ pub(crate) enum ExprForm {
     Calls,
     /// A literal or a reference, no call: a bool, a text, a key or an enum.
     NoCalls,
-    /// A reference only: a block.
+    /// A reference only: a block, or an `Option` held in a `Value`.
     ReferenceOnly,
 }
 
@@ -592,6 +592,13 @@ pub(crate) trait Walk {
     fn ty() -> Option<Ty> {
         None
     }
+
+    /// The type an `Option` of this type has (S2.2): an option of its own
+    /// type, which a reference to it brings only to a field holding the
+    /// same option (`Value<Option<TextRole>>`, S6.1).
+    fn ty_in_option() -> Option<Ty> {
+        Self::ty().map(Ty::option)
+    }
 }
 
 /// A map, `Vec<(K, V)>`: each key stated once (S12), each value walked
@@ -649,10 +656,18 @@ impl<T: Walk> Walk for Value<T> {
     fn ty() -> Option<Ty> {
         T::ty()
     }
+
+    /// An `Option<Value<T>>`'s `None` is a meaning of its field's own, its
+    /// `Value` never `Absent` (S6.1): a reference to it has `T`'s type.
+    fn ty_in_option() -> Option<Ty> {
+        T::ty()
+    }
 }
 
+/// An `Option` held in a `Value` (`Value<Option<u32>>`, S6.1) takes a
+/// reference only: an expression has no literal of an `Option`.
 impl<T: Walk> Walk for Option<T> {
-    const EXPR: ExprForm = T::EXPR;
+    const EXPR: ExprForm = ExprForm::ReferenceOnly;
     const SUFFIX: &'static str = T::SUFFIX;
 
     fn walk(&self, w: &mut Walker<'_>) {
@@ -666,7 +681,7 @@ impl<T: Walk> Walk for Option<T> {
     }
 
     fn ty() -> Option<Ty> {
-        T::ty()
+        T::ty_in_option()
     }
 }
 

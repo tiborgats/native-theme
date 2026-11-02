@@ -350,7 +350,7 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
         _ => {}
     }
     let one = Item::Integer(1);
-    let leaf = match (info.value)() {
+    let leaf = match (info.value)().map(Ty::held) {
         Some(Ty::Duration) => Some(("_ms", one)),
         Some(Ty::Length) => Some(("_px", one)),
         Some(Ty::Angle) => Some(("_deg", one)),
@@ -366,7 +366,7 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
                 .first()
                 .map(|first| ("", Item::String((*first).to_owned())));
         }
-        Some(Ty::Shadow | Ty::Block(_)) | None => None,
+        Some(Ty::Shadow | Ty::Block(_) | Ty::Option(_)) | None => None,
     };
     if leaf.is_some() {
         return leaf;

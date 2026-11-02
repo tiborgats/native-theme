@@ -791,6 +791,59 @@ fn kde_shade_typed_when_added() {
     );
 }
 
+/// A reference to a `Value<Option<T>>` field is an option of `T`'s type
+/// (S2.2, S6.1): a part's text takes its style's `scaling_role` and
+/// `max_lines` by reference, and an option is refused where another type
+/// is, as another type is where the option is; a literal or a call on an
+/// option is refused, its expression a reference only.
+#[test]
+fn scaling_role_reference_types() {
+    let label = |set: &str| toml(&format!("[widgets.button.label.text]\n{set}"));
+    for set in [
+        "scaling_role = \"= token.text.roles.body.scaling_role\"",
+        "max_lines = \"= token.text.roles.caption.max_lines\"",
+        "case = \"= token.text.roles.body.case\"",
+        "elision = \"= token.text.roles.body.elision\"",
+        "wrap = \"= token.text.roles.body.wrap\"",
+    ] {
+        assert_eq!(bare(&label(set)), NONE, "{set}");
+    }
+    assert_eq!(
+        bare(&label(
+            "scaling_role = \"= token.text.roles.body.max_lines\""
+        )),
+        [
+            "widgets.button.label.text.scaling_role: the expression does not type: an \
+             option<number> where an option<enum<TextRole>> is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&label("case = \"= token.text.roles.body.scaling_role\"")),
+        [
+            "widgets.button.label.text.case: the expression does not type: an \
+             option<enum<TextRole>> where an enum<TextCase> is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&label("max_lines = \"= token.motion.speed_factor\"")),
+        [
+            "widgets.button.label.text.max_lines: the expression does not type: a number \
+             where an option<number> is expected"
+        ]
+    );
+    assert_eq!(
+        bare(&label("max_lines = \"= 2\"")),
+        [
+            "widgets.button.label.text.max_lines: the expression does not type: an \
+             option<number> field's expression is a reference only"
+        ]
+    );
+    assert_eq!(
+        bare(&label("max_lines = \"= max(1, 2)\"")),
+        ["widgets.button.label.text.max_lines: takes a literal or a reference, not a call"]
+    );
+}
+
 #[test]
 fn refusal_too_deep() {
     let nested = |calls: usize| {
@@ -1892,10 +1945,27 @@ fn keyed_kind_params_are_typed() {
     assert_eq!(found(&step(expr("90deg")), &decl), NONE);
 }
 
+/// Runs `fixtures` on a thread with a larger stack than a test thread's
+/// default: a test whose fixtures' layers are held at once.
+fn on_large_stack(fixtures: fn()) {
+    let thread = std::thread::Builder::new()
+        .stack_size(16 << 20)
+        .spawn(fixtures)
+        .unwrap();
+    if let Err(panic) = thread.join() {
+        std::panic::resume_unwind(panic);
+    }
+}
+
 /// Every kind of name S10 declares, each refused undeclared and passed
 /// declared (S10, S12).
 #[test]
 fn refusal_undeclared_every_kind() {
+    on_large_stack(undeclared_every_kind);
+}
+
+/// [`refusal_undeclared_every_kind`]'s fixtures.
+fn undeclared_every_kind() {
     use crate::next::blocks::focus::{FocusIndicatorPatch, FocusKind};
     use crate::next::blocks::motion::{PresentationEvent, PresentationKind};
     use crate::next::blocks::paint::Material;
@@ -2419,6 +2489,11 @@ kinds! {
 /// it is listed, and fails here until a fixture triggers it.
 #[test]
 fn layer_error_every_variant_triggers() {
+    on_large_stack(every_variant_triggers);
+}
+
+/// [`layer_error_every_variant_triggers`]' fixtures.
+fn every_variant_triggers() {
     fn problems(result: Result<(), LayerError>) -> Vec<Problem> {
         match result {
             Ok(()) => Vec::new(),

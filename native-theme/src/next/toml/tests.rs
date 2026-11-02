@@ -316,7 +316,7 @@ fn spelling_none() {
         label,
         Some(PartPatch::Style(PartStylePatch {
             text: Some(BlockPatch::Fields(TextStylePatch {
-                max_lines: Some(None),
+                max_lines: Some(Value::Stated(None)),
                 ..
             })),
             ..

@@ -266,7 +266,7 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
         Shape::Block { kind, wrap, block } => {
             let b = &block.ty;
             match (kind, wrap) {
-                (BlockKind::Fields, Wrap::Value) => (quote!(cx.block::<#b>(&items)), false),
+                (BlockKind::Fields, Wrap::Value) => (quote!(cx.value_block::<#b>(&items)), false),
                 (BlockKind::Fields, Wrap::Bare) => (quote!(cx.block::<#b>(&items)), true),
                 (BlockKind::Set, Wrap::Value) => (quote!(cx.set::<#b>(&items)), false),
                 (BlockKind::Set, Wrap::Bare) => (quote!(cx.set::<#b>(&items)), true),

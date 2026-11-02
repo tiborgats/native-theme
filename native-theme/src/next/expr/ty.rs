@@ -46,9 +46,29 @@ pub(crate) enum Ty {
     /// A block (`TextStyle`, `FocusIndicator`, `IconStyle`, `Timing`, …),
     /// by its type's name: reached by reference only.
     Block(&'static str),
+    /// An `Option` of a type, a `Value<Option<T>>` field's
+    /// (`TextStyle.scaling_role`, `max_lines`, S6.1): reached by reference
+    /// only, from a field holding the same option.
+    Option(Box<Ty>),
 }
 
 impl Ty {
+    /// An `Option` of `ty`.
+    #[must_use]
+    pub(crate) fn option(ty: Ty) -> Ty {
+        Ty::Option(Box::new(ty))
+    }
+
+    /// The type an `Option` holds, through every `Option`; any other type
+    /// itself.
+    #[must_use]
+    pub(crate) fn held(self) -> Ty {
+        match self {
+            Ty::Option(ty) => ty.held(),
+            other => other,
+        }
+    }
+
     /// The type of a block named `name` (S2.2): a paint's and a shadow's
     /// types of their own, every other block's by its name, reached by
     /// reference only.
@@ -248,8 +268,8 @@ pub(crate) enum TypeError {
         /// The expression's.
         found: Ty,
     },
-    /// A literal or a call on a block or shadow field, whose expression is a
-    /// reference only.
+    /// A literal or a call on a block, shadow or option field, whose
+    /// expression is a reference only.
     ReferenceOnly {
         /// The field's type.
         field: Ty,
@@ -355,6 +375,7 @@ impl fmt::Display for Ty {
             Ty::Shadow => f.write_str("shadow"),
             Ty::Paint => f.write_str("paint"),
             Ty::Block(name) => f.write_str(name),
+            Ty::Option(ty) => write!(f, "option<{ty}>"),
         }
     }
 }
@@ -383,7 +404,11 @@ impl fmt::Display for TypeError {
                 write!(f, "{found} where {expected} is expected")
             }
             TypeError::ReferenceOnly { field } => {
-                write!(f, "a {field} field's expression is a reference only")
+                write!(
+                    f,
+                    "{} field's expression is a reference only",
+                    Article(field)
+                )
             }
             TypeError::CallNotAllowed { field } => {
                 write!(
@@ -520,8 +545,9 @@ impl Expr {
     /// Types the expression against the field it is stated on (S2.2): a
     /// field of type `T` takes a literal `T`, a reference to a token or
     /// field of type `T`, and, for scalar and colour fields only, a call; a
-    /// block or shadow field a reference only; a length is accepted where a
-    /// font size is expected, and a colour expression on a paint field.
+    /// block, shadow or option field a reference only; a length is accepted
+    /// where a font size is expected, and a colour expression on a paint
+    /// field.
     ///
     /// The checks that need the whole stack (absent and `Auto` operands,
     /// declared element data, cycles, where an operand may be read) are
@@ -532,7 +558,7 @@ impl Expr {
         env: &dyn TypeEnv,
     ) -> Result<TypedExpr, TypeError> {
         match (&field.ty, self) {
-            (Ty::Block(_) | Ty::Shadow, Expr::Lit(_) | Expr::Call(..)) => {
+            (Ty::Block(_) | Ty::Shadow | Ty::Option(_), Expr::Lit(_) | Expr::Call(..)) => {
                 return Err(TypeError::ReferenceOnly {
                     field: field.ty.clone(),
                 });

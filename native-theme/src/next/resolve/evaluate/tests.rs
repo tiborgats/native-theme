@@ -1462,3 +1462,111 @@ fn each_recording_site_records_a_synthetic_read() {
     );
     assert!(!part(&[BASE, "", reading], &scope, BODY, "fill"));
 }
+
+/// The label's text style, resolved over `layers` (the first the preset's).
+fn label_text(layers: &[&str]) -> crate::next::blocks::text::ResolvedTextStyle {
+    let theme = resolved(layers, 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    theme
+        .evaluate_part(LABEL, &element, &|_| true)
+        .value
+        .and_then(|label| label.text)
+        .expect("the label has text")
+}
+
+/// A `Value<Option<T>>`'s `"none"` is the option's own `None`, stated, and
+/// `"absent"` the value's absence (S6.1, S11): read as `Stated(None)` and
+/// `Absent`, resolved as `Some(None)` and `None`, and told apart by the
+/// gate's tree (S17).
+#[test]
+fn value_option_none_is_not_absent() {
+    use crate::next::blocks::BlockPatch;
+    use crate::next::blocks::part_style::PartStylePatch;
+    use crate::next::blocks::text::{TextRole, TextStylePatch};
+    use crate::next::gate::{Tolerance, Tree};
+    use crate::next::value::Value;
+    use crate::next::widgets::PartPatch;
+
+    let read = |set: &str| -> TextStylePatch {
+        let label = toml(&format!("[widgets.button.label.text]\n{set}"))
+            .bases
+            .widgets
+            .button
+            .and_then(|button| button.label);
+        match label {
+            Some(PartPatch::Style(PartStylePatch {
+                text: Some(BlockPatch::Fields(text)),
+                ..
+            })) => text,
+            other => panic!("{other:?}"),
+        }
+    };
+    let none = read("max_lines = \"none\"\nscaling_role = \"none\"");
+    assert_eq!(none.max_lines, Some(Value::Stated(None)));
+    assert_eq!(none.scaling_role, Some(Value::Stated(None)));
+    let absent = read("max_lines = \"absent\"\nscaling_role = \"absent\"");
+    assert_eq!(absent.max_lines, Some(Value::Absent));
+    assert_eq!(absent.scaling_role, Some(Value::Absent));
+    let stated = read("max_lines = 2\nscaling_role = \"caption\"");
+    assert_eq!(stated.max_lines, Some(Value::Stated(Some(2))));
+    assert_eq!(
+        stated.scaling_role,
+        Some(Value::Stated(Some(TextRole::Caption)))
+    );
+
+    // BASE's body slot states both `"none"`; the label references it.
+    let stated_none = label_text(&[BASE]);
+    assert_eq!(stated_none.max_lines, Some(None));
+    assert_eq!(stated_none.scaling_role, Some(None));
+    let absent = "[tokens.text.roles.body]\nmax_lines = \"absent\"\nscaling_role = \"absent\"";
+    let left_absent = label_text(&[BASE, absent]);
+    assert_eq!(left_absent.max_lines, None);
+    assert_eq!(left_absent.scaling_role, None);
+
+    let tree = |value: &dyn std::fmt::Debug| Tree::of(value).expect("a derived Debug form");
+    assert!(
+        tree(&stated_none.max_lines)
+            .differs(&tree(&left_absent.max_lines), &Tolerance::quote())
+            .is_some()
+    );
+    assert_eq!(
+        tree(&stated_none.max_lines).differs(&tree(&Some(None::<u32>)), &Tolerance::quote()),
+        None
+    );
+    assert_eq!(
+        tree(&Some(Some(2_u32))).differs(&tree(&Some(2_u32)), &Tolerance::quote()),
+        None
+    );
+}
+
+/// `TextStyle`'s `scaling_role`, `case`, `elision`, `wrap` and `max_lines`
+/// are `Value`s (S2.8): stated, or a part's leaf referencing its style's,
+/// each resolves to the value it gives.
+#[test]
+fn text_style_value_leaves_resolve() {
+    use crate::next::blocks::text::{ResolvedElision, TextCase, TextRole, Wrap};
+
+    let label = text_style("widgets.button.label.text");
+    let stated = label_text(&[BASE, &label]);
+    assert_eq!(stated.case, Some(TextCase::Mixed));
+    assert_eq!(stated.elision, Some(ResolvedElision::End));
+    assert_eq!(stated.wrap, Some(Wrap::Word));
+    assert_eq!(stated.max_lines, Some(None));
+    assert_eq!(stated.scaling_role, Some(None));
+
+    let slot = "[tokens.text.roles.body]\ncase = \"upper\"\nelision = \"middle\"\n\
+                wrap = \"char\"\nmax_lines = 2\nscaling_role = \"caption\"";
+    let references = "[widgets.button.label.text]\n\
+                      case = \"= token.text.roles.body.case\"\n\
+                      elision = \"= token.text.roles.body.elision\"\n\
+                      wrap = \"= token.text.roles.body.wrap\"\n\
+                      max_lines = \"= token.text.roles.body.max_lines\"\n\
+                      scaling_role = \"= token.text.roles.body.scaling_role\"";
+    let referenced = label_text(&[BASE, &label, slot, references]);
+    assert_eq!(referenced.case, Some(TextCase::Upper));
+    assert_eq!(referenced.elision, Some(ResolvedElision::Middle));
+    assert_eq!(referenced.wrap, Some(Wrap::Char));
+    assert_eq!(referenced.max_lines, Some(Some(2)));
+    assert_eq!(referenced.scaling_role, Some(Some(TextRole::Caption)));
+}

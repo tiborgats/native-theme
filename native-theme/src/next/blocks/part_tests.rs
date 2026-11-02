@@ -24,6 +24,7 @@ use super::text::{
 use super::{Apply, BlockPatch, KeyedItem, Merge, Table};
 use crate::key;
 use crate::next::color::Color;
+use crate::next::expr::Ty;
 use crate::next::registry::{FieldInfo, FieldType, join, leaves};
 use crate::next::roles::SurfaceSet;
 use crate::next::units::{Axes, FontSize, Fraction, Length, Ms, Px, Sides};
@@ -316,6 +317,41 @@ fn part_style_registry_paths() {
         assert_eq!(found, expected, "path {index}");
     }
     assert_eq!(found.len(), expected.len());
+    // The text style's leaves S2.8 types as `Value`s, two of them holding
+    // an `Option`, which a reference to them has the type of (S2.2, S6.1).
+    let text_role = || <super::text::TextRole as crate::next::validate::walk::Walk>::ty();
+    for (path, written, value) in [
+        (
+            "text.scaling_role",
+            "Value<Option<TextRole>>",
+            text_role().map(Ty::option),
+        ),
+        (
+            "text.case",
+            "Value<TextCase>",
+            <super::text::TextCase as crate::next::validate::walk::Walk>::ty(),
+        ),
+        ("text.elision", "Value<Elision>", Some(Ty::block("Elision"))),
+        (
+            "text.wrap",
+            "Value<Wrap>",
+            <super::text::Wrap as crate::next::validate::walk::Walk>::ty(),
+        ),
+        (
+            "text.max_lines",
+            "Value<Option<u32>>",
+            Some(Ty::option(Ty::Number)),
+        ),
+    ] {
+        let Some(field) = table_of(PartStyle::FIELDS, path) else {
+            panic!("no field at {path}");
+        };
+        let ty = match field.ty {
+            FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
+        };
+        assert_eq!((ty, (field.value)()), (written, value), "{path}");
+    }
+    assert!(text_role().is_some());
 }
 
 fn table_of(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldInfo> {
@@ -614,16 +650,16 @@ fn text_style() -> TextStyle {
             axes: Vec::new(),
             features: Vec::new(),
         },
-        scaling_role: None,
+        scaling_role: Value::Stated(None),
         letter_spacing: Value::Absent,
         word_spacing: Value::Absent,
         line_height: Value::Auto,
         decoration: Value::Absent,
         mnemonic_decoration: Value::Stated(decoration_value()),
-        case: super::text::TextCase::Mixed,
-        elision: Elision::End,
-        wrap: super::text::Wrap::Word,
-        max_lines: None,
+        case: Value::Stated(super::text::TextCase::Mixed),
+        elision: Value::Stated(Elision::End),
+        wrap: Value::Stated(super::text::Wrap::Word),
+        max_lines: Value::Stated(None),
         fill: paint_value(0.2),
     }
 }
@@ -660,7 +696,7 @@ fn a_part_styles_struct_blocks_patch_by_set_or_fields() {
     };
     let later = PartStylePatch {
         text: Some(BlockPatch::Fields(TextStylePatch {
-            max_lines: Some(Some(2)),
+            max_lines: Some(Value::Stated(Some(2))),
             mnemonic_decoration: Some(BlockPatch::Fields(super::text::DecorationPatch {
                 paint: Some(PaintPatch::Append(vec![PaintLayer {
                     kind: PaintKind::Color(color(0.3)),
@@ -676,7 +712,7 @@ fn a_part_styles_struct_blocks_patch_by_set_or_fields() {
     let Some(BlockPatch::Set(Value::Stated(text))) = earlier.text else {
         panic!("a Fields patch over a set text style applies to it");
     };
-    assert_eq!(text.max_lines, Some(2));
+    assert_eq!(text.max_lines, Value::Stated(Some(2)));
     let Value::Stated(decoration) = &text.mnemonic_decoration else {
         panic!("the decoration stays stated");
     };
@@ -698,7 +734,7 @@ fn a_part_styles_struct_blocks_patch_by_set_or_fields() {
 
     let mut set_after_fields = PartStylePatch {
         text: Some(BlockPatch::Fields(TextStylePatch {
-            max_lines: Some(None),
+            max_lines: Some(Value::Stated(None)),
             ..TextStylePatch::default()
         })),
         ..PartStylePatch::default()
@@ -802,22 +838,22 @@ fn enum_blocks_are_set_whole() {
     let mut earlier = PartStylePatch {
         transitions: None,
         text: Some(BlockPatch::Fields(TextStylePatch {
-            elision: Some(Elision::Fade {
+            elision: Some(Value::Stated(Elision::Fade {
                 start: Some(FadeLength::Px(Value::Stated(Px(8.0)))),
                 end: None,
                 under: None,
-            }),
+            })),
             ..TextStylePatch::default()
         })),
         ..PartStylePatch::default()
     };
     let later = PartStylePatch {
         text: Some(BlockPatch::Fields(TextStylePatch {
-            elision: Some(Elision::Fade {
+            elision: Some(Value::Stated(Elision::Fade {
                 start: None,
                 end: Some(FadeLength::Fraction(Value::Stated(Fraction(0.1)))),
                 under: None,
-            }),
+            })),
             ..TextStylePatch::default()
         })),
         ..PartStylePatch::default()
@@ -828,11 +864,11 @@ fn enum_blocks_are_set_whole() {
     };
     assert_eq!(
         text.elision,
-        Some(Elision::Fade {
+        Some(Value::Stated(Elision::Fade {
             start: None,
             end: Some(FadeLength::Fraction(Value::Stated(Fraction(0.1)))),
             under: None,
-        })
+        }))
     );
 
     let mut step = super::motion::PresentationStepPatch {

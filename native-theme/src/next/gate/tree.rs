@@ -7,7 +7,9 @@ use std::fmt;
 
 /// A resolved value's tree: a struct's fields by name, a tuple's or a
 /// list's items in order, and its leaves. `Some(x)` reads as `x`, so a
-/// value and its absence differ by a leaf `None`.
+/// value and its absence differ by a leaf `None`; but `Some(None)`, a
+/// `Value<Option<T>>`'s stated `None` (S6.1), stays itself, so it differs
+/// from the absence `None` (`"none"` and `"absent"`, S11).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tree {
     /// A number.
@@ -226,7 +228,10 @@ impl Parser {
                 } else if self.at_punct('(') {
                     self.punct('(')?;
                     let mut items = self.items(')')?;
-                    if name == "Some" && items.len() == 1 {
+                    if name == "Some"
+                        && let [item] = items.as_slice()
+                        && *item != Tree::Word("None".to_owned())
+                    {
                         return items.pop();
                     }
                     Some(Tree::Tuple { name, items })

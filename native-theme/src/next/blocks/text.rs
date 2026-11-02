@@ -373,9 +373,10 @@ pub struct TextStyle {
     /// The font.
     #[parts(block = "fields")]
     pub font: Font,
-    /// The text role whose Dynamic Type curve scales it (S9.4); `None`:
-    /// `body`'s.
-    pub scaling_role: Option<TextRole>,
+    /// The text role whose Dynamic Type curve scales it (S9.4); `None`: no
+    /// curve of its own, `body`'s under `DynamicType`. A `Value`, so a part
+    /// references its style's.
+    pub scaling_role: Value<Option<TextRole>>,
     /// The letter spacing, in points or pixels, converted and scaled as a
     /// line height, or an expression on `font_size`; may be negative.
     #[parts(signed, may_be_absent)]
@@ -394,15 +395,16 @@ pub struct TextStyle {
     /// The mnemonic's underline.
     #[parts(block = "fields", may_be_absent)]
     pub mnemonic_decoration: Value<Decoration>,
-    /// The case transform.
-    pub case: TextCase,
+    /// The case transform; a `Value`, as a heading takes it from the default
+    /// font (`= token.text.roles.body.case`).
+    pub case: Value<TextCase>,
     /// How text that does not fit is cut.
     #[parts(block = "set")]
-    pub elision: Elision,
+    pub elision: Value<Elision>,
     /// How text wraps.
-    pub wrap: Wrap,
+    pub wrap: Value<Wrap>,
     /// Wrap to at most this many lines, then elide; `None`: no limit.
-    pub max_lines: Option<u32>,
+    pub max_lines: Value<Option<u32>>,
     /// The text's paint.
     #[parts(block = "append")]
     pub fill: Value<Paint>,
