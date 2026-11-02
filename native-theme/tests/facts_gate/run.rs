@@ -1669,7 +1669,12 @@ fn check_globals(
                     },
                 ..
             }) = fact
-            && resolved.global_listed(&key.key, root).unwrap_or(false)
+            && listed_or_failed(
+                resolved.global_listed(&key.key, root),
+                &key.name,
+                report,
+                &combination,
+            )
         {
             found_listed(report, preset, key, id);
         }
@@ -1692,6 +1697,23 @@ fn check_globals(
             }
         }
     }
+}
+
+/// Whether a key is a listed path where its pending fact applies (S17,
+/// ADD-A128); a refusal to tell is a failure, recorded, and no listed path.
+fn listed_or_failed(
+    listed: Result<bool, Unread>,
+    key: &str,
+    report: &mut Report,
+    combination: &dyn Fn() -> String,
+) -> bool {
+    listed.unwrap_or_else(|(Unread::NotHeld(why) | Unread::Refused(why))| {
+        report.fail(format!(
+            "`{key}` under {}: whether it is a listed path: {why}",
+            combination()
+        ));
+        false
+    })
 }
 
 /// A fact skipped as its evaluation reaches a synthetic value (S17,
@@ -1802,7 +1824,8 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                         },
                     ..
                 }) = fact
-                && (!session.drawn(&key.key) || session.listed(&key.key).unwrap_or(false))
+                && (!session.drawn(&key.key)
+                    || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
             {
                 found_listed(report, run.preset, key, id);
             }
