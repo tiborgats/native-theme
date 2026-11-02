@@ -1795,11 +1795,13 @@ spaces:
   (`docs/facts/ios/state-models.toml:78-80`, `:639-641`), the lane's name for the size of a button that has no
   `buttonSize`, not a reading, and meanwhile
   `default_size = { pending = "U129" }` in the state models covers the pair, S17 having no pending form for a
-  `default_size_by_variant` entry (S17, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in `context toolbar.bar` the toolbar's
-  `extra_large` as the `sizes_by_context` entry's `default_size` (the probe's `view_*_controlSize_raw` 4,
-  `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml:49155-49158`; the
-  entry's sizes and a variant keeping its own size there U94, the macOS lane's; ADD-A131); `macos-monterey`: no
-  context default (its toolbar leaves `view_*_controlSize_raw` 0, the macOS 15 button pass, `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass-not-key/probe.toml:29553-29555`). Others: no `default_size_by_variant`. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  `default_size_by_variant` entry (S17, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in the default toolbar
+  (`toolbarStyle` automatic, size mode regular, `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml:49141-49143`)
+  `extra_large`, a `sizes_by_context` entry `{ context = { scope = "any", widget = "toolbar", part = "bar" }, … }`
+  with that `default_size` (the probe's `view_*_controlSize_raw` 4, `:49155-49158`; the entry's sizes, the other
+  toolbar styles and modes and a variant keeping its own size there U94, the macOS lane's; ADD-A131);
+  `macos-monterey`: no context default (its toolbar leaves `view_*_controlSize_raw` 0,
+  `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no `default_size_by_variant`. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
