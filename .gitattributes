@@ -1,2 +1,6 @@
 # Treat rendered SVG diagrams as binary so PR diffs focus on .dot sources.
 docs/assets/*.svg binary
+
+# Tests edit these fixtures as text with "\n" patterns, so every checkout,
+# Windows' included, keeps them LF.
+native-theme/tests/fixtures/** text eol=lf
