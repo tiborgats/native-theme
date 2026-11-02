@@ -8,7 +8,8 @@ use crate::next::value::Value;
 /// A part's transform. Its translation is stated for a left-to-right layout
 /// and mirrored with it: under right-to-left the query returns `translate_x`
 /// negated. The origin, the rotation, the scales and `translate_y` are not
-/// mirrored.
+/// mirrored. A scale of zero or less on either axis draws nothing: no
+/// mirrored drawing (a shrinking dot's spring past zero).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]

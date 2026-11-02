@@ -69,6 +69,11 @@ pub enum RenderingMode {
     Multicolor,
     /// The icon as drawn: nothing recoloured.
     Original,
+    /// The icon's own colouring, path by path: the paths the icon marks as
+    /// the platform's symbolic colours take the style's `fill` and
+    /// `symbolic_colors`, as under `Template`, every other path keeps its own
+    /// colour, as under `Original`.
+    FromIcon,
 }
 
 /// A glyph a part draws: a mark, an arrow, a spinner's arc.
@@ -89,9 +94,13 @@ pub struct Glyph {
     pub stroke: Value<GlyphStroke>,
     /// A symbol font's variation axes.
     pub axes: Vec<(AxisTag, AxisValue)>,
-    /// The fraction of the path drawn (Breeze's check mark).
+    /// The fraction of the path drawn from `draw_start`, at least 0, drawn
+    /// clamped to the whole path (Breeze's check mark, whose dash a pen
+    /// width measures): 0 draws nothing, a cap included; a drawn span of a
+    /// stroked path takes the stroke's cap at both its ends; on a filled
+    /// path below 1 draws nothing, 1 or more the whole.
     #[parts(may_be_absent)]
-    pub draw_extent: Value<Fraction>,
+    pub draw_extent: Value<f32>,
     /// Where along the path drawing starts (a spinner's arc).
     #[parts(may_be_absent)]
     pub draw_start: Value<Fraction>,

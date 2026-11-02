@@ -110,6 +110,7 @@ params = {}
 durations = {}
 timings = {}
 speed_factor = 1
+color_space = "premultiplied_srgb"
 [tokens.text]
 scaling = "linear"
 font_dpi = 96
@@ -197,17 +198,17 @@ double_click_distance_px = "absent"
 drag_threshold_px = "absent"
 hover_time_ms = "absent"
 key_repeat = "none"
-scroll_lines_per_step = "absent"
-scroll_px_per_step_px = "absent"
 hide_pointer_while_typing = "absent"
 hide_pointer_delay_ms = "absent"
 hide_pointer_fade_ms = "absent"
 long_press_ms = "absent"
 spring_loading_ms = "absent"
 drag_time_ms = "absent"
+drag_min_delay_ms = "absent"
 single_click_activates = "absent"
 double_click_height_px = "absent"
 mnemonics = "never"
+mnemonic_when_disabled = "absent"
 focus_visible_when = "absent"
 [tokens.behavior.touch]
 slop_px = "absent"

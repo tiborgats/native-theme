@@ -1,8 +1,9 @@
 //! Tokens (S4): the values a preset states once for the whole theme, which
 //! parts refer to as `token.<path>`.
 //!
-//! `Behavior.scroll` and its `ScrollPhysics` and `ScrollDecay` are staged:
-//! they enter with the unit holding the `scroll_view` widget (S6.1). So are
+//! `Behavior.scroll` and its `ScrollPhysics` and `ScrollDecay`, the wheel
+//! steps among them, are staged: they enter with the unit holding the
+//! `scroll_view` widget (S6.1). So are
 //! four of `Tokens`' fields, which the slice reads nowhere and its facts do
 //! not state (the M1a design, decision 9), their types already here: `kde`
 //! and `material` enter at M1b, `theme_change` with the unit S4.3 places it
@@ -94,6 +95,28 @@ pub struct MotionTokens {
     pub timings: Vec<(Key, Timing)>,
     /// The factor the platform scales its animations' durations by (R9).
     pub speed_factor: Value<f32>,
+    /// The space colour transitions move through (S2.7): a transition's, a
+    /// presentation step's and a loop's keyframes' colours, a paint layer's
+    /// included; a rule may restate it under a condition.
+    pub color_space: Value<ColorInterpolation>,
+}
+
+/// The space a moving colour's intermediate colours are taken in (S2.7):
+/// a closed set, each member to its toolkit's source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
+pub enum ColorInterpolation {
+    /// Each channel times its alpha, and the alpha, interpolated apart, each
+    /// clamped to `0..=1`, then the channels divided by the alpha (GTK's CSS
+    /// transitions).
+    PremultipliedSrgb,
+    /// Each 8-bit channel and the alpha interpolated apart without
+    /// premultiplying, clamped to `0..=255` and truncated toward zero (Qt's
+    /// colour interpolator, QML's `ColorAnimation`).
+    StraightSrgb8,
+    /// L, a, b and the straight alpha interpolated apart and clamped, held
+    /// as half floats with a 10-bit alpha (Compose's `animateColorAsState`).
+    Oklab,
 }
 
 /// How a theme change is drawn (S4.3): a re-resolution caused by a change of
@@ -199,7 +222,9 @@ pub enum SubpixelOrder {
 pub struct Caret {
     /// The caret's colour.
     pub color: Value<Color>,
-    /// The caret's width.
+    /// The caret's width; absent where it follows each line's caret
+    /// height, which the caret parts state (GTK's).
+    #[parts(may_be_absent)]
     pub width: Value<Px>,
     /// How long the caret is shown in a blink.
     pub blink_on: Value<Ms>,
@@ -255,12 +280,6 @@ pub struct Behavior {
     /// Key repeat; `None`: keys never repeat (the user turned it off).
     #[parts(block = "set")]
     pub key_repeat: Option<KeyRepeat>,
-    /// The lines one wheel step scrolls.
-    #[parts(may_be_absent)]
-    pub scroll_lines_per_step: Value<f32>,
-    /// The pixels one wheel step scrolls.
-    #[parts(may_be_absent)]
-    pub scroll_px_per_step: Value<Px>,
     /// The pointer is hidden while typing.
     #[parts(may_be_absent)]
     pub hide_pointer_while_typing: Value<bool>,
@@ -276,9 +295,15 @@ pub struct Behavior {
     /// How long a drag hovers over a target before it opens.
     #[parts(may_be_absent)]
     pub spring_loading: Value<Ms>,
-    /// How long a press lasts before a drag starts without moving.
+    /// How long a press held still takes to start a drag (Qt's
+    /// `startDragTime`); absent where only movement starts one.
     #[parts(may_be_absent)]
     pub drag_time: Value<Ms>,
+    /// How long after the press no drag starts, however far the pointer has
+    /// moved (GTK's `MIN_TIME_TO_DND`); zero where a move past
+    /// `drag_threshold` starts it at once.
+    #[parts(may_be_absent)]
+    pub drag_min_delay: Value<Ms>,
     /// A single click activates an item.
     #[parts(may_be_absent)]
     pub single_click_activates: Value<bool>,
@@ -292,6 +317,11 @@ pub struct Behavior {
     /// When mnemonics are shown.
     #[parts(block = "set")]
     pub mnemonics: Mnemonics,
+    /// Whether a mnemonic is underlined on a disabled element, and on a
+    /// label whose mnemonic target is disabled; absent where `mnemonics` is
+    /// `Never`.
+    #[parts(may_be_absent)]
+    pub mnemonic_when_disabled: Value<bool>,
     /// When focus becomes visible, every widget's default.
     #[parts(block = "set", may_be_absent)]
     pub focus_visible_when: Value<FocusVisibleWhen>,

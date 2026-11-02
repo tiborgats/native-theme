@@ -2,6 +2,17 @@
 //!
 //! A part has the fields its catalogue entry lists; the derive generates
 //! that set per part, and a field outside it is not part of that part.
+//!
+//! A part's box is its laid-out rectangle, the one `min_width` …
+//! `max_height` bound and its `corners` round: its `margin` lies outside it,
+//! its `padding` inside it, measured from the box's edge, so its content box
+//! is the box less its `padding`, and its margin box the box grown by its
+//! `margin`. The stroke takes no layout space: it is drawn in the box
+//! (`Inside`, over the padding), across its edge (`Center`) or outside it
+//! (`Outside`), so a stroke's width or its change never moves the content;
+//! a platform whose border adds to the layout states the padding as its
+//! padding plus the border's width on that side, and one whose size limits
+//! bound less than the box states them plus what lies between.
 
 use native_theme_derive::ThemeParts;
 
@@ -63,21 +74,22 @@ pub struct PartStyle {
     /// draws no ripple node.
     #[parts(block = "fields", may_be_absent)]
     pub interaction: Value<Interaction>,
-    /// The padding inside the box, per side.
+    /// The padding inside the box, per side, measured from the box's edge:
+    /// the content box is the box less it.
     pub padding: Sides<Value<Px>>,
     /// The margin outside the box, per side; may be negative.
     #[parts(signed, may_be_absent)]
     pub margin: Sides<Value<Px>>,
-    /// The minimum width; `Auto`: no minimum beyond the content.
+    /// The box's minimum width; `Auto`: no minimum beyond the content.
     #[parts(auto)]
     pub min_width: Value<Px>,
-    /// The minimum height; `Auto`: no minimum beyond the content.
+    /// The box's minimum height; `Auto`: no minimum beyond the content.
     #[parts(auto)]
     pub min_height: Value<Px>,
-    /// The maximum width; `Auto`: no maximum, the content decides.
+    /// The box's maximum width; `Auto`: no maximum, the content decides.
     #[parts(auto)]
     pub max_width: Value<Px>,
-    /// The maximum height; `Auto`: no maximum, the content decides.
+    /// The box's maximum height; `Auto`: no maximum, the content decides.
     #[parts(auto)]
     pub max_height: Value<Px>,
     /// The pointer's shape over the part; absent: none set, so the window's

@@ -128,7 +128,9 @@ pub struct SurfaceRoles {
     /// Visited link text.
     #[parts(may_be_absent)]
     pub link_visited: Value<Color>,
-    /// The set's negative status text colour (KDE's `ForegroundNegative`).
+    /// The set's negative status text colour (KDE's `ForegroundNegative`);
+    /// absent on `macos-*`, which states none.
+    #[parts(may_be_absent)]
     pub negative: Value<Color>,
     /// The set's neutral status text colour, a warning (KDE's `ForegroundNeutral`).
     #[parts(may_be_absent)]
@@ -148,7 +150,10 @@ pub struct SurfaceRoles {
     /// The set's darker shade (libadwaita's `headerbar_darker_shade_color`).
     #[parts(may_be_absent)]
     pub shade_darker: Value<Color>,
-    /// The set's stroke colour, translucent where the platform's is.
+    /// The set's stroke colour, translucent where the platform's is; absent
+    /// only in `macos-*`'s `Selection` set, as AppKit declares no colour for
+    /// a selection's outline (the facts gate checks the place).
+    #[parts(may_be_absent)]
     pub border: Value<Color>,
     /// KDE's computed active background, tinted from the set's foreground roles.
     #[parts(may_be_absent)]
@@ -264,7 +269,9 @@ pub struct StatusColors {
 }
 
 /// The status roles (the catalogue's `StatusRoles`): every colour may be
-/// absent where the platform has no counterpart, but `error`'s `fill`.
+/// absent where the platform has no counterpart, every one on `macos-*`;
+/// which preset must state `error`'s `fill` and `standalone` the facts gate
+/// checks.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
@@ -276,7 +283,7 @@ pub struct StatusRoles {
     #[parts(block = "fields", inner_may_be_absent)]
     pub warning: StatusColors,
     /// Error.
-    #[parts(block = "fields", inner_may_be_absent, required = "fill")]
+    #[parts(block = "fields", inner_may_be_absent)]
     pub error: StatusColors,
     /// Information.
     #[parts(block = "fields", inner_may_be_absent)]

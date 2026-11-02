@@ -1591,6 +1591,7 @@ impl<'t> Cx<'t> {
             ElementDatum::WindowWidth => Val::Length(scope.window.width),
             ElementDatum::WindowHeight => Val::Length(scope.window.height),
             ElementDatum::MoveDistance => Val::Length(data.move_distance),
+            ElementDatum::CaretHeight => Val::Length(data.caret_height),
             ElementDatum::CharWidth
             | ElementDatum::MaxCharWidth
             | ElementDatum::FontXHeight

@@ -180,6 +180,9 @@ pub enum ElementDatum {
     WindowHeight,
     /// `move_distance`: how far a `Move` presentation moves the element.
     MoveDistance,
+    /// `caret_height`: a caret part's own caret, its toolkit's caret
+    /// rectangle's height as drawn (S4.2).
+    CaretHeight,
     /// `char_width`: the part's font's average character width.
     CharWidth,
     /// `max_char_width`: the part's font's widest glyph.
@@ -200,7 +203,7 @@ pub enum ElementDatum {
 
 impl ElementDatum {
     /// Every datum, in S2.2's order.
-    pub const ALL: [ElementDatum; 22] = [
+    pub const ALL: [ElementDatum; 23] = [
         ElementDatum::Width,
         ElementDatum::Height,
         ElementDatum::Progress,
@@ -215,6 +218,7 @@ impl ElementDatum {
         ElementDatum::WindowWidth,
         ElementDatum::WindowHeight,
         ElementDatum::MoveDistance,
+        ElementDatum::CaretHeight,
         ElementDatum::CharWidth,
         ElementDatum::MaxCharWidth,
         ElementDatum::FontXHeight,
@@ -243,6 +247,7 @@ impl ElementDatum {
             ElementDatum::WindowWidth => "window_width",
             ElementDatum::WindowHeight => "window_height",
             ElementDatum::MoveDistance => "move_distance",
+            ElementDatum::CaretHeight => "caret_height",
             ElementDatum::CharWidth => "char_width",
             ElementDatum::MaxCharWidth => "max_char_width",
             ElementDatum::FontXHeight => "font_x_height",

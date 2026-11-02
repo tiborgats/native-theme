@@ -1746,7 +1746,11 @@ impl Visit for Checker<'_> {
         let expected = match (number, field) {
             (Number::Fraction, _) if !(0.0..=1.0).contains(&n) => Some("0..=1"),
             (Number::Length | Number::FontSize, _) if n < 0.0 && !signed => Some("at least zero"),
-            (Number::Plain, Some(("Material", "saturation"))) if n < 0.0 => Some("at least zero"),
+            (Number::Plain, Some(("Material", "saturation") | ("Glyph", "draw_extent")))
+                if n < 0.0 =>
+            {
+                Some("at least zero")
+            }
             (Number::Plain, Some(("TextTokens", "font_dpi"))) if n <= 0.0 => Some("above zero"),
             _ => None,
         };
@@ -3158,6 +3162,7 @@ mod table_tests {
             ("ColorRoles", "surfaces"),
             ("Tokens", "params"),
             ("Material", "saturation"),
+            ("Glyph", "draw_extent"),
             ("TextTokens", "font_dpi"),
             ("TransitionKind", "params"),
             ("PresentationKind", "params"),

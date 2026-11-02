@@ -180,6 +180,9 @@ pub struct ElementData<'a> {
     pub color: Color,
     /// How far a `Move` presentation moves the element.
     pub move_distance: Px,
+    /// A caret part's: its toolkit's caret rectangle's height, as drawn
+    /// (S4.2).
+    pub caret_height: Px,
 }
 
 /// Zero size, progress 0, scroll 0, item 0 of 1, empty text, transparent
@@ -202,6 +205,7 @@ impl Default for ElementData<'_> {
                 a: 0.0,
             },
             move_distance: Px(0.0),
+            caret_height: Px(0.0),
         }
     }
 }

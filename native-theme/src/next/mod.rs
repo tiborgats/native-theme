@@ -143,19 +143,19 @@ pub use selector::{
 };
 pub use theme::Theme;
 pub use tokens::{
-    Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, FontFallbacks,
-    FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens, IconTokensPatch,
-    KdeColorEffect, KdeContrastEffect, KdeEffects, KdeEffectsPatch, KdeGroup, KdeIntensityEffect,
-    KdeRoleKind, KdeTokens, KdeTokensPatch, KeyRepeat, KeyRepeatPatch, MaterialScheme,
-    MaterialSchemePatch, MaterialVariant, Mnemonics, MotionTokens, MotionTokensPatch,
-    PointerTokens, PointerTokensPatch, ResolvedBehavior, ResolvedCaret, ResolvedFontFallbacks,
-    ResolvedIconSizeTokens, ResolvedIconTokens, ResolvedKdeEffects, ResolvedKdeTokens,
-    ResolvedKeyRepeat, ResolvedMaterialScheme, ResolvedMnemonics, ResolvedMotionTokens,
-    ResolvedPointerTokens, ResolvedSizeClassThreshold, ResolvedTextRendering, ResolvedTextRoles,
-    ResolvedTextTokens, ResolvedThemeChange, ResolvedTokens, ResolvedTouchBehavior,
-    SizeClassThreshold, SizeClassThresholdPatch, SubpixelOrder, TextRendering, TextRenderingPatch,
-    TextRoles, TextRolesPatch, TextScaling, TextTokens, TextTokensPatch, ThemeChange, Tokens,
-    TokensPatch, TouchBehavior, TouchBehaviorPatch,
+    Antialiasing, Behavior, BehaviorPatch, BlinkStyle, Caret, CaretPatch, ColorInterpolation,
+    FontFallbacks, FontFallbacksPatch, Hinting, IconSizeTokens, IconSizeTokensPatch, IconTokens,
+    IconTokensPatch, KdeColorEffect, KdeContrastEffect, KdeEffects, KdeEffectsPatch, KdeGroup,
+    KdeIntensityEffect, KdeRoleKind, KdeTokens, KdeTokensPatch, KeyRepeat, KeyRepeatPatch,
+    MaterialScheme, MaterialSchemePatch, MaterialVariant, Mnemonics, MotionTokens,
+    MotionTokensPatch, PointerTokens, PointerTokensPatch, ResolvedBehavior, ResolvedCaret,
+    ResolvedFontFallbacks, ResolvedIconSizeTokens, ResolvedIconTokens, ResolvedKdeEffects,
+    ResolvedKdeTokens, ResolvedKeyRepeat, ResolvedMaterialScheme, ResolvedMnemonics,
+    ResolvedMotionTokens, ResolvedPointerTokens, ResolvedSizeClassThreshold, ResolvedTextRendering,
+    ResolvedTextRoles, ResolvedTextTokens, ResolvedThemeChange, ResolvedTokens,
+    ResolvedTouchBehavior, SizeClassThreshold, SizeClassThresholdPatch, SubpixelOrder,
+    TextRendering, TextRenderingPatch, TextRoles, TextRolesPatch, TextScaling, TextTokens,
+    TextTokensPatch, ThemeChange, Tokens, TokensPatch, TouchBehavior, TouchBehaviorPatch,
 };
 pub use units::{
     Axes, Deg, FontSize, Fraction, Length, Ms, Point, Px, Rect, Scalar, Sides, Size, ViewBox,

@@ -443,7 +443,9 @@ pub struct Decoration {
     /// The line's height.
     pub thickness: Value<Px>,
     /// The distance from the baseline to the line's top edge, positive
-    /// downward (an overline's and a strike line's are negative).
+    /// downward (an overline's and a strike line's are negative); an
+    /// [`UnderlineLow`](DecorationLine::UnderlineLow) line's is measured from
+    /// the bottom of the ink of the run it decorates instead.
     #[parts(signed)]
     pub offset: Value<Px>,
     /// The line's paint.
@@ -457,6 +459,10 @@ pub struct Decoration {
 pub enum DecorationLine {
     /// Under the text.
     Underline,
+    /// Under the decorated run's ink, not the font's descent: its `offset`
+    /// is measured from the bottom of the ink of the glyphs it is drawn
+    /// under (Pango's low underline, GTK's mnemonics').
+    UnderlineLow,
     /// Over the text.
     Overline,
     /// Through the text.

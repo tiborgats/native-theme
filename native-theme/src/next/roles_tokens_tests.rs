@@ -84,6 +84,7 @@ fn token_spec_paths() -> Vec<String> {
         "motion.durations",
         "motion.timings: Timing",
         "motion.speed_factor",
+        "motion.color_space",
         "elevation: ShadowLayer",
     ]
     .map(str::to_owned)
@@ -153,14 +154,13 @@ fn token_spec_paths() -> Vec<String> {
             "behavior.hover_time",
             "behavior.key_repeat.delay",
             "behavior.key_repeat.interval",
-            "behavior.scroll_lines_per_step",
-            "behavior.scroll_px_per_step",
             "behavior.hide_pointer_while_typing",
             "behavior.hide_pointer_delay",
             "behavior.hide_pointer_fade",
             "behavior.long_press",
             "behavior.spring_loading",
             "behavior.drag_time",
+            "behavior.drag_min_delay",
             "behavior.single_click_activates",
             "behavior.double_click_height",
             "behavior.touch.slop",
@@ -170,6 +170,7 @@ fn token_spec_paths() -> Vec<String> {
             "behavior.touch.delay",
             "behavior.mnemonics",
             "behavior.mnemonics.on_alt.delay",
+            "behavior.mnemonic_when_disabled",
             "behavior.focus_visible_when: FocusVisibleWhen",
             "size_classes.horizontal",
             "size_classes.vertical",
@@ -204,6 +205,8 @@ fn tokens_registry_has_slice_groups() {
     }
     for path in [
         "behavior.scroll",
+        "behavior.scroll_lines_per_step",
+        "behavior.scroll_px_per_step",
         "params",
         "caret.shape",
         "icons.sizes.keyed",
@@ -414,9 +417,19 @@ fn caret_secondary_read_only_and_typing_may_be_absent() {
     for path in ["secondary", "shown_in_read_only", "solid_while_typing"] {
         assert!(marked(Caret::FIELDS, path), "{path}");
     }
-    for path in ["color", "width", "blink_on", "blink_off", "blink_timeout"] {
+    for path in ["color", "blink_on", "blink_off", "blink_timeout"] {
         assert!(!marked(Caret::FIELDS, path), "{path}");
     }
+}
+
+/// The caret's width is absent where it follows each line's caret height,
+/// the caret parts stating it (S4.2, S6.3; ADD-A130).
+#[test]
+fn caret_width_may_be_absent() {
+    assert!(marked(Caret::FIELDS, "width"));
+    assert!(
+        registry::find(registry::tokens(), "caret.width").is_some_and(|field| field.may_be_absent)
+    );
 }
 
 #[test]
@@ -555,14 +568,7 @@ fn kde_tokens_are_stated_whole() {
 
 #[test]
 fn surface_roles_marks_by_the_catalogue() {
-    for path in [
-        "background",
-        "foreground",
-        "foreground_inactive",
-        "link",
-        "negative",
-        "border",
-    ] {
+    for path in ["background", "foreground", "foreground_inactive", "link"] {
         assert!(!marked(SurfaceRoles::FIELDS, path), "{path}");
     }
     let absent: Vec<_> = SurfaceRoles::FIELDS
@@ -576,12 +582,14 @@ fn surface_roles_marks_by_the_catalogue() {
             "background_alternate",
             "foreground_active",
             "link_visited",
+            "negative",
             "neutral",
             "positive",
             "decoration_focus",
             "decoration_hover",
             "shade",
             "shade_darker",
+            "border",
             "background_active",
             "background_link",
             "background_visited",
@@ -601,15 +609,31 @@ fn disabled_roles_may_all_be_absent() {
     assert!(!marked(SurfaceRoles::FIELDS, "disabled"));
 }
 
+/// `macos-*` states no set's `negative`, no `Selection` border and no status
+/// colour (the catalogue's role record and `StatusRoles`; ADD-A130): the
+/// registry holds the union per path (the M1a design, decision 6).
 #[test]
-fn status_roles_may_be_absent_but_error_fill() {
+fn macos_roles_may_be_absent() {
+    assert!(marked(SurfaceRoles::FIELDS, "negative"));
+    assert!(marked(SurfaceRoles::FIELDS, "border"));
+    for set in SurfaceSet::NAMES {
+        for role in ["negative", "border"] {
+            let path = format!("surfaces.{set}.{role}");
+            assert!(
+                registry::find(registry::colors(), &path).is_some_and(|field| field.may_be_absent),
+                "{path}"
+            );
+        }
+    }
     let mut paths = Vec::new();
     leaves("", StatusRoles::FIELDS, &mut paths);
+    assert_eq!(paths.len(), 30);
     for path in paths {
-        assert_eq!(
-            marked(StatusRoles::FIELDS, &path),
-            path != "error.fill",
-            "{path}"
+        assert!(marked(StatusRoles::FIELDS, &path), "{path}");
+        let global = format!("global.status.{path}");
+        assert!(
+            registry::find(registry::colors(), &global).is_some_and(|field| field.may_be_absent),
+            "{global}"
         );
     }
 }
@@ -1114,6 +1138,7 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "icons.sizes.large",
     "icons.sizes.dialog",
     "icons.sizes.panel",
+    "caret.width",
     "caret.secondary",
     "caret.shown_in_read_only",
     "caret.solid_while_typing",
@@ -1121,14 +1146,13 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "behavior.double_click_distance",
     "behavior.drag_threshold",
     "behavior.hover_time",
-    "behavior.scroll_lines_per_step",
-    "behavior.scroll_px_per_step",
     "behavior.hide_pointer_while_typing",
     "behavior.hide_pointer_delay",
     "behavior.hide_pointer_fade",
     "behavior.long_press",
     "behavior.spring_loading",
     "behavior.drag_time",
+    "behavior.drag_min_delay",
     "behavior.single_click_activates",
     "behavior.double_click_height",
     "behavior.touch.slop",
@@ -1136,23 +1160,21 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "behavior.touch.double_tap_time",
     "behavior.touch.double_tap_slop",
     "behavior.touch.delay",
+    "behavior.mnemonic_when_disabled",
     "behavior.focus_visible_when",
 ];
 
 #[test]
 fn status_roles_created_by_their_place_marks() {
-    use super::blocks::{Below, Create};
+    use super::blocks::Create;
     use super::roles::{StatusColorsPatch, StatusRoles, StatusRolesPatch};
 
-    // In `StatusRoles` every status colour may be `Absent` but `error.fill`
-    // (S6.3's place marks), so a block created from a patch leaving it unset
-    // is the merge conflict, and one stating it holds the rest `Absent`.
+    // In `StatusRoles` every status colour may be `Absent` (S6.3's place
+    // marks), so a block created from an empty patch holds every one
+    // `Absent`, and one stating a colour holds the rest `Absent`.
     assert_eq!(
-        StatusRoles::create(StatusRolesPatch::default()),
-        Err(MergeConflict {
-            path: "error.fill".to_owned(),
-            below: Below::Missing,
-        })
+        StatusRoles::create(StatusRolesPatch::default()).map(|roles| roles.error.fill),
+        Ok(Value::Absent)
     );
     let created = StatusRoles::create(StatusRolesPatch {
         error: Some(StatusColorsPatch {

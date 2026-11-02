@@ -1473,6 +1473,65 @@ fn governing_picks_the_last_that_applies() {
     );
 }
 
+/// `PropertyGroup::GlyphDraw` (S2.7, ADD-A126): the glyph's path and drawn
+/// span by a `GlyphDraw` transition where one applies, else by `Glyph`'s;
+/// the glyph's other fields by `Glyph`'s alone.
+#[test]
+fn glyph_draw_governs_glyph_path() {
+    use crate::next::blocks::motion::governing;
+    use crate::next::selector::{StateFlag, StateFlags};
+    let resolved = |groups: Vec<PropertyGroup>, ms: f32, from: Option<Vec<StateFlag>>| {
+        crate::next::ResolvedTransition {
+            properties: groups,
+            kind: crate::next::ResolvedTransitionKind::Interpolate,
+            duration: Some(Ms(ms)),
+            delay: Some(Ms(0.0)),
+            timing: Some(crate::next::ResolvedTiming::Linear),
+            suspended_by_theme_change: false,
+            from,
+        }
+    };
+    let ms = |found: Option<&crate::next::ResolvedTransition>| found.and_then(|t| t.duration);
+    let glyph = vec![resolved(vec![PropertyGroup::Glyph], 100.0, None)];
+    assert_eq!(
+        ms(governing(
+            &glyph,
+            PropertyGroup::GlyphDraw,
+            StateFlags::new()
+        )),
+        Some(Ms(100.0))
+    );
+    let mut both = glyph.clone();
+    both.push(resolved(
+        vec![PropertyGroup::GlyphDraw],
+        250.0,
+        Some(vec![StateFlag::Checked]),
+    ));
+    let checked = [StateFlag::Checked].into_iter().collect::<StateFlags>();
+    assert_eq!(
+        ms(governing(&both, PropertyGroup::GlyphDraw, checked.clone())),
+        Some(Ms(250.0))
+    );
+    assert_eq!(
+        ms(governing(&both, PropertyGroup::Glyph, checked)),
+        Some(Ms(100.0))
+    );
+    // The `GlyphDraw` transition applies only from `checked`: from no flag,
+    // `Glyph`'s governs the path.
+    assert_eq!(
+        ms(governing(
+            &both,
+            PropertyGroup::GlyphDraw,
+            StateFlags::new()
+        )),
+        Some(Ms(100.0))
+    );
+    assert_eq!(
+        governing(&[], PropertyGroup::GlyphDraw, StateFlags::new()),
+        None
+    );
+}
+
 /// `timing::evaluate`'s cubic Bézier, steps and spring readings (S2.7),
 /// against `tools/motion-vectors`' rows: libadwaita's `ease_cubic_bezier`
 /// and `AdwSpringAnimation` compiled unchanged, CSS's steps as its

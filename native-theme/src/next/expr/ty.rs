@@ -1132,6 +1132,7 @@ fn datum_type(datum: ElementDatum) -> Ty {
         | ElementDatum::WindowWidth
         | ElementDatum::WindowHeight
         | ElementDatum::MoveDistance
+        | ElementDatum::CaretHeight
         | ElementDatum::CharWidth
         | ElementDatum::MaxCharWidth
         | ElementDatum::FontXHeight
@@ -1197,6 +1198,29 @@ mod tests {
         check(text, ty)
             .map(|t| panic!("{text} typed as {}", t.ty()))
             .unwrap_err()
+    }
+
+    #[test]
+    fn element_caret_height_types() {
+        // A caret part's own caret height is a length (S2.2, S8; ADD-A130),
+        // read in the width GTK draws its caret's stem (S4.2).
+        assert_eq!(
+            ElementDatum::from_name("caret_height"),
+            Some(ElementDatum::CaretHeight)
+        );
+        assert_eq!(ElementDatum::CaretHeight.name(), "caret_height");
+        assert_eq!(typed("element.caret_height", Ty::Length), Ty::Length);
+        assert_eq!(
+            typed(
+                "add(floor(mul(element.caret_height, token.speed)), 1px)",
+                Ty::Length
+            ),
+            Ty::Length
+        );
+        assert!(matches!(
+            refused("element.caret_height", Ty::Color),
+            TypeError::Mismatch { .. }
+        ));
     }
 
     #[test]

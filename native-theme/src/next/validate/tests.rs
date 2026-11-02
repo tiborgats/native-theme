@@ -1527,6 +1527,19 @@ fn refusal_weight_out_of_range() {
     assert_eq!(bare(&weight(1000)), NONE);
 }
 
+/// A glyph's drawn extent is at least zero (S2.9, S12), and may exceed one:
+/// it is drawn clamped to the whole path (a pen width's dash).
+#[test]
+fn refusal_draw_extent_negative() {
+    let extent = |n: f32| toml(&format!("[widgets.button.icon]\nglyph.draw_extent = {n}"));
+    assert_eq!(
+        bare(&extent(-0.5)),
+        ["widgets.button.icon.glyph.draw_extent: out of range: at least zero"]
+    );
+    assert_eq!(bare(&extent(0.0)), NONE);
+    assert_eq!(bare(&extent(2.5)), NONE);
+}
+
 /// A reference naming a whole map, no key, names nothing (S2.2, S12): a
 /// reference names one entry's value.
 #[test]

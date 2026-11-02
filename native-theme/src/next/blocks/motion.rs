@@ -11,7 +11,8 @@
 //! never a toolkit's default one.
 //!
 //! Appearing layers interpolate from zero alpha, layers match by stack
-//! position, colours interpolate in premultiplied sRGB. A stroke or an edge
+//! position, colours interpolate in the space `token.motion.color_space`
+//! names. A stroke or an edge
 //! whose width becomes absent (the whole stroke stated `Absent`, or the
 //! edge) interpolates to zero width and its paint to zero alpha, and one that
 //! appears from them, a width interpolated to zero or below ending it; an
@@ -346,8 +347,12 @@ pub enum PropertyGroup {
     Text,
     /// The icon style.
     Icon,
-    /// The glyph.
+    /// The glyph, its path and drawn span too where no `GlyphDraw`
+    /// transition applies in the style after the change.
     Glyph,
+    /// The glyph's path and its `draw_extent` and `draw_start`: where a
+    /// transition of it applies, it times them in `Glyph`'s place.
+    GlyphDraw,
     /// The laid-out box: a transition also starts when the connector's own
     /// layout moves the element or part.
     Geometry,
@@ -414,8 +419,10 @@ pub(crate) fn same_flags(a: Option<&[StateFlag]>, b: Option<&[StateFlag]>) -> bo
 /// before the change (no `from`, or at least one of its flags held). For
 /// [`PropertyGroup::StrokeWidth`], the stroke's widths, the `Stroke`
 /// transition governs where no `StrokeWidth` one applies, as `Stroke` times
-/// every field of the stroke but where a `StrokeWidth` transition applies.
-/// `None`: the new value at once.
+/// every field of the stroke but where a `StrokeWidth` transition applies;
+/// likewise [`PropertyGroup::GlyphDraw`], the glyph's path and drawn span,
+/// by the `Glyph` transition where no `GlyphDraw` one applies. `None`: the
+/// new value at once.
 #[must_use]
 pub fn governing(
     transitions: &[ResolvedTransition],
@@ -433,6 +440,7 @@ pub fn governing(
     };
     match group {
         PropertyGroup::StrokeWidth => last(group).or_else(|| last(PropertyGroup::Stroke)),
+        PropertyGroup::GlyphDraw => last(group).or_else(|| last(PropertyGroup::Glyph)),
         _ => last(group),
     }
 }
@@ -460,8 +468,8 @@ fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
 #[parts(block, check)]
 pub enum TransitionKind {
     /// The old value interpolated to the new: layers matched by stack
-    /// position, appearing layers from zero alpha, colours in premultiplied
-    /// sRGB.
+    /// position, appearing layers from zero alpha, colours in the space
+    /// `token.motion.color_space` names.
     Interpolate,
     /// The focus indicator travelling between elements.
     FocusMove,

@@ -339,6 +339,43 @@ fn spelling_none() {
     );
 }
 
+/// `DecorationLine::UnderlineLow` reads as `underline_low` (S2.8, S11;
+/// ADD-A130), the line Pango's low underline draws.
+#[test]
+fn decoration_line_underline_low_reads() {
+    use crate::next::blocks::text::{DecorationLine, DecorationPatch};
+    let read = layer(
+        "[widgets.button.label]\ntext.mnemonic_decoration = { line = \"underline_low\", \
+         style = \"solid\", by_word = \"absent\", thickness_px = \"= element.font_underline_thickness\", \
+         offset_px = \"= element.font_underline_thickness\", paint = \"#000000\" }",
+    );
+    let label = read
+        .bases
+        .widgets
+        .button
+        .as_ref()
+        .and_then(|button| button.label.clone());
+    let Some(PartPatch::Style(PartStylePatch {
+        text:
+            Some(BlockPatch::Fields(TextStylePatch {
+                mnemonic_decoration:
+                    Some(BlockPatch::Fields(DecorationPatch {
+                        line: Some(line), ..
+                    })),
+                ..
+            })),
+        ..
+    })) = label
+    else {
+        panic!("not a stated decoration: {label:?}");
+    };
+    assert_eq!(line, DecorationLine::UnderlineLow);
+    assert_eq!(
+        problems("[widgets.button.label]\ntext.mnemonic_decoration.line = \"underline_lower\""),
+        ["widgets.button.label.text.mnemonic_decoration.line: unknown name \"underline_lower\""]
+    );
+}
+
 #[test]
 fn spelling_enum_variant() {
     let style = body_of("corners.curve = \"continuous\"\nshadow = { elevation = \"2\" }");

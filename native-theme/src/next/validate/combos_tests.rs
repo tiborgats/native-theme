@@ -117,6 +117,44 @@ fn combination_icon_fill_absent() {
     );
 }
 
+/// `FromIcon` recolours the paths the icon marks (S2.9), so an icon style's
+/// `fill` absent under it is refused as under any mode but `Original`
+/// (S12), whether the mode is stated beneath or beside it.
+#[test]
+fn from_icon_without_fill_refused() {
+    let base = "[widgets.button.icon.icon]\nsize_px = 16\nfill = \"#000000\"\n\
+                rendering_mode = \"from_icon\"";
+    let rule = |set: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.icon\"\nset = {set}"
+        )
+    };
+    assert_eq!(
+        over(
+            base,
+            &rule("{ icon.fill = \"absent\" }"),
+            &Declarations::default()
+        ),
+        ["rules[0].set.icon.fill: may not be absent"]
+    );
+    assert_eq!(
+        over(
+            base,
+            &rule("{ icon = { rendering_mode = \"from_icon\", fill = \"absent\" } }"),
+            &Declarations::default()
+        ),
+        ["rules[0].set.icon.fill: may not be absent"]
+    );
+    assert_eq!(
+        over(
+            base,
+            &rule("{ icon = { rendering_mode = \"original\", fill = \"absent\" } }"),
+            &Declarations::default()
+        ),
+        NONE
+    );
+}
+
 /// A glyph's `fill` absent where its `stroke` is absent too (S2.9, S12).
 #[test]
 fn combination_glyph_fill_absent() {
