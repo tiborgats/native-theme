@@ -1301,3 +1301,149 @@ fn reads_of_synthetic_layers_are_recorded() {
     });
     assert_eq!(none, Vec::new());
 }
+
+/// Each place evaluation reads a synthetic layer's step through records it
+/// at the field evaluated (S17's synthetic route, ADD-A128): a plain field,
+/// an `Option`'s `None`, a list, a keyed list, an `Option` block, a map
+/// stated empty, the text scaling a font size is scaled by, the text
+/// frame's `font_size`, `line_height` and font metrics, an enclosing part's
+/// bindings (the icon's, read from the body through `widget.icon.…`) and an
+/// outer scope entry whose bindings read one. A synthetic layer is the
+/// stack's third place: the preset, the stand-in, then it.
+#[test]
+fn each_recording_site_records_a_synthetic_read() {
+    use crate::next::resolve::evaluate::Resolve;
+    use crate::next::tokens::{KeyRepeat, MotionTokens, TextScaling};
+    use crate::next::units::Ms;
+    let scope = scope();
+    let field = |path: &str| -> Vec<String> { path.split('.').map(str::to_owned).collect() };
+    let theme = |layers: &[&str]| {
+        let mut theme = resolved(layers, 1.0);
+        theme.synthetic = vec![2];
+        theme
+    };
+    // A token's field resolved alone, by the function its type takes.
+    let token = |synthetic: &str, path: &str, read: &dyn Fn(&mut Cx<'_>, Vec<String>)| {
+        let theme = theme(&[BASE, synthetic]);
+        let reached = theme.evaluate_in(&scope, None, &|_| true, Target::Tokens, None, |cx| {
+            read(cx, field(path));
+            cx.reached().to_vec()
+        });
+        reached
+            .iter()
+            .any(|held| held.meets(Target::Tokens, &field(path)))
+    };
+    assert!(
+        token(
+            "[tokens.text]\nscaling = \"linear\"\n",
+            "text.scaling",
+            &|cx, path| {
+                cx.follow(Target::Tokens, path, false, |cx, folds| {
+                    cx.plain::<TextScaling>(folds)
+                });
+            }
+        ),
+        "plain"
+    );
+    assert!(
+        token(
+            "[tokens.caret]\nblink_timeout_ms = \"none\"\n",
+            "caret.blink_timeout",
+            &|cx, path| {
+                cx.follow(Target::Tokens, path, false, |cx, folds| {
+                    cx.optional::<Ms>(folds, false)
+                });
+            }
+        ),
+        "an Option's None"
+    );
+    assert!(
+        token(
+            "[tokens.behavior]\nkey_repeat = \"none\"\n",
+            "behavior.key_repeat",
+            &|cx, path| {
+                cx.follow(Target::Tokens, path, false, |cx, folds| {
+                    cx.option::<KeyRepeat>(folds)
+                });
+            }
+        ),
+        "an Option block"
+    );
+    assert!(
+        token(
+            "[tokens.motion]\ndurations = {}\n",
+            "motion.durations",
+            &|cx, _| {
+                cx.follow(Target::Tokens, field("motion"), false, |cx, folds| {
+                    MotionTokens::resolve(folds, cx)
+                });
+            }
+        ),
+        "a map"
+    );
+    let part = |layers: &[&str], scope: &Scope, part: TypedPart, path: &str| {
+        let theme = theme(layers);
+        let element = Element::new(PartRef::Typed(part), scope, &Metrics);
+        let reached = theme.evaluate_in(
+            scope,
+            Some(&element),
+            &|_| true,
+            Target::Part(part),
+            None,
+            |cx| {
+                cx.part(part);
+                cx.reached().to_vec()
+            },
+        );
+        reached
+            .iter()
+            .any(|held| held.meets(Target::Part(part), &field(path)))
+    };
+    let body = |synthetic: &str, path: &str| part(&[BASE, synthetic], &scope, BODY, path);
+    assert!(
+        body("[widgets.button.body]\ntransitions = []\n", "transitions"),
+        "a list"
+    );
+    assert!(
+        body("[widgets.button.body]\nbindings = []\n", "bindings"),
+        "a keyed list"
+    );
+    let scaling = "[tokens.text]\nscaling = \"linear\"\n";
+    assert!(
+        part(&[BASE, scaling], &scope, LABEL, "text.font.size"),
+        "the scaling factor"
+    );
+    let dpi = "[tokens.text]\nfont_dpi = 72\n";
+    let frame = "[widgets.button.label.text]\nletter_spacing = \"= mul(font_size, 0.1)\"\n\
+                 word_spacing = \"= mul(line_height, 0.1)\"\n\
+                 [widgets.button.label]\npadding.top_px = \"= element.char_width\"\n";
+    for path in ["text.letter_spacing", "text.word_spacing", "padding.top"] {
+        assert!(part(&[BASE, dpi, frame], &scope, LABEL, path), "{path}");
+    }
+    let bound = "[widgets.button.body]\nbindings = [{ role = { role = { surface = \"foreground\" }, \
+                 value = \"= role.global.accent\" } }]\n[colors.light.global]\naccent = \"#010203\"\n";
+    let reading = "[widgets.button.icon.icon]\nfill = \"= surface.foreground\"\n\
+                   [widgets.button.body]\nfill = \"= widget.icon.icon.fill\"\n";
+    assert!(
+        part(&[BASE, bound, reading], &scope, BODY, "fill"),
+        "an enclosing part's binding"
+    );
+    let outer = scope.entered(ScopeEntry {
+        part: PartRef::Typed(LABEL),
+        variants: Vec::new(),
+        states: StateFlags::new(),
+        size: None,
+        surface: None,
+        roles: vec![(
+            RoleRef::Surface(SurfaceRole::from_path("foreground").unwrap()),
+            Some(rgb(1, 2, 3)),
+        )],
+        synthetic: true,
+    });
+    let reading = "[widgets.button.body]\nfill = \"= surface.foreground\"\n";
+    assert!(
+        part(&[BASE, "", reading], &outer, BODY, "fill"),
+        "an outer scope's binding"
+    );
+    assert!(!part(&[BASE, "", reading], &scope, BODY, "fill"));
+}
