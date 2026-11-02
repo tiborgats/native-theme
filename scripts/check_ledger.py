@@ -69,8 +69,11 @@ The ledger's `## Unmeasured register` table (`| Id | Key and combination |
 Attempts and evidence | Options | Decision |`): a missing section or table,
 an Id not `U` and a number, and an Id two rows share are findings. Every S17
 pending fact (a `[[fact]]` with `pending` of `docs/facts/<platform>/*.toml`,
-the folders of NOT_PLATFORMS left out) names a row: a pending fact whose id
-is no row's Id is a finding. Several pending facts may name one row.
+the folders of NOT_PLATFORMS left out) and every pending declaration (a
+state model's `default_size = { pending = "U<n>" }`, the widget's or a
+`sizes_by_variant` or `sizes_by_context` entry's, S10's *A pending default*,
+ADD-A131) names a row: one whose id is no row's Id is a finding. Several may
+name one row.
 
 --final (the plan's M4 gate, from M4 on)
 ----------------------------------------
@@ -86,8 +89,8 @@ Also:
   dict>`. A missing script (the plan keeps it from M0 on), a missing or
   non-literal assignment, and a non-empty list are findings.
 - The Unmeasured register: a row with an empty Decision is a finding.
-- No S17 pending fact: each pending fact is a finding, whether or not its id
-  names a row (the plan's final gate; 0.8.0 is released with none).
+- No S17 pending fact or declaration: each is a finding, whether or not its
+  id names a row (the plan's final gate; 0.8.0 is released with none).
 - Every measured fact with a drift comparison. A measured fact is a
   `[[fact]]` of `docs/facts/<platform>/*.toml` (not `imported/`, not
   `palettes/`, not `staged/`, S19.2's staged inheritance bases) with a `[[fact.cite]]` of `kind = "measured"`; M4's drift run
@@ -449,18 +452,56 @@ def pending_facts(texts: dict[str, str]) -> list[tuple[str, int, str, object]]:
     return out
 
 
+DEFAULT_PENDING = re.compile(r"\bdefault_size\s*=\s*\{\s*pending\s*=\s*\"([^\"]*)\"")
+
+
+def pending_declarations(texts: dict[str, str]) -> list[tuple[str, int, str, object]]:
+    """(file, line, declaration, id) of every pending default size of the state models (`[[model]]` tables of the
+    platform fact files; S10's *A pending default*, ADD-A131): the widget's `default_size = { pending = "U<n>" }` and
+    each `sizes_by_variant` entry's (named by its variant) and `sizes_by_context` entry's (by its position), as S17
+    names them in `[pending]`: `<widget>.default_size`, `<widget>.sizes_by_variant.<variant>.default_size`,
+    `<widget>.sizes_by_context.<n>.default_size`. Each is placed on the first line not yet taken that states its id
+    in a `default_size = { pending = … }`, else on line 1."""
+    out = []
+    for name, text in texts.items():
+        try:
+            data = tomllib.loads(text)
+        except tomllib.TOMLDecodeError as err:
+            raise InputError(f"{name}: {err}") from err
+        found = [(n, m.group(1)) for n, line in enumerate(text.splitlines(), 1)
+                 for m in DEFAULT_PENDING.finditer(line)]
+        taken: set[int] = set()
+        for model in data.get("model", []):
+            if not isinstance(model, dict):
+                continue
+            widget = str(model.get("widget"))
+            decls = [(f"{widget}.default_size", model.get("default_size"))]
+            for k, sub in (("sizes_by_variant", "variant"), ("sizes_by_context", None)):
+                entries = model.get(k) if isinstance(model.get(k), list) else []
+                decls += [(f"{widget}.{k}.{e.get(sub) if sub else i}.default_size", e.get("default_size"))
+                          for i, e in enumerate(entries) if isinstance(e, dict)]
+            for decl, value in decls:
+                if not (isinstance(value, dict) and "pending" in value):
+                    continue
+                pid = value["pending"]
+                line = next((n for n, i in found if i == pid and n not in taken), 1)
+                taken.add(line)
+                out.append((name, line, decl, pid))
+    return out
+
+
 def pending_problems(ledger: str, ledger_text: str, pending: list, final: bool) -> list[tuple[str, int, str]]:
     """S17 *A pending measurement*: on every run, a pending fact whose id names no row of the register; with
     `final`, every pending fact (the plan's final gate requires none)."""
     rows, _ = register_rows(ledger, ledger_text)
     ids = {c[0] for _, c in rows or []}
     found = []
-    for name, line, key, pid in pending:
+    for name, line, key, pid, *kind in pending:
+        what = kind[0] if kind else "pending fact"
         if not isinstance(pid, str) or pid not in ids:
-            found.append((name, line, f"pending fact {key!r} names {pid!r}, no row of the ledger's Unmeasured "
-                                      "register"))
+            found.append((name, line, f"{what} {key!r} names {pid!r}, no row of the ledger's Unmeasured register"))
         if final:
-            found.append((name, line, f"pending fact {key!r} ({pid}): 0.8.0 is released with no S17 pending fact"))
+            found.append((name, line, f"{what} {key!r} ({pid}): 0.8.0 is released with no S17 {what}"))
     return found
 
 
@@ -734,6 +775,34 @@ rows = []
         failures.append(f"pending, --final: got {got}")
     if pending_problems("L", ledger, [], True) or pending_problems("L", ledger, pending[:1], False):
         failures.append("pending: no pending fact, or one naming a row, is a finding")
+    # S10's pending default sizes (ADD-A131): read from the state models, each checked as a pending fact is
+    models_text = """[[model]]
+widget = "button"
+default_size = { pending = "U1" }
+sizes_by_variant = [{ variant = "@gray", sizes = ["mini", "small"], default_size = { pending = "U9" } },
+                    { variant = "@fab", sizes = ["regular"], default_size = "regular" }]
+sizes_by_context = [{ context = { widget = "toolbar" }, sizes = ["regular"], default_size = { pending = "U1" } }]
+
+[[model]]
+widget = "switch"
+default_size = "regular"
+"""
+    decls = pending_declarations({"s.toml": models_text})
+    if decls != [("s.toml", 3, "button.default_size", "U1"),
+                 ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U9"),
+                 ("s.toml", 6, "button.sizes_by_context.0.default_size", "U1")]:
+        failures.append(f"pending declarations: got {decls}")
+    got = pending_problems("L", ledger, [(*d, "pending declaration") for d in decls], False)
+    if got != [("s.toml", 4, "pending declaration 'button.sizes_by_variant.@gray.default_size' names 'U9', no row of "
+                             "the ledger's Unmeasured register")]:
+        failures.append(f"pending declarations, every run: got {got}")
+    got = pending_problems("L", ledger, [(*decls[0], "pending declaration")], True)
+    if got != [("s.toml", 3, "pending declaration 'button.default_size' (U1): 0.8.0 is released with no S17 pending "
+                             "declaration")]:
+        failures.append(f"pending declarations, --final: got {got}")
+    if pending_declarations({"s.toml": models_text.replace("{ pending = \"U1\" }", "\"small\"")}) != [
+            ("s.toml", 4, "button.sizes_by_variant.@gray.default_size", "U9")]:
+        failures.append("pending declarations: a stated default size is no pending declaration")
     if unmeasured_problems("L", "# Ledger\n") != [("L", 1, "no `## Unmeasured register` section")]:
         failures.append("unmeasured: a ledger without the section passed")
     if unmeasured_problems("L", "## Unmeasured register\n\nProse.\n")[0][2] != "the unmeasured register has no table":
@@ -784,6 +853,7 @@ kind = "read"
         (lambda: extract({**texts, "docs/todo.md": "- [ ] before any heading\n"}), "item before a heading"),
         (lambda: measured_facts({"f.toml": "[[fact]\n"}), "bad TOML"),
         (lambda: pending_facts({"f.toml": "[[fact]\n"}), "bad TOML, pending"),
+        (lambda: pending_declarations({"s.toml": "[[model]\n"}), "bad TOML, pending declaration"),
         (lambda: legacy_problems("c.py", "LEGACY_EVIDENCE = [\n"), "bad Python"),
     ]
     for call, label in bad_inputs:
@@ -829,9 +899,13 @@ def main(argv: list[str]) -> int:
             raise InputError(f"{ledger}: {err}") from err
         items = extract(read_sources())
         found = problems(str(ledger), rows, items)
-        pending = pending_facts(platform_fact_texts(FACTS))
+        fact_texts = platform_fact_texts(FACTS)
+        pending = pending_facts(fact_texts)
+        declarations = pending_declarations(fact_texts)
         found += unmeasured_problems(str(ledger), ledger_text, final)
         found += pending_problems(str(ledger), ledger_text, pending, final)
+        found += pending_problems(str(ledger), ledger_text, [(*d, "pending declaration") for d in declarations],
+                                  final)
         if final:
             found += check_final(str(ledger), ledger_text, staged)
     except (OSError, UnicodeDecodeError, InputError) as err:
@@ -840,7 +914,8 @@ def main(argv: list[str]) -> int:
     for name, line, what in found:
         print(f"{name}:{line}: {what}")
     per_source = ", ".join(f"{s} {sum(1 for i in items if i.source == s)}" for s in SOURCES)
-    print(f"{len(rows)} triage rows, {len(items)} items ({per_source}), {len(pending)} pending facts"
+    print(f"{len(rows)} triage rows, {len(items)} items ({per_source}), {len(pending)} pending facts, "
+          f"{len(declarations)} pending declarations"
           f"{', --final' if final else ''}: {len(found)} findings", file=sys.stderr)
     return 1 if found else 0
 

@@ -197,11 +197,11 @@ source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:13
 quote = "case SystemFont: fdtype = KFontSettingsData::GeneralFont;"
 
 # the size: QFont::pointSize() rounds the application font's point size to a whole number, then the factor, the
-# style sheet's size in points; the rounding is in points (S2.2's `round()` in its operand's unit), so the expression
-# takes the body size in points, `div(…, 1pt)`, whatever unit the field holds (the KDE reader states it in px, S9.4)
+# style sheet's size in points; the rounding is in whole points, S2.2's `round_pt` (ADD-A131), whatever unit the
+# field holds (the KDE reader states it in px, S9.4)
 [[fact]]
 key = "component.title_widget.title.text.font.size"
-value = "= mul(mul(1pt, round(div(token.text.roles.body.font.size, 1pt))), 1.35)"
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.35)"
 rows = ["K1.270", "K2.15"]
 
 [[fact.cite]]
@@ -227,7 +227,7 @@ quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
 [[fact]]
 key = "component.title_widget.title.text.font.size"
 when = { variants = ["@level_2"] }
-value = "= mul(mul(1pt, round(div(token.text.roles.body.font.size, 1pt))), 1.2)"
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.2)"
 rows = ["K1.270", "K2.15"]
 
 [[fact.cite]]
@@ -248,7 +248,7 @@ quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
 [[fact]]
 key = "component.title_widget.title.text.font.size"
 when = { variants = ["@level_3"] }
-value = "= mul(mul(1pt, round(div(token.text.roles.body.font.size, 1pt))), 1.15)"
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.15)"
 rows = ["K1.270", "K2.15"]
 
 [[fact.cite]]
@@ -269,7 +269,7 @@ quote = "int QFont::pointSize() const { return qRound(d->request.pointSize); }"
 [[fact]]
 key = "component.title_widget.title.text.font.size"
 when = { variants = ["@level_4"] }
-value = "= mul(mul(1pt, round(div(token.text.roles.body.font.size, 1pt))), 1.1)"
+value = "= mul(round_pt(token.text.roles.body.font.size), 1.1)"
 rows = ["K1.270", "K2.15"]
 
 [[fact.cite]]

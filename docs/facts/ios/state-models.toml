@@ -37,27 +37,38 @@
 #   `toggle`, as plain draws a bezel only while checked (analysis.toml `cells.<scheme>.plain.<size>.selected`; no
 #   bezel at rest, pressed, disabled or toggled off); each configuration style with `@role_primary` (the sets the run
 #   drew, `<style>__role_primary`, the prominent glass ones on 26 too).
-# - Not drawn: an element with no configuration style at `mini`, `small` or `large` (no `buttonSize`: one size,
-#   `regular`, whose facts state no size term); the configuration-only variants without a style (the corner styles,
-#   `@role_primary`, `@indicator_popup`; `@corner_dynamic` only with the glass styles and `pill` only with the others on
-#   26, each the style's default under another name elsewhere); `@menu_on_hold` without `menu`; each host-only form or
-#   identity outside its hosts, `@cancel` and `destructive` outside theirs (and `@cancel` in the text field, the search
-#   field's clear button's host, `destructive` in the search field); the configuration styles in the hosts whose
-#   buttons are UIKit's own items (an application's configured button placed in a bar is a custom view, no bar item),
-#   but `primary` in `toolbar.bar` on 26 (the prominent item, and the done style); `primary` in a bar on 13
+# - Sizes (S10; ADD-A131): an element with no configuration style takes one size, `regular` (no `buttonSize`), so
+#   `sizes = ["regular"]` and its default `regular`; each configuration style takes the four `buttonSize`s in its
+#   `sizes_by_variant` entry, its default pending (no reading of a configuration's default `buttonSize`: the host sets
+#   it on every specimen and UIButtonConfiguration.h states no default; U129). The sizes of `primary` in `toolbar.bar`
+#   on 26 (the prominent bar item, ADD-A131's one-size `sizes_by_context` entry) are pending: no source here states
+#   them (U310).
+# - Not drawn: the configuration-only variants without a style (the corner styles, `@role_primary`,
+#   `@indicator_popup`; `@corner_dynamic` only with the glass styles and `pill` only with the others on 26, each the
+#   style's default under another name elsewhere); `@menu_on_hold` without `menu`; each host-only form or identity
+#   outside its hosts, `@cancel` and `destructive` outside theirs (and `@cancel` in the text field, the search field's
+#   clear button's host, `destructive` in the search field); the configuration styles in the hosts whose buttons are
+#   UIKit's own items (an application's configured button placed in a bar is a custom view, no bar item), but
+#   `primary` in `toolbar.bar` on 26 (the prominent item, and the done style); `primary` in a bar on 13
 #   (`UIBarButtonItemStyleProminent` is iOS 26's); the base in the hosts whose rows name no plain button (the text
 #   field, the search field, the bottom tab bar, the ink toolbar, the toolbar editor).
-# - Not declared (the lane's report): `default_size` (no reading of a configuration's default `buttonSize`: the host
-#   sets it on every specimen and UIButtonConfiguration.h states no default; U129); the states the host rows name
-#   beside the button's (`default` in an alert, DL-5 and DL-7; `selected` on a bar item, P3-3†, which the facts state as
-#   `checked` with `toggle`, the run's toggle; `dragged` and `drop_target`, P4-10† and P3-11†; the route button's
-#   `route_active`): their rows' facts are the host units'.
+# - Not declared (the lane's report): the states the host rows name beside the button's (`default` in an alert, DL-5
+#   and DL-7; `selected` on a bar item, P3-3†, which the facts state as `checked` with `toggle`, the run's toggle;
+#   `dragged` and `drop_target`, P4-10† and P3-11†; the route button's `route_active`): their rows' facts are the host
+#   units'.
 [[model]]
 when = { conditions = ["preset:ios-13"] }
 widget = "button"
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
-sizes = ["mini", "small", "regular", "large"]
+sizes = ["regular"]
+default_size = "regular"
+sizes_by_variant = [
+  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+]
 densities = []
 flags = ["@loading"]
 axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
@@ -75,9 +86,6 @@ not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
   { states = ["focus_visible"], conditions = ["idiom:phone"] },
   { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary"] },
-  { sizes = ["mini"], not_variants = ["flat", "@gray", "tinted", "primary"] },
-  { sizes = ["small"], not_variants = ["flat", "@gray", "tinted", "primary"] },
-  { sizes = ["large"], not_variants = ["flat", "@gray", "tinted", "primary"] },
   { variants = ["@corner_fixed"], not_variants = ["flat", "@gray", "tinted", "primary"] },
   { variants = ["@corner_small"], not_variants = ["flat", "@gray", "tinted", "primary"] },
   { variants = ["@corner_medium"], not_variants = ["flat", "@gray", "tinted", "primary"] },
@@ -612,7 +620,16 @@ when = { conditions = ["preset:ios-26"] }
 widget = "button"
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
-sizes = ["mini", "small", "regular", "large"]
+sizes = ["regular"]
+default_size = "regular"
+sizes_by_variant = [
+  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "glass", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "clear", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+]
 densities = []
 flags = ["@loading"]
 axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
@@ -636,9 +653,6 @@ not_drawn = [
   { states = ["checked"], not_variants = ["toggle"] },
   { states = ["focus_visible"], conditions = ["idiom:phone"] },
   { states = ["@loading"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
-  { sizes = ["mini"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
-  { sizes = ["small"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
-  { sizes = ["large"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
   { variants = ["@corner_fixed"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
   { variants = ["@corner_small"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },
   { variants = ["@corner_medium"], not_variants = ["flat", "@gray", "tinted", "primary", "glass", "clear"] },

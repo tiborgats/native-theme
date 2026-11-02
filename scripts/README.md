@@ -722,8 +722,13 @@ cross-row citations pass by rules (a disabled colour citing
 `background_color`, ..., each only where the section has no row of the
 value's own), and the rest by the script's `EXCEPTIONS` list, keyed by
 preset, key path and cited row, each with its reason; an exception no
-citation uses is a finding. The script's docstring states the whole rule.
-Prints one line per finding (preset:line, key path, cited line, what is
+citation uses is a finding. A value the specification defines carries its
+section as its comment in place of a citation (`font_dpi = 72  # S9.4` on
+`macos-*` and `ios-*`, `animated_visuals = {}  # S4.5` on every preset but
+`windows-11`, ADD-A125, ADD-A131): the comment is accepted for that key,
+value and presets alone, in today's presets and the new model's
+(`native-theme/src/next/presets/`). The script's docstring states the whole
+rule. Prints one line per finding (preset:line, key path, cited line, what is
 wrong) and the counts of every preset, and exits 0 when there is none, 1
 when there are some, 2 on an input it cannot read (not UTF-8 or TOML, or a
 preset citing `platform-facts.md:N` where the rule reads no citation).
@@ -859,12 +864,14 @@ finding; each destination must be one the plan names, and a row going
 `after 0.8.0`, `not this plan's work` or `settled by the model` needs a
 reason. On every run it also checks the *Unmeasured register*'s Ids (`U` and
 a number, none shared by two rows) and that every pending fact
-(`pending = "U<n>"` in `docs/facts/<platform>/`) names one of its rows.
+(`pending = "U<n>"` in `docs/facts/<platform>/`) and every pending default
+size of a state model (`default_size = { pending = "U<n>" }`) names one of
+its rows.
 The script's docstring states the whole rule. `--final` adds the
 plan's M4 gate: `docs/facts/imported/` empty, S19.2's staged file (named by
 `--staged-file PATH`, which `--final` requires) gone, the `LEGACY_EVIDENCE`
 list of `check_fact_citations.py` empty, no unmeasured-register row
-without a decision and no S17 pending fact; the drift comparison of every measured fact has no ledger
+without a decision and no S17 pending fact or declaration; the drift comparison of every measured fact has no ledger
 table to read yet, so `--final` reports it as a finding until it has one.
 Prints one line per finding (file:line: what) and a summary with the counts,
 and exits 0 when there is none, 1 when there are some, 2 on an input it
@@ -1023,7 +1030,20 @@ never a reference; a drawn-text leaf (`fill`, `elision`, `wrap`, `max_lines`)
 is absent only in a keyed text style, a slot or a part the catalogue's
 may_be_absent marks; no fact states `token.text.font_dpi` on the Apple
 presets (S9.4's own 72); and the types the catalogue's prose defines
-(`ContentWidth`, `InputPlacement`, ADD-A127) type their widget values. Offline. The
+(`ContentWidth`, `InputPlacement`, ADD-A127) type their widget values.
+ADD-A131's forms: no fact states `token.icons.animated_visuals` off
+`windows/` (S4.5's own `{}`); `round_pt(x)` only in an expression on a
+`Font.size`, its operand a reference to a font size, and a font size rounded
+in points by `round(div(<size>, 1pt))` a finding; Core Animation's
+`kCAMediaTimingFunction` among the motion prefixes; a state model's
+`default_size` (a size or `{ pending = "U<n>" }`) wherever `sizes` is not
+empty, `default_size_by_variant` removed, a `sizes_by_variant` entry's own
+`default_size` where it leaves out the widget's, a `sizes_by_context`
+entry's `context` one S11 selector of the keys S10 lists (read from the
+specification) matching some `axes.contexts` chain, every element taking a
+size in each context where it takes one outside it and the default in force
+there among them, and that default drawn in some combination of each variant
+set and context the entry draws (`not_drawn` read). Offline. The
 docstring states every rule and list. Prints one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -1054,7 +1074,10 @@ thresholds; XAML's character reference `&#xE974;` is its code point, equal
 only to the same integer, and each entry of a XAML `<FontFamily>` list is
 a whole string; a platform curve's name is the verifier's, and so are
 ADD-A124's names, a ripple effect's, a transition's `from` flags); a
-measured value
+`GtkCss` transition list naming several curves follows its quoted CSS
+`transition` list item by item, in its order (duration, delay, curve;
+ADD-A131); a value the specification defines (`# S9.4`, `# S4.5`) is asked
+no fact; a measured value
 has the committed evidence's shape and
 equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
@@ -1134,8 +1157,9 @@ python3 scripts/convert_inheritance_rules.py --self-test
 ## check_function_vectors.py
 
 Holds, documents and checks the vector-table format of the 0.8.0 model's
-platform functions and placement strategies (specification S2.2, S13):
-`native-theme/tests/vectors/<function>.tsv` and `place.<strategy>.tsv`,
+platform functions, placement strategies and colour interpolations
+(specification S2.2, S13, S2.7): `native-theme/tests/vectors/<function>.tsv`,
+`place.<strategy>.tsv` and `interpolate_color.<member>.tsv`,
 tab-separated, with `# <name>: <value>` header lines (the route, which is
 `public_api`, `observable_behaviour`, `compiled_source`, `measured` or
 `published`; the `sources.toml` entries, the generations, the generator,
@@ -1146,13 +1170,16 @@ spelled by their column's type, with `cite` and `quote` (published) or
 or `pub(crate)` function of the `platform` module
 (`native-theme/src/next/platform/`, `src/platform/` after the switch), every
 platform function of S2.2's table that is implemented and, once the
-`placement` module exists, every strategy has a table and a
-`#[test] fn vectors_<fn>` in `native-theme/tests/platform_vectors.rs`; that
+`placement` module exists, every strategy, and, once
+`transitions::interpolate_color` exists, every `ColorInterpolation` member
+(its table `from`, `to`, `t` with an undershoot and an overshoot row, and the
+colour; ADD-A131) has a table and a `#[test] fn vectors_<fn>` in
+`native-theme/tests/platform_vectors.rs`; that
 every platform function a preset calls is implemented (one only facts call
 is reported as not yet implemented); and the generations rule: the rows'
 generator pins, citations or evidence serve every generation that calls the
-function with the rows' enum operands. The model's own arithmetic has unit
-tests, not tables. Offline; the docstring states the format and every rule.
+function with the rows' enum operands. The model's own arithmetic
+(`round_pt` among it) has unit tests, not tables. Offline; the docstring states the format and every rule.
 Prints one line per finding, `# ` lines for what is informational, and a
 summary; exits 0, 1, or 2 on an input it cannot read. `--self-test` runs
 each rule on fixture tables, Rust snippets, facts and presets. Enters

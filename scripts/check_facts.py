@@ -58,11 +58,13 @@ A `[[fact]]` (S17 *Fields*):
 - S4.1's motion keys (ADD-A122; motion_key_problems), where the checker can tell: a duration's or timing's key keeps
   no word of the closed list MOTION_WORDS (`animation`, `duration`, `time`, `ms`, `transition`, `timing`, `curve`,
   `easing`, `spring`, each also in its plural) or MOTION_PAIRS (`key_spline`, `cubic_bezier`) unless it is made only
-  of them (Breeze's `animations`), and starts with no toolkit prefix of MOTION_PREFIXES (`adw`, `gtk`, `q`, `k`, `ns`,
-  `ui`, `c`, `md_sys_motion`, `units`); a duration key of a platform whose row of the catalogue's
-  *token.motion.durations* table lists every key (motion_duration_keys: the rows naming no family, DURATION_FAMILY:
-  `by family`, `one entry per`; DURATION_ROWS maps each row to its directory) is one of the row's backticked names.
-  The catalogue's timings are prose with families, so a timing key is checked by the words and prefixes only.
+  of them (Breeze's `animations`; the words of a kept prefix not counted), and starts with no toolkit prefix of
+  MOTION_PREFIXES (`adw`, `gtk`, `q`, `k_ca_media_timing_function`, Core Animation's `kCAMediaTimingFunction` in
+  snake_case, ADD-A131, `k`, `ns`, `ui`, `c`, `md_sys_motion`, `units`; the first that matches is named); a duration
+  key of a platform whose row of the catalogue's *token.motion.durations* table lists every key (motion_duration_keys:
+  the rows naming no family, DURATION_FAMILY: `by family`, `one entry per`; DURATION_ROWS maps each row to its
+  directory) is one of the row's backticked names. The catalogue's timings are prose with families, so a timing key is
+  checked by the words and prefixes only.
 - `value` is spelled as S11's Spelling table spells a preset value, with the key's own unit in the value (S17): a
   TOML number, a TOML bool, `"auto"`, `"absent"`, `"none"`, a colour literal (`#rrggbb`, `#rrggbbaa`,
   `srgb(r, g, b[, a])`, `display_p3(r, g, b[, a])`), a length `"<n>px"`, a duration `"<n>ms"`, an angle
@@ -208,7 +210,13 @@ ADD-A125 to ADD-A130 (each rule's function states it in full):
   (DRAWN_TEXT_LEAVES) `"absent"` only in a keyed text style or a slot (TEXT_STYLE_HOMES) or on a part whose catalogue
   entry's may_be_absent `fields:` lists the leaf (marked_text_leaves).
 - `token.text.font_dpi` on `macos/` and `ios/` (APPLE_FONT_DPI) has no fact: S9.4's 72 is the specification's own
-  (S17; ADD-A125).
+  (S17; ADD-A125); nor has `token.icons.animated_visuals` or an entry of it off `windows/` (ANIMATED_VISUALS): S4.5's
+  `{}` is the specification's own there (S17; ADD-A131).
+- `round_pt(x)` (round_pt_problems; S2.2, S12; ADD-A131): called only in an expression stated on a `Font.size` (the
+  key, with the value's table path, ends `font.size` and is typed a font size), its one argument a reference to a font
+  size (font_size_ref: `font_size`, `widget.<part>.font_size`, a `token.` or `role.` path typed a font size, a
+  `.font.size` path of `part.`, `values.` or `input.`); `round(div(<font size>, <n>pt))` (or `floor`), S2.2's rejected
+  form of a size rounded in whole points, is a finding.
 - The catalogue's own types (catalogue_types): a backticked `<Name> { … }` in the catalogue's prose defines an enum
   or a struct the core lacks (ADD-A127's `ContentWidth`, `InputPlacement`, `CharRun`), so the widget values it types
   are checked as a core type's are; a `char` is text.
@@ -218,16 +226,23 @@ A `[[model]]` in `<platform>/state-models.toml` (S17 *State models*): `widget` (
 may only hold `conditions` with `preset:` or `flavor:` ones. With `available = false` no other declaration. With
 `true`, `variants`, `sizes`, `densities`, `axes` (`{ states, conditions, contexts }`), `exclusive` and `not_drawn`
 are required, and `default_size`, `flags`, `requires_variants`, `sizes_by_variant`, `sizes_by_context`,
-`exclusive_variants`, `variant_sets`, `variant_products`, `default_size_by_variant` and `recency` optional (S10's
-declarations, S17; absent meaning none); names are checked against the catalogue's entry and the core (variants, flags, sizes, densities, states,
-conditions, context selectors as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states`
-and in one group only, `default_size` is one of a non-empty `sizes`, `requires_variants` and `sizes_by_variant`'s
-variants are among `variants`, every listed size among `sizes`, a `sizes_by_context` context a catalogue widget.
+`exclusive_variants`, `variant_sets`, `variant_products` and `recency` optional (S10's declarations, S17; absent
+meaning none; `default_size_by_variant`, ADD-A121's, is removed, REMOVED_DECLARATIONS, ADD-A131); names are checked
+against the catalogue's entry and the core (variants, flags, sizes, densities, states, conditions, context selectors
+as `when`'s, each `not_drawn` a `when`), every `exclusive` state is in `axes.states` and in one group only,
+`requires_variants`' variants are among `variants`. ADD-A131's sizes and default sizes (size_declaration_problems,
+whose docstring states them in full): `default_size` a size of `sizes` or `{ pending = "U<n>" }`, stated wherever
+`sizes` is not empty; `sizes_by_variant` entries `{ variant, sizes[, default_size] }`, one per variant, a variant's
+sizes its own, its default stated where the widget's is not among them; `sizes_by_context` entries `{ context, sizes[,
+default_size] }`, `context` one S11 context selector of the keys S10 lists (sizes_context_keys reads them, and the keys
+S12 refuses there, from the specification), matching some `axes.contexts` chain (selector_matches), and in each
+entry's context every element taking a size there if it takes any, and the default in force there among them. The
+default-size check (drawn_default_problems): for each variant set and context the entry draws, the default size in
+force there is drawn in some combination there, `not_drawn` read by exclusion (an entry naming a position, a
+direction, a size class or `latest` removes nothing there).
 ADD-A121 (variant_declaration_problems): each `exclusive_variants` group names variants among `variants`, none twice
 (a variant may be in several groups, S12); each `variant_sets` set holds two or more variants among `variants`, none
-twice, at most one of each `exclusive_variants` group, and no set is listed twice (in any order); each
-`default_size_by_variant` entry is `{ variant, size }`, its variant among `variants`, its size one that variant takes
-(its `sizes_by_variant` entry's sizes, else `sizes`), and no two entries name one variant (S12). ADD-A122
+twice, at most one of each `exclusive_variants` group, and no set is listed twice (in any order). ADD-A122
 (product_problems): `variant_products` is a list of products, each a non-empty list of groups `{ any = [...] }` (at
 most one of its variants, or none) or `{ one = [...] }` (exactly one), each naming variants among `variants`, no
 product naming one variant in two of its groups (or twice in one); its sets (product_sets) are every choice from each
@@ -315,7 +330,9 @@ CITE_FIELDS = {
 MODEL_REQUIRED = {"widget", "available", "rows", "cite"}
 MODEL_DECLARATIONS = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn", "default_size", "flags",
                       "requires_variants", "sizes_by_variant", "sizes_by_context", "exclusive_variants",
-                      "variant_sets", "variant_products", "default_size_by_variant", "recency"}
+                      "variant_sets", "variant_products", "recency"}
+REMOVED_DECLARATIONS = {"default_size_by_variant": "a variant's default size is its `sizes_by_variant` entry's "
+                                                   "`default_size` (S10; ADD-A131)"}
 MODEL_AVAILABLE_REQUIRED = {"variants", "sizes", "densities", "axes", "exclusive", "not_drawn"}
 AXES_KEYS = {"states", "conditions", "contexts"}
 
@@ -359,7 +376,7 @@ PRODUCT_GROUPS = {"any", "one"}   # a variant product's groups (S17 *Variant pro
 MOTION_WORDS = {"animation", "duration", "time", "ms", "transition", "timing", "curve", "easing", "spring"}
 MOTION_WORDS |= {w + "s" for w in MOTION_WORDS - {"ms"}}
 MOTION_PAIRS = (("key", "spline"), ("key", "splines"), ("cubic", "bezier"), ("cubic", "beziers"))
-MOTION_PREFIXES = ("adw", "gtk", "q", "k", "ns", "ui", "c", "md_sys_motion", "units")
+MOTION_PREFIXES = ("adw", "gtk", "q", "k_ca_media_timing_function", "k", "ns", "ui", "c", "md_sys_motion", "units")
 # the catalogue's *token.motion.durations* table: each row's platform as the facts directory it is
 DURATION_ROWS = {"libadwaita": "gnome", "kde-breeze": "kde", "windows-11": "windows", "macos-*": "macos",
                  "ios-*": "ios", "material-3": "material"}
@@ -518,6 +535,16 @@ def core_functions(text: str) -> dict:
             ps = [x.strip() for x in params.split(",") if x.strip()]
             out[name] = (len(ps) - 1, None) if ps and ps[-1] in ("…", "...") else (len(ps), len(ps))
     return out
+
+
+def sizes_context_keys(text: str) -> tuple:
+    """(the keys, the keys S12 refuses) of a `sizes_by_context` entry's `context` selector, as S10 lists them
+    (ADD-A131): "its keys `scope`, `widget`, `part`, `variants` and `not_variants` (S12 refuses `states`, … there"."""
+    m = re.search(r"A\s+`sizes_by_context`\s+entry's\s+`context`\s+is\s+one\s+S11\s+context\s+selector.*?its\s+keys\s+"
+                  r"(.*?)\s+\(S12\s+refuses\s+(.*?)\s+there", text, re.S)
+    if not m:
+        raise InputError("core: S10 lists no keys of a `sizes_by_context` entry's `context`")
+    return tuple(re.findall(r"`([a-z_]+)`", m.group(1))), tuple(re.findall(r"`([a-z_]+)`", m.group(2)))
 
 
 def motion_duration_keys(cat_text: str) -> dict:
@@ -705,6 +732,7 @@ class Context:
         for name, variants in core_enums(cat_types).items():
             self.enums.setdefault(name, variants)
         self.functions = core_functions(core_text)
+        self.sizes_context, self.sizes_context_refused = sizes_context_keys(core_text)
         self.motion_durations = motion_duration_keys(cat_text)
         self.window_conditions = window_conditions(core_text)
         self.platform_facts = {}   # {platform: {canonical key: [values]}}: set by check() before the facts' rules
@@ -959,7 +987,8 @@ def motion_key_problems(ctx, key, platform) -> list:
     if not m:
         return []
     name = m.group(2)
-    words = name.split("_")
+    prefix = next((p for p in MOTION_PREFIXES if name == p or name.startswith(p + "_")), None)
+    words = name[len(prefix) + 1:].split("_") if prefix and name != prefix else name.split("_")
     dropped = [w in MOTION_WORDS for w in words]
     for i in range(len(words) - 1):
         if (words[i], words[i + 1]) in MOTION_PAIRS:
@@ -969,7 +998,6 @@ def motion_key_problems(ctx, key, platform) -> list:
         kept = [w for w, d in zip(words, dropped) if d]
         out.append(f"key {key!r}: `{name}` keeps {', '.join(f'`{w}`' for w in kept)}, which S4.1's rule drops (a word "
                    f"that only says the value is a duration, a curve or a motion)")
-    prefix = next((p for p in MOTION_PREFIXES if name == p or name.startswith(p + "_")), None)
     if prefix:
         out.append(f"key {key!r}: `{name}` keeps the toolkit's prefix `{prefix}`, which S4.1's rule drops")
     listed = ctx.motion_durations.get(platform)
@@ -1737,6 +1765,10 @@ def fact_problems(ctx, item: Item) -> list:
             if d["key"] == "token.text.font_dpi" and item.platform in APPLE_FONT_DPI:
                 out.append((item.ln("key"), "token.text.font_dpi on the Apple presets is S9.4's own 72, which no fact "
                                             "states (S17; ADD-A125)"))
+            if animated_visuals_key(d["key"]) and item.platform not in ANIMATED_VISUALS:
+                out.append((item.ln("key"), "token.icons.animated_visuals off windows/ is S4.5's own `{}`, which no "
+                                            "fact states (S17; ADD-A131)"))
+            out += [(item.ln("value"), p) for p in round_pt_problems(ctx, d["key"], d["value"])]
             if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
@@ -2051,7 +2083,8 @@ def model_problems(ctx, item: Item) -> list:
     d = item.data
     out = [(item.line, f"missing `{f}`") for f in sorted(MODEL_REQUIRED - d.keys())]
     out += [(item.ln(f), f"`{f}` is not a state-model entry's field") for f in
-            sorted(d.keys() - MODEL_REQUIRED - MODEL_DECLARATIONS - {"when"})]
+            sorted(d.keys() - MODEL_REQUIRED - MODEL_DECLARATIONS - REMOVED_DECLARATIONS.keys() - {"when"})]
+    out += [(item.ln(f), f"`{f}` was removed: {why}") for f, why in sorted(REMOVED_DECLARATIONS.items()) if f in d]
     widget = d.get("widget")
     entry = ctx.entries.get(widget) if isinstance(widget, str) else None
     if "widget" in d and entry is None:
@@ -2129,28 +2162,13 @@ def model_problems(ctx, item: Item) -> list:
                 for i, w in enumerate(nd):
                     out += [(item.ln("not_drawn"), p) for p in when_problems(ctx, w, widget, item.platform,
                                                                               where=f"not_drawn[{i}]")]
-        if "default_size" in d:
-            if not str_list(sizes) or not sizes:
-                out.append((item.ln("default_size"), "default_size where sizes is empty"))
-            elif d["default_size"] not in sizes:
-                out.append((item.ln("default_size"), f"default_size {d['default_size']!r} is not among sizes"))
         if "requires_variants" in d:
             out += [(item.ln("requires_variants"), p) for p in names_problems(
                 d["requires_variants"], "requires_variants", lambda s: s in variants, "among variants")]
-        for k, sub in (("sizes_by_variant", "variant"), ("sizes_by_context", "context")):
-            if k not in d:
-                continue
-            if not isinstance(d[k], list) or not all(isinstance(x, dict) and set(x) == {sub, "sizes"} for x in d[k]):
-                out.append((item.ln(k), f"{k} is not a list of {{ {sub}, sizes }}"))
-                continue
-            for x in d[k]:
-                if sub == "variant" and x[sub] not in variants:
-                    out.append((item.ln(k), f"{k}: {x[sub]!r} is not among variants"))
-                if sub == "context" and not widget_ok(ctx, x[sub]):
-                    out.append((item.ln(k), f"{k}: {x[sub]!r} is not a catalogue entry"))
-                out += [(item.ln(k), p) for p in names_problems(x["sizes"], f"{k}.sizes", lambda s: s in sizes,
-                                                                  "among sizes")]
-        out += variant_declaration_problems(item, variants, sizes)
+        if "sizes" in d and str_list(d["sizes"]):
+            out += size_declaration_problems(ctx, item, variants, sizes)
+            out += drawn_default_problems(ctx, item)
+        out += variant_declaration_problems(item, variants)
         out += recency_problems(item, states, ws, ck)
         out += catalogue_group_problems(ctx, item, entry)
     out += cite_list_problems(item, "model")
@@ -2295,8 +2313,8 @@ def recency_orders(d) -> tuple:
             max((n for _, n in counts), default=0))
 
 
-def variant_declaration_problems(item: Item, variants, sizes) -> list:
-    """`exclusive_variants`, `variant_sets` and `default_size_by_variant` (S10, S12, S17; ADD-A121)."""
+def variant_declaration_problems(item: Item, variants) -> list:
+    """`exclusive_variants` and `variant_sets` (S10, S12, S17; ADD-A121)."""
     d = item.data
     out = []
     groups = []
@@ -2337,28 +2355,324 @@ def variant_declaration_problems(item: Item, variants, sizes) -> list:
                 if frozenset(s) in seen:
                     out.append((item.ln("variant_sets"), f"{where} is listed twice"))
                 seen.add(frozenset(s))
-    if "default_size_by_variant" in d:
-        dv = d["default_size_by_variant"]
-        if not isinstance(dv, list) or not all(isinstance(x, dict) and set(x) == {"variant", "size"}
-                                               and isinstance(x["variant"], str) and isinstance(x["size"], str)
-                                               for x in dv):
-            out.append((item.ln("default_size_by_variant"), "default_size_by_variant is not a list of "
-                                                            "{ variant, size }"))
-        else:
-            by_variant = {x["variant"]: x["sizes"] for x in d.get("sizes_by_variant", [])
-                          if isinstance(x, dict) and isinstance(x.get("variant"), str) and str_list(x.get("sizes"))} \
-                if isinstance(d.get("sizes_by_variant"), list) else {}
-            names = [x["variant"] for x in dv]
-            for x in dv:
-                v, size = x["variant"], x["size"]
-                if v not in variants:
-                    out.append((item.ln("default_size_by_variant"), f"default_size_by_variant: {v!r} is not among "
-                                                                    f"variants"))
-                elif size not in by_variant.get(v, sizes):
-                    out.append((item.ln("default_size_by_variant"), f"default_size_by_variant: {v!r} does not take "
-                                                                    f"the size {size!r}"))
-            out += [(item.ln("default_size_by_variant"), f"default_size_by_variant: two entries name {v!r}")
+    return out
+
+
+def default_form(v):
+    """A `default_size`'s form (S10, S17; ADD-A131): "size" for a size's name, "pending" for `{ pending = "U<n>" }`
+    (S10's *A pending default*), None for anything else."""
+    if isinstance(v, str):
+        return "size"
+    if isinstance(v, dict) and set(v) == {"pending"} and isinstance(v["pending"], str) and PENDING_RX.match(
+            v["pending"]):
+        return "pending"
+    return None
+
+
+def size_entries(d, k) -> list:
+    """The well-formed entries of an entry's `sizes_by_variant` or `sizes_by_context` (size_declaration_problems
+    reports the others), in their written order."""
+    sub = "variant" if k == "sizes_by_variant" else "context"
+    raw = d.get(k)
+    return [x for x in raw if isinstance(x, dict) and {sub, "sizes"} <= set(x) <= {sub, "sizes", "default_size"}
+            and str_list(x["sizes"]) and (sub == "context" or isinstance(x[sub], str))] \
+        if isinstance(raw, list) else []
+
+
+def axes_chains(d) -> list:
+    """The ancestor chains the gate builds for an entry's `axes.contexts` (S17 *State models*; ADD-A125): per entry,
+    its selectors outermost first, each ancestor its `widget`, `part`, `variants` and `states` (an ancestor holds the
+    variants and states its selector names, and no other)."""
+    axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+    contexts = axes.get("contexts") if isinstance(axes.get("contexts"), list) else []
+    out = []
+    for c in contexts:
+        chain = c if isinstance(c, list) else [c]
+        if all(isinstance(x, dict) for x in chain):
+            out.append([{"widget": x.get("widget"), "part": x.get("part"),
+                         "variants": set(x.get("variants", [])) if str_list(x.get("variants", [])) else set(),
+                         "states": set(x.get("states", [])) if str_list(x.get("states", [])) else set()}
+                        for x in chain])
+    return out
+
+
+def selector_matches(sel, chain):
+    """Whether an S11 context selector matches an ancestor chain (outermost first): its `scope` picks the ancestors it
+    looks at (any of them, or the nearest of the widgets `nearest` lists), one of which has its `widget` and `part`,
+    holds its `variants` and `states` and none of its `not_variants` and `not_states`; None where the selector names
+    what an ancestor the gate builds does not carry (`sizes`, `not_sizes`, `surface`)."""
+    if not isinstance(sel, dict) or sel.keys() & {"sizes", "not_sizes", "surface"}:
+        return None
+    scope = sel.get("scope", "any")
+    if isinstance(scope, dict):
+        near = scope.get("nearest") if isinstance(scope.get("nearest"), list) else []
+        nearest = next((a for a in reversed(chain) if a["widget"] in near), None)
+        candidates = [nearest] if nearest else []
+    else:
+        candidates = chain
+
+    def holds(a):
+        return (("widget" not in sel or sel["widget"] == a["widget"])
+                and ("part" not in sel or sel["part"] == a["part"])
+                and set(sel.get("variants", [])) <= a["variants"]
+                and not set(sel.get("not_variants", [])) & a["variants"]
+                and set(sel.get("states", [])) <= a["states"] and not set(sel.get("not_states", [])) & a["states"])
+    return any(holds(a) for a in candidates)
+
+
+def size_declaration_problems(ctx, item: Item, variants, sizes) -> list:
+    """An available entry's sizes and default sizes (S10, S12, S17; ADD-A131), given its `sizes` (a list of names):
+
+    - `default_size` is a size's name or `{ pending = "U<n>" }` (S10's *A pending default*, its id a register row's,
+      which scripts/check_ledger.py checks), stated wherever `sizes` is not empty and nowhere else; a name is one of
+      `sizes`. `default_size_by_variant` is removed (model_problems: REMOVED_DECLARATIONS).
+    - `sizes_by_variant` is a list of `{ variant, sizes[, default_size] }`: its variant among `variants`, no two entries
+      naming one, its sizes sizes (a variant's entry may name sizes `sizes` does not, the sizes that variant alone
+      takes); its `default_size` stated only where its `sizes` is not empty, a name one of its sizes; an entry whose
+      `sizes` is not empty states one where the widget's is not one of them (or the widget has none; a pending one is
+      not read, S10).
+    - `sizes_by_context` is a list of `{ context, sizes[, default_size] }`: `context` one S11 context selector of the
+      keys S10 lists (ctx.sizes_context; ctx.sizes_context_refused, which S12 refuses there, named as such), checked as
+      a `when`'s context entry (context_problems) and matching the ancestors of some `axes.contexts` entry (S17's
+      chain, selector_matches); its sizes among those some element takes (`sizes` and the variants' entries'); its
+      `default_size` as a variant entry's. In each entry's context, for an element holding each variant entry's variant
+      and for one holding none (S12): the element takes its variant entry's sizes, else `sizes`, less those the context
+      entry leaves out; it takes none there while it takes some outside it, or the default in force there (the context
+      entry's, else the variant entry's, else the widget's, S10) is not among those it takes, is a finding; a pending
+      default first reached is not read (S10's *A pending default*)."""
+    d = item.data
+    out = []
+    has_sizes = bool(sizes)
+    widget_default = d.get("default_size")
+    if "default_size" in d:
+        form = default_form(widget_default)
+        if form is None:
+            out.append((item.ln("default_size"), f"default_size {widget_default!r} is not a size or "
+                                                 f"`{{ pending = \"U<n>\" }}` (S10, S17)"))
+        elif not has_sizes:
+            out.append((item.ln("default_size"), "default_size where sizes is empty"))
+        elif form == "size" and widget_default not in sizes:
+            out.append((item.ln("default_size"), f"default_size {widget_default!r} is not among sizes"))
+    elif has_sizes:
+        out.append((item.line, "missing `default_size`: it is stated wherever sizes is not empty, `{ pending = "
+                               "\"U<n>\" }` while no source gives it (S10, S17; ADD-A131)"))
+    ck = ctx.ck
+
+    def size_ok(s):
+        return s in ck.v["sizes"] or KEYED.match(s)
+
+    taken = set(sizes)
+    for k, sub in (("sizes_by_variant", "variant"), ("sizes_by_context", "context")):
+        if k not in d:
+            continue
+        raw = d[k]
+        if not isinstance(raw, list) or len(size_entries(d, k)) != len(raw):
+            out.append((item.ln(k), f"{k} is not a list of {{ {sub}, sizes[, default_size] }}"))
+            continue
+        for i, x in enumerate(raw):
+            where = f"{k}[{i}]"
+            out += [(item.ln(k), p) for p in names_problems(x["sizes"], f"{where}.sizes", size_ok, "a size")]
+            if sub == "variant":
+                taken |= set(x["sizes"])
+                if x["variant"] not in variants:
+                    out.append((item.ln(k), f"{k}: {x['variant']!r} is not among variants"))
+            if "default_size" in x:
+                form = default_form(x["default_size"])
+                if form is None:
+                    out.append((item.ln(k), f"{where}.default_size {x['default_size']!r} is not a size or "
+                                            f"`{{ pending = \"U<n>\" }}` (S10, S17)"))
+                elif not x["sizes"]:
+                    out.append((item.ln(k), f"{where}: a default_size where its sizes is empty"))
+                elif form == "size" and x["default_size"] not in x["sizes"]:
+                    out.append((item.ln(k), f"{where}: default_size {x['default_size']!r} is not among its sizes"))
+            elif sub == "variant" and x["sizes"] and ("default_size" not in d or (
+                    default_form(widget_default) == "size" and widget_default in sizes
+                    and widget_default not in x["sizes"])):
+                theirs = f"is {widget_default!r}" if "default_size" in d else "is none"
+                out.append((item.ln(k), f"{where}: {x['variant']!r} takes {x['sizes']} and states no default_size, "
+                                        f"where the widget's {theirs} (S10, S12; ADD-A131)"))
+        if sub == "variant":
+            names = [x["variant"] for x in raw]
+            out += [(item.ln(k), f"{k}: two entries name {v!r} (S12)")
                     for v in sorted({v for v in names if names.count(v) > 1})]
+    chains = axes_chains(d)
+    by_variant = size_entries(d, "sizes_by_variant")
+    for i, x in enumerate(size_entries(d, "sizes_by_context") if "sizes_by_context" in d and isinstance(
+            d["sizes_by_context"], list) and len(size_entries(d, "sizes_by_context")) == len(d["sizes_by_context"])
+            else []):
+        where = f"sizes_by_context[{i}]"
+        sel = x["context"]
+        if not isinstance(sel, dict):
+            out.append((item.ln("sizes_by_context"), f"{where}.context is not an S11 context selector (a table; S10)"))
+            continue
+        for key in sel:
+            if key in ctx.sizes_context_refused:
+                out.append((item.ln("sizes_by_context"), f"{where}.context states `{key}`, which S12 refuses there "
+                                                         f"(the sizes an element takes do not change with an "
+                                                         f"ancestor's state, size or surface; S10)"))
+            elif key not in ctx.sizes_context:
+                out.append((item.ln("sizes_by_context"), f"{where}.context: unknown key `{key}`"))
+        out += [(item.ln("sizes_by_context"), p) for p in context_problems(
+            ctx, {k: v for k, v in sel.items() if k in ctx.sizes_context}, f"{where}.context")]
+        if "axes" in d and not any(selector_matches({k: v for k, v in sel.items() if k in ctx.sizes_context}, c)
+                                   for c in chains):
+            out.append((item.ln("sizes_by_context"), f"{where}.context matches the ancestors of no axes.contexts "
+                                                     f"entry (S17: no combination checks it)"))
+        out += [(item.ln("sizes_by_context"), f"{where}.sizes: {s!r} is a size no element of the entry takes "
+                                              f"(sizes, sizes_by_variant)") for s in x["sizes"] if s not in taken]
+        for v, base, vdefault in [(None, sizes, widget_default)] + [
+                (e["variant"], e["sizes"], e.get("default_size", widget_default)) for e in by_variant]:
+            holder = f"an element holding {v!r}" if v else "an element holding no variant of an entry"
+            inside = [s for s in base if s in x["sizes"]]
+            if base and not inside:
+                out.append((item.ln("sizes_by_context"), f"{where}: {holder} takes {base} outside this context and "
+                                                         f"none inside it (S12)"))
+            elif inside:
+                default = x.get("default_size", vdefault)
+                if default_form(default) == "size" and default not in inside:
+                    out.append((item.ln("sizes_by_context"), f"{where}: the default size in force there for {holder}, "
+                                                             f"{default!r}, is not among the sizes it takes there "
+                                                             f"{inside} (S10, S12)"))
+    return out
+
+
+# the keys of a `not_drawn` entry the default-size check reads (drawn_default_problems); an entry naming another (a
+# position, a direction, a size class, `latest`) removes nothing there
+NOT_DRAWN_READ = {"states", "not_states", "conditions", "not_conditions", "variants", "not_variants", "sizes",
+                  "not_sizes", "densities", "not_densities", "context", "not_context"}
+
+
+@dataclass
+class Exclusion:
+    """A `not_drawn` entry as the default-size check reads it: its lists as sets (`sizes`, `densities` None where it
+    states none) and, per context of the entry, whether its `context` and `not_context` hold there."""
+    variants: set
+    not_variants: set
+    sizes: set | None
+    not_sizes: set
+    states: set
+    not_states: set
+    conditions: set
+    not_conditions: set
+    densities: set | None
+    not_densities: set
+    in_context: list
+
+    def applies(self, vset, size):
+        """It holds for the variant set and the size (and, in_context, the context)."""
+        return (self.variants <= vset and not self.not_variants & vset
+                and (self.sizes is None or size in self.sizes) and size not in self.not_sizes)
+
+    def holds(self, k, c, n):
+        """It holds for the state combination, the conditions and the density (None: none)."""
+        return (self.states <= k and not self.not_states & k and self.conditions <= c
+                and not self.not_conditions & c and (self.densities is None or n in self.densities)
+                and n not in self.not_densities)
+
+    @property
+    def coarse(self):
+        """It holds whatever the states, conditions and density."""
+        return not (self.states or self.not_states or self.conditions or self.not_conditions
+                    or self.densities is not None or self.not_densities)
+
+
+def exclusion(w, chains):
+    """The `not_drawn` entry `w` read for the default-size check, or None where it names what the check does not read
+    (NOT_DRAWN_READ) or is not well formed. Its context is matched by selector_matches against each chain: a selector
+    naming what an ancestor the gate builds does not carry holds nowhere for `context` and everywhere for
+    `not_context`, so the entry removes nothing there."""
+    if not isinstance(w, dict) or w.keys() - NOT_DRAWN_READ or not all(
+            str_list(w[k]) for k in w if k not in ("context", "not_context")):
+        return None
+
+    def lst(k):
+        return set(w.get(k, []))
+
+    in_context = []
+    for chain in chains:
+        ok = all(selector_matches(sel, chain) is True for sel in w.get("context", [])) and not any(
+            selector_matches(sel, chain) is not False for sel in w.get("not_context", []))
+        in_context.append(ok)
+    return Exclusion(lst("variants"), lst("not_variants"), lst("sizes") if "sizes" in w else None, lst("not_sizes"),
+                     lst("states"), lst("not_states"), lst("conditions"), lst("not_conditions"),
+                     lst("densities") if "densities" in w else None, lst("not_densities"), in_context)
+
+
+def drawn_default_problems(ctx, item: Item) -> list:
+    """S17's default-size check (ADD-A131): for each variant set the entry draws (none, each variant alone, its listed
+    and its products' sets, less those `requires_variants` excludes) and each context it draws (none, and each
+    `axes.contexts` entry's chain), the default size in force there (the first `sizes_by_context` entry whose
+    selector the chain matches, its `default_size` where it states one, else the first `sizes_by_variant` entry whose
+    variant the set holds, its `default_size` where it states one, else `default_size`; S10) is drawn in some
+    combination with that set in that context: `not_drawn` excluding every combination of it (each state
+    combination, each condition value or none per kind, each density or none; S7's `SetMatch`, S11's context
+    selectors, exclusion) while the set and context are drawn at another size the element takes there is a finding.
+    A pending default first reached, or none, is not checked (S10's *A pending default*), nor a set and context at no
+    size."""
+    d = item.data
+    sizes = d.get("sizes") if str_list(d.get("sizes")) else []
+    nd = d.get("not_drawn") if isinstance(d.get("not_drawn"), list) else []
+    by_variant = size_entries(d, "sizes_by_variant")
+    if not (sizes or by_variant) or not nd:
+        return []
+    by_context = size_entries(d, "sizes_by_context")
+    variants = d.get("variants") if str_list(d.get("variants")) else []
+    groups = [g for g in d.get("exclusive_variants", []) if str_list(g)] if isinstance(
+        d.get("exclusive_variants"), list) else []
+    sets = {frozenset()} | {frozenset([v]) for v in variants} | product_sets(d, groups)
+    if isinstance(d.get("variant_sets"), list):
+        sets |= {frozenset(x) for x in d["variant_sets"] if str_list(x)}
+    sets = sorted((x for x in sets if requires_ok(d, x)), key=lambda x: (len(x), sorted(x)))
+    axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+    chains = [[]] + axes_chains(d)
+    names = ["no context"] + [f"axes.contexts[{i}]" for i in range(len(chains) - 1)]
+    states = sorted(state_combinations({**d, "not_drawn": []}), key=lambda k: (len(k), sorted(k)))
+    kinds = {}
+    for c in axes.get("conditions", []) if str_list(axes.get("conditions", [])) else []:
+        kinds.setdefault(c.rsplit(":", 1)[0] if ":" in c else c, []).append(c)
+    conditions = [frozenset(x for x in pick if x) for pick in itertools.product(*[[None] + v for v in kinds.values()])]
+    densities = [None] + (d["densities"] if str_list(d.get("densities")) else [])
+    exclusions = [e for e in (exclusion(w, chains) for w in nd) if e is not None]
+    per_chain = [[e for e in exclusions if e.in_context[i]] for i in range(len(chains))]
+    memo = {}
+
+    def drawn(vset, ci, size):
+        key = (vset, ci, size)
+        if key not in memo:
+            live = [e for e in per_chain[ci] if e.applies(vset, size)]
+            if not live:
+                memo[key] = True
+            elif any(e.coarse for e in live):
+                memo[key] = False
+            else:
+                memo[key] = any(not any(e.holds(k, c, n) for e in live)
+                                for k in states for c in conditions for n in densities)
+        return memo[key]
+
+    found = {}   # (context, default) -> ([the variant sets], {the sizes drawn there})
+    for ci, chain in enumerate(chains):
+        centry = next((x for x in by_context if isinstance(x["context"], dict) and selector_matches(
+            {k: v for k, v in x["context"].items() if k in ctx.sizes_context}, chain)), None)
+        for vset in sets:
+            ventry = next((x for x in by_variant if x["variant"] in vset), None)
+            takes = ventry["sizes"] if ventry else sizes
+            if centry is not None:
+                takes = [s for s in takes if s in centry["sizes"]]
+            default = next((x["default_size"] for x in (centry, ventry) if x is not None and "default_size" in x),
+                           d.get("default_size"))
+            if default_form(default) != "size" or default not in takes or drawn(vset, ci, default):
+                continue
+            others = [s for s in takes if s != default and drawn(vset, ci, s)]
+            if others:
+                hit = found.setdefault((ci, default), ([], set()))
+                hit[0].append("{" + (", ".join(sorted(vset)) if vset else "no variant") + "}")
+                hit[1].update(others)
+    out = []
+    for (ci, default), (vsets, others) in sorted(found.items()):
+        shown = ", ".join(vsets[:4]) + (f" and {len(vsets) - 4} more variant sets" if len(vsets) > 4 else "")
+        out.append((item.ln("not_drawn"), f"the default size {default!r} in force in {names[ci]} for {shown} is drawn "
+                                          f"in no combination there, its not_drawn excluding every one, while "
+                                          f"{sorted(others)} are drawn (S17; ADD-A131)"))
     return out
 
 
@@ -2851,6 +3165,74 @@ def compound_problems(ctx, value, t, path="value") -> list:
 DRAWN_TEXT_LEAVES = ("fill", "elision", "wrap", "max_lines")
 TEXT_STYLE_HOMES = ("token.text.keyed.", "token.text.roles.")
 APPLE_FONT_DPI = ("macos", "ios")   # S9.4's `token.text.font_dpi = 72` there is the specification's own (S17; ADD-A125)
+# the directories whose facts state `token.icons.animated_visuals`: elsewhere S4.5's `{}` is the specification's own
+# (S17; ADD-A131)
+ANIMATED_VISUALS = ("windows",)
+
+
+def animated_visuals_key(key) -> bool:
+    """The key is `token.icons.animated_visuals` or one of its entries' paths."""
+    return isinstance(key, str) and (key == "token.icons.animated_visuals"
+                                     or key.startswith("token.icons.animated_visuals."))
+
+
+def value_expressions(value, path=""):
+    """(leaf path, expression) of every expression (`"= …"`) of a value, a table's leaves and a list's entries."""
+    if isinstance(value, str):
+        if value.startswith("="):
+            yield path, value[1:]
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from value_expressions(v, f"{path}.{k}" if path else str(k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from value_expressions(v, f"{path}.{i}" if path else str(i))
+
+
+def font_size_ref(ctx, ref) -> bool:
+    """The reference is to a font size (S2.2, S12): the own `font_size`, an element part's `widget.<part>.font_size`,
+    a `token.` or `role.` path the core's sketches type as a font size, or a `.font.size` path of an operand whose
+    type the checker cannot read (`part.`, `values.`, `input.`)."""
+    segs = ref.split(".")
+    if ref == "font_size" or (segs[0] == "widget" and len(segs) == 3 and segs[2] == "font_size"):
+        return True
+    if segs[0] in ("token", "role"):
+        problem, dim = key_info(ctx, ref)[:2]
+        return problem is None and dim == "font_size"
+    return segs[0] in ("part", "values", "input") and segs[-2:] == ["font", "size"]
+
+
+def round_pt_problems(ctx, key, value) -> list:
+    """`round_pt(x)` (S2.2, S12; ADD-A131): called only in an expression stated on a `Font.size` (the leaf the
+    expression sits at, the key and the value's table path, ends `font.size` and is typed a font size), with one
+    argument, a reference to a font size (font_size_ref); and a font size rounded in whole points is `round_pt`'s,
+    so `round(div(<font size>, <n>pt))` (or `floor`), S2.2's rejected form, is a finding."""
+    out = []
+    for path, expr in value_expressions(value):
+        toks = [(m.lastgroup, m.group(m.lastgroup)) for m in TOKEN_RX.finditer(expr)]
+        leaf = f"{key}.{path}" if path else key
+        segs = [re.sub(r"_(?:px|pt)$", "", x) for x in leaf.split(".")]
+        on_size = segs[-2:] == ["font", "size"] and key_info(ctx, ".".join(segs))[1] == "font_size"
+        for i, (kind, text) in enumerate(toks):
+            nxt = toks[i + 1:i + 2] == [("p", "(")]
+            if kind == "path" and text == "round_pt" and nxt:
+                if not on_size:
+                    out.append(f"expression {expr!r}: `round_pt` outside an expression stated on a `Font.size` "
+                               f"(S2.2, S12; ADD-A131)")
+                arg = toks[i + 2:i + 4]
+                if not (len(arg) == 2 and arg[0][0] == "path" and arg[1] == ("p", ")")
+                        and font_size_ref(ctx, arg[0][1])):
+                    out.append(f"expression {expr!r}: `round_pt`'s operand is not a reference to a font size (S2.2, "
+                               f"S12; ADD-A131)")
+            if kind == "path" and text in ("round", "floor") and nxt and toks[i + 2:i + 4] == [("path", "div"),
+                                                                                             ("p", "(")]:
+                inner = toks[i + 4:i + 9]
+                if (len(inner) == 5 and inner[0][0] == "path" and inner[1] == ("p", ",") and inner[2][0] == "num"
+                        and inner[2][1].endswith("pt") and inner[3:] == [("p", ")"), ("p", ")")]
+                        and font_size_ref(ctx, inner[0][1])):
+                    out.append(f"expression {expr!r}: `{text}(div({inner[0][1]}, {inner[2][1]}))` rounds a font size "
+                               f"in whole points, which is `round_pt`'s (S2.2; ADD-A131)")
+    return out
 
 
 def block_form_problems(ctx, key, value, typ, kind) -> list:
@@ -3320,9 +3702,14 @@ pub enum FocusVisibleWhen { Always }
 | `kde_shade(c, role: KdeShadeRole, contrast)` | colour | KColorScheme::shade |
 | `kirigami_lerp(a, b, balance)` | colour | Kirigami's ColorUtils.linearInterpolation |
 | `floor(x)`, `round(x)` | number | toward negative infinity; to the nearest, a half away from zero |
+| `round_pt(x)` | font size | `x` rounded to whole points |
+| `mul(x, y)`, `div(x, y)` | number | arithmetic |
 | `pick(index, c0, c1, …)` | colour | the colour at `index` |
 
 A function is added only with its rule.
+
+S10: A `sizes_by_context` entry's `context` is one S11 context selector, its keys `scope`, `widget`, `part`,
+`variants` and `not_variants` (S12 refuses `states`, `not_states`, `sizes`, `not_sizes` and `surface` there).
 '''
 
 SELF_TEST_CATALOGUE = '''
@@ -3687,6 +4074,8 @@ def fixture_context(root: Path):
 
 
 _SBV = 'sizes_by_variant = [{ variant = "@pill", sizes = ["regular"] }]'
+_SBC = ('sizes_by_context = [{ context = { scope = "any", widget = "toolbar", part = "bar" }, sizes = ["regular"], '
+        'default_size = "regular" }]')
 _CITE = ('\n[[fact.cite]]\nkind = "published"\n'
          'source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11"\n'
          'quote = "&:hover { background-color: $hover_color; }"\n')
@@ -3768,7 +4157,8 @@ _SWITCH_TR = ('{ properties = ["geometry"], kind = "interpolate", duration_ms = 
               '{ adw = "ease_out_cubic" } }, engine = "gtk_switch" }')
 _CHAIN = '[{ widget = "component.led" }, { widget = "toolbar", part = "bar" }]'
 
-# (label, file, old, new, the findings wanted: substrings, one per finding)
+# (label, file, old, new, the findings wanted: substrings, one per finding); old a list of (old, new) pairs: each
+# replaced
 SELF_TEST_CASES = [
     # libadwaita derivation over two files
     ("libadwaita: an unknown function", "docs/facts/gnome/buttons.toml", "alpha(surface", "alfa(surface",
@@ -3874,8 +4264,7 @@ SELF_TEST_CASES = [
      '["small", "regular", "huge"]', ["'huge' is not a size"]),
     # a state model's variant declarations (S10, S12, S17; ADD-A121)
     ("model: variant groups, sets and defaults", "docs/facts/macos/state-models.toml", _SBV,
-     _SBV + '\nexclusive_variants = [["flat", "@pill"]]\ndefault_size_by_variant = [{ variant = "@pill", size = '
-     '"regular" }]', []),
+     _SBV.replace(' }]', ', default_size = "regular" }]') + '\nexclusive_variants = [["flat", "@pill"]]', []),
     ("model: a variant set", "docs/facts/macos/state-models.toml", _SBV,
      _SBV + '\nvariant_sets = [["flat", "@pill"]]', []),
     ("model: an exclusive group naming an undeclared variant", "docs/facts/macos/state-models.toml", _SBV,
@@ -3893,17 +4282,60 @@ SELF_TEST_CASES = [
      _SBV + '\nvariant_sets = [["flat", "@pill"], ["@pill", "flat"]]', ["is listed twice"]),
     ("model: a variant set not a list of lists", "docs/facts/macos/state-models.toml", _SBV,
      _SBV + '\nvariant_sets = ["flat", "@pill"]', ["variant_sets is not a list of lists of variants"]),
-    ("model: a default size the variant does not take", "docs/facts/macos/state-models.toml", _SBV,
-     _SBV + '\ndefault_size_by_variant = [{ variant = "@pill", size = "small" }]',
-     ["default_size_by_variant: '@pill' does not take the size 'small'"]),
-    ("model: a default size for an undeclared variant", "docs/facts/macos/state-models.toml", _SBV,
-     _SBV + '\ndefault_size_by_variant = [{ variant = "primary", size = "small" }]',
-     ["default_size_by_variant: 'primary' is not among variants"]),
-    ("model: two default sizes for one variant", "docs/facts/macos/state-models.toml", _SBV,
-     _SBV + '\ndefault_size_by_variant = [{ variant = "flat", size = "small" }, { variant = "flat", size = "large" }]',
-     ["two entries name 'flat'"]),
-    ("model: a default size entry without its size", "docs/facts/macos/state-models.toml", _SBV,
-     _SBV + '\ndefault_size_by_variant = [{ variant = "flat" }]', ["is not a list of { variant, size }"]),
+    # sizes and default sizes (S10, S12, S17; ADD-A131)
+    ("model: a variant's default size it does not take", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV.replace(' }]', ', default_size = "small" }]'), ["sizes_by_variant[0]: default_size 'small' is not among its "
+                                                         "sizes"]),
+    ("model: default_size_by_variant, removed", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\ndefault_size_by_variant = [{ variant = "@pill", size = "regular" }]',
+     ["`default_size_by_variant` was removed"]),
+    ("model: two entries for one variant", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV.replace(' }]', ' }, { variant = "@pill", sizes = ["small"], default_size = "small" }]'),
+     ["sizes_by_variant: two entries name '@pill'"]),
+    ("model: a sizes_by_variant entry of another form", "docs/facts/macos/state-models.toml", _SBV,
+     'sizes_by_variant = [{ variant = "@pill" }]', ["sizes_by_variant is not a list of { variant, sizes[, "
+                                                   "default_size] }"]),
+    ("model: a variant's sizes the widget does not take, with its default", "docs/facts/macos/state-models.toml",
+     [('["small", "regular", "large"]', '["small", "regular"]'),
+      (_SBV, _SBV.replace('["regular"] }', '["large"], default_size = "large" }'))], None, []),
+    ("model: a variant's sizes without the widget's default, and no default", "docs/facts/macos/state-models.toml",
+     _SBV, _SBV.replace('["regular"]', '["large"]'),
+     ["sizes_by_variant[0]: '@pill' takes ['large'] and states no default_size, where the widget's is 'regular'"]),
+    ("model: sizes without a default size", "docs/facts/macos/state-models.toml", 'default_size = "regular"\n', "",
+     ["missing `default_size`", "'@pill' takes ['regular'] and states no default_size, where the widget's is none"]),
+    ("model: a default size where sizes is empty", "docs/facts/macos/state-models.toml",
+     [('["small", "regular", "large"]', "[]"), (_SBV, "")], None, ["default_size where sizes is empty"]),
+    ("model: a pending default size", "docs/facts/macos/state-models.toml", 'default_size = "regular"',
+     'default_size = { pending = "U5" }', []),
+    ("model: a pending default size of another form", "docs/facts/macos/state-models.toml", 'default_size = "regular"',
+     'default_size = { pending = "5" }', ["default_size {'pending': '5'} is not a size or"]),
+    ("model: a context's sizes and default", "docs/facts/macos/state-models.toml", _SBV, _SBV + "\n" + _SBC, []),
+    ("model: a context's sizes as 0.8.0's first reading", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + '\nsizes_by_context = [{ context = "toolbar", sizes = ["regular"], default_size = "regular" }]',
+     ["sizes_by_context[0].context is not an S11 context selector"]),
+    ("model: a context selector on states", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + "\n" + _SBC.replace('part = "bar"', 'part = "bar", states = ["hover"]'),
+     ["sizes_by_context[0].context states `states`, which S12 refuses there"]),
+    ("model: a context no axes context's ancestors match", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + "\n" + _SBC.replace('widget = "toolbar", part = "bar"', 'widget = "component.led"'),
+     ["sizes_by_context[0].context matches the ancestors of no axes.contexts entry"]),
+    ("model: a context leaving a variant no size", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + "\n" + _SBC.replace('sizes = ["regular"], default_size = "regular"', 'sizes = ["large"], default_size = '
+                                 '"large"'),
+     ["sizes_by_context[0]: an element holding '@pill' takes ['regular'] outside this context and none inside it"]),
+    ("model: a context whose default a variant does not take there", "docs/facts/macos/state-models.toml", _SBV,
+     _SBV + "\n" + _SBC.replace('sizes = ["regular"], default_size = "regular"', 'sizes = ["small", "regular"], '
+                                 'default_size = "small"'),
+     ["the default size in force there for an element holding '@pill', 'small', is not among the sizes it takes"]),
+    ("model: a default size drawn in some state", "docs/facts/macos/state-models.toml",
+     'not_drawn = [{ states = ["hover"], conditions = ["window_inactive"] }]',
+     'not_drawn = [{ states = ["hover"], conditions = ["window_inactive"] }, { sizes = ["regular"], states = '
+     '["hover"] }, { sizes = ["small"] }]', []),
+    ("model: a default size not_drawn excludes", "docs/facts/macos/state-models.toml",
+     'not_drawn = [{ states = ["hover"], conditions = ["window_inactive"] }]',
+     'not_drawn = [{ states = ["hover"], conditions = ["window_inactive"] }, { sizes = ["regular"], variants = '
+     '["flat"], context = [{ widget = "toolbar", part = "bar" }] }]',
+     ["the default size 'regular' in force in axes.contexts[0] for {flat} is drawn in no combination there"]),
     ("model: variant groups while unavailable", "docs/facts/macos/state-models.toml", "available = false\n",
      'available = false\nexclusive_variants = [["flat", "@pill"]]\n',
      ["`exclusive_variants` on an entry with available = false"]),
@@ -4091,6 +4523,11 @@ SELF_TEST_CASES = [
          "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11", "breeze@6.8.2 kstyle/breezestyle.cpp:1"), []),
     ("motion: a toolkit prefix kept", "docs/facts/gnome/motion.toml", None,
      _MOTION.replace("durations.button", "durations.adw_toast_overlay_show"), ["keeps the toolkit's prefix `adw`"]),
+    ("motion: Core Animation's curve without its prefix", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace("in_out_sine\"\nvalue", "ease_in_ease_out\"\nvalue"), []),
+    ("motion: Core Animation's prefix kept", "docs/facts/gnome/motion.toml", None,
+     _TIMING.replace("in_out_sine\"\nvalue", "k_ca_media_timing_function_ease_in_ease_out\"\nvalue"),
+     ["keeps the toolkit's prefix `k_ca_media_timing_function`"]),
     ("motion: a key the platform's row does not list", "docs/facts/kde/motion.toml", None,
      _MOTION.replace("durations.button", "durations.breeze_state").replace(
          "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:10-11", "breeze@6.8.2 kstyle/breezestyle.cpp:1"),
@@ -4410,6 +4847,10 @@ SELF_TEST_CASES = [
     ("tokens: the colour space misspelt", "docs/facts/gnome/tokens.toml", None,
      _fact("token.motion.colour_space", '"oklab"'), ["names no token"]),
     ("tokens: an animated visual with its markers", "docs/facts/windows/tokens.toml", None, _VISUAL, []),
+    ("tokens: an animated visual off windows/", "docs/facts/gnome/tokens.toml", None, _VISUAL.replace(_WIN_CITE, _CITE),
+     ["token.icons.animated_visuals off windows/ is S4.5's own `{}`"]),
+    ("tokens: no animated visual off windows/", "docs/facts/gnome/tokens.toml", None,
+     _fact("token.icons.animated_visuals", "{}"), ["token.icons.animated_visuals off windows/ is S4.5's own `{}`"]),
     ("tokens: an animated visual by reference", "docs/facts/windows/tokens.toml", None,
      _fact("token.icons.animated_visuals.accept", '"= token.icons.animated_visuals.check"', cite=_WIN_CITE),
      ["a reference where AnimatedVisual, a map's block entry, is stated as a table"]),
@@ -4587,6 +5028,24 @@ SELF_TEST_CASES = [
              when='{ conditions = ["scheme:dark"] }') + _fact("combo_box.values.icon_clip_inset", "6"),
      ["'widest_shown' is not a unit variant of ContentWidth", "'overlay' is not a unit variant of InputPlacement",
       "`at_most_px` is not a field of ContentWidth::widest", "a length is spelled with its unit"]),
+    # `round_pt` on a `Font.size` (S2.2, S12; ADD-A131)
+    ("round_pt: a title's size in whole points", "docs/facts/kde/title.toml", None,
+     _fact("button.label.text.font.size", '"= mul(round_pt(token.text.roles.body.font.size), 1.35)"', cite=_KDE_CITE),
+     []),
+    ("round_pt: off a font size", "docs/facts/kde/title.toml", None,
+     _fact("button.body.min_width", '"= round_pt(token.text.roles.body.font.size)"', cite=_KDE_CITE),
+     ["`round_pt` outside an expression stated on a `Font.size`"]),
+    ("round_pt: an operand no reference to a font size", "docs/facts/kde/title.toml", None,
+     _fact("button.label.text.font.size", '"= round_pt(token.text.font_dpi)"', cite=_KDE_CITE)
+     + _fact("button.label.text.font.size", '"= round_pt(mul(token.text.roles.body.font.size, 2))"',
+             when='{ conditions = ["scheme:dark"] }', cite=_KDE_CITE),
+     ["`round_pt`'s operand is not a reference to a font size"] * 2),
+    ("round_pt: a size rounded in points by `round`", "docs/facts/kde/title.toml", None,
+     _fact("button.label.text.font.size", '"= mul(mul(1pt, round(div(token.text.roles.body.font.size, 1pt))), 1.35)"',
+           cite=_KDE_CITE), ["rounds a font size in whole points, which is `round_pt`'s"]),
+    ("round_pt: a number rounded", "docs/facts/kde/title.toml", None,
+     _fact("button.label.text.font.size", '"= mul(1pt, round(div(token.text.roles.body.font.size, 2)))"',
+           cite=_KDE_CITE), []),
     # S9.4's font DPI on the Apple presets (S17; ADD-A125)
     ("font dpi: a fact off the Apple presets", "docs/facts/gnome/text.toml", None, _fact("token.text.font_dpi", "96"),
      []),
@@ -4617,10 +5076,13 @@ def self_test() -> int:
             if old is None:
                 files[path] = new
             else:
-                if old not in files[path]:
-                    failures.append(f"{label}: fixture text {old!r} not found")
+                pairs = old if isinstance(old, list) else [(old, new)]
+                missing = [o for o, _ in pairs if o not in files[path]]
+                if missing:
+                    failures.append(f"{label}: fixture text {missing[0]!r} not found")
                     continue
-                files[path] = files[path].replace(old, new, 1)
+                for o, n in pairs:
+                    files[path] = files[path].replace(o, n, 1)
             got = run(files)
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
@@ -4634,8 +5096,13 @@ def self_test() -> int:
         ctx = fixture_context(root)
         if ctx.functions != {"alpha": (2, 2), "with_alpha": (2, 2), "mix": (3, 3), "kcu_mix": (3, 3),
                              "kcu_tint": (3, 3), "kde_shade": (3, 3), "kirigami_lerp": (3, 3), "floor": (1, 1),
-                             "round": (1, 1), "pick": (3, None)}:
+                             "round": (1, 1), "round_pt": (1, 1), "mul": (2, 2), "div": (2, 2),
+                             "pick": (3, None)}:
             failures.append(f"functions: got {ctx.functions}")
+        if (ctx.sizes_context, ctx.sizes_context_refused) != (
+                ("scope", "widget", "part", "variants", "not_variants"),
+                ("states", "not_states", "sizes", "not_sizes", "surface")):
+            failures.append(f"sizes_by_context keys: got {ctx.sizes_context}, {ctx.sizes_context_refused}")
         if ctx.presets != set(ALL_PRESETS):
             failures.append(f"existing presets: got {sorted(ctx.presets)}")
         # only the new model's presets exist: today's directory and a stem that is no platform preset do not count
@@ -4700,7 +5167,7 @@ def self_test() -> int:
                            ("= surface.disabled.nope", ["names no surface role"]),
                            ("= kde_shade(role.window.background, light, 4)", []),
                            ("= kirigami_lerp(role.window.background, role.view.foreground, 0.2)", []),
-                           ("= round(mul(token.kde.frame_width, 0.5))", ["`mul` is not a function"]),
+                           ("= round(sub(token.kde.frame_width, 0.5))", ["`sub` is not a function"]),
                            ("= round(token.kde.frame_width)", []),
                            ("= mix(role.global.accent_ramp.light1, role.view.background, 0.5)", []),
                            ("= role.global.accent_ramp.light1.x", ["an accent ramp role is"]),

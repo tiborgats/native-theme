@@ -32,15 +32,16 @@ facts directory lists its row in `rows` (S17: `rows` lists the gap-map rows the 
 each line of a row is counted separately (the ledger's queue #58), so a role fact naming a row carries the row's role
 line and not its `list.disclosure` or `keycap` lines. A fact (a pending fact too) carries a line when its `key` (a
 state-model entry: its `widget`) and one of the line's target paths (below; a `[declare.widget.<w>]` or
-`[declare.component.<k>]` head names `<w>` or `component.<k>`) are related, one a leading part of the other segment by
-segment, a unit suffix ignored (`button.body.stroke.top.paint` carries `button.body.{fill,stroke}`, the state model's
-`button` carries `button.body.fill @ {hover}`); a target naming a core struct's field (`FocusIndicator.offset`,
-`PartStyle.cursor`, an UpperCamel head) is carried by a key whose path passes through that struct to that field
-(key_types: `token.focus.width` and `button.body.focus.width` both carry `FocusIndicator.width`). A key's segments are
-read as check_facts.key_segments reads them, a quoted one whole (`token.text.fallbacks.per_family.".AppleSystemUIFont"`
-ends in one segment; S17, ADD-A123). A line whose target
-names no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The
-rows are compared as the gap maps write them, `†` included.
+`[declare.component.<k>]` head, a flavour's `[declare.flavor.<f>.widget.<w>]` too, names `<w>` or `component.<k>`:
+`[declare.flavor.expressive.widget.button] sizes_by_variant: @fab default_size regular`, ADD-A131) are related, one a
+leading part of the other segment by segment, a unit suffix ignored (`button.body.stroke.top.paint` carries
+`button.body.{fill,stroke}`, the state model's `button` carries `button.body.fill @ {hover}`); a target naming a core
+struct's field (`FocusIndicator.offset`, `PartStyle.cursor`, an UpperCamel head) is carried by a key whose path passes
+through that struct to that field (key_types: `token.focus.width` and `button.body.focus.width` both carry
+`FocusIndicator.width`). A key's segments are read as check_facts.key_segments reads them, a quoted one whole
+(`token.text.fallbacks.per_family.".AppleSystemUIFont"` ends in one segment; S17, ADD-A123). A line whose target names
+no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The rows
+are compared as the gap maps write them, `†` included.
 
 Where a target lies (target_paths): the target cell up to its first backtick (the code span; what follows is a note),
 cut at its selector (` @ `), split at commas outside braces into items; each item's leading dotted path, its brace
@@ -92,7 +93,7 @@ SLICE_DEFERRED = {"button": ("menu_placement", "scaffold_placement")}
 UNIT_SUFFIX = re.compile(r"_(?:px|ms|deg|pt)$")
 CONTEXT_RX = re.compile(r"context\s+(?:any\s+|nearest\s+\{([^}]*)\}\s*=\s*)?"
                         r"(component\.[a-z_][a-z0-9_]*|[a-z_][a-z0-9_]*)")
-DECLARE_RX = re.compile(r"\[declare\.((?:widget\.|component\.)[a-z_][a-z0-9_]*)\]")
+DECLARE_RX = re.compile(r"\[declare\.(?:flavor\.[a-z_][a-z0-9_]*\.)?((?:widget\.|component\.)[a-z_][a-z0-9_]*)\]")
 PATH_HEAD = re.compile(r"@?[A-Za-z_][A-Za-z0-9_]*(?:\.(?:\{[^}]*\}|@?[A-Za-z0-9_]+))*")
 
 
@@ -587,7 +588,12 @@ def self_test() -> int:
                 ("button.body.padding_px @ variant flat", {"button.body.padding.top"}, True),
                 ("button.body.fill @ {hover}", {"button"}, True),
                 ("toolbar.bar.fill", {"button"}, False),
-                ("[declare.widget.button] default_size_by_variant: @pill regular", {"button"}, True),
+                ("[declare.flavor.expressive.widget.button] sizes_by_variant: @fab default_size regular",
+                 {"button"}, True),
+                ("[declare.flavor.expressive.widget.button] sizes_by_variant: @fab default_size regular",
+                 {"toolbar"}, False),
+                ("[declare.widget.button] sizes_by_variant: @pill default_size regular", {"button"}, True),
+                ("[declare.widget.button] sizes_by_variant: @pill default_size regular", {"toolbar"}, False),
                 ("[declare.component.led] available", {"component.led"}, True),
                 ("PartStyle.min_width per part", {"button.body.min_width"}, True),
                 ("PartStyle.min_width per part", {"button.body.fill"}, False),
