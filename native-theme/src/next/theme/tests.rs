@@ -136,6 +136,40 @@ fn a_listed_enum_is_read_as_each_variant() {
     );
 }
 
+/// S12's conservative reading of a listed path below a block S6.1 sets
+/// whole (S17, ADD-A128): the listed `key_repeat` may be `none`, a value of
+/// its type, so its delay read where a duration may not be absent is
+/// refused, though the synthetic layer states the block; the preset
+/// stating the block itself is accepted.
+#[test]
+fn a_listed_option_block_is_read_as_none_too() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let line = "\nkey_repeat = \"none\"\n";
+    assert!(base.contains(line));
+    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.key_repeat.delay\" }\n";
+    let stated = base.replacen(
+        line,
+        "\nkey_repeat = { delay_ms = 500, interval_ms = 40 }\n",
+        1,
+    );
+    preset_stack(None, &format!("{stated}{rule}"), Scheme::Light).unwrap();
+    let text = format!(
+        "[pending]\n\"tokens.behavior.key_repeat\" = \"U1\"\n{}{rule}",
+        base.replacen(line, "\n", 1)
+    );
+    let layer = synthetic_layer("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n");
+    let refused = synthetic_stack(None, &text, Scheme::Light, vec![layer]);
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) = refused else {
+        panic!("the delay is read where the listed key repeat can be none");
+    };
+    assert!(
+        problems
+            .iter()
+            .any(|problem| problem.kind == ProblemKind::AbsentNotAllowed),
+        "{problems:?}"
+    );
+}
+
 /// A window's root inputs, synthetic.
 fn root() -> RootInputs {
     RootInputs::new(

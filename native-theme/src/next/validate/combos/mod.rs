@@ -330,7 +330,15 @@ impl<'a> Stack<'a> {
                     if let Some(got) = got {
                         local = Some(found(got));
                         listed = if self.cx.synthetic.contains(&source.layer) {
-                            any_value(target, q, op.marks.may_be_absent)
+                            // A block S6.1 sets whole, the path itself or one
+                            // above it, which the layer states whole, may be
+                            // `None` too.
+                            let none = q
+                                .match_indices('.')
+                                .map(|(at, _)| q.get(..at).unwrap_or(q))
+                                .chain([q])
+                                .any(|path| set_whole(target, path));
+                            any_value(target, q, op.marks.may_be_absent || none)
                                 .into_iter()
                                 .map(found)
                                 .collect()
@@ -1393,6 +1401,17 @@ fn literals(
                     .map(|index| (index, want))
             })
             .collect()
+    })
+}
+
+/// Whether the field at `path` of `target` is an `Option` of a block,
+/// which S6.1 sets whole and whose `None` reads as `Absent`.
+fn set_whole(target: Target, path: &str) -> bool {
+    registry::find(table(target), path).is_some_and(|field| {
+        let ty = match field.ty {
+            FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
+        };
+        ty.starts_with("Option<")
     })
 }
 
