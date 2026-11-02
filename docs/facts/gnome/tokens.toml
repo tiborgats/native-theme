@@ -175,9 +175,10 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_toggle-group.scss:142"
 quote = "transition: opacity 200ms $ease-out-quad;"
 
+# CSS's `linear`, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity: `Timing::Linear` (S2.7)
 [[fact]]
 key = "token.motion.timings.linear"
-value = { cubic_bezier = [0.0, 0.0, 1.0, 1.0] }
+value = "linear"
 rows = ["GN-3.18", "GN-3.19"]
 
 [[fact.cite]]
@@ -1641,11 +1642,13 @@ quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer:
 absent = ["box-shadow"]
 
 [[fact]]
-# the ring growing in from `offset + 4px` (`_drawing.scss:15`) is not expressible: reported. The mixin states the
-# transition on the unfocused selector alone and no state rule restates it, and GTK times a change by the style
-# after it, the new base style, not the previous one (`gtkcssanimatedstyle.c:818-820`, `:1034`), so the ring's transition is the same from every state: `from` none
+# the ring's outline colour, width and offset as one, a stylesheet transition GTK's CSS engine runs (`GtkCss`), so
+# `properties` empty (S2.10): it grows in from the rest outline, zero wide and transparent at the larger offset, which
+# each part's rest style states (S2.10), and shrinks back to it. The mixin states the transition on the unfocused
+# selector alone and no state rule restates it, and GTK times a change by the style after it (`gtkcssanimatedstyle.c:
+# 818-820`, `:1034`), so the ring's transition is the same from every state: `from` none
 key = "token.focus.transition"
-value = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true, from = "none" }
+value = { properties = [], kind = "interpolate", duration_ms = "= mul(token.motion.durations.focus, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", engine = "gtk_css", from = "none" }
 rows = ["GN-3.28"]
 
 [[fact.cite]]
@@ -1670,8 +1673,8 @@ quote = "gtk_css_style_property_register (\"transition-delay\", GTK_CSS_PROPERTY
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/adw-style-manager.c:237-239"
-quote = "gtk_style_context_add_provider_for_display (self->display, GTK_STYLE_PROVIDER (self->animations_provider), 10000);"
+source = "libadwaita@1.10.0 src/stylesheet/_common.scss:3-5"
+quote = "$focus_transition: outline-color 200ms $ease-out-quad, outline-width 200ms $ease-out-quad, outline-offset 200ms $ease-out-quad;"
 
 [[fact]]
 key = "token.caret.color"
@@ -1687,6 +1690,30 @@ quote = "gtk_css_style_property_register (\"caret-color\", GTK_CSS_PROPERTY_CARE
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:1-2"
 quote = "label { caret-color: currentColor;"
+
+# GTK draws the caret's stem `height × aspect ratio + 1` wide, its height the caret's drawn height, so the width
+# follows each caret and no token states it (S4.2's *The caret's width*): each caret part states its own over its
+# `caret_height`; GTK has no width setting
+[[fact]]
+key = "token.caret.width"
+value = "absent"
+rows = ["GN-3.36"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:315-1070"
+quote = "gtk_settings_class_init (GtkSettingsClass *class)"
+absent = ["gtk-cursor-width"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrenderlayout.c:136"
+quote = "stem_width = height * aspect_ratio + 1;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkrenderlayout.c:265"
+quote = "stem_width = height * aspect_ratio + 1;"
 
 [[fact]]
 # the cycle's visible half: shown, then fading out (gtktext.c's blink_alpha)
@@ -1985,18 +2012,30 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.a11y.interface.gschema.xml.in:25-26"
 quote = "<key name=\"keyboard-focus-visible-timeout\" type=\"i\"> <default>-1</default>"
 
-# S4.2 does not say which delay it is (GTK hard-codes the tooltip's HOVER_TIMEOUT 500, gtktooltip.c:71, and the
-# submenu's OPEN_TIMEOUT 80, gtkmodelbutton.c:1423)
+# GTK has no hover-time setting (S4.2's *Hover time*): each widget states its own delay as its value, the tooltip's
+# HOVER_TIMEOUT and the popover menu's 80 ms submenu delay (`menu.values.submenu_open_delay`, GN-1.77)
 [[fact]]
-key = "token.behavior.hover_open_delay"
-pending = "U149"
-rows = []
-
-# a wheel detent scrolls by the page size to the power 2/3, not by lines (its px step is not expressible: reported)
-[[fact]]
-key = "token.behavior.scroll_lines_per_step"
+key = "token.behavior.hover_time"
 value = "absent"
-rows = []
+rows = ["GN-1.77"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksettings.c:315-1070"
+quote = "gtk_settings_class_init (GtkSettingsClass *class)"
+absent = ["hover", "gtk-tooltip-timeout", "gtk-tooltip-browse-timeout"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtktooltip.c:71"
+quote = "#define HOVER_TIMEOUT          500"
+
+# a wheel detent scrolls by the page size to the power 2/3, neither lines nor a fixed distance (S4.2's *Wheel steps*):
+# the step is `scroll_view.values.wheel_step` (GN-P3-15†)
+[[fact]]
+key = "token.behavior.scroll.wheel_step_lines"
+value = "absent"
+rows = ["GN-P3-15†"]
 
 [[fact.cite]]
 kind = "published"
@@ -2008,6 +2047,77 @@ absent = []
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1226"
 quote = "scroll_step = pow (page_size, 2.0 / 3.0);"
+
+[[fact]]
+key = "token.behavior.scroll.wheel_step_distance"
+value = "absent"
+rows = ["GN-P3-15†"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1206-1229"
+quote = "get_wheel_detent_scroll_step (GtkScrolledWindow *sw, GtkOrientation orientation)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkscrolledwindow.c:1226"
+quote = "scroll_step = pow (page_size, 2.0 / 3.0);"
+
+# GtkDragSource begins a drag only on a move past the threshold, and only once its MIN_TIME_TO_DND timer, started
+# at the press, has run (S4.2's *Drag start*): no drag sooner, however far the pointer moves
+[[fact]]
+key = "token.behavior.drag_min_delay"
+value = "100ms"
+rows = ["GN-3.48"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:42"
+quote = "#define MIN_TIME_TO_DND 100"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:288"
+quote = "source->timeout_id = g_timeout_add_once (MIN_TIME_TO_DND, drag_timeout, source);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:308-311"
+quote = "if (gtk_drag_check_threshold_double (widget, source->start_x, source->start_y, x, y) && !source->timeout_id) { gtk_drag_source_drag_begin (source);"
+
+# only movement starts a drag: a press held still starts none (no held-press timer)
+[[fact]]
+key = "token.behavior.drag_time"
+value = "absent"
+rows = ["GN-3.48"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:294-313"
+quote = "gtk_drag_source_update (GtkGesture *gesture, GdkEventSequence *sequence)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkdragsource.c:308-311"
+quote = "if (gtk_drag_check_threshold_double (widget, source->start_x, source->start_y, x, y) && !source->timeout_id) { gtk_drag_source_drag_begin (source);"
+
+# GtkLabel parses the mnemonic underline only while the label and its mnemonic target are sensitive
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+value = false
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3878-3880"
+quote = "do_mnemonics = self->mnemonics_visible && gtk_widget_is_sensitive (GTK_WIDGET (self)) && (!self->mnemonic_widget || gtk_widget_is_sensitive (self->mnemonic_widget));"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
 # the key press hides the pointer at once, by setting the `none` cursor (S17's zero stated by omission)
 [[fact]]
@@ -2401,120 +2511,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.title_1.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.title_1.mnemonic_decoration"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
+quote = ".title-1 {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.title_1.mnemonic_decoration.style"
-value = "solid"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.title_1.mnemonic_decoration.by_word"
-value = false
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.title_1.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.title_1.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_1.elision"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_1.wrap"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_1.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_1.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = []
 
 [[fact.cite]]
@@ -2522,11 +2575,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:35-38"
 quote = ".title-1 {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -2743,120 +2791,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.title_2.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.title_2.mnemonic_decoration"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
+quote = ".title-2 {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.title_2.mnemonic_decoration.style"
-value = "solid"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.title_2.mnemonic_decoration.by_word"
-value = false
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.title_2.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.title_2.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_2.elision"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_2.wrap"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_2.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_2.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = []
 
 [[fact.cite]]
@@ -2864,11 +2855,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:40-43"
 quote = ".title-2 {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -3085,120 +3071,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.title_3.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.title_3.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
+quote = ".title-3 {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.title_3.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.title_3.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.title_3.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.title_3.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_3.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_3.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_3.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_3.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3206,11 +3135,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:45-48"
 quote = ".title-3 {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -3427,120 +3351,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.title_4.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.title_4.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
+quote = ".title-4 {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.title_4.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.title_4.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.title_4.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.title_4.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_4.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_4.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.title_4.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.title_4.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3548,11 +3415,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:50-53"
 quote = ".title-4 {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -3767,120 +3629,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.heading.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.heading.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
+quote = ".heading {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.heading.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.heading.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.heading.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.heading.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.heading.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.heading.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.heading.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.heading.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3888,11 +3693,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:55-57"
 quote = ".heading {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.keyed.body.font.family"
@@ -4100,120 +3900,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.body.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.body.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
+quote = ".body {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.body.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.body.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.body.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.body.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.body.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.body.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.body.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.body.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4221,11 +3964,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:59-62"
 quote = ".body {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -4442,120 +4180,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.caption_heading.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.caption_heading.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.189"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
+quote = ".caption-heading {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.caption_heading.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.caption_heading.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.caption_heading.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.caption_heading.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.189"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.caption_heading.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.caption_heading.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.caption_heading.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.caption_heading.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4563,11 +4244,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:64-67"
 quote = ".caption-heading {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -4778,120 +4454,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.caption.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.caption.mnemonic_decoration"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
+quote = ".caption {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.caption.mnemonic_decoration.style"
-value = "solid"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.caption.mnemonic_decoration.by_word"
-value = false
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.caption.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.caption.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.caption.elision"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.caption.wrap"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.caption.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.caption.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = []
 
 [[fact.cite]]
@@ -4899,11 +4518,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:69-73"
 quote = ".caption {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.keyed.document.font.family"
@@ -5122,120 +4736,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.document.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.document.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.191"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
+quote = ".document {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.document.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.191"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.document.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.191"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.document.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.191"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.document.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.191"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.document.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.191"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.document.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.191"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.document.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.191"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.document.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.191"]
 
 [[fact.cite]]
@@ -5243,11 +4800,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:75-79"
 quote = ".document {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.keyed.monospace.font.family"
@@ -5466,120 +5018,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.monospace.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.monospace.mnemonic_decoration"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
+quote = ".monospace {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.monospace.mnemonic_decoration.style"
-value = "solid"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.monospace.mnemonic_decoration.by_word"
-value = false
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.monospace.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.monospace.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.monospace.elision"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.monospace.wrap"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.monospace.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.monospace.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = []
 
 [[fact.cite]]
@@ -5587,11 +5082,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:81-84"
 quote = ".monospace {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 # the class sets no family: the default font's, inherited
@@ -5810,120 +5300,63 @@ source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
 quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
 absent = ["word-spacing", "word_spacing"]
 
-# GtkLabel's mnemonic: Pango's markup parser underlines the accelerator character with PANGO_UNDERLINE_LOW
-# (its offset, beneath the character's ink, is not expressible: reported)
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the class sets no decoration (S2.8)
 [[fact]]
-key = "token.text.keyed.numeric.mnemonic_decoration.line"
-value = "underline"
+key = "token.text.keyed.numeric.mnemonic_decoration"
+value = "absent"
 rows = ["GN-1.192"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric {"
+absent = ["text-decoration", "text-decoration-line"]
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact]]
-key = "token.text.keyed.numeric.mnemonic_decoration.style"
-value = "solid"
-rows = ["GN-1.192"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
-quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-markup.c:500-503"
-quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-attributes.h:141"
-quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
-
-# the line spans the underlined run's whole extents
-[[fact]]
-key = "token.text.keyed.numeric.mnemonic_decoration.by_word"
-value = false
-rows = ["GN-1.192"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:368-369"
-quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
-
-[[fact]]
-key = "token.text.keyed.numeric.mnemonic_decoration.thickness"
-value = "= element.font_underline_thickness"
-rows = ["GN-1.192"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:365-370"
-quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:370"
-quote = "new_rect.height = underline_thickness;"
-
-# the attribute names no colour: the text's own
-[[fact]]
-key = "token.text.keyed.numeric.mnemonic_decoration.paint"
-value = "= surface.foreground"
-rows = ["GN-1.192"]
-
-[[fact.cite]]
-kind = "published"
-source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
-quote = "if (!underline_color) underline_color = fg_color;"
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
-
-# GtkLabel's defaults: no ellipsizing, no wrapping, no line limit
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.numeric.elision"
-value = "none"
+value = "absent"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2645-2649"
-quote = "g_param_spec_enum (\"ellipsize\", NULL, NULL, PANGO_TYPE_ELLIPSIZE_MODE, PANGO_ELLIPSIZE_NONE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.numeric.wrap"
-value = "none"
+value = "absent"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
-quote = "g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
 [[fact]]
 key = "token.text.keyed.numeric.max_lines"
-value = "none"
+value = "absent"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
-quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
 
-# the class sets no colour: the inherited one
+# the class sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
 [[fact]]
 key = "token.text.keyed.numeric.fill"
-value = "= surface.foreground"
+value = "absent"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
@@ -5931,11 +5364,6 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
 quote = ".numeric {"
 absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
-quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "token.text.roles.body"
@@ -6404,26 +5832,6 @@ source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:161-163"
 quote = "> .icon { -gtk-icon-size: 96px; -gtk-icon-weight: 134;"
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.size"
-value = "64px"
-rows = ["GN-3.59"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-185"
-quote = "> .icon { -gtk-icon-size: 64px; -gtk-icon-weight: 267;"
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.weight"
-value = 267
-rows = ["GN-3.57"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-185"
-quote = "> .icon { -gtk-icon-size: 64px; -gtk-icon-weight: 267;"
-
-[[fact]]
 key = "token.icons.sizes.keyed.about.size"
 value = "128px"
 rows = ["GN-3.59"]
@@ -6446,7 +5854,7 @@ quote = "-gtk-icon-size: 14px;"
 # every context's lists: the root's symbolic-icon palette (inherited everywhere); GTK's themed icons have no
 # variation axes and no symbol variants
 [[fact]]
-key = "token.icons.sizes.toolbar.status_colors"
+key = "token.icons.sizes.toolbar.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6476,7 +5884,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.small.status_colors"
+key = "token.icons.sizes.small.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6506,7 +5914,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.large.status_colors"
+key = "token.icons.sizes.large.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6536,7 +5944,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page.status_colors"
+key = "token.icons.sizes.keyed.status_page.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6566,7 +5974,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page_compact.status_colors"
+key = "token.icons.sizes.keyed.status_page_compact.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6596,37 +6004,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.status_colors"
-value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/_common.scss:16-23"
-quote = ":root { --window-radius: #{$button_radius + 6}; -gtk-icon-palette: success var(--success-color), warning var(--warning-color), error var(--error-color), accent var(--accent-color); }"
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.axes"
-value = {}
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
-quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.symbol_variants"
-value = []
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
-quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
-
-[[fact]]
-key = "token.icons.sizes.keyed.about.status_colors"
+key = "token.icons.sizes.keyed.about.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6656,7 +6034,7 @@ source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1285-1290"
 quote = "gtk_css_style_property_register (\"-gtk-icon-size\","
 
 [[fact]]
-key = "token.icons.sizes.keyed.check.status_colors"
+key = "token.icons.sizes.keyed.check.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = []
 
@@ -6947,7 +6325,7 @@ source = "gtk@4.24.1 gtk/svg/gtksvg.c:1937-1938"
 quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
 
 
-# the status page's icon colour, the compact and spinner pages' too (their rules set none)
+# the status page's icon colour, the compact page's too (its rules set none)
 [[fact]]
 key = "token.icons.sizes.keyed.status_page.fill"
 value = "= alpha(surface.foreground, token.params.opacity.dim)"
@@ -7105,73 +6483,6 @@ quote = "self->playing = FALSE; self->run_mode = GTK_SVG_RUN_MODE_STOPPED;"
 
 
 [[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.fill"
-value = "= alpha(surface.foreground, token.params.opacity.dim)"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
-quote = "> .icon {"
-absent = ["color"]
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:134-135"
-quote = "> .icon { color: color-mix(in srgb, currentColor var(--dim-opacity), transparent);"
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.rendering_mode"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
-quote = "> .icon {"
-absent = ["-gtk-icon-style"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
-quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.scale"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1279-1320"
-quote = "gtk_css_style_property_register (\"-gtk-icon-source\","
-absent = []
-
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.state_effect"
-value = "absent"
-rows = []
-
-[[fact.cite]]
-kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:183-186"
-quote = "> .icon {"
-absent = ["-gtk-icon-filter"]
-
-[[fact.cite]]
-kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1309-1314"
-quote = "gtk_css_style_property_register (\"-gtk-icon-filter\", GTK_CSS_PROPERTY_ICON_FILTER, GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_CONTENT, filter_value_parse, gtk_css_filter_value_new_none ());"
-
-# the context holds AdwSpinnerPaintable (adw-status-page.c:427-430), which turns forever (adw-spinner-paintable.c:532-539);
-# an IconStyle loop's keyframes patch a part's style, which cannot state the paintable's arc (S2.7 gives a spinner's
-# motion to the spinner widget)
-[[fact]]
-key = "token.icons.sizes.keyed.status_page_spinner.animation"
-pending = "U148"
-rows = []
-
-[[fact]]
 key = "token.icons.sizes.keyed.about.fill"
 value = "= surface.foreground"
 rows = []
@@ -7299,12 +6610,22 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81"
 quote = "check { border-radius: $check_radius; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/check.svg\")); } }"
 
-# the check's icon is always recoloured (`-gtk-recolor`, _checks.scss:70, :76, :80), GTK's symbolic recolouring, which
-# no RenderingMode names yet (ledger queue #123)
+# the check's images are always recoloured (`-gtk-recolor`, _checks.scss:70, :76, :80), whatever their files: the
+# context's own recolouring, `Template` (S2.9)
 [[fact]]
 key = "token.icons.sizes.keyed.check.rendering_mode"
-pending = "U147"
-rows = []
+value = "template"
+rows = ["GN-3.59"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:67-81"
+quote = "check { border-radius: $check_radius; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/check.svg\")); } }"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:73-81"
+quote = "radio { border-radius: 100%; &:checked { -gtk-icon-source: -gtk-recolor(url(\"assets/bullet.svg\")); } } check, radio { &:indeterminate { -gtk-icon-source: -gtk-recolor(url(\"assets/dash.svg\")); } }"
 
 [[fact]]
 key = "token.icons.sizes.keyed.check.scale"
