@@ -41,6 +41,9 @@ pub(crate) struct Reader {
     /// A preset's listed paths (S17, ADD-A128), each as [`listed_path`]
     /// gives it: a block built whole may leave exactly these out.
     pub(crate) listed: Vec<String>,
+    /// Reading an `Option` of a struct block, stated whole in every
+    /// position: a field it leaves out is mistyped, not missing (S11).
+    option_block: bool,
 }
 
 /// A path as a listed path compares (S11's `[pending]` key): its last
@@ -338,6 +341,10 @@ pub(crate) trait FromToml: Sized {
     /// is what the type spells by it.
     const AUTO: bool = false;
 
+    /// Whether the type is a struct block, read whole as a table holding
+    /// every field (the `ThemeParts` derive's).
+    const STRUCT_BLOCK: bool = false;
+
     /// Whether, under `spelling`, a `Value` of this type is also stated as
     /// an expression, `"auto"` or `"absent"`: a font size's number takes a
     /// suffixed key, its other forms the bare one (S11).
@@ -463,10 +470,23 @@ pub(crate) fn required<T>(value: Option<T>, at: &str, cx: &mut Reader) -> Option
         return value;
     }
     if value.is_none() && !cx.reported_at(at) {
-        cx.problem(at, ProblemKind::Missing);
+        if cx.option_block {
+            cx.problem(
+                at,
+                ProblemKind::Mistyped {
+                    expected: OPTION_BLOCK,
+                },
+            );
+        } else {
+            cx.problem(at, ProblemKind::Missing);
+        }
     }
     value
 }
+
+/// What an `Option` of a struct block is stated as (S11).
+const OPTION_BLOCK: &str = "a field of a block an `Option` holds: the block is \"none\" or a \
+                            table holding every field";
 
 /// An `Option` field of a block built whole: left out, `None` where
 /// `options_none`, else missing.
@@ -777,7 +797,13 @@ impl<T: FromToml> FromToml for Option<T> {
         {
             return Some(None);
         }
-        T::read(item, spelling, at, cx).map(Some)
+        if !T::STRUCT_BLOCK {
+            return T::read(item, spelling, at, cx).map(Some);
+        }
+        let outer = std::mem::replace(&mut cx.option_block, true);
+        let read = T::read(item, spelling, at, cx).map(Some);
+        cx.option_block = outer;
+        read
     }
 
     fn finish(self, at: &str, cx: &mut Reader) -> Self {

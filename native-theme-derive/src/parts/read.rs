@@ -198,6 +198,8 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
             }
 
             impl #t::FromToml for #name {
+                const STRUCT_BLOCK: bool = true;
+
                 fn read(
                     item: &::toml::Value,
                     spelling: #t::Spelling,

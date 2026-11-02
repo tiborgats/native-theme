@@ -1198,6 +1198,50 @@ fn auto_none_and_absent_are_exact() {
     );
 }
 
+/// An `Option` of a struct block is `"none"` or a table holding every
+/// field, in every position; a table missing a field is mistyped, the leaf
+/// named (S11, ADD-A125), not a missing field, and a whole block in a
+/// preset's bases is still missing what it leaves out.
+#[test]
+fn partial_option_block_mistyped() {
+    let expected = "expected a field of a block an `Option` holds: the block is \"none\" or a \
+                    table holding every field";
+    assert_eq!(
+        problems("[tokens.behavior]\nkey_repeat = { delay_ms = 500 }"),
+        [format!(
+            "tokens.behavior.key_repeat.interval_ms: {expected}"
+        )]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\nwhen = { conditions = [\"scheme:dark\"] }\ntarget = \"tokens\"\n\
+             set = { behavior.key_repeat = { interval_ms = 40 } }"
+        ),
+        [format!(
+            "rules[0].set.behavior.key_repeat.delay_ms: {expected}"
+        )]
+    );
+    assert_eq!(
+        problems("[tokens.behavior]\nkey_repeat = { delay_ms = 500, interval_ms = 40 }"),
+        Vec::<String>::new()
+    );
+    assert_eq!(
+        problems("[tokens.behavior]\nkey_repeat = \"none\""),
+        Vec::<String>::new()
+    );
+    let found = match read_preset("[widgets.button.label.text]\nmax_lines = 1") {
+        Err(LayerError::Invalid(problems)) => problems,
+        other => panic!("{other:?}"),
+    };
+    assert!(
+        found.contains(&Problem::new(
+            "widgets.button.label.text.wrap",
+            ProblemKind::Missing
+        )),
+        "{found:?}"
+    );
+}
+
 #[test]
 fn try_from_names_every_missing_leaf() {
     let error = Corners::try_from(CornersPatch {
