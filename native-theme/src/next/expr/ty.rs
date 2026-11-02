@@ -1575,11 +1575,6 @@ mod tests {
                 Func::NameIndex,
             ),
             (
-                "adw_standalone(role.global.accent, scheme)",
-                Ty::Color,
-                Func::AdwStandalone,
-            ),
-            (
                 "shadow_extent(widget.frame.shadow, left)",
                 Ty::Length,
                 Func::ShadowExtent,
@@ -1630,6 +1625,30 @@ mod tests {
                 index: 1,
                 expected: Ty::Color,
                 found: Ty::Length
+            }
+        );
+    }
+
+    #[test]
+    fn adw_standalone_is_implemented() {
+        for text in [
+            "adw_standalone(role.global.accent, scheme)",
+            "adw_standalone(role.global.accent, dark)",
+        ] {
+            assert_eq!(typed(text, Ty::Color), Ty::Color, "{text}");
+        }
+        assert_eq!(
+            refused("adw_standalone(role.global.accent, dim)", Ty::Color),
+            TypeError::UnknownVariant {
+                ty: "Scheme",
+                name: Key::new("dim").unwrap()
+            }
+        );
+        assert_eq!(
+            refused("adw_standalone(role.global.accent)", Ty::Color),
+            TypeError::Arity {
+                func: Func::AdwStandalone,
+                found: 1
             }
         );
     }

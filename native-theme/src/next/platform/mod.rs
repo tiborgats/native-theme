@@ -1,8 +1,10 @@
 //! S2.2's platform functions, one file each; public for their vector tests
-//! (`tests/platform_vectors.rs`). `kde_shade` and `kirigami_lerp` were written
-//! in a clean room, from behavioural descriptions and the vector tables alone
-//! (the plan's D10); the model's names for their operands are here.
+//! (`tests/platform_vectors.rs`). `adw_standalone`, `kde_shade` and
+//! `kirigami_lerp` were written in a clean room, from behavioural descriptions
+//! and the vector tables alone (the plan's D10); the model's names for their
+//! operands are here.
 
+pub mod adw_standalone;
 pub mod kde_shade;
 pub mod kirigami_lerp;
 

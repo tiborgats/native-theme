@@ -7,6 +7,7 @@ use super::{Func, Name, Ref};
 use crate::next::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::next::color::Color;
 use crate::next::platform::kde_shade::KdeShadeRole;
+use crate::next::selector::Scheme;
 use crate::next::units::{Deg, FontSize, Ms, Px};
 
 /// An evaluated value.
@@ -81,6 +82,8 @@ pub(crate) trait Env {
 /// M1a design's task 13 and the value phase).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Platform {
+    /// `adw_standalone(c, scheme)`.
+    AdwStandalone,
     /// `kde_shade(c, role, contrast)`.
     KdeShade,
     /// `kirigami_lerp(a, b, balance)`.
@@ -92,6 +95,7 @@ impl Platform {
     /// implemented yet and for the model's own arithmetic.
     pub(super) fn of(func: Func) -> Option<Platform> {
         match func {
+            Func::AdwStandalone => Some(Platform::AdwStandalone),
             Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             _ => None,
@@ -102,6 +106,22 @@ impl Platform {
     fn eval(self, args: &[Node], env: &dyn Env) -> Val {
         let arg = |index: usize| args.get(index).map(|node| eval(node, env));
         match self {
+            Platform::AdwStandalone => {
+                let (c, scheme) = (arg(0), arg(1));
+                let scheme = match scheme {
+                    Some(Val::Name(Name::Variant(name))) => {
+                        <Scheme as crate::next::toml::read::Named>::from_name(name.as_str())
+                    }
+                    _ => None,
+                };
+                let c = c.as_ref().map_or_else(transparent, color);
+                match scheme {
+                    Some(scheme) => Val::Color(from_channels(
+                        crate::next::platform::adw_standalone::adw_standalone(channels(c), scheme),
+                    )),
+                    None => Val::Color(c),
+                }
+            }
             Platform::KdeShade => {
                 let (c, role, contrast) = (arg(0), arg(1), arg(2));
                 let role = match role {
@@ -337,6 +357,7 @@ mod tests {
                 Ref::FontSize => Val::Length(Px(13.0)),
                 Ref::Base => Val::Length(Px(6.0)),
                 Ref::Active(_) => rgba(0.0, 0.0, 1.0, 1.0),
+                Ref::Scheme => Val::Name(Name::Variant(Key::new("dark").unwrap())),
                 _ => match reference.to_string().as_str() {
                     "token.gap" | "widget.frame.width" => Val::Length(Px(6.0)),
                     "token.speed" => Val::Number(0.5),
@@ -474,6 +495,27 @@ mod tests {
                 a: 1.0
             })
         );
+        // libadwaita's standalone colour of its blue accent: unclamped, its
+        // blue channel above 1 in the dark scheme, which the fixture's
+        // `scheme` names (`next::platform::adw_standalone`).
+        let blue = Color::parse("#3584e4").unwrap();
+        for (text, scheme) in [
+            ("adw_standalone(#3584e4, light)", Scheme::Light),
+            ("adw_standalone(#3584e4, dark)", Scheme::Dark),
+            ("adw_standalone(#3584e4, scheme)", Scheme::Dark),
+        ] {
+            assert_eq!(
+                value(text, Ty::Color),
+                Val::Color(from_channels(
+                    crate::next::platform::adw_standalone::adw_standalone(channels(blue), scheme)
+                )),
+                "{text}"
+            );
+        }
+        let Val::Color(dark) = value("adw_standalone(#3584e4, dark)", Ty::Color) else {
+            panic!("a colour");
+        };
+        assert!(dark.b > 1.0, "{dark:?}");
         assert_eq!(
             value("with_alpha(surface.foreground, 0.8)", Ty::Color),
             Val::Color(Color {

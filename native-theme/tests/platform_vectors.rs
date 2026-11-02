@@ -6,9 +6,10 @@
 
 use std::collections::HashMap;
 
-use native_theme::next::Color;
+use native_theme::next::platform::adw_standalone::adw_standalone;
 use native_theme::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use native_theme::next::platform::kirigami_lerp::kirigami_lerp;
+use native_theme::next::{Color, Scheme};
 
 /// A table's rows, each by its column names; the header lines skipped.
 fn rows(function: &str) -> Vec<HashMap<String, String>> {
@@ -38,21 +39,32 @@ fn rows(function: &str) -> Vec<HashMap<String, String>> {
     rows
 }
 
-/// An input colour, a literal of S2.1.
+/// An input colour, a literal of S2.1, or `srgb(r, g, b, a)` with the
+/// reference's singles in the tables' number form, which allows an exponent
+/// (`-5.19812102e-06`).
 fn color(cell: &str) -> Color {
-    Color::parse(cell).expect(cell)
+    Color::parse(cell).unwrap_or_else(|| {
+        let channels: Vec<f32> = srgb_channels(cell)
+            .map(|n| n.parse().expect(cell))
+            .collect();
+        from_channels(channels.try_into().expect(cell))
+    })
+}
+
+/// The channels of `srgb(…)`, as written.
+fn srgb_channels(cell: &str) -> impl Iterator<Item = &str> {
+    cell.strip_prefix("srgb(")
+        .and_then(|rest| rest.strip_suffix(')'))
+        .expect(cell)
+        .split(',')
+        .map(str::trim)
 }
 
 /// An output colour, `srgb(r, g, b, a)` with the reference's unrounded
 /// channels.
 fn output(cell: &str) -> [f64; 4] {
-    let inner = cell
-        .strip_prefix("srgb(")
-        .and_then(|rest| rest.strip_suffix(')'))
-        .expect(cell);
-    let channels: Vec<f64> = inner
-        .split(',')
-        .map(|n| n.trim().parse().expect(cell))
+    let channels: Vec<f64> = srgb_channels(cell)
+        .map(|n| n.parse().expect(cell))
         .collect();
     channels.try_into().expect(cell)
 }
@@ -107,6 +119,21 @@ fn vectors_kde_shade() {
             other => panic!("no role `{other}`"),
         };
         let got = kde_shade(channels(color(&row["c"])), role, number(&row["contrast"]));
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_adw_standalone() {
+    let rows = rows("adw_standalone");
+    assert_eq!(rows.len(), 628);
+    for row in rows {
+        let scheme = match row["scheme"].as_str() {
+            "light" => Scheme::Light,
+            "dark" => Scheme::Dark,
+            other => panic!("no scheme `{other}`"),
+        };
+        let got = adw_standalone(channels(color(&row["c"])), scheme);
         assert_color(from_channels(got), output(&row["result"]), &row);
     }
 }
