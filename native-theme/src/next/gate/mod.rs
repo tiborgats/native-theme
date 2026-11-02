@@ -303,10 +303,13 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// the field `info` or of an entry of its map (S17, ADD-A128), with the
 /// unit suffix S11 spells its key with. Synthetic, never bundled, no
 /// platform's: an empty list or map, a list of two halves, 1 in the
-/// type's unit, `#010203`, the text `Synthetic`, the key `synthetic`, an
-/// enum's first variant, a glyph's named system image `synthetic`; a
-/// struct block's every field so, `absent` where a field may be absent; an
-/// enum block's first unit variant. `None` for a type with none yet.
+/// type's unit, `#010203`, the text `Synthetic`, an enum's first variant,
+/// a glyph's named system image `synthetic`; a struct block's every field
+/// so, `absent` where a field may be absent; an enum block's first unit
+/// variant. `None` for a type with none yet, and for a key: a key names
+/// what the preset declares or what its slot lists (S10), which no
+/// synthetic name is, so a listed key is refused by name until the layers
+/// take the preset's declarations.
 fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, Item)> {
     let wrapped = ["Option<", "Value<"]
         .iter()
@@ -342,7 +345,7 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
         Some(Ty::Bool) => Some(("", Item::Boolean(true))),
         Some(Ty::Text) => Some(("", Item::String("Synthetic".to_owned()))),
         Some(Ty::Color | Ty::Paint) => Some(("", Item::String("#010203".to_owned()))),
-        Some(Ty::Key(_)) => Some(("", Item::String("synthetic".to_owned()))),
+        Some(Ty::Key(_)) => return None,
         Some(Ty::Enum(names)) => {
             return names
                 .variants
@@ -2367,6 +2370,19 @@ mod tests {
         let refused = synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), "U1".to_owned())])
             .unwrap_err();
         assert!(refused.contains("holds no field"), "{refused}");
+    }
+
+    /// A key has no synthetic value (S10: it names what the preset
+    /// declares or its slot lists), so a listed key the field cannot leave
+    /// `absent`, or a block holding one, is refused by name, never loaded
+    /// with a name validation refuses; one that may be absent is `absent`.
+    #[test]
+    fn a_listed_key_is_refused_by_name() {
+        let key = "widgets.button.icon.icon.scale";
+        let (info, _) = super::super::toml::read::listed_field(key).unwrap();
+        assert!(synthetic_of(written(info), info).is_none());
+        let (_, absent) = synthetic_value(key).unwrap();
+        assert_eq!(absent, Item::String("absent".to_owned()));
     }
 
     /// The synthetic layers of a set-whole block (`Option<KeyRepeat>`), a
