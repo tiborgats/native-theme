@@ -9191,6 +9191,44 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/selection.toml#selection.darkAqua.disabled_foreground"
 tolerance = 1
 
+# the unemphasized selection (`window_inactive`, as `role.selection.background`'s `unemphasizedSelectedContentBackgroundColor`
+# above): the row view is not emphasized and its cells' background style is `normal` (run 41195846264,
+# `probe.toml#macos.selection.<appearance>.unemphasized.row_view`), so the label colours do not adapt and draw as outside
+# the selection; the captures show it: over `#dcdcdc` (light) the secondary and tertiary glyphs are `#6e6e6e` and
+# `#a3a3a3` (`#0000007f`, `#00000042` composited), over `#464646` (dark) `#acacac` and `#747474` (`#ffffff8c`,
+# `#ffffff3f`), `….unemphasized.samples.r1_secondaryLabelColor_glyph.raw`, `….r1_tertiaryLabelColor_glyph.raw`
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"] }
+value = "= role.window.foreground_inactive"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:289-290"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"] }
+value = "= role.window.disabled.foreground"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:289-290"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
 [[fact]]
 key = "role.selection.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"] }

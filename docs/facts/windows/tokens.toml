@@ -135,13 +135,20 @@ rows = ["W-P4-3†"]
 
 # The theme change (S4.3): what a theme switch does to WinUI's brush transitions and visual-state storyboards (a
 # brush swapped, or a colour changed in place) and to a transition running at the switch is runtime behaviour no
-# cached source states (S2.7's `WinUi`, ADD-A126): pending (register U183). The colour space,
-# `token.motion.color_space` (ADD-A125), is the composition path's, measured (U157): its pending fact waits for the
-# checkers to take the key (ledger queue #133).
+# cached source states (S2.7's `WinUi`, ADD-A126): pending (register U183).
 [[fact]]
 key = "token.theme_change"
 pending = "U183"
 rows = ["W-P3-16†"]
+
+# The colour space (`token.motion.color_space`, S2.7, ADD-A125): the composition path's, which the brush transitions
+# take (a `ColorKeyFrameAnimation` interpolating in `CompositionColorSpace_Rgb`,
+# microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111), whose arithmetic the
+# compositor holds, not the cache: measured (U157).
+[[fact]]
+key = "token.motion.color_space"
+pending = "U157"
+rows = ["W1-023"]
 
 
 # Behaviour: the system defaults the Win32 reference states (the reader reads the user's).
@@ -723,6 +730,23 @@ quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
 
 [[fact]]
+key = "token.text.keyed.caption.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19-22"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact]]
 key = "token.text.keyed.caption.fill"
 value = "absent"
 rows = []
@@ -890,6 +914,23 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
 quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23-25"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
 
 [[fact]]
 key = "token.text.keyed.body.fill"
@@ -1066,6 +1107,23 @@ quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
 
 [[fact]]
+key = "token.text.keyed.body_strong.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact]]
 key = "token.text.keyed.body_strong.fill"
 value = "absent"
 rows = []
@@ -1233,6 +1291,23 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
 quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body_large.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27-31"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
 
 [[fact]]
 key = "token.text.keyed.body_large.fill"
@@ -1409,6 +1484,23 @@ quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
 
 [[fact]]
+key = "token.text.keyed.body_large_strong.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32-35"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact]]
 key = "token.text.keyed.body_large_strong.fill"
 value = "absent"
 rows = []
@@ -1581,6 +1673,23 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
 quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.subtitle.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36-39"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
 
 [[fact]]
 key = "token.text.keyed.subtitle.fill"
@@ -1757,6 +1866,23 @@ quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
 
 [[fact]]
+key = "token.text.keyed.title.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40-43"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact]]
 key = "token.text.keyed.title.fill"
 value = "absent"
 rows = []
@@ -1931,6 +2057,23 @@ quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
 
 [[fact]]
+key = "token.text.keyed.title_large.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44-47"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact]]
 key = "token.text.keyed.title_large.fill"
 value = "absent"
 rows = []
@@ -2103,6 +2246,23 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
 quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
 absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.display.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48-51"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["TextDecorations", "AccessKey"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["TextDecorations", "AccessKey"]
 
 [[fact]]
 key = "token.text.keyed.display.fill"
@@ -2319,7 +2479,7 @@ quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"
 [[fact]]
 key = "token.text.font_dpi"
 value = 96
-rows = []
+rows = ["W-P3-13†"]
 
 [[fact.cite]]
 kind = "published"
@@ -2352,6 +2512,26 @@ quote = "<x:Double x:Key=\"AppBarButtonContentHeight\">16</x:Double>"
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:366"
 quote = "<Viewbox x:Name=\"ContentViewbox\" Height=\"{ThemeResource AppBarButtonContentHeight}\""
+
+# Animated visuals (S2.7's `WinUiAnimatedIcon`, S4.5, ADD-A126): the drop-down button's chevron,
+# AnimatedChevronDownSmallVisualSource, its duration (a TimeSpan of 4833333 ticks, 483.3333ms by S17's `ticks_to_ms`)
+# and its marker map as the source states them (W3-28).
+
+[[fact]]
+key = "token.icons.animated_visuals.chevron_down_small"
+value = { duration_ms = 483.3333, markers = { NormalToPointerOver_Start = 0.0, NormalToPointerOver_End = 0.0, NormalToPressed_Start = 0.0, NormalToPressed_End = 0.312068965517241, PointerOverToNormal_Start = 0.0, PointerOverToNormal_End = 0.0, PointerOverToPressed_Start = 0.0, PointerOverToPressed_End = 0.312068965517241, PressedToNormal_Start = 0.346551724137931, PressedToNormal_End = 0.967241379310345, PressedToPointerOver_Start = 0.346551724137931, PressedToPointerOver_End = 0.967241379310345 } }
+rows = ["W3-28"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedChevronDownSmallVisualSource.cpp:460-463"
+quote = "TimeSpan AnimatedChevronDownSmallVisualSource::Duration() { return TimeSpan{ 4833333L }; }"
+conversion = ["ticks_to_ms"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedChevronDownSmallVisualSource.cpp:470-488"
+quote = "{ L\"NormalToPointerOver_Start\", 0.0 }, { L\"NormalToPointerOver_End\", 0.0 }, { L\"NormalToPressed_Start\", 0.0 }, { L\"NormalToPressed_End\", 0.312068965517241 }, { L\"PointerOverToNormal_Start\", 0.0 }, { L\"PointerOverToNormal_End\", 0.0 }, { L\"PointerOverToPressed_Start\", 0.0 }, { L\"PointerOverToPressed_End\", 0.312068965517241 }, { L\"PressedToNormal_Start\", 0.346551724137931 }, { L\"PressedToNormal_End\", 0.967241379310345 }, { L\"PressedToPointerOver_Start\", 0.346551724137931 }, { L\"PressedToPointerOver_End\", 0.967241379310345 },"
 
 # Font fallbacks (S4.4, ADD-A122, ADD-A123): the symbol font is the XAML FontFamily list SymbolThemeFontFamily,
 # Segoe Fluent Icons then Segoe MDL2 Assets, which every FontCodePoint glyph's family takes.

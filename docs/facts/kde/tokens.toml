@@ -39,13 +39,51 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezestyle.cpp:2080-2086"
 quote = "const int animationsDuration = cg.readEntry(\"AnimationDurationFactor\", StyleConfigData::animationsDuration() / 100.0f) * 100; if (animationsDuration > 0) { StyleConfigData::setAnimationsDuration(animationsDuration); StyleConfigData::setAnimationsEnabled(true); } else { StyleConfigData::setAnimationsEnabled(false); }"
 
+# the colour space (S2.7's *Colour interpolation*, ADD-A125): Breeze paints its widgets' fades with KColorUtils::mix,
+# which mixes premultiplied (inside 0..1, the only range Breeze's opacity reaches); Kirigami's QML colour animations
+# run through QVariantAnimation's QColor interpolator, each 8-bit channel and the alpha apart, unpremultiplied
+[[fact]]
+key = "token.motion.color_space"
+value = "premultiplied_srgb"
+rows = ["K3.31"]
+
+[[fact.cite]]
+kind = "published"
+source = "kguiaddons@6.31.0 src/colors/kcolorutils.cpp:144-166"
+quote = "qreal a = mixQreal(c1.alphaF(), c2.alphaF(), bias); if (a <= 0.0) { return Qt::transparent; } qreal r = qBound(0.0, mixQreal(c1.redF() * c1.alphaF(), c2.redF() * c2.alphaF(), bias), 1.0) / a;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:152"
+quote = "outline = KColorUtils::mix(hover, focus, opacity);"
+
+[[fact]]
+key = "token.motion.color_space"
+when = { conditions = ["flavor:kirigami"] }
+value = "straight_srgb8"
+rows = ["Q3.26"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22"
+quote = "template<> Q_INLINE_TEMPLATE QColor _q_interpolate(const QColor &f,const QColor &t, qreal progress) { return QColor(qBound(0,_q_interpolate(f.red(), t.red(), progress),255), qBound(0,_q_interpolate(f.green(), t.green(), progress),255), qBound(0,_q_interpolate(f.blue(), t.blue(), progress),255), qBound(0,_q_interpolate(f.alpha(), t.alpha(), progress),255)); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/corelib/animation/qvariantanimation_p.h:89-94"
+quote = "_q_interpolate(const T &f, const T &t, qreal progress) { return T(f + (t - f) * progress); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/util/qquickanimation.cpp:776-782"
+quote = "d->interpolatorType = QMetaType::QColor; d->defaultToInterpolatorType = true; d->interpolator = QVariantAnimationPrivate::getInterpolator(d->interpolatorType);"
+
 # Breeze's state engines (buttons' hover, focus, pressed cross-fades; also Qt's SH_Widget_Animation_Duration, which
 # breezestyle.cpp:937-938 answers with it): `animations`, S4.1's key for Breeze's Animations class. While kdeglobals
 # sets the factor, the factor times the literal 100 (not breezerc's AnimationsDuration), truncated to whole ms by
 # the int conversion; a positive result turns Breeze's animations on whatever breezerc says, zero (a factor below
 # 0.01, the factor 0 of animations_off) turns them off. While the factor is unset, breezerc's AnimationsDuration
 # (100), which the factor's default 1 reproduces
-
 [[fact]]
 key = "token.motion.durations.animations"
 value = "= floor(mul(100ms, token.motion.speed_factor))"
@@ -1417,6 +1455,17 @@ quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.default.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
+
+[[fact]]
 key = "token.text.keyed.fixed.font.family"
 value = "Hack"
 rows = []
@@ -1622,6 +1671,17 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
 quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.fixed.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
 
 [[fact]]
 key = "token.text.keyed.toolbar.font.family"
@@ -1836,6 +1896,17 @@ quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.toolbar.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
+
+[[fact]]
 key = "token.text.keyed.menu.font.family"
 value = "Noto Sans"
 rows = []
@@ -2046,6 +2117,17 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
 quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.menu.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
 
 [[fact]]
 key = "token.text.keyed.smallest_readable.font.family"
@@ -2260,13 +2342,24 @@ quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.smallest_readable.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
+
+[[fact]]
 key = "token.text.keyed.heading_1.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.family"]
 
@@ -2324,7 +2417,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.italic", "font.styleName"]
 
@@ -2355,7 +2448,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.letterSpacing"]
 
@@ -2376,7 +2469,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.wordSpacing"]
 
@@ -2397,7 +2490,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.variableAxes"]
 
@@ -2418,7 +2511,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.features"]
 
@@ -2439,7 +2532,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.capitalization"]
 
@@ -2460,7 +2553,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.underline", "font.strikeout"]
 
@@ -2474,9 +2567,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28"
 quote = "font: Kirigami.Theme.defaultFont"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading (its text colour is the
-# label's, templates/Heading.qml:93, the part's fill) sets no colour, elision, wrapping or line limit, so each is
-# `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93), the surface's foreground; it sets no elision, wrapping or line limit,
+# so each is `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
 [[fact]]
 key = "token.text.keyed.heading_1.font.width"
 value = "= token.text.roles.body.font.width"
@@ -2484,7 +2577,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -2505,7 +2598,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -2521,14 +2614,13 @@ quote = "font: Kirigami.Theme.defaultFont"
 
 [[fact]]
 key = "token.text.keyed.heading_1.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_1.elision"
@@ -2580,6 +2672,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_1.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.heading_1_primary.font.family"
@@ -2696,8 +2805,9 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
 quote = "DemiBold = 600,"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; its width and scaling role the level's
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; its width and scaling role the level's
 [[fact]]
 key = "token.text.keyed.heading_1_primary.font.width"
 value = "= token.text.keyed.heading_1.font.width"
@@ -2720,14 +2830,13 @@ quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Norma
 
 [[fact]]
 key = "token.text.keyed.heading_1_primary.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.4"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_1_primary.elision"
@@ -2779,6 +2888,24 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_1_primary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
 
 # heading_1_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
 
@@ -2907,8 +3034,9 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:37"
 quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; the secondary type's fill its reduced alpha
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; the secondary type's fill its reduced alpha
 # (above)
 [[fact]]
 key = "token.text.keyed.heading_1_secondary.font.width"
@@ -2982,13 +3110,30 @@ quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.heading_1_secondary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
+[[fact]]
 key = "token.text.keyed.heading_2.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.family"]
 
@@ -3046,7 +3191,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.italic", "font.styleName"]
 
@@ -3077,7 +3222,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.letterSpacing"]
 
@@ -3098,7 +3243,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.wordSpacing"]
 
@@ -3119,7 +3264,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.variableAxes"]
 
@@ -3140,7 +3285,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.features"]
 
@@ -3161,7 +3306,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.capitalization"]
 
@@ -3182,7 +3327,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.underline", "font.strikeout"]
 
@@ -3196,9 +3341,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28"
 quote = "font: Kirigami.Theme.defaultFont"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading (its text colour is the
-# label's, templates/Heading.qml:93, the part's fill) sets no colour, elision, wrapping or line limit, so each is
-# `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93), the surface's foreground; it sets no elision, wrapping or line limit,
+# so each is `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
 [[fact]]
 key = "token.text.keyed.heading_2.font.width"
 value = "= token.text.roles.body.font.width"
@@ -3206,7 +3351,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -3227,7 +3372,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -3243,14 +3388,13 @@ quote = "font: Kirigami.Theme.defaultFont"
 
 [[fact]]
 key = "token.text.keyed.heading_2.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_2.elision"
@@ -3302,6 +3446,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_2.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.heading_2_primary.font.family"
@@ -3418,8 +3579,9 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
 quote = "DemiBold = 600,"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; its width and scaling role the level's
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; its width and scaling role the level's
 [[fact]]
 key = "token.text.keyed.heading_2_primary.font.width"
 value = "= token.text.keyed.heading_2.font.width"
@@ -3442,14 +3604,13 @@ quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Norma
 
 [[fact]]
 key = "token.text.keyed.heading_2_primary.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.4"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_2_primary.elision"
@@ -3501,6 +3662,24 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_2_primary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
 
 # heading_2_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
 
@@ -3629,8 +3808,9 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:37"
 quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; the secondary type's fill its reduced alpha
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; the secondary type's fill its reduced alpha
 # (above)
 [[fact]]
 key = "token.text.keyed.heading_2_secondary.font.width"
@@ -3704,13 +3884,30 @@ quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.heading_2_secondary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
+[[fact]]
 key = "token.text.keyed.heading_3.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.family"]
 
@@ -3768,7 +3965,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.italic", "font.styleName"]
 
@@ -3799,7 +3996,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.letterSpacing"]
 
@@ -3820,7 +4017,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.wordSpacing"]
 
@@ -3841,7 +4038,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.variableAxes"]
 
@@ -3862,7 +4059,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.features"]
 
@@ -3883,7 +4080,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.capitalization"]
 
@@ -3904,7 +4101,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.underline", "font.strikeout"]
 
@@ -3918,9 +4115,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28"
 quote = "font: Kirigami.Theme.defaultFont"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading (its text colour is the
-# label's, templates/Heading.qml:93, the part's fill) sets no colour, elision, wrapping or line limit, so each is
-# `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93), the surface's foreground; it sets no elision, wrapping or line limit,
+# so each is `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
 [[fact]]
 key = "token.text.keyed.heading_3.font.width"
 value = "= token.text.roles.body.font.width"
@@ -3928,7 +4125,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -3949,7 +4146,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -3965,14 +4162,13 @@ quote = "font: Kirigami.Theme.defaultFont"
 
 [[fact]]
 key = "token.text.keyed.heading_3.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_3.elision"
@@ -4024,6 +4220,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_3.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.heading_3_primary.font.family"
@@ -4140,8 +4353,9 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
 quote = "DemiBold = 600,"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; its width and scaling role the level's
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; its width and scaling role the level's
 [[fact]]
 key = "token.text.keyed.heading_3_primary.font.width"
 value = "= token.text.keyed.heading_3.font.width"
@@ -4164,14 +4378,13 @@ quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Norma
 
 [[fact]]
 key = "token.text.keyed.heading_3_primary.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.4"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_3_primary.elision"
@@ -4223,6 +4436,24 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_3_primary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
 
 # heading_3_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
 
@@ -4351,8 +4582,9 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:37"
 quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; the secondary type's fill its reduced alpha
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; the secondary type's fill its reduced alpha
 # (above)
 [[fact]]
 key = "token.text.keyed.heading_3_secondary.font.width"
@@ -4426,13 +4658,30 @@ quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.heading_3_secondary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
+[[fact]]
 key = "token.text.keyed.heading_4.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.family"]
 
@@ -4490,7 +4739,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.italic", "font.styleName"]
 
@@ -4521,7 +4770,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.letterSpacing"]
 
@@ -4542,7 +4791,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.wordSpacing"]
 
@@ -4563,7 +4812,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.variableAxes"]
 
@@ -4584,7 +4833,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.features"]
 
@@ -4605,7 +4854,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.capitalization"]
 
@@ -4626,7 +4875,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.underline", "font.strikeout"]
 
@@ -4640,9 +4889,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28"
 quote = "font: Kirigami.Theme.defaultFont"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading (its text colour is the
-# label's, templates/Heading.qml:93, the part's fill) sets no colour, elision, wrapping or line limit, so each is
-# `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93), the surface's foreground; it sets no elision, wrapping or line limit,
+# so each is `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
 [[fact]]
 key = "token.text.keyed.heading_4.font.width"
 value = "= token.text.roles.body.font.width"
@@ -4650,7 +4899,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -4671,7 +4920,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -4687,14 +4936,13 @@ quote = "font: Kirigami.Theme.defaultFont"
 
 [[fact]]
 key = "token.text.keyed.heading_4.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_4.elision"
@@ -4746,6 +4994,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_4.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.heading_4_primary.font.family"
@@ -4862,8 +5127,9 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
 quote = "DemiBold = 600,"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; its width and scaling role the level's
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; its width and scaling role the level's
 [[fact]]
 key = "token.text.keyed.heading_4_primary.font.width"
 value = "= token.text.keyed.heading_4.font.width"
@@ -4886,14 +5152,13 @@ quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Norma
 
 [[fact]]
 key = "token.text.keyed.heading_4_primary.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.4"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_4_primary.elision"
@@ -4945,6 +5210,24 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_4_primary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
 
 # heading_4_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
 
@@ -5073,8 +5356,9 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:37"
 quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; the secondary type's fill its reduced alpha
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; the secondary type's fill its reduced alpha
 # (above)
 [[fact]]
 key = "token.text.keyed.heading_4_secondary.font.width"
@@ -5148,13 +5432,30 @@ quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.heading_4_secondary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
+[[fact]]
 key = "token.text.keyed.heading_5.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.family"]
 
@@ -5215,7 +5516,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.italic", "font.styleName"]
 
@@ -5246,7 +5547,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.letterSpacing"]
 
@@ -5267,7 +5568,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.wordSpacing"]
 
@@ -5288,7 +5589,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.variableAxes"]
 
@@ -5309,7 +5610,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.features"]
 
@@ -5330,7 +5631,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.capitalization"]
 
@@ -5351,7 +5652,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = ["font.underline", "font.strikeout"]
 
@@ -5365,9 +5666,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Label.qml:28"
 quote = "font: Kirigami.Theme.defaultFont"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading (its text colour is the
-# label's, templates/Heading.qml:93, the part's fill) sets no colour, elision, wrapping or line limit, so each is
-# `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93), the surface's foreground; it sets no elision, wrapping or line limit,
+# so each is `Absent` in the style; its width and scaling role the default font's, as its other leaves (queue #129)
 [[fact]]
 key = "token.text.keyed.heading_5.font.width"
 value = "= token.text.roles.body.font.width"
@@ -5375,7 +5676,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -5396,7 +5697,7 @@ rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:14-35"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
 quote = "font.pointSize: {"
 absent = []
 
@@ -5412,14 +5713,13 @@ quote = "font: Kirigami.Theme.defaultFont"
 
 [[fact]]
 key = "token.text.keyed.heading_5.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.3"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_5.elision"
@@ -5471,6 +5771,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_5.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.3"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.heading_5_primary.font.family"
@@ -5587,8 +5904,9 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:71"
 quote = "DemiBold = 600,"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; its width and scaling role the level's
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; its width and scaling role the level's
 [[fact]]
 key = "token.text.keyed.heading_5_primary.font.width"
 value = "= token.text.keyed.heading_5.font.width"
@@ -5611,14 +5929,13 @@ quote = "font.weight: type === Heading.Type.Primary ? Font.DemiBold : Font.Norma
 
 [[fact]]
 key = "token.text.keyed.heading_5_primary.fill"
-value = "absent"
+value = "= surface.foreground"
 rows = ["Q1.4"]
 
 [[fact.cite]]
 kind = "published"
-source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
-quote = "KT.Heading {"
-absent = ["color"]
+source = "kirigami@6.31.0 src/templates/Heading.qml:93"
+quote = "color: Platform.Theme.textColor"
 
 [[fact]]
 key = "token.text.keyed.heading_5_primary.elision"
@@ -5670,6 +5987,24 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_5_primary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
+
 
 # heading_5_secondary: Heading.Type.Secondary, the level's style at normal weight, the label at 0.75 opacity
 
@@ -5798,8 +6133,9 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:37"
 quote = "opacity: type === Heading.Type.Secondary ? 0.75 : 1"
 
-# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading sets no colour,
-# elision, wrapping or line limit, so each is `Absent` in the style; the secondary type's fill its reduced alpha
+# the style's drawn-text leaves (S2.8's *Styles and drawn text*, ADD-A130): a Kirigami Heading's colour is the
+# theme's text colour (templates/Heading.qml:93); it sets no elision, wrapping or line limit, so each is `Absent` in
+# the style; the secondary type's fill its reduced alpha
 # (above)
 [[fact]]
 key = "token.text.keyed.heading_5_secondary.font.width"
@@ -5871,6 +6207,23 @@ kind = "published"
 source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
 quote = "QQC2.Label {"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.heading_5_secondary.mnemonic_decoration"
+value = "absent"
+rows = ["Q1.4"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/controls/Heading.qml:10-38"
+quote = "KT.Heading {"
+absent = ["MnemonicData"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/templates/Heading.qml:48-94"
+quote = "QQC2.Label {"
+absent = ["MnemonicData"]
 
 [[fact]]
 key = "token.text.keyed.flat_group_title.font.family"
@@ -6060,6 +6413,17 @@ quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.flat_group_title.mnemonic_decoration"
+value = "absent"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
+
+[[fact]]
 key = "token.text.keyed.command_link_title.font.family"
 value = "= token.text.roles.body.font.family"
 rows = ["K1.272"]
@@ -6247,6 +6611,17 @@ quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
 
 [[fact]]
+key = "token.text.keyed.command_link_title.mnemonic_decoration"
+value = "absent"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
+
+[[fact]]
 key = "token.text.keyed.menu_section.font.family"
 value = "= token.text.keyed.menu.font.family"
 rows = ["K1.272"]
@@ -6432,6 +6807,17 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
 quote = "class Q_GUI_EXPORT QFont"
 absent = ["maximumLineCount"]
+
+[[fact]]
+key = "token.text.keyed.menu_section.mnemonic_decoration"
+value = "absent"
+rows = ["K1.272"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qfont.h:22-366"
+quote = "class Q_GUI_EXPORT QFont"
+absent = ["TextShowMnemonic"]
 
 [[fact]]
 key = "token.text.roles.body"
@@ -6846,7 +7232,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.toolbar.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -6888,6 +7274,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.size"
@@ -6928,7 +7319,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -6970,6 +7361,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.small.size"
@@ -7010,7 +7406,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.small.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7052,6 +7448,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.large.size"
@@ -7092,7 +7493,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.large.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7134,6 +7535,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.panel.size"
@@ -7174,7 +7580,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.panel.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7216,6 +7622,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.dialog.size"
@@ -7256,7 +7667,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.dialog.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7298,6 +7709,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.small.size"
@@ -7333,7 +7749,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.small.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7380,6 +7796,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.small_medium.size"
@@ -7415,7 +7836,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.small_medium.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7462,6 +7883,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.medium.size"
@@ -7497,7 +7923,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.medium.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7544,6 +7970,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.large.size"
@@ -7579,7 +8010,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.large.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7626,6 +8057,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.huge.size"
@@ -7661,7 +8097,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.huge.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7708,6 +8144,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
 key = "token.icons.sizes.keyed.enormous.size"
@@ -7743,7 +8184,7 @@ absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.enormous.symbolic_colors"
-value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= role.global.accent" }
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
 rows = []
 
 [[fact.cite]]
@@ -7790,6 +8231,11 @@ quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
 quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 # S4.6 keyed scalars: Kirigami's Units (flavour `kirigami`'s sizes; Plasma's integration leaves them at
 # Kirigami's defaults), and the icon effects (K3.60: KIconLoader's for Qt Widgets; Q3.18: Kirigami's icon shader).

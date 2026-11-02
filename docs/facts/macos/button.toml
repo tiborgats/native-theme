@@ -43299,6 +43299,16 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:338"
 quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:186"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:178"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
 
 [[fact]]
 key = "button.label.text.letter_spacing"
@@ -43910,6 +43920,16 @@ quote = "Mnemonics, which are underlined characters in the button title that can
 kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:336"
 quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:181"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:175"
+quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmpersand API_DEPRECATED(\"Mnemonics are not used on macOS. Set the title property directly instead.\", macos(10.0,10.8));"
 
 [[fact]]
 key = "button.label.text.letter_spacing"

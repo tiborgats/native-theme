@@ -1337,6 +1337,23 @@ kind = "published"
 source = "frameworks-base@android-17.0.0_r1 services/core/java/com/android/server/wm/SharedMemoryBackedCurrentAnimatorScale.java:51-53"
 quote = "float getCurrentScale() { return mAnimationsDisabled ? 0 : mCurrentAnimatorScale; }"
 
+# the colour space (S2.7's *Colour interpolation*, ADD-A125): Compose's colour animations (`animateColorAsState`,
+# `Animatable` over `Color.VectorConverter`) move through Oklab, each component clamped on the way back
+[[fact]]
+key = "token.motion.color_space"
+value = "oklab"
+rows = ["MAT-X13"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/ColorVectorConverter.kt:31-49"
+quote = "val (l, a, b, alpha) = color.convert(ColorSpaces.Oklab) AnimationVector4D(alpha, l, a, b)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SingleValueAnimation.kt:64"
+quote = "remember(targetValue.colorSpace) { (Color.VectorConverter)(targetValue.colorSpace) }"
+
 # ----------------------------------------------------------------------------------------------------
 # token.elevation: material-web's md-elevation key (::before, opacity 0.3) and ambient (::after, opacity 0.15) shadows per
 # level (elevation/internal/_elevation.scss), the level the md.sys.elevation index (tokens/_md-sys-elevation.scss:18-26),

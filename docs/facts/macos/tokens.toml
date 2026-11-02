@@ -1853,6 +1853,14 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U182"
 rows = ["MAC-X13"]
 
+# The colour space (`token.motion.color_space`, S2.7, ADD-A125): Core Animation's colour interpolation has no source in
+# the cache; the probe measures it from a transition's middle frame (U158).
+[[fact]]
+key = "token.motion.color_space"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U158"
+rows = ["MAC-X11"]
+
 # The icon sizes (`token.icons.sizes`): no pass reads them (U102).
 [[fact]]
 key = "token.icons.sizes.toolbar.size"
@@ -3763,6 +3771,14 @@ key = "token.focus.transition"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U182"
 rows = ["MAC-X13"]
+
+# The colour space (`token.motion.color_space`, S2.7, ADD-A125): Core Animation's colour interpolation has no source in
+# the cache; the probe measures it from a transition's middle frame (U158).
+[[fact]]
+key = "token.motion.color_space"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U158"
+rows = ["MAC-X11"]
 
 # The icon sizes (`token.icons.sizes`): no pass reads them (U102).
 [[fact]]
@@ -14438,21 +14454,18 @@ rows = ["MAC-TS02"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.weightTrait"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.kCTFontCSSWeightAttribute"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.weightTrait"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.kCTFontCSSWeightAttribute"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact.cite]]
 kind = "measured"
-evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/increase-contrast-on/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.weightTrait"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/increase-contrast-on/probe.toml#macos.fonts.named.systemFontOfSize_smallSystemFontSize.descriptor.kCTFontCSSWeightAttribute"
 tolerance = 0
-conversion = ["ns_font_weight"]
 
 [[fact]]
 key = "token.text.keyed.small_system.fill"

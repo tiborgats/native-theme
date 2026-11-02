@@ -611,6 +611,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleLargeTitle API_AVAILABLE(ios(11.0), watchos(5.0)) API_UNAVAILABLE(tvos);"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.large_title.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.title_1.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -658,6 +689,37 @@ quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:178"
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle1 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.title_1.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 key = "token.text.keyed.title_2.font.weight"
@@ -709,6 +771,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle2 API_AVAILABLE(ios(9.0), watchos(2.0));"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.title_2.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.title_3.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -756,6 +849,37 @@ quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:180"
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleTitle3 API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.title_3.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 key = "token.text.keyed.headline.font.weight"
@@ -807,6 +931,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleHeadline API_AVAILABLE(ios(7.0), watchos(2.0));"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.headline.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.subheadline.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -854,6 +1009,37 @@ quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAIL
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:182"
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleSubheadline API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.subheadline.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 key = "token.text.keyed.body.font.weight"
@@ -905,6 +1091,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleBody API_AVAILABLE(ios(7.0), watchos(2.0));"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.body.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.callout.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -952,6 +1169,37 @@ quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:184"
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCallout API_AVAILABLE(ios(9.0), watchos(2.0));"
+
+[[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.callout.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 key = "token.text.keyed.footnote.font.weight"
@@ -1003,6 +1251,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleFootnote API_AVAILABLE(ios(7.0), watchos(2.0));"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.footnote.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.caption_1.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -1052,6 +1331,37 @@ source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption1 API_AVAILABLE(ios(7.0), watchos(2.0));"
 
 [[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.caption_1.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
 key = "token.text.keyed.caption_2.font.weight"
 value = 400
 rows = ["TS-1"]
@@ -1099,6 +1409,37 @@ quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABL
 kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:187"
 quote = "UIKIT_EXTERN UIFontTextStyle const UIFontTextStyleCaption2 API_AVAILABLE(ios(7.0), watchos(2.0));"
+
+[[fact]]
+# a Dynamic Type style is a font (UIFont, its descriptor), which holds no mnemonic or underline: UIKit draws no
+# mnemonics (S2.8)
+key = "token.text.keyed.caption_2.mnemonic_decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 # each text style's size per content size category, not a factor (run1/index.toml `[[text_style]]` reads every category)
@@ -1174,6 +1515,13 @@ conversion = ["seconds_to_ms"]
 # UIKit's default spring: the SDK states its duration and bounce, the model's spring its mass, stiffness and damping
 key = "token.motion.timings.default"
 pending = "U128"
+rows = ["X-MO-1"]
+
+[[fact]]
+# the colour space (S2.7, ADD-A125): Core Animation's colour interpolation has no source in the cache; the iOS host
+# measures it from a transition's middle frame
+key = "token.motion.color_space"
+pending = "U158"
 rows = ["X-MO-1"]
 
 [[fact]]

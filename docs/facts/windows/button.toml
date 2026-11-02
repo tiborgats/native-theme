@@ -15508,8 +15508,8 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 # The drop-down chevron's AnimatedIcon states (S2.7's `WinUiAnimatedIcon`, ADD-A126): each visual state sets only
 # the icon's State, the player running the segment between the two states' markers of AnimatedChevronDownSmall,
 # timed by the visual (duration and timing absent), with no delay. A `Keyed` transition of group `Glyph`, the part
-# drawing a glyph; its colour changes at once (a DiscreteObjectKeyFrame). The visual's entry,
-# `token.icons.animated_visuals.chevron_down_small`, waits for the checkers to take the key.
+# drawing a glyph; its colour changes at once (a DiscreteObjectKeyFrame). The visual's entry is
+# `token.icons.animated_visuals.chevron_down_small` (tokens.toml).
 [[fact]]
 key = "button.menu_indicator.transitions"
 when = { variants = ["menu"], not_variants = ["tool"] }

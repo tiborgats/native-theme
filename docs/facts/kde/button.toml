@@ -7671,7 +7671,7 @@ absent = ["elidedText", "ElideMode"]
 
 [[fact.cite]]
 kind = "published"
-source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-633"
+source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-636"
 quote = "void QStyle::drawItemText(QPainter *painter, const QRect &rect, int alignment, const QPalette &pal,"
 absent = ["elidedText", "ElideMode"]
 
@@ -7704,7 +7704,7 @@ rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-633"
+source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-636"
 quote = "void QStyle::drawItemText(QPainter *painter, const QRect &rect, int alignment, const QPalette &pal,"
 absent = ["maximumLineCount", "setMaximumLineCount"]
 

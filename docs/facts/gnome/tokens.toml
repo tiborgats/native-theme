@@ -690,6 +690,18 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:1091-1092"
 quote = "if (timestamp == 0) return g_object_ref (source->style);"
 
+# the colour space (S2.7's *Colour interpolation*, ADD-A125): GTK's CSS transitions mix colours premultiplied, each
+# channel times its alpha and the alpha interpolated apart, clamped, then divided by the alpha
+[[fact]]
+key = "token.motion.color_space"
+value = "premultiplied_srgb"
+rows = ["GN-3.18"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604"
+quote = "out->alpha = CLAMP (transition (in1->alpha, in2->alpha, factor), 0, 1); if (out->alpha <= 0.0) { out->red = out->green = out->blue = 0.0; } else { out->red = CLAMP (transition (in1->red * in1->alpha, in2->red * in2->alpha, factor), 0, 1) / out->alpha;"
+
 # libadwaita's springs (AdwSpringAnimation), by damping ratio, mass and stiffness as `adw_spring_params_new` takes them;
 # each widget's own epsilon and clamp, its initial velocity 0 until a gesture hands one over (a swipe's release
 # velocity, a run-time input the model cannot state, which the bottom sheet keeps for its later runs,
@@ -1703,7 +1715,7 @@ rows = ["GN-3.36"]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtksettings.c:315-1070"
 quote = "gtk_settings_class_init (GtkSettingsClass *class)"
-absent = ["gtk-cursor-width"]
+absent = []
 
 [[fact.cite]]
 kind = "published"
@@ -2023,7 +2035,7 @@ rows = ["GN-1.77"]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtksettings.c:315-1070"
 quote = "gtk_settings_class_init (GtkSettingsClass *class)"
-absent = ["hover", "gtk-tooltip-timeout", "gtk-tooltip-browse-timeout"]
+absent = ["gtk-tooltip-timeout", "gtk-tooltip-browse-timeout"]
 
 [[fact.cite]]
 kind = "published"
@@ -5558,7 +5570,7 @@ quote = ".numeric { font-variant-numeric: tabular-nums; }"
 [[fact]]
 key = "token.text.font_dpi"
 value = 96
-rows = []
+rows = ["GN-3.63"]
 
 [[fact.cite]]
 kind = "published"

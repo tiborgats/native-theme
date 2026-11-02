@@ -716,7 +716,7 @@ quote = "gtk_image_set_from_icon_name (GTK_IMAGE (priv->child), icon_name);"
 [[fact]]
 key = "button.icon.glyph"
 when = { variants = ["@tab_button"] }
-value = { source = { theme_icon = { name = "adw-tab-counter-symbolic", fallbacks = [] } }, size = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
+value = { source = { theme_icon = { name = "adw-tab-counter-symbolic", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
 rows = ["GN-2.37"]
 
 [[fact.cite]]
@@ -748,7 +748,7 @@ quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK
 [[fact]]
 key = "button.icon.glyph"
 when = { variants = ["@tab_button", "@tab_overflow"] }
-value = { source = { theme_icon = { name = "adw-tab-overflow-symbolic", fallbacks = [] } }, size = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
+value = { source = { theme_icon = { name = "adw-tab-overflow-symbolic", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
 rows = ["GN-2.37"]
 
 [[fact.cite]]

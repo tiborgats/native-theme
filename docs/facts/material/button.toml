@@ -1308,6 +1308,12 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:145"
 quote = "remember(tint) { if (tint == Color.Unspecified) null else ColorFilter.tint(tint) }"
 
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Icon.kt:138-162"
+quote = "public fun Icon( painter: Painter, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = LocalContentColor.current, ) {"
+absent = []
+
 [[fact]]
 key = "button.icon.glyph"
 value = "absent"
