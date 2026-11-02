@@ -29,9 +29,12 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:201-204"
 quote = ".card { @at-root %card, & { background-color: var(--card-bg-color); color: var(--card-fg-color);"
 
+# GTK's CSS `min-width` and `min-height` bound the content box: GTK adds the border and padding (and the margin)
+# to them, so the box's minimum is the CSS minimum plus the part's own padding, which holds the border (a button
+# draws none), and a variant's padding carries through (S2.11, ADD-A125)
 [[fact]]
 key = "button.body.min_height"
-value = "24px"
+value = "= add(24px, add(part.padding.top, part.padding.bottom))"
 rows = []
 
 [[fact.cite]]
@@ -39,9 +42,19 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:20"
 quote = "min-height: 24px;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
+
 [[fact]]
 key = "button.body.min_width"
-value = "16px"
+value = "= add(16px, add(part.padding.left, part.padding.right))"
 rows = ["GN-1.27"]
 
 [[fact.cite]]
@@ -49,11 +62,34 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:21"
 quote = "min-width: 16px;"
 
-# the model's base is the text-only button, GTK's `.text-button` (gtkbutton.c:431): 17 px at the sides
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
+
+# the model's base is the text-only button, GTK's `.text-button` (gtkbutton.c:431): 17 px at the sides. GTK lays the
+# content inside border and padding, and a button sets no CSS border (GTK's initial style `none`, width 0), so the
+# padding is the CSS padding alone (S2.11, ADD-A125)
 [[fact]]
 key = "button.body.padding"
 value = { top_px = 5, right_px = 17, bottom_px = 5, left_px = 17 }
 rows = ["GN-1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["border", "border-width", "border-style", "border-top", "border-right", "border-bottom", "border-left", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1072-1077"
+quote = "gtk_css_style_property_register (\"border-top-style\", GTK_CSS_PROPERTY_BORDER_TOP_STYLE, 0, GTK_CSS_AFFECTS_BORDER, parse_border_style, _gtk_css_border_style_value_new (GTK_BORDER_STYLE_NONE));"
 
 [[fact.cite]]
 kind = "published"
@@ -173,21 +209,317 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
 quote = "%button, button {"
 
-# the label inherits the window's font (the system font, the body style); the weight below is the button's
+# the label's text, leaf by leaf (S2.8): the button sets only the weight (below), so each inherited leaf is the
+# window's, the default font's (the body slot's), and its four drawn-text leaves are GtkLabel's as GtkButton makes it
 [[fact]]
-key = "button.label.text"
-value = "= token.text.roles.body"
+key = "button.label.text.font.family"
+value = "= token.text.roles.body.font.family"
 rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:909-914"
-quote = "GTK_STYLE_PROPERTY_INHERIT,"
+quote = "gtk_css_style_property_register (\"font-family\", GTK_CSS_PROPERTY_FONT_FAMILY, GTK_STYLE_PROPERTY_INHERIT,"
+
+[[fact]]
+key = "button.label.text.font.size"
+value = "= token.text.roles.body.font.size"
+rows = []
 
 [[fact.cite]]
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:886-891"
-quote = "GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+quote = "gtk_css_style_property_register (\"font-size\", GTK_CSS_PROPERTY_FONT_SIZE, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "button.label.text.font.style"
+value = "= token.text.roles.body.font.style"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["font-style"]
+
+[[fact]]
+key = "button.label.text.font.width"
+value = "= token.text.roles.body.font.width"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["font-width", "font-stretch"]
+
+[[fact]]
+key = "button.label.text.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["font-variation-settings"]
+
+[[fact]]
+key = "button.label.text.font.features"
+value = "= token.text.roles.body.font.features"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+# one factor scales every text: the style's (no curve of its own)
+[[fact]]
+key = "button.label.text.scaling_role"
+value = "= token.text.roles.body.scaling_role"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["letter-spacing"]
+
+# GTK registers no word spacing: the style's zero
+[[fact]]
+key = "button.label.text.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# no ancestor of a button sets `line-height` (libadwaita sets it only on `.body`, `.caption` and `.caption-heading`
+# labels and the column view), so the label keeps GTK's initial `normal`, which adds no Pango line height: the
+# font's own line spacing
+[[fact]]
+key = "button.label.text.line_height"
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcsslineheightvalue.c:142-147"
+quote = "gtk_css_line_height_value_get_default (void) { if (default_line_height == NULL) default_line_height = gtk_css_value_line_height_new_empty ();"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:763-773"
+quote = "double height = gtk_css_line_height_value_get (style->font->line_height); if (height != 0.0)"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["line-height"]
+
+[[fact]]
+key = "button.label.text.case"
+value = "= token.text.roles.body.case"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT,"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["text-transform"]
+
+# `text-decoration-line` is not inherited and the button sets none: GTK's initial `none`
+[[fact]]
+key = "button.label.text.decoration"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["text-decoration", "text-decoration-line"]
+
+# the mnemonic (a label with `use-underline`): Pango's low underline under the accelerator character, its top one
+# underline thickness below the character's ink, the font's thickness, in the text's colour (S2.8)
+[[fact]]
+key = "button.label.text.mnemonic_decoration.line"
+value = "underline_low"
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:875-878"
+quote = "if (priv->use_underline) { gtk_label_set_use_underline (GTK_LABEL (child), priv->use_underline); gtk_label_set_mnemonic_widget (GTK_LABEL (child), GTK_WIDGET (button));"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.style"
+value = "solid"
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-markup.c:500-503"
+quote = "/* Add the underline indicating the accelerator */ PangoAttribute *attr; attr = pango_attr_underline_new (PANGO_UNDERLINE_LOW);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-attributes.h:141"
+quote = "@PANGO_UNDERLINE_LOW: a single underline should be drawn at a"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.by_word"
+value = false
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:368-369"
+quote = "new_rect.x = base_x + MIN (ink_rect->x, logical_rect->x); new_rect.width = MAX (ink_rect->width, logical_rect->width);"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.thickness"
+value = "= element.font_underline_thickness"
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:365"
+quote = "int underline_thickness = pango_font_metrics_get_underline_thickness (metrics);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:370"
+quote = "new_rect.height = underline_thickness;"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.offset"
+value = "= element.font_underline_thickness"
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:382-384"
+quote = "case PANGO_UNDERLINE_LOW: new_rect.y += ink_rect->y + ink_rect->height + underline_thickness;"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.paint"
+value = "= surface.foreground"
+rows = ["GN-3.50"]
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-renderer.c:1571-1572"
+quote = "if (!underline_color) underline_color = fg_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+# GtkButton's label ellipsizes only where the application sets `can-shrink`, off by default
+[[fact]]
+key = "button.label.text.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:889-891"
+quote = "gtk_label_set_ellipsize (GTK_LABEL (priv->child), priv->can_shrink ? PANGO_ELLIPSIZE_END : PANGO_ELLIPSIZE_NONE);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkbutton.c:285-288"
+quote = "props[PROP_CAN_SHRINK] = g_param_spec_boolean (\"can-shrink\", NULL, NULL, FALSE,"
+
+# GtkLabel's defaults: no wrapping, no line limit
+[[fact]]
+key = "button.label.text.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2557-2560"
+quote = "label_props[PROP_WRAP] = g_param_spec_boolean (\"wrap\", NULL, NULL, FALSE,"
+
+[[fact]]
+key = "button.label.text.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:2715-2723"
+quote = "Set this property to -1 if you don't want to limit the number of lines. */ label_props[PROP_LINES] = g_param_spec_int (\"lines\", NULL, NULL, -1, G_MAXINT, -1,"
 
 [[fact]]
 key = "button.label.text.font.weight"
@@ -251,12 +583,33 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
 quote = "GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
-# GTK recolours an icon by its name (`-gtk-icon-style: requested`, a `-symbolic` name recoloured), which no
-# RenderingMode states (ledger queue #123)
+# the icon's own colouring (S2.9's `FromIcon`): under GTK's default `-gtk-icon-style: requested` a symbolic file (by
+# its name) takes the style's colours and any other file keeps its own; the button's CSS sets no icon style
 [[fact]]
 key = "button.icon.icon.rendering_mode"
-pending = "U152"
-rows = []
+value = "from_icon"
+rows = ["GN-3.58"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1297-1302"
+quote = "gtk_css_style_property_register (\"-gtk-icon-style\", GTK_CSS_PROPERTY_ICON_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_ICON_TEXTURE, icon_style_parse, _gtk_css_icon_style_value_new (GTK_CSS_ICON_STYLE_REQUESTED));"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkiconhelper.c:73-74"
+quote = "case GTK_CSS_ICON_STYLE_REQUESTED: break;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkiconpaintable.c:42-53"
+quote = "icon_uri_is_symbolic (const char *icon_name, int icon_name_len) { if (g_str_has_suffix (icon_name, \"-symbolic.svg\") || g_str_has_suffix (icon_name, \".symbolic.png\") ||"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
+quote = "%button, button {"
+absent = ["-gtk-icon-style"]
 
 [[fact]]
 key = "button.icon.icon.weight"
@@ -273,8 +626,9 @@ kind = "published"
 source = "pango@1.58.2 pango/pango-font.h:136"
 quote = "PANGO_WEIGHT_NORMAL = 400,"
 
+# the icon palette's marks beyond the foreground, which GTK looks up by name for a symbolic icon's marked paths
 [[fact]]
-key = "button.icon.icon.status_colors"
+key = "button.icon.icon.symbolic_colors"
 value = { success = "= role.global.status.success.standalone", warning = "= role.global.status.warning.standalone", error = "= role.global.status.error.standalone", accent = "= role.global.accent_standalone" }
 rows = ["GN-3.58"]
 
@@ -355,6 +709,68 @@ rows = []
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkbutton.c:1018"
 quote = "gtk_image_set_from_icon_name (GTK_IMAGE (priv->child), icon_name);"
+
+# AdwTabButton's image is the icon libadwaita itself names, a `ThemeIcon` glyph (the catalogue's `button.icon`): its
+# counter frame, and from 100 pages the overflow icon with no count; libadwaita's own resources, which it adds to the
+# icon theme's search path, with no `-rtl` variant; drawn at the image's icon size in the inherited colour
+[[fact]]
+key = "button.icon.glyph"
+when = { variants = ["@tab_button"] }
+value = { source = { theme_icon = { name = "adw-tab-counter-symbolic", fallbacks = [] } }, size = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
+rows = ["GN-2.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.c:107"
+quote = "const char *icon_name = \"adw-tab-counter-symbolic\";"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.c:130"
+quote = "gtk_image_set_from_icon_name (self->icon, icon_name);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-main.c:95-96"
+quote = "gtk_icon_theme_add_resource_path (gtk_icon_theme_get_for_display (gdk_display_get_default ()), \"/org/gnome/Adwaita/icons\");"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adwaita.gresources.xml:3-23"
+quote = "<file preprocess=\"xml-stripblanks\" alias=\"icons/scalable/actions/adw-tab-counter-symbolic.svg\">icons/adw-tab-counter.svg</file>"
+absent = ["adw-tab-counter-symbolic-rtl", "adw-tab-overflow-symbolic-rtl"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
+
+[[fact]]
+key = "button.icon.glyph"
+when = { variants = ["@tab_button", "@tab_overflow"] }
+value = { source = { theme_icon = { name = "adw-tab-overflow-symbolic", fallbacks = [] } }, size = "= part.icon.size", fill = "= surface.foreground", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
+rows = ["GN-2.37"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.c:115-119"
+quote = "if (n_pages < 100) { display_label = TRUE; label_text = g_strdup_printf (\"%u\", n_pages); } else { icon_name = \"adw-tab-overflow-symbolic\";"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.c:130"
+quote = "gtk_image_set_from_icon_name (self->icon, icon_name);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adwaita.gresources.xml:3-23"
+quote = "<file preprocess=\"xml-stripblanks\" alias=\"icons/scalable/actions/adw-tab-overflow-symbolic.svg\">icons/adw-tab-overflow.svg</file>"
+absent = ["adw-tab-counter-symbolic-rtl", "adw-tab-overflow-symbolic-rtl"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:874-879"
+quote = "gtk_css_style_property_register (\"color\", GTK_CSS_PROPERTY_COLOR, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED,"
 
 [[fact]]
 key = "button.values.icon_text_gap"
@@ -622,10 +1038,78 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
 quote = "@mixin focus-ring($target: null, $width: 2px, $offset: -$width, $outer: false, $focus-state: ':focus:focus-visible', $transition: null) {"
 
-# background and box-shadow, 200 ms ease-out-quad; libadwaita turns CSS transitions off while it switches styles
+# the ring at rest (S2.10), wherever `:focus:focus-visible` does not hold (not focused, or focus not visible):
+# `outline: 0 solid transparent` at `$offset + $width + 4px`, so zero wide and `width + 4px` outward of the
+# focused ring's inner edge, from which the ring grows in and to which it shrinks out
+[[fact]]
+key = "button.body.focus.width"
+when = { not_states = ["focused"] }
+value = "0px"
+rows = ["GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { not_states = ["focused"] }
+value = { top_px = "= add(add(token.focus.offset.top, token.focus.width), 4px)", right_px = "= add(add(token.focus.offset.right, token.focus.width), 4px)", bottom_px = "= add(add(token.focus.offset.bottom, token.focus.width), 4px)", left_px = "= add(add(token.focus.offset.left, token.focus.width), 4px)" }
+rows = ["GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.width"
+when = { not_states = ["focus_visible"] }
+value = "0px"
+rows = ["GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { not_states = ["focus_visible"] }
+value = { top_px = "= add(add(token.focus.offset.top, token.focus.width), 4px)", right_px = "= add(add(token.focus.offset.right, token.focus.width), 4px)", bottom_px = "= add(add(token.focus.offset.bottom, token.focus.width), 4px)", left_px = "= add(add(token.focus.offset.left, token.focus.width), 4px)" }
+rows = ["GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+# background and box-shadow, 200 ms ease-out-quad, a stylesheet transition GTK's CSS engine runs (`GtkCss`); stated on
+# the button's own selector, so it applies from every state (`from` left out)
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill", "shadow"], kind = "interpolate", duration_ms = "= mul(token.motion.durations.button, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", suspended_by_theme_change = true }]
+value = [{ properties = ["fill", "shadow"], kind = "interpolate", duration_ms = "= mul(token.motion.durations.button, token.motion.speed_factor)", delay_ms = 0, timing = "= token.motion.timings.ease_out_quad", engine = "gtk_css" }]
 rows = ["GN-1.36"]
 
 [[fact.cite]]
@@ -645,8 +1129,8 @@ quote = "gtk_css_number_value_new (0, GTK_CSS_S));"
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/adw-style-manager.c:476-477"
-quote = "\"* { transition: none; }\");"
+source = "gtk@4.24.1 gtk/gtkcssanimatedstyle.c:818-820"
+quote = "durations = base_style->transition->transition_duration; delays = base_style->transition->transition_delay; timing_functions = base_style->transition->transition_timing_function;"
 
 # libadwaita draws no state layer and no press ripple: its state colours are the fill's layers
 [[fact]]
@@ -971,13 +1455,23 @@ quote = "&:disabled { filter: Opacity(var(--disabled-opacity));"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["icon_only"] }
-value = "24px"
+value = "= add(24px, add(part.padding.left, part.padding.right))"
 rows = ["GN-1.27"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:66-67"
 quote = "&.image-button { min-width: 24px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
 
 [[fact]]
 key = "button.body.padding"
@@ -1103,7 +1597,7 @@ quote = "$drop_target_color: var(--accent-bg-color);"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["@osd"] }
-value = "32px"
+value = "= add(32px, add(part.padding.left, part.padding.right))"
 rows = ["GN-1.34"]
 
 [[fact.cite]]
@@ -1111,10 +1605,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:114"
 quote = "min-width: 32px;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
+
 [[fact]]
 key = "button.body.min_height"
 when = { variants = ["@osd"] }
-value = "32px"
+value = "= add(32px, add(part.padding.top, part.padding.bottom))"
 rows = ["GN-1.34"]
 
 [[fact.cite]]
@@ -1122,6 +1626,18 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:115"
 quote = "min-height: 32px;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
+
+# focused, at `$offset`; at rest (below), not `:focus:focus-visible`, the outward ring sits 4px further out
+# (`$offset + 4px`), zero wide (the rest rules above)
 [[fact]]
 key = "button.body.focus.offset"
 when = { variants = ["@osd"] }
@@ -1137,6 +1653,48 @@ quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_tr
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:21-22"
 quote = "outline-width: $width; outline-offset: $offset;"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@osd"], not_states = ["focused"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.34", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:116"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@osd"], not_states = ["focus_visible"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.34", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:116"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
 
 [[fact]]
 key = "button.body.bindings"
@@ -1376,6 +1934,8 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:155-156"
 quote = "@at-root %opaque_button { box-shadow: none;"
 
+# focused, at `$offset`; at rest (below), not `:focus:focus-visible`, the outward ring sits 4px further out
+# (`$offset + 4px`), zero wide (the rest rules above)
 [[fact]]
 key = "button.body.focus.offset"
 when = { variants = ["primary"] }
@@ -1391,6 +1951,48 @@ quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_tr
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:21-22"
 quote = "outline-width: $width; outline-offset: $offset;"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["primary"], not_states = ["focused"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.30", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:158"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["primary"], not_states = ["focus_visible"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.30", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:158"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
 
 [[fact]]
 key = "button.body.fill"
@@ -1575,6 +2177,8 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:155-156"
 quote = "@at-root %opaque_button { box-shadow: none;"
 
+# focused, at `$offset`; at rest (below), not `:focus:focus-visible`, the outward ring sits 4px further out
+# (`$offset + 4px`), zero wide (the rest rules above)
 [[fact]]
 key = "button.body.focus.offset"
 when = { variants = ["@opaque"] }
@@ -1590,6 +2194,48 @@ quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_tr
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:21-22"
 quote = "outline-width: $width; outline-offset: $offset;"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@opaque"], not_states = ["focused"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.32", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:158"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@opaque"], not_states = ["focus_visible"] }
+value = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
+rows = ["GN-1.32", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:158"
+quote = "@include focus-ring($outer: true, $offset: 1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
 
 [[fact]]
 key = "button.body.fill"
@@ -2231,7 +2877,7 @@ quote = "$strong_disabled_opacity: 30%;"
 [[fact]]
 key = "button.body.min_width"
 when = { variants = ["circular"] }
-value = "34px"
+value = "= add(34px, add(part.padding.left, part.padding.right))"
 rows = ["GN-1.28"]
 
 [[fact.cite]]
@@ -2239,16 +2885,36 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:313-314"
 quote = "&.circular { // force circular button shape min-width: 34px;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
+
 [[fact]]
 key = "button.body.min_height"
 when = { variants = ["circular"] }
-value = "34px"
+value = "= add(34px, add(part.padding.top, part.padding.bottom))"
 rows = ["GN-1.28"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:313-315"
 quote = "&.circular { // force circular button shape min-width: 34px; min-height: 34px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:194-197"
+quote = "css_extra_size = margin.left + margin.right + border.left + border.right + padding.left + padding.right; css_extra_for_size = margin.top + margin.bottom + border.top + border.bottom + padding.top + padding.bottom; css_min_size = get_number_ceil (style->size->min_width);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtksizerequest.c:297"
+quote = "min_size = MAX (0, MAX (reported_min_size, css_min_size)) + css_extra_size;"
 
 [[fact]]
 key = "button.body.padding"
@@ -2340,6 +3006,8 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:332"
 quote = "padding: 0;"
 
+# focused, at `$offset`; at rest (below), not `:focus:focus-visible`, the inward ring sits `width + 4px` further out
+# (`$offset + $width + 4px`), zero wide (the rest rules above)
 [[fact]]
 key = "button.body.focus.offset"
 when = { variants = ["@card"], not_variants = ["menu"] }
@@ -2355,6 +3023,48 @@ quote = "@include focus-ring($offset: -1px, $transition: $button_transition);"
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:21-22"
 quote = "outline-width: $width; outline-offset: $offset;"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focused"] }
+value = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
+rows = ["GN-1.35", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:334"
+quote = "@include focus-ring($offset: -1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
+
+[[fact]]
+key = "button.body.focus.offset"
+when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focus_visible"] }
+value = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
+rows = ["GN-1.35", "GN-1.37", "GN-3.28"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:334"
+quote = "@include focus-ring($offset: -1px, $transition: $button_transition);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:13-15"
+quote = "& #{$target} { outline: 0 solid transparent; outline-offset: if($outer, $offset + 4px, $offset + $width + 4px);"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_drawing.scss:12"
+quote = "$focus-state: ':focus:focus-visible'"
 
 [[fact]]
 key = "button.body.fill"
@@ -2799,10 +3509,18 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
 quote = "arrow {"
 
+# the arrow has no padding (the part holds none) and no border: its box's minimum is the CSS minimum plus GTK's initial
+# zero padding, the sum (S2.11, ADD-A125)
 [[fact]]
 key = "button.menu_indicator.min_width"
 value = "16px"
 rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
+quote = "arrow {"
+absent = ["padding", "padding-left", "padding-right", "padding-top", "padding-bottom", "border", "border-width"]
 
 [[fact.cite]]
 kind = "published"
@@ -2813,6 +3531,12 @@ quote = "arrow { min-height: 16px; min-width: 16px;"
 key = "button.menu_indicator.min_height"
 value = "16px"
 rows = ["GN-1.40"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:451-469"
+quote = "arrow {"
+absent = ["padding", "padding-left", "padding-right", "padding-top", "padding-bottom", "border", "border-width"]
 
 [[fact.cite]]
 kind = "published"
