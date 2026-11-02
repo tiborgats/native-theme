@@ -154,7 +154,7 @@ vacuously, and each preset then states every field the model holds.
    S4.6's groups the button and the roles use, not S4.3 or S4.7; S4.8's `token.kde` and `token.material` are M1b's
    (`:473-474`); no gnome or macos fact names them. S6.1's staging rule (spec `:1717-1719`, ADD-A120: "a hand-written
    token field a later unit's type needs is staged with that unit") covers them: `Tokens.kde` and `Tokens.material`
-   are staged to M1b, `theme_change` to the unit ADD-A126 places S4.3 in, `pointer` to the first unit that reads it,
+   are staged to M1b, `theme_change` to M3's tokens unit (S4's remaining groups and conditions, ADD-A131), `pointer` to the first unit that reads it,
    their types kept (`kde_and_material_fields_present_as_types`). What only these fields reach goes with them:
    `ProblemKind::ZeroDuration` (S12's zero theme-change duration, as decision 4 keeps the refusal test exhaustive),
    the `drag_cursors` and `spec_versions` declaration slots, and the mapping-palette check's tint case. `elevation`
