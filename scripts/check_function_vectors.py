@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""The platform functions' and placement strategies' vector tables (specification S2.2 *Checked against their
-references*, S13; the 0.8.0 plan's *How values are checked*, M1a's *Facts tooling*). Offline.
+"""The platform functions', placement strategies' and colour interpolations' vector tables (specification S2.2
+*Checked against their references*, S13, S2.7; the 0.8.0 plan's *How values are checked*, M1a's *Facts tooling*).
+Offline.
 
 Reads the vector tables `native-theme/tests/vectors/*.tsv`, the tests `native-theme/tests/platform_vectors.rs`, the
 Rust sources of the `platform` module (`native-theme/src/next/platform/`, `native-theme/src/platform/` after the
@@ -23,7 +24,10 @@ The vector-table file format
 One table per platform function, `native-theme/tests/vectors/<function>.tsv` (`adw_standalone.tsv`), and per
 placement strategy, `native-theme/tests/vectors/place.<strategy>.tsv`, the strategy as S13's `PlacementStrategy`
 variant in snake_case (`place.gtk_popover.tsv`, `place.keyboard_avoid.tsv`; a variant with data takes its data as an
-enum input column). UTF-8, lines ending in `\\n`, tab-separated.
+enum input column), and per member of S2.7's `ColorInterpolation`, `native-theme/tests/vectors/interpolate_color.
+<member>.tsv`, the member in snake_case (`interpolate_color.premultiplied_srgb.tsv`; ADD-A131): its inputs `from:colour
+to:colour t:number` and one colour output (INTERPOLATE_COLUMNS), with a row whose `t` is below 0 and one whose `t` is
+above 1 (the undershoot and overshoot a timing gives). UTF-8, lines ending in `\\n`, tab-separated.
 
 1. Header lines, before anything else (after the column header row every line is a row, so a row may start with a
    `#rrggbb` colour). A line starting `#` is a header field when it reads `# <name>: <value>`
@@ -82,12 +86,15 @@ What is checked
   `#[cfg(test)]` module are not the module's) has a table `<fn>.tsv` and a test `#[test] fn vectors_<fn>` in
   `native-theme/tests/platform_vectors.rs`, and so does every function S2.2's table lists as a platform function
   (every row but the model's own arithmetic, ARITHMETIC: `alpha`, `with_alpha`, `mix`, `mul`, `div`, `add`, `sub`,
-  `min`, `max`, `floor`, `round`, `pick`) that is implemented there; the functions implementing S9.4's
+  `min`, `max`, `floor`, `round`, `round_pt`, `pick`) that is implemented there; the functions implementing S9.4's
   scaling curves live in `platform` too and are covered by the same rule. Once the `placement` module exists, every
   `PlacementStrategy` variant has `place.<strategy>.tsv` and `vectors_place_<strategy>` (S13: each strategy
-  implemented). A table or test of anything else is a finding (the model's arithmetic has unit tests, S2.2), except a
-  table of an S2.2 platform function not implemented yet, which is reported (a clean-room implementer receives the
-  table first, the plan's D10).
+  implemented). Once `interpolate_color` is a `pub` function of the `transitions` module (TRANSITIONS: its folder or
+  file, `native-theme/src/next/` and after the switch `src/`), every `ColorInterpolation` member has
+  `interpolate_color.<member>.tsv` and `vectors_interpolate_color_<member>` (S2.7: each member checked by a vector
+  table, as a platform function is; ADD-A131). A table or test of anything else is a finding (the model's arithmetic
+  has unit tests, S2.2), except a table of an S2.2 platform function or a `ColorInterpolation` member not implemented
+  yet, which is reported (a clean-room implementer receives the table first, the plan's D10).
 - Calls: every platform function a fact (`docs/facts/<platform>/*.toml`, as check_facts.py loads them) or a preset
   (`native-theme/src/next/presets/*.toml`) calls in an expression is implemented and has a table. A function only
   facts call and that is not implemented yet is reported as called, not yet implemented; it is a finding once a
@@ -127,8 +134,13 @@ VECTORS = Path("native-theme/tests/vectors")
 TESTS = Path("native-theme/tests/platform_vectors.rs")
 PLATFORM_DIRS = (Path("native-theme/src/next/platform"), Path("native-theme/src/platform"))
 PLACEMENT_DIRS = (Path("native-theme/src/next/placement"), Path("native-theme/src/placement"))
-# S2.2's model's own arithmetic, no platform function (`with_alpha` ADD-A123's, `round` ADD-A122's)
-ARITHMETIC = {"alpha", "with_alpha", "mix", "mul", "div", "add", "sub", "min", "max", "floor", "round", "pick"}
+# the `transitions` module, a folder or a file, before and after the switch (S2.7's `transitions::interpolate_color`)
+TRANSITIONS = (Path("native-theme/src/next/transitions"), Path("native-theme/src/next/transitions.rs"),
+               Path("native-theme/src/transitions"), Path("native-theme/src/transitions.rs"))
+# S2.2's model's own arithmetic, no platform function (`with_alpha` ADD-A123's, `round` ADD-A122's, `round_pt`
+# ADD-A131's)
+ARITHMETIC = {"alpha", "with_alpha", "mix", "mul", "div", "add", "sub", "min", "max", "floor", "round", "round_pt",
+              "pick"}
 GENERATED = ("public_api", "observable_behaviour", "compiled_source")
 ROUTES = GENERATED + ("measured", "published")
 HEADER_NAMES = {"function", "route", "source", "generations", "generator", "inputs", "outputs", "tolerance"}
@@ -141,6 +153,9 @@ ROUTE_COLUMNS = {
 }
 PLACEMENT_COLUMNS = ("preset", "value", "when")
 PLACE = "place."
+# S2.7's colour interpolation (ADD-A131): `interpolate_color`'s table per `ColorInterpolation` member, its columns
+INTERPOLATE = "interpolate_color"
+INTERPOLATE_COLUMNS = (["from:colour", "to:colour", "t:number"], 1)   # (the inputs, the number of colour outputs)
 SCALAR_TYPES = {"colour", "length", "duration", "angle", "font_size", "number", "bool", "text", "name"}
 COMPOSITE_TYPES = {"rect": 4, "size": 2, "point": 2, "sides": 4, "shadow": None}
 TOLERANCE_TYPES = {"colour", "length", "duration", "angle", "font_size", "number"} | set(COMPOSITE_TYPES)
@@ -601,12 +616,17 @@ def without_cfg_test(text: str) -> str:
 
 
 def pub_functions(root: Path, dirs) -> dict:
-    """{name: (file, line)} of every `pub` and `pub(crate)` fn in the .rs files of the first existing dir of dirs."""
+    """{name: (file, line)} of every `pub` and `pub(crate)` fn in the .rs files of dirs (a folder's, or a module
+    file's own)."""
     out = {}
     for d in dirs:
-        if not (root / d).is_dir():
+        if (root / d).is_file() and d.suffix == ".rs":
+            files = [root / d]
+        elif (root / d).is_dir():
+            files = sorted((root / d).rglob("*.rs"))
+        else:
             continue
-        for p in sorted((root / d).rglob("*.rs")):
+        for p in files:
             rel = p.relative_to(root).as_posix()
             text = without_cfg_test(strip_rust_comments(p.read_text(encoding="utf-8")))
             for m in PUB_FN_RX.finditer(text):
@@ -843,6 +863,14 @@ def check(ctx):
         for s in strategies:
             required[PLACE + s] = (f"placement strategy `{s}` (S13)", next(
                 (d.as_posix() for d in PLACEMENT_DIRS if (root / d).is_dir())), 1)
+    members = ctx.enums.get("ColorInterpolation", [])
+    interpolate = pub_functions(root, TRANSITIONS).get(INTERPOLATE)
+    if interpolate:
+        for m in members:
+            required[f"{INTERPOLATE}.{m}"] = (f"colour interpolation `{m}` (S2.7)", *interpolate)
+    for t in tabs:
+        if t.stem.startswith(INTERPOLATE + "."):
+            findings += [(t.file, ln, w) for ln, w in interpolate_findings(t, members)]
     for stem, (why, f, ln) in sorted(required.items()):
         if stem not in by_stem:
             findings.append((f, ln, f"{why} has no vector table {(VECTORS / (stem + '.tsv')).as_posix()}"))
@@ -856,11 +884,12 @@ def check(ctx):
         if stem in ARITHMETIC:
             findings.append((t.file, 1, f"`{stem}` is the model's own arithmetic: unit tests from S2.2's definition, "
                                         f"no vector table"))
-        elif stem in ctx.platform_functions:
+        elif stem in ctx.platform_functions or (stem.startswith(INTERPOLATE + ".")
+                                                and stem[len(INTERPOLATE) + 1:] in members):
             waiting.append(stem)
         else:
             findings.append((t.file, 1, f"`{stem}` is no platform function of S2.2's table, `pub` function of the "
-                                        f"platform module or placement strategy"))
+                                        f"platform module, placement strategy or colour interpolation"))
     expected_tests = {"vectors_" + s.replace(".", "_") for s in set(required) | set(waiting)}
     for name, ln in sorted(tests.items()):
         if name.startswith("vectors_") and name not in expected_tests:
@@ -897,6 +926,29 @@ def check(ctx):
     counts = {"tables": len(tabs), "functions": len(pub), "strategies": len(strategies), "tests": len(tests),
               "calls": len(calls)}
     return sorted(set(findings)), info, counts
+
+
+def interpolate_findings(t: Table, members) -> list:
+    """An `interpolate_color.<member>` table (S2.7; ADD-A131): its member one of the core's `ColorInterpolation`
+    members (snake_case), its inputs `from:colour to:colour t:number` (INTERPOLATE_COLUMNS) and one colour output, and,
+    once its form holds, a row with `t` below 0 and one above 1 (the undershoot and overshoot a timing gives)."""
+    out = []
+    member = t.stem[len(INTERPOLATE) + 1:]
+    if member not in members:
+        out.append((1, f"`{member}` is not a member of ColorInterpolation ({', '.join(members) or 'none'})"))
+    inputs, n_out = INTERPOLATE_COLUMNS
+    got = [f"{c.name}:{c.type}" for c in t.inputs]
+    outs = t.outputs
+    if got != inputs or len(outs) != n_out or any(c.type != "colour" for c in outs):
+        out.append((t.line_of("inputs"), f"an {INTERPOLATE} table's inputs are `{' '.join(inputs)}` and its output "
+                                         f"one colour column (S2.7), not `{' '.join(got)}` and "
+                                         f"`{' '.join(c.name + ':' + c.type for c in outs)}`"))
+    elif not t.findings and t.rows:
+        ts = [float(row["t"]) for _, row in t.rows if NUMBER_RX.match(row.get("t", ""))]
+        if not any(x < 0 for x in ts) or not any(x > 1 for x in ts):
+            out.append((t.line_of("inputs"), f"no row with `t` below 0 and one above 1 (the undershoot and the "
+                                             f"overshoot a timing gives, S2.7)"))
+    return out
 
 
 def summary(counts, n):
@@ -959,6 +1011,28 @@ PLACE_TABLE = '''# function: place.below
 anchor\tsize\twindow\tpointer\tframe\tevidence\tpreset\tvalue\twhen
 [10, 10, 80, 24]\t[120, 60]\t[0, 0, 800, 600]\tnone\t[10, 34, 120, 60]\tdocs/evidence/os-probe/2026-10-30-run-1/os-probe-macos-26/place.toml#below.0\tmacos-tahoe\tcombo_box.values.popup_placement\t{ variants = ["@pull_down"] }
 '''
+
+INTERP_TABLE = '''# function: interpolate_color.premultiplied_srgb
+# route: public_api
+# source: libadwaita@1.10.0
+# generations: adwaita
+# generator: tools/gnome-vectors
+# inputs: from:colour to:colour t:number
+# outputs: result:colour
+from\tto\tt\tresult
+#000000\t#ffffff\t-0.1\tsrgb(0, 0, 0, 1)
+#000000\t#ffffff\t0.5\tsrgb(0.5, 0.5, 0.5, 1)
+#000000\t#ffffff\t1.1\tsrgb(1, 1, 1, 1)
+'''
+INTERP = "native-theme/tests/vectors/interpolate_color.premultiplied_srgb.tsv"
+INTERP_MEMBERS = ("premultiplied_srgb", "straight_srgb8", "oklab")
+INTERP_FILES = {
+    "native-theme/src/next/transitions.rs": "pub fn interpolate_color(from: Color, to: Color, t: f32, space: "
+                                            "ColorInterpolation) -> Color {\n    from\n}\n",
+    **{f"native-theme/tests/vectors/interpolate_color.{m}.tsv": INTERP_TABLE.replace("premultiplied_srgb", m)
+       for m in INTERP_MEMBERS},
+}
+INTERP_TESTS = "".join(f"\n#[test]\nfn vectors_interpolate_color_{m}() {{}}\n" for m in INTERP_MEMBERS)
 
 SELF_TEST_FILES = {
     "native-theme/src/next/platform/mod.rs": "//! The platform functions.\npub mod adw_standalone;\npub mod sf_tracking;\n",
@@ -1086,6 +1160,8 @@ SELF_TEST_CASES = [
      ["placement strategy `below` (S13) has no vector table"]),
     ("coverage: a table of the model's arithmetic", "native-theme/tests/vectors/mix.tsv", None,
      ADW_TABLE.replace("adw_standalone", "mix"), ["`mix` is the model's own arithmetic"]),
+    ("coverage: a table of round_pt, the model's arithmetic", "native-theme/tests/vectors/round_pt.tsv", None,
+     ADW_TABLE.replace("adw_standalone", "round_pt"), ["`round_pt` is the model's own arithmetic"]),
     ("coverage: a table of no function", "native-theme/tests/vectors/blur.tsv", None,
      ADW_TABLE.replace("adw_standalone", "blur"), ["`blur` is no platform function"]),
     ("coverage: a stray file", "native-theme/tests/vectors/notes.txt", None, "x",
@@ -1225,6 +1301,36 @@ def self_test() -> int:
         got, info, _ = run(files, presets=())
         if got or "tables waiting for their implementation: adw_standalone" not in info:
             failures.append(f"waiting table: got {got}, {info}")
+        # `interpolate_color`'s tables, one per `ColorInterpolation` member, once it is implemented (S2.7; ADD-A131)
+        interp = dict(SELF_TEST_FILES, **INTERP_FILES)
+        interp[TS] = SELF_TEST_FILES[TS] + INTERP_TESTS
+        for label, change, want in (
+                ("every member's table and test", {}, []),
+                ("a member without a table", {INTERP: None}, ["colour interpolation `premultiplied_srgb` (S2.7) has "
+                                                             "no vector table"]),
+                ("a member without a test", {TS: SELF_TEST_FILES[TS] + INTERP_TESTS.replace(
+                    "\n#[test]\nfn vectors_interpolate_color_premultiplied_srgb() {}\n", "")},
+                 ["colour interpolation `premultiplied_srgb` (S2.7) has no test"]),
+                ("a table of no member", {"native-theme/tests/vectors/interpolate_color.linear_rgb.tsv":
+                                          INTERP_TABLE.replace("premultiplied_srgb", "linear_rgb")},
+                 ["`linear_rgb` is not a member of ColorInterpolation", "`interpolate_color.linear_rgb` is no "
+                                                                        "platform function"]),
+                ("other columns", {INTERP: INTERP_TABLE.replace("t:number", "t:number space:text").replace(
+                    "t\tresult", "t\tspace\tresult").replace("1\tsrgb", "1\tx\tsrgb").replace("5\tsrgb", "5\tx\tsrgb")},
+                 ["an interpolate_color table's inputs are `from:colour to:colour t:number`"]),
+                ("no overshoot", {INTERP: INTERP_TABLE.replace("#000000\t#ffffff\t1.1\tsrgb(1, 1, 1, 1)\n", "")},
+                 ["no row with `t` below 0 and one above 1"])):
+            files = dict(interp)
+            files.update(change)
+            got, _, _ = run({k: v for k, v in files.items() if v is not None})
+            if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
+                failures.append(f"interpolate_color, {label}: got {got}, want {want}")
+        # before `interpolate_color` exists, a member's table waits for it
+        files = {k: v for k, v in SELF_TEST_FILES.items() if not k.startswith("native-theme/")}
+        files[INTERP] = INTERP_TABLE
+        got, info, _ = run(files, presets=())
+        if got or "tables waiting for their implementation: interpolate_color.premultiplied_srgb" not in info:
+            failures.append(f"interpolate_color waiting: got {got}, {info}")
         # the API
         root = base / "case0"
         ev = table_evidence(root)
@@ -1248,7 +1354,7 @@ def self_test() -> int:
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST_CASES) + 5} fixture cases)")
+        print(f"self-test ok ({len(SELF_TEST_CASES) + 12} fixture cases)")
     return 1 if failures else 0
 
 

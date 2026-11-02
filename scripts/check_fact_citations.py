@@ -50,6 +50,23 @@ those quotes holds a `<LinearGradientBrush …>` (xaml), an angle literal of the
 the quotes (the brush's computed angle, a `deg` literal), never a unitless number, so a point's `0` holds no
 `angle_deg = 0`.
 
+A `GtkCss` transition list (gtk_css_list_problems; S2.7, S17; ADD-A131): a fact whose value is a list of transitions
+all under `engine = "gtk_css"` that name two or more curves states the stylesheet's one CSS `transition` list (the
+`transition` property, or an SCSS variable holding one, `$button_transition: …`) one transition per item, in the
+list's order, as the engine takes a value's curve by its position: the first `published` citation quoting such a list
+has as many items as the fact has transitions, and each transition's duration, delay and curve equal its item's (CSS's
+defaults a delay of 0 and `ease`; a duration or delay a number, a `<n>ms` literal or an expression's first
+`token.motion.durations.<key>` reference followed to the one value the platform's facts state for it, one it cannot
+follow a finding; a curve by its name, a `token.motion.timings.<key>` reference by its key, as S4.1 keys a
+stylesheet's named curve, `$ease-out-quad` `ease_out_quad`, or a `cubic-bezier()`'s four numbers). S12's own check of
+such a list, on the groups the engine maps, is the crate's.
+
+A value the specification defines (S9.4's `token.text.font_dpi = 72` on `macos-*` and `ios-*`, S4.5's
+`token.icons.animated_visuals = {}` on every preset but `windows-11`) carries its section as its comment, `# S9.4`,
+`# S4.5`, and no fact (S11, S17; ADD-A125, ADD-A131): this script reads no preset and asks no fact for it;
+scripts/check_facts.py refuses a fact stating one, and scripts/check_preset_citations.py accepts the comment for that
+key, value and presets alone.
+
 Per `measured` citation: the evidence file is committed (`git ls-files`) and exists, the run folder's `run.toml` has an
 entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
 derivation*), the evidence path names a list of pass tables in a TOML file (pass_problems): each holds the `inputs` as
@@ -970,6 +987,124 @@ def vector_table_evidence(root: Path) -> set:
 
 # ------------------------------------------------------------------------------------------------- checks
 
+# a stylesheet's `transition` list (S2.7's `GtkCss`; ADD-A131): the `transition` property's value or an SCSS variable
+# holding one (`$button_transition: …`), its items split at top-level commas, each item's words
+CSS_TRANSITION_RX = re.compile(r"(?:^|[\s;{])(?:transition|\$[\w-]*transition[\w-]*)\s*:\s*([^;{}]+)")
+CSS_ITEM_WORD_RX = re.compile(r"(?:cubic-bezier|steps)\([^)]*\)|\S+")
+CSS_TIME_RX = re.compile(r"^(-?(?:\d+(?:\.\d+)?|\.\d+))(ms|s)$")
+CSS_CURVES = ("ease", "linear", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end")
+
+
+def css_transition_items(quote: str):
+    """The items of the first CSS `transition` list a quote holds, each (duration ms, delay ms, curve), the curve
+    css_curve's; None where it holds none. CSS's defaults: a delay of 0 and the curve `ease`."""
+    m = CSS_TRANSITION_RX.search(quote)
+    if not m:
+        return None
+    items = []
+    for raw in check_facts.split_top(m.group(1).strip()):
+        times, curve = [], ("name", "ease")
+        for w in CSS_ITEM_WORD_RX.findall(raw):
+            t = CSS_TIME_RX.match(w)
+            if t:
+                times.append(float(t.group(1)) * (1000 if t.group(2) == "s" else 1))
+            elif w.startswith(("$", "cubic-bezier(", "steps(")) or w in CSS_CURVES:
+                curve = css_curve(w)
+        items.append((times[0] if times else 0.0, times[1] if len(times) > 1 else 0.0, curve))
+    return items
+
+
+def css_curve(word: str):
+    """A CSS curve as the facts key it (S4.1: a stylesheet's named curve by its name in snake_case, `$ease-out-quad`
+    `ease_out_quad`), or a `cubic-bezier()`'s four numbers."""
+    if word.startswith("cubic-bezier("):
+        nums = re.findall(NUM + EXP, word)
+        return ("bezier", tuple(float(x) for x in nums)) if len(nums) == 4 else ("other", word)
+    return ("name", word.lstrip("$").replace("-", "_"))
+
+
+def fact_curve(timing):
+    """A transition's timing as gtk_css_list_problems compares it: a `token.motion.timings.<key>` reference by its key,
+    `"linear"` by its name, a `cubic_bezier` by its four numbers, anything else as written."""
+    if isinstance(timing, str):
+        m = re.fullmatch(r"=\s*token\.motion\.timings\.([a-z0-9_]+)\s*", timing)
+        if m:
+            return ("name", m.group(1))
+        return ("name", timing) if not timing.startswith("=") else ("other", timing)
+    if isinstance(timing, dict) and set(timing) == {"cubic_bezier"}:
+        v = timing["cubic_bezier"]
+        nums = list(v.values()) if isinstance(v, dict) else v if isinstance(v, list) else []
+        if len(nums) == 4 and all(isinstance(x, (int, float)) for x in nums):
+            return ("bezier", tuple(float(x) for x in nums))
+    return ("other", repr(timing))
+
+
+def same_curve(a, b) -> bool:
+    if a[0] == b[0] == "bezier":
+        return all(math.isclose(x, y, rel_tol=NUMBER_EQ, abs_tol=NUMBER_EQ) for x, y in zip(a[1], b[1]))
+    return a == b
+
+
+def fact_ms(v, durations: dict):
+    """A transition's duration or delay in ms: a number, a `"<n>ms"` literal, or an expression's first
+    `token.motion.durations.<key>` reference followed to the one value the platform's facts state for it (durations:
+    {key: [values]}); None where it cannot be followed to one literal."""
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return float(v)
+    if isinstance(v, str):
+        m = re.fullmatch(r"(-?\d+(?:\.\d+)?)ms", v)
+        if m:
+            return float(m.group(1))
+        r = re.search(r"\btoken\.motion\.durations\.([a-z0-9_]+)", v) if v.startswith("=") else None
+        if r:
+            values = {repr(x) for x in durations.get(f"token.motion.durations.{r.group(1)}", [])}
+            if len(values) == 1:
+                return fact_ms(durations[f"token.motion.durations.{r.group(1)}"][0], {})
+    return None
+
+
+def gtk_css_list_problems(item, durations: dict) -> list:
+    """S2.7's `GtkCss` list order (ADD-A131): a fact whose value is a list of transitions all under `engine =
+    "gtk_css"` and naming two or more curves (fact_curve) states the stylesheet's one CSS `transition` list one
+    transition per item, in its order, as the engine takes a value's curve by its position: the first `published`
+    citation quoting such a list (css_transition_items) has as many items as the fact has transitions, and each
+    transition's duration, delay (fact_ms) and curve equal its item's (a curve by its name, S4.1 keying a stylesheet's
+    named curve by it, or a `cubic-bezier()`'s numbers). A fact whose citations quote no list is a finding."""
+    value = item.data.get("value")
+    if not (isinstance(value, list) and value and all(isinstance(t, dict) and t.get("engine") == "gtk_css"
+                                                      for t in value)):
+        return []
+    curves = [fact_curve(t.get("timing")) for t in value]
+    if len({repr(c) for c in curves}) < 2:
+        return []
+    quoted = None
+    for c in item.cites:
+        if c.data.get("kind") == "published" and isinstance(c.data.get("quote"), str):
+            quoted = css_transition_items(c.data["quote"])
+            if quoted is not None:
+                break
+    if quoted is None:
+        return [(item.ln("value"), "a GtkCss transition list naming several curves quotes no CSS `transition` list "
+                                   "(S2.7: the facts state the stylesheet's list, in its order)")]
+    if len(quoted) != len(value):
+        return [(item.ln("value"), f"a GtkCss transition list naming several curves has {len(value)} transitions, "
+                                   f"its quoted CSS `transition` list {len(quoted)} items (S2.7: one per item)")]
+    out = []
+    for i, (t, (dur, delay, curve)) in enumerate(zip(value, quoted)):
+        for field, want in (("duration_ms", dur), ("delay_ms", delay)):
+            got = fact_ms(t.get(field), durations)
+            if got is None:
+                out.append((item.ln("value"), f"transition {i}: its {field} cannot be followed to one literal to "
+                                              f"compare with the CSS list's item {i}"))
+            elif not math.isclose(got, want, rel_tol=NUMBER_EQ, abs_tol=NUMBER_EQ):
+                out.append((item.ln("value"), f"transition {i}: {field} {got:g}, the CSS list's item {i} {want:g}ms "
+                                              f"(S2.7: the list's order)"))
+        if not same_curve(curves[i], curve):
+            out.append((item.ln("value"), f"transition {i}: curve {curves[i][1]}, the CSS list's item {i} {curve[1]} "
+                                          f"(S2.7: the engine takes a curve by its position)"))
+    return out
+
+
 class Run:
     def __init__(self, ctx, cache: Path, committed=None, check_heads=True):
         self.ctx = ctx
@@ -1341,7 +1476,11 @@ class Run:
     def check(self):
         items, _, _ = check_facts.load(self.ctx)
         runs = {}
+        facts = check_facts.platform_facts(self.ctx, items)
         for it in items:
+            if it.table == "fact" and not it.palette:
+                for ln, what in gtk_css_list_problems(it, facts.get(it.platform, {})):
+                    self.add(it.file, ln, what)
             for cite in it.cites:
                 kind = cite.data.get("kind")
                 if kind in ("published", "read"):
@@ -1373,7 +1512,36 @@ class Run:
 
 # --------------------------------------------------------------------------------------------- self-test
 
+_SHEET_TRS = ('[{ properties = ["geometry"], kind = "interpolate", duration_ms = 100, delay_ms = 0, timing = '
+              '"= token.motion.timings.ease_out", engine = "gtk_css" }, { properties = ["shadow"], kind = '
+              '"interpolate", duration_ms = 250, delay_ms = 0, timing = "= token.motion.timings.ease", engine = '
+              '"gtk_css" }]')
 SELF_TEST_EXTRA = {
+    "docs/facts/gnome/sheet.toml": f'''
+[[fact]]
+key = "button.body.transitions"
+value = {_SHEET_TRS}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:3-4"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease; transition-delay: 0s;"
+
+[[fact]]
+key = "token.motion.durations.bottom_sheet_border_radius"
+value = "100ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_bottom-sheet.scss:3"
+quote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease;"
+''',
+    "cache/libadwaita@1.10.0/src/stylesheet/widgets/_bottom-sheet.scss": "bottom-sheet {\n  > sheet {\n"
+                                                                         "    transition: border-radius 100ms ease-out, "
+                                                                         "box-shadow 250ms ease;\n"
+                                                                         "    transition-delay: 0s;\n  }\n}\n",
     "docs/facts/gnome/curve.toml": '''
 [[fact]]
 key = "button.body.transitions"
@@ -1624,6 +1792,32 @@ _PASSES = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml
 # (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new (None:
 # removed); old a list of (old, new) pairs: each replaced
 SELF_TEST_CASES = [
+    # a GtkCss list naming several curves follows the stylesheet's CSS list item by item (S2.7, S17; ADD-A131)
+    ("GtkCss: the list in another order", "docs/facts/gnome/sheet.toml", _SHEET_TRS,
+     _SHEET_TRS.replace("timings.ease_out", "timings.@").replace("timings.ease\"", "timings.ease_out\"").replace(
+         "timings.@", "timings.ease"),
+     ["transition 0: curve ease, the CSS list's item 0 ease_out", "transition 1: curve ease_out, the CSS list's item 1 "
+                                                                 "ease"]),
+    ("GtkCss: a duration followed to its token", "docs/facts/gnome/sheet.toml", "duration_ms = 100,",
+     'duration_ms = "= mul(token.motion.durations.bottom_sheet_border_radius, token.motion.speed_factor)",', []),
+    ("GtkCss: a duration followed to another item's", "docs/facts/gnome/sheet.toml", "duration_ms = 250,",
+     'duration_ms = "= mul(token.motion.durations.bottom_sheet_border_radius, token.motion.speed_factor)",',
+     ["transition 1: duration_ms 100, the CSS list's item 1 250ms"]),
+    ("GtkCss: a duration not followed", "docs/facts/gnome/sheet.toml", "duration_ms = 250,",
+     'duration_ms = "= token.motion.durations.bottom_sheet_box_shadow",',
+     ["transition 1: its duration_ms cannot be followed to one literal"]),
+    ("GtkCss: one curve, not compared", "docs/facts/gnome/sheet.toml",
+     [("timings.ease\"", "timings.ease_out\""), ("duration_ms = 100,", "duration_ms = 250,")], None, []),
+    ("GtkCss: an item left out", "docs/facts/gnome/sheet.toml",
+     ', { properties = ["shadow"], kind = "interpolate", duration_ms = 250, delay_ms = 0, timing = "= '
+     'token.motion.timings.ease", engine = "gtk_css" }]', ', { properties = ["shadow"], kind = "interpolate", '
+     'duration_ms = 250, delay_ms = 0, timing = "= token.motion.timings.ease", engine = "gtk_css" }, { properties = '
+     '["fill"], kind = "interpolate", duration_ms = 250, delay_ms = 0, timing = "linear", engine = "gtk_css" }]',
+     ["has 3 transitions, its quoted CSS `transition` list 2 items"]),
+    ("GtkCss: no list quoted", "docs/facts/gnome/sheet.toml",
+     [('scss:3-4"\nquote = "transition: border-radius 100ms ease-out, box-shadow 250ms ease; transition-delay: 0s;"',
+       'scss:3-4"\nquote = "border-radius 100ms ease-out, box-shadow 250ms ease; transition-delay: 0s;"')], None,
+     ["quotes no CSS `transition` list"]),
     # a zero stated by omission (S17 *Absence*, ADD-A122): an absence citation holds the value's zero literals
     ("zero by omission: a non-zero value", "docs/facts/gnome/zero.toml", 'value = "0ms"', 'value = "10ms"',
      ["10ms is in no quote serving adwaita"]),
