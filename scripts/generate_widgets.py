@@ -976,7 +976,7 @@ def self_test() -> int:
             failures.append(f"widget file lacks {needle!r}:\n{code}")
     index = index_file([w], shared)
     for needle in ["pub enum WidgetKind {\n    /// `knob`.\n    Knob,", "    /// `round`, a typed variant of `knob`.",
-                   "    Knob(KnobPart),", "pub knob: Option<KnobPatch>,", "variants: &[Variant::Flat, Variant::Round],",
+                   "    Knob(KnobPart),", "pub knob: Option<Box<KnobPatch>>,", "variants: &[Variant::Flat, Variant::Round],",
                    "pub enum Side {"]:
         if needle not in index:
             failures.append(f"index lacks {needle!r}:\n{index}")
