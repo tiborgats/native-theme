@@ -1343,6 +1343,17 @@ impl Reach {
         }
         Reach { reaches, decides }
     }
+
+    /// What one value's evaluation read, a role's or an input's: every
+    /// record counts, wherever its place (a token a role's or an input's
+    /// value reads is its own place), and the value's own place, the
+    /// roles', decides.
+    fn whole(reached: &[Reached]) -> Reach {
+        Reach {
+            reaches: !reached.is_empty(),
+            ..Reach::of(reached, Target::Roles, &[])
+        }
+    }
 }
 
 /// The place a fact's value is evaluated in beside the theme's own steps,
@@ -1410,19 +1421,18 @@ impl Resolved {
                 Place::Role(reference, _) => {
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(reference));
-                        (tree, Reach::of(cx.reached(), Target::Roles, &[]))
+                        (tree, Reach::whole(cx.reached()))
                     })
                 }
                 Place::Input(name) => {
                     let reference = Ref::Input(name.segments().to_vec());
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(&reference));
-                        let reach = Reach::of(cx.reached(), Target::Roles, &[]);
                         // An input is never listed: what it reads is no
                         // synthetic value of its own.
                         let reach = Reach {
                             decides: false,
-                            ..reach
+                            ..Reach::whole(cx.reached())
                         };
                         (tree, reach)
                     })

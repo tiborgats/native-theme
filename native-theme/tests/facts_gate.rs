@@ -951,8 +951,9 @@ fn gate_fixture_pending_map() {
 /// A fact reading a listed path through a function that maps many values
 /// to one (`max`, `min`, `floor`, `round`, a `mix` all the way to its
 /// second colour, a `pick`) is skipped and reported (S17, ADD-A128): its
-/// evaluation reaches the synthetic value, whatever value it gives; each
-/// listed path, a colour role's per scheme among them, is found.
+/// evaluation reaches the synthetic value, whatever value it gives; so is
+/// an input whose value reads a listed token; each listed path, a colour
+/// role's per scheme among them, is found.
 #[test]
 fn gate_fixture_pending_reached_through_functions() {
     let report = fixture_report("pending_reached");
@@ -962,6 +963,7 @@ fn gate_fixture_pending_reached_through_functions() {
         [
             "probe role.global.selection_text_background",
             "probe token.caret.blink_on",
+            "probe token.caret.color",
             "probe token.motion.speed_factor",
         ]
     );
@@ -970,6 +972,7 @@ fn gate_fixture_pending_reached_through_functions() {
     assert_eq!(
         skipped,
         [
+            "input.accent",
             "role.global.drop_highlight",
             "role.global.scrim",
             "token.behavior.hover_open_delay",

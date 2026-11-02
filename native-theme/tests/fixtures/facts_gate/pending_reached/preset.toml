@@ -1,10 +1,15 @@
-# A synthetic preset (S17, ADD-A128): three listed paths, each read through functions that map many
-# values to one (max, min, floor, round, a mix all the way, a pick).
+# A synthetic preset (S17, ADD-A128): four listed paths, three read through functions that map many
+# values to one (max, min, floor, round, a mix all the way, a pick), the caret's colour by an input.
 # base without: blink_on_ms = 500
 # base without: speed_factor = 1
 # base without: selection_text_background = "#3366cc"
 # base without: selection_text_background = "#3366cc"
+# base without: color = "#000000"
+# base without: [inputs.accent]
+# base without: light = "#3366cc"
+# base without: dark = "#3366cc"
 [pending]
+"tokens.caret.color" = "U8"
 "tokens.caret.blink_on_ms" = "U5"
 "tokens.motion.speed_factor" = "U6"
 "colors.light.global.selection_text_background" = "U7"
@@ -30,3 +35,7 @@ set = { behavior.long_press_ms = "= max(token.caret.blink_on, 100ms)", behavior.
 [[rules]]
 target = "colors"
 set = { global.drop_highlight = "= mix(role.global.selection_text_background, #000000, 1)", global.scrim = "= pick(0, #000000, role.global.selection_text_background)" }
+
+[inputs.accent]
+light = "= token.caret.color"
+dark = "= token.caret.color"

@@ -64,3 +64,19 @@ rows = []
 kind = "published"
 source = "probe@1 probe.css:1"
 quote = "synthetic"
+
+[[fact]]
+key = "token.caret.color"
+pending = "U8"
+rows = []
+
+# An input reading the listed caret colour: skipped, as its evaluation reaches the synthetic value.
+[[fact]]
+key = "input.accent"
+value = "= token.caret.color"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
