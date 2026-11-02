@@ -168,16 +168,15 @@ pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
 }
 
 /// Each of a preset's listed paths `pending` (as its `[pending]` table
-/// spells them) that none of `layers` states, as S12's missing field: the
-/// synthetic route's completeness (S17, ADD-A128).
+/// spells them) that none of `layers` states, as S12's missing field at the
+/// model's path, the one the plain route reports it at: the synthetic
+/// route's completeness (S17, ADD-A128).
 pub(crate) fn listed_unstated(pending: &[(String, String)], layers: &[Layer]) -> Vec<Problem> {
     pending
         .iter()
-        .filter(|(path, _)| {
-            let listed = crate::next::toml::read::listed_path(path);
-            !layers.iter().any(|layer| checks::states(layer, &listed))
-        })
-        .map(|(path, _)| Problem::new(path, ProblemKind::Missing))
+        .map(|(path, _)| crate::next::toml::read::listed_path(path))
+        .filter(|listed| !layers.iter().any(|layer| checks::states(layer, listed)))
+        .map(|listed| Problem::new(&listed, ProblemKind::Missing))
         .collect()
 }
 

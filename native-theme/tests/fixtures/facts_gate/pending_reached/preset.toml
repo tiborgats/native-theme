@@ -1,0 +1,32 @@
+# A synthetic preset (S17, ADD-A128): three listed paths, each read through functions that map many
+# values to one (max, min, floor, round, a mix all the way, a pick).
+# base without: blink_on_ms = 500
+# base without: speed_factor = 1
+# base without: selection_text_background = "#3366cc"
+# base without: selection_text_background = "#3366cc"
+[pending]
+"tokens.caret.blink_on_ms" = "U5"
+"tokens.motion.speed_factor" = "U6"
+"colors.light.global.selection_text_background" = "U7"
+"colors.dark.global.selection_text_background" = "U7"
+
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "tokens"
+set = { behavior.long_press_ms = "= max(token.caret.blink_on, 100ms)", behavior.hover_open_delay_ms = "= min(token.caret.blink_on, 0ms)", text.rendering.gamma = "= floor(token.motion.speed_factor)", text.rendering.contrast = "= round(token.motion.speed_factor)" }
+
+[[rules]]
+target = "colors"
+set = { global.drop_highlight = "= mix(role.global.selection_text_background, #000000, 1)", global.scrim = "= pick(0, #000000, role.global.selection_text_background)" }

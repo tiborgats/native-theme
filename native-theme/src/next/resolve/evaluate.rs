@@ -16,6 +16,7 @@
 //! then not drawn (validation keeps both from a stack, S12).
 
 use std::any::Any;
+use std::cell::Cell;
 
 use super::compose::{self, Fold, Found, Locate, Target};
 use super::{Pos, ResolvedTheme};
@@ -413,15 +414,43 @@ pub(crate) struct Evaluated<T> {
     pub(crate) value: T,
     /// The refusals, in the order met.
     pub(crate) refusals: Vec<Refusal>,
+    /// The places whose evaluation read a synthetic layer's step (S17's
+    /// synthetic route, ADD-A128); none outside it.
+    pub(crate) reached: Vec<Reached>,
+}
+
+/// A place whose evaluation read a step of a synthetic layer, the stand-in
+/// the synthetic route states a preset's listed path with (S17, ADD-A128):
+/// the place evaluated outside every reference followed, and whether the
+/// step decided that place itself rather than an operand it reads.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Reached {
+    /// The place's target.
+    pub(crate) target: Target,
+    /// The place, below its target.
+    pub(crate) path: Vec<String>,
+    /// The step decided the place itself, no reference followed.
+    pub(crate) direct: bool,
+}
+
+impl Reached {
+    /// Whether the place lies at `path` of `target`, above it or below it.
+    pub(crate) fn meets(&self, target: Target, path: &[String]) -> bool {
+        let shared = self.path.len().min(path.len());
+        self.target == target && self.path.get(..shared) == path.get(..shared)
+    }
 }
 
 /// The text style a value lies in, for its `font_size` and `line_height`
-/// operands (S2.2: the style's own).
+/// operands (S2.2: the style's own), each with whether its evaluation read
+/// a synthetic layer's step.
 #[derive(Clone, Debug)]
 struct TextFrame {
     font: Option<ResolvedFont>,
     size: Option<Px>,
     line_height: Option<Length>,
+    font_reached: bool,
+    line_height_reached: bool,
 }
 
 /// The query's evaluation context (S8): the resolved theme, the element and
@@ -464,6 +493,9 @@ pub(crate) struct Cx<'t> {
     /// The DPI and the scaling factor, read once outside every chain of
     /// references (S9.4); `None` until read.
     sizes: Option<(Option<f32>, Option<f32>)>,
+    /// Whether reading the DPI, and the scaling, read a synthetic layer's
+    /// step.
+    sizes_reached: (bool, bool),
     /// Inside a keyed scalar map whose units a declaration names (a
     /// material's or a keyed kind's `params`): the depth of its place and
     /// the declared units (S2.7, S10).
@@ -472,6 +504,13 @@ pub(crate) struct Cx<'t> {
     /// theme's: a fact's value evaluated where the preset's is (S17).
     extra: Option<Extra<'t>>,
     refusals: Vec<Refusal>,
+    /// The places whose evaluation read a synthetic layer's step, in the
+    /// order met (S17's synthetic route).
+    reached: Vec<Reached>,
+    /// The place evaluated outside every reference followed, while one is,
+    /// and how many places are being followed where a step read decides it
+    /// itself.
+    origin: Option<(Target, Vec<String>, usize)>,
 }
 
 /// What the facts gate evaluates in place of the theme's own (S17): a step
@@ -502,16 +541,20 @@ struct Bindings {
     part: TypedPart,
     surface: Option<SurfaceSet>,
     roles: Vec<(RoleRef, Option<Color>)>,
+    /// Their evaluation read a synthetic layer's step.
+    reached: bool,
 }
 
 impl Bindings {
     /// `part`'s bindings, a later of one role or the surface replacing the
-    /// earlier (S6.1).
-    fn of(part: TypedPart, bindings: Vec<ResolvedBinding>) -> Bindings {
+    /// earlier (S6.1); `reached` where their evaluation read a synthetic
+    /// layer's step.
+    fn of(part: TypedPart, bindings: Vec<ResolvedBinding>, reached: bool) -> Bindings {
         let mut bound = Bindings {
             part,
             surface: None,
             roles: Vec::new(),
+            reached,
         };
         for binding in bindings {
             match binding {
@@ -531,6 +574,8 @@ struct Operands {
     values: Vec<(Ref, Val)>,
     dpi: Option<f32>,
     factor: Option<f32>,
+    /// A font size literal was converted.
+    converted: Cell<bool>,
 }
 
 impl Env for Operands {
@@ -545,6 +590,7 @@ impl Env for Operands {
     /// scales it; without a DPI (validation requires one, S9.4) non-finite,
     /// which evaluation takes as zero (S2.2's *Totality*).
     fn font_size(&self, size: FontSize) -> Px {
+        self.converted.set(true);
         match (convert(size, self.dpi), self.factor) {
             (Some(px), Some(factor)) => Px(px.0 * factor),
             (Some(px), None) => px,
@@ -647,9 +693,9 @@ fn last<'f>(items: &[Fold<'f>]) -> Option<(usize, Fold<'f>)> {
         .map(|(index, fold)| (index, *fold))
 }
 
-/// One scope entry's bindings, S3.3's lookup walks: its surface set and its
-/// roles.
-type ScopeBindings<'s> = (Option<SurfaceSet>, &'s [(RoleRef, Option<Color>)]);
+/// One scope entry's bindings, S3.3's lookup walks: its surface set, its
+/// roles, and whether they read a synthetic layer's step.
+type ScopeBindings<'s> = (Option<SurfaceSet>, &'s [(RoleRef, Option<Color>)], bool);
 
 /// What a struct block's step is to its place.
 enum Step<'f, B: FieldsBlock> {
@@ -747,10 +793,67 @@ impl<'t> Cx<'t> {
             unscaled: false,
             bases_only: false,
             sizes: None,
+            sizes_reached: (false, false),
             params: None,
             extra: None,
             refusals: Vec::new(),
+            reached: Vec::new(),
+            origin: None,
         }
+    }
+
+    /// Records that the place being evaluated read a synthetic layer's
+    /// step: `direct` where the step decides the place itself (S17's
+    /// synthetic route, ADD-A128).
+    fn record(&mut self, direct: bool) {
+        let (target, path, depth) = match &self.origin {
+            Some((target, path, depth)) => (*target, path.clone(), *depth),
+            None => (self.target, self.path.clone(), 0),
+        };
+        self.reached.push(Reached {
+            target,
+            path,
+            direct: direct && self.visiting.len() == depth,
+        });
+    }
+
+    /// Records the step at `pos` read, where it is a synthetic layer's.
+    fn touch(&mut self, pos: Pos) {
+        if self.theme.synthetic.contains(&pos.layer) {
+            self.record(true);
+        }
+    }
+
+    /// Records a value read whose evaluation read a synthetic layer's step,
+    /// where `reached`.
+    fn reach(&mut self, reached: bool) {
+        if reached {
+            self.record(false);
+        }
+    }
+
+    /// The places whose evaluation read a synthetic layer's step so far
+    /// (S17's synthetic route, ADD-A128).
+    pub(crate) fn reached(&self) -> &[Reached] {
+        &self.reached
+    }
+
+    /// `f`'s value, and whether its evaluation read a synthetic layer's
+    /// step, recorded for no place: a value read once and used by others.
+    fn aside<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> (R, bool) {
+        let held = self.reached.len();
+        let out = f(self);
+        let reached = self.reached.len() > held;
+        self.reached.truncate(held);
+        (out, reached)
+    }
+
+    /// `f`'s value, and whether its evaluation read a synthetic layer's
+    /// step, recorded at its place too.
+    fn noting<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> (R, bool) {
+        let held = self.reached.len();
+        let out = f(self);
+        (out, self.reached.len() > held)
     }
 
     /// What the place's steps state values of.
@@ -805,20 +908,27 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let font = self.at("font", |cx| {
-            cx.block::<Font>(&compose::children(folds, "font"))
+        let (font, font_reached) = self.noting(|cx| {
+            cx.at("font", |cx| {
+                cx.block::<Font>(&compose::children(folds, "font"))
+            })
         });
         let size = font.as_ref().and_then(|font| font.size);
         self.text.push(TextFrame {
             font,
             size,
             line_height: None,
+            font_reached,
+            line_height_reached: false,
         });
-        let line_height = self.at("line_height", |cx| {
-            cx.font_auto(&compose::children(folds, "line_height"), false)
+        let (line_height, line_height_reached) = self.noting(|cx| {
+            cx.at("line_height", |cx| {
+                cx.font_auto(&compose::children(folds, "line_height"), false)
+            })
         });
         if let Some(frame) = self.text.last_mut() {
             frame.line_height = line_height;
+            frame.line_height_reached = line_height_reached;
         }
         let out = f(self);
         self.text.pop();
@@ -942,6 +1052,16 @@ impl<'t> Cx<'t> {
         }
         let bases_only = bases_only || self.bases_only;
         let folds = self.locate(target, &path, bases_only);
+        // The place evaluated: the one being evaluated where there is one,
+        // else (a reference read alone, a role's) the one followed.
+        let entered = self.origin.is_none();
+        if entered {
+            self.origin = Some(if self.path.is_empty() {
+                (target, path.clone(), self.visiting.len().saturating_add(1))
+            } else {
+                (self.target, self.path.clone(), self.visiting.len())
+            });
+        }
         self.visiting.push(key);
         let saved_bases = std::mem::replace(&mut self.bases_only, bases_only);
         let saved_target = std::mem::replace(&mut self.target, target);
@@ -974,6 +1094,9 @@ impl<'t> Cx<'t> {
         self.path = saved_path;
         self.target = saved_target;
         self.visiting.pop();
+        if entered {
+            self.origin = None;
+        }
         out
     }
 
@@ -1011,10 +1134,12 @@ impl<'t> Cx<'t> {
             self.chain_part = Some(held);
             self.outside = Some(held);
             let path = vec!["bindings".to_owned()];
-            let bindings = self.follow(Target::Part(held), path, false, |cx, folds| {
-                cx.keyed::<Binding>(folds)
+            let (bindings, reached) = self.aside(|cx| {
+                cx.follow(Target::Part(held), path, false, |cx, folds| {
+                    cx.keyed::<Binding>(folds)
+                })
             });
-            chain.push(Bindings::of(held, bindings.unwrap_or_default()));
+            chain.push(Bindings::of(held, bindings.unwrap_or_default(), reached));
         }
         self.outside = None;
         chain
@@ -1074,9 +1199,15 @@ impl<'t> Cx<'t> {
         let text = || "text".to_owned();
         match reference {
             Ref::Role { .. } | Ref::GlobalRole(_) | Ref::KeyedRole(_) | Ref::Surface(_) => {
-                Some(self.role(reference, false))
+                let (answer, reached) = self.role(reference, false);
+                self.reach(reached);
+                Some(answer)
             }
-            Ref::Active(inner) => Some(self.role(inner, true)),
+            Ref::Active(inner) => {
+                let (answer, reached) = self.role(inner, true);
+                self.reach(reached);
+                Some(answer)
+            }
             Ref::Token(path) => Some(place(Target::Tokens, segments(path))),
             Ref::Input(path) => {
                 let theme = self.theme;
@@ -1191,8 +1322,9 @@ impl<'t> Cx<'t> {
     /// queried part's own innermost (outside its own `bindings`, whose values
     /// are evaluated in the scope outside it), then its ancestors'; else the
     /// colour roles' value. `active(…)` (`bases`) follows the `Surface(S)`
-    /// bindings only, and reads the bases (S2.2).
-    fn role(&self, reference: &Ref, bases: bool) -> Answer {
+    /// bindings only, and reads the bases (S2.2). With whether a binding it
+    /// takes read a synthetic layer's step (S17's synthetic route).
+    fn role(&self, reference: &Ref, bases: bool) -> (Answer, bool) {
         let bases = bases || self.bases_only;
         let joined = |path: &[Key]| path.iter().map(Key::as_str).collect::<Vec<_>>().join(".");
         let mut chain: Vec<ScopeBindings<'_>> = self
@@ -1200,33 +1332,37 @@ impl<'t> Cx<'t> {
             .iter()
             .rev()
             .filter(|bound| Some(bound.part) != self.outside)
-            .map(|bound| (bound.surface, bound.roles.as_slice()))
+            .map(|bound| (bound.surface, bound.roles.as_slice(), bound.reached))
             .collect();
         chain.extend(
             self.outer
                 .iter()
                 .rev()
-                .map(|entry| (entry.surface, entry.roles.as_slice())),
+                .map(|entry| (entry.surface, entry.roles.as_slice(), entry.synthetic)),
         );
-        let color = |value: &Option<Color>| {
-            Answer::Val(match value {
+        let color = |value: &Option<Color>, reached: bool| {
+            let val = match value {
                 Some(c) => Val::Color(*c),
                 None => Val::Absent,
-            })
+            };
+            (Answer::Val(val), reached)
         };
-        let roles_place = |path: Vec<String>| Answer::Place {
-            target: Target::Roles,
-            path,
-            bases_only: bases,
+        let roles_place = |path: Vec<String>| {
+            let place = Answer::Place {
+                target: Target::Roles,
+                path,
+                bases_only: bases,
+            };
+            (place, false)
         };
         let split = |text: &str| text.split('.').map(str::to_owned).collect::<Vec<_>>();
         // Step 2: the nearest `Role` binding of exactly that role, else the
         // colour roles' value; for `active(…)` the value alone.
         let step2 = |held: &dyn Fn(&RoleRef) -> bool, path: Vec<String>| {
             if !bases {
-                for (_, roles) in &chain {
+                for (_, roles, reached) in &chain {
                     if let Some((_, value)) = roles.iter().rev().find(|(role, _)| held(role)) {
-                        return color(value);
+                        return color(value, *reached);
                     }
                 }
             }
@@ -1260,17 +1396,18 @@ impl<'t> Cx<'t> {
             // with no binding, `role.window.x`.
             Ref::Surface(path) => {
                 let x = joined(path);
-                for (surface, roles) in &chain {
+                for (surface, roles, reached) in &chain {
                     if !bases
                         && let Some((_, value)) = roles
                             .iter()
                             .rev()
                             .find(|(role, _)| matches!(role, RoleRef::Surface(r) if r.path() == x))
                     {
-                        return color(value);
+                        return color(value, *reached);
                     }
                     if let Some(set) = surface {
-                        return in_set(*set, &x);
+                        let (answer, through) = in_set(*set, &x);
+                        return (answer, through || *reached);
                     }
                 }
                 in_set(SurfaceSet::Window, &x)
@@ -1287,7 +1424,7 @@ impl<'t> Cx<'t> {
             | Ref::Part(_)
             | Ref::Widget { .. }
             | Ref::Values(_)
-            | Ref::TextScale => Answer::Val(Val::Absent),
+            | Ref::TextScale => (Answer::Val(Val::Absent), false),
         }
     }
 
@@ -1296,7 +1433,7 @@ impl<'t> Cx<'t> {
     /// that patches it below the reference's level, which composes with the
     /// referenced value instead ([`Cx::through`]); an `Option` member a patch
     /// leaves unset states nothing.
-    fn decide<'f, X: Any>(&self, items: &[Fold<'f>]) -> Option<(usize, Fold<'f>)> {
+    fn decide<'f, X: Any>(&mut self, items: &[Fold<'f>]) -> Option<(usize, Fold<'f>)> {
         let stated = items.iter().enumerate().map(|(index, fold)| {
             let states = match fold.found {
                 Found::Missing => false,
@@ -1311,9 +1448,10 @@ impl<'t> Cx<'t> {
     /// Of the steps `candidates` names (each item's index, and whether it
     /// sets the place rather than patching it), the index of the one that
     /// decides, by [`Cx::decide`]'s rule; positions in `candidates` are
-    /// `items`' indices.
+    /// `items`' indices. The step that decides is recorded read (S17's
+    /// synthetic route).
     fn decider(
-        &self,
+        &mut self,
         candidates: impl Iterator<Item = (usize, bool)>,
         items: &[Fold<'_>],
     ) -> Option<usize> {
@@ -1339,6 +1477,9 @@ impl<'t> Cx<'t> {
                 continue;
             }
             out = Some(index);
+        }
+        if let Some(fold) = out.and_then(|index| items.get(index)) {
+            self.touch(fold.pos);
         }
         out
     }
@@ -1382,7 +1523,11 @@ impl<'t> Cx<'t> {
     /// one, else the part's text's (S2.2).
     fn font_size_operand(&mut self) -> Option<Px> {
         match self.text.last() {
-            Some(frame) => frame.size,
+            Some(frame) => {
+                let (size, reached) = (frame.size, frame.font_reached);
+                self.reach(reached);
+                size
+            }
             None => match self.target {
                 Target::Part(part) => self.part_text(part)?.font.size,
                 Target::Roles | Target::Tokens | Target::Values(_) => None,
@@ -1394,7 +1539,12 @@ impl<'t> Cx<'t> {
     /// (S2.2).
     fn line_height_operand(&mut self) -> Option<Px> {
         let (line_height, font) = match self.text.last() {
-            Some(frame) => (frame.line_height?, frame.font.clone()),
+            Some(frame) => {
+                let reached = frame.line_height_reached || frame.font_reached;
+                let held = (frame.line_height?, frame.font.clone());
+                self.reach(reached);
+                held
+            }
             None => match self.target {
                 Target::Part(part) => {
                     let style = self.part_text(part)?;
@@ -1438,8 +1588,15 @@ impl<'t> Cx<'t> {
             | ElementDatum::FontUnderlineThickness
             | ElementDatum::FontStrikeoutOffset
             | ElementDatum::FontStrikeoutThickness => {
-                let font = match self.text.last().and_then(|frame| frame.font.clone()) {
-                    Some(font) => font,
+                let framed = self
+                    .text
+                    .last()
+                    .and_then(|frame| Some((frame.font.clone()?, frame.font_reached)));
+                let font = match framed {
+                    Some((font, reached)) => {
+                        self.reach(reached);
+                        font
+                    }
                     None => match origin {
                         Target::Part(part) => self.part_text(part)?.font,
                         Target::Roles | Target::Tokens | Target::Values(_) => return None,
@@ -1470,7 +1627,9 @@ impl<'t> Cx<'t> {
     /// The DPI points convert by (S9.4): the reader's, else the preset's
     /// `token.text.font_dpi`.
     fn dpi(&mut self) -> Option<f32> {
-        self.sizes().0
+        let dpi = self.sizes().0;
+        self.reach(self.sizes_reached.0);
+        dpi
     }
 
     /// The DPI and the scaling factor, read once, outside the chain of
@@ -1483,19 +1642,24 @@ impl<'t> Cx<'t> {
         self.sizes = Some((None, None));
         let saved = std::mem::take(&mut self.visiting);
         let saved_bases = std::mem::replace(&mut self.bases_only, false);
-        let dpi = match self.theme.font_dpi {
-            Some(dpi) => Some(dpi),
+        let (dpi, dpi_reached) = match self.theme.font_dpi {
+            Some(dpi) => (Some(dpi), false),
             None => {
                 let path = vec!["text".to_owned(), "font_dpi".to_owned()];
-                self.follow(Target::Tokens, path, false, |cx, folds| {
-                    cx.value::<f32>(folds, false)
+                self.aside(|cx| {
+                    cx.follow(Target::Tokens, path, false, |cx, folds| {
+                        cx.value::<f32>(folds, false)
+                    })
                 })
             }
         };
         let path = vec!["text".to_owned(), "scaling".to_owned()];
-        let scaling = self.follow(Target::Tokens, path, false, |cx, folds| {
-            cx.plain::<TextScaling>(folds)
+        let (scaling, scaling_reached) = self.aside(|cx| {
+            cx.follow(Target::Tokens, path, false, |cx, folds| {
+                cx.plain::<TextScaling>(folds)
+            })
         });
+        self.sizes_reached = (dpi_reached, scaling_reached);
         let factor = match scaling {
             Some(TextScaling::Linear) => Some(self.theme.text_scaling_factor),
             Some(TextScaling::AndroidNonLinear | TextScaling::DynamicType) | None => None,
@@ -1510,7 +1674,9 @@ impl<'t> Cx<'t> {
     /// `token.text.scaling` (S9.4): `Linear`'s product; `None` for the
     /// non-linear kinds, whose curves are not implemented yet.
     fn factor(&mut self) -> Option<f32> {
-        self.sizes().1
+        let factor = self.sizes().1;
+        self.reach(self.sizes_reached.1);
+        factor
     }
 
     /// `px` scaled by the text scaling (S9.4).
@@ -1609,13 +1775,20 @@ impl<'t> Cx<'t> {
             };
             values.push((reference, value.unwrap_or(Val::Absent)));
         }
-        let dpi = self.dpi();
-        let factor = if self.unscaled { None } else { self.factor() };
-        Some(typed.eval(&Operands {
+        let (dpi, factor) = self.sizes();
+        let factor = if self.unscaled { None } else { factor };
+        let operands = Operands {
             values,
             dpi,
             factor,
-        }))
+            converted: Cell::new(false),
+        };
+        let val = typed.eval(&operands);
+        if operands.converted.get() {
+            let (dpi_reached, scaling_reached) = self.sizes_reached;
+            self.reach(dpi_reached || (scaling_reached && !self.unscaled));
+        }
+        Some(val)
     }
 
     /// The value `reference` gives as an operand.
@@ -1811,23 +1984,28 @@ impl<'t> Cx<'t> {
     where
         't: 'f,
     {
-        let held = items
-            .iter()
-            .rev()
-            .find_map(|fold| fold.found.get::<Option<Value<X>>>())?;
+        let (held, pos) = items.iter().rev().find_map(|fold| {
+            fold.found
+                .get::<Option<Value<X>>>()
+                .map(|held| (held, fold.pos))
+        })?;
         match held {
-            None => Some(None),
+            None => {
+                self.touch(pos);
+                Some(None)
+            }
             Some(_) => Some(self.value::<X>(items, signed)),
         }
     }
 
     /// A plain field's value: the last step's.
     pub(crate) fn plain<'f, T: Any + Clone>(&mut self, items: &[Fold<'f>]) -> Option<T> {
-        items
+        let (value, pos) = items
             .iter()
             .rev()
-            .find_map(|fold| fold.found.get::<T>())
-            .cloned()
+            .find_map(|fold| fold.found.get::<T>().map(|value| (value, fold.pos)))?;
+        self.touch(pos);
+        Some(value.clone())
     }
 
     /// A `Value<Px>` field marked `auto` (S6.1): `Length::Auto` where the last
@@ -2161,6 +2339,7 @@ impl<'t> Cx<'t> {
         for (at, step) in steps.iter().skip(from) {
             if let PaintStep::Appended(appended) = step {
                 let pos = items.get(*at)?.pos;
+                self.touch(pos);
                 for layer in *appended {
                     drawn = true;
                     layers.push(layer.resolve_whole(pos, self)?);
@@ -2188,6 +2367,7 @@ impl<'t> Cx<'t> {
             return Some(Vec::new());
         };
         let list = fold.found.get::<Vec<B>>()?;
+        self.touch(fold.pos);
         list.iter()
             .map(|item| item.resolve_whole(fold.pos, self))
             .collect()
@@ -2206,6 +2386,7 @@ impl<'t> Cx<'t> {
             if let Some(list) = fold.found.get::<Vec<B>>() {
                 B::merge_keyed(&mut merged, list.clone());
                 pos = Some(fold.pos);
+                self.touch(fold.pos);
             }
         }
         let Some(pos) = pos else {
@@ -2229,6 +2410,7 @@ impl<'t> Cx<'t> {
             .iter()
             .rev()
             .find(|fold| fold.found.get::<Option<B>>().is_some())?;
+        self.touch(fold.pos);
         match fold.found.get::<Option<B>>()? {
             None => Some(None),
             Some(block) => block.resolve_whole(fold.pos, self).map(Some),
@@ -2347,23 +2529,25 @@ impl<'t> Cx<'t> {
 
     /// A plain member's value: the last step's, a patch's unset member left
     /// out.
-    fn member<T: Any + Clone>(items: &[Fold<'_>], name: &str) -> Option<T> {
-        compose::children(items, name)
+    fn member<T: Any + Clone>(&mut self, items: &[Fold<'_>], name: &str) -> Option<T> {
+        let (value, pos) = compose::children(items, name)
             .iter()
             .rev()
             .find_map(|fold| {
                 fold.found
                     .get::<T>()
                     .or_else(|| fold.found.get::<Option<T>>().and_then(Option::as_ref))
-                    .cloned()
-            })
+                    .map(|value| (value.clone(), fold.pos))
+            })?;
+        self.touch(pos);
+        Some(value)
     }
 
     /// An `Axes` of plain values.
     pub(crate) fn axes_plain<T: Any + Clone>(&mut self, items: &[Fold<'_>]) -> Option<Axes<T>> {
         Some(Axes {
-            horizontal: Self::member(items, "horizontal")?,
-            vertical: Self::member(items, "vertical")?,
+            horizontal: self.member(items, "horizontal")?,
+            vertical: self.member(items, "vertical")?,
         })
     }
 
@@ -2378,6 +2562,7 @@ impl<'t> Cx<'t> {
             .iter()
             .rev()
             .find_map(|fold| fold.found.get::<B::Patch>().map(|patch| (patch, fold.pos)))?;
+        self.touch(pos);
         Some(B::resolve_patch(patch, pos, self))
     }
 
@@ -2398,11 +2583,13 @@ impl<'t> Cx<'t> {
         let folds = self.roots(Target::Part(part));
         self.target = Target::Part(part);
         self.chain_part = Some(part);
-        let bindings = self.at("bindings", |cx| {
-            cx.keyed::<Binding>(&compose::children(&folds, "bindings"))
+        let (bindings, reached) = self.noting(|cx| {
+            cx.at("bindings", |cx| {
+                cx.keyed::<Binding>(&compose::children(&folds, "bindings"))
+            })
         });
         self.chain
-            .push(Bindings::of(part, bindings.unwrap_or_default()));
+            .push(Bindings::of(part, bindings.unwrap_or_default(), reached));
         PartStyle::resolve(&folds, self)
     }
 }
@@ -2485,6 +2672,7 @@ impl ResolvedTheme {
         Evaluated {
             value,
             refusals: cx.refusals,
+            reached: cx.reached,
         }
     }
 
@@ -2499,6 +2687,7 @@ impl ResolvedTheme {
         Evaluated {
             value,
             refusals: cx.refusals,
+            reached: cx.reached,
         }
     }
 
@@ -2515,6 +2704,7 @@ impl ResolvedTheme {
         Evaluated {
             value,
             refusals: cx.refusals,
+            reached: cx.reached,
         }
     }
 
@@ -2601,6 +2791,7 @@ impl ResolvedTheme {
         Evaluated {
             value,
             refusals: cx.refusals,
+            reached: cx.reached,
         }
     }
 }

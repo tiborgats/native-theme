@@ -2331,23 +2331,33 @@ impl Stated {
 }
 
 /// Whether `layer`'s bases state the listed path `listed` (as
-/// `listed_path` gives it), or a value holding it whole (S17, ADD-A128).
+/// `listed_path` gives it), or a value holding it whole: a reference,
+/// `Absent`, a part stated `Absent` or drawn as another (S17, ADD-A128).
+/// Its inputs state no listed path, which names a field of the colour
+/// roles, the tokens or a typed widget (the reader refuses any other).
 pub(super) fn states(layer: &Layer, listed: &str) -> bool {
     let toml = matches!(layer.spelled, Spelled::Toml);
     let mut stated = Stated::default();
-    let bases = &layer.bases;
-    for (scheme, roles) in [("light", &bases.colors.light), ("dark", &bases.colors.dark)] {
+    let Bases {
+        colors,
+        inputs: _,
+        tokens,
+        widgets,
+    } = &layer.bases;
+    for (scheme, roles) in [("light", &colors.light), ("dark", &colors.dark)] {
         if let Some(roles) = roles {
             stated.walk(&format!("colors.{scheme}"), toml, roles);
         }
     }
-    stated.walk("tokens", toml, &bases.tokens);
-    let WidgetsPatch { button } = &bases.widgets;
+    stated.walk("tokens", toml, tokens);
+    let WidgetsPatch { button } = widgets;
     if let Some(button) = button {
         let (parts, values) = button.clone().into_parts();
         for (part, patch) in parts {
-            if let PartPatch::Style(style) = patch {
-                stated.walk(&format!("widgets.button.{}", part.name()), toml, &style);
+            let at = format!("widgets.button.{}", part.name());
+            match patch {
+                PartPatch::Style(style) => stated.walk(&at, toml, &style),
+                PartPatch::Absent | PartPatch::DrawnAs { .. } => stated.wholes.push(at),
             }
         }
         if let Some(values) = values {

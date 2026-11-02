@@ -884,10 +884,80 @@ fn gate_fixture_pending_listed() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// A fact reading a listed path through a function that maps many values
+/// to one (`max`, `min`, `floor`, `round`, a `mix` all the way to its
+/// second colour, a `pick`) is skipped and reported (S17, ADD-A128): its
+/// evaluation reaches the synthetic value, whatever value it gives; each
+/// listed path, a colour role's per scheme among them, is found.
+#[test]
+fn gate_fixture_pending_reached_through_functions() {
+    let report = fixture_report("pending_reached");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        [
+            "probe role.global.selection_text_background",
+            "probe token.caret.blink_on",
+            "probe token.motion.speed_factor",
+        ]
+    );
+    let mut skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    skipped.sort();
+    assert_eq!(
+        skipped,
+        [
+            "role.global.drop_highlight",
+            "role.global.scrim",
+            "token.behavior.hover_open_delay",
+            "token.behavior.long_press",
+            "token.text.rendering.contrast",
+            "token.text.rendering.gamma",
+        ],
+        "{:?}",
+        report.synthetic
+    );
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// A part's field and a widget value listed (S17, ADD-A128): each found
+/// where its pending fact applies with nothing beneath; a fact reading one
+/// through `max` or `min` skipped where it reaches the synthetic value, and
+/// compared where the preset's rule states the field (pressed).
+#[test]
+fn gate_fixture_pending_widget_paths() {
+    let report = fixture_report("pending_widget");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        [
+            "probe button.body.min_width",
+            "probe button.values.menu_indicator_gap",
+        ]
+    );
+    let mut skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    skipped.sort();
+    assert_eq!(
+        skipped,
+        ["button.body.max_width", "button.values.subtitle_gap"],
+        "{:?}",
+        report.synthetic
+    );
+    let pressed = fixture_report_with("pending_widget", "unpressed.toml");
+    assert!(
+        pressed
+            .failures
+            .iter()
+            .any(|failure| failure.contains("button.body.min_width")),
+        "the rule's value is compared where it applies: {:?}",
+        pressed.failures
+    );
+}
+
 /// The table holds exactly the listed paths (S17, ADD-A128): a listed path
 /// the table lacks is S12's missing field, which loading the preset
 /// refuses; an entry no combination leaves to a pending fact fails, and so
-/// does one under another register id than its pending fact's.
+/// do one the preset states, which the reader reads, and one under another
+/// register id than its pending fact's.
 #[test]
 fn gate_fixture_pending_table_both_ways() {
     let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
@@ -908,6 +978,15 @@ fn gate_fixture_pending_table_both_ways() {
         ],
         "{:?}",
         extra.failures
+    );
+    let stated = fixture_report_with("pending_listed", "stated.toml");
+    assert_eq!(
+        failing(&stated, "[pending]"),
+        [&"probe: `tokens.behavior.drag_time_ms` (U6) is in its [pending] table, and the preset \
+           states it"
+            .to_owned()],
+        "{:?}",
+        stated.failures
     );
     let wrong = fixture_report_with("pending_listed", "wrong_id.toml");
     assert_eq!(

@@ -62,6 +62,9 @@ pub(crate) struct ScopeEntry {
     /// The roles it binds, each evaluated in the scope outside it; `None`:
     /// bound to a role not drawn.
     pub(crate) roles: Vec<(RoleRef, Option<Color>)>,
+    /// Whether its bindings, or its being drawn, read a step of a layer
+    /// the synthetic route added (S17, ADD-A128); never outside it.
+    pub(crate) synthetic: bool,
 }
 
 /// The scope a query is evaluated in (S8): owned, evaluated values only,

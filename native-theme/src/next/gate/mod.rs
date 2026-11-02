@@ -26,7 +26,7 @@ use super::query::{
 };
 use super::registry;
 use super::resolve::compose::{Fold, Found, Target};
-use super::resolve::evaluate::{Extra, Resolve};
+use super::resolve::evaluate::{Extra, Reached, Resolve};
 use super::resolve::{
     Pos, ReaderState, ResolvedTheme, Stack, WindowConditions, WindowState, input_value,
 };
@@ -89,16 +89,13 @@ fn refused(error: &LayerError) -> String {
 
 /// A preset the gate checks: its stack, validated as `Theme` validates a
 /// bundled preset (S12); where its `[pending]` table lists paths, through
-/// the synthetic route, once with each type's first synthetic value and
-/// once with its second, so a value reaching one is told from the preset's
-/// own (S17, ADD-A128).
+/// the synthetic route, its synthetic layers' steps recorded wherever an
+/// evaluation reads one (S17, ADD-A128).
 #[derive(Clone, Debug)]
 pub struct Preset {
     stack: Stack,
     id: String,
     pending: Vec<(String, String)>,
-    /// The synthetic route's stack with the second synthetic values.
-    alternate: Option<Stack>,
 }
 
 impl Preset {
@@ -115,34 +112,33 @@ impl Preset {
 
     fn read(text: &str, id: Option<PresetId>) -> Result<Preset, String> {
         let file = read_preset(text).map_err(|error| refused(&error))?;
-        if file.pending.is_empty() {
-            let stack = Stack::new(id, file.declarations, file.layer, Scheme::Light)
-                .map_err(|error| refused(&error))?;
-            return Ok(Preset {
-                stack,
-                id: file.id,
-                pending: Vec::new(),
-                alternate: None,
-            });
-        }
-        let synthetic = |second: bool| {
-            let layers = synthetic_layers(&file.pending, second)?;
+        let stack = if file.pending.is_empty() {
+            Stack::new(id, file.declarations, file.layer, Scheme::Light)
+        } else {
+            let layers = synthetic_layers(&file.pending)?;
             Stack::synthetic(
                 id,
-                file.declarations.clone(),
-                file.layer.clone(),
+                file.declarations,
+                file.layer,
                 Scheme::Light,
                 &file.pending,
                 layers,
             )
-            .map_err(|error| refused(&error))
         };
         Ok(Preset {
-            stack: synthetic(false)?,
-            alternate: Some(synthetic(true)?),
+            stack: stack.map_err(|error| refused(&error))?,
             id: file.id,
             pending: file.pending,
         })
+    }
+
+    /// Whether the preset's own bases state the listed path `path` (as its
+    /// `[pending]` table spells it), or a value holding it whole: a path it
+    /// states is no listed path (S17, ADD-A128).
+    #[must_use]
+    pub fn states(&self, path: &str) -> bool {
+        let listed = super::toml::read::listed_path(path);
+        super::validate::states(self.stack.preset_layer(), &listed)
     }
 
     /// Its `[pending]` table: each listed path as S11 spells it, with its
@@ -255,146 +251,212 @@ impl Preset {
     /// `conditions` and no reader (S17), validated as `Theme` validates the
     /// stand-in.
     pub fn resolve(&self, conditions: &Conditions, stand_in: &Layer) -> Result<Resolved, String> {
-        let alternate = match &self.alternate {
-            Some(stack) => Some(Box::new(resolve_stack(stack, conditions, stand_in)?)),
-            None => None,
-        };
-        let mut resolved = resolve_stack(&self.stack, conditions, stand_in)?;
-        resolved.alternate = alternate;
-        Ok(resolved)
-    }
-}
-
-/// `stack` resolved with a stand-in stating `stand_in` in `conditions`.
-fn resolve_stack(
-    stack: &Stack,
-    conditions: &Conditions,
-    stand_in: &Layer,
-) -> Result<Resolved, String> {
-    let mut stack = stack.clone();
-    if let Some(flavor) = &conditions.flavor {
-        stack
-            .set_flavor(flavor.clone())
-            .map_err(|error| refused(&error))?;
-    }
-    stack
-        .set_reader_stand_in(conditions.state.clone(), stand_in.clone())
-        .map_err(|error| refused(&error))?;
-    let theme = stack
-        .resolve(&mut WindowState::default(), &conditions.window)
-        .theme;
-    Ok(Resolved {
-        theme,
-        stack,
-        window: conditions.window.clone(),
-        alternate: None,
-    })
-}
-
-/// The field a listed path names (S11's `[pending]` key: `tokens.…` or
-/// `widgets.<widget>.<part>.…`, `widgets.<widget>.values.…`), its last
-/// key's unit suffix left out.
-fn listed_field(path: &str) -> Option<&'static registry::FieldInfo> {
-    let path = super::toml::read::listed_path(path);
-    let parts = segments(&path).ok()?;
-    let (head, rest) = parts.split_first()?;
-    let (fields, below): (&'static [registry::FieldInfo], &[String]) = match head.as_str() {
-        "tokens" => (registry::tokens(), rest),
-        "widgets" => {
-            let (widget, rest) = rest.split_first()?;
-            let info = registry::widget(widget)?;
-            let (part, rest) = rest.split_first()?;
-            if part == "values" {
-                (info.values, rest)
-            } else {
-                let part = info.parts.iter().find(|held| held.name == part)?;
-                (part.fields, rest)
-            }
+        let mut stack = self.stack.clone();
+        if let Some(flavor) = &conditions.flavor {
+            stack
+                .set_flavor(flavor.clone())
+                .map_err(|error| refused(&error))?;
         }
-        _ => return None,
-    };
-    registry::find(fields, &below.join("."))
+        stack
+            .set_reader_stand_in(conditions.state.clone(), stand_in.clone())
+            .map_err(|error| refused(&error))?;
+        let theme = stack
+            .resolve(&mut WindowState::default(), &conditions.window)
+            .theme;
+        Ok(Resolved {
+            theme,
+            stack,
+            window: conditions.window.clone(),
+        })
+    }
 }
 
 /// The fact key a listed path names (S11's `[pending]` key as S17's key
 /// spells it: `tokens.behavior.touch.delay_ms` is
 /// `token.behavior.touch.delay`, `widgets.button.icon.icon.size_px` is
-/// `button.icon.icon.size`); `None` for a path of no field the gate reads.
+/// `button.icon.icon.size`, `colors.light.global.status` and
+/// `colors.dark.global.status` are `role.global.status`,
+/// `colors.light.surfaces.window.background` is `role.window.background`,
+/// `colors.light.keyed.badge` is `role.@badge`); `None` for a path of no
+/// field the gate reads.
 #[must_use]
 pub fn listed_key(path: &str) -> Option<String> {
     let path = super::toml::read::listed_path(path);
     if let Some(rest) = path.strip_prefix("tokens.") {
-        Some(format!("token.{rest}"))
+        return Some(format!("token.{rest}"));
+    }
+    if let Some(rest) = path.strip_prefix("widgets.") {
+        return Some(rest.to_owned());
+    }
+    let (_, roles) = path.strip_prefix("colors.")?.split_once('.')?;
+    let role = if let Some(rest) = roles.strip_prefix("surfaces.") {
+        rest.to_owned()
+    } else if let Some(key) = roles.strip_prefix("keyed.") {
+        format!("@{key}")
     } else {
-        path.strip_prefix("widgets.").map(str::to_owned)
+        roles.to_owned()
+    };
+    Some(format!("role.{role}"))
+}
+
+/// A synthetic value of the type `ty`, written as the model writes it, of
+/// the field `info` or of an entry of its map (S17, ADD-A128), with the
+/// unit suffix S11 spells its key with. Synthetic, never bundled, no
+/// platform's: an empty list or map, a list of two halves, 1 in the
+/// type's unit, `#010203`, the text `Synthetic`, the key `synthetic`, an
+/// enum's first variant, a glyph's named system image `synthetic`; a
+/// struct block's every field so, `absent` where a field may be absent; an
+/// enum block's first unit variant. `None` for a type with none yet.
+fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, Item)> {
+    let wrapped = ["Option<", "Value<"]
+        .iter()
+        .find_map(|wrap| ty.strip_prefix(wrap)?.strip_suffix('>'));
+    if let Some(inner) = wrapped {
+        return synthetic_of(inner, info);
+    }
+    if registry::key_levels(ty) > 0 {
+        return Some(("", Item::Table(Table::new())));
+    }
+    if ty.starts_with("Vec<") {
+        return Some(("", Item::Array(Vec::new())));
+    }
+    match ty {
+        "(f32,f32)" => return Some(("", Item::Array(vec![Item::Float(0.5), Item::Float(0.5)]))),
+        "Scalar" => return Some(("", Item::Integer(1))),
+        "GlyphSource" => {
+            let mut name = Table::new();
+            name.insert("name".to_owned(), Item::String("synthetic".to_owned()));
+            let mut source = Table::new();
+            source.insert("named_system_image".to_owned(), Item::Table(name));
+            return Some(("", Item::Table(source)));
+        }
+        _ => {}
+    }
+    let one = Item::Integer(1);
+    let leaf = match (info.value)() {
+        Some(Ty::Duration) => Some(("_ms", one)),
+        Some(Ty::Length) => Some(("_px", one)),
+        Some(Ty::Angle) => Some(("_deg", one)),
+        Some(Ty::FontSize) => Some(("_pt", one)),
+        Some(Ty::Number) => Some(("", one)),
+        Some(Ty::Bool) => Some(("", Item::Boolean(true))),
+        Some(Ty::Text) => Some(("", Item::String("Synthetic".to_owned()))),
+        Some(Ty::Color | Ty::Paint) => Some(("", Item::String("#010203".to_owned()))),
+        Some(Ty::Key(_)) => Some(("", Item::String("synthetic".to_owned()))),
+        Some(Ty::Enum(names)) => {
+            return names
+                .variants
+                .first()
+                .map(|first| ("", Item::String((*first).to_owned())));
+        }
+        Some(Ty::Shadow | Ty::Block(_)) | None => None,
+    };
+    if leaf.is_some() {
+        return leaf;
+    }
+    match info.ty {
+        registry::FieldType::Block {
+            form: registry::BlockForm::Struct,
+            fields,
+            ..
+        } => {
+            let mut table = Table::new();
+            for field in fields {
+                let (suffix, item) = if field.may_be_absent {
+                    (unit_suffix(field), Item::String("absent".to_owned()))
+                } else {
+                    synthetic_of(written(field), field)?
+                };
+                table.insert(format!("{}{suffix}", field.path), item);
+            }
+            Some(("", Item::Table(table)))
+        }
+        registry::FieldType::Block {
+            form: registry::BlockForm::Enum { unit_variants },
+            ..
+        } => unit_variants
+            .first()
+            .map(|first| ("", Item::String((*first).to_owned()))),
+        registry::FieldType::Leaf(_) | registry::FieldType::Patch { .. } => None,
     }
 }
 
-/// A synthetic value of the field `info` (S17, ADD-A128): one of two per
-/// type, `second` picking the other, so a value reaching it tells the two
-/// apart. Synthetic, never bundled, no platform's; `None` for a type the
-/// gate has none for yet.
-fn synthetic_value(info: &registry::FieldInfo, second: bool) -> Option<Item> {
-    let pick = |first: &str, other: &str| (if second { other } else { first }).to_owned();
-    let names = |first: &str, other: &str| Item::Array(vec![Item::String(pick(first, other))]);
-    if let Some(ty) = (info.value)() {
-        return match ty {
-            Ty::Duration | Ty::Length | Ty::Angle | Ty::FontSize => {
-                Some(Item::Integer(if second { 2 } else { 1 }))
-            }
-            Ty::Number => Some(Item::Float(if second { 0.75 } else { 0.25 })),
-            Ty::Bool => Some(Item::Boolean(!second)),
-            Ty::Text => Some(Item::String(pick("Synthetic A", "Synthetic B"))),
-            Ty::Color | Ty::Paint => Some(Item::String(pick("#010203", "#030201"))),
-            Ty::Enum(names) => {
-                let (first, other) = (names.variants.first()?, names.variants.get(1)?);
-                Some(Item::String(pick(first, other)))
-            }
-            Ty::Key(_) | Ty::Shadow | Ty::Block(_) => None,
-        };
+/// A field's type as the model writes it.
+fn written(info: &registry::FieldInfo) -> &'static str {
+    match info.ty {
+        registry::FieldType::Leaf(ty)
+        | registry::FieldType::Block { ty, .. }
+        | registry::FieldType::Patch { ty, .. } => ty,
     }
-    let registry::FieldType::Leaf(ty) = info.ty else {
-        return None;
-    };
-    let ty: String = ty.chars().filter(|c| !c.is_whitespace()).collect();
-    let map = |key: &str| {
-        let mut table = Table::new();
-        table.insert(key.to_owned(), names("Synthetic A", "Synthetic B"));
-        Item::Table(table)
-    };
-    match ty.as_str() {
-        "Vec<String>" => Some(names("Synthetic A", "Synthetic B")),
-        "Vec<(String,Vec<String>)>" => Some(map("Synthetic")),
-        "Vec<(LanguageTag,Vec<String>)>" => Some(map("x-synth")),
-        _ => None,
+}
+
+/// The unit suffix S11 spells every value of a one-unit field with (S11:
+/// `delay_ms = "absent"`), none for any other.
+fn unit_suffix(info: &registry::FieldInfo) -> &'static str {
+    match (info.value)() {
+        Some(Ty::Duration) => "_ms",
+        Some(Ty::Length) => "_px",
+        Some(Ty::Angle) => "_deg",
+        _ => "",
     }
+}
+
+/// The synthetic value of a listed path (S17, ADD-A128), its last key
+/// spelled with the unit suffix of the value: `absent` where the field may
+/// be absent, else [`synthetic_of`] its type, or its map's value type where
+/// the path names an entry.
+fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
+    let (info, levels) = super::toml::read::listed_field(path)
+        .ok_or_else(|| "the model holds no field there".to_owned())?;
+    let mut ty = written(info);
+    for _ in 0..levels {
+        ty = map_value(ty).ok_or_else(|| format!("`{ty}` is no map"))?;
+    }
+    let (suffix, item) = if levels == 0 && info.may_be_absent {
+        (unit_suffix(info), Item::String("absent".to_owned()))
+    } else {
+        synthetic_of(ty, info)
+            .ok_or_else(|| format!("the gate has no synthetic value of `{ty}`"))?
+    };
+    let mut keys = super::toml::read::key_segments(path)
+        .ok_or_else(|| "a key that does not read".to_owned())?;
+    if let Some(last) = keys.last_mut() {
+        *last = format!("{}{suffix}", super::toml::read::listed_path(last));
+    }
+    Ok((keys, item))
+}
+
+/// A map's value type, as the model writes it: `Vec<(K,V)>`'s and
+/// `SurfaceMap<V>`'s `V`.
+fn map_value(ty: &str) -> Option<&str> {
+    if let Some(inner) = ty.strip_prefix("SurfaceMap<") {
+        return inner.strip_suffix('>');
+    }
+    let pair = ty.strip_prefix("Vec<(")?.strip_suffix(")>")?;
+    let mut depth = 0_usize;
+    for (at, c) in pair.char_indices() {
+        match c {
+            '<' | '(' => depth = depth.saturating_add(1),
+            '>' | ')' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => return pair.get(at.saturating_add(1)..),
+            _ => {}
+        }
+    }
+    None
 }
 
 /// One layer per listed path of a preset's `[pending]` table, stating it
 /// in its bases with a synthetic value (S17's synthetic route, ADD-A128):
 /// the layers [`Preset`] and S19.1's build test load such a preset with.
-/// `second` picks each type's other synthetic value. A listed path the
-/// model holds no field at, or of a type with no synthetic value yet, is
-/// refused, naming it.
-pub fn synthetic_layers(pending: &[(String, String)], second: bool) -> Result<Vec<Layer>, String> {
+/// A listed path the model holds no field at, or of a type with no
+/// synthetic value yet, is refused, naming it.
+pub fn synthetic_layers(pending: &[(String, String)]) -> Result<Vec<Layer>, String> {
     pending
         .iter()
         .map(|(path, id)| {
-            let info = listed_field(path)
-                .ok_or_else(|| format!("`{path}` ({id}): the model holds no field there"))?;
-            let value = synthetic_value(info, second).ok_or_else(|| {
-                format!("`{path}` ({id}): the gate has no synthetic value of its type")
-            })?;
-            let mut item = value;
-            for key in segments(path)
-                .map_err(|unread| format!("`{path}` ({id}): {unread:?}"))?
-                .iter()
-                .rev()
-            {
-                let mut table = Table::new();
-                table.insert(key.clone(), item);
-                item = Item::Table(table);
-            }
+            let (keys, value) =
+                synthetic_value(path).map_err(|why| format!("`{path}` ({id}): {why}"))?;
+            let item = nested(&keys, value);
             let text = ::toml::to_string(&item).map_err(|error| error.to_string())?;
             Layer::from_toml(&text).map_err(|error| format!("`{path}` ({id}): {error}"))
         })
@@ -1256,9 +1318,31 @@ pub struct Resolved {
     theme: ResolvedTheme,
     stack: Stack,
     window: WindowConditions,
-    /// The synthetic route's second resolution, with each type's other
-    /// synthetic value (S17, ADD-A128).
-    alternate: Option<Box<Resolved>>,
+}
+
+/// A value the gate read, and the places its evaluation read a synthetic
+/// layer's step at (S17's synthetic route, ADD-A128).
+type Read = (Option<Tree>, Vec<Reached>);
+
+/// Whether a value's evaluation read a synthetic layer's step at the place
+/// `path` of `target`, above it or below it: any step (`reaches`), or one
+/// deciding the place itself (`decides`).
+#[derive(Clone, Copy, Debug, Default)]
+struct Reach {
+    reaches: bool,
+    decides: bool,
+}
+
+impl Reach {
+    fn of(reached: &[Reached], target: Target, path: &[String]) -> Reach {
+        let meets = reached.iter().filter(|held| held.meets(target, path));
+        let (mut reaches, mut decides) = (false, false);
+        for held in meets {
+            reaches = true;
+            decides |= held.direct;
+        }
+        Reach { reaches, decides }
+    }
 }
 
 /// The place a fact's value is evaluated in beside the theme's own steps,
@@ -1303,44 +1387,58 @@ impl Resolved {
 
     /// A token's, a role's or an input's value read in the root scope:
     /// the theme's own, or `value`'s evaluated in its place, with the path
-    /// of the key's place in it.
+    /// of the key's place in it, and whether its evaluation read a
+    /// synthetic layer's step there (S17, ADD-A128).
     fn global_tree(
         &self,
         key: &FactKey,
         value: Option<&FactValue>,
         root: &RootInputs,
-    ) -> Result<(Option<Tree>, Vec<String>), Unread> {
+    ) -> Result<(Option<Tree>, Vec<String>, Reach), Unread> {
         let scope = self.root(root);
         let applies: &dyn Fn(&Selector) -> bool = &|_| true;
         let theme = &self.theme;
-        let read = |extra: Option<Extra<'_>>| -> Option<Tree> {
+        let read = |extra: Option<Extra<'_>>| -> (Option<Tree>, Reach) {
             match &key.place {
-                Place::Token(_) => {
+                Place::Token(path) => {
                     theme.evaluate_in(&scope, None, applies, Target::Tokens, extra, |cx| {
                         let folds = cx.roots(Target::Tokens);
-                        Tree::of(&Tokens::resolve(&folds, cx))
+                        let tree = Tree::of(&Tokens::resolve(&folds, cx));
+                        (tree, Reach::of(cx.reached(), Target::Tokens, path))
                     })
                 }
                 Place::Role(reference, _) => {
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
-                        Tree::of(&cx.color_of(reference))
+                        let tree = Tree::of(&cx.color_of(reference));
+                        (tree, Reach::of(cx.reached(), Target::Roles, &[]))
                     })
                 }
                 Place::Input(name) => {
                     let reference = Ref::Input(name.segments().to_vec());
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
-                        Tree::of(&cx.color_of(&reference))
+                        let tree = Tree::of(&cx.color_of(&reference));
+                        let reach = Reach::of(cx.reached(), Target::Roles, &[]);
+                        // An input is never listed: what it reads is no
+                        // synthetic value of its own.
+                        let reach = Reach {
+                            decides: false,
+                            ..reach
+                        };
+                        (tree, reach)
                     })
                 }
                 Place::KdeList(list) => {
                     let lists = &theme.kde_lists;
-                    match list {
+                    let tree = match list {
                         KdeList::Groups => Tree::of(&lists.groups),
                         KdeList::InactiveGroups => Tree::of(&lists.inactive_groups),
                         KdeList::UnsetKeys => Tree::of(&lists.unset_keys),
-                    }
+                    };
+                    (tree, Reach::default())
                 }
-                Place::WholePart(_) | Place::Part(..) | Place::Values(..) => None,
+                Place::WholePart(_) | Place::Part(..) | Place::Values(..) => {
+                    (None, Reach::default())
+                }
             }
         };
         let path = match &key.place {
@@ -1353,47 +1451,54 @@ impl Resolved {
             }
         };
         let Some(value) = value else {
-            return Ok((read(None), path));
+            let (tree, reach) = read(None);
+            return Ok((tree, path, reach));
         };
         let scheme = theme.scheme;
         let contrast = self.stack.contrast();
-        let tree = match (&value.body, &key.place) {
+        let (tree, reach) = match (&value.body, &key.place) {
             (Body::Rule(body), _) => read(extra_step(body).map(Extra::Step)),
             (Body::Inputs(bases), Place::Input(name)) => bases
                 .entries
                 .iter()
                 .find(|(held, _)| held == name)
                 .and_then(|(_, stated)| input_value(stated, scheme, contrast))
-                .and_then(|color| read(Some(Extra::Input(name, &color)))),
-            (Body::Inputs(bases), Place::KdeList(list)) => list_tree(bases, *list, scheme),
-            (Body::Inputs(_) | Body::Part(_), _) => None,
+                .map_or_else(
+                    || (None, Reach::default()),
+                    |color| read(Some(Extra::Input(name, &color))),
+                ),
+            (Body::Inputs(bases), Place::KdeList(list)) => {
+                (list_tree(bases, *list, scheme), Reach::default())
+            }
+            (Body::Inputs(_) | Body::Part(_), _) => (None, Reach::default()),
         };
-        Ok((tree, path))
+        Ok((tree, path, reach))
     }
 
     /// Whether a token's, a role's or an input's value, or `value`
     /// evaluated in its place, reaches a synthetic value (S17, ADD-A128):
-    /// it differs between the synthetic route's two resolutions. Never
-    /// without a `[pending]` table.
+    /// its evaluation reads a step of a synthetic layer, through any
+    /// reference, call, binding, rule or base. Never without a `[pending]`
+    /// table.
     pub fn global_synthetic(
         &self,
         key: &FactKey,
         value: Option<&FactValue>,
         root: &RootInputs,
     ) -> Result<bool, Unread> {
-        let Some(alternate) = &self.alternate else {
-            return Ok(false);
-        };
         for value in [None, value] {
-            let (first, path) = self.global_tree(key, value, root)?;
-            let (second, _) = alternate.global_tree(key, value, root)?;
-            if first.as_ref().and_then(|tree| tree.at(&path))
-                != second.as_ref().and_then(|tree| tree.at(&path))
-            {
+            if self.global_tree(key, value, root)?.2.reaches {
                 return Ok(true);
             }
         }
         Ok(false)
+    }
+
+    /// Whether a synthetic layer's step decides a token's or a role's
+    /// value itself (S17, ADD-A128): the preset leaves its place, or a
+    /// block it is a leaf of, unstated here, a listed path.
+    pub fn global_listed(&self, key: &FactKey, root: &RootInputs) -> Result<bool, Unread> {
+        Ok(self.global_tree(key, None, root)?.2.decides)
     }
 
     /// A token's, a role's or an input's value, read in the root scope,
@@ -1405,8 +1510,8 @@ impl Resolved {
         root: &RootInputs,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let (actual, path) = self.global_tree(key, None, root)?;
-        let (expected, _) = self.global_tree(key, Some(value), root)?;
+        let (actual, path, _) = self.global_tree(key, None, root)?;
+        let (expected, _, _) = self.global_tree(key, Some(value), root)?;
         let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
         differs(actual.as_ref(), expected.as_ref(), &path, &tolerance)
     }
@@ -1422,8 +1527,8 @@ impl Resolved {
         root: &RootInputs,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let (measured, path) = self.global_tree(key, Some(result), root)?;
-        let (derived, _) = self.global_tree(key, Some(value), root)?;
+        let (measured, path, _) = self.global_tree(key, Some(result), root)?;
+        let (derived, _, _) = self.global_tree(key, Some(value), root)?;
         let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
         differs(measured.as_ref(), derived.as_ref(), &path, &tolerance)
     }
@@ -1443,10 +1548,6 @@ impl Resolved {
         if let Some(context) = &combination.context {
             scope = self.context_scope(context, scope, metrics)?;
         }
-        let alternate = match &self.alternate {
-            Some(alternate) => Some(Box::new(alternate.session(combination, root, metrics)?)),
-            None => None,
-        };
         let mut session = Session {
             resolved: self,
             metrics,
@@ -1454,7 +1555,6 @@ impl Resolved {
             widget,
             parts: Vec::new(),
             values: OnceCell::new(),
-            alternate,
         };
         let info = registry::widgets()
             .iter()
@@ -1566,7 +1666,7 @@ struct Queried {
     returned: Option<Scope>,
     answer: Answer,
     /// The theme's own resolved style, read once.
-    actual: OnceCell<Option<Tree>>,
+    actual: OnceCell<Read>,
 }
 
 impl Queried {
@@ -1723,10 +1823,7 @@ pub struct Session<'r> {
     widget: WidgetKind,
     parts: Vec<Queried>,
     /// The theme's own resolved values, read once.
-    values: OnceCell<Option<Tree>>,
-    /// The same element in the synthetic route's second resolution (S17,
-    /// ADD-A128).
-    alternate: Option<Box<Session<'r>>>,
+    values: OnceCell<Read>,
 }
 
 impl Session<'_> {
@@ -1899,10 +1996,10 @@ impl Session<'_> {
                 })
             }
             Place::Part(..) | Place::Values(..) => {
-                let Some((actual, path)) = self.field_tree(key, None)? else {
+                let Some((actual, path, _)) = self.field_tree(key, None)? else {
                     return Ok(Outcome::NotDrawn);
                 };
-                let (expected, _) = self
+                let (expected, _, _) = self
                     .field_tree(key, Some(rule_body(value)?))?
                     .unwrap_or_default();
                 differs(
@@ -1929,10 +2026,11 @@ impl Session<'_> {
         result: &FactValue,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let Some((measured, path)) = self.field_tree(key, Some(rule_body(Some(result))?))? else {
+        let Some((measured, path, _)) = self.field_tree(key, Some(rule_body(Some(result))?))?
+        else {
             return Ok(Outcome::NotDrawn);
         };
-        let (derived, _) = self
+        let (derived, _, _) = self
             .field_tree(key, Some(rule_body(Some(value))?))?
             .unwrap_or_default();
         differs(
@@ -1980,32 +2078,76 @@ impl Session<'_> {
     }
 
     /// Whether the key's value for the element, or `value` evaluated in
-    /// its place, reaches a synthetic value (S17, ADD-A128): it differs
-    /// between the synthetic route's two resolutions, a whole part by its
-    /// answer. Never without a `[pending]` table.
+    /// its place, reaches a synthetic value (S17, ADD-A128): its
+    /// evaluation reads a step of a synthetic layer, through any reference,
+    /// call, binding, rule or base, or such a step decides whether its part
+    /// is drawn. Never without a `[pending]` table.
     pub fn synthetic(&self, key: &FactKey, value: Option<&FactValue>) -> Result<bool, Unread> {
-        let Some(alternate) = &self.alternate else {
-            return Ok(false);
-        };
-        match &key.place {
-            Place::WholePart(part) => Ok(self.queried(*part).map(|held| &held.answer)
-                != alternate.queried(*part).map(|held| &held.answer)),
-            Place::Part(..) | Place::Values(..) => {
-                let body = value.and_then(|value| rule_body(Some(value)).ok());
-                for body in [None, body] {
-                    let read = |session: &Session<'_>| -> Result<Option<Tree>, Unread> {
-                        Ok(session
-                            .field_tree(key, body)?
-                            .and_then(|(tree, path)| tree.and_then(|tree| tree.at(&path).cloned())))
-                    };
-                    if read(self)? != read(alternate)? {
-                        return Ok(true);
-                    }
+        let (target, path) = match &key.place {
+            Place::WholePart(part) => return Ok(self.shown_synthetic(*part)),
+            Place::Part(part, path) => {
+                if self.shown_synthetic(*part) {
+                    return Ok(true);
                 }
-                Ok(false)
+                (Target::Part(*part), path)
             }
-            Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => Ok(false),
+            Place::Values(widget, path) => (Target::Values(*widget), path),
+            Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => {
+                return Ok(false);
+            }
+        };
+        let body = value.and_then(|value| rule_body(Some(value)).ok());
+        for body in [None, body] {
+            if let Some((_, _, reached)) = self.field_tree(key, body)?
+                && Reach::of(&reached, target, path).reaches
+            {
+                return Ok(true);
+            }
         }
+        Ok(false)
+    }
+
+    /// Whether a synthetic layer's step decides the key's value for the
+    /// element itself (S17, ADD-A128): the preset leaves the place, or a
+    /// block it is a leaf of, unstated here, a listed path. A whole part's
+    /// key is never one.
+    pub fn listed(&self, key: &FactKey) -> Result<bool, Unread> {
+        let (target, path) = match &key.place {
+            Place::Part(part, path) => (Target::Part(*part), path),
+            Place::Values(widget, path) => (Target::Values(*widget), path),
+            Place::WholePart(_)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::Input(_)
+            | Place::KdeList(_) => return Ok(false),
+        };
+        Ok(self
+            .field_tree(key, None)?
+            .is_some_and(|(_, _, reached)| Reach::of(&reached, target, path).decides))
+    }
+
+    /// Whether the step deciding whether `part` is drawn for the element
+    /// (its last kept step, S6.3) is a synthetic layer's (S17, ADD-A128).
+    fn shown_synthetic(&self, part: TypedPart) -> bool {
+        let Some(queried) = self.queried(part) else {
+            return false;
+        };
+        let theme = &self.resolved.theme;
+        self.with_element(queried.part, &queried.scope, |element| {
+            let Ok(matched) = Matched::new(theme, element) else {
+                return false;
+            };
+            theme
+                .part_steps(part)
+                .iter()
+                .rev()
+                .find(|step| {
+                    step.selector
+                        .as_ref()
+                        .is_none_or(|selector| matched.matches(selector))
+                })
+                .is_some_and(|step| theme.synthetic.contains(&step.pos.layer))
+        })
     }
 
     /// Whether `when`, a state model's `not_drawn` entry (S17), holds for
@@ -2040,9 +2182,11 @@ impl Session<'_> {
                 if queried.answer != Answer::Drawn {
                     return Ok(None);
                 }
-                let evaluate = |extra: Option<Extra<'_>>| {
+                let evaluate = |extra: Option<Extra<'_>>| -> Read {
                     self.with_element(queried.part, &queried.scope, |element| {
-                        let matched = Matched::new(theme, element).ok()?;
+                        let Ok(matched) = Matched::new(theme, element) else {
+                            return (None, Vec::new());
+                        };
                         let applies = |selector: &Selector| matched.matches(selector);
                         theme.evaluate_in(
                             element.scope,
@@ -2050,23 +2194,25 @@ impl Session<'_> {
                             &applies,
                             Target::Part(queried.part),
                             extra,
-                            |cx| Tree::of(&cx.part(queried.part)),
+                            |cx| (Tree::of(&cx.part(queried.part)), cx.reached().to_vec()),
                         )
                     })
                 };
-                let tree = match body {
+                let (tree, reached) = match body {
                     None => queried.actual.get_or_init(|| evaluate(None)).clone(),
                     Some(_) => evaluate(extra),
                 };
-                Ok(Some((tree, path.clone())))
+                Ok(Some((tree, path.clone(), reached)))
             }
             Place::Values(widget, path) => {
                 let root = self
                     .root()
                     .ok_or_else(|| Unread::Refused("a widget with no root".to_owned()))?;
-                let evaluate = |extra: Option<Extra<'_>>| {
+                let evaluate = |extra: Option<Extra<'_>>| -> Read {
                     self.with_element(root.part, &root.scope, |element| {
-                        let matched = Matched::new(theme, element).ok()?;
+                        let Ok(matched) = Matched::new(theme, element) else {
+                            return (None, Vec::new());
+                        };
                         let applies = |selector: &Selector| matched.matches(selector);
                         theme.evaluate_in(
                             element.scope,
@@ -2076,20 +2222,21 @@ impl Session<'_> {
                             extra,
                             |cx| {
                                 let folds = cx.roots(Target::Values(*widget));
-                                match widget {
+                                let tree = match widget {
                                     WidgetKind::Button => {
                                         Tree::of(&ButtonValues::resolve(&folds, cx))
                                     }
-                                }
+                                };
+                                (tree, cx.reached().to_vec())
                             },
                         )
                     })
                 };
-                let tree = match body {
+                let (tree, reached) = match body {
                     None => self.values.get_or_init(|| evaluate(None)).clone(),
                     Some(_) => evaluate(extra),
                 };
-                Ok(Some((tree, path.clone())))
+                Ok(Some((tree, path.clone(), reached)))
             }
             Place::WholePart(_)
             | Place::Token(_)
@@ -2102,9 +2249,10 @@ impl Session<'_> {
     }
 }
 
-/// A part field's or a widget value's tree, where it resolved, and the
-/// key's path in it.
-type Field = (Option<Tree>, Vec<String>);
+/// A part field's or a widget value's tree, where it resolved, the key's
+/// path in it, and the places its evaluation read a synthetic layer's step
+/// at (S17, ADD-A128).
+type Field = (Option<Tree>, Vec<String>, Vec<Reached>);
 
 /// A part's or a widget value's fact as a rule's body.
 fn rule_body(value: Option<&FactValue>) -> Result<&RuleBody, Unread> {
@@ -2120,39 +2268,135 @@ mod tests {
 
     use super::*;
 
+    /// Every path a fact's key can name below `fields`, the listed paths
+    /// the generator can write (S17, ADD-A128): each field, a struct
+    /// block's fields inside it but a set-whole block's, a map's entry,
+    /// each map key one its key type reads.
+    fn listable(prefix: &str, fields: &'static [registry::FieldInfo], out: &mut Vec<String>) {
+        for field in fields {
+            let path = format!("{prefix}.{}", field.path);
+            out.push(path.clone());
+            let mut entry = path;
+            let mut inner = written(field);
+            let levels = registry::key_levels(inner);
+            for level in 1..=levels {
+                let key = match inner.split_once(',').map(|(head, _)| head) {
+                    Some("Vec<(String") => "Synthetic",
+                    Some("Vec<(LanguageTag") => "x-synth",
+                    Some("Vec<(SizeClass") => "compact",
+                    Some("Vec<(IconRole") => "action_save",
+                    Some("Vec<(AxisTag") => "wght",
+                    Some("Vec<(FeatureTag") => "liga",
+                    _ if inner.starts_with("SurfaceMap<") => "window",
+                    _ => "synthetic",
+                };
+                entry = format!("{entry}.{key}");
+                inner = map_value(inner).unwrap();
+                if level == levels {
+                    out.push(entry.clone());
+                }
+            }
+            let list = ["Option<", "Value<"]
+                .iter()
+                .fold(inner, |ty, wrap| {
+                    ty.strip_prefix(wrap)
+                        .and_then(|rest| rest.strip_suffix('>'))
+                        .unwrap_or(ty)
+                })
+                .starts_with("Vec<");
+            // A set-whole block's leaves are listed as the block (S6.1, S17).
+            let set_whole = inner.starts_with("Option<");
+            if let registry::FieldType::Block {
+                form: registry::BlockForm::Struct,
+                fields: below,
+                ..
+            } = field.ty
+                && !list
+                && !set_whole
+            {
+                listable(&entry, below, out);
+            }
+        }
+    }
+
+    /// A synthetic layer reads for every path the generator can write
+    /// into `[pending]`, of every type the model holds there, each spelled
+    /// as its type takes it (S11, S17, ADD-A128): a type with no synthetic
+    /// value fails here until it has one. A path the model holds no field
+    /// at is refused, naming it.
+    #[test]
+    fn synthetic_layers_state_every_listable_type() {
+        let mut paths = Vec::new();
+        listable("tokens", registry::tokens(), &mut paths);
+        listable("colors.light", registry::colors(), &mut paths);
+        for widget in registry::widgets() {
+            listable(
+                &format!("widgets.{}.values", widget.name),
+                widget.values,
+                &mut paths,
+            );
+            for part in widget.parts {
+                listable(
+                    &format!("widgets.{}.{}", widget.name, part.name),
+                    part.fields,
+                    &mut paths,
+                );
+            }
+        }
+        assert!(paths.len() > 500, "{}", paths.len());
+        let mut failures = Vec::new();
+        for path in &paths {
+            let spelled = ["", "_ms", "_px", "_deg", "_pt"]
+                .iter()
+                .map(|suffix| format!("{path}{suffix}"))
+                .find(|spelled| super::super::toml::read::listed_field(spelled).is_some());
+            let Some(spelled) = spelled else {
+                failures.push(format!("{path}: no spelling names its field"));
+                continue;
+            };
+            if let Err(why) = synthetic_layers(&[(spelled, "U1".to_owned())]) {
+                failures.push(why);
+            }
+        }
+        assert_eq!(failures, Vec::<String>::new());
+        let refused = synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), "U1".to_owned())])
+            .unwrap_err();
+        assert!(refused.contains("holds no field"), "{refused}");
+    }
+
+    /// The synthetic layers of a set-whole block (`Option<KeyRepeat>`), a
+    /// keyed icon size's leaf and a colour role state the listed path, its
+    /// key spelled with the unit its value takes (S11, S17, ADD-A128).
+    #[test]
+    fn synthetic_layers_spell_their_values() {
+        let layer = |path: &str| {
+            let mut layers = synthetic_layers(&[(path.to_owned(), "U1".to_owned())]).unwrap();
+            layers.pop().unwrap()
+        };
+        let repeat = layer("tokens.behavior.key_repeat");
+        assert_eq!(
+            repeat.bases.tokens,
+            Layer::from_toml("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n")
+                .unwrap()
+                .bases
+                .tokens
+        );
+        let status = layer("colors.light.global.status");
+        assert!(status.bases.colors.light.is_some());
+        assert!(status.bases.colors.dark.is_none());
+        let font = layer("widgets.button.label.text.font.size");
+        assert_eq!(
+            font.bases.widgets,
+            Layer::from_toml("[widgets.button.label.text.font]\nsize_pt = 1\n")
+                .unwrap()
+                .bases
+                .widgets
+        );
+    }
+
     /// A value no spelling reads is reported by the spelling whose key the
     /// reader knows: a one-unit field's suffixed key for an expression
     /// (S11), not the bare key's "unknown key".
-    /// A synthetic layer per listed path, its value of the field's type,
-    /// two distinct ones per type (S17, ADD-A128): a duration, a list of
-    /// families, a map of them, an enum; a path the model holds no field
-    /// at, or a type with no synthetic value, is refused naming it.
-    #[test]
-    fn synthetic_layers_state_each_listed_path() {
-        let pending: Vec<(String, String)> = [
-            "tokens.behavior.touch.delay_ms",
-            "tokens.text.fallbacks.families",
-            "tokens.text.fallbacks.per_family",
-            "tokens.text.fallbacks.per_language",
-            "tokens.icons.sizes.keyed.check.rendering_mode",
-            "widgets.button.icon.icon.rendering_mode",
-        ]
-        .iter()
-        .map(|path| ((*path).to_owned(), "U1".to_owned()))
-        .collect();
-        let first = synthetic_layers(&pending, false).unwrap();
-        let second = synthetic_layers(&pending, true).unwrap();
-        assert_eq!(first.len(), pending.len());
-        for (a, b) in first.iter().zip(&second) {
-            assert_ne!(a.bases, b.bases);
-        }
-        let refused = |path: &str| {
-            synthetic_layers(&[(path.to_owned(), "U1".to_owned())], false).unwrap_err()
-        };
-        assert!(refused("tokens.behavior.bogus_ms").contains("holds no field"));
-        assert!(refused("tokens.focus.shadow").contains("no synthetic value"));
-    }
-
     #[test]
     fn a_refused_leaf_reports_its_known_spelling() {
         let key = parse_key("token.behavior.double_click_time").unwrap();

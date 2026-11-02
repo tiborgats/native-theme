@@ -364,6 +364,10 @@ pub struct ResolvedTheme {
     /// The flavour in force, whose declarations the query reads (S10);
     /// `None` where the preset declares none.
     pub(crate) flavor: Option<Key>,
+    /// The places in the stack of the synthetic route's layers (S16's
+    /// `Theme::from_preset_synthetic`, S17, ADD-A128), whose steps
+    /// evaluation records read; none outside it.
+    pub(crate) synthetic: Vec<usize>,
 }
 
 /// KDE's scheme lists under the scheme in force (S9.1).
@@ -420,6 +424,8 @@ pub(crate) struct Stack {
     contrast: Option<Contrast>,
     /// The flavour the application set; `None`: the preset's default.
     flavor: Option<Key>,
+    /// The application layers the synthetic route added (S17, ADD-A128).
+    synthetic: Vec<LayerId>,
 }
 
 impl Stack {
@@ -443,6 +449,7 @@ impl Stack {
             default_scheme: scheme,
             contrast: None,
             flavor: None,
+            synthetic: Vec::new(),
         };
         validate::check_preset(&stack.declarations, &stack.preset_layer, preset)?;
         stack.validate()?;
@@ -473,15 +480,17 @@ impl Stack {
                 Err(other) => return Err(other),
             };
         problems.extend(validate::listed_unstated(pending, &layers));
+        let layers: Vec<(LayerId, Arc<Layer>)> = layers
+            .into_iter()
+            .map(|layer| (LayerId::next(), Arc::new(layer)))
+            .collect();
         let stack = Stack {
             preset,
             declarations,
             preset_layer: Arc::new(layer),
             reader: None,
-            layers: layers
-                .into_iter()
-                .map(|layer| (LayerId::next(), Arc::new(layer)))
-                .collect(),
+            synthetic: layers.iter().map(|(id, _)| *id).collect(),
+            layers,
             accent: None,
             accent_layer: Arc::default(),
             picked: None,
@@ -529,6 +538,7 @@ impl Stack {
             default_scheme: Scheme::Light,
             contrast: None,
             flavor,
+            synthetic: Vec::new(),
         }
     }
 
@@ -721,6 +731,17 @@ impl Stack {
         out
     }
 
+    /// The places in the stack's order of the synthetic route's layers.
+    pub(crate) fn synthetic_places(&self) -> Vec<usize> {
+        let first = if self.reader.is_some() { 2_usize } else { 1 };
+        self.layers
+            .iter()
+            .enumerate()
+            .filter(|(_, (id, _))| self.synthetic.contains(id))
+            .map(|(index, _)| first.saturating_add(index))
+            .collect()
+    }
+
     /// The layers in the stack's order, shared.
     fn shared_layers(&self) -> Vec<Arc<Layer>> {
         let mut out = vec![Arc::clone(&self.preset_layer)];
@@ -901,6 +922,7 @@ impl Stack {
             content_size_category: reader.and_then(|state| state.content_size_category),
             declarations: self.declarations.clone(),
             flavor: self.flavor().cloned(),
+            synthetic: self.synthetic_places(),
         };
         let stacked = self.stacked();
         let left_out = self.reader_accent_left_out();

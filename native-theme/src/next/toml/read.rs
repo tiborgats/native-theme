@@ -9,10 +9,12 @@ use crate::next::blocks::paint::{Paint, PaintPatch};
 use crate::next::blocks::{BlockPatch, FieldsBlock};
 use crate::next::color::Color;
 use crate::next::error::{Problem, ProblemKind};
-use crate::next::expr::Expr;
+use crate::next::expr::{Expr, Ty};
 use crate::next::key::Key;
 use crate::next::layer::Shorthands;
+use crate::next::registry::{self, FieldInfo, FieldType};
 use crate::next::roles::SurfaceSet;
+use crate::next::selector::Scheme;
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides};
 use crate::next::value::{SurfaceMap, Value};
 use crate::next::widgets::WidgetKind;
@@ -43,11 +45,111 @@ pub(crate) struct Reader {
 /// A path as a listed path compares (S11's `[pending]` key): its last
 /// key's unit suffix left out, so `delay_ms` and `delay` are one field.
 pub(crate) fn listed_path(path: &str) -> String {
-    ["_px", "_ms", "_deg", "_pt"]
+    UNIT_SUFFIXES
         .iter()
         .find_map(|suffix| path.strip_suffix(suffix))
         .unwrap_or(path)
         .to_owned()
+}
+
+/// The unit suffixes S11 spells a key with.
+const UNIT_SUFFIXES: [&str; 4] = ["_px", "_ms", "_deg", "_pt"];
+
+/// The segments of a dotted TOML key, a quoted segment taken as written
+/// inside its quotes; `None` for an unclosed quote or an empty segment.
+pub(crate) fn key_segments(key: &str) -> Option<Vec<String>> {
+    let mut out = Vec::new();
+    let mut current = String::new();
+    let mut quoted = false;
+    let mut chars = key.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => quoted = !quoted,
+            '\\' if quoted => current.push(chars.next()?),
+            '.' if !quoted => out.push(std::mem::take(&mut current)),
+            other => current.push(other),
+        }
+    }
+    out.push(current);
+    (!quoted && !out.iter().any(String::is_empty)).then_some(out)
+}
+
+/// What a listed path names (S11's `[pending]` key, S17, ADD-A128): a
+/// field of `colors.<scheme>`, of `tokens`, of a typed widget's part
+/// (`widgets.<widget>.<part>.…`) or of its values
+/// (`widgets.<widget>.values.…`), and how many levels of its map's keys
+/// the path names below it ([`registry::find_entry`]), the model's path
+/// the reader maps the key to. `None` where it names no such field, or its
+/// last key carries a unit suffix its type is not spelled with (S11).
+pub(crate) fn listed_field(path: &str) -> Option<(&'static FieldInfo, usize)> {
+    let segments = key_segments(path)?;
+    let last = segments.last()?;
+    let suffixed = UNIT_SUFFIXES.iter().find_map(|suffix| {
+        let name = last.strip_suffix(suffix)?;
+        let mut stripped = segments.clone();
+        if let Some(held) = stripped.last_mut() {
+            *held = name.to_owned();
+        }
+        field_at(&stripped).filter(|(field, levels)| spelled_with(field, *levels, suffix))
+    });
+    suffixed
+        .or_else(|| field_at(&segments).filter(|(field, levels)| spelled_with(field, *levels, "")))
+}
+
+/// The field `segments` name below `colors.<scheme>`, `tokens` or a typed
+/// widget's part or values.
+fn field_at(segments: &[String]) -> Option<(&'static FieldInfo, usize)> {
+    let (head, rest) = segments.split_first()?;
+    let (fields, below): (&'static [FieldInfo], &[String]) = match head.as_str() {
+        "tokens" => (registry::tokens(), rest),
+        "colors" => {
+            let (scheme, rest) = rest.split_first()?;
+            <Scheme as Named>::from_name(scheme)?;
+            (registry::colors(), rest)
+        }
+        "widgets" => {
+            let (widget, rest) = rest.split_first()?;
+            let info = registry::widget(widget)?;
+            let (part, rest) = rest.split_first()?;
+            if part == "values" {
+                (info.values, rest)
+            } else {
+                (info.part(part)?.fields, rest)
+            }
+        }
+        _ => return None,
+    };
+    registry::find_entry(fields, &below.join("."))
+}
+
+/// Whether S11 spells the field `field`, `levels` levels of its map's keys
+/// below it, with the unit suffix `suffix` (`""`: none): a duration with
+/// `_ms`, a length with `_px`, an angle with `_deg`, a font size with
+/// `_pt`, `_px` or none, a corner radius with `_px` or none, any other
+/// value, and a map named whole, with none.
+fn spelled_with(field: &FieldInfo, levels: usize, suffix: &str) -> bool {
+    let ty = match field.ty {
+        FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
+    };
+    if levels < registry::key_levels(ty) {
+        return suffix.is_empty();
+    }
+    if matches!(
+        field.ty,
+        FieldType::Block {
+            block: "Radius",
+            ..
+        }
+    ) {
+        return matches!(suffix, "_px" | "");
+    }
+    match (field.value)() {
+        Some(Ty::Duration) => suffix == "_ms",
+        Some(Ty::Length) => suffix == "_px",
+        Some(Ty::Angle) => suffix == "_deg",
+        Some(Ty::FontSize) => matches!(suffix, "_pt" | "_px" | ""),
+        _ => suffix.is_empty(),
+    }
 }
 
 impl Reader {
@@ -342,9 +444,9 @@ pub(crate) fn no_combine<P>(_held: &mut P, _later: P) -> bool {
 /// A field of a block built whole, or a key a table must state: its value,
 /// else missing, unless its value was stated and its problem recorded.
 pub(crate) fn required<T>(value: Option<T>, at: &str, cx: &mut Reader) -> Option<T> {
-    if value.is_none() && cx.listed.contains(&listed_path(at)) {
-        // A preset's listed path left out: the block stays a patch, the
-        // field unstated for S12 to report (S17, ADD-A128).
+    if value.is_none() && cx.whole && cx.listed.contains(&listed_path(at)) {
+        // A preset's listed path left out of its own bases: the block stays
+        // a patch, the field unstated for S12 to report (S17, ADD-A128).
         return value;
     }
     if value.is_none() && !cx.reported_at(at) {

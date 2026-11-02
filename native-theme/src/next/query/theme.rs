@@ -201,12 +201,12 @@ impl ResolvedTheme {
             Err(unavailable) => return Styled::NotAvailable(unavailable),
         };
         let applies = |selector: &Selector| matched.matches(selector);
-        let shown = self
+        let shown_step = self
             .part_steps(matched.part)
             .iter()
             .rev()
-            .find(|step| step.selector.as_ref().is_none_or(applies))
-            .map(|step| &step.patch);
+            .find(|step| step.selector.as_ref().is_none_or(applies));
+        let shown = shown_step.map(|step| &step.patch);
         match shown {
             Some(PartPatch::Absent) => return Styled::NotDrawn,
             Some(PartPatch::DrawnAs { target, variants }) => {
@@ -217,7 +217,14 @@ impl ResolvedTheme {
             }
             Some(PartPatch::Style(_)) | None => {}
         }
-        let Some(mut style) = self.evaluate_part(matched.part, element, &applies).value else {
+        let evaluated = self.evaluate_part(matched.part, element, &applies);
+        let bindings = ["bindings".to_owned()];
+        let synthetic = shown_step.is_some_and(|step| self.synthetic.contains(&step.pos.layer))
+            || evaluated
+                .reached
+                .iter()
+                .any(|held| held.meets(Target::Part(matched.part), &bindings));
+        let Some(mut style) = evaluated.value else {
             return Styled::NotDrawn;
         };
         if matched.direction == Direction::Rtl {
@@ -230,6 +237,7 @@ impl ResolvedTheme {
             size: matched.size,
             surface: None,
             roles: Vec::new(),
+            synthetic,
         };
         for binding in &style.bindings {
             match binding {

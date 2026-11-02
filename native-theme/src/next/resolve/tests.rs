@@ -45,6 +45,7 @@ pub(super) fn stack(
         default_scheme: Scheme::Light,
         contrast: None,
         flavor: None,
+        synthetic: Vec::new(),
     }
 }
 

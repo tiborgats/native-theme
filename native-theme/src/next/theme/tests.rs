@@ -3,7 +3,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use super::{Theme, preset_stack, synthetic_stack};
+use super::{preset_stack, synthetic_stack};
 use crate::next::error::{LayerError, ThemeError};
 use crate::next::gate::synthetic_layers;
 use crate::next::layer::Layer;
@@ -27,38 +27,98 @@ fn every_bundled_preset_validates() {
         let file = read_preset(id.source()).unwrap_or_else(|e| panic!("{}: {e}", id.key()));
         assert_eq!(file.id, id.key());
         assert_eq!(PresetId::from_key(id.key()), Some(id));
-        validates(id, &file.pending)
-            .map(drop)
-            .unwrap_or_else(|e| panic!("{}: {e}", id.key()));
+        validates(Some(id), id.source()).unwrap_or_else(|e| panic!("{}: {e}", id.key()));
     }
 }
 
-/// The build test's route for a preset whose `[pending]` table is
-/// `pending`: the plain one where it is empty, else the synthetic one.
-fn validates(id: PresetId, pending: &[(String, String)]) -> Result<Theme, String> {
-    if pending.is_empty() {
-        Theme::from_preset(id, Scheme::Light).map_err(|e| e.to_string())
+/// The build test's route for the preset `text` states, as `Theme` reads
+/// the bundled preset `id`: the plain one (`from_preset`'s) where its
+/// `[pending]` table is empty, else the synthetic one
+/// (`from_preset_synthetic`'s) with one synthetic layer per listed path.
+fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
+    let file = read_preset(text).map_err(|e| e.to_string())?;
+    if file.pending.is_empty() {
+        preset_stack(id, text, Scheme::Light).map_err(|e| e.to_string())?;
     } else {
-        let layers = synthetic_layers(pending, false)?;
-        Theme::from_preset_synthetic(id, Scheme::Light, layers).map_err(|e| e.to_string())
+        let layers = synthetic_layers(&file.pending)?;
+        synthetic_stack(id, text, Scheme::Light, layers).map_err(|e| e.to_string())?;
     }
+    Ok(())
 }
 
 /// The build test's two routes, over the fixture preset with a listed
-/// path (no preset is bundled with one): the synthetic layers state it,
-/// so the preset validates through them, and the plain route refuses it.
+/// path (no preset is bundled with one): the build test takes the
+/// synthetic route for it, whose layers state the listed path, so it
+/// validates, where the plain route refuses it; and the plain route for
+/// the complete base.
 #[test]
 fn build_test_takes_both_routes() {
     let text = listed_preset();
-    let file = read_preset(&text).unwrap();
-    assert!(!file.pending.is_empty());
-    let layers = synthetic_layers(&file.pending, false).unwrap();
-    assert_eq!(layers.len(), 1);
-    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    assert!(!read_preset(&text).unwrap().pending.is_empty());
+    validates(None, &text).unwrap();
     assert!(preset_stack(None, &text, Scheme::Light).is_err());
     let complete = include_str!("../../../tests/fixtures/facts_gate/base.toml");
     assert!(read_preset(complete).unwrap().pending.is_empty());
-    preset_stack(None, complete, Scheme::Light).unwrap();
+    validates(None, complete).unwrap();
+}
+
+/// Two listed paths, a set-whole block (`Option<KeyRepeat>`) and a leaf
+/// the focus indicator's table, built whole, leaves out (S6.1, S17,
+/// ADD-A128): the reader leaves the indicator a patch, the Checker exempts
+/// both, the synthetic layers, validated all at once, state them, and each
+/// resolves to its synthetic value; one layer alone leaves the other
+/// missing.
+#[test]
+fn synthetic_route_takes_every_layer_at_once() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let text = format!(
+        "[pending]\n\"tokens.behavior.key_repeat\" = \"U1\"\n\"tokens.focus.width_px\" = \"U2\"\n{}",
+        base.replacen("\nkey_repeat = \"none\"\n", "\n", 1)
+            .replacen("\nwidth_px = 2\n", "\n", 1)
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    assert_eq!(layers.len(), 2);
+    let stack = synthetic_stack(None, &text, Scheme::Light, layers.clone()).unwrap();
+    let theme = stack
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let tokens = theme.tokens(&theme.root_scope(&root())).unwrap();
+    let repeat = tokens.behavior.key_repeat.unwrap();
+    assert_eq!(
+        (repeat.delay, repeat.interval),
+        (Some(Ms(1.0)), Some(Ms(1.0)))
+    );
+    assert_eq!(tokens.focus.width, Some(Px(1.0)));
+    for (alone, other) in [(0, "tokens.focus.width"), (1, "tokens.behavior.key_repeat")] {
+        let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+            synthetic_stack(None, &text, Scheme::Light, vec![layers[alone].clone()])
+        else {
+            panic!("one layer alone leaves the other listed path missing");
+        };
+        assert_eq!(
+            problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            [format!("{other}: missing")]
+        );
+    }
+}
+
+/// A window's root inputs, synthetic.
+fn root() -> RootInputs {
+    RootInputs::new(
+        Size {
+            width: Px(800.0),
+            height: Px(600.0),
+        },
+        Size {
+            width: Px(1920.0),
+            height: Px(1080.0),
+        },
+        Direction::Ltr,
+    )
 }
 
 /// A preset that does not read, or fails validation, is
@@ -100,8 +160,12 @@ fn synthetic_layer(text: &str) -> Layer {
 }
 
 /// The reader reads `[pending]` with its register ids (S11) and leaves a
-/// listed path out of a block built whole, and refuses an entry whose id
-/// is not `U<n>` or whose path the preset states anyway (S17, ADD-A128).
+/// listed path out of a block built whole; it refuses an entry whose id is
+/// not `U<n>`, or whose path names no field of `colors`, `tokens` or a
+/// typed widget (an input, a rule's key, a field the model lacks) or is
+/// spelled with a unit suffix its field's type does not take (S17,
+/// ADD-A128). A path the preset states too it reads: the facts gate fails
+/// that entry.
 #[test]
 fn pending_table_read() {
     let file = read_preset(&listed_preset()).unwrap();
@@ -124,13 +188,43 @@ fn pending_table_read() {
         refused("\"tokens.behavior.drag_time_ms\" = 151"),
         ["pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`"]
     );
-    assert_eq!(
-        refused("\"tokens.behavior.touch.delay_ms\" = \"U1\""),
-        [
-            "pending.\"tokens.behavior.touch.delay_ms\": states the field \
-             tokens.behavior.touch.delay_ms states too"
-        ]
-    );
+    for id in ["U", "U12a"] {
+        assert_eq!(
+            refused(&format!("\"tokens.behavior.drag_time_ms\" = \"{id}\"")),
+            ["pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`"]
+        );
+    }
+    for path in [
+        "tokens.behavior.bogus_ms",
+        "tokens.behavior.touch.delay_px",
+        "tokens.behavior.touch.delay",
+        "inputs.accent",
+        "rules[0].target",
+        "widgets.button.bogus.fill",
+    ] {
+        assert_eq!(
+            refused(&format!("\"{path}\" = \"U1\"")),
+            [format!("pending.\"{path}\": unknown key")]
+        );
+    }
+    let stated = read_preset(&format!(
+        "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n{base}"
+    ))
+    .unwrap();
+    assert_eq!(stated.pending.len(), 1);
+    for path in [
+        "colors.light.global.accent",
+        "widgets.button.values.icon_text_gap_px",
+        "widgets.button.label.text.font.size",
+        "widgets.button.label.text.font.size_pt",
+        "widgets.button.body.corners.top_left",
+        "tokens.motion.durations.backdrop_ms",
+    ] {
+        assert!(
+            crate::next::toml::read::listed_field(path).is_some(),
+            "{path}"
+        );
+    }
 }
 
 /// The reader's exemption covers exactly the listed leaves: a map entry
@@ -149,7 +243,9 @@ fn pending_exemption_is_the_listed_leaves() {
         )
     };
     let listed = "\"tokens.icons.sizes.keyed.check.rendering_mode\" = \"U2\"";
-    assert!(read_preset(&with_entry(listed, entry)).is_err());
+    // A listed leaf the entry states too reads; the facts gate fails the
+    // entry (S17, ADD-A128).
+    read_preset(&with_entry(listed, entry)).unwrap();
     read_preset(&with_entry(listed, "weight = \"absent\"\n")).unwrap();
     let Err(LayerError::Invalid(problems)) = read_preset(&with_entry(listed, "")) else {
         panic!("an unlisted leaf left out is refused");
@@ -187,18 +283,7 @@ fn from_preset_synthetic_validates_and_resolves() {
             &WindowConditions::new(InputKind::Mouse),
         )
         .theme;
-    let scope = theme.root_scope(&RootInputs::new(
-        Size {
-            width: Px(800.0),
-            height: Px(600.0),
-        },
-        Size {
-            width: Px(1920.0),
-            height: Px(1080.0),
-        },
-        Direction::Ltr,
-    ));
-    let tokens = theme.tokens(&scope).unwrap();
+    let tokens = theme.tokens(&theme.root_scope(&root())).unwrap();
     assert_eq!(tokens.behavior.touch.delay, Some(Ms(7.0)));
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         synthetic_stack(None, &listed_preset(), Scheme::Light, Vec::new())
@@ -207,6 +292,7 @@ fn from_preset_synthetic_validates_and_resolves() {
     };
     assert_eq!(
         problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
-        ["tokens.behavior.touch.delay_ms: missing"]
+        ["tokens.behavior.touch.delay: missing"],
+        "the plain route's problem, at its path"
     );
 }

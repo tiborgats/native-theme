@@ -361,7 +361,7 @@ pub(crate) fn tokens() -> &'static [FieldInfo] {
 /// How many key segments a map written as `ty` takes before its values: one
 /// per `Vec` of pairs or `SurfaceMap` it nests (`Vec<(Key,Vec<(Key,…)>)>`
 /// two), none for any other type.
-fn key_levels(ty: &str) -> usize {
+pub(crate) fn key_levels(ty: &str) -> usize {
     let mut levels = 0_usize;
     let mut rest = ty;
     loop {
@@ -382,6 +382,17 @@ fn key_levels(ty: &str) -> usize {
 /// `params.opacity.disabled`); a unit variant of an enum block names the
 /// field holding it.
 pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldInfo> {
+    find_in(fields, path, false).map(|(field, _)| field)
+}
+
+/// The field a path names below `fields`, as [`find`] does, and how many
+/// of its map's levels of keys the path names below it: 0 for the field
+/// itself, 1 for an entry of a map (`durations.backdrop`), 2 for an entry
+/// of a map's entry (`params.opacity.disabled`).
+pub(crate) fn find_entry(
+    fields: &'static [FieldInfo],
+    path: &str,
+) -> Option<(&'static FieldInfo, usize)> {
     find_in(fields, path, false)
 }
 
@@ -389,11 +400,15 @@ pub(crate) fn find(fields: &'static [FieldInfo], path: &str) -> Option<&'static 
 /// but `None` for a map named whole, its keys left out: a reference names
 /// one entry's value (S2.2), never the map.
 pub(crate) fn find_value(fields: &'static [FieldInfo], path: &str) -> Option<&'static FieldInfo> {
-    find_in(fields, path, true)
+    find_in(fields, path, true).map(|(field, _)| field)
 }
 
-/// [`find`]; `value`: a map named whole names nothing.
-fn find_in(fields: &'static [FieldInfo], path: &str, value: bool) -> Option<&'static FieldInfo> {
+/// [`find_entry`]; `value`: a map named whole names nothing.
+fn find_in(
+    fields: &'static [FieldInfo],
+    path: &str,
+    value: bool,
+) -> Option<(&'static FieldInfo, usize)> {
     fields.iter().find_map(|field| {
         let rest = if path == field.path {
             ""
@@ -409,7 +424,7 @@ fn find_in(fields: &'static [FieldInfo], path: &str, value: bool) -> Option<&'st
         };
         let levels = key_levels(ty);
         if rest.is_empty() {
-            return (!value || levels == 0).then_some(field);
+            return (!value || levels == 0).then_some((field, 0));
         }
         let mut rest = rest;
         for _ in 0..levels {
@@ -419,11 +434,11 @@ fn find_in(fields: &'static [FieldInfo], path: &str, value: bool) -> Option<&'st
             rest = rest.split_once('.').map_or("", |(_, after)| after);
         }
         if rest.is_empty() {
-            return Some(field);
+            return Some((field, levels));
         }
         match below {
             Some((BlockForm::Enum { unit_variants }, _)) if unit_variants.contains(&rest) => {
-                Some(field)
+                Some((field, levels))
             }
             Some((_, fields)) => find_in(fields, rest, value),
             None => None,

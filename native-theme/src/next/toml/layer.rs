@@ -106,16 +106,6 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
             }
         }
     }
-    for (path, _) in &pending {
-        if crate::next::validate::states(&layer, &read::listed_path(path)) {
-            cx.problem(
-                &join("pending", path),
-                ProblemKind::DuplicateKey {
-                    other: path.clone(),
-                },
-            );
-        }
-    }
     let header = read::required(header, "preset", &mut cx);
     let declarations = declarations.unwrap_or_default();
     let layer = finished(layer, cx)?;
@@ -136,7 +126,9 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
 
 /// `[pending]` (S11, S17): each listed path, its TOML path quoted, with its
 /// register id, `U` and a number (ADD-A122's form); an entry of another
-/// form is refused.
+/// form is refused, and so is a path naming no field of `colors`, `tokens`
+/// or a typed widget, or spelled with a unit suffix its field's type does
+/// not take ([`read::listed_field`], the model's path it maps to).
 fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<(String, String)> {
     let Some(entries) = table(item, at, cx) else {
         return Vec::new();
@@ -163,6 +155,10 @@ fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<(String, String)>
                     expected: "a register id, `U<n>`",
                 },
             );
+            continue;
+        }
+        if read::listed_field(path).is_none() {
+            cx.problem(&at, ProblemKind::UnknownKey);
             continue;
         }
         out.push((path.clone(), id.to_owned()));

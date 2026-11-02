@@ -466,13 +466,18 @@ fn prepare<'f>(
             if out.iter().any(|held| held.name == name) {
                 continue;
             }
-            if let Ok(key) = parse_key(&name) {
-                out.push(KeyFacts {
+            match parse_key(&name) {
+                Ok(key) => out.push(KeyFacts {
                     name,
                     key,
                     set_whole: None,
                     facts: Vec::new(),
-                });
+                }),
+                Err(unread) => {
+                    report.fail(format!(
+                        "the part's own key `{name}` is refused: {unread:?}"
+                    ));
+                }
             }
         }
     }
@@ -1155,12 +1160,20 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
 }
 
 /// The preset's `[pending]` table against the listed paths the run found
-/// (S17, ADD-A128): an entry no combination leaves to a pending fact with
-/// nothing beneath fails, as does one whose register id is not that
-/// fact's. A listed path the table lacks is S12's missing field, which the
-/// preset's own loading refuses.
+/// (S17, ADD-A128): an entry the preset's bases state is no listed path and
+/// fails; so does an entry no combination leaves to a pending fact with
+/// nothing beneath, and one whose register id is not that fact's. A listed
+/// path the table lacks is S12's missing field, which the preset's own
+/// loading refuses.
 fn listed_paths(preset: &Preset, report: &mut Report) {
     for (path, id) in preset.pending() {
+        if preset.states(path) {
+            report.fail(format!(
+                "{}: `{path}` ({id}) is in its [pending] table, and the preset states it",
+                preset.id()
+            ));
+            continue;
+        }
         let found = listed_key(path)
             .and_then(|key| report.listed.get(&format!("{} {key}", preset.id())))
             .cloned();
@@ -1361,10 +1374,6 @@ pub fn complete(mut combination: Combination, when: &Value, entry: &Model) -> Op
     Some(combination)
 }
 
-/// A state model's `not_drawn` entries read as `when`s (S17), for the
-/// preset: an entry naming another preset left out; one naming what the
-/// model does not hold yet holds on no element the gate queries, which
-/// cannot hold the name either; one the model refuses is a failure.
 /// Each state-model entry's `not_drawn` entries read for the preset, once,
 /// by [`entry_id`].
 type NotDrawn = BTreeMap<String, Vec<When>>;
@@ -1384,6 +1393,10 @@ fn not_drawn_map(platform: &Platform, preset: &str, report: &mut Report) -> NotD
         .collect()
 }
 
+/// A state model's `not_drawn` entries read as `when`s (S17), for the
+/// preset: an entry naming another preset left out; one naming what the
+/// model does not hold yet holds on no element the gate queries, which
+/// cannot hold the name either; one the model refuses is a failure.
 fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When> {
     let mut out = Vec::new();
     for table in &entry.not_drawn {
@@ -1644,9 +1657,7 @@ fn check_globals(
                     },
                 ..
             }) = fact
-            && resolved
-                .global_synthetic(&key.key, None, root)
-                .unwrap_or(false)
+            && resolved.global_listed(&key.key, root).unwrap_or(false)
         {
             found_listed(report, preset, key, id);
         }
@@ -1765,6 +1776,23 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
         report.queried += 1;
         for (key, fact) in widget_keys.iter().zip(applying_facts) {
             let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
+            // A pending fact applying where the preset leaves its path to the
+            // synthetic value is a listed path found; where its part is not
+            // drawn too, as the preset's bases state the part's fields whole
+            // there (S17, ADD-A128, ADD-A130).
+            if pass == Pass::Normal
+                && let Some(Prepared {
+                    fact:
+                        Fact {
+                            stated: Stated::Pending(id),
+                            ..
+                        },
+                    ..
+                }) = fact
+                && (!session.drawn(&key.key) || session.listed(&key.key).unwrap_or(false))
+            {
+                found_listed(report, run.preset, key, id);
+            }
             if !session.drawn(&key.key) {
                 // A field of a part not drawn: no fact is asked for it and
                 // none is compared, one that applies there no failure; the
@@ -1783,19 +1811,6 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                 report,
                 &describe,
             );
-            if pass == Pass::Normal
-                && let Some(Prepared {
-                    fact:
-                        Fact {
-                            stated: Stated::Pending(id),
-                            ..
-                        },
-                    ..
-                }) = fact
-                && session.synthetic(&key.key, None).unwrap_or(false)
-            {
-                found_listed(report, run.preset, key, id);
-            }
             match verdict(
                 &key.name,
                 key.key.whole_part(),

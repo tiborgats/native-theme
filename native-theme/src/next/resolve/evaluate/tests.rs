@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use super::{Cx, Refusal};
+use super::{Cx, Reached, Refusal};
 use crate::next::blocks::part_style::RoleRef;
 use crate::next::blocks::text::ResolvedFont;
 use crate::next::color::Color;
@@ -100,6 +100,7 @@ fn resolved(layers: &[&str], factor: f32) -> ResolvedTheme {
         default_scheme: Scheme::Light,
         contrast: None,
         flavor: None,
+        synthetic: Vec::new(),
     };
     stack
         .resolve(
@@ -421,6 +422,7 @@ fn bindings_follow_s3_3_in_two_steps() {
         size: None,
         surface,
         roles,
+        synthetic: false,
     };
     let colour = |scope: &Scope, text: &str| {
         with_body(&theme, scope, |cx| {
@@ -1207,4 +1209,74 @@ presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = 
             Some(Scalar::Ms(crate::next::units::Ms(30.0)))
         )]
     );
+}
+
+/// What evaluation records it read of the synthetic route's layers (S17,
+/// ADD-A128), a place by the field evaluated outside every reference: a
+/// step deciding a reference's place itself, directly; a reference through
+/// a function giving one value for many (`floor`); a role read through a
+/// binding whose value reads one; a font size converted by a listed DPI,
+/// through the text style a reference brings. A field reading none of them
+/// is recorded at no place; outside the synthetic route nothing is.
+#[test]
+fn reads_of_synthetic_layers_are_recorded() {
+    let synthetic = "[tokens.motion]\nspeed_factor = 2\n[tokens.text]\nfont_dpi = 72\n\
+                     [colors.light.global]\naccent = \"#010203\"\n";
+    let reading = "[widgets.button.body]\nopacity = \"= floor(token.motion.speed_factor)\"\n\
+                   bindings = [{ role = { role = { surface = \"foreground\" }, value = \
+                   \"= role.global.accent\" } }]\nfill = \"= surface.foreground\"\n";
+    let plain = resolved(&[BASE, synthetic, reading], 1.0);
+    let mut theme = plain.clone();
+    // The stack's places: the preset, the stand-in, then the synthetic
+    // layer.
+    theme.synthetic = vec![2];
+    let scope = scope();
+    let field = |path: &str| -> Vec<String> { path.split('.').map(str::to_owned).collect() };
+    let direct = with_body(&theme, &scope, |cx| {
+        cx.operand_of(&reference("token.motion.speed_factor"), Target::Part(BODY));
+        cx.reached().to_vec()
+    });
+    assert!(
+        direct
+            .iter()
+            .any(|held| held.direct && held.meets(Target::Tokens, &field("motion.speed_factor"))),
+        "{direct:?}"
+    );
+    let body = with_body(&theme, &scope, |cx| {
+        cx.part(BODY);
+        cx.reached().to_vec()
+    });
+    let reaches = |reached: &[Reached], target, path: &str| {
+        reached.iter().any(|held| held.meets(target, &field(path)))
+    };
+    assert!(reaches(&body, Target::Part(BODY), "opacity"), "{body:?}");
+    assert!(reaches(&body, Target::Part(BODY), "fill"), "{body:?}");
+    assert!(!reaches(&body, Target::Part(BODY), "min_width"), "{body:?}");
+    assert!(
+        body.iter()
+            .filter(|held| held.meets(Target::Part(BODY), &field("opacity")))
+            .all(|held| !held.direct),
+        "a reference's operand is no step of the field itself: {body:?}"
+    );
+    let label = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
+    let read = theme.evaluate_in(
+        &scope,
+        Some(&label),
+        &|_| true,
+        Target::Part(LABEL),
+        None,
+        |cx| {
+            cx.part(LABEL);
+            cx.reached().to_vec()
+        },
+    );
+    assert!(
+        reaches(&read, Target::Part(LABEL), "text.font.size"),
+        "{read:?}"
+    );
+    let none = with_body(&plain, &scope, |cx| {
+        cx.part(BODY);
+        cx.reached().to_vec()
+    });
+    assert_eq!(none, Vec::new());
 }
