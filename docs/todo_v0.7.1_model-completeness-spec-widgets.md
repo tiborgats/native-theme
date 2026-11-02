@@ -322,7 +322,8 @@ Each `### <widget>` section states, in this order:
 - **Sizes and densities** per platform (`ControlSize`, S7.3; Material Expressive's xsmall is `extra_small`); sizes a
   variant alone takes are declared by `sizes_by_variant` (S10: Material's FAB, MAT-N1), and a size a variant does not
   declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by its
-  `sizes_by_variant` entry's `default_size` (S10, ADD-A121, ADD-A131).
+  `sizes_by_variant` entry's `default_size` (S10, ADD-A121, ADD-A131); sizes a container restricts, and the default
+  size it gives an element that states none, by a `sizes_by_context` entry (S10, ADD-A131: `macos-tahoe`'s toolbar).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
@@ -1786,7 +1787,8 @@ spaces:
   `small`, `large` and `extra_large`, Expressive's small, medium and large extended FABs
   (`SmallExtendedFloatingActionButton` …, `:400`, `:467`, `:534`, `:1434-1470`) (MAT-N2; ADD-A123: the unsized one
   had no size under Expressive, where `regular` named the medium one). Default sizes (a `sizes_by_variant` entry's
-  `default_size`, S10, ADD-A121, ADD-A131): `@fab` and `@extended_fab` `regular` in both flavours, the unsized composables, where the
+  `default_size`, S10, ADD-A121, ADD-A131): `@fab` and `@extended_fab` `regular` in both flavours (the widget's default under baseline, their entries'
+  `default_size` under `expressive`), the unsized composables, where the
   Expressive buttons' default is `small`. `ios-*`: the `buttonSize` a configuration takes when the application sets
   none, which `UIButtonConfiguration.h` states no default for and the iOS host has not read (it sets the size on every
   specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared from it as
