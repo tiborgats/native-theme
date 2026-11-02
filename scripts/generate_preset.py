@@ -80,10 +80,15 @@ preset's bases apply before its rules, its rules in stated order, the later winn
   later `scheme:` fact, covers it in the other) takes that slot's `scheme:` condition into its `conditions`
   (narrowed), so it holds exactly where it applied.
 - A widget's or a token's key with no fact at rest whose rules cover an axis, one fact under each scheme alone or (a
-  widget's) under each of its sizes alone, gets a base too (covering_bases()): the reader needs a value for every field,
-  and those rules replace the base in every combination. Its value is the light scheme's fact's, or the default
-  size's, the round trip checking that it never shows (its minimal combinations take the size an element holds:
-  `default_size`, or its variant's `default_size_by_variant`, S10).
+  widget's) under each of its sizes alone, gets a base too (covering_bases()): the reader needs a value for every field.
+  Those rules replace the base in every combination where every element holds one of them: always for the schemes, and
+  for the sizes where the widget states `default_size` (S10: "the size of an element that states none"). Its value is
+  the light scheme's fact's, or the default size's, the round trip checking that it never shows (its minimal
+  combinations take the size an element holds: `default_size`, or its variant's `default_size_by_variant`, S10).
+  Where the widget states no `default_size`, an element stating no size holds none (iOS's button), and the base shows
+  there wherever no other fact applies: the reader still needs the field there and no fact gives it, so the base (the
+  first size's fact's value) is written and reported, and the round trip counts each combination it shows in apart,
+  never as a match.
 - Facts with an equal `when` (check_facts.canonical_when) and an equal target group into one rule: a fact joins the
   last rule with its `when` and target unless a later rule states its key or a key above or below it (a block and its
   leaves), or the rule's `set` already holds a key above or below it in TOML, and else starts a new rule at the end.
@@ -582,6 +587,7 @@ class Draft:
     staged: int
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
     pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id, the pending fact)
+    unfacted: list = field(default_factory=list)  # the facts whose covering base shows where no fact applies
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -673,20 +679,22 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         rules = group_rules([f for f in facts if f.status == "rule"])
     declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
                                                                      ctx.content_variants)
-    bases += covering_bases(facts, models, tree)
+    covering, unfacted = covering_bases(facts, models, tree)
+    bases += covering
     # a covering base can state a set-whole block's leaf alone: split again, the base dropped (its rules stay)
     split = split_blocks(ctx, bases, [])
     for f in split:
         if f.status == "base":
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
     bases = [b for b in bases if b[5] not in split]
+    unfacted = [f for f in unfacted if f not in split]
     pending_blocks = {f.ckey[:-1] for f in facts if f.status == PENDING and set_whole_block(ctx, f)}
     for f in facts:
         if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
             f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
-                 listed)
+                 listed, unfacted)
 
 
 def unsuffixed(path: tuple) -> tuple:
@@ -769,19 +777,22 @@ def pending_inputs(facts, bases) -> list:
     return out
 
 
-def covering_bases(facts, models, tree) -> list:
+def covering_bases(facts, models, tree) -> tuple:
     """The bases of keys whose facts are all rules that together cover an axis (S11, S8): a widget's or a token's key
     with no fact at rest, one fact under each scheme alone (`{ conditions = ["scheme:<s>"] }`), or for a widget one
-    under each of its sizes alone (`{ sizes = ["<size>"] }`; every element has a size, its `default_size` where it
-    states none). The reader needs a base for every field (S11: a field left out is missing), and the axis' rules
-    replace it in every combination, so the base is one of those facts' values: the light scheme's, or the default
-    size's (else the first size's), S11 stating a value shared across schemes once outside the colour roles. Its
-    comment cites that fact. The round trip checks that the base never shows."""
+    under each of its sizes alone (`{ sizes = ["<size>"] }`). The reader needs a base for every field (S11: a field
+    left out is missing). Where every element holds one of the axis' values (a scheme always; a size where the widget
+    states `default_size`, S10), the axis' rules replace the base in every combination, so the base is one of those
+    facts' values: the light scheme's, or the default size's, S11 stating a value shared across schemes once outside
+    the colour roles; the round trip checks that it never shows. Where the widget states sizes and no `default_size`,
+    an element stating no size holds none (S10), so the base shows there wherever no other fact applies, a value no
+    fact gives that the reader still needs: the first size's fact's value, reported. Its comment cites that fact.
+    (the bases, the facts of the reported ones)."""
     by_key = {}
     for f in facts:
         if f.kind in ("widget", "token"):
             by_key.setdefault(f.ckey, []).append(f)
-    out = []
+    out, unfacted = [], []
     for fs in by_key.values():
         if any(f.status == "base" for f in fs):
             continue
@@ -791,7 +802,7 @@ def covering_bases(facts, models, tree) -> list:
             want = check_facts.canonical_when(when)
             return next((f for f in rules if check_facts.canonical_when(f.rule_when) == want), None)
 
-        chosen = None
+        chosen, shows = None, False
         per_scheme = [alone({"conditions": [f"scheme:{s}"]}) for s in SCHEMES]
         if all(per_scheme):
             chosen = per_scheme[0]
@@ -801,13 +812,16 @@ def covering_bases(facts, models, tree) -> list:
             per_size = {z: alone({"sizes": [z]}) for z in sizes}
             if sizes and all(per_size.values()):
                 default = model.get("default_size")
-                chosen = per_size.get(default) or per_size[sizes[0]]
+                shows = default not in per_size
+                chosen = per_size[sizes[0]] if shows else per_size[default]
         if chosen is None:
             continue
         path = (chosen.section,) + chosen.header + tuple(chosen.dotted)
         if insert(tree, path, Leaf(chosen)):
             out.append((chosen.section, None, chosen.header, tuple(chosen.dotted), chosen.value, chosen))
-    return out
+            if shows:
+                unfacted.append(chosen)
+    return out, unfacted
 
 
 def set_whole_block(ctx, f: Fact):
@@ -1212,6 +1226,7 @@ class Trip:
     compared: int = 0
     pending: int = 0
     left_out: int = 0
+    unfacted: int = 0
     impossible: int = 0
     mismatches: list = field(default_factory=list)
 
@@ -1290,6 +1305,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
             leaves(r.get("set", {}), (), expected_set[i], extra)
     trip.mismatches += [f"a value no fact gives: {dotted_key(p)}" for p in extra]
     by_key, whens = {}, {}
+    unfacted = {f.ckey for f in draft.unfacted}
     for f in draft.facts:
         by_key.setdefault(f.ckey, []).append(f)
         whens.setdefault(group_of(f), {}).setdefault(check_facts.canonical_when(f.when), f.when)
@@ -1322,7 +1338,10 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     continue
                 applies = last_holding(fs, c, groups, recency)
                 if applies is None:
-                    if preset_value(got, fs[0].kind, c, s, groups, recency) is not None:
+                    if ckey in unfacted and not any(holds(w if isinstance(w, dict) else {}, c, groups, recency)
+                                                    for w, _ in got["rules"]):
+                        trip.unfacted += 1
+                    elif preset_value(got, fs[0].kind, c, s, groups, recency) is not None:
                         trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft states a value "
                                                f"where no fact holds")
                     continue
@@ -1423,8 +1442,13 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
         out.append(f"# [declare] {w}: variants left out, only facts of units not enabled naming them: {', '.join(vs)}")
     out.append(f"# left for hand-writing: S19.2's staged bases for {draft.preset}: {draft.staged} "
                f"({STAGED_BASES}); the keyed namespaces of [declare] but `conditions`; `[preset] generation`")
+    if draft.unfacted:
+        out.append(f"# bases no fact gives where they show: {len(draft.unfacted)}, each its widget's first size's "
+                   f"value where an element states no size and no `default_size` gives one (S10), the reader needing "
+                   f"the field there: " + ", ".join(f"{f.key} ({f.where})" for f in draft.unfacted))
     out.append(f"# round trip: {trip.compared} combinations compared, {len(trip.mismatches)} mismatches "
-               f"({trip.pending} where a pending fact applies and {trip.left_out} where a left-out one does, skipped; "
+               f"({trip.pending} where a pending fact applies, {trip.left_out} where a left-out one does and "
+               f"{trip.unfacted} where a reported base no fact gives shows, skipped; "
                f"{trip.impossible} facts whose `when` no element holds: two sizes, a flag its exclusive group drops, "
                f"a name required and refused)")
     return out
@@ -2062,9 +2086,19 @@ def self_test() -> int:
     by_size = [rule_fact("button.body.min_width", {"sizes": [z]}, v) for z, v in (("small", 20), ("regular", 30))]
     partial = [rule_fact("button.body.margin", {"sizes": ["small"]}, 1)]
     sized = {("button", None): {"sizes": ["small", "regular"], "default_size": "regular"}}
-    got = [(b[3], b[4]) for b in covering_bases(by_scheme + by_size + partial, sized, {})]
-    if got != [(("min_height_px",), 24), (("min_width_px",), 30)]:
-        failures.append(f"covering_bases: {got}, expected light's min_height and the default size's min_width")
+    covering, unfacted = covering_bases(by_scheme + by_size + partial, sized, {})
+    got = [(b[3], b[4]) for b in covering]
+    if got != [(("min_height_px",), 24), (("min_width_px",), 30)] or unfacted:
+        failures.append(f"covering_bases: {got}, {[f.key for f in unfacted]} reported, expected light's min_height "
+                        f"and the default size's min_width, none reported")
+    # iOS's button: sizes and no `default_size`, so an element stating no size holds none and the size rules leave
+    # the base showing there: written (the reader needs the field) from the first size's fact, and reported
+    unsized = {("button", None): {"sizes": ["small", "regular"]}}
+    by_size = [rule_fact("button.body.min_width", {"sizes": [z]}, v) for z, v in (("small", 20), ("regular", 30))]
+    covering, unfacted = covering_bases(by_size, unsized, {})
+    if [(b[3], b[4]) for b in covering] != [(("min_width_px",), 20)] or unfacted != [by_size[0]]:
+        failures.append(f"covering_bases without a default size: {[(b[3], b[4]) for b in covering]}, "
+                        f"{[f.key for f in unfacted]} reported, expected the small size's min_width, reported")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")
@@ -2137,6 +2171,34 @@ def self_test() -> int:
             failures.append("an unknown preset: accepted")
         except InputError:
             pass
+        # iOS's pattern end to end: a key stated per size alone, one variant's rule over it, and no `default_size`:
+        # the base shows on an element stating no size and no other variant, counted apart and reported; with a
+        # `default_size` it never shows
+        model = SELF_TEST_FILES["docs/facts/gnome/state-models.toml"]
+        sizes = "sizes = []\ndensities = []\nflags = [\"@busy\"]"
+        sized_facts = SELF_TEST_FILES["docs/facts/gnome/button.toml"] + "".join([
+            _fact("button.body.opacity", "0.5", '{ sizes = ["small"] }'),
+            _fact("button.body.opacity", "0.75", '{ sizes = ["regular"] }'),
+            _fact("button.body.opacity", "0.25", '{ variants = ["flat"] }')])
+        for default, shows in (("", True), ('default_size = "regular"\n', False)):
+            root = Path(tmp) / f"sized{int(shows)}"
+            sized_model = model.replace(sizes, f'sizes = ["small", "regular"]\n{default}' + sizes[len("sizes = []\n"):],
+                                        1)
+            write(root, {**SELF_TEST_FILES, "docs/facts/gnome/state-models.toml": sized_model,
+                         "docs/facts/gnome/button.toml": sized_facts})
+            sized_draft, sized_text, sized_trip, sized_units = generate(fixture_context(root), "adwaita")
+            reported = [f.key for f in sized_draft.unfacted]
+            want = ["button.body.opacity"] if shows else []
+            if sized_trip.mismatches or reported != want or bool(sized_trip.unfacted) != shows:
+                failures.append(f"a key per size, default size {not shows}: {reported} reported, round trip "
+                                f"{sized_trip}")
+            lines = share_lines(sized_draft, sized_units, sized_trip)
+            if any(line.startswith("# bases no fact gives") for line in lines) != shows:
+                failures.append(f"a key per size, default size {not shows}: the report's bases line: {lines}")
+            if shows and "opacity = 0.5" not in sized_text:
+                failures.append("a key per size, no default size: the base is not the first size's value")
+            if shows and not round_trip(Draft(**{**sized_draft.__dict__, "unfacted": []}), sized_text).mismatches:
+                failures.append("a key per size, no default size: an unreported base no fact gives passes")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
