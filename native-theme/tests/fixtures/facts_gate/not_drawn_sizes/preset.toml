@@ -1,3 +1,5 @@
+# A synthetic preset (S17): a button with two sizes whose rules state a wrong value at the small size,
+# pressed (not drawn there) and hover (drawn).
 [declare.widget.button]
 variants = ["flat"]
 sizes = ["small", "regular"]
