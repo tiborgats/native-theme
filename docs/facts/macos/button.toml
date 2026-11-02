@@ -22033,6 +22033,17 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U181"
 rows = ["MAC-X11"]
 
+# The presentations (`button.values.presentations`, S2.7; the catalogue's list is never absent, empty only where the
+# platform has none): not stated empty, as the catalogue gives macOS a spring-loaded button's flash while a drag
+# hovers it (`@spring_load`, MAC-X21) and the gap map names it ("spring-loading flash",
+# todo_v0.7.1_model-completeness-gap-map-macos.md:485, to be recorded during a programmatic drag); no pass records
+# it, nor the search field's cancel button (`clear_field`, MAC-N02) appearing and leaving: pending (U302).
+[[fact]]
+key = "button.values.presentations"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U302"
+rows = ["MAC-X11", "MAC-X21"]
+
 # ---------------------------------------------------------------------------------------------------------------------
 # button (macos-monterey): AppKit's NSButton as macOS 15.7.9 draws it, measured in the os-probe button pass of run
 # 41006842699's macos-15 job (docs/evidence/os-probe/2026-10-30-run-41006842699/README.md), by the method and the
@@ -43192,6 +43203,17 @@ key = "button.body.transitions"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U181"
 rows = ["MAC-X11"]
+
+# The presentations (`button.values.presentations`, S2.7; the catalogue's list is never absent, empty only where the
+# platform has none): not stated empty, as the catalogue gives macOS a spring-loaded button's flash while a drag
+# hovers it (`@spring_load`, MAC-X21) and the gap map names it ("spring-loading flash",
+# todo_v0.7.1_model-completeness-gap-map-macos.md:485, to be recorded during a programmatic drag); no pass records
+# it, nor the search field's cancel button (`clear_field`, MAC-N02) appearing and leaving: pending (U302).
+[[fact]]
+key = "button.values.presentations"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U302"
+rows = ["MAC-X11", "MAC-X21"]
 
 # macos-tahoe fill (preset gaps, pass 1): the label text's leaves NSButton's title has no counterpart for (as the
 # text styles' in tokens.toml): NSButton's class and deprecated category (NSButton.h:20-181, :183-188), its
