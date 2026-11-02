@@ -1790,10 +1790,10 @@ spaces:
   Expressive buttons' default is `small`. `ios-*`: the `buttonSize` a configuration takes when the application sets
   none, which `UIButtonConfiguration.h` states no default for and the iOS host has not read (it sets the size on every
   specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared from it as
-  `default_size`, or as `default_size_by_variant` on the configuration styles where it differs from the unstyled
-  button's `regular`, the one size `not_drawn` leaves it (ADD-A125, ADD-A131): `default_size` is `regular` in either case, and
-  the pending form covers the pair, S17 having none for a `default_size_by_variant` entry, and meanwhile `default_size = { pending = "U129" }` in the state models (S17,
-  ADD-A131). Others: no `default_size_by_variant`. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  `default_size_by_variant` on the configuration styles where it differs from `regular` (ADD-A125, ADD-A131).
+  `default_size` is the unstyled button's `regular`, the one size `not_drawn` leaves it, and meanwhile
+  `default_size = { pending = "U129" }` in the state models covers the pair, S17 having no pending form for a
+  `default_size_by_variant` entry (S17, ADD-A131). Others: no `default_size_by_variant`. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
