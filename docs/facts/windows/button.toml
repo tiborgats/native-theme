@@ -9,12 +9,14 @@
 
 # Geometry and text the plain, subtle, toggle, drop-down and repeat buttons' styles set alike. The accent
 # style (`primary`) sets none of them, and the app-bar button (`tool`) its own: both are left out here (see the lane's
-# unmeasured list).
+# unmeasured list). The padding is ButtonPadding plus the border's width on each side (S2.11's box, ADD-A125): the
+# stroke takes no layout space in the model, while WinUI adds BorderThickness to Padding to measure the content and
+# deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and Grid call).
 
 [[fact]]
 key = "button.body.padding.top"
 when = { not_variants = ["primary", "tool"], not_states = ["default"] }
-value = "5px"
+value = "= add(5px, part.stroke.top.width)"
 rows = []
 
 [[fact.cite]]
@@ -46,11 +48,31 @@ quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" /
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:84"
 quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:349-350"
+quote = "CBorder::HelperDeflateRect(outerRect, thickness, innerRect); CBorder::HelperDeflateRect(innerRect, pElement->GetPadding(), rcChild);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:374-378"
+quote = "padding = CBorder::HelperCollapseThickness(pElement->GetPadding()); // Combine both. XSIZEF combined; combined.width = border.width + padding.width;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:845"
+quote = "XSIZEF combined = CBorder::HelperGetCombinedThickness(this);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Grid.cpp:986"
+quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(this);"
 
 [[fact]]
 key = "button.body.padding.right"
 when = { not_variants = ["primary", "tool"], not_states = ["default"] }
-value = "11px"
+value = "= add(11px, part.stroke.right.width)"
 rows = []
 
 [[fact.cite]]
@@ -82,11 +104,31 @@ quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" /
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:84"
 quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:349-350"
+quote = "CBorder::HelperDeflateRect(outerRect, thickness, innerRect); CBorder::HelperDeflateRect(innerRect, pElement->GetPadding(), rcChild);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:374-378"
+quote = "padding = CBorder::HelperCollapseThickness(pElement->GetPadding()); // Combine both. XSIZEF combined; combined.width = border.width + padding.width;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:845"
+quote = "XSIZEF combined = CBorder::HelperGetCombinedThickness(this);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Grid.cpp:986"
+quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(this);"
 
 [[fact]]
 key = "button.body.padding.bottom"
 when = { not_variants = ["primary", "tool"], not_states = ["default"] }
-value = "6px"
+value = "= add(6px, part.stroke.bottom.width)"
 rows = []
 
 [[fact.cite]]
@@ -118,11 +160,31 @@ quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" /
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:84"
 quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:349-350"
+quote = "CBorder::HelperDeflateRect(outerRect, thickness, innerRect); CBorder::HelperDeflateRect(innerRect, pElement->GetPadding(), rcChild);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:374-378"
+quote = "padding = CBorder::HelperCollapseThickness(pElement->GetPadding()); // Combine both. XSIZEF combined; combined.width = border.width + padding.width;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:845"
+quote = "XSIZEF combined = CBorder::HelperGetCombinedThickness(this);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Grid.cpp:986"
+quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(this);"
 
 [[fact]]
 key = "button.body.padding.left"
 when = { not_variants = ["primary", "tool"], not_states = ["default"] }
-value = "11px"
+value = "= add(11px, part.stroke.left.width)"
 rows = []
 
 [[fact.cite]]
@@ -154,6 +216,26 @@ quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" /
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:84"
 quote = "<Setter Property=\"Padding\" Value=\"{StaticResource ButtonPadding}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:349-350"
+quote = "CBorder::HelperDeflateRect(outerRect, thickness, innerRect); CBorder::HelperDeflateRect(innerRect, pElement->GetPadding(), rcChild);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:374-378"
+quote = "padding = CBorder::HelperCollapseThickness(pElement->GetPadding()); // Combine both. XSIZEF combined; combined.width = border.width + padding.width;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:845"
+quote = "XSIZEF combined = CBorder::HelperGetCombinedThickness(this);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Grid.cpp:986"
+quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(this);"
 
 [[fact]]
 key = "button.body.stroke.top.width"
@@ -1112,10 +1194,12 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CornerRadius_themeresources.xaml:9"
 quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
 
+# The fill's BrushTransition: engine WinUi (S2.7, ADD-A126), the brush manager's composition animation, linear,
+# handed off from the colour drawn, a brush fading in from none from its own colour at zero alpha.
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = 83, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
-rows = ["W1-023"]
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = 83, delay_ms = 0, timing = "linear", engine = "win_ui" }]
+rows = ["W1-023", "W3-34"]
 
 [[fact.cite]]
 kind = "published"
@@ -1176,6 +1260,26 @@ quote = "IFCFAILFAST(colorKFA->InsertKeyFrameWithEasingFunction(1.0f, toColor, m
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/brushes/WUCBrushManager.cpp:528-530"
 quote = "newBrush != nullptr && oldBrushIsNullOrSolidColorBrush && oldBrush != newBrush"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:160-169"
+quote = "CBrushTransition* const backgroundTransition = CUIElement::GetBrushTransitionNoRef(*this, KnownPropertyIndex::ContentPresenter_BackgroundTransition); if (backgroundTransition != nullptr) { dcompTreeHost->GetWUCBrushManager()->SetUpBrushTransitionIfAllowed("
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:51-55"
+quote = "CBrushTransition* const backgroundTransition = CUIElement::GetBrushTransitionNoRef(*this, KnownPropertyIndex::Border_BackgroundTransition); if (backgroundTransition != nullptr) { dcompTreeHost->GetWUCBrushManager()->SetUpBrushTransitionIfAllowed("
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/panel.cpp:78-82"
+quote = "CBrushTransition* const backgroundTransition = CUIElement::GetBrushTransitionNoRef(*this, KnownPropertyIndex::Panel_BackgroundTransition); if (backgroundTransition != nullptr) { dcompTreeHost->GetWUCBrushManager()->SetUpBrushTransitionIfAllowed("
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/brushes/WUCBrushManager.cpp:578-579"
+quote = "// If the old brush exists, use its color. Otherwise fade in the new brush's color from transparent. XUINT32 oldRgb = oldBrush != nullptr ? oldBrush->m_rgb : (newBrush->m_rgb & 0x00ffffff);"
 
 [[fact]]
 key = "button.body.margin.top"
@@ -2088,6 +2192,32 @@ rows = []
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/contentpresenter_textwrapping.md:16"
 quote = "A value that indicates how the element wraps text. The default is **NoWrap**."
+
+# The label's trimming (S2.8's drawn-text leaves, ADD-A130): the content presenter's default TextBlock takes no
+# style and is given no TextTrimming, the presenter forwarding only its wrapping, line and spacing properties, so
+# the TextBlock's default, None, holds.
+[[fact]]
+key = "button.label.text.elision"
+when = { not_variants = ["tool"] }
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_texttrimming.md:24"
+quote = "One of the [TextTrimming](../microsoft.ui.xaml/texttrimming.md) values that specifies the text trimming behavior to employ. The default is **None**."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:1183-1238"
+quote = "_Check_return_ HRESULT CContentPresenter::CreateDefaultContent("
+absent = ["TextTrimming"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/ContentPresenter.cpp:190-245"
+quote = "_Check_return_ HRESULT CContentPresenter::OnPropertyChanged(_In_ const PropertyChangedParams& args)"
+absent = ["TextTrimming"]
 
 [[fact]]
 key = "button.label.text.max_lines"
@@ -15374,6 +15504,94 @@ quote = "<Grid.ColumnDefinitions> <ColumnDefinition Width=\"*\" /> <ColumnDefini
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
 quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\""
+
+# The drop-down chevron's AnimatedIcon states (S2.7's `WinUiAnimatedIcon`, ADD-A126): each visual state sets only
+# the icon's State, the player running the segment between the two states' markers of AnimatedChevronDownSmall,
+# timed by the visual (duration and timing absent), with no delay. A `Keyed` transition of group `Glyph`, the part
+# drawing a glyph; its colour changes at once (a DiscreteObjectKeyFrame). The visual's entry,
+# `token.icons.animated_visuals.chevron_down_small`, waits for the checkers to take the key.
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
+rows = ["W2-18", "W3-28"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93-94"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\" Width=\"12\" Height=\"12\" Foreground=\"{ThemeResource DropDownButtonForegroundSecondary}\" AutomationProperties.AccessibilityView=\"Raw\" local:AnimatedIcon.State=\"Normal\" xmlns:local=\"using:Microsoft.UI.Xaml.Controls\"> <animatedvisuals:AnimatedChevronDownSmallVisualSource />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:415-471"
+quote = "void AnimatedIcon::PlaySegment(float from, float to, const std::function<void()>& cleanupAction, float playbackMultiplier)"
+absent = ["DelayTime"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"], not_variants = ["tool"], states = ["hover"] }
+value = [{ properties = ["glyph"], kind = { keyed = { key = "pointer_over", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
+rows = ["W2-18", "W3-28"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:44"
+quote = "<Setter Target=\"ChevronIcon.(controls:AnimatedIcon.State)\" Value=\"PointerOver\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93-94"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\" Width=\"12\" Height=\"12\" Foreground=\"{ThemeResource DropDownButtonForegroundSecondary}\" AutomationProperties.AccessibilityView=\"Raw\" local:AnimatedIcon.State=\"Normal\" xmlns:local=\"using:Microsoft.UI.Xaml.Controls\"> <animatedvisuals:AnimatedChevronDownSmallVisualSource />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:415-471"
+quote = "void AnimatedIcon::PlaySegment(float from, float to, const std::function<void()>& cleanupAction, float playbackMultiplier)"
+absent = ["DelayTime"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"], not_variants = ["tool"], states = ["pressed"] }
+value = [{ properties = ["glyph"], kind = { keyed = { key = "pressed", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
+rows = ["W2-18", "W3-28"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:63"
+quote = "<Setter Target=\"ChevronIcon.(controls:AnimatedIcon.State)\" Value=\"Pressed\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93-94"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\" Width=\"12\" Height=\"12\" Foreground=\"{ThemeResource DropDownButtonForegroundSecondary}\" AutomationProperties.AccessibilityView=\"Raw\" local:AnimatedIcon.State=\"Normal\" xmlns:local=\"using:Microsoft.UI.Xaml.Controls\"> <animatedvisuals:AnimatedChevronDownSmallVisualSource />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:415-471"
+quote = "void AnimatedIcon::PlaySegment(float from, float to, const std::function<void()>& cleanupAction, float playbackMultiplier)"
+absent = ["DelayTime"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
+value = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
+rows = ["W2-18", "W3-28"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:83"
+quote = "<Setter Target=\"ChevronIcon.(controls:AnimatedIcon.State)\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93-94"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\" Width=\"12\" Height=\"12\" Foreground=\"{ThemeResource DropDownButtonForegroundSecondary}\" AutomationProperties.AccessibilityView=\"Raw\" local:AnimatedIcon.State=\"Normal\" xmlns:local=\"using:Microsoft.UI.Xaml.Controls\"> <animatedvisuals:AnimatedChevronDownSmallVisualSource />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedIcon.cpp:415-471"
+quote = "void AnimatedIcon::PlaySegment(float from, float to, const std::function<void()>& cleanupAction, float playbackMultiplier)"
+absent = ["DelayTime"]
 
 # The app-bar button's chevron: a FontIcon (U+E974 of SymbolThemeFontFamily) at font size 8, mirrored in
 # right-to-left, no size of its own. Under the default and icon-only label positions (W1-102, ADD-A122) it lies over

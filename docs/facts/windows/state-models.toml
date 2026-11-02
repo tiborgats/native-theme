@@ -3,6 +3,10 @@
 # Variants (ADD-A121): each is one control class or one style (WinUI's `Style` holds one), so an element holds one of
 # them; the sets of two are the app-bar toggle (AppBarToggleButton, a ToggleButton), `toggle` with `tool`, and the
 # app-bar button with a Flyout (its HasFlyout chevron), `menu` with `tool`.
+# Contexts (ADD-A125, ledger queue #86): a dialog's action area and a command bar (`toolbar.bar`, W1-099, W1-102).
+# The command bar inside the tabbed command bar, whose items are CommandBars placing their labels beside the icons,
+# is the ordered chain `[{ widget = "component.tabbed_command_bar" }, { widget = "toolbar", part = "bar" }]`
+# (W-RV-3†, W1-102), which check_facts.py does not read yet ("axes.contexts[2] is not a table"): added with it.
 
 
 [[model]]
@@ -11,12 +15,12 @@ available = true
 variants = ["primary", "flat", "toggle", "menu", "tool", "@repeat"]
 sizes = []
 densities = []
-axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ widget = "dialog", part = "action_area" }] }
+axes = { states = ["hover", "pressed", "disabled", "focus_visible", "checked", "indeterminate", "default"], conditions = ["scheme:light", "scheme:dark", "contrast_high"], contexts = [{ widget = "dialog", part = "action_area" }, { widget = "toolbar", part = "bar" }] }
 exclusive = [["disabled", "pressed", "hover"], ["indeterminate", "checked"]]
 exclusive_variants = [["primary", "flat", "toggle", "menu", "@repeat"], ["primary", "flat", "tool", "@repeat"]]
 variant_sets = [["toggle", "tool"], ["menu", "tool"]]
 not_drawn = [{ states = ["checked"], not_variants = ["toggle"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["indeterminate"], variants = ["tool"] }, { states = ["disabled", "focus_visible"] }, { states = ["default"], not_context = [{ widget = "dialog", part = "action_area" }] }]
-rows = ["W1-018", "W1-019", "W1-020", "W1-022"]
+rows = ["W1-018", "W1-019", "W1-020", "W1-022", "W1-099", "W1-102"]
 
 [[model.cite]]
 kind = "published"
@@ -158,3 +162,13 @@ quote = "if (flyout) { IFC_RETURN(GoToState(useTransitions, L\"HasFlyout\", &ign
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:344-346"
 quote = "<VisualState x:Name=\"HasFlyout\"> <VisualState.Setters> <Setter Target=\"SubItemChevronPanel.Visibility\" Value=\"{ThemeResource AppBarButtonHasFlyoutChevronVisibility}\" />"
+
+[[model.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/CommandBar_themeresources.xaml:77"
+quote = "<Style x:Key=\"DefaultCommandBarStyle\" TargetType=\"CommandBar\">"
+
+[[model.cite]]
+kind = "published"
+source = "CommunityToolkit-Windows@8.2.251219 components/TabbedCommandBar/src/TabbedCommandBarItem.xaml:65-69"
+quote = "<Style x:Key=\"DefaultTabbedCommandBarItemStyle\" BasedOn=\"{StaticResource DefaultCommandBarStyle}\" TargetType=\"controls:TabbedCommandBarItem\"> <Setter Property=\"HorizontalAlignment\" Value=\"Stretch\" /> <Setter Property=\"DefaultLabelPosition\" Value=\"Right\" />"

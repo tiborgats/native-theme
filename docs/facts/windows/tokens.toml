@@ -133,6 +133,16 @@ key = "token.motion.timings.scroll_into_view"
 pending = "U50"
 rows = ["W-P4-3†"]
 
+# The theme change (S4.3): what a theme switch does to WinUI's brush transitions and visual-state storyboards (a
+# brush swapped, or a colour changed in place) and to a transition running at the switch is runtime behaviour no
+# cached source states (S2.7's `WinUi`, ADD-A126): pending (register U183). The colour space,
+# `token.motion.color_space` (ADD-A125), is the composition path's, measured (U157): its pending fact waits for the
+# checkers to take the key (ledger queue #133).
+[[fact]]
+key = "token.theme_change"
+pending = "U183"
+rows = ["W-P3-16†"]
+
 
 # Behaviour: the system defaults the Win32 reference states (the reader reads the user's).
 
@@ -146,8 +156,26 @@ kind = "published"
 source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-setdoubleclicktime.md:62"
 quote = "The number of milliseconds that may occur between the first and second clicks of a double-click. If this parameter is set to 0, the system uses the default double-click time of 500 milliseconds. If this parameter value is greater than 5000 milliseconds, the system sets the value to 5000 milliseconds."
 
+# The system's one hover time (S4.2's *Hover time*, ADD-A130): TrackMouseEvent's default, which
+# SPI_GETMOUSEHOVERTIME reads and of which WinUI's tooltip delays are multiples (W1-059).
 [[fact]]
-key = "token.behavior.scroll_lines_per_step"
+key = "token.behavior.hover_time"
+value = "400ms"
+rows = ["W3-41"]
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/ns-winuser-trackmouseevent.md:153"
+quote = "The system default hover time-out is initially the menu drop-down time, which is 400 milliseconds. You can call <a href=\"/windows/desktop/api/winuser/nf-winuser-systemparametersinfoa\">SystemParametersInfo</a> and use <b>SPI_GETMOUSEHOVERTIME</b> to retrieve the default hover time-out."
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-systemparametersinfoa.md:1158"
+quote = "Retrieves the time, in milliseconds, that the mouse pointer has to stay in the hover rectangle for <a href=\"/windows/desktop/api/winuser/nf-winuser-trackmouseevent\">TrackMouseEvent</a> to generate a <a href=\"/windows/desktop/inputdev/wm-mousehover\">WM_MOUSEHOVER</a> message."
+
+# The wheel step in lines (S4.2's *Wheel steps*, ADD-A130): staged with `Behavior.scroll` (S6.1).
+[[fact]]
+key = "token.behavior.scroll.wheel_step_lines"
 value = 3
 rows = ["W3-41"]
 
@@ -526,9 +554,31 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:444-459"
 quote = "{ XTHICKNESS* thickness = (type == FocusElementType::Outer ? &options.firstThickness : &options.secondThickness); xref_ptr<CSolidColorBrush> brush = (type == FocusElementType::Outer ? options.firstBrush : options.secondBrush); bool focusRectDirty = false; XRECTF bounds = outerBounds; if (type == FocusElementType::Inner) { bounds.Width -= options.firstThickness.left + options.firstThickness.right; bounds.Height -= options.firstThickness.left + options.firstThickness.right; bounds.X += options.firstThickness.left; bounds.Y += options.firstThickness.top; } // Let's just not deal with negative sizes. bounds.Width = MAX(0.0f, bounds.Width);"
 
+# The HighVisibility visual is placed on the focus target and removed from it at once (S2.10's *The indicator
+# entering and leaving*, ADD-A126): UpdateFocusRect and ConfigureFocusElement set its borders' bounds, thickness and
+# brush with no brush transition or storyboard (Reveal's animator is the Keyed kind's, W3-20, not this one's).
+[[fact]]
+key = "token.focus.transition"
+value = "absent"
+rows = ["W3-20"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:706-971"
+quote = "void CFocusRectManager::UpdateFocusRect("
+absent = ["Storyboard", "BrushTransition"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/FocusRect/FocusRectManager.cpp:438-514"
+quote = "CFocusRectManager::ConfigureFocusElement("
+absent = ["Storyboard", "BrushTransition"]
+
 # The type ramp: TextBlock_themeresources.xaml's styles (`UseVisualStyle Latest`), all based on BaseTextBlockStyle
 # (XamlAutoFontFamily, which WinUI resolves to Segoe UI Variable for a Latin-script default language, SemiBold,
-# CharacterEllipsis, Wrap, LineStackingStrategy MaxHeight, no LineHeight: the font's own line spacing).
+# CharacterEllipsis, Wrap, LineStackingStrategy MaxHeight, no LineHeight: the font's own line spacing). No style sets
+# a Foreground or MaxLines, so each style's `fill` and `max_lines` are absent, a part drawing text in it stating its
+# own (S2.8's *Styles and drawn text*, ADD-A130).
 
 [[fact]]
 key = "token.text.keyed.caption.font.family"
@@ -657,13 +707,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.caption.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19-22"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.caption.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:19-22"
+quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.caption.font.axes"
@@ -802,13 +876,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.body.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23-25"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23-25"
+quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.body.font.axes"
@@ -952,13 +1050,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.body_strong.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body_strong.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:26"
+quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\" />"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.body_strong.font.axes"
@@ -1097,13 +1219,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.body_large.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27-31"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body_large.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:27-31"
+quote = "<Style x:Key=\"BodyLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.body_large.font.axes"
@@ -1247,13 +1393,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.body_large_strong.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32-35"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:32-35"
+quote = "<Style x:Key=\"BodyLargeStrongTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.body_large_strong.font.axes"
@@ -1397,13 +1567,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.subtitle.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36-39"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.subtitle.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:36-39"
+quote = "<Style x:Key=\"SubtitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.subtitle.font.axes"
@@ -1547,13 +1741,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.title.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40-43"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.title.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:40-43"
+quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.title.font.axes"
@@ -1697,13 +1915,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.title_large.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44-47"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.title_large.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:44-47"
+quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.title_large.font.axes"
@@ -1847,13 +2089,37 @@ quote = "<Setter Property=\"TextWrapping\" Value=\"Wrap\" />"
 
 [[fact]]
 key = "token.text.keyed.display.max_lines"
-value = "none"
+value = "absent"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
-quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior. The value cannot be negative."
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48-51"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["MaxLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["MaxLines"]
+
+[[fact]]
+key = "token.text.keyed.display.fill"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:48-51"
+quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+absent = ["Foreground"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:10-18"
+quote = "<Style x:Key=\"BaseTextBlockStyle\" TargetType=\"TextBlock\">"
+absent = ["Foreground"]
 
 [[fact]]
 key = "token.text.keyed.display.font.axes"
@@ -2047,6 +2313,28 @@ rows = []
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/TextBlock_themeresources.xaml:23"
 quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"{StaticResource BaseTextBlockStyle}\">"
+
+# The font DPI (S9.4, ADD-A103): WinUI lays out in logical pixels at USER_DEFAULT_SCREEN_DPI, 96 to the inch, its
+# rasterization scale the window's DPI over it, so a point (1/72 inch) is 96/72 logical pixels.
+[[fact]]
+key = "token.text.font_dpi"
+value = 96
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-getdpiforwindow.md:80"
+quote = "The base value of DPI is which is set to 96 (defined as `USER_DEFAULT_SCREEN_DPI`)"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/DesktopWindowImpl.cpp:195-196"
+quote = "const auto dpi = ::GetDpiForWindow(m_hwnd.get()); rasterizationScale = static_cast<float>(dpi) / static_cast<float>(USER_DEFAULT_SCREEN_DPI);"
+
+[[fact.cite]]
+kind = "published"
+source = "win32@ca8274de desktop-src/uxguide/vis-fonts.md:42"
+quote = "A point is roughly 1/72 inch."
 
 # Icon sizes: the app-bar button's icon box (AppBarButtonContentHeight, used by AppBarButton's ContentViewbox).
 
