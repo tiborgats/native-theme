@@ -466,7 +466,7 @@ impl Stack {
         declarations: Declarations,
         layer: Layer,
         scheme: Scheme,
-        pending: &[(String, String)],
+        pending: &[crate::next::toml::layer::Listed],
         layers: Vec<Layer>,
     ) -> Result<Stack, LayerError> {
         let exempt: Vec<String> = pending

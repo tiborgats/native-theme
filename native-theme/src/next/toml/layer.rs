@@ -71,10 +71,15 @@ pub(crate) struct PresetFile {
     pub(crate) declarations: Declarations,
     /// The bases and rules.
     pub(crate) layer: Layer,
-    /// `[pending]`: each listed path as S11 spells it, with its register id
-    /// (S17, ADD-A128).
-    pub(crate) pending: Vec<(String, String)>,
+    /// `[pending]`: each listed path as S11 spells it, with its register
+    /// ids (S17, ADD-A128).
+    pub(crate) pending: Vec<Listed>,
 }
+
+/// A listed path as S11 spells it and its register ids: one, or several
+/// where a field S6.1 sets whole has leaves pending under different ids
+/// (S11, S17).
+pub(crate) type Listed = (String, Vec<String>);
 
 /// The preset `text` states (S11), or every problem it has.
 pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
@@ -125,43 +130,52 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
 }
 
 /// `[pending]` (S11, S17): each listed path, its TOML path quoted, with its
-/// register id, `U` and a number (ADD-A122's form); an entry of another
-/// form is refused, and so is a path naming no field of `colors`, `tokens`
-/// or a typed widget, or spelled with a unit suffix its field's type does
-/// not take ([`read::listed_field`], the model's path it maps to).
-fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<(String, String)> {
+/// register id, `U` and a number (ADD-A122's form), or a list of distinct
+/// ones (a field S6.1 sets whole whose leaves are pending under different
+/// ids); an entry of another form is refused, and so is a path naming no
+/// field of `colors`, `tokens` or a typed widget, or spelled with a unit
+/// suffix its field's type does not take ([`read::listed_field`], the
+/// model's path it maps to).
+fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
     let Some(entries) = table(item, at, cx) else {
         return Vec::new();
     };
     let mut out = Vec::new();
-    for (path, id) in entries {
+    let register = |id: &str| {
+        id.strip_prefix('U')
+            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+    };
+    for (path, ids) in entries {
         let at = join(at, path);
-        let Some(id) = id.as_str() else {
+        let ids: Option<Vec<String>> = match ids {
+            Item::String(id) => Some(vec![id.clone()]),
+            Item::Array(ids) if !ids.is_empty() => ids
+                .iter()
+                .map(|id| id.as_str().map(str::to_owned))
+                .collect(),
+            _ => None,
+        };
+        let ids = ids.filter(|ids| {
+            ids.iter().all(|id| register(id))
+                && ids
+                    .iter()
+                    .enumerate()
+                    .all(|(index, id)| !ids.iter().take(index).any(|held| held == id))
+        });
+        let Some(ids) = ids else {
             cx.problem(
                 &at,
                 ProblemKind::Mistyped {
-                    expected: "a register id, `U<n>`",
+                    expected: "a register id, `U<n>`, or a list of distinct ones",
                 },
             );
             continue;
         };
-        let register = id
-            .strip_prefix('U')
-            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
-        if !register {
-            cx.problem(
-                &at,
-                ProblemKind::Mistyped {
-                    expected: "a register id, `U<n>`",
-                },
-            );
-            continue;
-        }
         if read::listed_field(path).is_none() {
             cx.problem(&at, ProblemKind::UnknownKey);
             continue;
         }
-        out.push((path.clone(), id.to_owned()));
+        out.push((path.clone(), ids));
     }
     out
 }

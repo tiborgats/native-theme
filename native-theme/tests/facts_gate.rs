@@ -74,6 +74,11 @@ fn fixture_report_with(name: &str, file: &str) -> run::Report {
     run::run(&root, &presets)
 }
 
+/// A listed path's register ids found, in order.
+fn ids_of(ids: &std::collections::BTreeSet<String>) -> Vec<&str> {
+    ids.iter().map(String::as_str).collect()
+}
+
 /// The report's failures that mention `needle`.
 fn failing<'r>(report: &'r run::Report, needle: &str) -> Vec<&'r String> {
     report
@@ -917,8 +922,8 @@ fn gate_fixture_pending_listed() {
         ["probe token.behavior.touch.delay"]
     );
     assert_eq!(
-        report.listed.values().next().map(|(id, _)| id.as_str()),
-        Some("U5")
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U5"])
     );
     let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
     assert_eq!(
@@ -928,6 +933,35 @@ fn gate_fixture_pending_listed() {
         report.synthetic
     );
     assert!(report.compared > 0, "{report:?}");
+}
+
+/// A field S6.1 sets whole listed with a list of ids, its leaves pending
+/// under different ones (S11: `"tokens.behavior.key_repeat" = ["<id>",
+/// "<id>"]`): found with both; listed with one of them, it fails, naming
+/// both.
+#[test]
+fn gate_fixture_pending_ids() {
+    let report = fixture_report("pending_ids");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe token.behavior.key_repeat"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U3", "U4"])
+    );
+    let one = fixture_report_with("pending_ids", "one_id.toml");
+    assert_eq!(
+        failing(&one, "[pending]"),
+        [
+            &"probe: `tokens.behavior.key_repeat` is listed as U3 in its [pending] table, and \
+           its pending facts are U3, U4"
+                .to_owned()
+        ],
+        "{:?}",
+        one.failures
+    );
 }
 
 /// A whole map listed as pending is found (S17: "U150's
@@ -943,8 +977,8 @@ fn gate_fixture_pending_map() {
         ["probe token.text.fallbacks.per_language"]
     );
     assert_eq!(
-        report.listed.values().next().map(|(id, _)| id.as_str()),
-        Some("U150")
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U150"])
     );
 }
 
@@ -1236,8 +1270,11 @@ fn facts_gate() {
     for (place, (id, key, count)) in &report.pending {
         eprintln!("  pending: {place}: {id} `{key}` on {count} combinations");
     }
-    for (key, (id, count)) in &report.listed {
-        eprintln!("  listed: {key}: {id} on {count} combinations");
+    for (key, (ids, count)) in &report.listed {
+        eprintln!(
+            "  listed: {key}: {} on {count} combinations",
+            ids_of(ids).join(", ")
+        );
     }
     for (place, (key, count)) in &report.synthetic {
         eprintln!("  reaches a synthetic value: {place}: `{key}` on {count} combinations");

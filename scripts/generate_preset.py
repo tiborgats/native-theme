@@ -732,12 +732,14 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     pending fact of the preset states where it applies (no later fact covering it everywhere) and the draft writes no
     base at it, above it (a block stated whole, a whole part) or below it, so the preset's own layer leaves it unstated
     where that fact applies; a colour role's per scheme the fact applies in; a pending leaf of a set-whole block lists
-    the block, which its bases cannot state without it. Each with the first such fact's register id: [(path, id,
-    fact)], the path spelled as S11 writes its key, unit suffix included. A pending input is no listed path (S11:
+    the block, which its bases cannot state without it. Each with its pending facts' register id, or the list of
+    their distinct ids in fact order where they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the
+    leaves of a field set whole pending under different ids), and the first such fact: [(path, id or ids, fact)],
+    the path spelled as S11 writes its key, unit suffix included. A pending input is no listed path (S11:
     the reader takes a field of the colour roles, the tokens or a widget): pending_inputs() reports it."""
     block_of = block_of or set_whole_block
     based = based_paths(bases)
-    out, seen = [], set()
+    out, seen = [], {}
     for f in facts:
         if f.status != PENDING or f.kind == "input":
             continue
@@ -754,11 +756,16 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
             path = (f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
             key = unsuffixed(path)
             beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
-            if beneath or key in seen:
+            if beneath:
                 continue
-            seen.add(key)
-            out.append((dotted_key(path), f.item.data["pending"], f))
-    return out
+            uid = f.item.data["pending"]
+            if key in seen:
+                if uid not in seen[key][1]:
+                    seen[key][1].append(uid)
+                continue
+            seen[key] = [dotted_key(path), [uid], f]
+            out.append(seen[key])
+    return [(path, uids[0] if len(uids) == 1 else uids, f) for path, uids, f in out]
 
 
 def pending_inputs(facts, bases) -> list:
@@ -1431,7 +1438,7 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
             f"{k}: {v}" for k, v in sorted(pend.items(), key=lambda kv: int(kv[0][1:]))))
     if draft.pending:
         out.append(f"# [pending]: {len(draft.pending)} listed paths, pending with nothing beneath: " + ", ".join(
-            f"{path} ({uid})" for path, uid, _ in draft.pending))
+            f"{path} ({uid if isinstance(uid, str) else ', '.join(uid)})" for path, uid, _ in draft.pending))
     inputs = pending_inputs(draft.facts, draft.bases)
     if inputs:
         out.append(f"# [pending]: {len(inputs)} pending inputs with nothing beneath, which no table lists (S11), "
@@ -2020,6 +2027,11 @@ def self_test() -> int:
         ("tokens", None, ("behavior",), ("touch", "delay_ms"), 1, touch)], repeat_block)]
     if got != [("tokens.behavior.key_repeat", "U3")]:
         failures.append(f"pending_table: {got}, expected the key repeat block alone")
+    # the leaves of a block set whole pending under different ids list it with both, in fact order
+    delay = pending_fact("token.behavior.key_repeat.delay", "U2")
+    got = [(path, uid) for path, uid, _ in pending_table(None, [delay, interval], [], repeat_block)]
+    if got != [("tokens.behavior.key_repeat", ["U2", "U3"])]:
+        failures.append(f"pending_table: {got}, expected the key repeat block with U2 and U3")
     # a base above the path (a block stated whole, a whole part) or below it lists nothing; a colour role is listed
     # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input is reported
     def any_fact(key, uid, kind, when=None, widget=None, status=PENDING):

@@ -108,8 +108,9 @@ pub struct Report {
     pub synthetic: BTreeMap<String, (String, u64)>,
     /// Each listed path found: a pending fact applying where the preset
     /// leaves the path to the synthetic value, by `<preset> <key>`: the
-    /// pending fact's register id and how many combinations.
-    pub listed: BTreeMap<String, (String, u64)>,
+    /// pending facts' register ids (a set-whole block's, its pending
+    /// leaves') and how many combinations.
+    pub listed: BTreeMap<String, (BTreeSet<String>, u64)>,
     /// Each set-whole leaf's fact left unchecked as a sibling leaf's
     /// applying fact is pending (ADD-A128): its place, its key, the pending
     /// fact, and how many combinations.
@@ -1166,7 +1167,8 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
 /// path the table lacks is S12's missing field, which the preset's own
 /// loading refuses.
 fn listed_paths(preset: &Preset, report: &mut Report) {
-    for (path, id) in preset.pending() {
+    for (path, ids) in preset.pending() {
+        let id = ids.join(", ");
         if preset.states(path) {
             report.fail(format!(
                 "{}: `{path}` ({id}) is in its [pending] table, and the preset states it",
@@ -1183,10 +1185,20 @@ fn listed_paths(preset: &Preset, report: &mut Report) {
                  pending fact with nothing beneath",
                 preset.id()
             )),
-            Some((fact, _)) if fact != *id => report.fail(format!(
-                "{}: `{path}` is listed as {id} in its [pending] table, and its pending fact is {fact}",
-                preset.id()
-            )),
+            Some((facts, _)) if facts != ids.iter().cloned().collect::<BTreeSet<String>>() => {
+                let found: Vec<String> = facts.into_iter().collect();
+                let (fact, are) = if found.len() == 1 {
+                    ("fact", "is")
+                } else {
+                    ("facts", "are")
+                };
+                report.fail(format!(
+                    "{}: `{path}` is listed as {id} in its [pending] table, and its pending {fact} \
+                     {are} {}",
+                    preset.id(),
+                    found.join(", ")
+                ));
+            }
             Some(_) => {}
         }
     }
@@ -1705,7 +1717,8 @@ fn found_listed(report: &mut Report, preset: &str, key: &KeyFacts<'_>, id: &str)
     let entry = report
         .listed
         .entry(format!("{preset} {name}"))
-        .or_insert_with(|| (id.to_owned(), 0));
+        .or_insert_with(|| (BTreeSet::new(), 0));
+    entry.0.insert(id.to_owned());
     entry.1 += 1;
 }
 

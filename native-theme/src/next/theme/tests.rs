@@ -189,9 +189,10 @@ fn synthetic_layer(text: &str) -> Layer {
     Layer::from_toml(text).unwrap()
 }
 
-/// The reader reads `[pending]` with its register ids (S11) and leaves a
-/// listed path out of a block built whole; it refuses an entry whose id is
-/// not `U<n>`, or whose path names no field of `colors`, `tokens` or a
+/// The reader reads `[pending]` with its register ids (S11), one or a list
+/// of distinct ones, and leaves a listed path out of a block built whole;
+/// it refuses an entry whose id is not `U<n>` or whose list is empty or
+/// repeats one, or whose path names no field of `colors`, `tokens` or a
 /// typed widget (an input, a rule's key, a field the model lacks) or is
 /// spelled with a unit suffix its field's type does not take (S17,
 /// ADD-A128). A path the preset states too it reads: the facts gate fails
@@ -201,7 +202,10 @@ fn pending_table_read() {
     let file = read_preset(&listed_preset()).unwrap();
     assert_eq!(
         file.pending,
-        [("tokens.behavior.touch.delay_ms".to_owned(), "U1".to_owned())]
+        [(
+            "tokens.behavior.touch.delay_ms".to_owned(),
+            vec!["U1".to_owned()]
+        )]
     );
     let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
     let refused = |table: &str| match read_preset(&format!("[pending]\n{table}\n{base}")) {
@@ -210,20 +214,38 @@ fn pending_table_read() {
         }
         other => panic!("{table}: {other:?}"),
     };
-    assert_eq!(
-        refused("\"tokens.behavior.drag_time_ms\" = \"151\""),
-        ["pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`"]
-    );
-    assert_eq!(
-        refused("\"tokens.behavior.drag_time_ms\" = 151"),
-        ["pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`"]
-    );
-    for id in ["U", "U12a"] {
+    let not_an_id = [
+        "pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`, \
+                      or a list of distinct ones",
+    ];
+    for ids in [
+        "\"151\"",
+        "151",
+        "\"U\"",
+        "\"U12a\"",
+        "[]",
+        "[\"U1\", \"U1\"]",
+        "[\"U1\", 2]",
+        "[\"U1\", \"V2\"]",
+    ] {
         assert_eq!(
-            refused(&format!("\"tokens.behavior.drag_time_ms\" = \"{id}\"")),
-            ["pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`"]
+            refused(&format!("\"tokens.behavior.drag_time_ms\" = {ids}")),
+            not_an_id,
+            "{ids}"
         );
     }
+    let ids = read_preset(&format!(
+        "[pending]\n\"tokens.behavior.key_repeat\" = [\"U1\", \"U2\"]\n{}",
+        base.replacen("\nkey_repeat = \"none\"\n", "\n", 1)
+    ))
+    .unwrap();
+    assert_eq!(
+        ids.pending,
+        [(
+            "tokens.behavior.key_repeat".to_owned(),
+            vec!["U1".to_owned(), "U2".to_owned()]
+        )]
+    );
     for path in [
         "tokens.behavior.bogus_ms",
         "tokens.behavior.touch.delay_px",

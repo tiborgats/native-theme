@@ -95,7 +95,7 @@ fn refused(error: &LayerError) -> String {
 pub struct Preset {
     stack: Stack,
     id: String,
-    pending: Vec<(String, String)>,
+    pending: Vec<(String, Vec<String>)>,
 }
 
 impl Preset {
@@ -142,9 +142,9 @@ impl Preset {
     }
 
     /// Its `[pending]` table: each listed path as S11 spells it, with its
-    /// register id (S17, ADD-A128).
+    /// register ids (S17, ADD-A128).
     #[must_use]
-    pub fn pending(&self) -> &[(String, String)] {
+    pub fn pending(&self) -> &[(String, Vec<String>)] {
         &self.pending
     }
 
@@ -453,15 +453,16 @@ fn map_value(ty: &str) -> Option<&str> {
 /// the layers [`Preset`] and S19.1's build test load such a preset with.
 /// A listed path the model holds no field at, or of a type with no
 /// synthetic value yet, is refused, naming it.
-pub fn synthetic_layers(pending: &[(String, String)]) -> Result<Vec<Layer>, String> {
+pub fn synthetic_layers(pending: &[(String, Vec<String>)]) -> Result<Vec<Layer>, String> {
     pending
         .iter()
-        .map(|(path, id)| {
+        .map(|(path, ids)| {
+            let ids = ids.join(", ");
             let (keys, value) =
-                synthetic_value(path).map_err(|why| format!("`{path}` ({id}): {why}"))?;
+                synthetic_value(path).map_err(|why| format!("`{path}` ({ids}): {why}"))?;
             let item = nested(&keys, value);
             let text = ::toml::to_string(&item).map_err(|error| error.to_string())?;
-            Layer::from_toml(&text).map_err(|error| format!("`{path}` ({id}): {error}"))
+            Layer::from_toml(&text).map_err(|error| format!("`{path}` ({ids}): {error}"))
         })
         .collect()
 }
@@ -2362,13 +2363,14 @@ mod tests {
                 failures.push(format!("{path}: no spelling names its field"));
                 continue;
             };
-            if let Err(why) = synthetic_layers(&[(spelled, "U1".to_owned())]) {
+            if let Err(why) = synthetic_layers(&[(spelled, vec!["U1".to_owned()])]) {
                 failures.push(why);
             }
         }
         assert_eq!(failures, Vec::<String>::new());
-        let refused = synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), "U1".to_owned())])
-            .unwrap_err();
+        let refused =
+            synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])])
+                .unwrap_err();
         assert!(refused.contains("holds no field"), "{refused}");
     }
 
@@ -2391,7 +2393,7 @@ mod tests {
     #[test]
     fn synthetic_layers_spell_their_values() {
         let layer = |path: &str| {
-            let mut layers = synthetic_layers(&[(path.to_owned(), "U1".to_owned())]).unwrap();
+            let mut layers = synthetic_layers(&[(path.to_owned(), vec!["U1".to_owned()])]).unwrap();
             layers.pop().unwrap()
         };
         let repeat = layer("tokens.behavior.key_repeat");

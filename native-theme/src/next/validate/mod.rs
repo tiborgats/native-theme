@@ -177,7 +177,10 @@ pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
 /// spells them) that none of `layers` states, as S12's missing field at the
 /// model's path, the one the plain route reports it at: the synthetic
 /// route's completeness (S17, ADD-A128).
-pub(crate) fn listed_unstated(pending: &[(String, String)], layers: &[Layer]) -> Vec<Problem> {
+pub(crate) fn listed_unstated(
+    pending: &[crate::next::toml::layer::Listed],
+    layers: &[Layer],
+) -> Vec<Problem> {
     pending
         .iter()
         .map(|(path, _)| crate::next::toml::read::listed_path(path))
