@@ -321,8 +321,8 @@ Each `### <widget>` section states, in this order:
   `exclusive_variants` group (S10, ADD-A121); others combine.
 - **Sizes and densities** per platform (`ControlSize`, S7.3; Material Expressive's xsmall is `extra_small`); sizes a
   variant alone takes are declared by `sizes_by_variant` (S10: Material's FAB, MAT-N1), and a size a variant does not
-  declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by
-  `default_size_by_variant` (S10, ADD-A121).
+  declare answers `NotAvailable`; a variant's own default size, where it differs from the widget's, by its
+  `sizes_by_variant` entry's `default_size` (S10, ADD-A121, ADD-A131).
 - **Flags:** the element's widget-specific flags: shared (`SharedFlag`, below), keyed (`@name`,
   `StateFlag::Widget(Key)`, declared by the preset); and the state flags it uses (S7.2).
 - **Exclusive groups:** per platform, the flags of each group (the platform's state groups mapped to flags), written
@@ -1785,23 +1785,23 @@ spaces:
   `:877-928`, `:1472-1482`, `tokens/ExtendedFabPrimaryTokens.kt:64`), and declared under flavour `expressive` only
   `small`, `large` and `extra_large`, Expressive's small, medium and large extended FABs
   (`SmallExtendedFloatingActionButton` …, `:400`, `:467`, `:534`, `:1434-1470`) (MAT-N2; ADD-A123: the unsized one
-  had no size under Expressive, where `regular` named the medium one). Default sizes (`default_size_by_variant`,
-  S10, ADD-A121): `@fab` and `@extended_fab` `regular` in both flavours, the unsized composables, where the
+  had no size under Expressive, where `regular` named the medium one). Default sizes (a `sizes_by_variant` entry's
+  `default_size`, S10, ADD-A121, ADD-A131): `@fab` and `@extended_fab` `regular` in both flavours, the unsized composables, where the
   Expressive buttons' default is `small`. `ios-*`: the `buttonSize` a configuration takes when the application sets
   none, which `UIButtonConfiguration.h` states no default for and the iOS host has not read (it sets the size on every
   specimen): a measurement, the host reading an unset configuration's `buttonSize` (the register's U129), declared from it as
-  `default_size_by_variant` on the configuration styles where it differs from `regular` (ADD-A125, ADD-A131).
-  `default_size` is `regular`, the one size the state models leave an element without a configuration style
-  (`docs/facts/ios/state-models.toml:78-80`, `:639-641`), the lane's name for the size of a button that has no
-  `buttonSize`, not a reading, and meanwhile
-  `default_size = { pending = "U129" }` in the state models covers the pair, S17 having no pending form for a
-  `default_size_by_variant` entry (S17, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in the default toolbar
+  the `default_size` of each configuration style's `sizes_by_variant` entry where it differs from `regular`, pending
+  meanwhile (`default_size = { pending = "U129" }` in each entry; ADD-A125, ADD-A131). `sizes` is `["regular"]` and
+  `default_size` `regular`, the one size of a button with no configuration style, which has no `buttonSize` (the
+  lane's name for that size, not a reading, `docs/facts/ios/state-models.toml:40-41`), each configuration style's
+  `mini` … `large` in its `sizes_by_variant` entry, in place of the state models' three size `not_drawn` lines
+  (`:78-80`, `:639-641`; S10, ADD-A131). `macos-tahoe`: `default_size` `regular` (a new button's, controlSize 0), and in the default toolbar
   (`toolbarStyle` automatic, size mode regular, `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml:49141-49143`)
   `extra_large`, a `sizes_by_context` entry `{ context = { scope = "any", widget = "toolbar", part = "bar" }, … }`
   with that `default_size` (the probe's `view_*_controlSize_raw` 4, `:49155-49158`; the entry's sizes, the other
   toolbar styles and modes and a variant keeping its own size there U94, the macOS lane's; ADD-A131);
   `macos-monterey`: no context default (its toolbar leaves `view_*_controlSize_raw` 0,
-  `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no `default_size_by_variant`. Which size an element that states none has is declared (ADD-A60). Densities: none from the
+  `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no variant default. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
 - **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
