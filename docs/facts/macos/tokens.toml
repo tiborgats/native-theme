@@ -1861,6 +1861,24 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U158"
 rows = ["MAC-X11"]
 
+# The speed factor (`token.motion.speed_factor`, S4.1, R9) and the timings (`token.motion.timings`, S2.7, MAC-X11):
+# no pinned source in the cache states either (the SDK headers are not in it: os-probe.yml's macOS job reads them);
+# the probe reads NSAnimationContext's duration alone (`[macos.tokens.NSAnimationContext]`), no factor, setting or
+# curve; and no pass says whether Reduce Motion (`accessibilityDisplayShouldReduceMotion`, on in the runner image)
+# zeroes or scales AppKit's animations. The timings stand as the whole map (S17), their keys (AppKit's media-timing
+# curves by family, the catalogue's *token.motion.timings*) not read yet: pending (U300, U301).
+[[fact]]
+key = "token.motion.speed_factor"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U300"
+rows = []
+
+[[fact]]
+key = "token.motion.timings"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U301"
+rows = ["MAC-X11"]
+
 # The icon sizes (`token.icons.sizes`): no pass reads them (U102).
 [[fact]]
 key = "token.icons.sizes.toolbar.size"
@@ -3778,6 +3796,24 @@ rows = ["MAC-X13"]
 key = "token.motion.color_space"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U158"
+rows = ["MAC-X11"]
+
+# The speed factor (`token.motion.speed_factor`, S4.1, R9) and the timings (`token.motion.timings`, S2.7, MAC-X11):
+# no pinned source in the cache states either (the SDK headers are not in it: os-probe.yml's macOS job reads them);
+# the probe reads NSAnimationContext's duration alone (`[macos.tokens.NSAnimationContext]`), no factor, setting or
+# curve; and no pass says whether Reduce Motion (`accessibilityDisplayShouldReduceMotion`, on in the runner image)
+# zeroes or scales AppKit's animations. The timings stand as the whole map (S17), their keys (AppKit's media-timing
+# curves by family, the catalogue's *token.motion.timings*) not read yet: pending (U300, U301).
+[[fact]]
+key = "token.motion.speed_factor"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U300"
+rows = []
+
+[[fact]]
+key = "token.motion.timings"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U301"
 rows = ["MAC-X11"]
 
 # The icon sizes (`token.icons.sizes`): no pass reads them (U102).
