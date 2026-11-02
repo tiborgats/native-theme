@@ -23,11 +23,14 @@
 # choices, the extended FAB with a leading icon among them (its own start padding, FloatingActionButton.kt:898-899,
 # MAT-N2); the platform draws more (a style with a leading icon, the other FAB colours lowered, the Expressive shapes
 # and widths across the icon-button styles), which no fact states yet (the lane report).
-# `default_size_by_variant` (flavour expressive; S10 states it only where it differs from `default_size`): Compose's
-# FloatingActionButton and ExtendedFloatingActionButton are the unsized composables, `regular`, where Expressive's
-# buttons default to `small` (ToggleButton.kt:111, Button.kt:1064). The extended FAB's sizes (ADD-A123): `regular`
-# the unsized one in both flavours (FloatingActionButton.kt:601-629, :1472-1482), and under flavour expressive
-# `small`, `large` and `extra_large` Expressive's small, medium and large extended FABs (:400, :467, :534).
+# Sizes (S10; ADD-A131): flavour baseline's buttons but the FABs take one size, `regular` (Button has no size
+# parameter, its minimum height ButtonDefaults.MinHeight, Button.kt:139-150, :174), the FABs' sizes in their
+# `sizes_by_variant` entries. Under flavour expressive the FAB's and the extended FAB's entries state their default,
+# `regular`, where it differs from the widget's `small` (S10 states it only so): Compose's FloatingActionButton and
+# ExtendedFloatingActionButton are the unsized composables, where Expressive's buttons default to `small`
+# (ToggleButton.kt:111, Button.kt:1064). The extended FAB's sizes (ADD-A123): `regular` the unsized one in both
+# flavours (FloatingActionButton.kt:601-629, :1472-1482), and under flavour expressive `small`, `large` and
+# `extra_large` Expressive's small, medium and large extended FABs (:400, :467, :534).
 # Flavour baseline: no Expressive sizes (the FAB's three baseline sizes only), icon toggles only (IconToggleButton);
 # flavour expressive: the five button sizes (default small: Compose's ToggleButton and Button use the small design),
 # the text toggles, `@square`, `@narrow`, `@wide`, the container and branded FAB styles; `@primary_container`
@@ -37,7 +40,7 @@
 widget = "button"
 available = true
 variants = ["primary", "tinted", "flat", "toggle", "menu", "icon_only", "with_icon", "@elevated", "@outlined", "@fab", "@extended_fab", "@lowered", "@secondary", "@tertiary", "@surface", "@primary_container"]
-sizes = ["small", "regular", "extra_large"]
+sizes = ["regular"]
 default_size = "regular"
 densities = []
 axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], conditions = ["scheme:light", "scheme:dark", "contrast_increased", "contrast_high"], contexts = [{ scope = "any", widget = "toolbar", variants = ["floating"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@vibrant"] }, { scope = "any", widget = "toolbar", variants = ["floating", "@collapsed"] }] }
@@ -219,6 +222,18 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/FabPrimaryContainerTokens.kt:22-23"
 quote = "inline val ContainerColor: ColorToken get() = ColorSchemeKeyTokens.PrimaryContainer"
 
+# flavour baseline's Button takes one size: no size parameter, its minimum height ButtonDefaults.MinHeight
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-150"
+quote = "public fun Button( onClick: () -> Unit, modifier: Modifier = Modifier,"
+absent = ["size"]
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:174"
+quote = "minHeight = ButtonDefaults.MinHeight,"
+
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:expressive"] }
@@ -231,7 +246,7 @@ axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], 
 exclusive = []
 recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
 not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@branded"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@narrow"], not_variants = ["icon_only"] }, { variants = ["@wide"], not_variants = ["icon_only"] }]
-sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"] }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"] }]
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }]
 exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"], ["@narrow", "@wide"]]
 variant_sets = [["toggle", "primary"], ["toggle", "tinted"], ["toggle", "@elevated"], ["toggle", "@outlined"], ["toggle", "@square"], ["menu", "primary"], ["menu", "@outlined"]]
 variant_products = [
@@ -243,7 +258,6 @@ variant_products = [
   [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }],  # the extended FABs with an icon
   [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["@surface", "@branded"] }, { one = ["@lowered"] }],  # lowered, with an icon
 ]
-default_size_by_variant = [{ variant = "@fab", size = "regular" }, { variant = "@extended_fab", size = "regular" }]
 rows = ["MAT-B9", "MAT-B10", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N5", "MAT-X22"]
 
 [[model.cite]]
