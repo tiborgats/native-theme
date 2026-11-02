@@ -17,13 +17,11 @@ pub use gen_index::*;
 /// A part's patch (S6.1): its style's fields, or that the whole part is not
 /// drawn, or that another widget, or a part of one, draws it.
 #[derive(Clone, Debug, PartialEq)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "S6.1's variants as stated; a part patch is read when a layer is added and resolved, not drawn per frame"
-)]
 pub enum PartPatch {
-    /// The part's style's fields.
-    Style(PartStylePatch),
+    /// The part's style's fields, boxed: a widget's patch holds one per part
+    /// and a layer one per widget, so inline they would make a layer's value
+    /// grow with the catalogue.
+    Style(Box<PartStylePatch>),
     /// The whole part is not drawn (S6.3); the query answers `NotDrawn`.
     Absent,
     /// Another widget, or a part of one, draws the part, in the host's
@@ -35,6 +33,18 @@ pub enum PartPatch {
         /// Its variants.
         variants: Vec<VariantRef>,
     },
+}
+
+#[cfg(test)]
+impl PartPatch {
+    /// The style a `Style` patch holds, unboxed, so a test's pattern reaches
+    /// its fields; `None` for the other patches.
+    pub(crate) fn into_style(self) -> Option<PartStylePatch> {
+        match self {
+            PartPatch::Style(style) => Some(*style),
+            PartPatch::Absent | PartPatch::DrawnAs { .. } => None,
+        }
+    }
 }
 
 /// What a part is drawn as, by the last of its patches that says so.
@@ -71,7 +81,7 @@ impl Apply<PartPatch> for PartSlot {
         match patch {
             PartPatch::Style(style) => {
                 self.shown = Shown::Drawn;
-                merge_slot(&mut self.style, Some(style))
+                merge_slot(&mut self.style, Some(*style))
             }
             PartPatch::Absent => {
                 self.shown = Shown::Absent;

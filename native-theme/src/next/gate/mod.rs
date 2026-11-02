@@ -1407,13 +1407,13 @@ const LAST: Pos = Pos {
 /// The step `body` states, at its target's root.
 fn extra_step(body: &RuleBody) -> Option<Fold<'_>> {
     let (target, found) = match body {
-        RuleBody::Colors(roles) => (Target::Roles, Found::Node(roles)),
-        RuleBody::Tokens(tokens) => (Target::Tokens, Found::Node(tokens)),
+        RuleBody::Colors(roles) => (Target::Roles, Found::Node(&**roles)),
+        RuleBody::Tokens(tokens) => (Target::Tokens, Found::Node(&**tokens)),
         RuleBody::Part(PartRef::Typed(part), PartPatch::Style(style)) => {
-            (Target::Part(*part), Found::Node(style))
+            (Target::Part(*part), Found::Node(&**style))
         }
         RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(values))) => {
-            (Target::Values(WidgetKind::Button), Found::Node(values))
+            (Target::Values(WidgetKind::Button), Found::Node(&**values))
         }
         RuleBody::Part(..) => return None,
     };

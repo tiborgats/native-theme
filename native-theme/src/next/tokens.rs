@@ -46,11 +46,12 @@ pub struct Tokens {
     /// The platform's elevation ramp, keyed, or empty (R8).
     #[parts(block = "fields")]
     pub elevation: Vec<(Key, Vec<ShadowLayer>)>,
-    /// The text ramp, fallbacks and rendering (S4.4).
-    #[parts(block = "fields")]
+    /// The text ramp, fallbacks and rendering (S4.4); its patch boxed, as
+    /// it holds a text style's patch per slot.
+    #[parts(block = "fields", boxed)]
     pub text: TextTokens,
-    /// The icon set, theme and sizes (S4.5).
-    #[parts(block = "fields")]
+    /// The icon set, theme and sizes (S4.5); its patch boxed.
+    #[parts(block = "fields", boxed)]
     pub icons: IconTokens,
     /// The platform's focus indicator (R12).
     #[parts(block = "fields")]

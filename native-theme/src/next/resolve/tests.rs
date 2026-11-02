@@ -54,19 +54,19 @@ pub(super) fn window() -> WindowConditions {
 }
 
 fn opacity(n: f32) -> PartPatch {
-    PartPatch::Style(PartStylePatch {
+    PartPatch::Style(Box::new(PartStylePatch {
         opacity: Some(Value::Stated(Fraction(n))),
         ..PartStylePatch::default()
-    })
+    }))
 }
 
 /// A layer whose bases set the button body's opacity.
 pub(super) fn body(n: f32) -> Layer {
     let mut layer = Layer::default();
-    layer.bases.widgets.button = Some(ButtonPatch {
+    layer.bases.widgets.button = Some(Box::new(ButtonPatch {
         body: Some(opacity(n)),
         ..ButtonPatch::default()
-    });
+    }));
     layer
 }
 

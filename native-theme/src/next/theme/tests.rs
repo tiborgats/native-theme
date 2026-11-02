@@ -418,3 +418,32 @@ fn from_preset_synthetic_validates_and_resolves() {
         "the plain route's problem, at its path"
     );
 }
+
+/// A theme builds on a small stack: every bundled preset through
+/// `Theme::from_preset`, and the facts gate's complete base as a preset,
+/// in both schemes, validated and resolved on a 256 KiB thread, an eighth
+/// of a spawned thread's default (it takes under 192 KiB here). The patches a layer holds are boxed where
+/// they fan out (`layer.rs`'s `patch_holders_stay_small`), so the stack this
+/// takes does not grow with the catalogue's widgets.
+#[test]
+fn presets_build_on_a_small_stack() {
+    let run = || {
+        let complete = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            for &id in PresetId::all() {
+                super::Theme::from_preset(id, scheme)
+                    .unwrap_or_else(|e| panic!("{}: {e}", id.key()));
+            }
+            let resolution = preset_stack(None, complete, scheme).unwrap().resolve(
+                &mut WindowState::default(),
+                &WindowConditions::new(InputKind::Mouse),
+            );
+            assert!(!resolution.theme.tokens.is_empty());
+        }
+    };
+    let thread = std::thread::Builder::new()
+        .stack_size(256 << 10)
+        .spawn(run)
+        .unwrap();
+    assert!(thread.join().is_ok(), "the preset did not build on 256 KiB");
+}

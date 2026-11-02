@@ -348,7 +348,7 @@ pub struct ResolvedTheme {
     /// (S9.1).
     pub(crate) kde_lists: KdeLists,
     /// The tokens' bases, then the `Tokens` rules whose conditions hold.
-    pub(crate) tokens: Vec<Step<TokensPatch>>,
+    pub(crate) tokens: Vec<Step<Box<TokensPatch>>>,
     /// Each typed part's bases, then its rules whose conditions hold.
     pub(crate) parts: Vec<(TypedPart, Vec<Step<PartPatch>>)>,
     /// Each typed widget's values' bases, then its rules whose conditions
@@ -1052,7 +1052,7 @@ impl ResolvedTheme {
             self.colors.push(step(pos, None, colors.clone()));
         }
         self.inputs(&bases.inputs, pos.layer, scheme, contrast, drop_accent);
-        if bases.tokens != TokensPatch::default() {
+        if *bases.tokens != TokensPatch::default() {
             self.tokens.push(step(pos, None, bases.tokens.clone()));
         }
         let (parts, values) = widget_patches(&bases.widgets);
@@ -1100,7 +1100,7 @@ impl ResolvedTheme {
     /// Steps 2 and 3 for one rule whose conditions hold.
     fn rule(&mut self, body: &RuleBody, selector: &Selector, pos: Pos) {
         match body {
-            RuleBody::Colors(roles) => self.colors.push(step(pos, None, roles.clone())),
+            RuleBody::Colors(roles) => self.colors.push(step(pos, None, (**roles).clone())),
             RuleBody::Tokens(tokens) => self.tokens.push(step(pos, None, tokens.clone())),
             RuleBody::Part(PartRef::Typed(part), patch) => {
                 self.part(*part, step(pos, Some(selector.clone()), patch.clone()));
@@ -1205,13 +1205,16 @@ fn widget_patches(widgets: &WidgetsPatch) -> (PartPatches, ValuesPatches) {
     let mut parts = Vec::new();
     let mut values = Vec::new();
     if let Some(button) = &widgets.button {
-        let (own, own_values) = button.clone().into_parts();
+        let (own, own_values) = (**button).clone().into_parts();
         parts.extend(
             own.into_iter()
                 .map(|(part, patch)| (TypedPart::Button(part), patch)),
         );
         if let Some(own_values) = own_values {
-            values.push((WidgetKind::Button, WidgetValuesPatch::Button(own_values)));
+            values.push((
+                WidgetKind::Button,
+                WidgetValuesPatch::Button(Box::new(own_values)),
+            ));
         }
     }
     (parts, values)

@@ -61,7 +61,7 @@ fn body(layer: &Layer) -> PartStylePatch {
         .as_ref()
         .and_then(|b| b.body.clone())
     {
-        Some(PartPatch::Style(style)) => style,
+        Some(PartPatch::Style(style)) => *style,
         other => panic!("not a style: {other:?}"),
     }
 }
@@ -100,10 +100,16 @@ fn spelling_stated_value() {
         Some(PaintPatch::Set(Value::Stated(color_paint("#ff0000"))))
     );
     let label = layer("[widgets.button.label]\ntext.case = \"upper\"\ntext.wrap = \"word\"");
-    let Some(PartPatch::Style(PartStylePatch {
+    let Some(PartStylePatch {
         text: Some(BlockPatch::Fields(text)),
         ..
-    })) = label.bases.widgets.button.unwrap().label
+    }) = label
+        .bases
+        .widgets
+        .button
+        .unwrap()
+        .label
+        .and_then(PartPatch::into_style)
     else {
         panic!("a table under an application layer's bases is a `Fields` patch");
     };
@@ -128,11 +134,11 @@ fn spelling_key_of_a_field_with_a_unit() {
     let text = |lines: &str| {
         let layer = layer(&format!("[widgets.button.label.text]\n{lines}"));
         let label = layer.bases.widgets.button.unwrap().label;
-        match label {
-            Some(PartPatch::Style(PartStylePatch {
+        match label.and_then(PartPatch::into_style) {
+            Some(PartStylePatch {
                 text: Some(BlockPatch::Fields(text)),
                 ..
-            })) => text,
+            }) => text,
             other => panic!("{other:?}"),
         }
     };
@@ -211,14 +217,21 @@ fn spelling_key_of_a_field_with_a_unit() {
 fn spelling_text_value() {
     let font = |lines: &str| {
         let layer = layer(&format!("[widgets.button.label.text.font]\n{lines}"));
-        match layer.bases.widgets.button.unwrap().label {
-            Some(PartPatch::Style(PartStylePatch {
+        match layer
+            .bases
+            .widgets
+            .button
+            .unwrap()
+            .label
+            .and_then(PartPatch::into_style)
+        {
+            Some(PartStylePatch {
                 text:
                     Some(BlockPatch::Fields(TextStylePatch {
                         font: Some(font), ..
                     })),
                 ..
-            })) => font,
+            }) => font,
             other => panic!("{other:?}"),
         }
     };
@@ -313,14 +326,14 @@ fn spelling_none() {
         .unwrap()
         .label;
     assert!(matches!(
-        label,
-        Some(PartPatch::Style(PartStylePatch {
+        label.and_then(PartPatch::into_style),
+        Some(PartStylePatch {
             text: Some(BlockPatch::Fields(TextStylePatch {
                 max_lines: Some(Value::Stated(None)),
                 ..
             })),
             ..
-        }))
+        })
     ));
     // An `Option` inside an enum variant's payload left out is `None`.
     let values =
@@ -355,7 +368,7 @@ fn decoration_line_underline_low_reads() {
         .button
         .as_ref()
         .and_then(|button| button.label.clone());
-    let Some(PartPatch::Style(PartStylePatch {
+    let Some(PartStylePatch {
         text:
             Some(BlockPatch::Fields(TextStylePatch {
                 mnemonic_decoration:
@@ -365,7 +378,7 @@ fn decoration_line_underline_low_reads() {
                 ..
             })),
         ..
-    })) = label
+    }) = label.clone().and_then(PartPatch::into_style)
     else {
         panic!("not a stated decoration: {label:?}");
     };
@@ -586,12 +599,12 @@ fn spelling_rule_target() {
     ));
     assert_eq!(
         layer_rule("target = \"button.values\"\nset = { icon_placement = \"top\" }"),
-        RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(
+        RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(Box::new(
             ButtonValuesPatch {
                 icon_placement: Some(Value::Stated(IconPlacement::Top)),
                 ..ButtonValuesPatch::default()
             }
-        )))
+        ))))
     );
     assert_eq!(
         problems(

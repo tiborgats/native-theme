@@ -1039,14 +1039,14 @@ impl<'t> Cx<'t> {
             Target::Tokens => theme
                 .tokens
                 .iter()
-                .map(|step| fold(step.pos, Found::Node(&step.patch)))
+                .map(|step| fold(step.pos, Found::Node(&*step.patch)))
                 .collect(),
             Target::Part(part) => theme
                 .part_steps(part)
                 .iter()
                 .filter(|step| self.kept(step.selector.as_ref()))
                 .filter_map(|step| match &step.patch {
-                    PartPatch::Style(style) => Some(fold(step.pos, Found::Node(style))),
+                    PartPatch::Style(style) => Some(fold(step.pos, Found::Node(&**style))),
                     PartPatch::Absent | PartPatch::DrawnAs { .. } => None,
                 })
                 .collect(),
@@ -1057,7 +1057,7 @@ impl<'t> Cx<'t> {
                 .flat_map(|(_, steps)| steps)
                 .filter(|step| self.kept(step.selector.as_ref()))
                 .map(|step| match &step.patch {
-                    WidgetValuesPatch::Button(values) => fold(step.pos, Found::Node(values)),
+                    WidgetValuesPatch::Button(values) => fold(step.pos, Found::Node(&**values)),
                 })
                 .collect(),
         }

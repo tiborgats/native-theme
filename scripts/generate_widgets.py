@@ -675,16 +675,18 @@ def index_file(widgets: list, shared: dict) -> str:
         out += [f"    /// A part of `{w.name}`.", f"    {W}({W}Part),"]
     out += ["}", ""]
     out += ["/// The typed widgets' patches (S1): per widget, its parts' patches and its",
-            "/// values' patch, each `None` where the patch leaves it as it is.",
+            "/// values' patch, each `None` where the patch leaves it as it is; boxed, so",
+            "/// a layer's value does not grow with the catalogue.",
             "#[derive(Clone, Debug, Default, PartialEq)]", "#[non_exhaustive]", "pub struct WidgetsPatch {"]
     for w in widgets:
-        out += [f"    /// `{w.name}`'s patch.", f"    pub {w.name}: Option<{camel(w.name)}Patch>,"]
+        out += [f"    /// `{w.name}`'s patch.", f"    pub {w.name}: Option<Box<{camel(w.name)}Patch>>,"]
     out += ["}", ""]
-    out += ["/// A typed widget's values' patch, one variant per typed widget (S6.1).",
+    out += ["/// A typed widget's values' patch, one variant per typed widget (S6.1), boxed,",
+            "/// so a rule's value does not grow with a widget's values.",
             "#[derive(Clone, Debug, PartialEq)]", "pub enum WidgetValuesPatch {"]
     for w in widgets:
         W = camel(w.name)
-        out += [f"    /// `{w.name}`'s.", f"    {W}({W}ValuesPatch),"]
+        out += [f"    /// `{w.name}`'s.", f"    {W}(Box<{W}ValuesPatch>),"]
     out += ["}", ""]
     for e in shared.values():
         out += enum_code(e)
@@ -707,7 +709,7 @@ def index_file(widgets: list, shared: dict) -> str:
             "    pub(crate) fn apply_values(&mut self, patch: WidgetValuesPatch) -> Result<(), MergeConflict> {",
             "        match patch {"]
     for w in widgets:
-        out.append(f"            WidgetValuesPatch::{camel(w.name)}(patch) => self.{w.name}.apply_values(patch),")
+        out.append(f"            WidgetValuesPatch::{camel(w.name)}(patch) => self.{w.name}.apply_values(*patch),")
     out += ["        }", "    }", "}", ""]
     out += ["impl TypedPart {", "    /// The part `part` of `widget`, by its bare name.",
             "    pub(crate) fn from_names(widget: WidgetKind, part: &str) -> Option<TypedPart> {",
@@ -758,13 +760,13 @@ def index_file(widgets: list, shared: dict) -> str:
     for w in widgets:
         W = camel(w.name)
         out.append(f"            WidgetKind::{W} => {W}ValuesPatch::read(item, Spelling::Bare, at, cx)"
-                   f".map(WidgetValuesPatch::{W}),")
+                   f".map(|values| WidgetValuesPatch::{W}(Box::new(values))),")
     out += ["        }", "    }", "}", ""]
     out += ["impl Apply<WidgetsPatch> for WidgetSlots {",
             "    fn apply(&mut self, patch: WidgetsPatch) -> Result<(), MergeConflict> {",
             f"        let WidgetsPatch {{ {', '.join(w.name for w in widgets)} }} = patch;"]
     for w in widgets:
-        out += [f"        if let Some(patch) = {w.name} {{", f"            self.{w.name}.apply_widget(patch.into_parts())?;",
+        out += [f"        if let Some(patch) = {w.name} {{", f"            self.{w.name}.apply_widget((*patch).into_parts())?;",
                 "        }"]
     out += ["        Ok(())", "    }", "}", ""]
     out += ["/// The typed widgets' tables, in `WidgetKind`'s order, for the field-path",

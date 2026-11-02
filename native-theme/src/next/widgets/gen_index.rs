@@ -116,19 +116,21 @@ pub enum TypedPart {
 }
 
 /// The typed widgets' patches (S1): per widget, its parts' patches and its
-/// values' patch, each `None` where the patch leaves it as it is.
+/// values' patch, each `None` where the patch leaves it as it is; boxed, so
+/// a layer's value does not grow with the catalogue.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct WidgetsPatch {
     /// `button`'s patch.
-    pub button: Option<ButtonPatch>,
+    pub button: Option<Box<ButtonPatch>>,
 }
 
-/// A typed widget's values' patch, one variant per typed widget (S6.1).
+/// A typed widget's values' patch, one variant per typed widget (S6.1), boxed,
+/// so a rule's value does not grow with a widget's values.
 #[derive(Clone, Debug, PartialEq)]
 pub enum WidgetValuesPatch {
     /// `button`'s.
-    Button(ButtonValuesPatch),
+    Button(Box<ButtonValuesPatch>),
 }
 
 /// A shared value type of the catalogue: Qt's tool-button style, WinUI's
@@ -183,7 +185,7 @@ impl WidgetSlots {
     /// Merges `patch` over its widget's values' patches.
     pub(crate) fn apply_values(&mut self, patch: WidgetValuesPatch) -> Result<(), MergeConflict> {
         match patch {
-            WidgetValuesPatch::Button(patch) => self.button.apply_values(patch),
+            WidgetValuesPatch::Button(patch) => self.button.apply_values(*patch),
         }
     }
 }
@@ -263,9 +265,8 @@ impl WidgetValuesPatch {
         cx: &mut Reader,
     ) -> Option<WidgetValuesPatch> {
         match widget {
-            WidgetKind::Button => {
-                ButtonValuesPatch::read(item, Spelling::Bare, at, cx).map(WidgetValuesPatch::Button)
-            }
+            WidgetKind::Button => ButtonValuesPatch::read(item, Spelling::Bare, at, cx)
+                .map(|values| WidgetValuesPatch::Button(Box::new(values))),
         }
     }
 }
@@ -274,7 +275,7 @@ impl Apply<WidgetsPatch> for WidgetSlots {
     fn apply(&mut self, patch: WidgetsPatch) -> Result<(), MergeConflict> {
         let WidgetsPatch { button } = patch;
         if let Some(patch) = button {
-            self.button.apply_widget(patch.into_parts())?;
+            self.button.apply_widget((*patch).into_parts())?;
         }
         Ok(())
     }

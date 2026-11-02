@@ -1494,11 +1494,11 @@ fn value_option_none_is_not_absent() {
             .widgets
             .button
             .and_then(|button| button.label);
-        match label {
-            Some(PartPatch::Style(PartStylePatch {
+        match label.and_then(PartPatch::into_style) {
+            Some(PartStylePatch {
                 text: Some(BlockPatch::Fields(text)),
                 ..
-            })) => text,
+            }) => text,
             other => panic!("{other:?}"),
         }
     };

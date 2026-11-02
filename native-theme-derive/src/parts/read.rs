@@ -345,8 +345,13 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStrea
             block,
         } => {
             let ty = &block.ty;
+            let held = if f.attrs.boxed {
+                quote!(#ident.map(|patch| *patch))
+            } else {
+                quote!(#ident)
+            };
             quote! {
-                <#ty as #t::Build>::build(#ident.unwrap_or_default(), #at, options_none, cx)
+                <#ty as #t::Build>::build(#held.unwrap_or_default(), #at, options_none, cx)
             }
         }
         Shape::Block {

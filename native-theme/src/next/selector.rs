@@ -32,16 +32,14 @@ impl Rule {
 /// A rule's target and its patch in one, so a mismatch cannot be written
 /// (S7). A rule targeting `Colors` or `Tokens` may only have conditions
 /// (S12).
+/// The colour roles' and the tokens' patches are boxed, so a rule's value
+/// stays small however many fields they hold.
 #[derive(Clone, Debug, PartialEq)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "S7's variants as stated; a rule is read when a layer is added, not drawn per frame"
-)]
 pub enum RuleBody {
     /// The colour roles of the scheme in force.
-    Colors(ColorRolesPatch),
+    Colors(Box<ColorRolesPatch>),
     /// The tokens.
-    Tokens(TokensPatch),
+    Tokens(Box<TokensPatch>),
     /// A part, and its patch.
     Part(PartRef, PartPatch),
     /// A widget's values.

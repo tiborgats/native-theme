@@ -84,6 +84,13 @@ pub(crate) trait Apply<P> {
     fn apply(&mut self, patch: P) -> Result<(), MergeConflict>;
 }
 
+/// A boxed patch merges as the patch it holds.
+impl<T: Merge> Merge for Box<T> {
+    fn merge(&mut self, later: Self) -> Result<(), MergeConflict> {
+        (**self).merge(*later)
+    }
+}
+
 impl<T> Merge for BlockPatch<T>
 where
     T: FieldsBlock + Apply<T::Patch>,

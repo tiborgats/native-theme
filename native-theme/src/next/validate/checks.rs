@@ -2985,10 +2985,7 @@ mod tests {
     /// is skipped enters with the first bundled preset (M1a task 15).
     #[test]
     fn a_rule_naming_no_preset_is_validated() {
-        let rule = Rule::new(
-            Selector::default(),
-            RuleBody::Tokens(crate::next::tokens::TokensPatch::default()),
-        );
+        let rule = Rule::new(Selector::default(), RuleBody::Tokens(Box::default()));
         assert!(!excluded(&rule, None));
     }
 

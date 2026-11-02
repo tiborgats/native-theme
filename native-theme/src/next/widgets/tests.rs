@@ -199,7 +199,7 @@ fn values(gap: f32) -> ButtonValuesPatch {
 fn button_patch_splits_into_its_parts_in_catalogue_order() {
     let patch = ButtonPatch {
         menu_indicator: Some(PartPatch::Absent),
-        body: Some(PartPatch::Style(style(0.5))),
+        body: Some(PartPatch::Style(Box::new(style(0.5)))),
         values: Some(values(4.0)),
         ..ButtonPatch::default()
     };
@@ -207,7 +207,7 @@ fn button_patch_splits_into_its_parts_in_catalogue_order() {
     assert_eq!(
         parts,
         vec![
-            (ButtonPart::Body, PartPatch::Style(style(0.5))),
+            (ButtonPart::Body, PartPatch::Style(Box::new(style(0.5)))),
             (ButtonPart::MenuIndicator, PartPatch::Absent),
         ]
     );
@@ -218,22 +218,22 @@ fn button_patch_splits_into_its_parts_in_catalogue_order() {
 fn button_patches_merge_in_order() {
     let mut slots = WidgetSlots::default();
     let base = WidgetsPatch {
-        button: Some(ButtonPatch {
-            body: Some(PartPatch::Style(PartStylePatch {
+        button: Some(Box::new(ButtonPatch {
+            body: Some(PartPatch::Style(Box::new(PartStylePatch {
                 min_width: Some(Value::Stated(Px(10.0))),
                 ..style(0.5)
-            })),
-            label: Some(PartPatch::Style(style(1.0))),
+            }))),
+            label: Some(PartPatch::Style(Box::new(style(1.0)))),
             values: Some(ButtonValuesPatch {
                 repeat_delay: Some(Value::Stated(Ms(300.0))),
                 ..values(4.0)
             }),
             ..ButtonPatch::default()
-        }),
+        })),
     };
     assert_eq!(slots.apply(base), Ok(()));
     let later = WidgetsPatch {
-        button: Some(ButtonPatch {
+        button: Some(Box::new(ButtonPatch {
             body: Some(PartPatch::Absent),
             values: Some(ButtonValuesPatch {
                 hit_extension: Some(Sides {
@@ -245,7 +245,7 @@ fn button_patches_merge_in_order() {
                 ..values(6.0)
             }),
             ..ButtonPatch::default()
-        }),
+        })),
     };
     assert_eq!(slots.apply(later), Ok(()));
     // A style after `Absent` brings the part back with the fields stated
@@ -253,7 +253,7 @@ fn button_patches_merge_in_order() {
     assert_eq!(
         slots.apply_part(
             TypedPart::Button(ButtonPart::Body),
-            PartPatch::Style(style(0.8))
+            PartPatch::Style(Box::new(style(0.8)))
         ),
         Ok(())
     );
@@ -266,10 +266,10 @@ fn button_patches_merge_in_order() {
         Ok(())
     );
     assert_eq!(
-        slots.apply_values(WidgetValuesPatch::Button(ButtonValuesPatch {
+        slots.apply_values(WidgetValuesPatch::Button(Box::new(ButtonValuesPatch {
             presentations: Some(vec![presentation(PresentationEvent::Appear)]),
             ..ButtonValuesPatch::default()
-        })),
+        }))),
         Ok(())
     );
 
@@ -318,7 +318,7 @@ fn button_patches_merge_in_order() {
 #[test]
 fn an_absent_part_keeps_its_style_until_brought_back() {
     let mut slot = PartSlot::default();
-    assert_eq!(slot.apply(PartPatch::Style(style(0.3))), Ok(()));
+    assert_eq!(slot.apply(PartPatch::Style(Box::new(style(0.3)))), Ok(()));
     assert_eq!(slot.apply(PartPatch::Absent), Ok(()));
     assert_eq!(
         slot,
@@ -327,10 +327,7 @@ fn an_absent_part_keeps_its_style_until_brought_back() {
             style: Some(style(0.3)),
         }
     );
-    assert_eq!(
-        slot.apply(PartPatch::Style(PartStylePatch::default())),
-        Ok(())
-    );
+    assert_eq!(slot.apply(PartPatch::Style(Box::default())), Ok(()));
     assert_eq!(slot.shown, Shown::Drawn);
     assert_eq!(slot.style, Some(style(0.3)));
 }
@@ -423,7 +420,7 @@ fn a_drawn_as_part_keeps_its_style_until_brought_back() {
     // ADD-A123: a `Style` after a `DrawnAs` brings the part back as after
     // `Absent`, the fields stated before the `DrawnAs` kept.
     let mut slot = PartSlot::default();
-    assert_eq!(slot.apply(PartPatch::Style(style(0.3))), Ok(()));
+    assert_eq!(slot.apply(PartPatch::Style(Box::new(style(0.3)))), Ok(()));
     let drawn_as = PartPatch::DrawnAs {
         target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
         variants: Vec::new(),
@@ -434,7 +431,7 @@ fn a_drawn_as_part_keeps_its_style_until_brought_back() {
         min_width: Some(Value::Stated(Px(8.0))),
         ..PartStylePatch::default()
     };
-    assert_eq!(slot.apply(PartPatch::Style(width)), Ok(()));
+    assert_eq!(slot.apply(PartPatch::Style(Box::new(width))), Ok(()));
     assert_eq!(
         slot,
         PartSlot {

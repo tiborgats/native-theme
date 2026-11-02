@@ -224,6 +224,14 @@ impl BlockField {
                 kind: BlockKind::Fields,
                 wrap: Wrap::Bare,
                 block,
+            } if self.attrs.boxed => {
+                let patch = renamed(&block.ty, &format_ident!("{}Patch", block.name));
+                quote!(::std::boxed::Box<#patch>)
+            }
+            Shape::Block {
+                kind: BlockKind::Fields,
+                wrap: Wrap::Bare,
+                block,
             }
             | Shape::Block {
                 kind: BlockKind::Append,
@@ -287,6 +295,17 @@ impl BlockField {
             | Shape::NestedMap
             | Shape::Surfaces(_)
             | Shape::Block { .. } => (TokenStream::new(), Vec::new()),
+        }
+    }
+
+    /// The field's patch as its block's patch: `ident` itself, or its box
+    /// opened where the field is `boxed`.
+    pub(super) fn unboxed(&self) -> TokenStream {
+        let ident = &self.ident;
+        if self.attrs.boxed {
+            quote!(#ident.map(|patch| *patch))
+        } else {
+            quote!(#ident)
         }
     }
 
@@ -379,8 +398,9 @@ impl BlockField {
                 } else {
                     quote!(#o::None)
                 };
+                let held = self.unboxed();
                 quote! {
-                    <#ty as #b::Create>::create_in(#ident.unwrap_or_default(), #place)
+                    <#ty as #b::Create>::create_in(#held.unwrap_or_default(), #place)
                         .map_err(|c| c.under(#path))?
                 }
             }
@@ -752,6 +772,18 @@ pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
             "required names the fields an `inner_may_be_absent` mark leaves out",
         ));
     }
+    if attrs.boxed
+        && (attrs.block != Some(BlockKind::Fields)
+            || generic_arg(&ty, "Value").is_some()
+            || generic_arg(&ty, "Vec").is_some()
+            || generic_arg(&ty, "Option").is_some()
+            || map_pair(&ty).is_some())
+    {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "boxed marks a bare struct block, `block = \"fields\"`",
+        ));
+    }
     if attrs.inner_may_be_absent && attrs.block != Some(BlockKind::Fields) {
         return Err(Error::new_spanned(
             &field.ty,
@@ -1091,11 +1123,14 @@ fn expand_fields(
                     }
                 }
             }
-            MergeKind::Nested => quote! {
-                if let ::core::option::Option::Some(field_patch) = #ident {
-                    #b::Apply::apply(&mut self.#ident, field_patch).map_err(|c| c.under(#path))?;
+            MergeKind::Nested => {
+                let held = f.unboxed();
+                quote! {
+                    if let ::core::option::Option::Some(field_patch) = #held {
+                        #b::Apply::apply(&mut self.#ident, field_patch).map_err(|c| c.under(#path))?;
+                    }
                 }
-            },
+            }
         }
     });
     let resolved_patch = if type_attrs.resolved_patch {

@@ -80,6 +80,7 @@ pub(super) fn patch_locate(
             let _ = #value;
             #c::leaf(#held, rest)
         }},
+        Shape::Block { .. } if field.attrs.boxed => quote!(#c::Locate::locate(&**#value, rest)),
         Shape::Leaf
         | Shape::Block {
             wrap: Wrap::List | Wrap::Option,

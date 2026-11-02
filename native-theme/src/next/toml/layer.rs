@@ -238,11 +238,11 @@ fn read_base(
     cx.bases = true;
     cx.whole = whole;
     match key {
-        "colors" => bases.colors = read_colors(item, at, cx),
+        "colors" => *bases.colors = read_colors(item, at, cx),
         "inputs" => bases.inputs = read_inputs(item, at, cx),
         "tokens" => {
             if let Some(tokens) = TokensPatch::read(item, Spelling::Bare, at, cx) {
-                bases.tokens = tokens;
+                *bases.tokens = tokens;
             }
         }
         "widgets" => {
@@ -472,7 +472,7 @@ fn set_scheme<T>(map: &mut SchemeMap<T>, scheme: Scheme, value: T) {
 
 /// A typed widget's table into its patch: each part's table, and `values`.
 pub(crate) fn read_widget<P: WidgetPatch>(
-    slot: &mut Option<P>,
+    slot: &mut Option<Box<P>>,
     item: &Item,
     at: &str,
     cx: &mut Reader,
@@ -480,7 +480,7 @@ pub(crate) fn read_widget<P: WidgetPatch>(
     let Some(fields) = table(item, at, cx) else {
         return;
     };
-    let patch = slot.get_or_insert_with(P::default);
+    let patch = slot.get_or_insert_with(Box::default);
     let outer = cx.widget.replace(P::KIND);
     for (key, item) in fields {
         let at = join(at, key);
@@ -520,7 +520,9 @@ fn read_part(
         others_unknown(fields, "drawn_as", at, cx);
         read_drawn_as(drawn_as, &join(at, "drawn_as"), cx)
     } else {
-        Some(PartPatch::Style(read_style(widget, part, fields, at, cx)))
+        Some(PartPatch::Style(Box::new(read_style(
+            widget, part, fields, at, cx,
+        ))))
     };
     cx.widget = outer;
     read
@@ -647,12 +649,10 @@ fn read_body(target: &Item, set: &Item, at: &str, cx: &mut Reader) -> Option<Rul
     let set_at = join(at, "set");
     let name = text(target, &target_at, cx)?;
     match name.split_once('.') {
-        None if name == "colors" => {
-            ColorRolesPatch::read(set, Spelling::Bare, &set_at, cx).map(RuleBody::Colors)
-        }
-        None if name == "tokens" => {
-            TokensPatch::read(set, Spelling::Bare, &set_at, cx).map(RuleBody::Tokens)
-        }
+        None if name == "colors" => ColorRolesPatch::read(set, Spelling::Bare, &set_at, cx)
+            .map(|roles| RuleBody::Colors(Box::new(roles))),
+        None if name == "tokens" => TokensPatch::read(set, Spelling::Bare, &set_at, cx)
+            .map(|tokens| RuleBody::Tokens(Box::new(tokens))),
         Some(("component", _)) => cx.unknown(&target_at, name),
         Some((widget, rest)) if !rest.contains('.') => {
             let widget = widget_named(widget, &target_at, cx)?;

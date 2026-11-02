@@ -175,12 +175,45 @@ impl fmt::Display for LayerId {
 #[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct Bases {
-    /// The colour roles, per scheme.
-    pub colors: SchemeMap<ColorRolesPatch>,
+    /// The colour roles, per scheme, boxed, so a layer's value stays small.
+    pub colors: Box<SchemeMap<ColorRolesPatch>>,
     /// The inputs.
     pub inputs: InputBases,
-    /// The tokens.
-    pub tokens: TokensPatch,
+    /// The tokens, boxed, so a layer's value stays small.
+    pub tokens: Box<TokensPatch>,
     /// The typed widgets' parts and values.
     pub widgets: WidgetsPatch,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::mem::size_of;
+
+    use super::{Bases, Layer};
+    use crate::next::selector::{Rule, RuleBody};
+    use crate::next::widgets::{ButtonPatch, PartPatch, WidgetsPatch};
+
+    /// A layer's and a rule's values stay small whatever the model holds:
+    /// the patches are boxed where they fan out (per widget, per part, the
+    /// tokens', the colour roles', a rule's and a widget's values'), so a
+    /// layer or a list of them held by value takes little stack, and a
+    /// widget unit added costs a layer one pointer.
+    #[test]
+    fn patch_holders_stay_small() {
+        let pointer = size_of::<usize>();
+        assert!(size_of::<Layer>() <= 512, "{}", size_of::<Layer>());
+        assert!(size_of::<Bases>() <= 512, "{}", size_of::<Bases>());
+        assert!(size_of::<Rule>() <= 1024, "{}", size_of::<Rule>());
+        assert!(size_of::<RuleBody>() <= 128, "{}", size_of::<RuleBody>());
+        assert!(size_of::<PartPatch>() <= 128, "{}", size_of::<PartPatch>());
+        assert_eq!(
+            size_of::<WidgetsPatch>(),
+            crate::next::registry::widgets().len() * pointer
+        );
+        assert!(
+            size_of::<ButtonPatch>() <= 2048,
+            "{}",
+            size_of::<ButtonPatch>()
+        );
+    }
 }

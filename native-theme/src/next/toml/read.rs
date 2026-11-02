@@ -811,6 +811,29 @@ pub(crate) fn read_value_map<K: MapKey + PartialEq, V: FromToml>(
     }
 }
 
+/// A boxed value, read as the value it holds.
+impl<T: FromToml> FromToml for Box<T> {
+    const SPELLINGS: &'static [Spelling] = T::SPELLINGS;
+    const AUTO: bool = T::AUTO;
+    const STRUCT_BLOCK: bool = T::STRUCT_BLOCK;
+
+    fn forms(spelling: Spelling) -> bool {
+        T::forms(spelling)
+    }
+
+    fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
+        T::read(item, spelling, at, cx).map(Box::new)
+    }
+
+    fn combine(&mut self, later: Self) -> bool {
+        (**self).combine(*later)
+    }
+
+    fn finish(self, at: &str, cx: &mut Reader) -> Self {
+        Box::new((*self).finish(at, cx))
+    }
+}
+
 /// An `Option` with a meaning of its own for `None`: `"none"` (S11).
 impl<T: FromToml> FromToml for Option<T> {
     const SPELLINGS: &'static [Spelling] = T::SPELLINGS;
