@@ -627,8 +627,9 @@ jobs:
           name: gnome-harness-${{ matrix.display }}
           path: gnome-harness-out
 
-  # The vector table of libadwaita's public colour functions (the plan's route
-  # 1; spike G): tools/gnome-vectors in the GNOME container, no display.
+  # The vector table of adw_standalone (S2.2, ADD-A128), by the observable
+  # route: tools/gnome-vectors in the GNOME container on mutter's headless
+  # display, run twice and compared (tools/gnome-vectors/run.sh).
   gnome-vectors:
     name: GNOME vectors
     needs: gnome-container
@@ -659,7 +660,9 @@ jobs:
           fi
           cat "$OUT/pull.txt"
       - name: Generate the vectors
-        run: docker run --rm -v "$PWD:/work" -w /work "$IMAGE" bash tools/gnome-vectors/run.sh "$OUT"
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work "$IMAGE" \
+            dbus-run-session -- bash tools/gnome-vectors/run.sh "$OUT"
       - name: Upload the vectors
         if: always()
         uses: actions/upload-artifact@v7
