@@ -7277,21 +7277,22 @@ quote = "size = expandSize(size, Metrics::Button_MarginWidth); // make sure butt
 
 # Breeze's widget state engine fades the frame while enabled: the fill from the pressed colour (its focus animation,
 # which follows `down`) and the pen from the highlight colour (its hover animation, which follows hover, visual focus
-# and `down`). Entering a state is instant: the brush is already the pressed or highlight colour that the animation
-# mixes it with; only leaving one fades, the animation running backward, its opacity floor(x * 10) / 10 of a falling
-# x, so the progress toward the new colour, S2.7's forward reading, jumps at the start of each tenth (steps(10,
-# jump-start), not the forward-run `animations` timing); no delay: the state change starts the animation at once.
+# and `down`). Each runs under its engine's own test, quoted from its updateState call (engine Breeze, S2.7,
+# ADD-A126): the fill's `down && enabled`, any [pressed] none [disabled]; the pen's `(hovered || visualFocus || down)
+# && enabled`, any [hover, focus_visible, pressed] none [disabled]. Entering a state is instant: the brush is already
+# the pressed or highlight colour that the animation mixes it with; only leaving one fades, a re-entry mid-fade
+# turning the run where it is. Its opacity is Breeze's quantisation, floor(x * 10) / 10, in both directions, S2.7's
+# `Steps` with `jump_end` (ADD-A126, queue #136); no delay: the state change starts the animation at once.
 # So the fill fades only from {pressed} and the pen only from {hover, focus_visible, pressed}, into whatever state
 # follows (checked included), while checked, default and window-activation changes are instant (Transition.from,
 # S2.7, ADD-A124): one list for every state, the state rules stating none of their own. After the two fades, zero
-# ones from {disabled}: Qt keeps State_MouseOver on a disabled widget (Enter reaches it), and a hovered button
-# enabled again draws the highlight pen mixed with the highlight, so it changes at once. A zero duration's timing
-# (`linear`) never runs: the new value is taken in the frame of the change. The flat button's pen keeps its width
-# while its colour fades (S2.7: an edge whose paint alone becomes absent keeps its width)
-
+# ones from {disabled}, engine Breeze with its test empty: Qt keeps State_MouseOver on a disabled widget (Enter
+# reaches it), and a hovered button enabled again draws the highlight pen mixed with the highlight, so it changes at
+# once. A stated zero's timing is absent (S2.7, ADD-A125). The flat button's pen keeps its width while its colour
+# fades (S2.7: an edge whose paint alone becomes absent keeps its width)
 [[fact]]
 key = "button.body.transitions"
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }]
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -7378,7 +7379,7 @@ quote = "if ((e->type() == QEvent::Enter || e->type() == QEvent::DragEnter) && (
 [[fact]]
 key = "button.body.transitions"
 when = { states = ["disabled"], not_conditions = ["flavor:kirigami"] }
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -7404,12 +7405,13 @@ quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </
 
 # Kirigami: qqc2's style item paints with no widget, which Breeze's state engine keeps no animation data for (its
 # data map finds nothing for a null key), so it gives no opacity and neither fade runs; Button.qml and
-# RoundButton.qml state no Behavior or animation of their own. Zero transitions from any state, after the base's
+# RoundButton.qml state no Behavior or animation of their own. Zero transitions from any state, engine Breeze
+# with its test empty, so Breeze's rest value is drawn at once, after the base's (K1.30, ADD-A126)
 
 [[fact]]
 key = "button.body.transitions"
 when = { conditions = ["flavor:kirigami"] }
-value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_start" } }, suspended_by_theme_change = false, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "linear", suspended_by_theme_change = false }]
+value = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }]
 rows = ["K1.30"]
 
 [[fact.cite]]
@@ -7457,9 +7459,11 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breeze.kcfg:49-51"
 quote = "<entry name=\"AnimationSteps\" type = \"Int\"> <default>10</default> </entry>"
 
+# the label's text leaf by leaf (S2.8's *Styles and drawn text*, S20, ADD-A130): each leaf that follows the
+# font a reference to the slot's or style's leaf
 [[fact]]
-key = "button.label.text"
-value = "= token.text.roles.body"
+key = "button.label.text.font.family"
+value = "= token.text.roles.body.font.family"
 rows = []
 
 [[fact.cite]]
@@ -7473,9 +7477,490 @@ source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:13
 quote = "case PushButtonFont:"
 
 [[fact]]
-key = "button.label.text"
+key = "button.label.text.font.size"
+value = "= token.text.roles.body.font.size"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.weight"
+value = "= token.text.roles.body.font.weight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.style"
+value = "= token.text.roles.body.font.style"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.width"
+value = "= token.text.roles.body.font.width"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.axes"
+value = "= token.text.roles.body.font.axes"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.features"
+value = "= token.text.roles.body.font.features"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.scaling_role"
+value = "= token.text.roles.body.scaling_role"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+value = "= token.text.roles.body.letter_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.word_spacing"
+value = "= token.text.roles.body.word_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.line_height"
+value = "= token.text.roles.body.line_height"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.case"
+value = "= token.text.roles.body.case"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.decoration"
+value = "= token.text.roles.body.decoration"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:582-583"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::PushButtonFont)) fontHash->insert(QByteArrayLiteral(\"QPushButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+# the four drawn-text leaves as QPainter's path draws the label (the trace's *Text rows*): Breeze's drawItemText
+# elides nothing, its push and tool button flags hold no wrap flag, and no line limit; the fill below
+[[fact]]
+key = "button.label.text.elision"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1595-1630"
+quote = "void Style::drawItemText(QPainter *painter,"
+absent = ["elidedText", "ElideMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-633"
+quote = "void QStyle::drawItemText(QPainter *painter, const QRect &rect, int alignment, const QPalette &pal,"
+absent = ["elidedText", "ElideMode"]
+
+[[fact]]
+key = "button.label.text.wrap"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5392"
+quote = "const int textFlags(_mnemonics->textFlags() | Qt::AlignCenter);"
+absent = ["Qt::TextWordWrap", "Qt::TextWrapAnywhere"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5556"
+quote = "int textFlags(_mnemonics->textFlags());"
+absent = ["Qt::TextWordWrap", "Qt::TextWrapAnywhere"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemnemonics.h:39-42"
+quote = "int textFlags() const { return _enabled ? Qt::TextShowMnemonic : Qt::TextHideMnemonic; }"
+
+[[fact]]
+key = "button.label.text.max_lines"
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/styles/qstyle.cpp:610-633"
+quote = "void QStyle::drawItemText(QPainter *painter, const QRect &rect, int alignment, const QPalette &pal,"
+absent = ["maximumLineCount", "setMaximumLineCount"]
+
+# the mnemonic's underline (shown as Breeze's mnemonics setting allows): QPainter underlines the one character
+# in the text's pen, its position and thickness QPainter's form, register U180 (S2.8, ADD-A130)
+[[fact]]
+key = "button.label.text.mnemonic_decoration.line"
+value = "underline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:7319-7325"
+quote = "if (*cin != u'&' && !hidemnmemonic && !(tf & Qt::TextDontPrint)) { QTextLayout::FormatRange range; range.start = cout - cout0; range.length = 1; range.format.setFontUnderline(true); underlineFormats.append(range); }"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.style"
+value = "solid"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:7319-7325"
+quote = "if (*cin != u'&' && !hidemnmemonic && !(tf & Qt::TextDontPrint)) { QTextLayout::FormatRange range; range.start = cout - cout0; range.length = 1; range.format.setFontUnderline(true); underlineFormats.append(range); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:6132-6136"
+quote = "QColor uc = charFormat.underlineColor(); if (uc.isValid()) pen.setColor(uc); pen.setStyle((Qt::PenStyle)(underlineStyle));"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.by_word"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:7319-7325"
+quote = "if (*cin != u'&' && !hidemnmemonic && !(tf & Qt::TextDontPrint)) { QTextLayout::FormatRange range; range.start = cout - cout0; range.length = 1; range.format.setFontUnderline(true); underlineFormats.append(range); }"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.paint"
+value = "= part.text.fill"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.cpp:6132-6136"
+quote = "QColor uc = charFormat.underlineColor(); if (uc.isValid()) pen.setColor(uc); pen.setStyle((Qt::PenStyle)(underlineStyle));"
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.thickness"
+pending = "U180"
+rows = ["Q1.10"]
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration.offset"
+pending = "U180"
+rows = ["Q1.10"]
+
+[[fact]]
+key = "button.label.text.font.family"
 when = { variants = ["tool"] }
-value = "= token.text.keyed.toolbar"
+value = "= token.text.keyed.toolbar.font.family"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.size"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.weight"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.style"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.width"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.width"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.axes"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.font.features"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.scaling_role"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.scaling_role"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.letter_spacing"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.word_spacing"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.word_spacing"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.line_height"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.case"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.case"
+rows = ["K1.153"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { variants = ["tool"] }
+value = "= token.text.keyed.toolbar.decoration"
 rows = ["K1.153"]
 
 [[fact.cite]]
@@ -7491,9 +7976,201 @@ quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 # qqc2's ToolButton passes the control's font, the QML default (the general font), not QToolButton's
 
 [[fact]]
-key = "button.label.text"
+key = "button.label.text.font.family"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body"
+value = "= token.text.roles.body.font.family"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.size"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.weight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.style"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.width"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.width"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.axes"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.axes"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.font.features"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.font.features"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.scaling_role"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.scaling_role"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.letter_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.word_spacing"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.word_spacing"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.line_height"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.case"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.case"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
+quote = "const QFont font = qApp->font(\"QPushButton\");"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
+quote = "case PushButtonFont:"
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
+value = "= token.text.roles.body.decoration"
 rows = []
 
 [[fact.cite]]
@@ -7730,6 +8407,28 @@ quote = "case PM_SmallIconSize: { return ParentStyleClass::pixelMetric(metric, o
 kind = "published"
 source = "frameworkintegration@6.31.0 src/kstyle/kstyle.cpp:439-441"
 quote = "case PM_SmallIconSize: case PM_ButtonIconSize: return KIconLoader::global()->currentSize(KIconLoader::Small);"
+
+# KIconLoader recolours an SVG's colour-scheme classes in a theme that follows the colour scheme, Breeze's,
+# and draws every other path as it is (S2.9's `FromIcon`, ADD-A130, K3.61)
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+value = "from_icon"
+rows = ["K3.61"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
 
 [[fact]]
 key = "button.icon.icon.size"
