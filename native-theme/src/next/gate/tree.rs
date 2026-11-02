@@ -7,9 +7,11 @@ use std::fmt;
 
 /// A resolved value's tree: a struct's fields by name, a tuple's or a
 /// list's items in order, and its leaves. `Some(x)` reads as `x`, so a
-/// value and its absence differ by a leaf `None`; but `Some(None)`, a
-/// `Value<Option<T>>`'s stated `None` (S6.1), stays itself, so it differs
-/// from the absence `None` (`"none"` and `"absent"`, S11).
+/// value and its absence differ by a leaf `None`; but a `Some` holding a
+/// leaf `None` stays itself, so it differs from the absence `None`: a
+/// `Value<Option<T>>`'s stated `None` (S6.1), and as the `Debug` form
+/// writes it alike, a unit variant named `None` (`Some(Wrap::None)`), each
+/// `"none"` apart from `"absent"` (S11).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Tree {
     /// A number.

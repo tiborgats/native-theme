@@ -172,6 +172,38 @@ mod tests {
         }
     }
 
+    /// A bare struct block marked `boxed` is patched boxed, its box opened
+    /// where the patch is applied, built and located; `boxed` marks nothing
+    /// else.
+    #[test]
+    fn boxed_block_patch() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(block = "fields", boxed)]
+                pub text: TextTokens,
+            }
+        });
+        for expected in [
+            "pub text : :: core :: option :: Option < :: std :: boxed :: Box < TextTokensPatch > >",
+            "text . map (| patch | * patch)",
+            "crate :: next :: resolve :: compose :: Locate :: locate (& * * value , rest)",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+        let refused = refused(syn::parse_quote! {
+            #[parts(block)]
+            pub struct Probe {
+                #[parts(boxed)]
+                pub width: Value<Px>,
+            }
+        });
+        assert!(
+            refused.contains("boxed marks a bare struct block"),
+            "{refused}"
+        );
+    }
+
     #[test]
     fn auto_value_px_resolves_to_length() {
         let out = expand(syn::parse_quote! {

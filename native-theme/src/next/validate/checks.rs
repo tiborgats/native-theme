@@ -1079,9 +1079,14 @@ impl<'a> Checker<'a> {
         }
         let found = self.problems.len();
         // A bool, a text, a key or an enum takes a literal or a reference, a
-        // block (an enum block among them) a reference only: no call.
-        if form != ExprForm::Calls && matches!(expr, Expr::Call(..)) {
-            self.problem(&at, ProblemKind::CallNotAllowed);
+        // block (an enum block among them), an option or a map a reference
+        // only: no call.
+        if matches!(expr, Expr::Call(..)) {
+            match form {
+                ExprForm::Calls => {}
+                ExprForm::NoCalls => self.problem(&at, ProblemKind::CallNotAllowed),
+                ExprForm::ReferenceOnly => self.problem(&at, ProblemKind::CallNotAReference),
+            }
         }
         let in_text_style = path.fields().any(|(owner, _)| owner == "TextStyle");
         self.expr_node(expr, &at, in_text_style);

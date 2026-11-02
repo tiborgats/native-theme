@@ -1483,7 +1483,7 @@ fn label_text(layers: &[&str]) -> crate::next::blocks::text::ResolvedTextStyle {
 fn value_option_none_is_not_absent() {
     use crate::next::blocks::BlockPatch;
     use crate::next::blocks::part_style::PartStylePatch;
-    use crate::next::blocks::text::{TextRole, TextStylePatch};
+    use crate::next::blocks::text::{TextRole, TextStylePatch, Wrap};
     use crate::next::gate::{Tolerance, Tree};
     use crate::next::value::Value;
     use crate::next::widgets::PartPatch;
@@ -1537,6 +1537,13 @@ fn value_option_none_is_not_absent() {
     assert_eq!(
         tree(&Some(Some(2_u32))).differs(&tree(&Some(2_u32)), &Tolerance::quote()),
         None
+    );
+    // A unit variant named `None` reads as an option's `None` does: stated,
+    // it differs from the absence.
+    assert!(
+        tree(&Some(Wrap::None))
+            .differs(&tree(&None::<Wrap>), &Tolerance::quote())
+            .is_some()
     );
 }
 
@@ -1710,5 +1717,40 @@ fn value_map_over_reference_composes_lazily() {
     assert_eq!(
         label_axes(&[&ruled, &referenced, &stated, later]),
         Some(axes(&[("XTRA", 7.0), ("YOPQ", 5.0), ("GRAD", 1.0)]))
+    );
+}
+
+/// A `Value` struct block nothing states resolves `None`, as a `Value`
+/// nothing states does (S6.1), not a block of `None` fields: a drawn part
+/// whose table leaves its `text` out has no text. `Cx::value_block` gives
+/// it; `Cx::block` over no step would build a `TextStyle` of `None` leaves,
+/// every one of its leaves being a `Value` or a block of them.
+#[test]
+fn value_block_nothing_states_is_none() {
+    use crate::next::blocks::text::TextStyle;
+
+    const SUBTITLE: TypedPart = TypedPart::Button(ButtonPart::Subtitle);
+    let preset = format!("{BASE}[widgets.button.subtitle]\n");
+    let theme = resolved(&[&preset], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(SUBTITLE), &scope, &Metrics);
+    let subtitle = theme.evaluate_part(SUBTITLE, &element, &|_| true).value;
+    assert_eq!(subtitle.map(|style| style.text), Some(None));
+
+    let (value_block, block) = with_body(&theme, &scope, |cx| {
+        let path = vec!["text".to_owned()];
+        cx.follow(Target::Part(SUBTITLE), path, false, |cx, folds| {
+            assert!(folds.is_empty(), "nothing states the subtitle's text");
+            Some((
+                cx.value_block::<TextStyle>(folds),
+                cx.block::<TextStyle>(folds),
+            ))
+        })
+        .unwrap()
+    });
+    assert_eq!(value_block, None);
+    assert!(
+        block.is_some(),
+        "a block of `None` leaves, which no `Value` resolves to"
     );
 }
