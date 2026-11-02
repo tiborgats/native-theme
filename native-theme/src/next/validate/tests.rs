@@ -61,6 +61,7 @@ fn found_as(layer: &Layer, decl: &Declarations, kind: LayerKind) -> Vec<String> 
         preset: None,
         kind,
         reader_accent_left_out: false,
+        synthetic: &[],
         below: &[],
     };
     strings(check(layer, &cx))
@@ -78,6 +79,7 @@ fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> 
         preset: None,
         kind: LayerKind::Application,
         reader_accent_left_out: false,
+        synthetic: &[],
         below: &below,
     };
     strings(check(layer, &cx))
@@ -2262,6 +2264,7 @@ fn layer_error_every_variant_triggers() {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
+            synthetic: &[],
             below: &below,
         };
         problems(check(layer, &cx))
@@ -2418,6 +2421,7 @@ fn layer_error_every_variant_triggers() {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
+            synthetic: &[],
             below: &[],
         };
         super::combos::check(&super::stack::Stack::new(&layers, cx))
@@ -2444,6 +2448,7 @@ fn layer_error_every_variant_triggers() {
             preset: None,
             kind: LayerKind::Palette,
             reader_accent_left_out: false,
+            synthetic: &[],
             below: &[],
         };
         super::combos::mapping_palette(&super::stack::Stack::new(&layers, cx), 1)
@@ -2820,6 +2825,7 @@ fn every_layer_error() {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
+            synthetic: &[],
             below: &[],
         },
     );

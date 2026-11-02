@@ -39,6 +39,7 @@ fn over(below: &str, top: &str, decl: &Declarations) -> Vec<String> {
         preset: None,
         kind: LayerKind::Application,
         reader_accent_left_out: false,
+        synthetic: &[],
         below: &below,
     };
     match check(&toml(top), &cx) {
@@ -713,6 +714,7 @@ fn combination_mapping_palette() {
             preset: None,
             kind: LayerKind::Palette,
             reader_accent_left_out: false,
+            synthetic: &[],
             below: &[],
         };
         let stack = Stack::new(&layers, cx);
@@ -1488,6 +1490,7 @@ fn combination_input_cycle_reader_accent_left_out() {
             preset: None,
             kind: LayerKind::Reader,
             reader_accent_left_out: left_out,
+            synthetic: &[],
             below: &below,
         };
         match check(&reader, &cx) {

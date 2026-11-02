@@ -766,12 +766,14 @@ impl Stack {
             .reader_state()
             .map(validate::reader_state)
             .unwrap_or_default();
+        let synthetic = self.synthetic_places();
         for (index, layer) in stacked.iter().enumerate().skip(1) {
             let cx = Context {
                 declarations: &self.declarations,
                 preset: self.preset,
                 kind: layer.kind,
                 reader_accent_left_out: self.reader_accent_left_out(),
+                synthetic: &synthetic,
                 below: stacked.get(..index).unwrap_or_default(),
             };
             match validate::check(layer.layer, &cx) {

@@ -4,7 +4,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::{preset_stack, synthetic_stack};
-use crate::next::error::{LayerError, ThemeError};
+use crate::next::error::{LayerError, ProblemKind, ThemeError};
 use crate::next::gate::synthetic_layers;
 use crate::next::layer::Layer;
 use crate::next::presets::PresetId;
@@ -104,6 +104,36 @@ fn synthetic_route_takes_every_layer_at_once() {
             [format!("{other}: missing")]
         );
     }
+}
+
+/// S12's conservative reading of a listed path (S17, ADD-A128): an
+/// enum-typed one is read as each of its variants, whatever its synthetic
+/// value, so `text_scale` read where the listed `text.scaling` could be
+/// `dynamic_type` is refused, though the synthetic layer states `linear`;
+/// the preset stating `linear` itself is accepted.
+#[test]
+fn a_listed_enum_is_read_as_each_variant() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let line = "\nscaling = \"linear\"\n";
+    assert!(base.contains(line));
+    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { text.keyed.body.letter_spacing = \"= mul(1px, text_scale)\" }\n";
+    preset_stack(None, &format!("{base}{rule}"), Scheme::Light).unwrap();
+    let text = format!(
+        "[pending]\n\"tokens.text.scaling\" = \"U1\"\n{}{rule}",
+        base.replacen(line, "\n", 1)
+    );
+    let layer = synthetic_layer("[tokens.text]\nscaling = \"linear\"\n");
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        synthetic_stack(None, &text, Scheme::Light, vec![layer])
+    else {
+        panic!("text_scale is refused where the listed scaling can be dynamic_type");
+    };
+    assert!(
+        problems
+            .iter()
+            .any(|problem| problem.kind == ProblemKind::TextScaleUnderDynamicType),
+        "{problems:?}"
+    );
 }
 
 /// A window's root inputs, synthetic.
