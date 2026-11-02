@@ -5812,7 +5812,8 @@ spaces:
   selectors), `supporting_text` (all but `material-3`: MAT-N16; `material-3` as `headline`), `divider` (all but
   `material-3`: MAT-N16; `material-3` by a rule `!{open}`, as `popup_header`); fields: `popup.stroke` (`macos-*`,
   `ios-*`, `material-3`: their popups state a fill, corners and shadow and no outline, MAC-N04, C-5, MAT-N16; W2-04's
-  flyout draws one). The `body.padding` is stated on every preset (the platform's inset, cited, zero where it is
+  flyout draws one), `field.fill` (`kde-breeze` by a rule `{read_only} context form.row`: kirigami-addons' row hides
+  each half's background while read-only, K-KA-22†). The `body.padding` is stated on every preset (the platform's inset, cited, zero where it is
   zero).
 - **State-model source:** macOS `NSDatePicker.Style` × control states; Windows CalendarDatePicker and DatePicker
   visual state groups; KDE Breeze `CC_ComboBox` and menu branches (`kdatecombobox.cpp`), kirigami-addons
@@ -6195,7 +6196,8 @@ spaces:
   `kde-breeze` `@cards` (Kirigami Forms' card style, Q2.55†), `@ka_form_card` (on the form: a
   kirigami-addons FormCard page, whose rows and nested controls match `context form variant @ka_form_card`,
   K-KA-1†–K-KA-9†), `@width_limited` (set by `breakpoints`, R16; K-KA-1†), `@ka_info_card`
-  (K-KA-15†), `@date_time` (K-KA-22†), `@icon_row` (K-KA-14†), `@link` (K-KA-7†); `windows-11` `@right`,
+  (K-KA-15†), `@date_time` (K-KA-22†), `@icon_row` (K-KA-14†), `@link` (K-KA-7†), `@ka_radio_selector` (K-KA-25†: a row holding
+  kirigami-addons' radio selector, which draws no row background); `windows-11` `@right`,
   `@right_wrapped_no_icon` (set by `breakpoints`), `@left` (the content
   layouts, W2-40†; RightWrapped is `collapsed`), and its vertical layout the typed `vertical` (orientation); the content variant `bitmap_icon`
   (on `row`: its icon is a bitmap, which WinUI dims when disabled where it recolours a glyph icon, W2-40†, W3-51†;
@@ -6233,6 +6235,8 @@ spaces:
   (`adwaita`, `macos-*`, `windows-11`; `kde-breeze` by a rule outside `@icon_row`, the chosen icon an icon row
   shows, K-KA-14†), `page.fill` (all but `kde-breeze`: kirigami-addons' page fill, K-KA-6†; `kde-breeze` by a rule
   under `cond flavor:widgets`), `row.focus` (`kde-breeze` under `@ka_form_card`: K-KA-2† draws no focus ring),
+  `row.fill` (`kde-breeze` by a rule under `variants {@ka_form_card,@ka_radio_selector}`: the radio selector's row draws no
+  background, K-KA-25†; the other kirigami-addons rows' rest fill is drawn transparent, K-KA-2†),
   `row_arrow.icon` (`adwaita` by a rule under `expander`, whose arrow is a glyph, GN-1.257), `row_arrow.glyph`
   (`kde-breeze`, `windows-11`: their arrows are icons, K-KA-7†, Q2.56†, W2-40†; `adwaita` by a rule outside
   `expander`, its other arrows being icons, GN-2.06), and the `row_separator.margin` is stated wherever the
@@ -7835,7 +7839,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   `windows-11`: TimePicker's header label, W2-04), `time_separator` (`windows-11`, whose columns are separated by
   its spacer lines, W2-04; `kde-breeze` by a rule under `cond flavor:widgets`, the separator being
   kirigami-addons' popup's, K-KA-23†; `macos-*`, `ios-*` where their facts show none, value phase); fields:
-  `popup.stroke` (`material-3`: its container draws no outline, MAT-N17); the body's padding is stated on every
+  `popup.stroke` (`material-3`: its container draws no outline, MAT-N17), `field.fill` (`kde-breeze` by a rule
+  `{read_only} context form.row`, as `date_picker.field.fill`, K-KA-22†); the body's padding is stated on every
   preset, a zero inset where the picker has none, and the field's minimum and maximum widths are `"auto"` where the
   platform sets none (no limit beyond the content, S2.11; W2-04 states TimePicker's), never `Absent`;
   values: `placement` (`kde-breeze`: its popups are the combo box's list and the dialog the popup is drawn as,

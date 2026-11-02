@@ -310,6 +310,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.121 | `tab.values.tab_gap` | field |
 | GN-1.122 | `tab.pane.fill (= the View surface)` | field |
 | GN-1.123 | `tab.tab.fill, tab.indicator.fill, tab.icon.icon.fill @ {disabled} (the tab dimmed by the disabled opacity except its label and close button)` | rule |
+| GN-1.124 | `tab.tab.fill @ variant document` (transparent at rest: AdwTabBar's tab, `libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:58-78`, states a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the state rules' appends draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | rule |
 | GN-1.124 | `tab.tab.fill.append @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} variant document` | rule |
 | GN-1.124 | `tab.tab.min_height, tab.tab.padding, tab.tab.corners @ variant document` | rule |
 | GN-1.124 | `tab.tab.fill @ pos only variant document` | rule |
@@ -394,6 +395,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.165 | `list.row_background.corners @ pos first variant inset / pos last variant inset / pos only variant inset` | rule |
 | GN-1.165 | `list.row_background.focus @ variant inset` | rule |
 | GN-1.165 | `list.row_background.transitions @ variant inset` | rule |
+| GN-1.165 | `form.row.fill` (transparent at rest: an AdwPreferencesGroup's rows are a boxed list's, `libadwaita@1.10.0 src/adw-preferences-group.ui:64`, whose row, `src/stylesheet/widgets/_lists.scss:16-19`, `:343-365`, `:520-554`, states a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the hover and pressed appends below draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | field |
 | GN-1.165 | `form.card.{fill,corners,shadow,stroke}; form.row_separator.stroke; form.row.fill.append @ {hover} / {pressed}; form.row.corners @ pos first / pos last / pos only; form.row.{focus,transitions}` (an AdwPreferencesGroup's boxed list: the same source on the form's own parts, R20) | rule |
 | GN-1.166 | `list.row_background.{fill,corners,shadow} @ variant separated` | rule |
 | GN-1.166 | `list.row_background.fill.append @ {hover} / {pressed} / {selected} variant separated` | rule |
