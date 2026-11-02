@@ -784,7 +784,10 @@ paths and the `interaction` block's fields are part-style fields, and
 `Radius::`, `PropertyGroup::` (and a `transitions (…)` note's groups, so
 `StateLayer` and `StrokeWidth`), `RippleEffect::` and a corner's or effect's
 TOML spelling name variants of their enums; a transition's `from {…}` is not
-empty and names no flag twice. Prints one line per problem
+empty and names no flag twice. The motion and icon tokens are the fields of
+the core's `MotionTokens` and `IconTokens` (`token.motion.color_space`,
+`token.icons.animated_visuals.<visual>`; ADD-A125, ADD-A126), read from the
+sketches as every other token group is. Prints one line per problem
 (tab-separated: file, line, kind, name, context) and exits 0 when there is
 none, 1 when there are some. `--only <key>` checks one file (`catalogue`,
 `trace-macos`, ...), `--cat` and
@@ -998,7 +1001,28 @@ by text (`per_family`, `per_language`) takes its text as keys
 (`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`). So is a compound field
 (`Sides`, `Axes`) stated whole as `"absent"`, `"auto"` or `"none"`: it is no
 `Value`, S6.1 patches it per member and S6.3 lets each member be absent, so
-its members are stated (`{ top_px = "absent", … }`). Offline. The
+its members are stated (`{ top_px = "absent", … }`). ADD-A125 to ADD-A130's
+forms: a state model's `axes.contexts` entry may be a nested context, an
+ordered chain of two or more selectors, outermost first; a whole part takes
+`"present"` too, after a fact of its key making it absent or drawn as
+another; every transition states each field of the core's `Transition` (its
+`engine` among them, `suspended_by_theme_change` gone), its `timing` absent
+exactly on a stated zero or under `win_ui_animated_icon`, its duration absent
+only on a spring or under that engine, a stated timing one its engine's code
+computes (S12's per-engine curves), no `Keyed` kind under a value engine and
+no `focus_move`; an AnimatedIcon transition names a visual the platform's
+facts state, whose markers hold its state; a Breeze test states its three
+lists, empty on a stated zero, with window conditions only (and
+`focus_visible` on a focus ring); `gtk_switch` is the thumb's geometry run;
+`shown` is `true` or `false`; a plain block (`TextStyle.font`, a `Tokens`
+group) is stated per leaf and a plain enum block by its variant; an
+`Option` of a block (`Behavior.key_repeat`) is `"none"` or a full table, and
+a generation states it whole or per leaf, never both; a part's `text` is
+never a reference; a drawn-text leaf (`fill`, `elision`, `wrap`, `max_lines`)
+is absent only in a keyed text style, a slot or a part the catalogue's
+may_be_absent marks; no fact states `token.text.font_dpi` on the Apple
+presets (S9.4's own 72); and the types the catalogue's prose defines
+(`ContentWidth`, `InputPlacement`, ADD-A127) type their widget values. Offline. The
 docstring states every rule and list. Prints one line per finding (file:line: what) and a summary with the counts, and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read or a wrong command line. `--self-test` walks the specification's
@@ -1205,7 +1229,8 @@ and the keyed namespaces of `[declare]` are left for hand-writing. Prints
 on stderr the transcription share per widget and per unit (the 0.8.0
 plan's checkpoint D6), the rule count, the pending facts' register ids and
 a round trip: the draft read back gives every combination the value of
-the fact that applies there. Exits 1 on a round-trip mismatch, 2 on an
+the fact that applies there, a map compared as a map (a `Value`'s too,
+`Font.axes`), a fact's list of pairs as its table. Exits 1 on a round-trip mismatch, 2 on an
 input it cannot read. `--self-test` compares a fixture's draft with the
 expected one and runs each rule. Offline; not in `check_release.sh`.
 

@@ -26,6 +26,10 @@ ADD-A124's names, each read from the core's sketches (core_vocab), never listed 
   state set's;
 - `RippleEffect::<V>`, `effect <V>` and `effect = "<v>"`: a `RippleEffect` variant (`AndroidPatterned`, S2.12).
 
+The token groups are the core's structs' fields (core_vocab), the motion and icon tokens among them since ADD-A125
+and ADD-A126: `token.motion.<field>` a `MotionTokens` field (`color_space`), `token.icons.<field>` an `IconTokens`
+field (`animated_visuals`, whose entries are keys).
+
     python3 scripts/check_spec_names.py            # report, exit 1 if anything is unknown
     python3 scripts/check_spec_names.py --index    # also write index.json (the catalogue's names per widget)
     python3 scripts/check_spec_names.py --only trace-macos   # one file
@@ -171,6 +175,8 @@ def core_vocab(text=None) -> dict:
     v["behaviour"] = set(struct_fields(code, "Behavior"))
     v["scroll"] = set(struct_fields(code, "ScrollPhysics"))
     v["touch"] = set(struct_fields(code, "TouchBehavior"))
+    v["motion"] = set(struct_fields(code, "MotionTokens"))   # durations, timings, speed_factor, color_space
+    v["icon_tokens"] = set(struct_fields(code, "IconTokens"))   # set, theme, …, animated_visuals
     v["fallbacks"] = set(struct_fields(code, "FontFallbacks"))
     v["rendering"] = set(struct_fields(code, "TextRendering"))
     v["pointer"] = {"theme", "size", "color", "drag_cursors"}
@@ -315,7 +321,7 @@ class Checker:
         if s1 in ("*", "<key>", "x") or s1.startswith("<"):
             return True
         if t == "motion":
-            return s1 in ("durations", "timings", "speed_factor")
+            return s1 in self.v["motion"]
         if t == "text":
             if s1 == "roles":
                 return len(seg) < 3 or seg[2] in self.v["text_roles"] or seg[2] == "*"
@@ -330,7 +336,7 @@ class Checker:
             if s1 == "sizes":
                 return len(seg) < 3 or seg[2] in ("toolbar", "small", "large", "dialog", "panel", "keyed", "*") \
                     or seg[2].startswith("<")
-            return s1 in ("set", "theme", "theme_fallback", "mirroring")
+            return s1 in self.v["icon_tokens"]
         if t == "focus":
             return s1 in self.v["focus"]
         if t == "caret":
@@ -856,7 +862,9 @@ pub enum SizeClass { Compact, Regular }
 pub enum SurfaceSet { View, Header }
 pub struct SurfaceRoles { pub background: Paint, pub foreground: Paint }
 pub struct GlobalRoles { pub accent: Paint, pub status: Status }
-pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: Motion }
+pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: MotionTokens, pub icons: IconTokens }
+pub struct MotionTokens { pub durations: X, pub timings: X, pub speed_factor: X, pub color_space: X }
+pub struct IconTokens { pub set: X, pub theme: X, pub sizes: X, pub animated_visuals: X }
 pub struct PartStyle { pub fill: X, pub stroke: X, pub corners: X, pub text: X, pub focus: X, pub padding: X,
                        pub interaction: Value<Interaction>, pub transitions: X }
 pub struct ElementData { pub progress: f32 }
@@ -953,6 +961,10 @@ SELF_TEST_STRINGS = [
     ("token.text.roles.body token.kde.disabled.intensity_amount", []),
     ("token.nope", [("token", "token.nope")]),
     ("token.text.roles.nope", [("token", "token.text.roles.nope")]),
+    # the motion and icon tokens are MotionTokens' and IconTokens' fields (S4.1, S4.5; ADD-A125, ADD-A126)
+    ("token.motion.color_space token.icons.animated_visuals.accept", []),
+    ("token.motion.colour_space", [("token", "token.motion.colour_space")]),
+    ("token.icons.animations", [("token", "token.icons.animations")]),
     ("surface.background", []),
     ("surface.nope", [("surface", "surface.nope")]),
     ("element.progress", []),

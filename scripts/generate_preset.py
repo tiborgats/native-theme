@@ -117,7 +117,8 @@ The round trip (the exactness proof)
 ------------------------------------
 The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in
 its rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling
-(unspell(): the suffix into the value's unit, a map's table into pairs, `absent = true` into `"absent"`); a value
+(unspell(): the suffix into the value's unit, `absent = true` into `"absent"`; a map stays a table, and a fact's
+map written as pairs is compared as its table, written()); a value
 at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases, then the rules in
 order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value; and (2) for
 every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs) and
@@ -350,12 +351,22 @@ def unspell(name, value, typ):
             if isinstance(value, (int, float)) and not isinstance(value, bool):
                 return base, f"{value}{unit}"
             return base, value
-    t = check_facts.strip_type(typ) if typ else None
-    m = MAP_TYPE.fullmatch(t) if t else None
-    if m and isinstance(value, dict):
-        vtype = m.group(2).strip()
-        return name, [list(unspell(k, x, vtype)) for k, x in value.items()]
     return name, value
+
+
+def written(f) -> object:
+    """A fact's value as the draft writes it, which the round trip compares: a map (`Vec<(K, V)>`, a `Value` of one
+    included, `Font.axes`) written as a list of pairs becomes its table (spell()), as S11 spells every map; any other
+    value, a map's table among them, as the fact states it. So a map compares as a map, entry by entry, never as a
+    list of pairs (ADD-A125's S2.8: `Font.axes` and `Font.features` in a `Value`)."""
+    value = f.item.data["value"]
+    t = check_facts.strip_type(f.typ) if f.typ else None
+    if t and MAP_TYPE.fullmatch(t) and isinstance(value, list):
+        try:
+            return spell(f.rel[-1] if f.rel else "x", f.typ, None, value)[1]
+        except Untranscribable:
+            return value
+    return value
 
 
 def normal(v):
@@ -941,14 +952,14 @@ def round_trip(draft: Draft, text: str) -> Trip:
     whens = {g: list(ws.values()) for g, ws in whens.items()}
     for ckey, fs in by_key.items():
         got = back.get(ckey, {"base": {}, "rules": []})
-        want_rules = [(f.rule_when, f.item.data["value"]) for f in fs if f.status == "rule"]
+        want_rules = [(f.rule_when, written(f)) for f in fs if f.status == "rule"]
         if [(check_facts.canonical_when(w), normal(v)) for w, v in got["rules"]] != [
                 (check_facts.canonical_when(w), normal(v)) for w, v in want_rules]:
             trip.mismatches.append(f"{fs[0].key}: the rules read back state other values or another order")
         for f in fs:
             if f.status == "base" and f.kind != "input":
                 for s in f.base_slots:
-                    if normal(got["base"].get(s if f.kind == "role" else None)) != normal(f.item.data["value"]):
+                    if normal(got["base"].get(s if f.kind == "role" else None)) != normal(written(f)):
                         trip.mismatches.append(f"{f.where}: {f.key}: the base reads back otherwise")
         model = draft.models.get(fs[0].widget) if fs[0].widget else None
         groups = [g for g in model.get("exclusive", []) if isinstance(g, list)] if model else []
@@ -979,7 +990,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
                                            f"{applies.where} applies")
                     continue
                 value = preset_value(got, fs[0].kind, c, s, groups, recency)
-                if normal(value) != normal(applies.item.data["value"]):
+                if normal(value) != normal(written(applies)):
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
     return trip
@@ -1550,7 +1561,9 @@ def self_test() -> int:
             got = str(err)
         if got != want:
             failures.append(f"spell({name!r}, {typ!r}, {value!r}): {got!r}, expected {want!r}")
-        elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(value):
+        elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(
+                want[1] if isinstance(value, list) and typ and MAP_TYPE.fullmatch(check_facts.strip_type(typ))
+                else value):
             failures.append(f"unspell({want[0]!r}, {want[1]!r}): not {value!r}")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
@@ -1615,6 +1628,17 @@ def self_test() -> int:
                            "rules": [draft.rules[2], draft.rules[1], draft.rules[0]] + draft.rules[3:]})
         if not round_trip(swapped, render(swapped)).mismatches:
             failures.append("round trip: rules out of the facts' order pass")
+        # a map stated as a table, empty or not, reads back as a map, entry by entry (ADD-A125's S2.8: a map in a
+        # `Value`, `Font.axes`): the round trip compares the tables, and a changed entry is a mismatch
+        for ramp in ("{}", '{ light1 = "#ff0000" }'):
+            mroot = Path(tmp) / f"map{len(ramp)}"
+            write(mroot, {**SELF_TEST_FILES, "docs/facts/gnome/roles.toml": SELF_TEST_FILES[
+                "docs/facts/gnome/roles.toml"].replace('value = []', f"value = {ramp}")})
+            mdraft, mtext, mtrip, _ = generate(fixture_context(mroot), "adwaita")
+            if mtrip.mismatches or f"accent_ramp = {ramp}" not in mtext:
+                failures.append(f"round trip: a map table {ramp}: {mtrip.mismatches[:3]}")
+            elif ramp != "{}" and not round_trip(mdraft, mtext.replace('"#ff0000"', '"#ff0001"')).mismatches:
+                failures.append("round trip: a map's changed entry passes")
         try:
             generate(ctx, "no-such-preset")
             failures.append("an unknown preset: accepted")

@@ -180,6 +180,39 @@ A `[[fact]]` (S17 *Fields*):
   generations: its source entry's `generations`; a measured citation's, the preset its run's `run.toml` maps its image
   to (S17 *`evidence`*; check_fact_citations.py checks the rest of run.toml).
 
+ADD-A125 to ADD-A130 (each rule's function states it in full):
+
+- Nested contexts (axes_context_problems): an `axes.contexts` entry is a context selector or a list of two or more,
+  an ordered chain, outermost first (S17 *State models*).
+- `value = "present"` on a whole part's key (`PartPresence::Present`, S6.3): part_patch_problems takes it, and
+  present_problems asks an earlier fact of its key, file and run making the part absent or drawn as another on a
+  combination both may hold in.
+- Transitions (engine_problems; S2.7, S6.3, S11, S12): every field of the core's `Transition` but `from` stated,
+  `engine` among them, no other key; `timing` absent exactly on a stated zero (`duration_ms = 0`) or under
+  `win_ui_animated_icon`; `duration` absent only on a spring or under that engine; a stated timing one its engine
+  computes (ENGINE_TIMINGS, the closed list of S12's prose, a `token.motion.timings` reference followed to the
+  platform's facts); no `keyed` kind under a value engine (VALUE_ENGINES, S2.7's list) and no `focus_move`;
+  `win_ui_animated_icon`'s visual a `token.icons.animated_visuals` entry the platform's facts state (platform_facts),
+  its keyed state held by a marker (MARKER_RX), no duration, timing or delay; a Breeze test's `any`, `none` and
+  `conditions` stated, empty on a stated zero, `any` and `conditions` not both empty otherwise, no flag twice, a
+  keyed flag the widget declares, conditions of S7.1's window group only (window_conditions, read from the
+  `Condition` sketch's comments), a focus ring's test naming `focus_visible`; `gtk_switch` the switch thumb's
+  `geometry` run, `interpolate`, no delay; `compose_held` a `geometry` run.
+- Block forms (block_form_problems; S2.2, S11, S17): a plain struct block (no `Value` or `Option`) per leaf, a map's
+  bare block entry a table never a reference (map_entry); a plain enum block S11 spells only by its variant (no
+  reference, no keyword but its own unit variant); an `Option` of a struct block `"none"` or a table holding every
+  field, never a reference or `"absent"` (ADD-A128), and stated by a generation whole or per leaf, never both
+  (option_block_problems, item_generations); `shown` `true`, `false` or an expression (ADD-A126); a part's `text`
+  never a reference (ADD-A130).
+- Drawn-text leaves (text_leaf_problems; S2.8, S6.3, ADD-A130): `fill`, `elision`, `wrap` and `max_lines`
+  (DRAWN_TEXT_LEAVES) `"absent"` only in a keyed text style or a slot (TEXT_STYLE_HOMES) or on a part whose catalogue
+  entry's may_be_absent `fields:` lists the leaf (marked_text_leaves).
+- `token.text.font_dpi` on `macos/` and `ios/` (APPLE_FONT_DPI) has no fact: S9.4's 72 is the specification's own
+  (S17; ADD-A125).
+- The catalogue's own types (catalogue_types): a backticked `<Name> { … }` in the catalogue's prose defines an enum
+  or a struct the core lacks (ADD-A127's `ContentWidth`, `InputPlacement`, `CharRun`), so the widget values it types
+  are checked as a core type's are; a `char` is text.
+
 A `[[model]]` in `<platform>/state-models.toml` (S17 *State models*): `widget` (a catalogue entry: a typed widget or
 `component.<key>`), `available` (a bool), `rows` and at least one `[[model.cite]]` (as a fact's) are required; `when`
 may only hold `conditions` with `preset:` or `flavor:` ones. With `available = false` no other declaration. With
@@ -340,6 +373,7 @@ MAP_TYPE = re.compile(r"Vec<\(\s*([^,]+?)\s*,\s*(.+)\)>")   # a map, `Vec<(K, V)
 TOML_BARE = re.compile(r"^[A-Za-z0-9_-]+$")
 TEXT_ENTRY = "text_entry"
 DRAWN_AS_KEYS = {"widget", "part", "variants"}
+PRESENCE_WORDS = ("absent", "present")   # a whole part's `PartPresence::Absent` and `::Present` (S6.3, S17; ADD-A126)
 KEY_RX = re.compile(r"^[a-z0-9][a-z0-9_]*$")   # S1's key grammar: a recency set's name (S10; ADD-A124)
 ONE_VALUED = ("scheme", "preset", "flavor", "idiom", "input", "posture", "device_model")   # S7.1, S12
 CONTRAST = ("contrast_increased", "contrast_high")   # `ReaderState.contrast` is one value (S9, S12)
@@ -420,6 +454,54 @@ def core_enums(text: str) -> dict:
                 payload = ("unit", None)
             variants[check_spec_names.snake(vm.group(1))] = payload
         out[name] = variants
+    return out
+
+
+def catalogue_types(cat_text: str) -> str:
+    """The types the catalogue defines in its prose where no core sketch does (ADD-A127's `ContentWidth`,
+    `InputPlacement`, `CharRun` on `combo_box`), as a core sketch: every backticked `<Name> { … }` (a span may wrap
+    lines) whose braces balance, an enum where each top-level piece starts with a capitalised variant, a struct
+    where each is a `<field>: <type>` (a capitalised type or a primitive; a prose example such as `Keyed { key:
+    pop_in }` is none). The core's own types win over these (Context), so a widget value typed by one is checked as a
+    core type is."""
+    out = []
+    for span in re.findall(r"`([A-Z]\w*\s*\{[^`]*\})`", cat_text):
+        m = re.fullmatch(r"\s*([A-Z]\w*)\s*\{(.*)\}\s*", " ".join(span.split()), re.S)
+        if not m:
+            continue
+        body = m.group(2)
+        depth, ok = 0, True
+        for c in body:
+            depth += c in "<([{"
+            depth -= c in ">)]}"
+            ok = ok and depth >= 0
+        pieces = [x.strip() for x in split_top(body) if x.strip()]
+        if not ok or depth or not pieces:
+            continue
+        if all(re.match(r"[A-Z]\w*\s*(?:$|[({])", x) for x in pieces):
+            out.append(f"pub enum {m.group(1)} {{ {body} }}")
+        elif all(re.fullmatch(r"[a-z_]\w*\s*:\s*(?!None\b)(?:[A-Z]\w*(?:<.*>)?|u8|u16|u32|i32|f32|f64|bool|char)",
+                              x, re.S) for x in pieces):
+            out.append(f"pub struct {m.group(1)} {{ {', '.join('pub ' + x for x in pieces)} }}")
+    return "```rust\n" + "\n".join(out) + "\n```\n"
+
+
+def window_conditions(text: str) -> set:
+    """The snake_case names of S7.1's `Condition` variants in its group "window, by the connector" (the comment line
+    heading the group, at the enum's own indentation, up to the next such line), read from the core's sketch with its
+    comments: the conditions a `BreezeTest` may name (S12; ADD-A126). Empty where the sketch has no such group (the
+    check then reads none)."""
+    code = check_spec_names.rust_blocks(text)
+    m = re.search(r"pub enum Condition\s*\{\n(.*?)\n\}", code, re.S)
+    group, out = None, set()
+    for line in (m.group(1).splitlines() if m else []):
+        if line.strip().startswith("//") and len(line) - len(line.lstrip()) <= 4:
+            group = line.strip()[2:].strip()
+            continue
+        if group == "window, by the connector":
+            body = check_spec_names.strip_comments(line)
+            body = re.sub(r"\([^()]*\)|\{[^{}]*\}", "", body)
+            out |= {check_spec_names.snake(v) for v in re.findall(r"\b([A-Z]\w*)\b", body)}
     return out
 
 
@@ -616,8 +698,15 @@ class Context:
         self.entries = {e.name: e for e in spec_catalogue.entries(cat_text)}
         self.structs = core_structs(core_text)
         self.enums = core_enums(core_text)
+        cat_types = catalogue_types(cat_text)
+        for name, fields in core_structs(cat_types).items():
+            self.structs.setdefault(name, fields)
+        for name, variants in core_enums(cat_types).items():
+            self.enums.setdefault(name, variants)
         self.functions = core_functions(core_text)
         self.motion_durations = motion_duration_keys(cat_text)
+        self.window_conditions = window_conditions(core_text)
+        self.platform_facts = {}   # {platform: {canonical key: [values]}}: set by check() before the facts' rules
         entries = self.sources_data.get("source", [])
         if not isinstance(entries, list):
             raise InputError(f"{SOURCES}: `source` is not an array of [[source]] tables")
@@ -977,11 +1066,11 @@ def type_dim(ctx, type_str, segs):
 
 
 def text_kind(t):
-    """"plain" for a plain `String` (always text, S11), "text" for a `Value<String>` (or `Option<String>`, whose
-    keywords and `=` keep their meaning), else None."""
-    if not t or strip_type(t) != "String":
+    """"plain" for a plain `String` or `char` (always text, S11; a `char` the catalogue's `CharRun.ch`, ADD-A127),
+    "text" for a `Value<String>` (or `Option<String>`, whose keywords and `=` keep their meaning), else None."""
+    if not t or strip_type(t) not in ("String", "char"):
         return None
-    return "plain" if t.strip() == "String" else "text"
+    return "plain" if t.strip() in ("String", "char") else "text"
 
 
 def child_type(ctx, t, key):
@@ -1441,6 +1530,22 @@ def context_problems(ctx, c, where):
     return out
 
 
+def axes_context_problems(ctx, c, where):
+    """An `axes.contexts` entry (S17 *State models*; ADD-A125): a context selector, or a list of two or more of them for
+    nested contexts, an ordered chain, outermost first (WinUI's tabbed command bar's toolbar, `[{ widget =
+    "component.tabbed_command_bar" }, { widget = "toolbar", part = "bar" }]`), each checked as a selector; an empty
+    chain or one of a single selector (which is that selector) is a finding."""
+    if not isinstance(c, list):
+        return context_problems(ctx, c, where)
+    if len(c) < 2:
+        return [f"{where}: a chain of {len(c)} context selector{'s' if len(c) != 1 else ''} (a nested context is an "
+                f"ordered chain of two or more, outermost first; one context is its selector alone, S17)"]
+    out = []
+    for i, x in enumerate(c):
+        out += context_problems(ctx, x, f"{where}[{i}]")
+    return out
+
+
 def position_problems(ctx, p, where):
     if not isinstance(p, dict):
         return [f"{where} is not a table"]
@@ -1622,9 +1727,15 @@ def fact_problems(ctx, item: Item) -> list:
             out += [(item.ln("value"), p) for p in part_patch_problems(ctx, d["value"], widget)]
         elif "value" in d:
             out += [(item.ln("value"), p) for p in value_problems(ctx, d["value"], dim, typ=typ)]
-            out += [(item.ln("value"), p) for p in transition_problems(ctx, d["key"], d["value"], typ, widget)]
+            out += [(item.ln("value"), p) for p in transition_problems(ctx, d["key"], d["value"], typ, widget,
+                                                                       item.platform)]
             out += [(item.ln("value"), p) for p in map_problems(ctx, d["value"], typ)]
             out += [(item.ln("value"), p) for p in compound_problems(ctx, d["value"], typ)]
+            out += [(item.ln("value"), p) for p in block_form_problems(ctx, d["key"], d["value"], typ, kind)]
+            out += [(item.ln("value"), p) for p in text_leaf_problems(ctx, d["key"], d["value"], widget)]
+            if d["key"] == "token.text.font_dpi" and item.platform in APPLE_FONT_DPI:
+                out.append((item.ln("key"), "token.text.font_dpi on the Apple presets is S9.4's own 72, which no fact "
+                                            "states (S17; ADD-A125)"))
             if isinstance(d["value"], str) and text_leaves(ctx, d["value"], typ):
                 out += [(c.ln("tolerance"), "a text value compares exactly: its measured citation's tolerance is 0 "
                                             "(S11)") for c in item.cites if c.data.get("kind") == "measured"
@@ -1669,13 +1780,207 @@ def part_fields(ctx, key):
     return [check_spec_names.norm_value(f) for f in part.fields] if part else None
 
 
-def transition_problems(ctx, key, value, typ, widget) -> list:
+# S12's timings per engine (ADD-A126): the curve kinds each `TransitionEngine` member's code computes, a closed list
+# the specification states in prose (S12's bullet "a transition's stated timing … is not one its engine's code
+# computes"), so it lives here. A kind is a `Timing` variant in snake_case, `qt`, `adw` and `kirigami_velocity` for a
+# `Platform` curve, and `adw:<curve>` for one `AdwEasing` member alone.
+ENGINE_TIMINGS = {
+    "gtk_css": {"cubic_bezier", "linear", "steps"},
+    "breeze": {"linear", "steps", "qt"},
+    "breeze_tab_bar": {"linear", "steps", "qt"},
+    "qt_quick": {"linear", "cubic_bezier", "qt", "kirigami_velocity"},
+    "adw_animation": {"linear", "cubic_bezier", "adw", "spring"},
+    "compose_animatable": {"linear", "cubic_bezier", "spring"},
+    "compose_transition": {"linear", "cubic_bezier", "spring"},
+    "compose_held": {"spring"},
+    "win_ui": {"linear", "cubic_bezier", "steps"},
+    "gtk_switch": {"adw:ease_out_cubic"},
+    "win_ui_animated_icon": set(),
+}
+# S2.7's value engines (*The engine*: "The value engines, `GtkCss`, `AdwAnimation`, `QtQuick`, `ComposeAnimatable`,
+# `ComposeTransition`, `ComposeHeld` and `WinUi`"), which no `Keyed` transition names (S12)
+VALUE_ENGINES = {"gtk_css", "adw_animation", "qt_quick", "compose_animatable", "compose_transition", "compose_held",
+                 "win_ui"}
+BREEZE_ENGINES = ("breeze", "breeze_tab_bar")
+ANIMATED_ICON = "win_ui_animated_icon"
+MARKER_RX = re.compile(r"^([A-Za-z0-9]+)To([A-Za-z0-9]+)_(?:Start|End)$")   # AnimatedIcon's `<from>To<to>_Start`
+
+
+def variant_of(v):
+    """(the snake_case variant, its payload) of an enum value as S11 spells it (a name or a one-key table), else
+    (None, None)."""
+    if isinstance(v, str) and NAME.match(v):
+        return v, None
+    if isinstance(v, dict) and len(v) == 1:
+        k = next(iter(v))
+        return k, v[k]
+    return None, None
+
+
+def timing_kind(ctx, timing, platform, depth=0):
+    """The kind of a stated timing (ENGINE_TIMINGS' names), a `= token.motion.timings.<key>` reference followed to
+    the platform's facts of that key where they all give one kind; None where it cannot be told."""
+    if isinstance(timing, str) and timing.startswith("=") and depth < 8:
+        m = re.fullmatch(r"=\s*token\.motion\.timings\.([a-z0-9_]+)\s*", timing)
+        vals = ctx.platform_facts.get(platform, {}).get(f"token.motion.timings.{m.group(1)}") if m else None
+        kinds = {timing_kind(ctx, v, platform, depth + 1) for v in vals or []}
+        return kinds.pop() if len(kinds) == 1 else None
+    name, payload = variant_of(timing)
+    if name not in ctx.enums.get("Timing", {}):
+        return None   # no variant: value_problems' finding
+    if name == "platform":
+        curve, arg = variant_of(payload)
+        if curve not in ctx.enums.get("PlatformCurve", {}):
+            return None
+        if curve == "adw" and isinstance(arg, str):
+            return f"adw:{arg}"
+        return curve
+    return name
+
+
+def unit_value(tr, field):
+    """(whether stated, the value) of a transition's unit field, under its suffixed key or its bare name."""
+    for k in (f"{field}_ms", field):
+        if k in tr:
+            return True, tr[k]
+    return False, None
+
+
+def stated_zero(v):
+    """S2.7's *stated zero*: the literal zero in the field itself, never a reference or expression (ADD-A125)."""
+    return (isinstance(v, (int, float)) and not isinstance(v, bool) and v == 0) or v == "0ms"
+
+
+def engine_problems(ctx, key, tr, path, widget, platform) -> list:
+    """A transition's own rules (S2.7, S6.3, S11, S12; ADD-A125, ADD-A126), where its fact shows them:
+
+    - it states every field of the core's `Transition` but `from` (whose rule is transition_problems'), `engine` among
+      them on every transition, a stated zero's included, and no other key (`suspended_by_theme_change` is gone);
+    - its `timing` is `"absent"` exactly where its duration is a stated zero (`duration_ms = 0`, never a reference)
+      or its engine `win_ui_animated_icon`; its `duration` is `"absent"` only on a spring (an inline `spring` timing or
+      a `token.motion.timings` reference whose facts on the platform all give one) or under `win_ui_animated_icon`;
+    - a stated timing is one its engine's code computes (ENGINE_TIMINGS; a reference followed as above);
+    - a `Keyed` kind names no value engine (VALUE_ENGINES); a `focus_move` kind is refused (no member runs one);
+    - under `win_ui_animated_icon`: `duration` and `timing` absent, the delay zero, the kind `keyed`, its `visual` an
+      entry `token.icons.animated_visuals.<visual>` the platform's facts state, and, where that entry's markers are
+      stated, the key's UpperCamelCase form (each `_` word capitalised) a state some marker `<from>To<to>_Start` or
+      `_End` holds;
+    - under `breeze` and `breeze_tab_bar`: the duration not absent, the delay zero, the kind `interpolate`; the test
+      a table stating `any`, `none` and `conditions` (lists), all empty on a stated zero and otherwise `any` and
+      `conditions` not both empty; no flag twice or in both `any` and `none`; a keyed flag the widget declares; each
+      condition one of S7.1's window group (window_conditions); a `focus.transition`'s test, but a stated zero's,
+      names `focus_visible` in `any`;
+    - under `gtk_switch`: the switch thumb's (`switch.thumb.…`) `geometry` transition, `interpolate`, delay zero;
+      under `compose_held`: a `geometry` transition."""
+    out = []
+    t = ctx.structs.get("Transition")
+    if t is None or "engine" not in t:
+        return out
+    stated = {re.sub(r"_(px|ms|deg|pt)$", "", k) for k in tr}
+    out += [f"{path}: missing `{f}` (S2.7, S11: every transition states it{', a stated zero included' if f == 'engine' else ''})"
+            for f in t if f != "from" and not t[f].startswith("Option<") and f not in stated]
+    out += [f"{path}: `{k}` is not a field of Transition (S2.7)" for k in tr
+            if k not in t and re.sub(r"_(px|ms|deg|pt)$", "", k) not in t]
+    engine, payload = variant_of(tr.get("engine"))
+    has_dur, dur = unit_value(tr, "duration")
+    has_delay, delay = unit_value(tr, "delay")
+    timing = tr.get("timing")
+    zero = has_dur and stated_zero(dur)
+    kind, kpay = variant_of(tr.get("kind"))
+    props = tr.get("properties") if isinstance(tr.get("properties"), list) else None
+    tk = None if timing in (None, "absent") else timing_kind(ctx, timing, platform)
+    if "timing" in tr:
+        if timing == "absent" and not zero and engine != ANIMATED_ICON:
+            out.append(f"{path}: timing absent where the duration is no stated zero (S2.7, S6.3, S12; ADD-A125)")
+        if timing != "absent" and zero:
+            out.append(f"{path}: a stated zero duration's timing is stated (S2.7: it is \"absent\"; ADD-A125)")
+    if dur == "absent" and engine != ANIMATED_ICON and timing != "absent" and tk is not None and tk != "spring":
+        out.append(f"{path}: duration absent but on a spring or under win_ui_animated_icon (S6.3, S12)")
+    if engine in ENGINE_TIMINGS and tk is not None and timing != "absent" and tk not in ENGINE_TIMINGS[engine] and \
+            tk.split(":")[0] not in ENGINE_TIMINGS[engine]:
+        out.append(f"{path}: a {tk} timing under {engine}, whose code computes "
+                   f"{', '.join(sorted(ENGINE_TIMINGS[engine])) or 'none'} (S12; ADD-A126)")
+    if kind == "keyed" and engine in VALUE_ENGINES:
+        out.append(f"{path}: a keyed transition under {engine}, a value engine (S12; ADD-A126)")
+    if kind == "focus_move":
+        out.append(f"{path}: a focus_move transition (no engine runs one yet; S12, ADD-A126)")
+    if engine == ANIMATED_ICON:
+        if dur != "absent" and has_dur:
+            out.append(f"{path}: a win_ui_animated_icon transition states a duration (its visual times it; S12)")
+        if timing not in (None, "absent"):
+            out.append(f"{path}: a win_ui_animated_icon transition states a timing (its visual times it; S12)")
+        if has_delay and not stated_zero(delay):
+            out.append(f"{path}: a win_ui_animated_icon transition's delay is not zero (S12)")
+        if kind != "keyed":
+            out.append(f"{path}: a win_ui_animated_icon transition is keyed (S12; ADD-A126)")
+        visual = payload.get("visual") if isinstance(payload, dict) else None
+        visuals = ctx.platform_facts.get(platform, {}).get("token.icons.animated_visuals.*", {})
+        if not isinstance(visual, str):
+            out.append(f"{path}.engine: win_ui_animated_icon names its `visual` (S2.7, S11)")
+        elif visual not in visuals:
+            out.append(f"{path}.engine: visual {visual!r} is no `token.icons.animated_visuals` entry the "
+                       f"{platform} facts state (S12; ADD-A126)")
+        else:
+            markers = visuals[visual]
+            state = kpay.get("key") if isinstance(kpay, dict) else None
+            if isinstance(markers, dict) and isinstance(state, str):
+                upper = "".join(w[:1].upper() + w[1:] for w in state.split("_"))
+                held = {x for mk in markers for m in [MARKER_RX.match(mk)] if m for x in m.groups()}
+                if upper not in held:
+                    out.append(f"{path}.kind: the state {state!r} ({upper}) is held by no marker of visual {visual!r} "
+                               f"(S2.7, S12)")
+    if engine in BREEZE_ENGINES:
+        if dur == "absent":
+            out.append(f"{path}: a {engine} transition's duration is absent (S12)")
+        if has_delay and not stated_zero(delay):
+            out.append(f"{path}: a {engine} transition's delay is not zero (S12)")
+        if kind is not None and kind != "interpolate":
+            out.append(f"{path}: a {engine} transition's kind is not interpolate (S12)")
+        if not isinstance(payload, dict):
+            out.append(f"{path}.engine: {engine} holds its test, {{ any, none, conditions }} (S11)")
+        else:
+            out += [f"{path}.engine: the test states no `{k}` (S11: every list of a test stated)"
+                    for k in ("any", "none", "conditions") if k not in payload]
+            out += [f"{path}.engine: `{k}` is not a field of BreezeTest" for k in payload
+                    if k not in ("any", "none", "conditions")]
+            lists = {k: payload.get(k) if str_list(payload.get(k)) else [] for k in ("any", "none", "conditions")}
+            if zero and any(lists.values()):
+                out.append(f"{path}.engine: a stated zero's test is not empty (S2.7, S12; ADD-A126)")
+            if not zero and has_dur and not lists["any"] and not lists["conditions"]:
+                out.append(f"{path}.engine: the test's `any` and `conditions` are both empty on a transition that is "
+                           f"no stated zero (S12)")
+            flags = lists["any"] + lists["none"]
+            out += [f"{path}.engine: the test names {f!r} twice, or in both `any` and `none` (S12)"
+                    for f in sorted(set(flags)) if flags.count(f) > 1]
+            out += [f"{path}.engine: {f!r} is not a flag {widget} declares (S12)" for f in dict.fromkeys(flags)
+                    if widget and KEYED.match(f) and not ctx.ck.flag_ok(f, [widget])]
+            if ctx.window_conditions:
+                out += [f"{path}.engine: the test's condition {c!r} is not one of the window's (S7.1, S12)"
+                        for c in lists["conditions"] if c.split(":")[0] not in ctx.window_conditions]
+            if isinstance(key, str) and key.endswith("focus.transition") and not zero and \
+                    "focus_visible" not in lists["any"]:
+                out.append(f"{path}.engine: a focus indicator's Breeze test names no focus_visible in `any` (S12)")
+    if engine == "gtk_switch":
+        if not (isinstance(key, str) and key.startswith("switch.thumb.")) or props != ["geometry"]:
+            out.append(f"{path}: a gtk_switch transition is the switch thumb's geometry one (S12)")
+        if kind is not None and kind != "interpolate":
+            out.append(f"{path}: a gtk_switch transition's kind is not interpolate (S12)")
+        if has_delay and not stated_zero(delay):
+            out.append(f"{path}: a gtk_switch transition's delay is not zero (S12)")
+    if engine == "compose_held" and props != ["geometry"]:
+        out.append(f"{path}: a compose_held transition is a segment's geometry one (S12)")
+    return out
+
+
+def transition_problems(ctx, key, value, typ, widget, platform=None) -> list:
     """A transition's `from` (`Transition.from`, S2.7, S11, S12; ADD-A124): stated in a single transition (`"none"` for
     any state), left out of a list's entry only; never an empty list, no flag twice, no keyed flag the widget does not
-    declare; and a `state_layer` transition only on a part whose fields hold `interaction` (S12)."""
+    declare; and a `state_layer` transition only on a part whose fields hold `interaction` (S12). Each transition's
+    engine, fields, duration and timing: engine_problems (ADD-A125, ADD-A126)."""
     out = []
     fields = part_fields(ctx, key)
     for path, tr, in_list in transition_tables(ctx, value, typ):
+        out += engine_problems(ctx, key, tr, path, widget, platform)
         frm = tr.get("from")
         if "from" not in tr and not in_list:
             out.append(f"{path}: a single transition states `from` (S11: \"none\" for any state)")
@@ -1801,7 +2106,7 @@ def model_problems(ctx, item: Item) -> list:
                     out.append((item.ln("axes"), "axes.contexts is not a list of context selectors"))
                 else:
                     for i, c in enumerate(axes["contexts"]):
-                        out += [(item.ln("axes"), p) for p in context_problems(ctx, c, f"axes.contexts[{i}]")]
+                        out += [(item.ln("axes"), p) for p in axes_context_problems(ctx, c, f"axes.contexts[{i}]")]
         if "exclusive" in d:
             ex = d["exclusive"]
             if not (isinstance(ex, list) and all(str_list(g) for g in ex)):
@@ -2135,13 +2440,15 @@ def drawn_variant_sets(d):
 
 
 def part_patch_problems(ctx, value, widget) -> list:
-    """A whole part's value (S17, ADD-A121): `"absent"` or `{ drawn_as = { widget, part, variants } }` (S11)."""
-    if value == "absent":
+    """A whole part's value (S17, ADD-A121, ADD-A126): `"absent"` (`PartPresence::Absent`), `"present"`
+    (`PartPresence::Present`, S6.3's `absent = false`) or `{ drawn_as = { widget, part, variants } }` (S11); a part's
+    presence changes by these three alone (S6.3), so nothing else is a whole part's value."""
+    if value in PRESENCE_WORDS:
         return []
     da = value.get("drawn_as") if isinstance(value, dict) and set(value) == {"drawn_as"} else None
     if not isinstance(da, dict):
-        return [f"the key names a whole part of {widget}: its value is \"absent\" or "
-                f"{{ drawn_as = {{ widget, part, variants }} }} (S11, S17)"]
+        return [f"the key names a whole part of {widget}: its value is \"absent\", \"present\" or "
+                f"{{ drawn_as = {{ widget, part, variants }} }} (S6.3, S11, S17)"]
     out = [f"value.drawn_as: unknown key `{k}`" for k in da if k not in DRAWN_AS_KEYS]
     if "widget" not in da:
         return out + ["value.drawn_as: missing `widget`"]
@@ -2292,6 +2599,35 @@ def pending_problems(ctx, items) -> list:
                     out.append((file, pend.line, f"pending fact {d['key']!r} ({d['pending']}) is shadowed by the later "
                                                  f"fact at line {later.line} on a combination both `when`s hold in "
                                                  f"(S17 *Which fact applies*: narrow its `when` or place it after)"))
+    return out
+
+
+def present_problems(ctx, items) -> list:
+    """S17's `value = "present"` (`PartPresence::Present`, S6.3; ADD-A126, ledger queue #126): a part drawn over an
+    `Absent` or `DrawnAs` below, so stated after the fact that makes it absent or drawn as another. A `present` fact
+    with no earlier fact of its key, in its file and of its run, stating `"absent"` or a `drawn_as` table on a
+    combination both `when`s may hold in (whens_overlap) is a finding: it brings back nothing."""
+    models = widget_models(items)
+    facts = {}
+    for it in items:
+        if it.table == "fact" and not it.palette and isinstance(it.data.get("key"), str):
+            facts.setdefault(it.file, []).append(it)
+    out = []
+    for file, fs in facts.items():
+        for i, pres in enumerate(fs):
+            d = pres.data
+            if d.get("value") != "present" or key_info(ctx, d["key"])[4] != PART_PATCH:
+                continue
+            widget = key_info(ctx, d["key"])[2]
+            model = models.get((pres.platform, widget)) if widget else None
+            run = (d.get("scheme_file"), d.get("accent"))
+            if not any(canonical_key(e.data["key"]) == canonical_key(d["key"])
+                       and (e.data.get("scheme_file"), e.data.get("accent")) == run
+                       and (e.data.get("value") == "absent" or isinstance(e.data.get("value"), dict))
+                       and whens_overlap(e.data.get("when"), d.get("when"), model) for e in fs[:i]):
+                out.append((file, pres.line, f"{d['key']!r} = \"present\" follows no fact of its key making the "
+                                             f"part absent or drawn as another where it holds (S17, S6.3: `present` "
+                                             f"draws a part over an `Absent` or `DrawnAs` stated before it)"))
     return out
 
 
@@ -2507,6 +2843,184 @@ def compound_problems(ctx, value, t, path="value") -> list:
     return []
 
 
+# S6.3's mark for the drawn-text leaves (S2.8; ADD-A130): a `TextStyle`'s `fill`, `elision`, `wrap` and `max_lines` may
+# be absent in a keyed text style and a slot only (TEXT_STYLE_HOMES), and on a part where its catalogue entry's
+# may_be_absent `fields:` lists the leaf (a part that only marks text another part lays out). A closed list of the
+# specification's prose (S6.3's "in a keyed text style and a slot only"), so it lives here.
+DRAWN_TEXT_LEAVES = ("fill", "elision", "wrap", "max_lines")
+TEXT_STYLE_HOMES = ("token.text.keyed.", "token.text.roles.")
+APPLE_FONT_DPI = ("macos", "ios")   # S9.4's `token.text.font_dpi = 72` there is the specification's own (S17; ADD-A125)
+
+
+def block_form_problems(ctx, key, value, typ, kind) -> list:
+    """S2.2's typing and S17's forms of a block, where a fact's key and value show them (ADD-A125, ADD-A128, ADD-A130):
+
+    - a plain struct block (a struct field with no `Value` or `Option` around it: `TextStyle.font`, `Tokens.focus`,
+      `FocusIndicator.corners`, a `Tokens` group) is never a reference, and a fact states it per leaf (S17), so a
+      fact keyed by one is a finding whatever its value; a map's bare block entry (`token.icons.animated_visuals.
+      <visual>`, `token.text.keyed.<key>`) is stated as a table, as S11 spells it, never a reference (map_entry);
+    - a plain enum block that S11 spells only by its variant (literal_enum: `Timing`, `GlyphSource`, a `Corners`
+      curve; not `Radius`, whose `Px` an expression spells) is stated by its variant only: no reference, and no
+      keyword but a unit variant's own name (`"none"` where the enum has a `None`);
+    - an `Option` of a struct block (`Behavior.key_repeat`, `RippleStyle.indication_box`) is set whole, `"none"` or
+      a table holding every field of the block, never a reference, `"absent"` or `"auto"` (S11, S6.1; ADD-A128);
+    - a part's `shown` (`PartStyle.shown`, `Option<Value<bool>>`) is `true`, `false` or an expression, never
+      `"absent"`, `"auto"` or `"none"`: a preset that hides the part states it, one that never does states nothing
+      (S2.7; ADD-A126);
+    - a part's `text` (`<widget>.<part>.text`) is never a reference: it references a style or slot leaf by leaf
+      (S2.8, S17; ADD-A130)."""
+    out = []
+    if not typ or typ == PART_PATCH:
+        return out
+    raw = typ.strip()
+    st = strip_type(raw)
+    is_ref = isinstance(value, str) and value.startswith("=")
+    if raw == st and st in ctx.structs and "::" not in st:
+        if map_entry(ctx, key):
+            if is_ref:
+                out.append(f"value: a reference where {st}, a map's block entry, is stated as a table (S11, S17: a "
+                           f"bare block is never a reference; ADD-A125)")
+        else:
+            out.append(f"{key!r} is a plain block ({st}, no `Value`): a fact states it per leaf, never whole or by a "
+                       f"reference (S2.2, S17; ADD-A125)")
+    elif raw == st and literal_enum(ctx, st):
+        units = {v for v, (form, _) in ctx.enums[st].items() if form == "unit"}
+        if is_ref:
+            out.append(f"value: a reference where {st} is a plain enum block, stated by its variant only (S17, "
+                       f"S6.1; ADD-A125)")
+        elif isinstance(value, str) and value in KEYWORDS and value not in units:
+            out.append(f"value: {value!r} where {st} is a plain enum block, stated by its variant only (no `Value`; "
+                       f"S17, S6.1)")
+    m = re.fullmatch(r"Option<\s*(\w+)\s*>", raw)
+    if m and m.group(1) in ctx.structs:
+        b = m.group(1)
+        if is_ref or (isinstance(value, str) and value in ("absent", "auto")):
+            out.append(f"value: {value!r} where `Option<{b}>` is set whole, \"none\" or a table holding every field "
+                       f"(S11, S6.1; ADD-A128)")
+        elif isinstance(value, dict):
+            fields = ctx.structs[b]
+            given = {re.sub(r"_(px|ms|deg|pt)$", "", k) for k in value}
+            missing = [f for f in fields if f not in given]
+            if missing:
+                out.append(f"value: a partial {b} table (no {', '.join(f'`{f}`' for f in missing)}): `Option<{b}>` is "
+                           f"set whole, \"none\" or every field (S11; ADD-A128)")
+    if raw.replace(" ", "") == "Option<Value<bool>>" and isinstance(key, str) and key.endswith(".shown") and \
+            isinstance(value, str) and value in KEYWORDS:
+        out.append(f"value: {value!r}: `shown` is spelt true or false where a preset hides the part (S2.7, S6.3: a "
+                   f"part's presence is `Absent`, `DrawnAs` or `Present`, never `shown`'s; ADD-A126)")
+    if kind == "widget" and is_ref and strip_type(raw) == "TextStyle" and isinstance(key, str) and \
+            re.fullmatch(r"(?:component\.)?[a-z0-9_]+(?:\.[a-z0-9_]+)?\.[a-z0-9_]+\.text", key) and \
+            key.split(".")[-2] != "values":
+        out.append(f"value: a part's `text` by reference; it references its style or slot leaf by leaf (S2.8, S17; "
+                   f"ADD-A130)")
+    return out
+
+
+def map_entry(ctx, key) -> bool:
+    """Whether a fact's key names an entry of a map (`Vec<(K, V)>`): its key less its last segment is a map's."""
+    parsed = key_segments(key) if isinstance(key, str) else None
+    if not isinstance(parsed, tuple) or len(parsed[0]) < 2:
+        return False
+    i = key.rfind(".")
+    parent = key_info(ctx, key[:i])[4] if i > 0 else None
+    return bool(parent and MAP_TYPE.fullmatch(strip_type(parent)))
+
+
+def absent_text_leaves(ctx, key, value):
+    """The drawn-text leaves (DRAWN_TEXT_LEAVES) a fact states `"absent"`, as `<path>.text.<leaf>` paths: its key's own
+    leaf, or the leaves of a whole `text` table it states."""
+    if not isinstance(key, str):
+        return []
+    m = re.fullmatch(r"(.+\.text)\.([a-z_]+)", key)
+    if m and m.group(2) in DRAWN_TEXT_LEAVES and value == "absent":
+        return [key]
+    if key.endswith(".text") and isinstance(value, dict):
+        return [f"{key}.{k}" for k in DRAWN_TEXT_LEAVES if value.get(k) == "absent"]
+    return []
+
+
+def text_leaf_problems(ctx, key, value, widget) -> list:
+    """S6.3's drawn-text mark (S2.8; ADD-A130): a `TextStyle`'s `fill`, `elision`, `wrap` or `max_lines` stated
+    `"absent"` outside a keyed text style and a slot (TEXT_STYLE_HOMES) is a finding, but on a part whose catalogue
+    entry's may_be_absent `fields:` lists `<part>.text.<leaf>` (marked_text_leaves)."""
+    out = []
+    for path in absent_text_leaves(ctx, key, value):
+        if path.startswith(TEXT_STYLE_HOMES):
+            continue
+        segs = path.split(".")
+        rel = ".".join(segs[2:]) if segs[0] == "component" else ".".join(segs[1:])
+        if widget and rel in marked_text_leaves(ctx, widget):
+            continue
+        out.append(f"value: {path} absent, where S6.3 allows a drawn-text leaf absent only in a keyed text style, a "
+                   f"slot or a part its catalogue entry marks (S2.8; ADD-A130)")
+    return out
+
+
+def marked_text_leaves(ctx, widget) -> set:
+    """The `<part>.text.<leaf>` paths (and `<part>.text`) the catalogue entry's may_be_absent item lists under
+    `fields:`, read through spec_catalogue.absence_sections (each backticked path, its notes not read)."""
+    cache = ctx.__dict__.setdefault("_marked_text", {})
+    if widget not in cache:
+        entry = ctx.entries.get(widget)
+        it = entry.item("may_be_absent") if entry else None
+        out = set()
+        if it:
+            text = it.text
+            for label, a, b in spec_catalogue.absence_sections(text):
+                if label == "fields":
+                    out |= {x for x in re.findall(r"`([a-z0-9_]+\.text(?:\.[a-z_]+)?)`", text[a:b])}
+        cache[widget] = out
+    return cache[widget]
+
+
+def item_generations(item) -> set:
+    """The generations a fact can serve by its `when` alone (S17 *Generations*): its `preset:` condition's, else its
+    directory's presets (PLATFORMS), less those its `not_conditions` names; whether or not the presets exist."""
+    when = item.data.get("when") if isinstance(item.data.get("when"), dict) else {}
+    conds = when.get("conditions", []) if str_list(when.get("conditions", [])) else []
+    nots = when.get("not_conditions", []) if str_list(when.get("not_conditions", [])) else []
+    pres = [c[7:] for c in conds if c.startswith("preset:")]
+    out = set(pres[:1]) if pres else set(PLATFORMS.get(item.platform, ()))
+    return out - {c[7:] for c in nots if c.startswith("preset:")}
+
+
+def option_block_problems(ctx, items) -> list:
+    """S17's *Per-leaf facts of a field set whole* (ADD-A128): a generation's facts state an `Option` of a struct block
+    (`token.behavior.key_repeat`) whole or per leaf, never both. A leaf fact (`….key_repeat.delay`) of a field that a
+    fact keyed by the field itself states whole for one of its generations (item_generations) is a finding."""
+    whole, leaves = {}, []
+    for it in items:
+        d = it.data
+        if it.table != "fact" or it.palette or not isinstance(d.get("key"), str):
+            continue
+        parsed = key_segments(d["key"])
+        if not isinstance(parsed, tuple):
+            continue
+        segs = parsed[0]
+        info = key_info(ctx, d["key"])
+        if info[4] and re.fullmatch(r"Option<\s*\w+\s*>", info[4].strip()) and \
+                strip_type(info[4]) in ctx.structs:
+            whole.setdefault((it.platform, tuple(segs)), []).append(it)
+        elif len(segs) > 2:
+            leaves.append((it, segs))
+    out = []
+    for it, segs in leaves:
+        for n in range(len(segs) - 1, 1, -1):
+            wf = whole.get((it.platform, tuple(segs[:n])))
+            if not wf:
+                continue
+            gens = item_generations(it)
+            clash = [w for w in wf if item_generations(w) & gens]
+            if clash:
+                out.append((it.file, it.line, f"{it.data['key']!r}: a leaf of {'.'.join(segs[:n])}, which the fact at "
+                                              f"{clash[0].file}:{clash[0].line} states whole for "
+                                              f"{', '.join(sorted(item_generations(clash[0]) & gens))}: a generation "
+                                              f"states an `Option` block whole or per leaf, never both (S17; "
+                                              f"ADD-A128)"))
+            break
+    return out
+
+
 def canonical_when(when):
     """A `when` as a comparable value: its lists of names as sets (two `when`s equal as S11 reads them)."""
     if isinstance(when, dict):
@@ -2611,13 +3125,45 @@ def palette_problems(path, text, data, fact_keys) -> list:
 
 # ------------------------------------------------------------------------------------------------- check
 
+def platform_facts(ctx, items) -> dict:
+    """{platform: {key (its canonical segments joined): [the values its facts state]}}, and under `token.icons.animated_visuals.*` the
+    visuals the platform's facts state (`token.icons.animated_visuals.<visual>`, a pending one included, or entries of
+    the whole map) with their `markers` table where a fact states one, else None: what engine_problems reads."""
+    out = {}
+    for it in items:
+        d = it.data
+        if it.table != "fact" or it.palette or not isinstance(d.get("key"), str):
+            continue
+        p = out.setdefault(it.platform, {})
+        ck = canonical_key(d["key"])
+        ck = ".".join(ck) if isinstance(ck, tuple) else ck
+        if "value" in d:
+            p.setdefault(ck, []).append(d["value"])
+        visuals = p.setdefault("token.icons.animated_visuals.*", {})
+        m = re.fullmatch(r"token\.icons\.animated_visuals(?:\.([A-Za-z0-9_]+))?", ck)
+        if not m:
+            continue
+        if m.group(1):
+            v = d.get("value")
+            markers = v.get("markers") if isinstance(v, dict) and isinstance(v.get("markers"), dict) else None
+            visuals[m.group(1)] = markers if markers is not None else visuals.get(m.group(1))
+        elif isinstance(d.get("value"), dict):
+            for name, v in d["value"].items():
+                visuals[name] = v.get("markers") if isinstance(v, dict) and isinstance(v.get("markers"), dict) \
+                    else visuals.get(name)
+    return out
+
+
 def check(ctx: Context):
     """(findings as (file, line, what), counts)."""
     items, findings, nfiles = load(ctx)
+    ctx.platform_facts = platform_facts(ctx, items)
     for it in items:
         problems = model_problems(ctx, it) if it.table == "model" else fact_problems(ctx, it)
         findings += [(it.file, ln, what) for ln, what in problems]
     findings += pending_problems(ctx, items)
+    findings += present_problems(ctx, items)
+    findings += option_block_problems(ctx, items)
     findings += latest_problems(ctx, items)
     findings += never_holds_problems(ctx, items)
     findings += ellipse_problems(ctx, items)
@@ -2659,8 +3205,14 @@ SELF_TEST_CORE = '''
 ```rust
 pub enum StateFlag { Hover, Pressed, Focused, FocusVisible, Disabled, Checked, Shared(SharedFlag), Widget(Key) }
 pub enum SharedFlag { Pulling, Refreshing }
-pub enum Condition { WindowInactive, ContrastIncreased, ContrastHigh, Maximized, Tiled(TiledEdges), Scheme(Scheme),
-                  Flavor(Key), Preset(PresetId) }
+pub enum Condition {
+    // system, by the reader
+    ContrastIncreased, ContrastHigh, Scheme(Scheme),
+    // window, by the connector
+    WindowInactive, Maximized, Tiled(TiledEdges),
+    // application
+    Flavor(Key), Preset(PresetId),
+}
 pub enum Scheme { Light, Dark }
 pub enum InputKind { Touch, Mouse }
 pub enum Idiom { Phone, Pad }
@@ -2672,28 +3224,43 @@ pub enum SurfaceSet { Window, View, Header, Button }
 pub struct SurfaceRoles { pub background: Value<Color>, pub foreground: Value<Color> }
 pub struct GlobalRoles { pub accent: Value<Color>, pub status: StatusRoles, pub accent_ramp: Vec<(Key, Value<Color>)> }
 pub struct Tokens { pub text: TextTokens, pub kde: KdeTokens, pub motion: MotionTokens, pub focus: FocusIndicator,
-                    pub icons: IconTokens, pub material: MaterialScheme }
-pub struct IconTokens { pub theme: Value<String> }
+                    pub icons: IconTokens, pub material: MaterialScheme, pub behavior: Behavior, pub caret: Caret }
+pub struct IconTokens { pub theme: Value<String>, pub animated_visuals: Vec<(Key, AnimatedVisual)> }
 pub struct MotionTokens { pub durations: Vec<(Key, Value<Ms>)>, pub timings: Vec<(Key, Timing)>,
-                          pub speed_factor: Value<f32> }
+                          pub speed_factor: Value<f32>, pub color_space: Value<ColorInterpolation> }
+pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, Oklab }
 pub struct PartStyle { pub fill: Value<Paint>, pub stroke: Value<Stroke>, pub corners: Value<Corners>,
                        pub shadow: Value<Shadow>, pub text: Value<TextStyle>, pub focus: Value<FocusIndicator>,
                        pub padding: Sides<Value<Px>>, pub min_width: Value<Px>, pub opacity: Value<Fraction>,
                        pub transitions: Vec<Transition>, pub glyph: Value<Glyph>,
-                       pub interaction: Value<Interaction> }
+                       pub interaction: Value<Interaction>, pub icon: Value<IconStyle>,
+                       pub shown: Option<Value<bool>> }
 pub struct Interaction { pub state_layer: StateLayerStyle, pub ripple: RippleStyle }
 pub struct StateLayerStyle { pub color: Value<Color>, pub alpha: Value<Fraction> }
 pub struct RippleStyle { pub effect: Value<RippleEffect>, pub color: Value<Color>, pub alpha: Value<Fraction>,
-                         pub bounded: bool, pub max_radius: Value<Px>, pub padding: Value<Px> }
+                         pub bounded: bool, pub max_radius: Value<Px>, pub padding: Value<Px>,
+                         pub indication_box: Option<IndicationBox> }
+pub struct IndicationBox { pub part: Key, pub outset: Value<Px> }
 pub enum RippleEffect { AndroidPatterned }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
                          pub color: Value<Color>, pub inset: bool }
-pub struct ElementData { pub progress: f32 }
-pub struct TextRoles { pub body: X }
-pub struct TextTokens { pub roles: X, pub keyed: X, pub scaling: X, pub fallbacks: FontFallbacks }
-pub struct TextStyle { pub font: Font, pub fill: Value<Paint> }
-pub struct Font { pub family: Value<String>, pub size: Value<FontSize>, pub weight: Value<u16> }
-pub struct IconStyle { pub size: Value<Px> }
+pub struct ElementData { pub progress: f32, pub caret_height: Px }
+pub struct TextRoles { pub body: Value<TextStyle> }
+pub struct TextTokens { pub roles: TextRoles, pub keyed: Vec<(Key, TextStyle)>, pub scaling: X,
+                        pub fallbacks: FontFallbacks, pub font_dpi: Value<f32> }
+pub struct TextStyle { pub font: Font, pub fill: Value<Paint>, pub decoration: Value<Decoration>,
+                       pub elision: Value<Elision>, pub wrap: Value<Wrap>, pub max_lines: Value<Option<u32>> }
+pub struct Font { pub family: Value<String>, pub size: Value<FontSize>, pub weight: Value<u16>,
+                  pub axes: Value<Vec<(AxisTag, AxisValue)>> }
+pub enum AxisValue { Fixed(f32), FollowsSize }
+pub struct Decoration { pub line: DecorationLine, pub style: DecorationStyle }
+pub enum DecorationLine { Underline, UnderlineLow, Overline, Strike }
+pub enum DecorationStyle { Solid, Wavy }
+pub enum Elision { None, End }
+pub enum Wrap { None, Word }
+pub struct IconStyle { pub size: Value<Px>, pub rendering_mode: Value<RenderingMode>,
+                       pub symbolic_colors: Vec<(Key, Value<Paint>)> }
+pub enum RenderingMode { Template, Original, FromIcon }
 pub struct Glyph { pub source: GlyphSource, pub stroke: X }
 pub enum GlyphSource { ThemeIcon { name: String, fallbacks: Vec<String> }, NamedSystemImage { name: String } }
 pub struct GlyphStroke { pub width: X }
@@ -2705,8 +3272,11 @@ pub enum CornerCurve { Circular, Continuous }
 pub struct Stroke { pub top: Edge }
 pub struct Transform { pub scale: X }
 pub struct Caret { pub width: X }
-pub struct Behavior { pub focus_visible_when: X }
-pub struct ScrollPhysics { pub friction: X }
+pub struct Behavior { pub focus_visible_when: X, pub hover_time: Value<Ms>, pub drag_min_delay: Value<Ms>,
+                      pub mnemonic_when_disabled: Value<bool>, pub key_repeat: Option<KeyRepeat>,
+                      pub scroll: ScrollPhysics }
+pub struct KeyRepeat { pub delay: Value<Ms>, pub interval: Value<Ms> }
+pub struct ScrollPhysics { pub friction: X, pub wheel_step_lines: Value<f32>, pub wheel_step_distance: Value<Px> }
 pub struct TouchBehavior { pub slop: X }
 pub struct FontFallbacks { pub families: Vec<String>, pub emoji: X, pub per_language: Vec<(LanguageTag, Vec<String>)>,
                            pub per_family: Vec<(String, Vec<String>)> }
@@ -2715,10 +3285,16 @@ pub struct KdeTokens { pub disabled: KdeEffects, pub frame_width: Value<Px> }
 pub struct KdeEffects { pub intensity_amount: Value<f32> }
 pub struct MaterialScheme { pub variant: MaterialVariant, pub primary: X }
 pub enum MaterialVariant { TonalSpot, FruitSalad, Cmf }
-pub struct Transition { pub properties: Vec<PropertyGroup>, pub duration: Value<Ms>, pub timing: Value<Timing>,
+pub struct Transition { pub properties: Vec<PropertyGroup>, pub kind: TransitionKind, pub duration: Value<Ms>,
+                        pub delay: Value<Ms>, pub timing: Value<Timing>, pub engine: TransitionEngine,
                         pub from: Option<Vec<StateFlag>> }
-pub enum PropertyGroup { Fill, Stroke, StrokeWidth, StateLayer }
-pub enum TransitionKind { Interpolate, Keyed { key: Key } }
+pub enum TransitionEngine { GtkCss, AdwAnimation { replays: bool }, QtQuick, Breeze(BreezeTest),
+                            BreezeTabBar(BreezeTest), ComposeAnimatable, ComposeTransition, ComposeHeld, WinUi,
+                            WinUiAnimatedIcon { visual: Key }, GtkSwitch }
+pub struct BreezeTest { pub any: Vec<StateFlag>, pub none: Vec<StateFlag>, pub conditions: Vec<Condition> }
+pub struct AnimatedVisual { pub duration: Value<Ms>, pub markers: Vec<(String, Value<Fraction>)> }
+pub enum PropertyGroup { Fill, Stroke, StrokeWidth, StateLayer, Glyph, Geometry }
+pub enum TransitionKind { Interpolate, FocusMove, Keyed { key: Key, params: Vec<(Key, Value<Scalar>)> } }
 pub enum Timing { CubicBezier(f32, f32, f32, f32), Linear, Spring { mass: f32, stiffness: f32, damping_ratio: f32,
                   rest_epsilon: f32 }, Platform(PlatformCurve) }
 pub enum PlatformCurve { KirigamiVelocity, Qt(QtEasing), Adw(AdwEasing) }
@@ -2757,10 +3333,28 @@ SELF_TEST_CATALOGUE = '''
   - `body` — the root: `fill`, `stroke`, `corners`, `shadow`, `padding`, `min_width`, `focus`, `transitions`,
     `interaction`.
   - `label` — the text: `text`.
-  - `mark` — the mark: `glyph`.
+  - `mark` — the mark: `glyph`, `icon`, `shown`, `transitions`.
+  - `selection` *(element)* — a mark on the label's text: `text`.
 - **Widget values:** `icon_text_gap_px: Value<Px>`, `repeat_delay_ms: Value<Ms>`.
 - **Variants:** typed `flat`, `primary`; keyed `@pill`.
 - **Flags:** keyed `@busy`.
+- **may_be_absent:** fields: `selection.text.elision` (every preset: a mark on the `label` part's text).
+
+### switch
+
+- **Parts:**
+  - `body` — the root: `fill`.
+  - `thumb` — the handle: `fill`, `transitions`.
+
+### combo_box
+
+- **Parts:**
+  - `body` — the root: `fill`.
+- **Widget values:** `content_width: Value<ContentWidth>`, `input_placement: Value<InputPlacement>`,
+  `icon_clip_inset_px: Value<Px>` (ADD-A127).
+- **Notes:** `ContentWidth { Shown, ShownAndHints { label_padding: Option<Value<Px>> }, Widest { at_least: Value<Px>,
+  empty: Option<CharRun>, or_shown: bool }, Fixed(Value<Px>) }`, `CharRun { ch: char, count: u32 }`;
+  `InputPlacement { Row, Body }`; a prose example, `Keyed { key: pop_in }`, is no type.
 
 ### pull_to_refresh
 
@@ -3097,8 +3691,8 @@ _CITE = ('\n[[fact.cite]]\nkind = "published"\n'
          'quote = "&:hover { background-color: $hover_color; }"\n')
 _PART = '[[fact]]\nkey = "button.mark"\nvalue = "absent"\nrows = []\n' + _CITE
 _SPRING_TIMING = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, rest_epsilon = 0.001 } }"
-_SPRING = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], duration_ms = 200, timing = '
-           + _SPRING_TIMING + ' }]\nrows = []\n' + _CITE)
+_SPRING = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], kind = "interpolate", duration_ms = 200, '
+           'delay_ms = 0, timing = ' + _SPRING_TIMING + ', engine = "compose_animatable" }]\nrows = []\n' + _CITE)
 _CMF = '[[fact]]\nkey = "token.material.variant"\nvalue = "cmf"\nrows = []\n' + _CITE
 _FILL = '[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["hover"] }\nvalue = "#ffffff"\nrows = []\n' + _CITE
 _PENDING = '\n[[fact]]\nkey = "button.body.fill"\nwhen = { states = ["pressed"] }\npending = "U1"\nrows = []\n'
@@ -3126,11 +3720,12 @@ _LATEST = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:m
 _LATEST_PENDING = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset:macos-monterey"], latest = { glow '
                    '= "hover" } }\npending = "U3"\nrows = []\n\n[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = '
                    '["preset:macos-monterey"], latest = { glow = "focused" } }\nvalue = "#ffffff"\nrows = []\n' + _MAC_CITE)
-_FROM = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], duration_ms = 150, timing = '
-         '"linear", from = ["pressed", "focused"] }, { properties = ["state_layer"], duration_ms = 15, timing = "linear" }]'
+_FROM = ('[[fact]]\nkey = "button.body.transitions"\nvalue = [{ properties = ["fill"], kind = "interpolate", duration_ms = '
+         '150, delay_ms = 0, timing = "linear", engine = "gtk_css", from = ["pressed", "focused"] }, { properties = '
+         '["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "gtk_css" }]'
          '\nrows = []\n' + _CITE)
-_FOCUS_TRANSITION = ('[[fact]]\nkey = "token.focus.transition"\nvalue = { properties = ["fill"], duration_ms = 100, timing = '
-                     '"linear", from = "none" }\nrows = []\n' + _CITE)
+_FOCUS_TRANSITION = ('[[fact]]\nkey = "token.focus.transition"\nvalue = { properties = ["fill"], kind = "interpolate", '
+                     'duration_ms = 100, delay_ms = 0, timing = "linear", engine = "gtk_css", from = "none" }\nrows = []\n' + _CITE)
 _ELLIPSE = "".join(f'[[fact]]\nkey = "button.body.corners.{c}"\nwhen = {{ variants = ["flat"] }}\nvalue = "ellipse"\n'
                    f'rows = []\n{_CITE}\n' for c in ("top_left", "top_right", "bottom_right", "bottom_left")) + (
            '[[fact]]\nkey = "button.body.corners.curve"\nwhen = { variants = ["flat"] }\nvalue = "circular"\nrows = []\n'
@@ -3148,6 +3743,29 @@ _MAC_FACT = ('[[fact]]\nkey = "button.body.fill"\nwhen = { conditions = ["preset
 _MAP = '[[fact]]\nkey = "token.motion.durations"\nvalue = { button = "200ms" }\nrows = []\n' + _CITE
 _SIDES = ('[[fact]]\nkey = "button.body.padding"\nvalue = { top_px = "absent", right_px = "absent", '
           'bottom_px = "absent", left_px = "absent" }\nrows = []\n' + _CITE)
+
+
+# ADD-A125–ADD-A130: the tokens, nested contexts, `present`, the engines, the block forms and the drawn-text leaves
+def _fact(key, value, when=None, cite=_CITE):
+    w = f"when = {when}\n" if when else ""
+    return f'[[fact]]\nkey = "{key}"\n{w}value = {value}\nrows = []\n{cite}\n'
+
+
+_TAHOE_CITE = _MAC_CITE.replace("16.4", "26.6")
+_WIN_CITE = _CITE.replace("libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss", "microsoft-ui-xaml@2.5.1 x.xaml")
+_KDE_CITE = _CITE.replace("libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss", "breeze@6.8.2 kstyle/x.cpp")
+_VISUAL = _fact("token.icons.animated_visuals.accept", '{ duration_ms = 2667, markers = { NormalOffToNormalOn_Start = '
+                '0.0, NormalOffToNormalOn_End = 0.5 } }', cite=_WIN_CITE)
+_TR = ('{ properties = ["fill"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = "linear", '
+       'engine = "gtk_css" }')
+_TRS = _fact("button.body.transitions", f"[{_TR}]")
+_ICON_TR = ('{ properties = ["glyph"], kind = { keyed = { key = "normal_on", params = {} } }, duration_ms = "absent", '
+            'delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "accept" } } }')
+_BREEZE_TR = ('{ properties = ["fill"], kind = "interpolate", duration_ms = 200, delay_ms = 0, timing = "linear", '
+              'engine = { breeze = { any = ["hover"], none = [], conditions = ["window_inactive"] } } }')
+_SWITCH_TR = ('{ properties = ["geometry"], kind = "interpolate", duration_ms = 200, delay_ms = 0, timing = { platform = '
+              '{ adw = "ease_out_cubic" } }, engine = "gtk_switch" }')
+_CHAIN = '[{ widget = "component.led" }, { widget = "toolbar", part = "bar" }]'
 
 # (label, file, old, new, the findings wanted: substrings, one per finding)
 SELF_TEST_CASES = [
@@ -3297,7 +3915,7 @@ SELF_TEST_CASES = [
     ("part: a component's part absent", "docs/facts/gnome/part.toml", None,
      _PART.replace('"button.mark"', '"component.led.body"'), []),
     ("part: neither absent nor drawn_as", "docs/facts/gnome/part.toml", None, _PART.replace('"absent"', '"none"'),
-     ["its value is \"absent\" or { drawn_as"]),
+     ["its value is \"absent\", \"present\" or { drawn_as"]),
     ("part: drawn_as a part of another widget", "docs/facts/gnome/part.toml", None,
      _PART.replace('"absent"', '{ drawn_as = { widget = "toolbar", part = "label" } }'),
      ["'label' is not a part of toolbar"]),
@@ -3654,7 +4272,7 @@ SELF_TEST_CASES = [
     ("map: inside a block", "docs/facts/gnome/map.toml", None,
      _MAP.replace('"token.motion.durations"', '"token.motion"').replace(
          '{ button = "200ms" }', '{ durations = [["button", "200ms"]] }'),
-     ["value.durations: a map written as a list of pairs"]),
+     ["value.durations: a map written as a list of pairs", "'token.motion' is a plain block (MotionTokens"]),
     ("map: a list of blocks is no map", "docs/facts/gnome/map.toml", None, _SPRING, []),
     ("map: an empty table", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "{}"), []),
     ("map: an empty map written []", "docs/facts/gnome/map.toml", None, _MAP.replace('{ button = "200ms" }', "[]"),
@@ -3671,7 +4289,7 @@ SELF_TEST_CASES = [
      ["value: 'auto' states a Sides whole, which is no `Value`"]),
     ("map: an empty map written [] inside a block", "docs/facts/gnome/map.toml", None,
      _MAP.replace('"token.motion.durations"', '"token.motion"').replace('{ button = "200ms" }', "{ durations = [] }"),
-     ["value.durations: an empty map written `[]`"]),
+     ["value.durations: an empty map written `[]`", "'token.motion' is a plain block (MotionTokens"]),
     ("map: an empty list is a list", "docs/facts/gnome/map.toml", None,
      _FALLBACK.replace('["Segoe MDL2 Assets"]', "[]"), []),
     # a whole map keyed by text: its keys the text as written, its values the map's value type (S11; ADD-A123)
@@ -3782,6 +4400,198 @@ SELF_TEST_CASES = [
     ("interaction: a part whose fields lack it", "docs/facts/gnome/interaction.toml", None,
      _INTERACTION.replace("button.body.interaction.state_layer", "button.label.interaction.state_layer"),
      ["`interaction` is not a field of button's part `label`"]),
+    # the tokens ADD-A125, ADD-A126 and ADD-A130 add or rename, read from the core's MotionTokens, IconTokens,
+    # Behavior, ScrollPhysics and IconStyle (check_spec_names.Checker.token_ok, field_ok)
+    ("tokens: the colour space", "docs/facts/gnome/tokens.toml", None,
+     _fact("token.motion.color_space", '"premultiplied_srgb"'), []),
+    ("tokens: a colour space no ColorInterpolation names", "docs/facts/gnome/tokens.toml", None,
+     _fact("token.motion.color_space", '"srgb"'), ["'srgb' is not a unit variant of ColorInterpolation"]),
+    ("tokens: the colour space misspelt", "docs/facts/gnome/tokens.toml", None,
+     _fact("token.motion.colour_space", '"oklab"'), ["names no token"]),
+    ("tokens: an animated visual with its markers", "docs/facts/windows/tokens.toml", None, _VISUAL, []),
+    ("tokens: an animated visual by reference", "docs/facts/windows/tokens.toml", None,
+     _fact("token.icons.animated_visuals.accept", '"= token.icons.animated_visuals.check"', cite=_WIN_CITE),
+     ["a reference where AnimatedVisual, a map's block entry, is stated as a table"]),
+    ("tokens: an animated visual under no IconTokens field", "docs/facts/windows/tokens.toml", None,
+     _fact("token.icons.animations.accept", "{ duration_ms = 2667 }", cite=_WIN_CITE), ["names no token"]),
+    ("tokens: the hover time, the drag delay, the disabled mnemonic and the wheel step", "docs/facts/gnome/tokens.toml",
+     None, _fact("token.behavior.hover_time", '"400ms"') + _fact("token.behavior.drag_min_delay", '"100ms"')
+     + _fact("token.behavior.mnemonic_when_disabled", "false") + _fact("token.behavior.scroll.wheel_step_lines", "3")
+     + _fact("token.behavior.scroll.wheel_step_distance", '"48px"'), []),
+    ("tokens: the old hover and wheel names", "docs/facts/gnome/tokens.toml", None,
+     _fact("token.behavior.hover_open_delay", '"400ms"') + _fact("token.behavior.scroll_lines_per_step", "3"),
+     ["names no token", "names no token"]),
+    ("icon: symbolic colours and the icon's own rendering", "docs/facts/gnome/icon.toml", None,
+     _fact("button.mark.icon.symbolic_colors", '{ success = "#00ff00", accent = "= role.global.accent" }')
+     + _fact("button.mark.icon.rendering_mode", '"from_icon"'), []),
+    ("icon: the old status colours and a rendering no RenderingMode names", "docs/facts/gnome/icon.toml", None,
+     _fact("button.mark.icon.status_colors", '{ success = "#00ff00" }')
+     + _fact("button.mark.icon.rendering_mode", '"from_glyph"'),
+     ["`icon.status_colors` is not a field path", "'from_glyph' is not a unit variant of RenderingMode"]),
+    ("text: the low underline", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text.decoration", '{ line = "underline_low", style = "solid" }'), []),
+    ("text: an underline no DecorationLine names", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text.decoration", '{ line = "underline_lower", style = "solid" }'),
+     ["'underline_lower' is not a unit variant of DecorationLine"]),
+    ("element: the caret's height", "docs/facts/gnome/caret.toml", None,
+     _fact("button.body.min_width", '"= floor(element.caret_height)"'), []),
+    ("element: no such element data", "docs/facts/gnome/caret.toml", None,
+     _fact("button.body.min_width", '"= floor(element.caret_hight)"'), ["names no element data"]),
+    ("map: font axes, an empty map in a Value", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text.font.axes", "{}"), []),
+    ("map: font axes written []", "docs/facts/gnome/text.toml", None, _fact("button.label.text.font.axes", "[]"),
+     ["an empty map written `[]`"]),
+    # nested contexts, an ordered chain (S17; ADD-A125)
+    ("contexts: a selector and a chain", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace("contexts = []", f'contexts = [{{ widget = "component.led" }}, {_CHAIN}]'), []),
+    ("contexts: a chain of one", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace("contexts = []", 'contexts = [[{ widget = "component.led" }]]'),
+     ["axes.contexts[0]: a chain of 1 context selector"]),
+    ("contexts: a chain's selector naming no part", "docs/facts/windows/state-models.toml", None,
+     _TOOLBAR.replace("contexts = []", f'contexts = [{_CHAIN.replace("bar", "rail")}]'),
+     ["axes.contexts[0][1]"]),
+    # `present` (S6.3, S17; ADD-A126)
+    ("present: over an absent part stated before", "docs/facts/gnome/part.toml", None,
+     _PART + "\n" + _PART.replace('value = "absent"', 'when = { states = ["hover"] }\nvalue = "present"'), []),
+    ("present: over nothing", "docs/facts/gnome/part.toml", None,
+     _PART.replace('value = "absent"', 'when = { states = ["hover"] }\nvalue = "present"'),
+     ["'button.mark' = \"present\" follows no fact of its key"]),
+    # the engines (S2.7, S6.3, S11, S12; ADD-A125, ADD-A126)
+    ("engine: a CSS transition", "docs/facts/gnome/engine.toml", None, _TRS, []),
+    ("engine: none stated, and the old theme-change flag", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace(', engine = "gtk_css"', ", suspended_by_theme_change = true"),
+     ["value[0]: missing `engine`", "value[0]: `suspended_by_theme_change` is not a field of Transition"]),
+    ("engine: a stated zero, its timing absent", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('duration_ms = 150, delay_ms = 0, timing = "linear"', 'duration_ms = 0, delay_ms = 0, timing = '
+                  '"absent"'), []),
+    ("engine: a stated zero with a timing", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace("duration_ms = 150", "duration_ms = 0"), ["a stated zero duration's timing is stated"]),
+    ("engine: a timing absent on a running transition", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('timing = "linear"', 'timing = "absent"'), ["timing absent where the duration is no stated zero"]),
+    ("engine: a spring's duration absent", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('duration_ms = 150', 'duration_ms = "absent"').replace('timing = "linear"', f"timing = "
+                  f"{_SPRING_TIMING}").replace('"gtk_css"', "{ adw_animation = { replays = false } }"), []),
+    ("engine: a curve's duration absent", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('duration_ms = 150', 'duration_ms = "absent"'), ["duration absent but on a spring"]),
+    ("engine: a spring under GTK's CSS", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('timing = "linear"', f"timing = {_SPRING_TIMING}"),
+     ["a spring timing under gtk_css, whose code computes cubic_bezier, linear, steps"]),
+    ("engine: a referenced curve under ButtonGroup's press", "docs/facts/gnome/engine.toml", None,
+     _fact("token.motion.timings.standard", "{ cubic_bezier = [0.2, 0.0, 0.0, 1.0] }")
+     + _TRS.replace('"fill"', '"geometry"').replace('timing = "linear"', 'timing = "= token.motion.timings.standard"')
+     .replace('"gtk_css"', '"compose_held"'), ["a cubic_bezier timing under compose_held, whose code computes spring"]),
+    ("engine: a referenced spring under ButtonGroup's press", "docs/facts/gnome/engine.toml", None,
+     _fact("token.motion.timings.standard", _SPRING_TIMING)
+     + _TRS.replace('"fill"', '"geometry"').replace('timing = "linear"', 'timing = "= token.motion.timings.standard"')
+     .replace('"gtk_css"', '"compose_held"'), []),
+    ("engine: ButtonGroup's press on a fill", "docs/facts/gnome/engine.toml", None,
+     _TRS.replace('"gtk_css"', '"compose_held"').replace('timing = "linear"', f"timing = {_SPRING_TIMING}"),
+     ["a compose_held transition is a segment's geometry one"]),
+    ("engine: a keyed transition under a value engine, and a focus move", "docs/facts/gnome/engine.toml", None,
+     _fact("button.body.transitions", "[" + _TR.replace('"interpolate"', '{ keyed = { key = "on", params = {} } }')
+           + ", " + _TR.replace('"interpolate"', '"focus_move"') + "]"),
+     ["value[0]: a keyed transition under gtk_css", "value[1]: a focus_move transition"]),
+    ("engine: AnimatedIcon on its visual's state", "docs/facts/windows/engine.toml", None,
+     _VISUAL + _fact("button.mark.transitions", f"[{_ICON_TR}]", cite=_WIN_CITE), []),
+    ("engine: AnimatedIcon on no visual the facts state", "docs/facts/windows/engine.toml", None,
+     _fact("button.mark.transitions", f"[{_ICON_TR}]", cite=_WIN_CITE),
+     ["visual 'accept' is no `token.icons.animated_visuals` entry the windows facts state"]),
+    ("engine: AnimatedIcon timed and delayed, on a state no marker holds", "docs/facts/windows/engine.toml", None,
+     _VISUAL + _fact("button.mark.transitions", "[" + _ICON_TR.replace('duration_ms = "absent"', "duration_ms = 100")
+                     .replace("delay_ms = 0", "delay_ms = 50").replace('"normal_on"', '"pointer_over"') + "]",
+                     cite=_WIN_CITE),
+     ["states a duration", "delay is not zero", "the state 'pointer_over' (PointerOver) is held by no marker"]),
+    ("engine: a Breeze test", "docs/facts/kde/engine.toml", None,
+     _fact("button.body.transitions", f"[{_BREEZE_TR}]", cite=_KDE_CITE), []),
+    ("engine: a Breeze test without its conditions, on a screen condition", "docs/facts/kde/engine.toml", None,
+     _fact("button.body.transitions", "[" + _BREEZE_TR.replace(', conditions = ["window_inactive"]', "") + ", "
+           + _BREEZE_TR.replace('"window_inactive"', '"contrast_high"') + "]", cite=_KDE_CITE),
+     ["value[0].engine: the test states no `conditions`", "value[1].engine: the test's condition 'contrast_high'"]),
+    ("engine: a Breeze zero with a test, and a delayed Breeze run with none", "docs/facts/kde/engine.toml", None,
+     _fact("button.body.transitions", "[" + _BREEZE_TR.replace("duration_ms = 200", "duration_ms = 0").replace(
+         'timing = "linear"', 'timing = "absent"') + ", " + _BREEZE_TR.replace("delay_ms = 0", "delay_ms = 10").replace(
+         'any = ["hover"]', "any = []").replace('["window_inactive"]', "[]") + "]", cite=_KDE_CITE),
+     ["value[0].engine: a stated zero's test is not empty", "value[1]: a breeze transition's delay is not zero",
+      "value[1].engine: the test's `any` and `conditions` are both empty"]),
+    ("engine: a Breeze test naming a flag in any and none", "docs/facts/kde/engine.toml", None,
+     _fact("button.body.transitions", "[" + _BREEZE_TR.replace("none = []", 'none = ["hover"]') + "]", cite=_KDE_CITE),
+     ["the test names 'hover' twice, or in both `any` and `none`"]),
+    ("engine: a focus ring's Breeze test on focus_visible", "docs/facts/kde/engine.toml", None,
+     _fact("token.focus.transition", _BREEZE_TR.replace('"hover"', '"focus_visible"').replace(
+         ' } } }', ' } }, from = "none" }'), cite=_KDE_CITE), []),
+    ("engine: a focus ring's Breeze test without focus_visible", "docs/facts/kde/engine.toml", None,
+     _fact("token.focus.transition", _BREEZE_TR.replace(' } } }', ' } }, from = "none" }'), cite=_KDE_CITE),
+     ["a focus indicator's Breeze test names no focus_visible"]),
+    ("engine: GtkSwitch's slide", "docs/facts/gnome/engine.toml", None, _fact("switch.thumb.transitions",
+                                                                             f"[{_SWITCH_TR}]"), []),
+    ("engine: GtkSwitch's slide off the thumb", "docs/facts/gnome/engine.toml", None,
+     _fact("button.body.transitions", f"[{_SWITCH_TR}]"), ["a gtk_switch transition is the switch thumb's geometry"]),
+    # `shown` (S2.7; ADD-A126)
+    ("shown: hidden at rest", "docs/facts/gnome/shown.toml", None, _fact("button.mark.shown", "false"), []),
+    ("shown: a keyword", "docs/facts/gnome/shown.toml", None, _fact("button.mark.shown", '"absent"'),
+     ["`shown` is spelt true or false"]),
+    ("shown: on a part the catalogue does not list it on", "docs/facts/gnome/shown.toml", None,
+     _fact("button.label.shown", "false"), ["`shown` is not a field of button's part `label`"]),
+    # the block forms (S2.2, S11, S17; ADD-A125, ADD-A128, ADD-A130)
+    ("plain block: a font leaf by reference", "docs/facts/gnome/block.toml", None,
+     _fact("token.text.keyed.title.font.size", '"= token.text.keyed.body.font.size"'), []),
+    ("plain block: a font whole, a focus whole", "docs/facts/gnome/block.toml", None,
+     _fact("token.text.keyed.title.font", '"= token.text.keyed.body.font"')
+     + _fact("token.focus", '{ width = "2px" }'),
+     ["'token.text.keyed.title.font' is a plain block (Font", "'token.focus' is a plain block (FocusIndicator"]),
+    ("plain enum: a decoration line by its variant", "docs/facts/gnome/block.toml", None,
+     _fact("button.label.text.decoration.line", '"underline_low"'), []),
+    ("plain enum: a decoration line by reference and absent", "docs/facts/gnome/block.toml", None,
+     _fact("button.label.text.decoration.line", '"= token.text.keyed.body.decoration.line"')
+     + _fact("button.label.text.decoration.style", '"absent"'),
+     ["a reference where DecorationLine is a plain enum block", "'absent' where DecorationStyle is a plain enum"]),
+    ("option block: whole and none", "docs/facts/gnome/block.toml", None,
+     _fact("token.behavior.key_repeat", "{ delay_ms = 500, interval_ms = 30 }")
+     + _fact("token.behavior.key_repeat", '"none"', when='{ conditions = ["scheme:dark"] }'), []),
+    ("option block: a partial table and a reference", "docs/facts/gnome/block.toml", None,
+     _fact("token.behavior.key_repeat", "{ delay_ms = 500 }")
+     + _fact("token.behavior.key_repeat", '"= token.behavior.key_repeat"', when='{ conditions = ["scheme:dark"] }'),
+     ["a partial KeyRepeat table (no `interval`)", "set whole"]),
+    ("option block: per leaf", "docs/facts/gnome/block.toml", None,
+     _fact("token.behavior.key_repeat.delay", '"500ms"') + _fact("token.behavior.key_repeat.interval", '"30ms"'), []),
+    ("option block: whole and per leaf in one generation", "docs/facts/gnome/block.toml", None,
+     _fact("token.behavior.key_repeat", "{ delay_ms = 500, interval_ms = 30 }")
+     + _fact("token.behavior.key_repeat.delay", '"400ms"', when='{ conditions = ["scheme:dark"] }'),
+     ["a leaf of token.behavior.key_repeat, which the fact at docs/facts/gnome/block.toml:1 states whole for adwaita"]),
+    ("option block: whole and per leaf in two generations", "docs/facts/macos/block.toml", None,
+     _fact("token.behavior.key_repeat", "{ delay_ms = 500, interval_ms = 30 }",
+           when='{ conditions = ["preset:macos-monterey"] }', cite=_MAC_CITE)
+     + _fact("token.behavior.key_repeat.delay", '"400ms"', when='{ conditions = ["preset:macos-tahoe"] }',
+             cite=_TAHOE_CITE), []),
+    ("text: a part's text leaf by leaf", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text.font.size", '"= token.text.keyed.body.font.size"'), []),
+    ("text: a part's text by reference", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text", '"= token.text.keyed.body"'), ["a part's `text` by reference"]),
+    # the drawn-text leaves (S2.8, S6.3; ADD-A130)
+    ("text leaves: absent in a keyed style, a slot and a marked part", "docs/facts/gnome/text.toml", None,
+     _fact("token.text.keyed.body.elision", '"absent"') + _fact("token.text.roles.body.max_lines", '"absent"')
+     + _fact("button.selection.text.elision", '"absent"') + _fact("button.label.text.max_lines", '"none"'), []),
+    ("text leaves: absent on a part the catalogue does not mark", "docs/facts/gnome/text.toml", None,
+     _fact("button.label.text.elision", '"absent"') + _fact("button.selection.text.wrap", '"absent"'),
+     ["button.label.text.elision absent", "button.selection.text.wrap absent"]),
+    # the combo box's content layout, its types the catalogue's prose defines (catalogue_types; ADD-A127)
+    ("combo: the content width, the input's place, the icon's cut", "docs/facts/gnome/combo.toml", None,
+     _fact("combo_box.values.content_width", '{ widest = { at_least_px = 0, empty = { ch = "M", count = 4 }, '
+           'or_shown = true } }') + _fact("combo_box.values.input_placement", '"body"')
+     + _fact("combo_box.values.icon_clip_inset", '"6px"'), []),
+    ("combo: a basis, a placement and a field none of them has", "docs/facts/gnome/combo.toml", None,
+     _fact("combo_box.values.content_width", '"widest_shown"') + _fact("combo_box.values.input_placement",
+                                                                       '"overlay"')
+     + _fact("combo_box.values.content_width", '{ widest = { at_least_px = 0, or_shown = true, at_most_px = 9 } }',
+             when='{ conditions = ["scheme:dark"] }') + _fact("combo_box.values.icon_clip_inset", "6"),
+     ["'widest_shown' is not a unit variant of ContentWidth", "'overlay' is not a unit variant of InputPlacement",
+      "`at_most_px` is not a field of ContentWidth::widest", "a length is spelled with its unit"]),
+    # S9.4's font DPI on the Apple presets (S17; ADD-A125)
+    ("font dpi: a fact off the Apple presets", "docs/facts/gnome/text.toml", None, _fact("token.text.font_dpi", "96"),
+     []),
+    ("font dpi: a fact on an Apple preset", "docs/facts/macos/text.toml", None,
+     _fact("token.text.font_dpi", "72", when='{ conditions = ["preset:macos-monterey"] }', cite=_MAC_CITE),
+     ["token.text.font_dpi on the Apple presets"]),
 ]
 
 
