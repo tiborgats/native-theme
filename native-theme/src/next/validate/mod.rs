@@ -189,6 +189,24 @@ pub(crate) fn listed_unstated(
         .collect()
 }
 
+/// Each listed input of a preset's `pending` (`inputs.<name>`,
+/// [`listed_input`](crate::next::toml::read::listed_input)) its own `layer`
+/// does not state, as S12's missing field at `inputs.<name>`: the plain
+/// route's refusal of a listed path (S17), which [`check_preset`]'s
+/// completeness check, having no missing input, does not give, as
+/// [`listed_unstated`] gives it on the synthetic route (ADD-A128).
+pub(crate) fn listed_inputs_unstated(
+    pending: &[crate::next::toml::layer::Listed],
+    layer: &Layer,
+) -> Vec<Problem> {
+    let inputs: Vec<crate::next::toml::layer::Listed> = pending
+        .iter()
+        .filter(|(path, _)| crate::next::toml::read::listed_input(path).is_some())
+        .cloned()
+        .collect();
+    listed_unstated(&inputs, std::slice::from_ref(layer))
+}
+
 /// Every problem a reader's or stand-in's state has (S9.4, S12): a text
 /// scaling factor, or a font DPI it reports, not finite and above zero; a
 /// container named twice in `container_sizes`, which reports one size at a

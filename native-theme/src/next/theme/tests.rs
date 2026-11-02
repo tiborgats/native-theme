@@ -360,6 +360,38 @@ fn from_preset_refuses_a_listed_path_as_missing() {
     );
 }
 
+/// Through the plain route a listed input the preset does not state is
+/// S12's missing field at `inputs.<name>`, as the synthetic route reports
+/// it with no layer stating it (S16, S17, ADD-A128); one the preset states
+/// is not refused for it.
+#[test]
+fn from_preset_refuses_a_listed_input_as_missing() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let stated = format!("[pending]\n\"inputs.accent\" = \"U1\"\n{base}");
+    let listed = stated.replacen(
+        "[inputs.accent]\nlight = \"#3366cc\"\ndark = \"#3366cc\"\n",
+        "",
+        1,
+    );
+    assert_ne!(listed, stated);
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &listed, Scheme::Light)
+    else {
+        panic!("a listed input is missing through the plain route");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        ["inputs.accent: missing"]
+    );
+    let Err(ThemeError::Preset(LayerError::Invalid(synthetic))) =
+        synthetic_stack(None, &listed, Scheme::Light, Vec::new())
+    else {
+        panic!("a listed input no layer states is missing");
+    };
+    assert_eq!(problems, synthetic, "the synthetic route's problem");
+    assert!(preset_stack(None, &stated, Scheme::Light).is_ok());
+}
+
 /// The synthetic route validates the preset with a layer stating the
 /// listed path, which then resolves as that layer states it; without one
 /// the listed path is the missing field (S16, S17, ADD-A128).

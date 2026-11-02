@@ -10,6 +10,7 @@ use super::presets::PresetId;
 use super::resolve::{ReaderState, Resolution, Stack, WindowConditions, WindowState};
 use super::selector::Scheme;
 use super::toml::layer::read_preset;
+use super::validate::listed_inputs_unstated;
 
 /// A theme: a bundled preset, the reader or its stand-in, the
 /// application's layers and the accent it set, and the application's
@@ -53,9 +54,14 @@ impl Theme {
     /// the accent layer is derived again; the flavour set is kept where the
     /// new preset declares it, else the new preset's default is in force.
     /// Refused where the accent set lacks one of the new preset's accent
-    /// inputs (S9.2), or the stack fails validation over it.
+    /// inputs (S9.2), where it lists an input its layer does not state
+    /// (S17), or where the stack fails validation over it.
     pub fn set_preset(&mut self, id: PresetId) -> Result<(), LayerError> {
         let file = read_preset(id.source())?;
+        let unstated = listed_inputs_unstated(&file.pending, &file.layer);
+        if !unstated.is_empty() {
+            return Err(LayerError::Invalid(unstated));
+        }
         self.stack
             .set_preset(Some(id), file.declarations, file.layer)?;
         self.preset = id;
@@ -158,10 +164,20 @@ impl Theme {
 }
 
 /// The stack of the preset `text` states, with no reader, under `scheme`;
-/// `Err(ThemeError::Preset)` where it does not read or fails validation.
+/// `Err(ThemeError::Preset)` where it does not read or fails validation, a
+/// listed input its layer does not state among the problems (S17).
 fn preset_stack(preset: Option<PresetId>, text: &str, scheme: Scheme) -> Result<Stack, ThemeError> {
     let file = read_preset(text).map_err(ThemeError::Preset)?;
-    Stack::new(preset, file.declarations, file.layer, scheme).map_err(ThemeError::Preset)
+    let mut problems = listed_inputs_unstated(&file.pending, &file.layer);
+    match Stack::new(preset, file.declarations, file.layer, scheme) {
+        Ok(stack) if problems.is_empty() => Ok(stack),
+        Ok(_) => Err(ThemeError::Preset(LayerError::Invalid(problems))),
+        Err(LayerError::Invalid(found)) => {
+            problems.extend(found);
+            Err(ThemeError::Preset(LayerError::Invalid(problems)))
+        }
+        Err(other) => Err(ThemeError::Preset(other)),
+    }
 }
 
 /// The synthetic route's stack of the preset `text` states, `layers` over
