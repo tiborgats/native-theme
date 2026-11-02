@@ -1,0 +1,18 @@
+# A synthetic preset (S17, ADD-A128): a whole map listed as pending, as adwaita's U150 lists
+# `tokens.text.fallbacks.per_language`.
+# base without: per_language = {}
+[pending]
+"tokens.text.fallbacks.per_language" = "U150"
+
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }

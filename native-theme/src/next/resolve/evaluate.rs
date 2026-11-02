@@ -2419,7 +2419,8 @@ impl<'t> Cx<'t> {
 
     /// A map merged by key (S6.1): its keys in the order first stated, each
     /// entry resolved by `entry` from the steps that state it; a whole map's
-    /// entries located by `whole`, a patch's by `patch`.
+    /// entries located by `whole`, a patch's by `patch`. Every step holding
+    /// the map is read, an empty one too.
     pub(crate) fn map<'f, K, V, P, Out>(
         &mut self,
         items: &[Fold<'f>],
@@ -2445,7 +2446,10 @@ impl<'t> Cx<'t> {
                 map.iter().for_each(|(key, _)| add(key));
             } else if let Some(map) = fold.found.get::<Vec<(K, P)>>() {
                 map.iter().for_each(|(key, _)| add(key));
+            } else {
+                continue;
             }
+            self.touch(fold.pos);
         }
         let mut out = Vec::new();
         for (key, name) in keys {
@@ -2477,7 +2481,8 @@ impl<'t> Cx<'t> {
     }
 
     /// A map of a struct block per surface set (S3), each set's entry
-    /// resolved as a block.
+    /// resolved as a block. Every step holding the map is read, an empty
+    /// one too.
     pub(crate) fn surfaces<'f, B>(&mut self, items: &[Fold<'f>]) -> Option<SurfaceMap<B::Resolved>>
     where
         't: 'f,
@@ -2490,7 +2495,10 @@ impl<'t> Cx<'t> {
                 sets.extend(map.iter().map(|(set, _)| set));
             } else if let Some(map) = fold.found.get::<SurfaceMap<BlockPatch<B>>>() {
                 sets.extend(map.iter().map(|(set, _)| set));
+            } else {
+                continue;
             }
+            self.touch(fold.pos);
         }
         let mut out = SurfaceMap::default();
         for set in sets {

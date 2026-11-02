@@ -930,6 +930,24 @@ fn gate_fixture_pending_listed() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// A whole map listed as pending is found (S17: "U150's
+/// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
+/// synthetic value is empty, so reading it reads the synthetic layer's step
+/// though it states no entry.
+#[test]
+fn gate_fixture_pending_map() {
+    let report = fixture_report("pending_map");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe token.text.fallbacks.per_language"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(id, _)| id.as_str()),
+        Some("U150")
+    );
+}
+
 /// A fact reading a listed path through a function that maps many values
 /// to one (`max`, `min`, `floor`, `round`, a `mix` all the way to its
 /// second colour, a `pick`) is skipped and reported (S17, ADD-A128): its
