@@ -1,0 +1,13 @@
+# A synthetic state model (S17): a button with one variant, two flags and two sizes; pressed is not
+# drawn at the small size.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat"]
+sizes = ["small", "regular"]
+default_size = "regular"
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = [{ states = ["pressed"], sizes = ["small"] }]
+rows = []

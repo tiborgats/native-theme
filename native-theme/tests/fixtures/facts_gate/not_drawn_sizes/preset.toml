@@ -1,0 +1,20 @@
+[declare.widget.button]
+variants = ["flat"]
+sizes = ["small", "regular"]
+default_size = "regular"
+
+# Wrong where the state model draws nothing (pressed, small), and wrong where it draws (hover, small).
+[[rules]]
+when = { states = ["pressed"], sizes = ["small"] }
+target = "button.body"
+set = { min_width_px = 99 }
+
+[[rules]]
+when = { states = ["hover"], sizes = ["small"] }
+target = "button.body"
+set = { min_width_px = 41 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

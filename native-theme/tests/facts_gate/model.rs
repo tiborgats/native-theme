@@ -3,7 +3,7 @@
 //! S17 states them and projected onto what the rules and facts can tell
 //! apart.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 
 use toml::{Table, Value};
 
@@ -350,12 +350,17 @@ pub fn condition_vectors(conditions: &[String], schemes: &[String]) -> Vec<Vec<S
 pub const MAX_FLAGS: usize = 20;
 
 /// The keys of a `not_drawn` entry the count of combinations evaluates
-/// ([`not_drawn`]); the run matches every key as the query does.
-pub const NOT_DRAWN_KEYS: [&str; 8] = [
+/// ([`names_element`], [`names_rest`]); the run matches every key as the
+/// query does.
+pub const NOT_DRAWN_KEYS: [&str; 12] = [
     "states",
     "not_states",
     "variants",
     "not_variants",
+    "sizes",
+    "not_sizes",
+    "densities",
+    "not_densities",
     "conditions",
     "not_conditions",
     "context",
@@ -555,21 +560,13 @@ pub struct Point {
     pub density: Option<String>,
 }
 
-/// Whether a `not_drawn` entry's `when` holds on a combination, for the
-/// count of an entry's combinations: by [`NOT_DRAWN_KEYS`], the only keys
-/// reading an entry lets it state, a context matched as S7 matches one
-/// against the axis' context (each key it states equal, each list it
-/// states held). The run matches every entry as the query does.
-pub fn not_drawn(
-    when: &Table,
-    conditions: &[String],
-    variants: &[String],
-    states: &[String],
-    context: Option<&Value>,
-) -> bool {
-    let all = |key: &str, held: &[String]| strings(when.get(key)).iter().all(|x| held.contains(x));
-    let none =
-        |key: &str, held: &[String]| !strings(when.get(key)).iter().any(|x| held.contains(x));
+/// Whether a `not_drawn` entry's `when` names an element by its variants
+/// and its context, for the count of an entry's combinations
+/// ([`NOT_DRAWN_KEYS`], the only keys reading an entry lets it state): a
+/// context matched as S7 matches one against the axis' context (each key it
+/// states equal, each list it states held). The run matches every entry as
+/// the query does.
+fn names_element(when: &Table, variants: &[String], context: Option<&Value>) -> bool {
     let contexts = |key: &str| {
         when.get(key)
             .and_then(Value::as_array)
@@ -589,14 +586,48 @@ pub fn not_drawn(
             other => held.get(key) == Some(other),
         })
     };
-    all("states", states)
-        && none("not_states", states)
-        && all("variants", variants)
-        && none("not_variants", variants)
-        && all("conditions", conditions)
-        && none("not_conditions", conditions)
+    strings(when.get("variants"))
+        .iter()
+        .all(|x| variants.contains(x))
+        && !strings(when.get("not_variants"))
+            .iter()
+            .any(|x| variants.contains(x))
         && contexts("context").iter().all(matches)
         && !contexts("not_context").iter().any(matches)
+}
+
+/// Whether a `not_drawn` entry's `when` holds on the rest of a combination
+/// its variants and context hold on ([`names_element`]): its states, its
+/// conditions, and its size and density (`held`), each equal to every one a
+/// list names, as S7's `all_of` holds on an element's one size.
+fn names_rest(
+    when: &Table,
+    conditions: &[String],
+    states: &[String],
+    held: (Option<&str>, Option<&str>),
+) -> bool {
+    let (size, density) = held;
+    let all = |key: &str, held: &[String]| strings(when.get(key)).iter().all(|x| held.contains(x));
+    let none =
+        |key: &str, held: &[String]| !strings(when.get(key)).iter().any(|x| held.contains(x));
+    let one = |key: &str, held: Option<&str>| {
+        strings(when.get(key))
+            .iter()
+            .all(|x| held == Some(x.as_str()))
+    };
+    let not_one = |key: &str, held: Option<&str>| {
+        !strings(when.get(key))
+            .iter()
+            .any(|x| held == Some(x.as_str()))
+    };
+    all("states", states)
+        && none("not_states", states)
+        && one("sizes", size)
+        && not_one("not_sizes", size)
+        && one("densities", density)
+        && not_one("not_densities", density)
+        && all("conditions", conditions)
+        && none("not_conditions", conditions)
 }
 
 /// What the rules and facts of a widget can tell apart (S17: "reusing what
@@ -681,21 +712,22 @@ type VariantSizes<'m> = (Vec<String>, Option<&'m Value>, Vec<Option<String>>);
 /// Each combination of `model` under the condition vectors `vectors` (S17),
 /// projected by `mentioned` where it is given, given to `each` with its
 /// context once per distinct combination; `requires_variants` and the size
-/// rules applied, and, for the count alone (no `mentioned`), `not_drawn`,
-/// which the run matches as the query does. The count of combinations.
+/// rules applied, and, for the count alone (no `mentioned`, [`count`]),
+/// `not_drawn`, which the run matches as the query does. The count of
+/// combinations.
 pub fn combinations(
     model: &Model,
     vectors: &[Vec<String>],
     mentioned: Option<&Mentioned>,
     mut each: impl FnMut(&Point, Option<&Value>),
 ) -> u64 {
+    let Some(mentioned) = mentioned else {
+        return count(model, vectors);
+    };
     let mut flag_sets: Vec<(Vec<String>, Vec<String>)> = Vec::new();
     for states in state_sets(&model.states, &model.exclusive) {
         for order in orders(&states, &model.recency) {
-            let pair = match mentioned {
-                Some(mentioned) => (mentioned.states_of(&states), mentioned.states_of(&order)),
-                None => (states.clone(), order),
-            };
+            let pair = (mentioned.states_of(&states), mentioned.states_of(&order));
             if !flag_sets.contains(&pair) {
                 flag_sets.push(pair);
             }
@@ -704,18 +736,12 @@ pub fn combinations(
     let contexts: Vec<Option<&Value>> = std::iter::once(None)
         .chain(model.contexts.iter().map(Some))
         .collect();
-    let densities: Vec<Option<String>> = std::iter::once(None)
-        .chain(model.densities.iter().cloned().map(Some))
-        .collect();
+    let densities = densities(model);
     let mut variant_sizes: Vec<VariantSizes<'_>> = Vec::new();
     for context in &contexts {
         for variants in variant_options(model) {
             let sizes = size_options(model, &variants, *context);
-            let variants = match mentioned {
-                Some(mentioned) => mentioned.variants_of(&variants),
-                None => variants,
-            };
-            let entry = (variants, *context, sizes);
+            let entry = (mentioned.variants_of(&variants), *context, sizes);
             if !variant_sizes.contains(&entry) {
                 variant_sizes.push(entry);
             }
@@ -724,44 +750,95 @@ pub fn combinations(
     let mut count = 0_u64;
     for conditions in vectors {
         for (variants, context, sizes) in &variant_sizes {
-            let drawn: Vec<&Table> = model
-                .not_drawn
-                .iter()
-                .filter(|_| mentioned.is_none())
-                .filter(|when| {
-                    strings(when.get("variants"))
-                        .iter()
-                        .all(|x| variants.contains(x))
-                        && !strings(when.get("not_variants"))
-                            .iter()
-                            .any(|x| variants.contains(x))
-                })
-                .collect();
             for (states, order) in &flag_sets {
-                if drawn
-                    .iter()
-                    .any(|when| not_drawn(when, conditions, variants, states, *context))
-                {
-                    continue;
-                }
                 for size in sizes {
                     for density in &densities {
                         count += 1;
-                        if mentioned.is_some() {
-                            let point = Point {
-                                conditions: conditions.clone(),
-                                context: context.map(Value::to_string),
-                                variants: variants.clone(),
-                                states: states.clone(),
-                                order: order.clone(),
-                                size: size.clone(),
-                                density: density.clone(),
-                            };
-                            each(&point, *context);
-                        }
+                        let point = Point {
+                            conditions: conditions.clone(),
+                            context: context.map(Value::to_string),
+                            variants: variants.clone(),
+                            states: states.clone(),
+                            order: order.clone(),
+                            size: size.clone(),
+                            density: density.clone(),
+                        };
+                        each(&point, *context);
                     }
                 }
             }
+        }
+    }
+    count
+}
+
+/// None and each of the entry's densities.
+fn densities(model: &Model) -> Vec<Option<String>> {
+    std::iter::once(None)
+        .chain(model.densities.iter().cloned().map(Some))
+        .collect()
+}
+
+/// The number of `model`'s combinations under `vectors` (S17), less those a
+/// `not_drawn` entry names: per variant option and context, the entries
+/// naming that element ([`names_element`]) and the combinations of
+/// conditions, flags (each set once per order), size and density none of
+/// them names ([`names_rest`]), the latter counted once per distinct set of
+/// such entries and sizes, as the options of a widget with many variant
+/// products share a few.
+fn count(model: &Model, vectors: &[Vec<String>]) -> u64 {
+    let flag_sets: Vec<(Vec<String>, u64)> = state_sets(&model.states, &model.exclusive)
+        .into_iter()
+        .map(|states| {
+            let orders = orders(&states, &model.recency).len() as u64;
+            (states, orders)
+        })
+        .collect();
+    let densities = densities(model);
+    let mut contexts: Vec<Option<&Value>> = vec![None];
+    for context in &model.contexts {
+        if !contexts.contains(&Some(context)) {
+            contexts.push(Some(context));
+        }
+    }
+    let options = variant_options(model);
+    let mut memo: HashMap<(Vec<usize>, Vec<Option<String>>), u64> = HashMap::new();
+    let mut count = 0_u64;
+    for context in &contexts {
+        for variants in &options {
+            let named: Vec<usize> = model
+                .not_drawn
+                .iter()
+                .enumerate()
+                .filter(|(_, when)| names_element(when, variants, *context))
+                .map(|(at, _)| at)
+                .collect();
+            let sizes = size_options(model, variants, *context);
+            count += *memo
+                .entry((named, sizes))
+                .or_insert_with_key(|(named, sizes)| {
+                    let named: Vec<&Table> = named
+                        .iter()
+                        .filter_map(|at| model.not_drawn.get(*at))
+                        .collect();
+                    let mut drawn = 0_u64;
+                    for conditions in vectors {
+                        for (states, orders) in &flag_sets {
+                            for size in sizes {
+                                for density in &densities {
+                                    let held = (size.as_deref(), density.as_deref());
+                                    if !named
+                                        .iter()
+                                        .any(|when| names_rest(when, conditions, states, held))
+                                    {
+                                        drawn += orders;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    drawn
+                });
         }
     }
     count

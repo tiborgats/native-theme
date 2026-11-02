@@ -691,6 +691,52 @@ fn gate_fixture_not_drawn_context() {
     assert!(report.queried > 0, "{report:?}");
 }
 
+/// A `not_drawn` entry naming a size is evaluated by the count and by the
+/// run (S17: `not_drawn` entries are `when`s, which state `sizes`, S11):
+/// the preset's wrong value at the small size is never queried where the
+/// entry names pressed, and fails where hover is drawn; the count leaves
+/// out the small size's pressed combinations alone.
+#[test]
+fn gate_fixture_not_drawn_sizes() {
+    let report = fixture_report("not_drawn_sizes");
+    assert!(report.queried > 0, "{report:?}");
+    assert!(!report.failures.is_empty(), "{report:?}");
+    assert!(
+        report
+            .failures
+            .iter()
+            .all(|failure| failure.contains("button.body.min_width")
+                && failure.contains("\"hover\"")
+                && !failure.contains("\"pressed\"")),
+        "{:?}",
+        report.failures
+    );
+    let state_model = |not_drawn: &str| {
+        format!(
+            "[[model]]\nwidget = \"button\"\navailable = true\nvariants = []\n\
+             sizes = [\"small\", \"regular\"]\ndensities = []\nexclusive = []\nrows = []\n\
+             axes = {{ states = [\"pressed\"], conditions = [], contexts = [] }}\n{not_drawn}"
+        )
+    };
+    let count = |text: &str| {
+        let models = model::Model::read("probe", text).unwrap();
+        model::combinations(&models[0], &[Vec::new()], None, |_, _| {})
+    };
+    assert_eq!(count(&state_model("")), 4);
+    assert_eq!(
+        count(&state_model(
+            "not_drawn = [{ states = [\"pressed\"], sizes = [\"small\"] }]\n"
+        )),
+        3
+    );
+    assert_eq!(
+        count(&state_model(
+            "not_drawn = [{ states = [\"pressed\"], not_sizes = [\"small\"] }]\n"
+        )),
+        3
+    );
+}
+
 /// A `not_drawn` entry with a key the count does not evaluate, and an
 /// entry with more flags than the gate enumerates, are refused, never
 /// evaluated without it (S17).
@@ -702,9 +748,9 @@ fn state_model_refuses_what_the_gate_cannot_enumerate() {
              densities = []\nexclusive = []\nrows = []\n{extra}"
         )
     };
-    let sizes = entry("not_drawn = [{ states = [\"pressed\"], sizes = [\"mini\"] }]\n");
-    let error = model::Model::read("probe", &sizes).unwrap_err();
-    assert!(error.contains("`sizes`"), "{error}");
+    let direction = entry("not_drawn = [{ states = [\"pressed\"], direction = \"rtl\" }]\n");
+    let error = model::Model::read("probe", &direction).unwrap_err();
+    assert!(error.contains("`direction`"), "{error}");
     let flags: Vec<String> = (0..=model::MAX_FLAGS)
         .map(|n| format!("\"@flag{n}\""))
         .collect();
