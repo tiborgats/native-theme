@@ -1,0 +1,21 @@
+# Synthetic token and input facts (S17, ADD-A132): the tint input a derivation of the accent.
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "input.tint"
+value = "= input.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

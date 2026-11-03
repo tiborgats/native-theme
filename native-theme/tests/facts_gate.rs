@@ -227,6 +227,82 @@ fn gate_fixture_literal_where_derived_fails_perturbed() {
     );
 }
 
+/// A preset of the case `name`'s `preset.toml` over the base whose text
+/// `edit` changes (the base's `[preset]` and `[declare]` keys, which a
+/// case's appended file cannot restate), checked against its `gnome`
+/// directory.
+fn fixture_edited(name: &str, edit: impl Fn(String) -> String) -> (PathBuf, Vec<(String, Preset)>) {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/facts_gate");
+    let base = edit(std::fs::read_to_string(fixtures.join("base.toml")).unwrap());
+    let case = fixtures.join(name);
+    let preset = Preset::from_toml(&fixture_text(&case, &base, "preset.toml"))
+        .unwrap_or_else(|error| panic!("{name}: {error}"));
+    (case.join("docs/facts"), vec![("gnome".to_owned(), preset)])
+}
+
+/// The base declaring the input `tint` beside the `accent`.
+fn with_tint(base: String) -> String {
+    let edited = base.replacen(
+        "inputs = [\"accent\"]",
+        "inputs = [\"accent\", \"tint\"]",
+        1,
+    );
+    assert_ne!(edited, base);
+    edited
+}
+
+/// The perturbed stand-in's inputs for the preset of `root` and `presets`
+/// under the light scheme with no other condition (S17).
+fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
+    let mut report = run::Report::default();
+    let platform = run::Platform::read(&root.join("gnome"), &mut report);
+    let preset = &presets[0].1;
+    let repo = root.parent().and_then(Path::parent).unwrap();
+    let keys = run::prepare(&platform, preset.id(), repo, &mut report);
+    let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
+    let resolved = preset
+        .resolve(&conditions, &native_theme::next::Layer::default())
+        .unwrap();
+    let layer = run::stand_in(preset, &keys, &resolved).unwrap();
+    layer
+        .bases
+        .inputs
+        .entries
+        .iter()
+        .map(|(name, _)| name.to_string())
+        .collect()
+}
+
+/// The perturbed stand-in states every declared input but one whose fact
+/// that applies is a derivation (S17, ADD-A132): `tint`, derived from the
+/// accent, follows the perturbed accent and is compared, where stating it
+/// would compare the stand-in's own colour with the derivation and fail.
+#[test]
+fn gate_fixture_derived_input_perturbed() {
+    let (root, presets) = fixture_edited("derived_input", with_tint);
+    assert_eq!(stand_in_inputs(&root, &presets), ["accent"]);
+    let report = run::run(&root, &presets);
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// On `kde-breeze` the perturbed stand-in states no `accent` (S9.2, S17,
+/// ADD-A132): no accent-derivation layer is derived, the preset's
+/// no-accent derivations are compared, and `kde_accent` is the accent
+/// run's; on another preset it states it.
+#[test]
+fn gate_perturbed_stand_in_states_no_accent_on_kde_breeze() {
+    let (root, presets) = fixture("passes", "preset.toml");
+    assert_eq!(stand_in_inputs(&root, &presets), ["accent"]);
+    let (root, presets) = fixture_edited("passes", |base| {
+        let edited = base.replacen("id = \"probe\"", "id = \"kde-breeze\"", 1);
+        assert_ne!(edited, base);
+        edited
+    });
+    assert_eq!(presets[0].1.id(), "kde-breeze");
+    assert!(stand_in_inputs(&root, &presets).is_empty());
+}
+
 /// A literal where the platform derives from `surface.<role>` fails the
 /// perturbed run: the role is perturbed in every surface set the preset
 /// declares (S17, R4's GN-1.29 form).

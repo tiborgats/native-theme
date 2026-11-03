@@ -243,7 +243,7 @@ impl Platform {
 
 /// One fact prepared for a preset: its `when` read with the preset's
 /// conditions decided, its value read for its key, its tolerance.
-struct Prepared<'f> {
+pub struct Prepared<'f> {
     fact: &'f Fact,
     when: When,
     value: Option<FactValue>,
@@ -257,7 +257,7 @@ struct Prepared<'f> {
 }
 
 /// A key's facts for a preset, in file order.
-struct KeyFacts<'f> {
+pub struct KeyFacts<'f> {
     name: String,
     key: FactKey,
     /// The set-whole block the key is a leaf of (S6.1, S17).
@@ -385,7 +385,7 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
 
 /// The facts of `platform` that can apply to `preset`, by key, each read;
 /// what [`read_all`] counted or failed left out.
-fn prepare<'f>(
+pub fn prepare<'f>(
     platform: &'f Platform,
     preset: &str,
     repo: &Path,
@@ -850,12 +850,19 @@ fn projected(
 
 /// The perturbed run's stand-in layer (S17): under each scheme, a fixed
 /// colour for every declared input and every colour role a derivation fact
-/// names as an operand, but a role whose own fact that applies under the
-/// conditions `resolved` decided is a derivation: it follows its perturbed
-/// operands on both sides, so only the derivation graph's leaves, the
-/// preset's own base colours, are perturbed (S17's `read` facts "checked as
-/// derivations").
-fn stand_in(preset: &Preset, keys: &[KeyFacts<'_>], resolved: &Resolved) -> Result<Layer, String> {
+/// names as an operand, but an input or role whose own fact that applies
+/// under the conditions `resolved` decided is a derivation: it follows its
+/// perturbed operands on both sides, so only the derivation graph's leaves,
+/// the preset's own base colours, are perturbed (S17's `read` facts
+/// "checked as derivations"); an input with no fact yet is stated. On
+/// `kde-breeze` it states no `accent`, so no accent-derivation layer is
+/// derived and the preset's no-accent derivations are compared, `kde_accent`
+/// being the accent run's (S9.2, S17, ADD-A132).
+pub fn stand_in(
+    preset: &Preset,
+    keys: &[KeyFacts<'_>],
+    resolved: &Resolved,
+) -> Result<Layer, String> {
     let mut roles: BTreeSet<String> = BTreeSet::new();
     let mut inputs: BTreeSet<String> = preset.inputs().into_iter().collect();
     for key in keys {
@@ -871,10 +878,9 @@ fn stand_in(preset: &Preset, keys: &[KeyFacts<'_>], resolved: &Resolved) -> Resu
             }
         }
     }
-    roles.retain(|role| {
-        let derived = keys
-            .iter()
-            .filter(|key| key.key.role().as_deref() == Some(role.as_str()))
+    let derived = |named: &dyn Fn(&KeyFacts<'_>) -> bool| {
+        keys.iter()
+            .filter(|key| named(key))
             .filter_map(|key| {
                 let mut probe = Report::default();
                 applying(
@@ -884,8 +890,12 @@ fn stand_in(preset: &Preset, keys: &[KeyFacts<'_>], resolved: &Resolved) -> Resu
                     &String::new,
                 )
             })
-            .any(|prepared| prepared.fact.derivation());
-        !derived
+            .any(|prepared| prepared.fact.derivation())
+    };
+    roles.retain(|role| !derived(&|key| key.key.role().as_deref() == Some(role.as_str())));
+    inputs.retain(|input| {
+        !derived(&|key| key.key.input().as_deref() == Some(input.as_str()))
+            && !(preset.id() == "kde-breeze" && input == "accent")
     });
     let mut text = String::new();
     let mut n = 0_usize;
@@ -922,7 +932,7 @@ fn stand_in(preset: &Preset, keys: &[KeyFacts<'_>], resolved: &Resolved) -> Resu
 
 /// A condition vector's conditions set on the no-reader state, under the
 /// flavour; `None` where one cannot be set.
-fn conditions(vector: &[String], flavor: Option<&str>) -> Result<Conditions, Unread> {
+pub fn conditions(vector: &[String], flavor: Option<&str>) -> Result<Conditions, Unread> {
     let scheme = vector
         .iter()
         .find_map(|condition| condition.strip_prefix("scheme:"))

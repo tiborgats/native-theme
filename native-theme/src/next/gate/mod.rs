@@ -1156,6 +1156,21 @@ pub fn parse_key(key: &str) -> Result<FactKey, Unread> {
 }
 
 impl FactKey {
+    /// The input the key names, as a reference names it below `input.`
+    /// (`accent`, `accent_ramp.light1`); `None` for any other key.
+    #[must_use]
+    pub fn input(&self) -> Option<String> {
+        match &self.place {
+            Place::Input(name) => Some(name.to_string()),
+            Place::WholePart(_)
+            | Place::Part(..)
+            | Place::Values(..)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::KdeList(_) => None,
+        }
+    }
+
     /// The widget whose element the key is queried with; `None` for a
     /// token, a role or an input, read in the root scope.
     #[must_use]
