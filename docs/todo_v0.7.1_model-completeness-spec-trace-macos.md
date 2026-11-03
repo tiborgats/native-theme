@@ -698,7 +698,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X02 | `PartStyle.fill @ cond window_inactive` | rule |
 | MAC-X02 | `PartStyle.fill @ cond reduced_transparency (Material.fallback)` | rule |
 | MAC-X03 | `PaintLayer.blend BlendMode::Keyed (vibrant blending)` | field |
-| MAC-X03 | `role.* under the vibrant appearances (reader)` | role |
+| MAC-X03 | `role.* @ context sidebar / context menu / context popover` (the vibrant appearances `NSVisualEffectView` sets inside its materials, read as the reader reads them; ledger queue #153) | rule |
 | MAC-X03 | `reader:macos:NSColor resolved under NSAppearance vibrantLight and vibrantDark` | reader |
 | MAC-X04 | `PartStyle.fill Material identity glass, the regular glass (the base) and the variant clear (tint, lensing in the identity)` | field |
 | MAC-X04 | `glass_container.surface.{fill,corners} @ variant clear` (the regular glass is the base) | rule |
@@ -787,7 +787,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X15 | `text_area.values.presentations event @find_indicator` | field |
 | MAC-X15 | `text_area.find_dimming.fill @ {@incremental_find}` | rule |
 | MAC-X15 | `list.row_background.corners @ {selected}` | rule |
-| MAC-X15 | `role.@foreground_secondary_emphasized` | role |
+| MAC-X15 | `role.selection.foreground_inactive` (`@foreground_secondary_emphasized`, the Selection set's secondary text; ledger queue #153) | role |
 | MAC-X16 | `button.body.fill, button.label.text.fill @ {default} cond window_inactive` | rule |
 | MAC-X16 | `checkbox.box.fill @ {checked} cond window_inactive; radio.ring.fill, radio.dot.fill @ {checked} cond window_inactive` | rule |
 | MAC-X16 | `switch.track.fill @ {checked} cond window_inactive` | rule |
