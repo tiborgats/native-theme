@@ -17,7 +17,7 @@
 key = "role.window.background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -34,11 +34,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.windowBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.windowBackgroundColor"
+tolerance = 0
+
 [[fact]]
 key = "role.window.background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1e1e1e"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -48,6 +58,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.windowBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -66,7 +86,7 @@ tolerance = 0
 key = "role.window.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#000000d8"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -76,6 +96,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.labelColor"
 tolerance = 0
 
 [[fact]]
@@ -93,7 +123,7 @@ tolerance = 0
 key = "role.window.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffffd8"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -103,6 +133,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.labelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.labelColor"
 tolerance = 0
 
 [[fact]]
@@ -121,7 +161,7 @@ tolerance = 0
 key = "role.window.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0000007f"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -131,6 +171,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.secondaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -148,7 +198,7 @@ tolerance = 0
 key = "role.window.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff8c"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -158,6 +208,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.secondaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -176,7 +236,7 @@ tolerance = 0
 key = "role.window.link"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0068da"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -193,11 +253,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.linkColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.linkColor"
+tolerance = 0
+
 [[fact]]
 key = "role.window.link"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#419cff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -214,12 +284,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.linkColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.linkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.linkColor"
+tolerance = 0
+
 [[fact]]
 # separatorColor
 key = "role.window.border"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000019"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -229,6 +309,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.separatorColor"
 tolerance = 0
 
 [[fact]]
@@ -246,7 +336,7 @@ tolerance = 0
 key = "role.window.border"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff19"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -256,6 +346,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.separatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.separatorColor"
 tolerance = 0
 
 [[fact]]
@@ -274,7 +374,7 @@ tolerance = 0
 key = "role.window.disabled.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000042"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -284,6 +384,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -301,7 +411,7 @@ tolerance = 0
 key = "role.window.disabled.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff3f"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -311,6 +421,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -329,7 +449,7 @@ tolerance = 0
 key = "role.view.background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -346,11 +466,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.controlBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.controlBackgroundColor"
+tolerance = 0
+
 [[fact]]
 key = "role.view.background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1e1e1e"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -360,6 +490,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.controlBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -378,7 +518,7 @@ tolerance = 0
 key = "role.selection.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -395,11 +535,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
 [[fact]]
 key = "role.selection.foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -416,12 +566,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
 [[fact]]
 # findHighlightColor
 key = "role.global.find_highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffff00"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X15", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -438,11 +598,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.findHighlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.findHighlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.find_highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffff00"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X15", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -459,12 +629,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.findHighlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.findHighlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.findHighlightColor"
+tolerance = 0
+
 [[fact]]
 # shadowColor
 key = "role.global.shadow_reference"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#000000"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -481,11 +661,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.shadowColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.shadowColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.shadow_reference"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#000000"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -502,12 +692,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.shadowColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.shadowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.shadowColor"
+tolerance = 0
+
 [[fact]]
 # selectedTextColor
 key = "role.global.selection_text_foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#000000"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -524,11 +724,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.selectedTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.selectedTextColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.selection_text_foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -545,12 +755,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.selectedTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.selectedTextColor"
+tolerance = 0
+
 [[fact]]
 # unemphasizedSelectedTextBackgroundColor
 key = "role.global.selection_text_background_unfocused"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#dcdcdc"
-rows = ["MAC-I05"]
+rows = ["MAC-I05", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -567,11 +787,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.selection_text_background_unfocused"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#464646"
-rows = ["MAC-I05"]
+rows = ["MAC-I05", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -588,12 +818,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextBackgroundColor"
+tolerance = 0
+
 [[fact]]
 # unemphasizedSelectedTextColor
 key = "role.global.selection_text_foreground_unfocused"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#000000"
-rows = ["MAC-I05"]
+rows = ["MAC-I05", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -610,11 +850,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.selection_text_foreground_unfocused"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff"
-rows = ["MAC-I05"]
+rows = ["MAC-I05", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -631,6 +881,16 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.unemphasizedSelectedTextColor"
+tolerance = 0
+
 # The selected items' background, and in a window that is not key (MAC-X16).
 
 [[fact]]
@@ -638,7 +898,7 @@ tolerance = 0
 key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0064e1"
-rows = ["MAC-L02"]
+rows = ["MAC-L02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -648,6 +908,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.selectedContentBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -665,7 +935,7 @@ tolerance = 0
 key = "input.selected_content_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#0059d1"
-rows = ["MAC-L02"]
+rows = ["MAC-L02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -675,6 +945,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.selectedContentBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -718,7 +998,7 @@ quote = "Alias for +secondarySelectedControlColor"
 key = "role.@label_tertiary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000042"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -728,6 +1008,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -745,7 +1035,7 @@ tolerance = 0
 key = "role.@label_tertiary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff3f"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -755,6 +1045,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.tertiaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -773,7 +1073,7 @@ tolerance = 0
 key = "role.@label_quaternary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000019"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -783,6 +1083,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.quaternaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -800,7 +1110,7 @@ tolerance = 0
 key = "role.@label_quaternary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff19"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -810,6 +1120,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.quaternaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -828,7 +1148,7 @@ tolerance = 0
 key = "role.@label_quinary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0000000c"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -838,6 +1158,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.quinaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -855,7 +1185,7 @@ tolerance = 0
 key = "role.@label_quinary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff0c"
-rows = ["MAC-DF01"]
+rows = ["MAC-DF01", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -865,6 +1195,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.quinaryLabelColor"
 tolerance = 0
 
 [[fact]]
@@ -883,7 +1223,7 @@ tolerance = 0
 key = "role.@system_fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000019"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -893,6 +1233,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -910,7 +1260,7 @@ tolerance = 0
 key = "role.@system_fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff19"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -920,6 +1270,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -938,7 +1298,7 @@ tolerance = 0
 key = "role.@system_fill_secondary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000014"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -948,6 +1308,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.secondarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -965,7 +1335,7 @@ tolerance = 0
 key = "role.@system_fill_secondary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff14"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -975,6 +1345,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.secondarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -993,7 +1373,7 @@ tolerance = 0
 key = "role.@system_fill_tertiary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0000000c"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1003,6 +1383,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.tertiarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1020,7 +1410,7 @@ tolerance = 0
 key = "role.@system_fill_tertiary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff0c"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1030,6 +1420,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.tertiarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1048,7 +1448,7 @@ tolerance = 0
 key = "role.@system_fill_quaternary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000007"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1058,6 +1458,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.quaternarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1075,7 +1485,7 @@ tolerance = 0
 key = "role.@system_fill_quaternary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff07"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1085,6 +1495,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.quaternarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1103,7 +1523,7 @@ tolerance = 0
 key = "role.@system_fill_quinary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00000002"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1113,6 +1533,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.quinarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1130,7 +1560,7 @@ tolerance = 0
 key = "role.@system_fill_quinary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff02"
-rows = ["MAC-DF02"]
+rows = ["MAC-DF02", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1140,6 +1570,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.quinarySystemFillColor"
 tolerance = 0
 
 [[fact]]
@@ -1158,7 +1598,7 @@ tolerance = 0
 key = "role.@system_red"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ff383c"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1168,6 +1608,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemRedColor"
 tolerance = 0
 
 [[fact]]
@@ -1185,7 +1635,7 @@ tolerance = 0
 key = "role.@system_red"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ff4245"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1195,6 +1645,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemRedColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemRedColor"
 tolerance = 0
 
 [[fact]]
@@ -1213,7 +1673,7 @@ tolerance = 0
 key = "role.@system_orange"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ff8d28"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1223,6 +1683,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemOrangeColor"
 tolerance = 0
 
 [[fact]]
@@ -1240,7 +1710,7 @@ tolerance = 0
 key = "role.@system_orange"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ff9230"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1250,6 +1720,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemOrangeColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemOrangeColor"
 tolerance = 0
 
 [[fact]]
@@ -1268,7 +1748,7 @@ tolerance = 0
 key = "role.@system_green"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#34c759"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1278,6 +1758,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemGreenColor"
 tolerance = 0
 
 [[fact]]
@@ -1295,7 +1785,7 @@ tolerance = 0
 key = "role.@system_green"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#30d158"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1305,6 +1795,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemGreenColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemGreenColor"
 tolerance = 0
 
 [[fact]]
@@ -1323,7 +1823,7 @@ tolerance = 0
 key = "role.@system_blue"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0088ff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1333,6 +1833,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemBlueColor"
 tolerance = 0
 
 [[fact]]
@@ -1350,7 +1860,7 @@ tolerance = 0
 key = "role.@system_blue"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#0091ff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1360,6 +1870,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBlueColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemBlueColor"
 tolerance = 0
 
 [[fact]]
@@ -1378,7 +1898,7 @@ tolerance = 0
 key = "role.@system_yellow"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffcc00"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1388,6 +1908,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemYellowColor"
 tolerance = 0
 
 [[fact]]
@@ -1405,7 +1935,7 @@ tolerance = 0
 key = "role.@system_yellow"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffd600"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1415,6 +1945,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemYellowColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemYellowColor"
 tolerance = 0
 
 [[fact]]
@@ -1433,7 +1973,7 @@ tolerance = 0
 key = "role.@system_purple"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#cb30e0"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1443,6 +1983,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemPurpleColor"
 tolerance = 0
 
 [[fact]]
@@ -1460,7 +2010,7 @@ tolerance = 0
 key = "role.@system_purple"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#db34f2"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1470,6 +2020,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPurpleColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemPurpleColor"
 tolerance = 0
 
 [[fact]]
@@ -1488,7 +2048,7 @@ tolerance = 0
 key = "role.@system_pink"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ff2d55"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1498,6 +2058,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemPinkColor"
 tolerance = 0
 
 [[fact]]
@@ -1515,7 +2085,7 @@ tolerance = 0
 key = "role.@system_pink"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ff375f"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1525,6 +2095,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemPinkColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemPinkColor"
 tolerance = 0
 
 [[fact]]
@@ -1543,7 +2123,7 @@ tolerance = 0
 key = "role.@system_teal"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00c3d0"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1553,6 +2133,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemTealColor"
 tolerance = 0
 
 [[fact]]
@@ -1570,7 +2160,7 @@ tolerance = 0
 key = "role.@system_teal"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#00d2e0"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1580,6 +2170,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemTealColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemTealColor"
 tolerance = 0
 
 [[fact]]
@@ -1598,7 +2198,7 @@ tolerance = 0
 key = "role.@system_indigo"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#6155f5"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1608,6 +2208,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemIndigoColor"
 tolerance = 0
 
 [[fact]]
@@ -1625,7 +2235,7 @@ tolerance = 0
 key = "role.@system_indigo"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#6d7cff"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1635,6 +2245,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemIndigoColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemIndigoColor"
 tolerance = 0
 
 [[fact]]
@@ -1653,7 +2273,7 @@ tolerance = 0
 key = "role.@system_cyan"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00c0e8"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1663,6 +2283,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemCyanColor"
 tolerance = 0
 
 [[fact]]
@@ -1680,7 +2310,7 @@ tolerance = 0
 key = "role.@system_cyan"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3cd3fe"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1690,6 +2320,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemCyanColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemCyanColor"
 tolerance = 0
 
 [[fact]]
@@ -1708,7 +2348,7 @@ tolerance = 0
 key = "role.@system_mint"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#00c8b3"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1718,6 +2358,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemMintColor"
 tolerance = 0
 
 [[fact]]
@@ -1735,7 +2385,7 @@ tolerance = 0
 key = "role.@system_mint"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#00dac3"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1745,6 +2395,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemMintColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemMintColor"
 tolerance = 0
 
 [[fact]]
@@ -1763,7 +2423,7 @@ tolerance = 0
 key = "role.@system_brown"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ac7f5e"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1773,6 +2433,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemBrownColor"
 tolerance = 0
 
 [[fact]]
@@ -1790,7 +2460,7 @@ tolerance = 0
 key = "role.@system_brown"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#b78a66"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1800,6 +2470,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemBrownColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemBrownColor"
 tolerance = 0
 
 [[fact]]
@@ -1818,7 +2498,7 @@ tolerance = 0
 key = "role.@system_gray"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#8e8e93"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1828,6 +2508,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.systemGrayColor"
 tolerance = 0
 
 [[fact]]
@@ -1845,7 +2535,7 @@ tolerance = 0
 key = "role.@system_gray"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#98989d"
-rows = ["MAC-DF03"]
+rows = ["MAC-DF03", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1862,12 +2552,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.systemGrayColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.systemGrayColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.systemGrayColor"
+tolerance = 0
+
 [[fact]]
 # underPageBackgroundColor
 key = "role.@under_page_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#969696e5"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1877,6 +2577,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.underPageBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -1894,7 +2604,7 @@ tolerance = 0
 key = "role.@under_page_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#282828"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1911,12 +2621,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.underPageBackgroundColor"
+tolerance = 0
+
 [[fact]]
 # textBackgroundColor
 key = "role.@text_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1933,11 +2653,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.textBackgroundColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.textBackgroundColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@text_background"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1e1e1e"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1947,6 +2677,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.textBackgroundColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.textBackgroundColor"
 tolerance = 0
 
 [[fact]]
@@ -1965,7 +2705,7 @@ tolerance = 0
 key = "role.@selected_control_secondary"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#dcdcdc"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1982,11 +2722,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.secondarySelectedControlColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@selected_control_secondary"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#464646"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2003,12 +2753,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.secondarySelectedControlColor"
+tolerance = 0
+
 [[fact]]
 # selectedControlTextColor
 key = "role.@selected_control_text"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#000000d8"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2025,11 +2785,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/increase-contrast-on/probe.toml#macos.colors.aqua.selectedControlTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.selectedControlTextColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@selected_control_text"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffffd8"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2039,6 +2809,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.selectedControlTextColor"
 tolerance = 0
 
 [[fact]]
@@ -2059,7 +2839,7 @@ tolerance = 0
 key = "input.accent"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#007aff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2069,6 +2849,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.controlAccentColor"
 tolerance = 0
 
 [[fact]]
@@ -2086,7 +2876,7 @@ tolerance = 0
 key = "input.accent"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#007aff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2096,6 +2886,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.controlAccentColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.controlAccentColor"
 tolerance = 0
 
 [[fact]]
@@ -2183,7 +2983,7 @@ quote = "NSColor *controlAccentColor"
 key = "role.global.accent_foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2195,11 +2995,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.alternateSelectedControlTextColor"
+tolerance = 0
+
 [[fact]]
 key = "role.global.accent_foreground"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2211,12 +3021,22 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.alternateSelectedControlTextColor"
+tolerance = 0
+
 [[fact]]
 # keyboardFocusIndicatorColor (S9.1: an accent input, ADD-A123)
 key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#0067f47f"
-rows = ["MAC-X13"]
+rows = ["MAC-X13", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2226,6 +3046,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.keyboardFocusIndicatorColor"
 tolerance = 0
 
 [[fact]]
@@ -2243,7 +3073,7 @@ tolerance = 0
 key = "input.keyboard_focus_indicator"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#1aa9ff7f"
-rows = ["MAC-X13"]
+rows = ["MAC-X13", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2253,6 +3083,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.keyboardFocusIndicatorColor"
 tolerance = 0
 
 [[fact]]
@@ -2282,7 +3122,7 @@ quote = "NSColor *keyboardFocusIndicatorColor;"
 key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#b3d7ff"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2292,6 +3132,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.selectedControlColor"
 tolerance = 0
 
 [[fact]]
@@ -2309,7 +3159,7 @@ tolerance = 0
 key = "input.selected_control"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#3f638b"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2319,6 +3169,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.selectedControlColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.selectedControlColor"
 tolerance = 0
 
 [[fact]]
@@ -2348,7 +3208,7 @@ quote = "NSColor *selectedControlColor;"
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffff"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2370,11 +3230,21 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.aqua.highlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.highlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#b4b4b4"
-rows = ["MAC-DF05†"]
+rows = ["MAC-DF05†", "MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2394,6 +3264,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -8804,7 +9684,7 @@ quote = "NSColor *keyboardFocusIndicatorColor; // Keyboard focus ring around con
 key = "role.view.background_alternate"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#f4f5f5"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -8816,13 +9696,23 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
 
 # alternatingContentBackgroundColors[1] (darkAqua)
 [[fact]]
 key = "role.view.background_alternate"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffff0c"
-rows = []
+rows = ["MAC-X27"]
 
 [[fact.cite]]
 kind = "measured"
@@ -8832,6 +9722,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-29-run-40969040283/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.alternatingContentBackgroundColors.1"
 tolerance = 0
 
 
@@ -9119,7 +10019,7 @@ tolerance = 0
 key = "role.selection.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffffb3"
-rows = []
+rows = ["MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -9157,7 +10057,7 @@ tolerance = 1
 key = "role.selection.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffffb3"
-rows = []
+rows = ["MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -11953,3 +12853,11 @@ key = "role.selection.disabled.foreground"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U236"
 rows = []
+
+# --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
+
+[[fact]]
+key = "role.global.drop_highlight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U322"
+rows = ["MAC-X21"]

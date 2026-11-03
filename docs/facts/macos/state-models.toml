@@ -24,18 +24,46 @@
 # the probe's toolbar window, which gives its item views control size extra_large, `view_*_controlSize_raw` 4: their
 # min_height and font are stated, the rest pending U94). Each variant was measured alone: no variant set is declared
 # (the report lists the sets AppKit draws).
+# The output-route button (MAC-P3-9†, the facts lane t16b): `route` is AVKit's AVRoutePickerView, an NSView
+# (AVRoutePickerView.h:31, :83), not an NSButton bezel, so it holds none of the bezel variants; its four button states
+# (:62-67) are rest, pressed (highlighted), `route_active` (AirPlay active) and both, so it draws no `disabled`
+# and no `default` (the class declares no enabled state, key equivalent or control size: it takes no size), and
+# `route_active` only on it; `@bordered` is `routePickerButtonBordered` (:118-121, default YES), only on it.
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true
-variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"]
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered"]
 sizes = ["mini", "small", "regular", "large", "extra_large"]
 default_size = "regular"
+sizes_by_variant = [{ variant = "route", sizes = [] }]
 densities = []
-axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "menu"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }]
-rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17"]
+variant_sets = [["route", "@bordered"]]
+exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "menu", "route"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }]
+rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:62-67"
+quote = "typedef NS_ENUM(NSInteger, AVRoutePickerViewButtonState) { AVRoutePickerViewButtonStateNormal = 0, AVRoutePickerViewButtonStateNormalHighlighted = 1, AVRoutePickerViewButtonStateActive = 2, AVRoutePickerViewButtonStateActiveHighlighted = 3"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:57-58"
+quote = "Active state of the picker. The picker has this state when AirPlay is active."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:118-121"
+quote = "Whether or not the picker button has a border. Default is YES."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:83-161"
+quote = "@interface AVRoutePickerView : AVKitPlatformViewClass"
+absent = ["enabled", "keyEquivalent", "controlSize"]
 
 [[model.cite]]
 kind = "published"
