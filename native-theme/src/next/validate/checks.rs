@@ -461,7 +461,8 @@ struct Checker<'a> {
     /// over it (S17, ADD-A128).
     exempt: Vec<String>,
     /// Walking the fields kept beneath a part's `Absent` or `DrawnAs`: the
-    /// part needs none, so its list is no completeness check (S6.3).
+    /// part needs none, so neither its list nor any block below it is a
+    /// completeness check (S6.3).
     latent: bool,
 }
 
@@ -1844,11 +1845,10 @@ impl Visit for Checker<'_> {
     /// patch sets only what it animates.
     fn patch(&mut self, path: &Path, all: &'static [&'static str], set: &[&'static str]) {
         let keyframe = path.within("Keyframe", "patch");
-        if !(self.in_bases && self.cx.kind == LayerKind::Preset) || keyframe {
+        if !(self.in_bases && self.cx.kind == LayerKind::Preset) || keyframe || self.latent {
             return;
         }
         let missing: Vec<&str> = match path.part_fields() {
-            Some(_) if self.latent => Vec::new(),
             Some(fields) => fields
                 .iter()
                 .map(|field| field.path)

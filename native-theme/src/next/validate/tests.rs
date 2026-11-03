@@ -1255,8 +1255,33 @@ fn present_with_nothing_beneath_is_missing() {
         ),
         missing(&["glyph", "margin", "transform"])
     );
+    // Rule A states one leaf of the glyph, rule B redraws the part with
+    // every other field: the glyph's other leaves are missing.
+    let mut leaves = redraw("{ glyph = { size_px = 4 } }");
+    leaves.rules.extend(
+        redraw(
+            "{ absent = false, min_width_px = 4, min_height_px = 4, margin = { top_px = 0, \
+             right_px = 0, bottom_px = 0 }, transitions = [] }",
+        )
+        .rules,
+    );
+    assert_eq!(
+        found_over(&leaves, &decl, &bare),
+        missing(&[
+            "glyph.source",
+            "glyph.fill",
+            "glyph.stroke",
+            "glyph.axes",
+            "glyph.draw_extent",
+            "glyph.draw_start",
+            "glyph.mirroring",
+            "margin.left",
+            "transform"
+        ])
+    );
     let file = read_preset(&format!(
-        "{PRESET_HEAD}[widgets.button.menu_indicator]\nabsent = true\nmin_width_px = 4"
+        "{PRESET_HEAD}[widgets.button.menu_indicator]\nabsent = true\nmin_width_px = 4\n\
+         margin = {{ top_px = 4 }}"
     ))
     .unwrap();
     let own = strings(check_preset(

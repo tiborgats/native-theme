@@ -32,7 +32,7 @@ use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
-use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
+use crate::next::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
     Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme,
@@ -1013,6 +1013,38 @@ impl Bound {
             before,
             bases_only: self.bases_only || other.bases_only,
         }
+    }
+}
+
+/// The places at or below `path`, the field `info`, that none of `ops`
+/// states (S6.1, S12): stated whole by a step at or above it that sets it
+/// (a value, a reference, `Absent`, nothing, a list replaced); where steps
+/// lie below a struct block (a `Fields` patch's, a compound's), each of its
+/// fields judged in turn; else stated by a step below it (a map's entry, a
+/// list's item); an `Append` alone states nothing, having no paint to
+/// append to.
+fn unstated(ops: &[&Op], path: &str, info: &FieldInfo, out: &mut Vec<String>) {
+    let whole = ops.iter().any(|op| {
+        (op.path == path || is_above(&op.path, path))
+            && matches!(op.kind, OpKind::Set(_) | OpKind::Touch | OpKind::Clear)
+    });
+    if whole {
+        return;
+    }
+    let patched = ops.iter().any(|op| is_above(path, &op.path));
+    match info.ty {
+        FieldType::Block {
+            ty,
+            form: BlockForm::Struct,
+            fields,
+            ..
+        } if patched && !ty.starts_with("Vec<") && !ty.starts_with("SurfaceMap<") => {
+            for field in fields {
+                unstated(ops, &below(path, field.path), field, out);
+            }
+        }
+        _ if patched => {}
+        _ => out.push(path.to_owned()),
     }
 }
 
@@ -2188,9 +2220,11 @@ impl Checks<'_, '_> {
     /// Each field of a part drawn again over an `Absent` or `DrawnAs` that
     /// no layer states under a combination in which the part resolves
     /// drawn (S6.3, S12): a `Present` over a part with nothing beneath is
-    /// missing every field no other patch states. Only a `Present` draws a
-    /// part a patch made absent, so a part none redraws needs no check
-    /// here: its bases state its fields (S2.2), or leave it absent.
+    /// missing every field no other patch states, a block's leaves judged
+    /// where only `Fields` patches state it ([`unstated`]). Only a
+    /// `Present` draws a part a patch made absent, so a part none redraws
+    /// needs no check here: its bases state its fields (S2.2), or leave it
+    /// absent.
     fn redrawn(&mut self) {
         let stack = self.stack;
         for info in registry::widgets() {
@@ -2215,27 +2249,27 @@ impl Checks<'_, '_> {
                         .map(|field| Seed::Field(Target::Part(part), field.path.to_owned(), true)),
                 );
                 let worlds = stack.worlds(seeds);
-                let mut missing: Vec<&str> = Vec::new();
+                let mut missing: Vec<String> = Vec::new();
                 for world in worlds.iter() {
                     let (Shown::Drawn, Some((layer, _))) = stack.shown(world, part) else {
                         continue;
                     };
+                    let ops: Vec<&Op> = stack
+                        .of(Target::Part(part))
+                        .filter(|(_, source)| stack.applies(world, source))
+                        .flat_map(|(_, source)| source.ops.iter())
+                        .filter(|op| !matches!(op.kind, OpKind::Shown(_)))
+                        .collect();
+                    let mut unstated_here = Vec::new();
                     for field in part_info.fields {
-                        let stated = stack.of(Target::Part(part)).any(|(_, source)| {
-                            stack.applies(world, source)
-                                && source.ops.iter().any(|op| {
-                                    !matches!(op.kind, OpKind::Shown(_))
-                                        && (op.path == field.path
-                                            || is_above(&op.path, field.path)
-                                            || is_above(field.path, &op.path))
-                                })
-                        });
-                        if !stated && !missing.contains(&field.path) {
-                            missing.push(field.path);
-                            let at =
-                                format!("widgets.{}.{}.{}", info.name, part_info.name, field.path);
+                        unstated(&ops, field.path, field, &mut unstated_here);
+                    }
+                    for path in unstated_here {
+                        if !missing.contains(&path) {
+                            let at = format!("widgets.{}.{}.{path}", info.name, part_info.name);
                             self.problems
                                 .push((layer, Problem::new(&at, ProblemKind::Missing)));
+                            missing.push(path);
                         }
                     }
                 }
