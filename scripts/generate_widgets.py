@@ -28,6 +28,12 @@ The units
 
     slice = ["button"]              # an enabled unit: the catalogue entries it holds (here typed widgets only)
 
+    [prefixes]                      # the target prefixes a unit holds beside them, written by hand, never
+    slice = ["role", "token.text"]  # generated (check_facts_trace.py and the facts gate read them)
+
+    [staged.slice]                  # paths those prefixes hold that a unit stages to a later unit, lying in no
+    "token.behavior.scroll" = "scroll_view"  # unit until then (read as the prefixes are)
+
     [deferred.button]               # values a unit defers, per widget, each to the named later unit (S6.1):
     menu_placement = "placement"    # left out until that unit's commit enables it
 
@@ -140,9 +146,12 @@ def parse_units(text: str) -> Units:
         raise InputError(f"{UNITS}: `deferred` is not a table of widgets to tables of value names to units")
     if not isinstance(hand, dict) or not all(isinstance(v, bool) for v in hand.values()):
         raise InputError(f"{UNITS}: `hand_written` is not a table of unit names to booleans")
+    for table in ("prefixes", "staged"):
+        if not isinstance(data.get(table, {}), dict):
+            raise InputError(f"{UNITS}: `{table}` is not a table of unit names")
     enabled = {}
     for name, entries in data.items():
-        if name in ("deferred", "hand_written"):
+        if name in ("deferred", "hand_written", "prefixes", "staged"):
             continue
         if not isinstance(entries, list) or not all(isinstance(e, str) and e for e in entries):
             raise InputError(f"{UNITS}: unit `{name}` is not a list of catalogue entries")

@@ -2,10 +2,28 @@
 # decision 1): scripts/generate_widgets.py generates the typed widgets of the
 # enabled units, and scripts/check_facts_trace.py checks their trace rows.
 
-# An enabled unit: the catalogue entries it holds. `slice` also holds the
-# colour roles and the slice's tokens, written by hand (check_facts_trace.py's
-# SLICE_EXTRA).
+# An enabled unit: the catalogue entries it holds, the typed widgets the
+# generator writes.
 slice = ["button"]
+
+# What an enabled unit holds beside its catalogue entries, written by hand and
+# never generated: target prefixes, each holding the paths below it. `slice`:
+# the colour roles and the slice's tokens, the plan's M1a scope: S4.1 motion,
+# S4.2 caret and behaviour, S4.4 text, S4.5 icons, the focus indicator, the
+# elevation ramp and the size classes' thresholds, which S2.5's shadows and
+# S8's query read (the M1a design, decision 9), and the S4.6 parameter groups
+# the button and the roles use, `pointer_repeat`, `color` and `opacity` (the
+# plan's M1a scope).
+[prefixes]
+slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", "token.icons",
+         "token.focus", "token.elevation", "token.size_classes",
+         "token.params.pointer_repeat", "token.params.color", "token.params.opacity"]
+
+# Paths an enabled unit's prefixes hold that it stages to a later unit, each
+# lying in no unit until that unit is enabled: the scroll behaviour to the
+# `scroll_view` unit (spec ADD-A120).
+[staged.slice]
+"token.behavior.scroll" = "scroll_view"
 
 # Values an enabled unit defers, per widget, each to the named later unit,
 # whose commit ends the deferral: the button's `Placement` values to S13's

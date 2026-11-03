@@ -25,6 +25,9 @@ pub struct Fact {
     pub cites: Vec<Table>,
     /// It carries `scheme_file` and `accent`: the accent run's alone (S17).
     pub accent_run: bool,
+    /// Every unit it belongs to is enabled (S17 *While 0.8.0 is built*);
+    /// set as its platform is read.
+    pub enabled: bool,
 }
 
 impl Fact {
@@ -102,6 +105,7 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
             stated,
             cites,
             accent_run: entry.contains_key("scheme_file") || entry.contains_key("accent"),
+            enabled: true,
         });
     }
     Ok(out)

@@ -17,6 +17,7 @@ use toml::Value;
 
 use super::facts::{self, Fact, Stated};
 use super::model::{self, Mentioned, Model, Point, strings};
+use super::units::Units;
 
 /// The gate's font measurement (S17 *The gate*, the design's "fixed,
 /// documented stub"): every metric a fixed share of the font's size, so a
@@ -121,6 +122,9 @@ pub struct Report {
     pub unread: Vec<String>,
     /// Facts whose key the model does not hold yet, by key.
     pub keys_not_held: BTreeMap<String, usize>,
+    /// Facts a unit they belong to, their key's or a widget's their `when`
+    /// names, is not enabled for (S17 *While 0.8.0 is built*), by key.
+    pub units_not_enabled: BTreeMap<String, usize>,
     /// Facts whose `when` names what the model does not hold yet, by what
     /// it names.
     pub whens_not_held: BTreeMap<String, usize>,
@@ -237,6 +241,9 @@ impl Report {
         for (key, count) in other.keys_not_held {
             *self.keys_not_held.entry(key).or_default() += count;
         }
+        for (key, count) in other.units_not_enabled {
+            *self.units_not_enabled.entry(key).or_default() += count;
+        }
         for (why, count) in other.whens_not_held {
             *self.whens_not_held.entry(why).or_default() += count;
         }
@@ -265,7 +272,7 @@ pub struct Platform {
 impl Platform {
     /// The directory `directory` of the facts root, read; a file the gate
     /// cannot read is a failure.
-    pub fn read(directory: &Path, report: &mut Report) -> Platform {
+    pub fn read(directory: &Path, units: &Units, report: &mut Report) -> Platform {
         let name = directory
             .file_name()
             .map(|name| name.to_string_lossy().into_owned())
@@ -285,6 +292,9 @@ impl Platform {
                 Ok(read) => facts.extend(read),
                 Err(error) => report.fail(error),
             }
+        }
+        for fact in &mut facts {
+            fact.enabled = units_enabled(units, fact);
         }
         let mut keys: Vec<(String, Result<FactKey, Unread>)> = Vec::new();
         let mut files: BTreeMap<&str, &str> = BTreeMap::new();
@@ -332,6 +342,20 @@ impl Platform {
             .find(|(held, _)| held == key)
             .map(|(_, parsed)| parsed)
     }
+}
+
+/// Whether every unit `fact` belongs to is enabled (S17 *While 0.8.0 is
+/// built*): its key's, and each widget's its `when`'s positive lists name
+/// ([`when_widgets`]), as check_facts_trace.py's `in_unit` places them. An
+/// S9 input's key (`input.…`) belongs to no unit: the inputs are the
+/// model's core (the plan's M1a: S9.1, S9.2, S9.4), whatever unit is
+/// enabled.
+fn units_enabled(units: &Units, fact: &Fact) -> bool {
+    (fact.key.starts_with("input.") || units.hold(&fact.key))
+        && fact
+            .when
+            .as_ref()
+            .is_none_or(|when| when_widgets(when).iter().all(|widget| units.hold(widget)))
 }
 
 /// One fact prepared for a preset: its `when` read with the preset's
@@ -407,6 +431,13 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
     for fact in &platform.facts {
         if fact.accent_run {
             report.accent_run += 1;
+            continue;
+        }
+        if !fact.enabled {
+            *report
+                .units_not_enabled
+                .entry(fact.key.clone())
+                .or_default() += 1;
             continue;
         }
         let key = match platform.key(&fact.key) {
@@ -486,7 +517,7 @@ pub fn prepare<'f>(
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
     for fact in &platform.facts {
-        if fact.accent_run {
+        if fact.accent_run || !fact.enabled {
             continue;
         }
         let Some(Ok(key)) = platform.key(&fact.key) else {
@@ -925,6 +956,7 @@ fn skipped_variants(
             Some(Err(Unread::NotHeld(_))) | None
         );
         let skipped = !key_held
+            || !fact.enabled
             || when_widgets(&when)
                 .iter()
                 .any(|widget| !held.contains(widget));
@@ -1241,6 +1273,10 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
         .unwrap_or_default();
     directories.sort();
     let bundled: Vec<&str> = presets.iter().map(|(_, preset)| preset.id()).collect();
+    let units = Units::repository().unwrap_or_else(|error| {
+        report.fail(format!("the units do not read: {error}"));
+        Units::none()
+    });
     for directory in directories {
         let name = directory
             .file_name()
@@ -1249,7 +1285,7 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
         if name == "imported" || name == "staged" || name == "palettes" {
             continue;
         }
-        let platform = Platform::read(&directory, &mut report);
+        let platform = Platform::read(&directory, &units, &mut report);
         read_all(&platform, &mut report);
         // Every pending fact is listed, with the combinations it applied
         // in, none where it applied in none (S17).

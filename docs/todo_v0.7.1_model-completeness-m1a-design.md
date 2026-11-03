@@ -160,4 +160,4 @@ vacuously, and each preset then states every field the model holds.
    the `drag_cursors` and `spec_versions` declaration slots, and the mapping-palette check's tint case. `elevation`
    and `size_classes` stay: S2.5's elevation shadows and S8's `size_classes` query read them, both in M1a's scope
    (the plan's "S2's blocks in full", "S8 without S13"), so the slice is the first unit that reads them and each
-   preset states them from its facts (`check_facts_trace.py`'s `SLICE_EXTRA` lists them).
+   preset states them from its facts (`scripts/widget_units.toml`'s `[prefixes]` list them).

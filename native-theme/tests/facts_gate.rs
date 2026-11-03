@@ -14,6 +14,8 @@ mod facts;
 mod model;
 #[path = "facts_gate/run.rs"]
 mod run;
+#[path = "facts_gate/units.rs"]
+mod units;
 
 use std::path::{Path, PathBuf};
 
@@ -230,6 +232,33 @@ fn gate_fixture_icon_size_keyed() {
     );
 }
 
+/// A token key of a unit not enabled (S17 *While 0.8.0 is built*: "the
+/// gate skips it while any of those units is not enabled"): the units are
+/// `scripts/widget_units.toml`'s, as check_facts_trace.py reads them, whose
+/// slice holds `token.params.pointer_repeat`, `.color` and `.opacity` and
+/// no other parameter group, so `token.params.caret`'s fact is skipped and
+/// counted, never compared, though the model holds the keyed map.
+#[test]
+fn gate_fixture_token_of_unit_not_enabled() {
+    let report = fixture_report("unit_not_enabled");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report
+            .units_not_enabled
+            .get("token.params.caret.aspect_ratio"),
+        Some(&1),
+        "{:?}",
+        report.units_not_enabled
+    );
+    let units = units::Units::repository().unwrap();
+    assert!(units.hold("token.params.pointer_repeat.delay"));
+    assert!(units.hold("token.params"));
+    assert!(!units.hold("token.params.caret.aspect_ratio"));
+    assert!(!units.hold("token.behavior.scroll.lines_per_step"));
+    assert!(!units.hold("button.values.menu_placement"));
+    assert!(units.hold("button.body.min_width_px"));
+}
+
 /// The last fact in file order applies, not the most specific: a later,
 /// unconditional 40px applies where an earlier pressed fact holds too, and
 /// a preset stating 40px everywhere passes (S17 *Which fact applies*).
@@ -325,7 +354,8 @@ fn with_tint(base: String) -> String {
 /// under the light scheme with no other condition (S17).
 fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
     let mut report = run::Report::default();
-    let platform = run::Platform::read(&root.join("gnome"), &mut report);
+    let units = units::Units::repository().unwrap();
+    let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
     let preset = &presets[0].1;
     let repo = root.parent().and_then(Path::parent).unwrap();
     let keys = run::prepare(&platform, preset.id(), repo, &mut report);
@@ -1844,7 +1874,8 @@ fn facts_gate() {
     let report = run::run(&root, &presets);
     eprintln!(
         "facts gate: {} presets, {} keys compared over {} distinct combinations in {:?}; \
-         {} pending facts; skipped: {} facts of {} keys the model does not hold, {} whens, \
+         {} pending facts; skipped: {} facts of {} keys the model does not hold, {} facts of a unit \
+         not enabled, {} whens, \
          {} accent-run facts, {} facts naming a preset not bundled, {} combinations, \
          {} state-model variants only skipped facts name",
         presets.len(),
@@ -1854,6 +1885,7 @@ fn facts_gate() {
         report.pending.len(),
         report.keys_not_held.values().sum::<usize>(),
         report.keys_not_held.len(),
+        report.units_not_enabled.values().sum::<usize>(),
         report.whens_not_held.values().sum::<usize>(),
         report.accent_run,
         report.other_presets,
@@ -1868,6 +1900,9 @@ fn facts_gate() {
     }
     for (key, count) in &report.keys_not_held {
         eprintln!("  keys not held: {count}: {key}");
+    }
+    for (key, count) in &report.units_not_enabled {
+        eprintln!("  unit not enabled: {count}: {key}");
     }
     for (entry, count) in &report.combinations {
         eprintln!("  combinations: {entry}: {count}");
@@ -1930,6 +1965,7 @@ fn facts_gate() {
             (
                 report.pending.len(),
                 report.keys_not_held.len(),
+                report.units_not_enabled.len(),
                 report.whens_not_held.len(),
                 report.other_presets,
                 report.combinations_skipped,
@@ -1937,7 +1973,7 @@ fn facts_gate() {
                 report.unread.len(),
                 report.listed.len() + report.synthetic.len(),
             ),
-            (0, 0, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, 0, 0, 0),
             "the release's gate: no pending fact, nothing skipped, no value refused"
         );
     }

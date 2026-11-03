@@ -5,7 +5,7 @@ written … decided by how closely the slice's presets transcribe their facts").
 
 Reads the facts as scripts/check_facts.py loads them (`docs/facts/<platform>/*.toml` and its `state-models.toml`;
 `imported/` and `staged/` are no facts), the core and the widget catalogue through it, and the enabled units as
-scripts/check_facts_trace.py reads them (`scripts/widget_units.toml`, until it exists the slice). Writes a draft of the
+scripts/check_facts_trace.py reads them (`scripts/widget_units.toml`, its `[prefixes]` and `[staged]` too). Writes a draft of the
 preset's TOML (S11): `[preset]`, `[declare]`, the bases and `[[rules]]`. A draft: the preset's own task places and
 completes it, and the Rust reader validates it there.
 
@@ -1743,6 +1743,7 @@ def _pending(key, uid, when=None):
 
 
 SELF_TEST_FILES = {
+    "scripts/widget_units.toml": check_facts_trace.SELF_TEST_UNITS,
     "docs/facts/sources.toml": check_facts.SELF_TEST_SOURCES,
     "docs/facts/gnome/state-models.toml": '''
 [[model]]
