@@ -377,13 +377,14 @@ input's base for it. The inputs:
   `kde-breeze` the accent alone: Plasma derives the accent-dependent roles when the accent or scheme is
   applied and writes them into kdeglobals, so the reader reads them as stated values; the preset states Breeze's scheme
   values as Plasma's default ("Accent color from color scheme") writes them, with no accent derivation, and an
-  application changing the accent, or another platform's reader whose accent reaches `kde-breeze`, gets the
+  application changing the accent, or a reader's or stand-in's accent where that layer states no such role (another
+  platform's reader, the KDE reader at the scheme it did not read), gets the
   accent-dependent roles by that derivation, a function (R25.1), over the scheme inputs in force, the reader's or those of a palette from a KDE port,
   which is a scheme file. A palette that is native-theme's mapping (R19) has no scheme inputs: it states its
   accent-dependent roles itself, following the accent by reference where they follow it, and is refused where it
   leaves one to the preset's Breeze value, which would mix the two schemes.
 - **KDE's stated Inactive values** (`[Colors:Header][Inactive]`, K3.55): inactive input roles. The preset states
-  each as Plasma's default path writes it, and an accent the application sets (or another platform's reader's) restates
+  each as Plasma's default path writes it, and an accent the application sets (or a reader's or stand-in's, where that layer states none) restates
   each by Plasma's derivation
   (`kde_accent(…, inactive)`, R25.1: what `applyScheme()`
   writes for a set whose scheme states an Inactive group, that group's own values tinted toward the accent in a tinting
