@@ -1288,7 +1288,10 @@ on stderr the transcription share per widget and per unit (the 0.8.0
 plan's checkpoint D6), the rule count, the pending facts' register ids and
 a round trip: the draft read back gives every combination the value of
 the fact that applies there, a map compared as a map (a `Value`'s too,
-`Font.axes`), a fact's list of pairs as its table. Exits 1 on a round-trip mismatch, 2 on an
+`Font.axes`), a fact's list of pairs as its table, each `when`'s minimal
+combination at the size its element holds by S10's rule (ADD-A131). A
+pending default size of a state model is listed in `[pending]` by its
+declaration's path, never written in `[declare]`. Exits 1 on a round-trip mismatch, 2 on an
 input it cannot read. `--self-test` compares a fixture's draft with the
 expected one and runs each rule. Offline; not in `check_release.sh`.
 

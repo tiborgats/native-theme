@@ -85,7 +85,10 @@ preset's bases apply before its rules, its rules in stated order, the later winn
   Those rules replace the base in every combination where every element holds one of them: always for the schemes, and
   for the sizes where the widget states `default_size` (S10: "the size of an element that states none"). Its value is
   the light scheme's fact's, or the default size's, the round trip checking that it never shows (its minimal
-  combinations take the size an element holds: `default_size`, or its variant's `default_size_by_variant`, S10).
+  combinations take the size an element holds, S10, ADD-A131: of the sizes it takes, its variant entry's or the
+  widget's less those its context entry leaves out, the default in force, the context entry's, the variant entry's
+  or the widget's, else, the default pending or refused by the `when`, the first the `when` allows, a variant whose
+  entry takes one added where the widget's own are all refused; element_size()).
   Where the widget states no `default_size`, an element stating no size holds none (iOS's button), and no fact gives
   the field's value there: no base is written (a size's fact would be a value invented for the element with no size),
   the field is left unstated, so the reader reports it as S12's missing field, and the gap is reported as a facts gap.
@@ -122,13 +125,17 @@ its fact's citation in a comment"; the fact holds the citations).
 `[declare]` (S10, S17 *State models*): per widget or component the model holds, its state-model entry for the
 preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `[declare.flavor.<f>.widget.<w>]`),
 the S10 declarations it states: `available` (alone where false), `variants`, `sizes`, `default_size`,
-`default_size_by_variant`, `densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`,
-`sizes_by_variant`, `sizes_by_context`; `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
+`densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`, `sizes_by_variant`,
+`sizes_by_context` (each entry with its `default_size`); a pending default size (`default_size = { pending = "U<n>" }`,
+the widget's or an entry's, S10's *A pending default*) is stated nowhere and listed in `[pending]` by its
+declaration's path, `declare.widget.<w>.default_size`, `….sizes_by_variant.<variant>.default_size`,
+`….sizes_by_context.<n>.default_size`, a flavour's under `declare.flavor.<f>.` (S17, ADD-A131;
+pending_defaults()); `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
 not declarations. A declared variant that facts name, every one of them left out as a unit it belongs to is not
 enabled (its key's, or a widget its `when` names), is left out of `variants` and `exclusive_variants`
 (off_variants()), as the facts gate leaves it out of the state model it checks the declarations against (S17,
 ADD-A128); a variant no fact names is declared, and one S12 exempts stays (`requires_variants`, `sizes_by_variant`,
-`default_size_by_variant`, the catalogue's content variants). `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
+the catalogue's content variants). `[declare] conditions` lists the `system_setting:` keys the entries' axes and the facts' `when`s
 name, as `@<key>`. The other keyed namespaces S10 declares (`color_roles`, `durations`, `timings`, `params` with their
 units, `text_styles`, `inputs`, `accent_inputs`, `surface_sets`, …) are left for hand-writing: no fact states their
 units or defaults.
@@ -169,7 +176,7 @@ CONTRASTS = (("contrast_increased", "increased"), ("contrast_high", "high"))
 SUFFIX_OF = {"length": "_px", "duration": "_ms", "angle": "_deg"}
 UNIT_OF_SUFFIX = {"_px": "px", "_ms": "ms", "_deg": "deg", "_pt": "pt"}
 MAP_TYPE = re.compile(r"Vec<\(\s*(\w+)\s*,\s*(.+)\)>")
-DECLARE_KEYS = ("available", "variants", "sizes", "default_size", "default_size_by_variant", "densities", "flags",
+DECLARE_KEYS = ("available", "variants", "sizes", "default_size", "densities", "flags",
                 "exclusive", "exclusive_variants", "recency", "requires_variants", "sizes_by_variant",
                 "sizes_by_context")
 STAGED_BASES = Path("docs/facts/staged/inheritance-bases.toml")
@@ -677,8 +684,8 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status, f.reason = LEFT_OUT, SET_WHOLE_SPLIT
         bases = [b for b in bases if b[5] not in split]
         rules = group_rules([f for f in facts if f.status == "rule"])
-    declare, conditions, models, left_models, dropped = declarations(items, platform, preset, units, facts,
-                                                                     ctx.content_variants)
+    declare, conditions, models, left_models, dropped, waiting = declarations(items, platform, preset, units, facts,
+                                                                              ctx.content_variants)
     covering, gaps = covering_bases(facts, models, tree)
     bases += covering
     # a covering base can state a set-whole block's leaf alone: split again, the base dropped (its rules stay)
@@ -691,7 +698,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     for f in facts:
         if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
             f.reason = SET_WHOLE_PENDING
-    listed = pending_table(ctx, facts, bases)
+    listed = pending_table(ctx, facts, bases) + waiting
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
                  listed, gaps)
 
@@ -816,9 +823,12 @@ def covering_bases(facts, models, tree) -> tuple:
     left out is missing). Where every element holds one of the axis' values (a scheme always; a size where the widget
     states `default_size`, S10), the axis' rules replace the base in every combination, so the base is one of those
     facts' values: the light scheme's, or the default size's, S11 stating a value shared across schemes once outside
-    the colour roles; the round trip checks that it never shows. Where the widget states sizes and no `default_size`,
-    an element stating no size holds none (S10), and no fact gives its value: no base, the field left unstated (S12's
-    missing field when read) and reported as a facts gap. (the bases, the gaps as (widget, key))."""
+    the colour roles; the round trip checks that it never shows. The sizes are every size an element takes, the
+    widget's and its `sizes_by_variant` entries' (S10, ADD-A131). Where the widget's default is pending, no element
+    stating no size is drawn, and the base is the first size's. Where the widget states sizes and no `default_size`,
+    or a variant's entry takes no size, an element holds none (S10), and no fact gives its value: no base, the field
+    left unstated (S12's missing field when read) and reported as a facts gap. (the bases, the gaps as (widget,
+    key))."""
     by_key = {}
     for f in facts:
         if f.kind in ("widget", "token"):
@@ -840,11 +850,19 @@ def covering_bases(facts, models, tree) -> tuple:
         elif rules and rules[0].kind == "widget":
             model = models.get((rules[0].widget, None)) or {}
             sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
-            per_size = {z: alone({"sizes": [z]}) for z in sizes}
+            entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
+                       and isinstance(e.get("sizes"), list)]
+            taken = list(dict.fromkeys(sizes + [z for e in entries for z in e["sizes"] if isinstance(z, str)]))
+            per_size = {z: alone({"sizes": [z]}) for z in taken}
+            unsized = any(not e["sizes"] for e in entries)
             if sizes and all(per_size.values()):
                 default = model.get("default_size")
-                if default in per_size:
+                if isinstance(default, str) and default in per_size and not unsized:
                     chosen = per_size[default]
+                elif isinstance(default, dict) and not unsized:
+                    # a pending default: no element states no size and is drawn (S10's *A pending default*), so
+                    # every drawn element holds one of the sizes and the base never shows
+                    chosen = per_size[sizes[0]]
                 else:
                     gaps.append((rules[0].widget, rules[0].key))
         if chosen is None:
@@ -977,7 +995,8 @@ def group_rules(facts: list) -> list:
 
 def declarations(items, platform, preset, units, facts, content):
     """([declare] tables, `[declare] conditions`, the state models the round trip reduces by, the entries left out,
-    the variants left out per widget) from the platform's state models (S10, S17 *State models*)."""
+    the variants left out per widget, the pending default sizes' listed paths) from the platform's state models (S10,
+    S17 *State models*)."""
     entries = {}
     for it in items:
         if it.table != "model" or it.platform != platform or not isinstance(it.data.get("widget"), str):
@@ -989,7 +1008,7 @@ def declarations(items, platform, preset, units, facts, content):
             continue
         flavor = next((c[7:] for c in conds if c.startswith("flavor:")), None)
         entries.setdefault(it.data["widget"], []).append((it, bool(named), flavor))
-    declare, models, left, settings, dropped = [], {}, [], [], []
+    declare, models, left, settings, dropped, listed = [], {}, [], [], [], []
     for widget, es in entries.items():
         if not held(units, widget, "widget"):
             left += [(widget, it) for it, _, _ in es]
@@ -1007,6 +1026,8 @@ def declarations(items, platform, preset, units, facts, content):
             if off:
                 kvs = [(k, without_variants(k, v, off)) for k, v in kvs]
                 dropped.append((widget, sorted(off)))
+            kvs, waiting = pending_defaults(header, kvs, it)
+            listed += waiting
             declare.append((header, kvs, it))
             models[(widget, flavor)] = d
             axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
@@ -1016,7 +1037,43 @@ def declarations(items, platform, preset, units, facts, content):
             settings += [c for c in f.when.get(k, []) if isinstance(c, str)]
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
                                     if c.startswith("system_setting:")))
-    return declare, conditions, models, left, dropped
+    return declare, conditions, models, left, dropped, listed
+
+
+@dataclass
+class DeclaredAt:
+    """A state model's place, as a fact's `where` names its own: the citation of a listed declaration."""
+    where: str
+
+
+def pending_defaults(header: tuple, kvs: list, it) -> tuple:
+    """A declaration's pending default sizes taken out (S10's *A pending default*, S17, ADD-A131): the state model's
+    `default_size = { pending = "U<n>" }`, the widget's, a `sizes_by_variant` entry's or a `sizes_by_context` entry's,
+    is stated nowhere in the draft and listed in `[pending]` by its declaration's path, as S11 spells it:
+    `declare.<header>.default_size`, `declare.<header>.sizes_by_variant.<variant>.default_size` (`@` included),
+    `declare.<header>.sizes_by_context.<n>.default_size` (`<n>` its position from 0), the header a flavour's
+    `flavor.<f>.widget.<w>` where the entry is one. ([(key, value)] without them, [(path, id, citation)])."""
+    def pending(value):
+        return value.get("pending") if isinstance(value, dict) and isinstance(value.get("pending"), str) else None
+
+    prefix = ".".join(("declare",) + header)
+    cite = DeclaredAt(f"{it.file}:{it.line}")
+    out, listed = [], []
+    for k, v in kvs:
+        if k == "default_size" and pending(v):
+            listed.append((f"{prefix}.default_size", pending(v), cite))
+            continue
+        if k in ("sizes_by_variant", "sizes_by_context") and isinstance(v, list):
+            entries = []
+            for i, e in enumerate(v):
+                if isinstance(e, dict) and pending(e.get("default_size")):
+                    name = e.get("variant") if k == "sizes_by_variant" else str(i)
+                    listed.append((f"{prefix}.{k}.{name}.default_size", pending(e["default_size"]), cite))
+                    e = {x: y for x, y in e.items() if x != "default_size"}
+                entries.append(e)
+            v = entries
+        out.append((k, v))
+    return out, listed
 
 
 def widget_content(content: dict, widget: str) -> list:
@@ -1030,7 +1087,7 @@ def widget_content(content: dict, widget: str) -> list:
 
 
 VARIANT_LISTS = ("variants", "not_variants")
-EXEMPT_VARIANTS = ("requires_variants", "sizes_by_variant", "default_size_by_variant")
+EXEMPT_VARIANTS = ("requires_variants", "sizes_by_variant")
 
 
 def named_variants(when, widget) -> set:
@@ -1062,8 +1119,8 @@ def off_variants(widget, model, facts, content) -> set:
     """The declared variants of `widget` that facts name and every one of them is left out as a unit it belongs to is
     not enabled (its key's, or a widget its `when` names): the facts gate leaves such a variant out of the state model
     it checks the declarations against (S17, ADD-A128), so the draft declares it neither; it comes back with the unit,
-    as its rules do. A variant no fact names is declared. A variant S12 exempts stays: one `requires_variants`, `sizes_by_variant`
-    or `default_size_by_variant` names, and a content variant the connector sets (the catalogue's pairs, S8)."""
+    as its rules do. A variant no fact names is declared. A variant S12 exempts stays: one `requires_variants` or
+    `sizes_by_variant` names, and a content variant the connector sets (the catalogue's pairs, S8)."""
     declared = {v for v in model.get("variants", []) if isinstance(v, str)}
     exempt = set(content)
     exempt |= {v for v in model.get("requires_variants", []) if isinstance(v, str)}
@@ -1205,35 +1262,75 @@ def holds(when: dict, c: dict, groups: list, recency: dict) -> bool:
     return True
 
 
-def element_size(when: dict, model) -> list:
-    """The size an element of the `when`'s minimal combination holds (S10): the one it names, else its variant's
-    `default_size_by_variant` (the first entry whose variant it holds), else the widget's `default_size`; none where
-    the widget declares no sizes."""
-    if when.get("sizes") or not model or not model.get("sizes"):
-        return list(when.get("sizes", []))
-    variants = set(when.get("variants", []))
-    for e in model.get("default_size_by_variant", []):
-        if isinstance(e, dict) and e.get("variant") in variants and isinstance(e.get("size"), str):
-            return [e["size"]]
-    default = model.get("default_size")
-    return [default] if isinstance(default, str) else []
+def element_size(when: dict, model, ancestors=()):
+    """The size an element of the `when`'s minimal combination holds and the variants it holds (S10, ADD-A131), or
+    (None, variants) where no element holds the `when`'s sizes. The size the `when` names; else, of the sizes the
+    element takes (its first `sizes_by_variant` entry's whose variant it holds, else the widget's `sizes`, less those
+    the first `sizes_by_context` entry whose selector its ancestors match leaves out), the default in force (that
+    context entry's `default_size`, else the variant entry's, else the widget's) where it is one of them and the
+    `when` does not refuse it, else the first the `when` does not refuse: an element stating that size, as one whose
+    default is pending states one (S10's *A pending default*: an element stating none is not available); none where
+    the element takes none. Where an element holding only the `when`'s variants takes no size the `when` allows (a
+    `not_sizes` refusing the widget's every size), the first `sizes_by_variant` entry whose variant the `when` does
+    not refuse and no `exclusive_variants` group shares with the `when`'s, and whose sizes it allows, adds its
+    variant: the sizes that variant alone takes."""
+    named = list(when.get("sizes", []))
+    variants = list(when.get("variants", []))
+    if named or not model:
+        return named, variants
+    refused = set(when.get("not_sizes", []))
+    entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and isinstance(e.get("sizes"), list)]
+    by_context = next((e for e in model.get("sizes_by_context", []) if isinstance(e, dict)
+                       and isinstance(e.get("context"), dict) and context_holds(e["context"], list(ancestors))), None)
+
+    def size_of(entry):
+        sizes = entry["sizes"] if entry else [z for z in model.get("sizes", []) if isinstance(z, str)]
+        if by_context is not None:
+            sizes = [z for z in sizes if z in by_context.get("sizes", [])]
+        if not sizes:
+            return []
+        default = next((x["default_size"] for x in (by_context, entry) if x is not None and "default_size" in x),
+                       model.get("default_size"))
+        if isinstance(default, str) and default in sizes and default not in refused:
+            return [default]
+        allowed = [z for z in sizes if z not in refused]
+        return allowed[:1] or None
+
+    entry = next((e for e in entries if e.get("variant") in variants), None)
+    got = size_of(entry)
+    if got is not None or entry is not None:
+        return got, variants
+    not_variants = set(when.get("not_variants", []))
+    groups = [set(g) for g in model.get("exclusive_variants", []) if isinstance(g, list)]
+    for e in entries:
+        v = e.get("variant")
+        if v in not_variants or any(v in g and g & set(variants) for g in groups):
+            continue
+        got = size_of(e)
+        if got:
+            return got, variants + [v]
+    return None, variants
 
 
 def minimal(when: dict, scheme: str, groups: list, recency: dict, model=None):
     """The `when`'s minimal combination under a scheme (its required names and nothing else, and the size an element
-    holds, element_size()), or None where no element holds it."""
+    holds and the variant that size needs, element_size()), or None where no element holds it."""
     conds = list(when.get("conditions", []))
     if any(x.startswith("scheme:") and x != f"scheme:{scheme}" for x in conds):
         return None
     latest = when.get("latest", {})
+    ancestors = [{"widget": e.get("widget"), "part": e.get("part"), "surface": e.get("surface"),
+                  "variants": set(e.get("variants", [])), "states": set(e.get("states", [])),
+                  "sizes": set(e.get("sizes", []))} for e in when.get("context", [])]
+    sizes, variants = element_size(when, model, ancestors)
+    if sizes is None:
+        return None
     d = {"conditions": conds + [f"scheme:{scheme}"], "states": list(when.get("states", [])) + list(latest.values()),
-         "variants": when.get("variants", []), "sizes": element_size(when, model),
+         "variants": variants, "sizes": sizes,
          "densities": when.get("densities", []),
          "direction": when.get("direction", "ltr"), "position": when.get("position"), "latest": latest,
          "size_class": when.get("size_class", {}),
-         "ancestors": [{"widget": e.get("widget"), "part": e.get("part"), "surface": e.get("surface"),
-                        "variants": set(e.get("variants", [])), "states": set(e.get("states", [])),
-                        "sizes": set(e.get("sizes", []))} for e in when.get("context", [])]}
+         "ancestors": ancestors}
     if len(set(d["sizes"])) > 1 or len(set(d["densities"])) > 1:
         return None
     if any(len(set(sc)) > 1 for sc in d["size_class"].values() if isinstance(sc, list)):
@@ -2024,12 +2121,46 @@ def self_test() -> int:
     # unspell: a suffix only where the key's type takes it; element_size: the size an element holds
     if unspell("edge_px", 1, "Value<Scalar>") != ("edge_px", 1) or unspell("gap_px", 6, "Value<Px>") != ("gap", "6px"):
         failures.append("unspell: a suffix stripped where the type takes none, or kept where it takes one")
-    sized_model = {"sizes": ["small", "regular"], "default_size": "regular",
-                   "default_size_by_variant": [{"variant": "flat", "size": "small"}]}
-    got = [element_size({}, sized_model), element_size({"variants": ["flat"]}, sized_model),
-           element_size({"sizes": ["small"]}, sized_model), element_size({}, {"sizes": []})]
-    if got != [["regular"], ["small"], ["small"], []]:
-        failures.append(f"element_size: {got}")
+    # (S10, ADD-A131): the variant entry's sizes, else the widget's, kept by the context entry; the default in force
+    # (context, variant, widget), else, pending or refused, the first size the `when` allows; a variant whose entry
+    # takes a size the `when` allows where the widget's own sizes are all refused; none for an unsized element
+    sized_model = {"sizes": ["small", "regular"], "default_size": "regular", "exclusive_variants": [["flat", "primary"]],
+                   "sizes_by_variant": [{"variant": "flat", "sizes": ["small", "regular"], "default_size": "small"},
+                                        {"variant": "primary", "sizes": ["mini", "large"],
+                                         "default_size": {"pending": "U9"}}],
+                   "sizes_by_context": [{"context": {"widget": "toolbar", "part": "bar"}, "sizes": ["small", "large"],
+                                         "default_size": "small"}]}
+    bar = [{"widget": "toolbar", "part": "bar", "surface": None, "variants": set(), "states": set(), "sizes": set()}]
+    cases = [({}, (), (["regular"], [])), ({"variants": ["flat"]}, (), (["small"], ["flat"])),
+             ({"sizes": ["small"]}, (), (["small"], [])), ({"variants": ["primary"]}, (), (["mini"], ["primary"])),
+             ({"not_sizes": ["regular"]}, (), (["small"], [])),
+             ({"not_sizes": ["regular", "small"]}, (), (["mini"], ["primary"])),
+             ({"not_sizes": ["regular", "small"], "variants": ["flat"]}, (), (None, ["flat"])),
+             ({"not_sizes": ["regular", "small"], "not_variants": ["primary"]}, (), (None, [])),
+             ({}, bar, (["small"], [])), ({"variants": ["primary"]}, bar, (["large"], ["primary"]))]
+    for when, ancestors, want in cases:
+        got = element_size(when, sized_model, ancestors)
+        if got != want:
+            failures.append(f"element_size({when}, {ancestors}): {got}, expected {want}")
+    if element_size({}, {"sizes": []}) != ([], []):
+        failures.append(f"element_size of an unsized element: {element_size({}, {'sizes': []})}")
+    # pending_defaults: each pending default size taken out of [declare] and listed by its declaration's path
+    kvs = [("sizes", ["regular"]), ("default_size", {"pending": "U1"}),
+           ("sizes_by_variant", [{"variant": "@gray", "sizes": ["mini"], "default_size": {"pending": "U2"}},
+                                 {"variant": "flat", "sizes": ["mini"], "default_size": "mini"}]),
+           ("sizes_by_context", [{"context": {"widget": "toolbar"}, "sizes": ["regular"],
+                                  "default_size": {"pending": "U3"}}])]
+    cited = type("Item", (), {"file": "s.toml", "line": 7})()
+    kept, listed = pending_defaults(("flavor", "f", "widget", "button"), kvs, cited)
+    head = "declare.flavor.f.widget.button"
+    if kept != [("sizes", ["regular"]), ("sizes_by_variant", [{"variant": "@gray", "sizes": ["mini"]},
+                                                              {"variant": "flat", "sizes": ["mini"],
+                                                               "default_size": "mini"}]),
+                ("sizes_by_context", [{"context": {"widget": "toolbar"}, "sizes": ["regular"]}])] or [
+            (path, uid, c.where) for path, uid, c in listed] != [
+            (f"{head}.default_size", "U1", "s.toml:7"), (f"{head}.sizes_by_variant.@gray.default_size", "U2", "s.toml:7"),
+            (f"{head}.sizes_by_context.0.default_size", "U3", "s.toml:7")]:
+        failures.append(f"pending_defaults: {kept}, {[(path, uid) for path, uid, _ in listed]}")
     # pending_table: a pending leaf of a set-whole block lists the block; a pending fact with a base beneath, or its
     # block's, lists nothing
     class _Item:
@@ -2250,6 +2381,18 @@ def self_test() -> int:
                 invented = base.replace("[widgets.button.body]\n", "[widgets.button.body]\nopacity = 0.5\n", 1)
                 if invented == base or not round_trip(sized_draft, invented + sized_text[len(base):]).mismatches:
                     failures.append("a key per size, no default size: a base from a size's fact passes")
+        # a pending default size end to end: listed in [pending] by its declaration's path, stated nowhere in
+        # [declare], the round trip reading the table back
+        root = Path(tmp) / "pending_default"
+        pending_model = model.replace(sizes, 'sizes = ["small", "regular"]\ndefault_size = { pending = "U9" }\n'
+                                      + sizes[len("sizes = []\n"):], 1)
+        write(root, {**SELF_TEST_FILES, "docs/facts/gnome/state-models.toml": pending_model,
+                     "docs/facts/gnome/button.toml": sized_facts})
+        pending_draft, pending_text, pending_trip, _ = generate(fixture_context(root), "adwaita")
+        declared = pending_text.split("[declare.widget.button]\n", 1)[-1].split("\n\n", 1)[0]
+        if (pending_trip.mismatches or '"declare.widget.button.default_size" = "U9"' not in pending_text
+                or "default_size" in declared):
+            failures.append(f"a pending default size: {pending_trip}, [declare.widget.button] {declared!r}")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
