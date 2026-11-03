@@ -8,7 +8,8 @@
 
 mod tree;
 
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
+use std::rc::Rc;
 
 use ::toml::{Table, Value as Item};
 
@@ -1653,9 +1654,13 @@ pub struct Resolved {
     window: WindowConditions,
 }
 
-/// A value the gate read, and the places its evaluation read a synthetic
-/// layer's step at (S17's synthetic route, ADD-A128).
-type Read = (Option<Tree>, Vec<Reached>);
+/// A value the gate read, a part's or a widget value's tree (whole, or at
+/// a key's place), and the places its evaluation read a synthetic layer's
+/// step at (S17's synthetic route, ADD-A128).
+struct Read {
+    tree: Option<Tree>,
+    reached: Vec<Reached>,
+}
 
 /// Whether a value's evaluation read a synthetic layer's step at the place
 /// `path` of `target`, above it or below it: any step (`reaches`), or one
@@ -1909,6 +1914,7 @@ impl Resolved {
             widget,
             parts: Vec::new(),
             values: OnceCell::new(),
+            evaluated: RefCell::new(Vec::new()),
         };
         let info = registry::widgets()
             .iter()
@@ -2020,7 +2026,7 @@ struct Queried {
     returned: Option<Scope>,
     answer: Answer,
     /// The theme's own resolved style, read once.
-    actual: OnceCell<Read>,
+    actual: OnceCell<Rc<Read>>,
 }
 
 impl Queried {
@@ -2139,18 +2145,29 @@ fn differs(
     path: &[String],
     tolerance: &Tolerance,
 ) -> Result<Outcome, Unread> {
+    differs_there(
+        actual.and_then(|tree| tree.at(path)),
+        expected.and_then(|tree| tree.at(path)),
+        path,
+        tolerance,
+    )
+}
+
+/// [`differs`] of the two sides' subtrees at `path`, each where read.
+fn differs_there(
+    actual: Option<&Tree>,
+    expected: Option<&Tree>,
+    path: &[String],
+    tolerance: &Tolerance,
+) -> Result<Outcome, Unread> {
     let unread = |side: &str| {
         Unread::Refused(format!(
             "the gate cannot read {side} value at `{}`",
             path.join(".")
         ))
     };
-    let actual = actual
-        .and_then(|tree| tree.at(path))
-        .ok_or_else(|| unread("the theme's"))?;
-    let expected = expected
-        .and_then(|tree| tree.at(path))
-        .ok_or_else(|| unread("the fact's"))?;
+    let actual = actual.ok_or_else(|| unread("the theme's"))?;
+    let expected = expected.ok_or_else(|| unread("the fact's"))?;
     Ok(match actual.differs(expected, tolerance) {
         None => Outcome::Agrees,
         Some(at) => Outcome::Differs {
@@ -2177,7 +2194,9 @@ pub struct Session<'r> {
     widget: WidgetKind,
     parts: Vec<Queried>,
     /// The theme's own resolved values, read once.
-    values: OnceCell<Read>,
+    values: OnceCell<Rc<Read>>,
+    /// Each fact's body evaluated in its key's place, read once.
+    evaluated: RefCell<Vec<(RuleBody, Rc<Read>)>>,
 }
 
 impl Session<'_> {
@@ -2249,6 +2268,56 @@ impl Session<'_> {
         self.with_element(queried.part, &queried.scope, |element| {
             Matched::new(theme, element).is_ok_and(|matched| matched.matches(&when.0))
         })
+    }
+
+    /// [`Session::holds`] of each `when` with its key, each part's element
+    /// matched once.
+    #[must_use]
+    pub fn holds_each(&self, whens: &[(&When, &FactKey)]) -> Vec<bool> {
+        let mut out: Vec<bool> = whens
+            .iter()
+            .map(|(when, _)| self.resolved.conditions_hold(when))
+            .collect();
+        let theme = &self.resolved.theme;
+        let root = self.root().map(|root| root.part);
+        for queried in &self.parts {
+            let of_part = |key: &FactKey| match &key.place {
+                Place::WholePart(part) | Place::Part(part, _) => *part == queried.part,
+                Place::Values(..) => root == Some(queried.part),
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => false,
+            };
+            let indices: Vec<usize> = whens
+                .iter()
+                .enumerate()
+                .filter(|(index, (_, key))| out.get(*index) == Some(&true) && of_part(key))
+                .map(|(index, _)| index)
+                .collect();
+            if indices.is_empty() {
+                continue;
+            }
+            self.with_element(queried.part, &queried.scope, |element| {
+                let matched = Matched::new(theme, element).ok();
+                for index in indices {
+                    let holds = matched.as_ref().is_some_and(|matched| {
+                        whens
+                            .get(index)
+                            .is_some_and(|(when, _)| matched.matches(&when.0))
+                    });
+                    if let Some(slot) = out.get_mut(index) {
+                        *slot = holds;
+                    }
+                }
+            });
+        }
+        for (slot, (_, key)) in out.iter_mut().zip(whens) {
+            let queried = match &key.place {
+                Place::WholePart(part) | Place::Part(part, _) => self.queried(*part).is_some(),
+                Place::Values(..) => root.is_some(),
+                Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => true,
+            };
+            *slot &= queried;
+        }
+        out
     }
 
     /// Which of the widget's steps apply to the element, and what each
@@ -2353,15 +2422,13 @@ impl Session<'_> {
                 })
             }
             Place::Part(..) | Place::Values(..) => {
-                let Some((actual, path, _)) = self.field_tree(key, None)? else {
+                let Some((actual, path)) = self.field_tree(key, None)? else {
                     return Ok(Outcome::NotDrawn);
                 };
-                let (expected, _, _) = self
-                    .field_tree(key, Some(rule_body(value)?))?
-                    .unwrap_or_default();
-                differs(
-                    actual.as_ref(),
-                    expected.as_ref(),
+                let expected = self.field_tree(key, Some(rule_body(value)?))?;
+                differs_there(
+                    actual.tree.as_ref(),
+                    expected.as_ref().and_then(|(read, _)| read.tree.as_ref()),
                     &path,
                     &self.in_scope(key, tolerance),
                 )
@@ -2383,16 +2450,13 @@ impl Session<'_> {
         result: &FactValue,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let Some((measured, path, _)) = self.field_tree(key, Some(rule_body(Some(result))?))?
-        else {
+        let Some((measured, path)) = self.field_tree(key, Some(rule_body(Some(result))?))? else {
             return Ok(Outcome::NotDrawn);
         };
-        let (derived, _, _) = self
-            .field_tree(key, Some(rule_body(Some(value))?))?
-            .unwrap_or_default();
-        differs(
-            measured.as_ref(),
-            derived.as_ref(),
+        let derived = self.field_tree(key, Some(rule_body(Some(value))?))?;
+        differs_there(
+            measured.tree.as_ref(),
+            derived.as_ref().and_then(|(read, _)| read.tree.as_ref()),
             &path,
             &self.in_scope(key, tolerance),
         )
@@ -2455,8 +2519,8 @@ impl Session<'_> {
         };
         let body = value.and_then(|value| rule_body(Some(value)).ok());
         for body in [None, body] {
-            if let Some((_, _, reached)) = self.field_tree(key, body)?
-                && Reach::of(&reached, target, path).reaches
+            if let Some((read, _)) = self.field_tree(key, body)?
+                && Reach::of(&read.reached, target, path).reaches
             {
                 return Ok(true);
             }
@@ -2481,7 +2545,7 @@ impl Session<'_> {
         };
         Ok(self
             .field_tree(key, None)?
-            .is_some_and(|(_, _, reached)| Reach::of(&reached, target, path).decides))
+            .is_some_and(|(read, _)| Reach::of(&read.reached, target, path).decides))
     }
 
     /// Whether a step kept for the element states `part`'s presence:
@@ -2540,6 +2604,23 @@ impl Session<'_> {
         })
     }
 
+    /// `body` evaluated in its key's place by `evaluate`, once.
+    fn evaluated_once(&self, body: &RuleBody, evaluate: impl FnOnce() -> Read) -> Rc<Read> {
+        if let Some((_, read)) = self
+            .evaluated
+            .borrow()
+            .iter()
+            .find(|(held, _)| held == body)
+        {
+            return Rc::clone(read);
+        }
+        let read = Rc::new(evaluate());
+        self.evaluated
+            .borrow_mut()
+            .push((body.clone(), Rc::clone(&read)));
+        read
+    }
+
     /// A part field's or a widget value's tree for the element, with the
     /// key's path in it: the theme's own (read once), or with `body`'s step
     /// after every other; `None` where the key's part is not drawn.
@@ -2554,10 +2635,14 @@ impl Session<'_> {
                 if queried.answer != Answer::Drawn {
                     return Ok(None);
                 }
-                let evaluate = |extra: Option<Extra<'_>>| -> Read {
+                // The whole part, or its tree at the key's place alone.
+                let evaluate = |extra: Option<Extra<'_>>, at: Option<&[String]>| -> Read {
                     self.with_element(queried.part, &queried.scope, |element| {
                         let Ok(matched) = Matched::new(theme, element) else {
-                            return (None, Vec::new());
+                            return Read {
+                                tree: None,
+                                reached: Vec::new(),
+                            };
                         };
                         let applies = |selector: &Selector| matched.matches(selector);
                         theme.evaluate_in(
@@ -2566,24 +2651,43 @@ impl Session<'_> {
                             &applies,
                             Target::Part(queried.part),
                             extra,
-                            |cx| (Tree::of(&cx.part(queried.part)), cx.reached().to_vec()),
+                            |cx| {
+                                let resolved = cx.part(queried.part);
+                                let tree = match at {
+                                    None => Tree::of(&resolved),
+                                    Some(path) => Tree::of_at(&resolved, path),
+                                };
+                                Read {
+                                    tree,
+                                    reached: cx.reached().to_vec(),
+                                }
+                            },
                         )
                     })
                 };
-                let (tree, reached) = match body {
-                    None => queried.actual.get_or_init(|| evaluate(None)).clone(),
-                    Some(_) => evaluate(extra),
+                let read = match body {
+                    None => {
+                        let whole = queried.actual.get_or_init(|| Rc::new(evaluate(None, None)));
+                        Rc::new(Read {
+                            tree: whole.tree.as_ref().and_then(|tree| tree.at(path)).cloned(),
+                            reached: whole.reached.clone(),
+                        })
+                    }
+                    Some(body) => self.evaluated_once(body, || evaluate(extra, Some(path))),
                 };
-                Ok(Some((tree, path.clone(), reached)))
+                Ok(Some((read, path.clone())))
             }
             Place::Values(widget, path) => {
                 let root = self
                     .root()
                     .ok_or_else(|| Unread::Refused("a widget with no root".to_owned()))?;
-                let evaluate = |extra: Option<Extra<'_>>| -> Read {
+                let evaluate = |extra: Option<Extra<'_>>, at: Option<&[String]>| -> Read {
                     self.with_element(root.part, &root.scope, |element| {
                         let Ok(matched) = Matched::new(theme, element) else {
-                            return (None, Vec::new());
+                            return Read {
+                                tree: None,
+                                reached: Vec::new(),
+                            };
                         };
                         let applies = |selector: &Selector| matched.matches(selector);
                         theme.evaluate_in(
@@ -2596,19 +2700,32 @@ impl Session<'_> {
                                 let folds = cx.roots(Target::Values(*widget));
                                 let tree = match widget {
                                     WidgetKind::Button => {
-                                        Tree::of(&ButtonValues::resolve(&folds, cx))
+                                        let resolved = ButtonValues::resolve(&folds, cx);
+                                        match at {
+                                            None => Tree::of(&resolved),
+                                            Some(path) => Tree::of_at(&resolved, path),
+                                        }
                                     }
                                 };
-                                (tree, cx.reached().to_vec())
+                                Read {
+                                    tree,
+                                    reached: cx.reached().to_vec(),
+                                }
                             },
                         )
                     })
                 };
-                let (tree, reached) = match body {
-                    None => self.values.get_or_init(|| evaluate(None)).clone(),
-                    Some(_) => evaluate(extra),
+                let read = match body {
+                    None => {
+                        let whole = self.values.get_or_init(|| Rc::new(evaluate(None, None)));
+                        Rc::new(Read {
+                            tree: whole.tree.as_ref().and_then(|tree| tree.at(path)).cloned(),
+                            reached: whole.reached.clone(),
+                        })
+                    }
+                    Some(body) => self.evaluated_once(body, || evaluate(extra, Some(path))),
                 };
-                Ok(Some((tree, path.clone(), reached)))
+                Ok(Some((read, path.clone())))
             }
             Place::WholePart(_)
             | Place::Token(_)
@@ -2621,10 +2738,10 @@ impl Session<'_> {
     }
 }
 
-/// A part field's or a widget value's tree, where it resolved, the key's
-/// path in it, and the places its evaluation read a synthetic layer's step
-/// at (S17, ADD-A128).
-type Field = (Option<Tree>, Vec<String>, Vec<Reached>);
+/// A part field's or a widget value's tree at the key's place, where it
+/// resolved, with the places its evaluation read a synthetic layer's step
+/// at (S17, ADD-A128), and the key's path.
+type Field = (Rc<Read>, Vec<String>);
 
 /// A part's or a widget value's fact as a rule's body.
 fn rule_body(value: Option<&FactValue>) -> Result<&RuleBody, Unread> {

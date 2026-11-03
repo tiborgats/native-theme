@@ -3,7 +3,7 @@
 //! queried and each key compared with the fact that applies; the perturbed
 //! run; the declarations run; and the report.
 
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -149,15 +149,108 @@ pub struct Report {
     pub compared: u64,
     /// The time the run took.
     pub elapsed: Duration,
+    /// The failures by run, fact and key, in the order each group's first
+    /// failure was recorded: its run, its key, its fact, how many
+    /// failures and its first; a failure of no comparison is its own group.
+    pub groups: Vec<Group>,
+    /// Each failure's group, by index into `groups`, in order.
+    of_group: Vec<usize>,
+    /// The groups by run, key and fact.
+    group_index: HashMap<(String, String, String), usize>,
     /// The failures recorded, each once.
     seen: HashSet<String>,
 }
 
+/// The failures of one run, fact and key (S17's report, grouped).
+#[derive(Debug)]
+pub struct Group {
+    pub run: String,
+    pub key: String,
+    pub fact: String,
+    pub count: u64,
+    pub first: String,
+}
+
 impl Report {
+    /// A failure of no comparison, its own group.
     fn fail(&mut self, failure: String) {
-        if self.seen.insert(failure.clone()) {
-            self.failures.push(failure);
+        let group = (String::new(), String::new(), failure.clone());
+        self.fail_in(group, failure);
+    }
+
+    /// A failure of the run, key and fact `group` (its run, key and fact).
+    fn fail_in(&mut self, group: (String, String, String), failure: String) {
+        if !self.seen.insert(failure.clone()) {
+            return;
         }
+        let index = match self.group_index.get(&group) {
+            Some(index) => *index,
+            None => {
+                let index = self.groups.len();
+                let (run, key, fact) = group.clone();
+                self.groups.push(Group {
+                    run,
+                    key,
+                    fact,
+                    count: 0,
+                    first: failure.clone(),
+                });
+                self.group_index.insert(group, index);
+                index
+            }
+        };
+        if let Some(group) = self.groups.get_mut(index) {
+            group.count += 1;
+        }
+        self.of_group.push(index);
+        self.failures.push(failure);
+    }
+
+    /// `other`'s findings added after this report's, as one run recording
+    /// both in turn records them.
+    fn merge(&mut self, mut other: Report) {
+        let failures = std::mem::take(&mut other.failures);
+        for (failure, group) in failures.into_iter().zip(&other.of_group) {
+            match other.groups.get(*group) {
+                Some(group) => {
+                    let group = (group.run.clone(), group.key.clone(), group.fact.clone());
+                    self.fail_in(group, failure);
+                }
+                None => self.fail(failure),
+            }
+        }
+        for (place, (id, key, count)) in other.pending {
+            self.pending.entry(place).or_insert((id, key, 0)).2 += count;
+        }
+        for (place, (key, count)) in other.synthetic {
+            self.synthetic.entry(place).or_insert((key, 0)).1 += count;
+        }
+        for (key, (ids, count)) in other.listed {
+            let entry = self.listed.entry(key).or_default();
+            entry.0.extend(ids);
+            entry.1 += count;
+        }
+        for (place, (key, pending, count)) in other.unchecked {
+            self.unchecked.entry(place).or_insert((key, pending, 0)).2 += count;
+        }
+        self.unread.extend(other.unread);
+        for (key, count) in other.keys_not_held {
+            *self.keys_not_held.entry(key).or_default() += count;
+        }
+        for (why, count) in other.whens_not_held {
+            *self.whens_not_held.entry(why).or_default() += count;
+        }
+        self.other_presets += other.other_presets;
+        self.variants_not_held.extend(other.variants_not_held);
+        self.accent_run += other.accent_run;
+        self.fields_not_drawn += other.fields_not_drawn;
+        self.whens_not_drawn += other.whens_not_drawn;
+        self.combinations_skipped += other.combinations_skipped;
+        for (entry, count) in other.combinations {
+            *self.combinations.entry(entry).or_default() += count;
+        }
+        self.queried += other.queried;
+        self.compared += other.compared;
     }
 }
 
@@ -495,7 +588,23 @@ fn applying<'p, 'f>(
     report: &mut Report,
     combination: &dyn Fn() -> String,
 ) -> Option<&'p Prepared<'f>> {
-    let held: Vec<&Prepared<'f>> = facts.iter().filter(|fact| holds(&fact.when)).collect();
+    let held: Vec<bool> = facts.iter().map(|fact| holds(&fact.when)).collect();
+    applying_of(facts, &held, report, combination)
+}
+
+/// [`applying`], whether each fact's `when` holds given in `held`.
+fn applying_of<'p, 'f>(
+    facts: &'p [Prepared<'f>],
+    held: &[bool],
+    report: &mut Report,
+    combination: &dyn Fn() -> String,
+) -> Option<&'p Prepared<'f>> {
+    let held: Vec<&Prepared<'f>> = facts
+        .iter()
+        .zip(held)
+        .filter(|(_, holds)| **holds)
+        .map(|(fact, _)| fact)
+        .collect();
     if let Some(last) = held.last() {
         for earlier in &held {
             if let Stated::Pending(id) = &earlier.fact.stated
@@ -535,7 +644,10 @@ fn verdict<'p>(
         None if whole_part => Verdict::Drawn,
         None => {
             if pass == Pass::Normal {
-                report.fail(format!("`{key}` has no fact under {}", combination()));
+                report.fail_in(
+                    ("Normal".to_owned(), key.to_owned(), String::new()),
+                    format!("`{key}` has no fact under {}", combination()),
+                );
             }
             Verdict::Done
         }
@@ -599,7 +711,10 @@ fn composed(
         match applies(leaf) {
             LeafFact::NoKey => {
                 if pass == Pass::Normal {
-                    report.fail(format!("`{leaf}` has no fact under {}", combination()));
+                    report.fail_in(
+                        ("Normal".to_owned(), leaf.clone(), String::new()),
+                        format!("`{leaf}` has no fact under {}", combination()),
+                    );
                 }
                 return None;
             }
@@ -641,13 +756,19 @@ fn leaf_value(
     let Some(key) = keys.iter().find(|key| key.name == name) else {
         return LeafFact::NoKey;
     };
+    let held: Vec<bool> = key
+        .facts
+        .iter()
+        .map(|fact| holds(&fact.when, &key.key))
+        .collect();
+    leaf_of(key, &held)
+}
+
+/// The leaf `key`'s fact as [`leaf_value`] finds it, whether each of its
+/// facts' `when` holds given in `held`.
+fn leaf_of(key: &KeyFacts<'_>, held: &[bool]) -> LeafFact {
     let mut probe = Report::default();
-    let fact = applying(
-        &key.facts,
-        |when| holds(when, &key.key),
-        &mut probe,
-        &String::new,
-    );
+    let fact = applying_of(&key.facts, held, &mut probe, &String::new);
     match fact {
         None => LeafFact::NoneApplies,
         Some(prepared) => match (&prepared.fact.stated, &prepared.leaf) {
@@ -667,23 +788,31 @@ fn record(
     pass: Pass,
 ) {
     report.compared += 1;
+    let group = (format!("{pass:?}"), key.to_owned(), place.to_owned());
     match outcome {
         Ok(Outcome::Agrees) => {}
-        Ok(Outcome::NotDrawn) => report.fail(format!(
-            "{pass:?}: `{key}` under {}: {place} applies where its part is not drawn",
-            combination()
-        )),
-        Ok(Outcome::Differs { at, theme, fact }) => report.fail(format!(
-            "{pass:?}: `{key}` at `{at}` under {}: {} gives {theme}, {place} gives {fact}",
-            combination(),
-            match pass {
-                Pass::Normal | Pass::Perturbed => "the preset",
-                Pass::Measured => "the measured result",
-            }
-        )),
-        Err(Unread::NotHeld(why) | Unread::Refused(why)) => {
-            report.fail(format!("{pass:?}: `{key}` under {}: {why}", combination()))
-        }
+        Ok(Outcome::NotDrawn) => report.fail_in(
+            group,
+            format!(
+                "{pass:?}: `{key}` under {}: {place} applies where its part is not drawn",
+                combination()
+            ),
+        ),
+        Ok(Outcome::Differs { at, theme, fact }) => report.fail_in(
+            group,
+            format!(
+                "{pass:?}: `{key}` at `{at}` under {}: {} gives {theme}, {place} gives {fact}",
+                combination(),
+                match pass {
+                    Pass::Normal | Pass::Perturbed => "the preset",
+                    Pass::Measured => "the measured result",
+                }
+            ),
+        ),
+        Err(Unread::NotHeld(why) | Unread::Refused(why)) => report.fail_in(
+            group,
+            format!("{pass:?}: `{key}` under {}: {why}", combination()),
+        ),
     }
 }
 
@@ -1056,14 +1185,34 @@ fn own_combination(
     Some((vectors, combination))
 }
 
+/// A hash of a combination's fields but its context, which equality
+/// compares.
+fn identity(combination: &Combination) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    (
+        &combination.widget,
+        &combination.variants,
+        &combination.states,
+        &combination.order,
+        &combination.size,
+        &combination.density,
+        &combination.direction,
+        combination.before,
+        combination.after,
+    )
+        .hash(&mut hasher);
+    hasher.finish()
+}
+
 /// A data combination as the model's.
-fn combination_of(point: &Point, widget: &str, context: Option<&Value>) -> Combination {
+fn combination_of(point: Point, widget: &str, context: Option<&Value>) -> Combination {
     let mut combination = Combination::new(widget);
-    combination.variants = point.variants.clone();
-    combination.states = point.states.clone();
-    combination.order = point.order.clone();
-    combination.size = point.size.clone();
-    combination.density = point.density.clone();
+    combination.variants = point.variants;
+    combination.states = point.states;
+    combination.order = point.order;
+    combination.size = point.size;
+    combination.density = point.density;
     combination.context = context.cloned();
     combination
 }
@@ -1469,11 +1618,22 @@ fn check(
     let drawing = drawing(&platform.name, flavor);
     let entries = projected(platform, preset, flavor, report);
     let mut planned: Planned = BTreeMap::new();
-    let mut seen: HashSet<(Vec<String>, String)> = HashSet::new();
+    // Each vector's combinations planned, by a hash of all but their
+    // context, so each is planned once.
+    let mut seen: HashMap<Vec<String>, HashMap<u64, Vec<usize>>> = HashMap::new();
     let mut plan = |vector: Vec<String>, combination: Combination, planned: &mut Planned| {
-        let identity = (vector.clone(), format!("{combination:?}"));
-        if seen.insert(identity) {
-            planned.entry(vector).or_default().push(combination);
+        let bucket = seen
+            .entry(vector.clone())
+            .or_default()
+            .entry(identity(&combination))
+            .or_default();
+        let held = planned.entry(vector).or_default();
+        if !bucket
+            .iter()
+            .any(|index| held.get(*index) == Some(&combination))
+        {
+            bucket.push(held.len());
+            held.push(combination);
         }
     };
     let mut global_vectors: BTreeSet<Vec<String>> = BTreeSet::new();
@@ -1538,8 +1698,9 @@ fn check(
         let vectors = model::condition_vectors(&entry.axis_conditions, &schemes);
         global_vectors.extend(vectors.iter().cloned());
         model::combinations(entry, &vectors, Some(&mentioned), |point, context| {
+            let vector = point.conditions.clone();
             plan(
-                point.conditions.clone(),
+                vector,
                 combination_of(point, &entry.widget, context),
                 &mut planned,
             );
@@ -1583,41 +1744,19 @@ fn check(
         planned.entry(vector.clone()).or_default();
     }
     let root = root_inputs();
-    for (vector, combinations) in &planned {
-        let conditions = match conditions(vector, flavor) {
-            Ok(conditions) => conditions,
-            Err(Unread::NotHeld(_)) => {
-                report.combinations_skipped += combinations.len() as u64;
-                continue;
-            }
-            Err(Unread::Refused(why)) => {
-                report.fail(format!("the conditions {vector:?} are refused: {why}"));
-                continue;
-            }
-        };
-        let resolve = |pass: Pass, layer: &Layer, report: &mut Report| match preset
-            .resolve(&conditions, layer)
-        {
-            Ok(resolved) => Some(resolved),
-            Err(why) => {
-                report.fail(format!(
-                    "{pass:?}: {} does not resolve under {vector:?}: {why}",
-                    preset.id()
-                ));
-                None
-            }
-        };
-        let Some(normal) = resolve(Pass::Normal, &Layer::default(), report) else {
+    // Each vector resolved for both runs, in parallel; what resolving found
+    // recorded before the vector's checks, as one run in turn records it.
+    let planned: Vec<(&Vec<String>, &Vec<Combination>)> = planned.iter().collect();
+    let resolutions = parallel(&planned, |(vector, combinations)| {
+        let mut report = Report::default();
+        let resolved = resolve_vector(preset, keys, vector, combinations, flavor, &mut report);
+        (report, resolved)
+    });
+    for ((vector, combinations), (found, resolved)) in planned.into_iter().zip(resolutions) {
+        report.merge(found);
+        let Some((normal, perturbed)) = resolved else {
             continue;
         };
-        let layer = match stand_in(preset, keys, &normal) {
-            Ok(layer) => layer,
-            Err(why) => {
-                report.fail(format!("Perturbed: the stand-in layer is refused: {why}"));
-                continue;
-            }
-        };
-        let perturbed = resolve(Pass::Perturbed, &layer, report);
         let passes = std::iter::once((Pass::Normal, Some(normal)))
             .chain(std::iter::once((Pass::Perturbed, perturbed)));
         for (pass, resolved) in passes {
@@ -1653,6 +1792,51 @@ fn check(
             check_widgets(&run, combinations, report);
         }
     }
+}
+
+/// A condition vector resolved for the normal run and the perturbed run,
+/// whose stand-in the facts that apply under it decide; `None` where its
+/// conditions cannot be set or the normal run does not resolve.
+fn resolve_vector(
+    preset: &Preset,
+    keys: &[KeyFacts<'_>],
+    vector: &[String],
+    combinations: &[Combination],
+    flavor: Option<&str>,
+    report: &mut Report,
+) -> Option<(Resolved, Option<Resolved>)> {
+    let conditions = match conditions(vector, flavor) {
+        Ok(conditions) => conditions,
+        Err(Unread::NotHeld(_)) => {
+            report.combinations_skipped += combinations.len() as u64;
+            return None;
+        }
+        Err(Unread::Refused(why)) => {
+            report.fail(format!("the conditions {vector:?} are refused: {why}"));
+            return None;
+        }
+    };
+    let resolve =
+        |pass: Pass, layer: &Layer, report: &mut Report| match preset.resolve(&conditions, layer) {
+            Ok(resolved) => Some(resolved),
+            Err(why) => {
+                report.fail(format!(
+                    "{pass:?}: {} does not resolve under {vector:?}: {why}",
+                    preset.id()
+                ));
+                None
+            }
+        };
+    let normal = resolve(Pass::Normal, &Layer::default(), report)?;
+    let layer = match stand_in(preset, keys, &normal) {
+        Ok(layer) => layer,
+        Err(why) => {
+            report.fail(format!("Perturbed: the stand-in layer is refused: {why}"));
+            return None;
+        }
+    };
+    let perturbed = resolve(Pass::Perturbed, &layer, report);
+    Some((normal, perturbed))
 }
 
 /// How the renderer of a facts directory's platform draws a colour a
@@ -1856,24 +2040,109 @@ fn found_listed(
     entry.1 += 1;
 }
 
+/// What the probe of one combination found: skipped (a context or a
+/// condition the gate cannot set), a failure that ends it, named by
+/// `not_drawn`, or its signature with the failures its facts' order gives.
+enum Probe {
+    Skipped,
+    Failed(String),
+    NotDrawn,
+    Queried {
+        failures: Vec<String>,
+        signature: (String, Vec<u32>, Vec<u32>),
+    },
+}
+
+/// How many combinations [`check_widgets`] probes at once.
+const PROBED_AT_ONCE: usize = 1 << 16;
+
+/// A widget's keys for a combination, with the fact that applies to each
+/// and whether each of its facts' `when` holds.
+struct Applying<'k, 'f> {
+    keys: Vec<&'k KeyFacts<'f>>,
+    held: Vec<Vec<bool>>,
+    facts: Vec<Option<&'k Prepared<'f>>>,
+}
+
+/// The facts that apply to the widget keys of `session`'s combination;
+/// a pending fact a later one shadows is a failure in `report`.
+fn applying_in<'k, 'f>(
+    keys: &'k [KeyFacts<'f>],
+    widget: &str,
+    session: &native_theme::next::gate::Session<'_>,
+    report: &mut Report,
+    describe: &dyn Fn() -> String,
+) -> Applying<'k, 'f> {
+    let keys: Vec<&KeyFacts<'_>> = keys
+        .iter()
+        .filter(|key| key.key.widget().as_deref() == Some(widget))
+        .collect();
+    let whens: Vec<(&When, &FactKey)> = keys
+        .iter()
+        .flat_map(|key| key.facts.iter().map(|fact| (&fact.when, &key.key)))
+        .collect();
+    let mut held = session.holds_each(&whens).into_iter();
+    let held: Vec<Vec<bool>> = keys
+        .iter()
+        .map(|key| held.by_ref().take(key.facts.len()).collect())
+        .collect();
+    let facts = keys
+        .iter()
+        .zip(&held)
+        .map(|(key, held)| applying_of(&key.facts, held, report, describe))
+        .collect();
+    Applying { keys, held, facts }
+}
+
+/// The threads the gate's parallel steps use.
+fn threads() -> usize {
+    std::thread::available_parallelism().map_or(1, std::num::NonZero::get)
+}
+
+/// `f` over each of `items` on [`threads`] threads, the results in the
+/// items' order.
+pub fn parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let mut done: Vec<(usize, R)> = std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads().min(items.len()))
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut out = Vec::new();
+                    loop {
+                        let index = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let Some(item) = items.get(index) else {
+                            break;
+                        };
+                        out.push((index, f(item)));
+                    }
+                    out
+                })
+            })
+            .collect();
+        workers
+            .into_iter()
+            .flat_map(|worker| worker.join().unwrap())
+            .collect()
+    });
+    done.sort_by_key(|(index, _)| *index);
+    done.into_iter().map(|(_, result)| result).collect()
+}
+
 /// Every widget key over a condition vector's combinations, each distinct
-/// signature compared once; a combination a `not_drawn` entry names, as
-/// the query matches it, is not queried (S17).
+/// signature compared once, at its first combination; a combination a
+/// `not_drawn` entry names, as the query matches it, is not queried (S17).
+/// The combinations are probed, and the distinct ones compared, in
+/// parallel, each step's findings recorded in the combinations' order.
 fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut Report) {
     let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
     let metrics = StubMetrics;
-    let mut signatures: HashSet<(String, Vec<u32>, Vec<String>)> = HashSet::new();
-    for combination in combinations {
+    let probe = |combination: &Combination| {
         let describe = || format!("{vector:?} {combination:?}");
         let session = match resolved.session(combination, run.root, &metrics) {
             Ok(session) => session,
-            Err(Unread::NotHeld(_)) => {
-                report.combinations_skipped += 1;
-                continue;
-            }
+            Err(Unread::NotHeld(_)) => return Probe::Skipped,
             Err(Unread::Refused(why)) => {
-                report.fail(format!("{pass:?}: {why} under {}", describe()));
-                continue;
+                return Probe::Failed(format!("{pass:?}: {why} under {}", describe()));
             }
         };
         if run
@@ -1881,119 +2150,156 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
             .get(&combination.widget)
             .is_some_and(|whens| whens.iter().any(|when| session.root_holds(when)))
         {
-            continue;
+            return Probe::NotDrawn;
         }
         if let Some(why) = session.unavailable() {
-            report.fail(format!(
+            return Probe::Failed(format!(
                 "{pass:?}: not available ({why}) under {}",
                 describe()
             ));
-            continue;
         }
-        let widget_keys: Vec<&KeyFacts<'_>> = keys
-            .iter()
-            .filter(|key| key.key.widget().as_deref() == Some(combination.widget.as_str()))
-            .collect();
         let mut probe = Report::default();
-        let applying_facts: Vec<Option<&Prepared<'_>>> = widget_keys
+        let applying = applying_in(keys, &combination.widget, &session, &mut probe, &describe);
+        // Each key's applying fact by its place among the key's facts, the
+        // widget's keys always in one order.
+        let facts: Vec<u32> = applying
+            .keys
             .iter()
-            .map(|key| {
-                applying(
-                    &key.facts,
-                    |when| session.holds(when, &key.key),
-                    &mut probe,
-                    &describe,
-                )
+            .zip(&applying.facts)
+            .map(|(key, fact)| {
+                fact.and_then(|fact| key.facts.iter().position(|held| std::ptr::eq(held, fact)))
+                    .and_then(|at| u32::try_from(at).ok())
+                    .unwrap_or(u32::MAX)
             })
-            .collect();
-        for failure in probe.failures {
-            report.fail(failure);
-        }
-        let indices: Vec<String> = applying_facts
-            .iter()
-            .map(|fact| fact.map(|fact| fact.fact.place()).unwrap_or_default())
             .collect();
         let element = format!(
             "{} {:?} {:?}",
             combination.widget, combination.context, combination.direction
         );
-        if !signatures.insert((element, session.signature(), indices)) {
-            continue;
+        Probe::Queried {
+            failures: probe.failures,
+            signature: (element, session.signature(), facts),
         }
-        report.queried += 1;
-        for (key, fact) in widget_keys.iter().zip(applying_facts) {
-            let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
-            // A pending fact applying where the preset leaves its path to the
-            // synthetic value is a listed path found; where its part is not
-            // drawn too, as the preset's bases state the part's fields whole
-            // there (S17, ADD-A128, ADD-A130).
-            if pass == Pass::Normal
-                && let Some(Prepared {
-                    fact:
-                        Fact {
-                            stated: Stated::Pending(id),
-                            ..
-                        },
-                    ..
-                }) = fact
-                && (!session.drawn(&key.key)
-                    || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
-            {
-                found_listed(report, run.preset, key, None, id);
-            }
-            if !session.drawn(&key.key) {
-                // A field of a part not drawn: no fact is asked for it and
-                // none is compared, one that applies there no failure; the
-                // part's own key states whether it is drawn (S17, ADD-A130).
-                if pass == Pass::Normal && fact.is_some() {
-                    report.fields_not_drawn += 1;
-                }
-                continue;
-            }
-            let holds = |when: &When, key: &FactKey| session.holds(when, key);
-            let whole = composed(
-                key,
-                fact,
-                &|leaf| leaf_value(keys, leaf, &holds),
-                pass,
-                report,
-                &describe,
-            );
-            match verdict(
-                &key.name,
-                key.key.whole_part(),
-                fact,
-                whole.as_ref(),
-                pass,
-                report,
-                &describe,
-            ) {
-                Verdict::Compare(value, tolerance) => {
-                    match session.synthetic(&key.key, Some(value)) {
-                        Ok(true) => synthetic_skip(report, &place, &key.name, pass),
-                        Ok(false) => {
-                            let tolerance = tolerance.drawn_by(run.drawing);
-                            let outcome = session.compare(&key.key, Some(value), &tolerance);
-                            record(outcome, &key.name, &place, report, &describe, pass);
-                        }
-                        Err(unread) => {
-                            record(Err(unread), &key.name, &place, report, &describe, pass);
-                        }
+    };
+    // Probed in chunks, each chunk's findings recorded in order before the
+    // next is probed, so only a chunk's signatures are held at once.
+    let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
+    let mut queried: Vec<&Combination> = Vec::new();
+    for chunk in combinations.chunks(PROBED_AT_ONCE) {
+        let probes = parallel(chunk, probe);
+        for (combination, probe) in chunk.iter().zip(probes) {
+            match probe {
+                Probe::Skipped => report.combinations_skipped += 1,
+                Probe::Failed(failure) => report.fail(failure),
+                Probe::NotDrawn => {}
+                Probe::Queried {
+                    failures,
+                    signature,
+                } => {
+                    for failure in failures {
+                        report.fail(failure);
+                    }
+                    if signatures.insert(signature) {
+                        queried.push(combination);
                     }
                 }
-                Verdict::Drawn if pass == Pass::Normal => {
-                    let outcome = session.compare(&key.key, None, &Tolerance::quote());
-                    record(
-                        outcome,
-                        &key.name,
-                        "no fact of the whole part (drawn)",
-                        report,
-                        &describe,
-                        pass,
-                    );
-                }
-                Verdict::Drawn | Verdict::Done => {}
             }
+        }
+    }
+    let found = parallel(&queried, |combination| {
+        let mut report = Report::default();
+        compare_widget(run, combination, &mut report);
+        report
+    });
+    for found in found {
+        report.merge(found);
+    }
+}
+
+/// Every widget key of `combination`, queried, compared with the fact that
+/// applies.
+fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Report) {
+    let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
+    let metrics = StubMetrics;
+    let describe = || format!("{vector:?} {combination:?}");
+    let Ok(session) = resolved.session(combination, run.root, &metrics) else {
+        return;
+    };
+    let mut probe = Report::default();
+    let applying = applying_in(keys, &combination.widget, &session, &mut probe, &describe);
+    report.queried += 1;
+    let widget_keys = &applying.keys;
+    let held = &applying.held;
+    let facts = &applying.facts;
+    for (key, fact) in widget_keys.iter().zip(facts.iter().copied()) {
+        let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
+        // A pending fact applying where the preset leaves its path to the
+        // synthetic value is a listed path found; where its part is not
+        // drawn too, as the preset's bases state the part's fields whole
+        // there (S17, ADD-A128, ADD-A130).
+        if pass == Pass::Normal
+            && let Some(Prepared {
+                fact:
+                    Fact {
+                        stated: Stated::Pending(id),
+                        ..
+                    },
+                ..
+            }) = fact
+            && (!session.drawn(&key.key)
+                || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
+        {
+            found_listed(report, run.preset, key, None, id);
+        }
+        if !session.drawn(&key.key) {
+            // A field of a part not drawn: no fact is asked for it and
+            // none is compared, one that applies there no failure; the
+            // part's own key states whether it is drawn (S17, ADD-A130).
+            if pass == Pass::Normal && fact.is_some() {
+                report.fields_not_drawn += 1;
+            }
+            continue;
+        }
+        let leaf = |name: &str| {
+            widget_keys
+                .iter()
+                .zip(held)
+                .find(|(key, _)| key.name == name)
+                .map_or(LeafFact::NoKey, |(key, held)| leaf_of(key, held))
+        };
+        let whole = composed(key, fact, &leaf, pass, report, &describe);
+        match verdict(
+            &key.name,
+            key.key.whole_part(),
+            fact,
+            whole.as_ref(),
+            pass,
+            report,
+            &describe,
+        ) {
+            Verdict::Compare(value, tolerance) => match session.synthetic(&key.key, Some(value)) {
+                Ok(true) => synthetic_skip(report, &place, &key.name, pass),
+                Ok(false) => {
+                    let tolerance = tolerance.drawn_by(run.drawing);
+                    let outcome = session.compare(&key.key, Some(value), &tolerance);
+                    record(outcome, &key.name, &place, report, &describe, pass);
+                }
+                Err(unread) => {
+                    record(Err(unread), &key.name, &place, report, &describe, pass);
+                }
+            },
+            Verdict::Drawn if pass == Pass::Normal => {
+                let outcome = session.compare(&key.key, None, &Tolerance::quote());
+                record(
+                    outcome,
+                    &key.name,
+                    "no fact of the whole part (drawn)",
+                    report,
+                    &describe,
+                    pass,
+                );
+            }
+            Verdict::Drawn | Verdict::Done => {}
         }
     }
 }

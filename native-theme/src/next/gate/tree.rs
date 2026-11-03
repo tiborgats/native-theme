@@ -3,6 +3,7 @@
 //! serves every type the model holds, its numeric and colour leaves within
 //! a tolerance and every other leaf exactly.
 
+use std::borrow::Cow;
 use std::fmt;
 
 /// A resolved value's tree: a struct's fields by name, a tuple's or a
@@ -82,18 +83,19 @@ fn list(f: &mut fmt::Formatter<'_>, items: &[Tree]) -> fmt::Result {
     Ok(())
 }
 
-/// One token of a `Debug` form.
+/// One token of a `Debug` form, its words and texts borrowed from the form
+/// where no escape changes them.
 #[derive(Clone, Debug, PartialEq)]
-enum Token {
-    Ident(String),
+enum Token<'t> {
+    Ident(&'t str),
     Number(f64),
-    Text(String),
+    Text(Cow<'t, str>),
     Punct(char),
 }
 
 /// The tokens of `text`, or `None` where it holds what no derived `Debug`
 /// writes.
-fn tokens(text: &str) -> Option<Vec<Token>> {
+fn tokens(text: &str) -> Option<Vec<Token<'_>>> {
     let mut out = Vec::new();
     let mut chars = text.char_indices().peekable();
     while let Some((start, c)) = chars.next() {
@@ -101,14 +103,24 @@ fn tokens(text: &str) -> Option<Vec<Token>> {
             c if c.is_whitespace() => {}
             '{' | '}' | '(' | ')' | '[' | ']' | ',' | ':' => out.push(Token::Punct(c)),
             '"' => {
-                let mut value = String::new();
+                let from = start.checked_add(1)?;
+                let mut value: Option<String> = None;
                 loop {
-                    let (_, c) = chars.next()?;
+                    let (at, c) = chars.next()?;
                     match c {
-                        '"' => break,
+                        '"' => {
+                            out.push(Token::Text(match value {
+                                Some(value) => Cow::Owned(value),
+                                None => Cow::Borrowed(text.get(from..at)?),
+                            }));
+                            break;
+                        }
                         '\\' => {
+                            let held = value.get_or_insert_with(|| {
+                                text.get(from..at).unwrap_or_default().to_owned()
+                            });
                             let (_, escaped) = chars.next()?;
-                            value.push(match escaped {
+                            held.push(match escaped {
                                 'n' => '\n',
                                 't' => '\t',
                                 'r' => '\r',
@@ -116,10 +128,13 @@ fn tokens(text: &str) -> Option<Vec<Token>> {
                                 other => other,
                             });
                         }
-                        other => value.push(other),
+                        other => {
+                            if let Some(held) = value.as_mut() {
+                                held.push(other);
+                            }
+                        }
                     }
                 }
-                out.push(Token::Text(value));
             }
             c if c.is_ascii_digit() || c == '-' => {
                 let mut end = start.checked_add(c.len_utf8())?;
@@ -154,7 +169,7 @@ fn tokens(text: &str) -> Option<Vec<Token>> {
                 out.push(match word {
                     "inf" => Token::Number(f64::INFINITY),
                     "NaN" => Token::Number(f64::NAN),
-                    _ => Token::Ident(word.to_owned()),
+                    _ => Token::Ident(word),
                 });
             }
             _ => return None,
@@ -164,24 +179,27 @@ fn tokens(text: &str) -> Option<Vec<Token>> {
 }
 
 /// A reader over a `Debug` form's tokens.
-struct Parser {
-    tokens: Vec<Token>,
+struct Parser<'t> {
+    tokens: Vec<Token<'t>>,
     at: usize,
+    /// Where each value skipped ends, by where it starts (`usize::MAX`:
+    /// not skipped yet), so it is read once.
+    ends: Vec<usize>,
 }
 
-impl Parser {
-    fn peek(&self) -> Option<&Token> {
+impl<'t> Parser<'t> {
+    fn peek(&self) -> Option<&Token<'t>> {
         self.tokens.get(self.at)
     }
 
-    fn next(&mut self) -> Option<Token> {
-        let token = self.tokens.get(self.at).cloned();
+    fn next(&mut self) -> Option<&Token<'t>> {
+        let token = self.tokens.get(self.at);
         self.at = self.at.saturating_add(1);
         token
     }
 
     fn punct(&mut self, c: char) -> Option<()> {
-        (self.next()? == Token::Punct(c)).then_some(())
+        (*self.next()? == Token::Punct(c)).then_some(())
     }
 
     fn at_punct(&self, c: char) -> bool {
@@ -202,9 +220,9 @@ impl Parser {
     }
 
     fn value(&mut self) -> Option<Tree> {
-        match self.next()? {
+        match self.next()?.clone() {
             Token::Number(x) => Some(Tree::Number(x)),
-            Token::Text(text) => Some(Tree::Text(text)),
+            Token::Text(text) => Some(Tree::Text(text.into_owned())),
             Token::Punct('[') => self.items(']').map(Tree::List),
             Token::Punct('(') => self.items(')').map(|items| Tree::Tuple {
                 name: String::new(),
@@ -216,17 +234,17 @@ impl Parser {
                     self.punct('{')?;
                     let mut fields = Vec::new();
                     while !self.at_punct('}') {
-                        let Token::Ident(field) = self.next()? else {
+                        let Token::Ident(field) = self.next()?.clone() else {
                             return None;
                         };
                         self.punct(':')?;
-                        fields.push((field, self.value()?));
+                        fields.push((field.to_owned(), self.value()?));
                         if !self.at_punct('}') {
                             self.punct(',')?;
                         }
                     }
                     self.punct('}')?;
-                    Some(fields_tree(name, fields))
+                    Some(fields_tree(name.to_owned(), fields))
                 } else if self.at_punct('(') {
                     self.punct('(')?;
                     let mut items = self.items(')')?;
@@ -236,9 +254,167 @@ impl Parser {
                     {
                         return items.pop();
                     }
-                    Some(Tree::Tuple { name, items })
+                    Some(Tree::Tuple {
+                        name: name.to_owned(),
+                        items,
+                    })
                 } else {
-                    Some(Tree::Word(name))
+                    Some(Tree::Word(name.to_owned()))
+                }
+            }
+        }
+    }
+
+    /// Skips the items up to `close`, as [`Parser::items`] reads them, each
+    /// item's start kept.
+    fn skip_items(&mut self, close: char) -> Option<Vec<usize>> {
+        let mut starts = Vec::new();
+        while !self.at_punct(close) {
+            starts.push(self.at);
+            self.skip()?;
+            if !self.at_punct(close) {
+                self.punct(',')?;
+            }
+        }
+        self.punct(close)?;
+        Some(starts)
+    }
+
+    /// Skips one value, as [`Parser::value`] reads it, each value read
+    /// once.
+    fn skip(&mut self) -> Option<()> {
+        let start = self.at;
+        if let Some(end) = self
+            .ends
+            .get(start)
+            .copied()
+            .filter(|end| *end != usize::MAX)
+        {
+            self.at = end;
+            return Some(());
+        }
+        self.skip_once()?;
+        if let Some(end) = self.ends.get_mut(start) {
+            *end = self.at;
+        }
+        Some(())
+    }
+
+    fn skip_once(&mut self) -> Option<()> {
+        match self.next()? {
+            Token::Number(_) | Token::Text(_) => Some(()),
+            Token::Punct('[') => self.skip_items(']').map(drop),
+            Token::Punct('(') => self.skip_items(')').map(drop),
+            Token::Punct(_) => None,
+            Token::Ident(_) => {
+                if self.at_punct('{') {
+                    self.skip_fields().map(drop)
+                } else if self.at_punct('(') {
+                    self.punct('(')?;
+                    self.skip_items(')').map(drop)
+                } else {
+                    Some(())
+                }
+            }
+        }
+    }
+
+    /// Skips a struct's fields from its `{`, each field's name and its
+    /// value's start kept.
+    fn skip_fields(&mut self) -> Option<Vec<(&'t str, usize)>> {
+        self.punct('{')?;
+        let mut fields = Vec::new();
+        while !self.at_punct('}') {
+            let Token::Ident(field) = *self.next()? else {
+                return None;
+            };
+            self.punct(':')?;
+            fields.push((field, self.at));
+            self.skip()?;
+            if !self.at_punct('}') {
+                self.punct(',')?;
+            }
+        }
+        self.punct('}')?;
+        Some(fields)
+    }
+
+    /// The value at `start` read whole, the reader left where it was.
+    fn value_from(&mut self, start: usize) -> Option<Tree> {
+        let held = std::mem::replace(&mut self.at, start);
+        let value = self.value();
+        self.at = held;
+        value
+    }
+
+    /// The subtree `path` names in the value at `start`, as [`Tree::at`]
+    /// finds it in the value's tree, the reader left where it was: `None`
+    /// where it names nothing, or the value is malformed.
+    fn at_path(&mut self, start: usize, path: &[String]) -> Option<Tree> {
+        let Some((first, rest)) = path.split_first() else {
+            return self.value_from(start);
+        };
+        let held = std::mem::replace(&mut self.at, start);
+        let found = self.step(first, rest, path);
+        self.at = held;
+        found
+    }
+
+    fn step(&mut self, first: &str, rest: &[String], path: &[String]) -> Option<Tree> {
+        let start = self.at;
+        match *self.next()? {
+            Token::Number(_) | Token::Text(_) => None,
+            Token::Punct('[') => {
+                for item in self.skip_items(']')? {
+                    self.at = item;
+                    if *self.next()? != Token::Punct('(') {
+                        continue;
+                    }
+                    let [key, value] = self.skip_items(')')?[..] else {
+                        continue;
+                    };
+                    let key = self.value_from(key)?;
+                    if key.text() == Some(first)
+                        && let Some(found) = self.at_path(value, rest)
+                    {
+                        return Some(found);
+                    }
+                }
+                None
+            }
+            Token::Punct('(') => match self.skip_items(')')?[..] {
+                [only] => self.at_path(only, path),
+                _ => None,
+            },
+            Token::Punct(_) => None,
+            Token::Ident(name) => {
+                if self.at_punct('{') {
+                    let fields = self.skip_fields()?;
+                    // A colour reads as its four channels, a leaf.
+                    if name == "Color" && matches!(self.value_from(start)?, Tree::Color(_)) {
+                        return None;
+                    }
+                    match fields.iter().find(|(field, _)| *field == first) {
+                        Some((_, at)) => self.at_path(*at, rest),
+                        None if snake(name) == first => self.at_path(start, rest),
+                        None => None,
+                    }
+                } else if self.at_punct('(') {
+                    self.punct('(')?;
+                    let [only] = self.skip_items(')')?[..] else {
+                        return None;
+                    };
+                    let transparent =
+                        name == "Some" && self.value_from(only)? != Tree::Word("None".to_owned());
+                    if transparent {
+                        self.at_path(only, path)
+                    } else if snake(name) == first {
+                        self.at_path(only, rest)
+                    } else {
+                        self.at_path(only, path)
+                    }
+                } else {
+                    None
                 }
             }
         }
@@ -265,12 +441,31 @@ impl Tree {
     /// The tree of a value's `Debug` form; `None` where the form is not one
     /// a derived `Debug` writes.
     pub fn of(value: &dyn fmt::Debug) -> Option<Tree> {
+        let text = format!("{value:?}");
         let mut parser = Parser {
-            tokens: tokens(&format!("{value:?}"))?,
+            tokens: tokens(&text)?,
             at: 0,
+            ends: Vec::new(),
         };
         let tree = parser.value()?;
         parser.peek().is_none().then_some(tree)
+    }
+
+    /// [`Tree::of`]'s subtree at `path` ([`Tree::at`]), built alone: the
+    /// rest of the form is read, never built.
+    pub fn of_at(value: &dyn fmt::Debug, path: &[String]) -> Option<Tree> {
+        let text = format!("{value:?}");
+        let tokens = tokens(&text)?;
+        let mut parser = Parser {
+            ends: vec![usize::MAX; tokens.len()],
+            tokens,
+            at: 0,
+        };
+        parser.skip()?;
+        if parser.peek().is_some() {
+            return None;
+        }
+        parser.at_path(0, path)
     }
 
     /// The subtree `path` names, in the model's Rust names (S1): a field by

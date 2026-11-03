@@ -808,7 +808,7 @@ pub fn combinations(
     model: &Model,
     vectors: &[Vec<String>],
     mentioned: Option<&Mentioned>,
-    mut each: impl FnMut(&Point, Option<&Value>),
+    mut each: impl FnMut(Point, Option<&Value>),
 ) -> u64 {
     let Some(mentioned) = mentioned else {
         return count(model, vectors);
@@ -825,6 +825,7 @@ pub fn combinations(
     let contexts: Vec<Option<&Value>> = std::iter::once(None)
         .chain(model.contexts.iter().map(Some))
         .collect();
+    let spelled = |context: Option<&Value>| context.map(Value::to_string);
     let densities = densities(model);
     let mut variant_sizes: Vec<VariantSizes<'_>> = Vec::new();
     for context in &contexts {
@@ -839,20 +840,21 @@ pub fn combinations(
     let mut count = 0_u64;
     for conditions in vectors {
         for (variants, context, sizes) in &variant_sizes {
+            let written = spelled(*context);
             for (states, order) in &flag_sets {
                 for size in sizes {
                     for density in &densities {
                         count += 1;
                         let point = Point {
                             conditions: conditions.clone(),
-                            context: context.map(Value::to_string),
+                            context: written.clone(),
                             variants: variants.clone(),
                             states: states.clone(),
                             order: order.clone(),
                             size: size.clone(),
                             density: density.clone(),
                         };
-                        each(&point, *context);
+                        each(point, *context);
                     }
                 }
             }

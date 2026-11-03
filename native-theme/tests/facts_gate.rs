@@ -1824,7 +1824,28 @@ fn facts_gate() {
         "  {} field facts where their part is not drawn, {} facts whose own when draws nothing",
         report.fields_not_drawn, report.whens_not_drawn
     );
-    assert_eq!(report.failures, Vec::<String>::new());
+    eprintln!(
+        "  {} failures in {} groups by run, key and fact{}:",
+        report.failures.len(),
+        report.groups.len(),
+        if report.groups.len() > 200 {
+            ", the first 200"
+        } else {
+            ""
+        }
+    );
+    for group in report.groups.iter().take(200) {
+        eprintln!(
+            "    {} × {} `{}` {}: first: {}",
+            group.count, group.run, group.key, group.fact, group.first
+        );
+    }
+    assert!(
+        report.failures.is_empty(),
+        "{} failures in {} groups (listed above)",
+        report.failures.len(),
+        report.groups.len()
+    );
     // The release's gate (S17, R21): 0.8.0 is released with nothing skipped,
     // no pending fact and every `[pending]` table empty, which the plan's
     // final gate runs this test with `FACTS_GATE_RELEASE=1` to require.
