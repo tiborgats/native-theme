@@ -295,7 +295,7 @@ fn button_patches_merge_in_order() {
             target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
             variants: Vec::new(),
         },
-        style: Some(PartStylePatch::default()),
+        style: None,
     };
     assert_eq!(
         slots.button.parts,

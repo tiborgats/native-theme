@@ -114,6 +114,9 @@ impl Apply<PartPatch> for PartSlot {
         if let Some(presence) = &patch.presence {
             self.shown = Shown::from(presence);
         }
+        if *patch.style == PartStylePatch::default() {
+            return Ok(());
+        }
         merge_slot(&mut self.style, Some(*patch.style))
     }
 }
