@@ -613,6 +613,44 @@ fn combination_follow_part_offsets() {
     );
 }
 
+/// Offsets whose expressions differ in their text but read, through
+/// references, the one value under every combination are equal (S12:
+/// "references and rules being followed as the query follows them"):
+/// adwaita's ring, `token.focus`'s sides reading its top and a part's
+/// sides each reading the token's own side; a reference to a value that
+/// differs by side still differs.
+#[test]
+fn combination_follow_part_offsets_through_references() {
+    let token = "[tokens.focus]\nwidth_px = 2\ncorners.top_left = \"follow_part\"\n\
+                 offset.top_px = \"= sub(0px, token.focus.width)\"\n\
+                 offset.right_px = \"= token.focus.offset.top\"\n\
+                 offset.bottom_px = \"= token.focus.offset.top\"\n\
+                 offset.left_px = \"= token.focus.offset.top\"\n";
+    let part = |sides: [&str; 4]| {
+        let [top, right, bottom, left] = sides.map(|side| {
+            format!("\"= add(add(token.focus.offset.{side}, token.focus.width), 4px)\"")
+        });
+        format!(
+            "{token}[widgets.button.body]\nfocus = \"= token.focus\"\n\
+             [[rules]]\nwhen = {{ states = [\"pressed\"] }}\ntarget = \"button.body\"\n\
+             set = {{ focus.offset = {{ top_px = {top}, right_px = {right}, bottom_px = {bottom}, \
+             left_px = {left} }} }}"
+        )
+    };
+    assert_eq!(bare(token), NONE);
+    assert_eq!(bare(&part(["top", "right", "bottom", "left"])), NONE);
+    let unequal = token.replace(
+        "offset.left_px = \"= token.focus.offset.top\"",
+        "offset.left_px = 3",
+    );
+    assert_eq!(
+        bare(&part(["top", "right", "bottom", "left"]).replace(token, &unequal)),
+        [
+            "tokens.focus.corners.top_left: `follow_part` on `top_left`, whose sides' offsets can differ"
+        ]
+    );
+}
+
 /// A `Concentric` corner whose two insets can differ, in either direction
 /// (S2.4, S12, ADD-A122): the root's own margins here, its container lying
 /// outside the widget.

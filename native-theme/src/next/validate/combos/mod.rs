@@ -29,7 +29,7 @@ use super::stack::{
 use crate::next::blocks::part_style::RoleRef;
 use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
-use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref};
+use crate::next::expr::{ElementDatum, Expr, Func, Literal, MAX_CHAIN, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
@@ -1581,10 +1581,10 @@ fn variant(found: &Found<'_>) -> Option<&'static str> {
 /// One side's length as the inset and offset checks compare it (S2.4,
 /// S2.10).
 #[derive(Debug)]
-enum SideLen<'s> {
+enum SideLen {
     /// A sum: of stated numbers (an absent side 0), and of expressions,
-    /// each by its step, the same only where stated at one step.
-    Known(f32, Vec<(Option<(usize, usize)>, &'s Expr)>),
+    /// each as [`Term`] reads it.
+    Known(f32, Vec<Term>),
     /// No layer states it: missing, the preset's check (S2.2), so it is no
     /// difference.
     Unstated,
@@ -1593,28 +1593,26 @@ enum SideLen<'s> {
     Unknown,
 }
 
-impl<'s> SideLen<'s> {
-    /// The length the values found at one place give.
-    fn of(founds: &[Found<'s>]) -> SideLen<'s> {
-        let mut out: Option<SideLen<'s>> = None;
-        for found in founds {
-            let one = match found.got {
-                Got::Stated(Fact::Number(n)) => SideLen::Known(n, Vec::new()),
-                Got::Absent => SideLen::Known(0.0, Vec::new()),
-                Got::Expr(expr) => SideLen::Known(0.0, vec![(found.id, expr)]),
-                Got::Auto | Got::Stated(_) => SideLen::Unknown,
-            };
-            out = match out {
-                None => Some(one),
-                Some(held) if held.same(&one) => Some(held),
-                Some(_) => Some(SideLen::Unknown),
-            };
-        }
-        out.unwrap_or(SideLen::Unstated)
-    }
+/// An expression with every reference it reads followed, as the query
+/// follows it (S12), to the one value the reference resolves to under a
+/// world: two terms are equal where they are the same under every input.
+#[derive(Debug, PartialEq)]
+enum Term {
+    /// A literal.
+    Lit(Literal),
+    /// A stated number a reference resolves to.
+    Number(f32),
+    /// A call of its arguments' terms.
+    Call(Func, Vec<Term>),
+    /// A reference followed no further (element data, an input, a binding,
+    /// values that differ by combination, or a chain too long): equal only
+    /// to itself stated at the same step.
+    Opaque(String, Option<(usize, usize)>),
+}
 
+impl SideLen {
     /// Two lengths added.
-    fn plus(self, other: SideLen<'s>) -> SideLen<'s> {
+    fn plus(self, other: SideLen) -> SideLen {
         match (self, other) {
             (SideLen::Unknown, _) | (_, SideLen::Unknown) => SideLen::Unknown,
             (SideLen::Unstated, _) | (_, SideLen::Unstated) => SideLen::Unstated,
@@ -1626,7 +1624,7 @@ impl<'s> SideLen<'s> {
     }
 
     /// Whether two known lengths are the same under every input.
-    fn same(&self, other: &SideLen<'_>) -> bool {
+    fn same(&self, other: &SideLen) -> bool {
         match (self, other) {
             (SideLen::Known(a, x), SideLen::Known(b, y)) => {
                 a == b
@@ -1641,10 +1639,80 @@ impl<'s> SideLen<'s> {
     }
 
     /// Whether the two sides can differ: an unstated side never does.
-    fn can_differ(&self, other: &SideLen<'_>) -> bool {
+    fn can_differ(&self, other: &SideLen) -> bool {
         match (self, other) {
             (SideLen::Unstated, _) | (_, SideLen::Unstated) => false,
             _ => !self.same(other),
+        }
+    }
+}
+
+impl Stack<'_> {
+    /// The length the values found at one place give under `world`.
+    fn side_len(&self, world: &World, founds: &[Found<'_>]) -> SideLen {
+        let mut out: Option<SideLen> = None;
+        for found in founds {
+            let one = match found.got {
+                Got::Stated(Fact::Number(n)) => SideLen::Known(n, Vec::new()),
+                Got::Absent => SideLen::Known(0.0, Vec::new()),
+                Got::Expr(expr) => {
+                    SideLen::Known(0.0, vec![self.term(world, expr, found.cx, found.id, 0)])
+                }
+                Got::Auto | Got::Stated(_) => SideLen::Unknown,
+            };
+            out = match out {
+                None => Some(one),
+                Some(held) if held.same(&one) => Some(held),
+                Some(_) => Some(SideLen::Unknown),
+            };
+        }
+        out.unwrap_or(SideLen::Unstated)
+    }
+
+    /// `expr`, stated at the step `id` in `cx`, as a [`Term`] under `world`:
+    /// each reference followed to the one value it resolves to, a stated
+    /// number or an expression read in its own context.
+    fn term(
+        &self,
+        world: &World,
+        expr: &Expr,
+        cx: Cx<'_>,
+        id: Option<(usize, usize)>,
+        depth: usize,
+    ) -> Term {
+        match expr {
+            Expr::Lit(literal) => Term::Lit(literal.clone()),
+            Expr::Call(func, args) => Term::Call(
+                *func,
+                args.iter()
+                    .map(|arg| self.term(world, arg, cx, id, depth))
+                    .collect(),
+            ),
+            Expr::Ref(reference) => {
+                let opaque = || Term::Opaque(reference.to_string(), id);
+                if depth >= MAX_FOLLOW {
+                    return opaque();
+                }
+                let places = self.places(world, reference, cx);
+                let [Place::Field(target, path, bound)] = places.as_slice() else {
+                    return opaque();
+                };
+                let founds: Vec<Found<'_>> = self
+                    .value_at(world, *target, path, *bound, 0)
+                    .into_iter()
+                    .flat_map(|found| self.follow(world, found).0)
+                    .collect();
+                match founds.as_slice() {
+                    [found] => match found.got {
+                        Got::Stated(Fact::Number(n)) => Term::Number(n),
+                        Got::Expr(inner) => {
+                            self.term(world, inner, found.cx, found.id, depth.saturating_add(1))
+                        }
+                        _ => opaque(),
+                    },
+                    _ => opaque(),
+                }
+            }
         }
     }
 }
@@ -2611,11 +2679,10 @@ impl Checks<'_, '_> {
                         continue;
                     }
                     let offset = |side: &str| {
-                        SideLen::of(&stack.effective(
+                        stack.side_len(
                             world,
-                            target,
-                            &format!("{focus}.offset.{side}"),
-                        ))
+                            &stack.effective(world, target, &format!("{focus}.offset.{side}")),
+                        )
                     };
                     let vertical = offset(corner_side(corner));
                     let differ = ["left", "right"]
@@ -2702,7 +2769,7 @@ impl Checks<'_, '_> {
                                     Target::Part(*holder),
                                     &format!("{field}.{side}"),
                                 );
-                                sum.plus(SideLen::of(&founds))
+                                sum.plus(stack.side_len(world, &founds))
                             },
                         )
                     };
