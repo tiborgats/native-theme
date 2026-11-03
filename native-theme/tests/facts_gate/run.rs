@@ -1721,6 +1721,7 @@ fn check_globals(
                     },
                 ..
             }) = fact
+            && !(key.key.input().is_some() && under_contrast(fact.map(|fact| fact.fact)))
             && listed_or_failed(
                 resolved.global_listed(&key.key, root),
                 &key.name,
@@ -1749,6 +1750,18 @@ fn check_globals(
             }
         }
     }
+}
+
+/// Whether a fact holds under a contrast condition only: its `when`'s
+/// `conditions` name one. An input's such pending fact is a contrast base,
+/// which is never listed (S17, ADD-A132): the gate lists it with its id as
+/// any pending fact, and its id is no listed input's.
+fn under_contrast(fact: Option<&Fact>) -> bool {
+    fact.is_some_and(|fact| {
+        strings(fact.when.as_ref().and_then(|when| when.get("conditions")))
+            .iter()
+            .any(|condition| condition == "contrast_increased" || condition == "contrast_high")
+    })
 }
 
 /// Whether a key is a listed path where its pending fact applies (S17,

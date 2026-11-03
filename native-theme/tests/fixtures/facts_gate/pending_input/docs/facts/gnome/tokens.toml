@@ -1,5 +1,6 @@
 # Synthetic facts (S17, ADD-A128): the accent input pending with nothing beneath, so the preset lists
-# it, as S11 writes its table.
+# it, as S11 writes its table; its high-contrast value pending under another id, a contrast base,
+# which is never listed (ADD-A132), so its id is not the listed input's.
 
 [[fact]]
 key = "token.focus.width"
@@ -13,5 +14,12 @@ quote = "synthetic"
 
 [[fact]]
 key = "input.accent"
+when = { not_conditions = ["contrast_high"] }
 pending = "U9"
+rows = []
+
+[[fact]]
+key = "input.accent"
+when = { conditions = ["contrast_high"] }
+pending = "U10"
 rows = []

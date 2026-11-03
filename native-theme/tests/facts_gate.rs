@@ -1226,11 +1226,21 @@ fn gate_fixture_pending_ids() {
 /// An input listed as pending is found per scheme (S17: "a scheme at which
 /// its per-scheme value has only pending facts and nothing beneath them is
 /// listed"; S11 writes it `inputs.<name>.<scheme>`, ADD-A132); listed
-/// while the preset states it, it fails at each scheme.
+/// while the preset states it, it fails at each scheme. Its pending
+/// high-contrast fact, a contrast base never listed, is a pending fact
+/// met, its id no listed input's (the A131b review's SF2).
 #[test]
 fn gate_fixture_pending_input() {
     let report = fixture_report("pending_input");
     assert_eq!(report.failures, Vec::<String>::new());
+    assert!(
+        report
+            .pending
+            .values()
+            .any(|(id, key, applied)| id == "U10" && key == "input.accent" && *applied > 0),
+        "{:?}",
+        report.pending
+    );
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
         ["probe input.accent dark", "probe input.accent light"]

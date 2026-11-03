@@ -1707,16 +1707,11 @@ impl Resolved {
                 }
                 Place::Input(name) => {
                     let reference = Ref::Input(name.segments().to_vec());
-                    // The input's own value decides where a synthetic layer
-                    // states it, a listed input (S17); what it reads
-                    // decides nothing of it.
-                    let decides = extra.is_none()
-                        && (theme.synthetic_inputs.contains(name)
-                            || theme
-                                .input_layers
-                                .iter()
-                                .find(|(held, _)| held == name)
-                                .is_some_and(|(_, layer)| theme.synthetic.contains(layer)));
+                    // The input's own value decides where its folded
+                    // synthetic value is in force, the mark saying so, a
+                    // listed input (S17, ADD-A132): no synthetic layer
+                    // states an input. What it reads decides nothing of it.
+                    let decides = extra.is_none() && theme.synthetic_inputs.contains(name);
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(&reference));
                         let reach = Reach {
@@ -2702,7 +2697,10 @@ mod tests {
                 1,
             )
             .replacen("stroke = \"absent\"\ncorners_px", "corners_px", 1);
-        let stroke = text(&["widgets", "button", "body", "stroke"], Item::Table(stroke));
+        let stroke = text(
+            &["widgets", "button", "body", "stroke"],
+            Item::Table(stroke),
+        );
         let drawn = format!("{edited}\n{stroke}");
         assert_eq!(drawn.matches("absent = true").count(), 1, "{drawn}");
         assert!(!drawn.contains("stroke = \"absent\"\ncorners_px"));
