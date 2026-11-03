@@ -9102,7 +9102,8 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 `kde-breeze`'s `[declare] accent_inputs` is `["accent"]` alone: the scheme inputs and the inactive input roles are the
 scheme's, which Plasma's derivation reads (S9.1). So a reader's `input.accent` from another platform applies on
 `kde-breeze`, where the accent layer derives the accent-dependent roles from it by `kde_accent` over Breeze's scheme
-inputs, as for `set_accent` (S9.2); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
+inputs, as for `set_accent`, per scheme, at each scheme where the reader's or stand-in's layer gives none of those
+roles, the KDE reader's scheme it did not read among them (S9.2; ADD-A132); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
 leaves a foreign reader's `input.accent` out, so no accent mixes with another platform's derived inputs (S8, S9.5).
 
 Each key names one record field, the same in all three namespaces and in `kde_accent`'s `key` operand:
@@ -9180,7 +9181,7 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
   which the reader states, in its `for_preset.kde-breeze` part, as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
 - the accent layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the accent layer states
-  these four roles too, each `= kde_accent_wm(<key>)` (S2.2, S9.2), over the scheme inputs in force, among them
+  these four roles too, each `= kde_accent_wm(<key>)` (S2.2, S9.2), at the schemes it states the others at (S9.2), over the scheme inputs in force, among them
   `input.kde_scheme.wm.<key>` (S9.1: the scheme file's `[WM]` key, or the `Header` default above where the file has
   none);
 - a mapping palette states the four roles in `[for_preset.kde-breeze]` (the project's colours, or as `applyScheme()`'s
