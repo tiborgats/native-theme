@@ -339,6 +339,53 @@ fn inputs_take_their_contrast_base() {
     assert_eq!(resolved(&state), [(accent, color(0.3))]);
 }
 
+/// An input is replaced slot by slot, never whole (S9, ADD-A132): at each
+/// of the six slots the last layer giving the input a value there wins,
+/// its contrast base for that contrast, else its per-scheme value, so a
+/// stand-in's one-scheme value stands under every contrast at that scheme,
+/// over the preset's contrast base, and leaves the other scheme's slots to
+/// the preset but where it states a contrast base.
+#[test]
+fn an_input_is_replaced_slot_by_slot() {
+    let accent = InputName::new("accent").unwrap();
+    let mut preset = Layer::default();
+    let mut stated = InputValue::new(SchemeMap::new(color(0.1), color(0.2)));
+    stated
+        .per_contrast
+        .push((Contrast::High, SchemeMap::new(color(0.3), color(0.4))));
+    preset.bases.inputs.entries.push((accent.clone(), stated));
+    let mut reader = Layer::default();
+    let mut one = InputValue::new(SchemeMap::one(Scheme::Dark, color(0.9)));
+    one.per_contrast.push((
+        Contrast::Increased,
+        SchemeMap::one(Scheme::Light, color(0.8)),
+    ));
+    reader.bases.inputs.entries.push((accent.clone(), one));
+    let at = |scheme: Scheme, contrast: Option<Contrast>| {
+        let mut state = ReaderState::new(scheme, 1.0);
+        state.contrast = contrast;
+        stack(preset.clone(), Some((state, reader.clone())), Vec::new())
+            .resolve(&mut WindowState::default(), &window())
+            .theme
+            .inputs
+    };
+    let slots = [
+        (Scheme::Light, None, 0.1),
+        (Scheme::Light, Some(Contrast::Increased), 0.8),
+        (Scheme::Light, Some(Contrast::High), 0.3),
+        (Scheme::Dark, None, 0.9),
+        (Scheme::Dark, Some(Contrast::Increased), 0.9),
+        (Scheme::Dark, Some(Contrast::High), 0.9),
+    ];
+    for (scheme, contrast, r) in slots {
+        assert_eq!(
+            at(scheme, contrast),
+            [(accent.clone(), color(r))],
+            "{scheme:?} {contrast:?}"
+        );
+    }
+}
+
 /// The stack's refusals, for `layer_error_every_variant_triggers`: a
 /// stand-in while a reader exists, an accent lacking an accent input, an
 /// id the stack does not hold.

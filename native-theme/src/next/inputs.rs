@@ -63,8 +63,11 @@ impl fmt::Display for InputName {
 #[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct InputBases {
-    /// The inputs the layer states; a later layer's input replaces the
-    /// earlier one whole.
+    /// The inputs the layer states. An input is replaced slot by slot,
+    /// never whole (S9, ADD-A132): at each scheme with no contrast or one
+    /// [`Contrast`], the last applying layer that gives it a value there
+    /// (its contrast base, else its per-scheme value) wins, a layer with
+    /// none there leaving the earlier layers'.
     pub entries: Vec<(InputName, InputValue)>,
     /// `input.kde_scheme.groups`, per scheme: the declared sets the scheme
     /// file has a `[Colors:<Set>]` group for (S9.1); `kde-breeze`'s only,

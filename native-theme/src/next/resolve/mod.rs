@@ -337,12 +337,14 @@ pub struct ResolvedTheme {
     /// The colour roles' bases of the scheme in force, then the `Colors`
     /// rules whose conditions hold.
     pub(crate) colors: Vec<Step<ColorRolesPatch>>,
-    /// Each input's value under the scheme and contrast in force: the last
-    /// layer's that states the input, its per-contrast base where a contrast
-    /// condition holds and it states one (S9).
+    /// Each input's value at the slot in force, the scheme and contrast in
+    /// force: that of the last applying layer that gives it a value there,
+    /// its per-contrast base where a contrast condition holds and it states
+    /// one for that scheme, else its per-scheme value (S9, ADD-A132).
     pub(crate) inputs: Vec<(InputName, Value<Color>)>,
     /// The layer each input in force was taken from, its place in the
-    /// stack: what a synthetic layer's input is told apart by (S17).
+    /// stack: whether a listed input's value in force is the preset's own
+    /// base, where the synthetic route folds it (S17, ADD-A132).
     pub(crate) input_layers: Vec<(InputName, usize)>,
     /// KDE's three lists under the scheme in force, the last layer's for it
     /// (S9.1).
@@ -1311,9 +1313,10 @@ fn classify(last: &Recorded, now: &Recorded) -> Change {
 
 impl ResolvedTheme {
     /// Step 1 for one layer's bases at `pos`: its colours under `scheme`,
-    /// its inputs (a later layer's replacing an earlier one whole; the
-    /// accent left out where `drop_accent`), KDE's lists, its tokens and its
-    /// widgets' patches.
+    /// its inputs (each replaced at the slot in force alone, S9; the accent
+    /// left out where `drop_accent`), KDE's lists, its tokens and its
+    /// widgets' patches. A layer's part for the current preset comes after
+    /// its common bases, so it replaces them slot by slot too.
     fn base(
         &mut self,
         bases: &Bases,
@@ -1350,8 +1353,8 @@ impl ResolvedTheme {
             if drop_accent && is_accent(name) {
                 continue;
             }
-            // A layer stating no value for the scheme in force leaves the
-            // earlier layers' (S9.3).
+            // A layer giving no value at the slot in force leaves the
+            // earlier layers' (S9, S9.3).
             if let Some(value) = input_value(value, scheme, contrast) {
                 self.inputs.retain(|(held, _)| held != name);
                 self.inputs.push((name.clone(), value));
