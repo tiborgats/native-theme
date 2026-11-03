@@ -92,8 +92,34 @@ fn build_test_names_a_refused_synthetic_value() {
     );
 }
 
+/// `adwaita` while its `[pending]` table lists paths (S17, ADD-A128):
+/// `Theme::from_preset` refuses it with S12's missing field at each listed
+/// path no layer states, and `Theme::from_preset_synthetic` loads it with
+/// one synthetic layer per listed path.
+#[test]
+fn adwaita_refused_plain_and_loaded_synthetic() {
+    let file = read_preset(PresetId::Adwaita.source()).unwrap();
+    assert!(!file.pending.is_empty());
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        super::Theme::from_preset(PresetId::Adwaita, Scheme::Light)
+    else {
+        panic!("adwaita's listed paths are missing on the plain route");
+    };
+    let missing: Vec<String> = problems
+        .iter()
+        .filter(|problem| problem.kind == ProblemKind::Missing)
+        .map(|problem| problem.path.clone())
+        .collect();
+    assert_eq!(missing.len(), file.pending.len(), "{problems:?}");
+    assert_eq!(missing.len(), problems.len(), "{problems:?}");
+    let layers = synthetic_layers(&file.pending).unwrap();
+    let theme =
+        super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers).unwrap();
+    assert_eq!(theme.preset(), PresetId::Adwaita);
+}
+
 /// The build test's two routes, over the fixture preset with a listed
-/// path (no preset is bundled with one): the build test takes the
+/// path (a small preset, beside `adwaita`'s whole one): the build test takes the
 /// synthetic route for it, whose layers state the listed path, so it
 /// validates, where the plain route refuses it; and the plain route for
 /// the complete base.
@@ -599,7 +625,9 @@ fn from_preset_synthetic_validates_and_resolves() {
 }
 
 /// A theme builds and answers its queries on a small stack: every bundled
-/// preset through `Theme::from_preset`, and the facts gate's complete base
+/// preset through `Theme::from_preset`, or `Theme::from_preset_synthetic`
+/// while its `[pending]` table lists paths (S17, as the build test takes
+/// it), and the facts gate's complete base
 /// as a preset, in both schemes, validated, resolved, and queried (the
 /// tokens, which `ResolvedTheme::tokens` returns by value, each button
 /// part's style and the button's values) on a 256 KiB thread, an eighth of
@@ -630,8 +658,18 @@ fn presets_build_on_a_small_stack() {
         let complete = include_str!("../../../tests/fixtures/facts_gate/base.toml");
         for scheme in [Scheme::Light, Scheme::Dark] {
             for &id in PresetId::all() {
+                let pending = read_preset(id.source()).unwrap().pending;
+                let theme = if pending.is_empty() {
+                    super::Theme::from_preset(id, scheme)
+                } else {
+                    super::Theme::from_preset_synthetic(
+                        id,
+                        scheme,
+                        synthetic_layers(&pending).unwrap(),
+                    )
+                };
                 query(
-                    &super::Theme::from_preset(id, scheme)
+                    &theme
                         .unwrap_or_else(|e| panic!("{}: {e}", id.key()))
                         .resolve(
                             &mut WindowState::default(),

@@ -1,5 +1,5 @@
-//! The bundled presets (S16): none yet, as no preset states every field
-//! the model holds; each enters with its facts (M1a tasks 15 and 16).
+//! The bundled presets (S16): each enters with its facts (M1a tasks 15 and
+//! 16), its `[pending]` table listing what its facts leave pending (S17).
 
 /// The bundled presets' one list: each variant with its key and its file,
 /// so [`PresetId::key`], [`PresetId::source`] and [`PresetId::all`] cannot
@@ -39,7 +39,10 @@ macro_rules! presets {
     };
 }
 
-presets! {}
+presets! {
+    /// GNOME's libadwaita.
+    Adwaita => "adwaita", "adwaita.toml";
+}
 
 impl PresetId {
     /// The preset `key` names.

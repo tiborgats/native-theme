@@ -1747,10 +1747,10 @@ fn perturbed_colours_are_distinct() {
     assert_eq!(colours.len(), 1000);
 }
 
-/// `facts_gate`: the gate over `docs/facts` and every bundled preset; none
-/// is bundled until M1a task 15, so it checks that every fact file and
-/// state model reads, counts each entry's combinations, and runs no
-/// preset.
+/// `facts_gate`: the gate over `docs/facts` and every bundled preset, each
+/// against its platform's directory: every fact file and state model
+/// read, each entry's combinations counted, and each preset's normal,
+/// perturbed and declarations runs.
 #[test]
 fn facts_gate() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts");

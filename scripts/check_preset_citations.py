@@ -99,7 +99,7 @@ TOML path it defines, the value, and the presets it is stated on: S9.4's
 (ADD-A131). The comment is accepted for that key, with that value, on those
 presets alone: on another key, another value or another preset it is a
 finding. It reads today's presets and the new model's
-(native-theme/src/next/presets/*.toml, none yet); a comment naming another
+(native-theme/src/next/presets/*.toml); a comment naming another
 section is no definition comment.
 """
 

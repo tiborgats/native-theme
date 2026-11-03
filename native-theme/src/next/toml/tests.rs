@@ -22,6 +22,7 @@ use crate::next::error::{LayerError, Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr};
 use crate::next::inputs::{Contrast, InputName};
 use crate::next::layer::Layer;
+use crate::next::presets::PresetId;
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
     Condition, ContextScope, ControlSize, Density, Direction, Idiom, InputKind, Parity, PartRef,
@@ -626,7 +627,8 @@ fn spelling_condition() {
         rule(
             "\"window_inactive\", \"scheme:dark\", \"tiled:left,top\", \"input:touch\", \
              \"idiom:pad\", \"flavor:kirigami\", \"system_setting:graphic_effects_level\", \
-             \"container_size:button:small\", \"posture:book\", \"device_model:iphone16\""
+             \"container_size:button:small\", \"posture:book\", \"device_model:iphone16\", \
+             \"preset:adwaita\""
         ),
         [
             Condition::WindowInactive,
@@ -646,17 +648,18 @@ fn spelling_condition() {
             },
             Condition::Posture(crate::next::selector::Posture::Book),
             Condition::DeviceModel(key!("iphone16")),
+            Condition::Preset(PresetId::Adwaita),
         ]
     );
     assert_eq!(
         problems(
             "[[rules]]\nwhen = { conditions = [\"scheme:blue\", \"windowinactive\", \
-             \"preset:adwaita\", \"scheme\", \"maximized:yes\"] }\ntarget = \"tokens\"\nset = {}"
+             \"preset:kde-breeze\", \"scheme\", \"maximized:yes\"] }\ntarget = \"tokens\"\nset = {}"
         ),
         [
             "rules[0].when.conditions[0]: unknown name \"blue\"",
             "rules[0].when.conditions[1]: unknown name \"windowinactive\"",
-            "rules[0].when.conditions[2]: unknown name \"adwaita\"",
+            "rules[0].when.conditions[2]: unknown name \"kde-breeze\"",
             "rules[0].when.conditions[3]: expected a condition and its value, `<name>:<value>`",
             "rules[0].when.conditions[4]: expected a condition with no `:<value>`",
         ]
@@ -762,13 +765,16 @@ fn spelling_per_contrast_input_bases() {
 
 #[test]
 fn spelling_for_preset() {
-    // No preset is bundled yet, so every `for_preset` id is an unknown key;
-    // its bases are read all the same, their problems reported.
+    // A bundled preset's id names its part; an id no preset has is an
+    // unknown key, its bases read all the same, their problems reported.
+    let layer = layer("[for_preset.adwaita.widgets.button.body]\nopacity = 0.5");
+    assert_eq!(layer.for_preset.len(), 1);
+    assert_eq!(layer.for_preset[0].0, PresetId::Adwaita);
     assert_eq!(
-        problems("[for_preset.adwaita.widgets.button.body]\nshine = 1"),
+        problems("[for_preset.kde-breeze.widgets.button.body]\nshine = 1"),
         [
-            "for_preset.adwaita: unknown key",
-            "for_preset.adwaita.widgets.button.body.shine: unknown key",
+            "for_preset.kde-breeze: unknown key",
+            "for_preset.kde-breeze.widgets.button.body.shine: unknown key",
         ]
     );
 }
