@@ -1397,6 +1397,27 @@ fn gate_definitions_compared() {
     );
 }
 
+/// An Apple preset's `font_dpi` is compared with S9.4's definition, 72,
+/// which no fact states, in the gate's run over a preset (S17, ADD-A125):
+/// the preset stating 72 passes, its twin stating 96 fails naming the key
+/// and the definition.
+#[test]
+fn gate_fixture_apple_font_dpi() {
+    let report = fixture_report("apple_font_dpi");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let other = fixture_report_with("apple_font_dpi", "dpi_96.toml");
+    assert!(!other.failures.is_empty(), "{other:?}");
+    assert!(
+        other
+            .failures
+            .iter()
+            .all(|failure| failure.contains("token.text.font_dpi")
+                && failure.contains("the definition of S9.4")),
+        "{:?}",
+        other.failures
+    );
+}
+
 /// A whole map listed as pending is found (S17: "U150's
 /// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
 /// synthetic value is empty, so reading it reads the synthetic layer's step
