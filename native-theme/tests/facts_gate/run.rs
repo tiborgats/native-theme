@@ -8,9 +8,9 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
-    Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, content_variants, is_listed_default, listed_key, parse_key, parse_value,
-    parse_when, parts, set_whole, widgets,
+    Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
+    Tolerance, Unread, When, content_variants, is_listed_default, listed_key, parse_key,
+    parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -1156,7 +1156,15 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
                 declarations_run(&platform, preset, flavor, &mut report);
                 check(&platform, preset, flavor, &keys, &not_drawn, &mut report);
                 let entries = projected(&platform, preset, flavor, &mut report);
-                derivations(preset, flavor, &keys, &entries, &not_drawn, &mut report);
+                derivations(
+                    &platform.name,
+                    preset,
+                    flavor,
+                    &keys,
+                    &entries,
+                    &not_drawn,
+                    &mut report,
+                );
             }
             listed_paths(preset, &mut report);
         }
@@ -1458,6 +1466,7 @@ fn check(
     report: &mut Report,
 ) {
     let schemes = preset.schemes();
+    let drawing = drawing(&platform.name, flavor);
     let entries = projected(platform, preset, flavor, report);
     let mut planned: Planned = BTreeMap::new();
     let mut seen: HashSet<(Vec<String>, String)> = HashSet::new();
@@ -1616,7 +1625,15 @@ fn check(
                 continue;
             };
             if global_vectors.contains(vector) {
-                check_globals(preset.id(), &resolved, keys, vector, pass, &root, report);
+                check_globals(
+                    preset.id(),
+                    &resolved,
+                    keys,
+                    vector,
+                    (pass, drawing),
+                    &root,
+                    report,
+                );
                 if pass == Pass::Normal {
                     definitions(preset.id(), &resolved, &root, report, &|| {
                         format!("{vector:?}")
@@ -1630,10 +1647,26 @@ fn check(
                 vector,
                 not_drawn: &not_drawn,
                 pass,
+                drawing,
                 root: &root,
             };
             check_widgets(&run, combinations, report);
         }
+    }
+}
+
+/// How the renderer of a facts directory's platform draws a colour a
+/// measured citation read from drawn pixels (S17, ADD-A131): GTK's
+/// (`gnome`) and, for what QPainter draws, Qt's raster engine (`kde`) premultiply and clamp
+/// each premultiplied channel; Compose (`material`) clamps each straight
+/// channel; Qt Quick's scene graph (`kde` under `flavor:kirigami`),
+/// `macos`, `ios`, `windows` and any other directory no source states.
+pub fn drawing(platform: &str, flavor: Option<&str>) -> Drawing {
+    match (platform, flavor) {
+        ("kde", Some("kirigami")) => Drawing::Unread,
+        ("gnome" | "kde", _) => Drawing::Premultiplied,
+        ("material", _) => Drawing::Clamped,
+        _ => Drawing::Unread,
     }
 }
 
@@ -1681,6 +1714,8 @@ struct Run<'a, 'f> {
     /// Each widget's `not_drawn` entries.
     not_drawn: &'a BTreeMap<String, Vec<When>>,
     pass: Pass,
+    /// How the measured platform's renderer draws a colour (S17).
+    drawing: Drawing,
     root: &'a RootInputs,
 }
 
@@ -1690,7 +1725,7 @@ fn check_globals(
     resolved: &Resolved,
     keys: &[KeyFacts<'_>],
     vector: &[String],
-    pass: Pass,
+    (pass, drawing): (Pass, Drawing),
     root: &RootInputs,
     report: &mut Report,
 ) {
@@ -1743,7 +1778,8 @@ fn check_globals(
             match resolved.global_synthetic(&key.key, Some(value), root) {
                 Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                 Ok(false) => {
-                    let outcome = resolved.compare_global(&key.key, value, root, tolerance);
+                    let tolerance = tolerance.drawn_by(drawing);
+                    let outcome = resolved.compare_global(&key.key, value, root, &tolerance);
                     record(outcome, &key.name, &place, report, &combination, pass);
                 }
                 Err(unread) => record(Err(unread), &key.name, &place, report, &combination, pass),
@@ -1936,7 +1972,8 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                     match session.synthetic(&key.key, Some(value)) {
                         Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                         Ok(false) => {
-                            let outcome = session.compare(&key.key, Some(value), tolerance);
+                            let tolerance = tolerance.drawn_by(run.drawing);
+                            let outcome = session.compare(&key.key, Some(value), &tolerance);
                             record(outcome, &key.name, &place, report, &describe, pass);
                         }
                         Err(unread) => {
@@ -1967,6 +2004,7 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
 /// expression evaluated in the key's place compared with the pass's result
 /// within the citation's tolerance.
 fn derivations(
+    platform: &str,
     preset: &Preset,
     flavor: Option<&str>,
     keys: &[KeyFacts<'_>],
@@ -1977,6 +2015,7 @@ fn derivations(
     let root = root_inputs();
     let metrics = StubMetrics;
     let schemes = preset.schemes();
+    let drawing = drawing(platform, flavor);
     for key in keys {
         for prepared in &key.facts {
             let Some(value) = &prepared.value else {
@@ -2069,7 +2108,7 @@ fn derivations(
                             value,
                             result,
                             &root,
-                            &pass.tolerance,
+                            &pass.tolerance.drawn_by(drawing),
                         ),
                         Some(_) => match resolved.session(&combination, &root, &metrics) {
                             Ok(session) => {
@@ -2086,7 +2125,7 @@ fn derivations(
                                         &key.key,
                                         value,
                                         result,
-                                        &pass.tolerance,
+                                        &pass.tolerance.drawn_by(drawing),
                                     ),
                                     Err(why) => Err(Unread::Refused(format!(
                                         "the pass's combination {combination:?} is {why}"

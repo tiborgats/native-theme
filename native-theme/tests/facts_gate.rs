@@ -1418,6 +1418,56 @@ fn gate_fixture_apple_font_dpi() {
     );
 }
 
+/// A colour measured from drawn pixels is compared with the resolved colour
+/// as the measured platform's renderer draws it (S17, S2.1's hand-over;
+/// ADD-A131 Q-B4): GTK's and QPainter's premultiply-then-clamp, Compose's
+/// straight clamp; out of the gamut where no source states the drawing
+/// (Apple's, WinUI's, Qt Quick's) the comparison fails, naming the key.
+#[test]
+fn gate_measured_colour_drawn_per_renderer() {
+    use native_theme::next::gate::Drawing;
+    for (platform, flavor, drawing) in [
+        ("gnome", None, Drawing::Premultiplied),
+        ("kde", None, Drawing::Premultiplied),
+        ("kde", Some("widgets"), Drawing::Premultiplied),
+        ("kde", Some("kirigami"), Drawing::Unread),
+        ("material", None, Drawing::Clamped),
+        ("macos", None, Drawing::Unread),
+        ("ios", None, Drawing::Unread),
+        ("windows", None, Drawing::Unread),
+    ] {
+        assert_eq!(
+            run::drawing(platform, flavor),
+            drawing,
+            "{platform} {flavor:?}"
+        );
+    }
+    let report = |platform: &str| {
+        let (root, presets) = fixture("measured_drawn", "preset.toml");
+        let presets: Vec<(String, Preset)> = presets
+            .into_iter()
+            .map(|(_, preset)| (platform.to_owned(), preset))
+            .collect();
+        run::run(&root, &presets)
+    };
+    for platform in ["gnome", "kde", "material"] {
+        let drawn = report(platform);
+        assert_eq!(drawn.failures, Vec::<String>::new(), "{platform}");
+        assert!(drawn.compared > 0, "{platform}: {drawn:?}");
+    }
+    let apple = report("macos");
+    assert!(!apple.failures.is_empty(), "{apple:?}");
+    assert!(
+        apple
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`button.body.fill`")
+                && failure.contains("out of the gamut")),
+        "{:?}",
+        apple.failures
+    );
+}
+
 /// A whole map listed as pending is found (S17: "U150's
 /// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
 /// synthetic value is empty, so reading it reads the synthetic layer's step

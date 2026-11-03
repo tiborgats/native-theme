@@ -12,7 +12,7 @@ use std::cell::OnceCell;
 
 use ::toml::{Table, Value as Item};
 
-pub use tree::{Tolerance, Tree};
+pub use tree::{Drawing, Tolerance, Tree};
 
 use super::blocks::part_style::PartStylePatch;
 use super::declare::{DefaultSize, WidgetDecl};

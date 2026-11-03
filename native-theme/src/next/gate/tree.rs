@@ -352,6 +352,56 @@ pub struct Tolerance {
     /// The px a point resolves to where the value is compared; `None`
     /// before the gate knows the place.
     px_per_point: Option<f64>,
+    /// A measured citation serves it: its colours were measured from drawn
+    /// pixels (S17).
+    measured: bool,
+    /// How the measured platform's renderer draws a colour, where its
+    /// colours were measured from drawn pixels and the gate knows the
+    /// platform: both sides' colours compared as drawn (S17, ADD-A131).
+    drawn: Option<Drawing>,
+}
+
+/// How the measured platform's renderer draws a resolved colour into the
+/// capture's frame, which the gate applies before comparing a colour
+/// measured from drawn pixels (S17, S2.1's hand-over; ADD-A131). An in-gamut
+/// colour draws the same in every case.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Drawing {
+    /// Premultiplied, each premultiplied channel clamped to `0..=1`: a
+    /// channel `c` at alpha `a > 0` draws as `clamp(c·a, 0, 1) / a`, the
+    /// alpha unchanged, and at alpha 0 the alpha alone, as transparent
+    /// black. GTK's (`adwaita`) and Qt's raster engine, QPainter's
+    /// (`kde-breeze`).
+    Premultiplied,
+    /// Each straight channel and the alpha clamped to `0..=1` before
+    /// anything draws: Compose's sRGB `Color` (`material-3`).
+    Clamped,
+    /// No source states how the renderer draws a channel outside `0..=1`
+    /// (`macos-*`, `ios-*`, `windows-11`, Qt Quick's scene graph): a colour
+    /// out of the gamut fails, an in-gamut one compares as it is.
+    Unread,
+}
+
+impl Drawing {
+    /// `color`, red, green, blue and alpha, as the renderer draws it;
+    /// `None` where it leaves the gamut and no source states the drawing.
+    fn draw(self, [r, g, b, a]: [f64; 4]) -> Option<[f64; 4]> {
+        match self {
+            Drawing::Premultiplied => {
+                let a = a.clamp(0.0, 1.0);
+                if a <= 0.0 {
+                    return Some([0.0; 4]);
+                }
+                let channel = |c: f64| (c * a).clamp(0.0, 1.0) / a;
+                Some([channel(r), channel(g), channel(b), a])
+            }
+            Drawing::Clamped => Some([r, g, b, a].map(|c| c.clamp(0.0, 1.0))),
+            Drawing::Unread => [r, g, b, a]
+                .iter()
+                .all(|c| (0.0..=1.0).contains(c))
+                .then_some([r, g, b, a]),
+        }
+    }
 }
 
 /// The quote check's relative precision for numbers (S17).
@@ -377,6 +427,7 @@ impl Tolerance {
     pub fn every(tolerance: f64) -> Tolerance {
         Tolerance {
             every: Some(tolerance),
+            measured: true,
             ..Tolerance::default()
         }
     }
@@ -399,6 +450,7 @@ impl Tolerance {
         Tolerance {
             leaves,
             points,
+            measured: true,
             ..Tolerance::default()
         }
     }
@@ -415,6 +467,17 @@ impl Tolerance {
             }
         }
         self
+    }
+
+    /// The tolerance whose colours, where a measured citation serves it, are
+    /// compared as `drawing` draws them (S17, ADD-A131): the measured
+    /// platform's renderer; the quote check's precision unchanged.
+    #[must_use]
+    pub fn drawn_by(&self, drawing: Drawing) -> Tolerance {
+        Tolerance {
+            drawn: self.measured.then_some(drawing),
+            ..self.clone()
+        }
     }
 
     /// The tolerance compared where a point resolves to `px_per_point` px.
@@ -452,6 +515,8 @@ impl Tolerance {
             leaves,
             points,
             px_per_point: self.px_per_point,
+            measured: self.measured || other.measured,
+            drawn: self.drawn.or(other.drawn),
         }
     }
 
@@ -584,9 +649,22 @@ impl Tree {
                 (!numbers_agree(*a, *b, tolerance.at(path))).then(|| written(path))
             }
             (Tree::Color(a), Tree::Color(b)) => {
+                let (a, b) = match tolerance.drawn {
+                    None => (*a, *b),
+                    Some(drawing) => match (drawing.draw(*a), drawing.draw(*b)) {
+                        (Some(a), Some(b)) => (a, b),
+                        _ => {
+                            return Some(format!(
+                                "{} (out of the gamut, where no source states how the renderer \
+                                 draws it)",
+                                written(path)
+                            ));
+                        }
+                    },
+                };
                 let limit = tolerance.at(path).unwrap_or(COLOR_PRECISION);
                 let close = a
-                    .iter()
+                    .into_iter()
                     .zip(b)
                     .all(|(a, b)| a == b || ((a - b) * 255.0).abs() <= limit + STORED * 255.0);
                 (!close).then(|| written(path))
@@ -846,5 +924,41 @@ mod tests {
         assert!(!numbers_agree(40.5 + 1e-5, 40.0, Some(0.5)));
         assert!(numbers_agree(40.0 + 0.5 * slack, 40.0, Some(0.0)));
         assert!(!numbers_agree(40.0 + 2.0 * slack, 40.0, Some(0.0)));
+    }
+
+    /// A measured colour compared as each renderer draws the resolved one
+    /// (S17, S2.1; ADD-A131): light teal's standalone red, -0.17 at alpha
+    /// 0.5, draws as 0 premultiplied and clamped; a channel 1.2 clamped
+    /// straight draws 1; where no source states the drawing it fails out
+    /// of the gamut; the quote check's tolerance draws nothing.
+    #[test]
+    fn measured_colour_drawn_as_its_renderer_draws_it() {
+        let colour = |r: f64, a: f64| Tree::Color([r, 0.5, 0.5, a]);
+        let measured = Tolerance::every(1.0);
+        let gtk = measured.drawn_by(Drawing::Premultiplied);
+        assert_eq!(colour(-0.17, 0.5).differs(&colour(0.0, 0.5), &gtk), None);
+        assert!(
+            colour(-0.17, 0.5)
+                .differs(&colour(0.0, 0.5), &measured)
+                .is_some()
+        );
+        assert_eq!(colour(0.3, 0.0).differs(&colour(0.9, 0.0), &gtk), None);
+        let compose = measured.drawn_by(Drawing::Clamped);
+        assert_eq!(colour(1.2, 0.5).differs(&colour(1.0, 0.5), &compose), None);
+        assert!(colour(1.2, 0.5).differs(&colour(1.0, 0.5), &gtk).is_some());
+        let unread = measured.drawn_by(Drawing::Unread);
+        assert_eq!(colour(0.2, 0.5).differs(&colour(0.2, 0.5), &unread), None);
+        assert_eq!(
+            colour(-0.17, 0.5).differs(&colour(0.0, 0.5), &unread),
+            Some(
+                ". (out of the gamut, where no source states how the renderer draws it)".to_owned()
+            )
+        );
+        let quoted = Tolerance::quote().drawn_by(Drawing::Premultiplied);
+        assert!(
+            colour(-0.17, 0.5)
+                .differs(&colour(0.0, 0.5), &quoted)
+                .is_some()
+        );
     }
 }
