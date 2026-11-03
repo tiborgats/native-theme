@@ -6,7 +6,8 @@
 //! whose conditions hold, kept in order for the query (S8); their
 //! evaluation for an element ([`evaluate`]), a `Fields` patch over a
 //! reference composed lazily ([`compose`], S2.2). Also S9.2's accent layer
-//! (its inputs; `kde-breeze`'s derived roles are M1b's).
+//! (its inputs; `kde-breeze`'s accent-derivation layer enters with that
+//! preset and `kde_accent`, M1b).
 #![cfg_attr(
     not(test),
     expect(
@@ -749,10 +750,12 @@ impl Stack {
     }
 
     /// The accent layer the accent gives (S9.2): its bases state the
-    /// preset's accent inputs, nothing else: the `accent`, and of the
-    /// accent's derived inputs those the preset's `accent_inputs` names, an
-    /// accent carrying more for another preset (S9.5) (`kde-breeze`'s
-    /// derived roles enter with its preset, M1b).
+    /// preset's accent inputs, nothing else, at the slots the accent states
+    /// them: the `accent`, and of the accent's derived inputs those the
+    /// preset's `accent_inputs` names, an accent carrying more for another
+    /// preset (S9.5). On `kde-breeze` that is the `accent` alone; Plasma's
+    /// derivation from it is the accent-derivation layer's (S8, S9.2),
+    /// which enters with that preset and `kde_accent` (M1b).
     fn derived_accent(&self) -> Arc<Layer> {
         let mut layer = Layer::default();
         if let Some(accent) = &self.accent {
