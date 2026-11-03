@@ -25,6 +25,7 @@ use super::blocks::icon::ResolvedIconStyle;
 use super::blocks::icon::{IconStyle, Mirroring};
 use super::blocks::motion::ResolvedTiming;
 use super::blocks::motion::Timing;
+use super::blocks::motion::{AnimatedVisual, ResolvedAnimatedVisual};
 use super::blocks::shadow::ResolvedShadowLayer;
 use super::blocks::shadow::ShadowLayer;
 use super::blocks::text::ResolvedTextStyle;
@@ -541,6 +542,11 @@ pub struct IconTokens {
     pub sizes: IconSizeTokens,
     /// How each icon role mirrors under right-to-left.
     pub mirroring: Vec<(IconRole, Mirroring)>,
+    /// WinUI's `AnimatedIcon` sources, the visuals the preset's
+    /// `WinUiAnimatedIcon` transitions name (S2.7); `{}` on every preset
+    /// but `windows-11`, as no other platform's transition can name one.
+    #[parts(block = "fields")]
+    pub animated_visuals: Vec<(Key, AnimatedVisual)>,
 }
 
 /// The icon-size contexts (S4.5): each an icon style in which only `size` is

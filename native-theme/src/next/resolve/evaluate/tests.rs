@@ -1211,6 +1211,45 @@ presentations = [{ event = "appear", steps = [{ part = "none", kind = { keyed = 
     );
 }
 
+/// A `WinUiAnimatedIcon` engine resolves to the visual its `visual` names,
+/// from `token.icons.animated_visuals`, its duration and markers evaluated,
+/// the entry merged over the layers as any map's (S2.7, S6.1; ADD-A126).
+/// Synthetic values.
+#[test]
+fn animated_visual_resolves_into_engine() {
+    use crate::next::blocks::motion::{ResolvedAnimatedVisual, ResolvedEngine};
+    use crate::next::units::Ms;
+    let preset = format!(
+        "{BASE}[tokens.icons.animated_visuals.accept]\n\
+         duration_ms = \"= mul(token.motion.durations.short, 3)\"\n\
+         markers = {{ NormalOnToNormalOff_Start = 0.25, NormalOnToNormalOff_End = 0.5 }}\n"
+    );
+    let over = "[tokens.icons.animated_visuals.accept]\n\
+                markers = { NormalOffToNormalOn_Start = 0.75 }\n\
+                [widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = \
+                \"interpolate\", duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", \
+                engine = { win_ui_animated_icon = { visual = \"accept\" } } }]\n";
+    let theme = resolved(&[&preset, over], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+    let body = theme
+        .evaluate_part(BODY, &element, &|_| true)
+        .value
+        .unwrap();
+    let transition = body.transitions.first().unwrap();
+    assert_eq!(
+        transition.engine,
+        ResolvedEngine::WinUiAnimatedIcon(ResolvedAnimatedVisual {
+            duration: Ms(300.0),
+            markers: vec![
+                ("NormalOnToNormalOff_Start".to_owned(), 0.25),
+                ("NormalOnToNormalOff_End".to_owned(), 0.5),
+                ("NormalOffToNormalOn_Start".to_owned(), 0.75),
+            ],
+        })
+    );
+}
+
 /// A synthetic layer's step decides whether a part is drawn only where it
 /// changes what the steps before it make the part (S6.3, S17, ADD-A128): a
 /// `Style` over a part a lower step leaves absent draws it again, and over

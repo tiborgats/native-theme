@@ -443,6 +443,74 @@ fn refusal_border_absent_outside_selection() {
     assert!(created("window"));
 }
 
+/// A `WinUiAnimatedIcon` transition's `visual` names an entry
+/// `token.icons.animated_visuals` holds under every combination in which
+/// the transition is in effect: in the layer's bases or a layer below it,
+/// or a tokens rule applying wherever the transition's does (S2.7, S4.5,
+/// S12; ADD-A126). Synthetic values; only the visual's problems are read.
+#[test]
+fn refusal_win_ui_animated_icon_unknown_visual() {
+    let engine = "engine = { win_ui_animated_icon = { visual = \"accept\" } }";
+    let transition = format!(
+        "transitions = [{{ properties = [\"icon\"], kind = \"interpolate\", duration_ms = \
+         \"absent\", delay_ms = 0, timing = \"linear\", {engine} }}]"
+    );
+    let visual = "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\n\
+                  markers = { NormalOnToNormalOff_Start = 0.0 }\n";
+    let refused = |layer: &Layer, below: &Layer| -> Vec<String> {
+        found_over(layer, &Declarations::default(), below)
+            .into_iter()
+            .filter(|problem| problem.contains(".visual: "))
+            .collect()
+    };
+    let none = Layer::default();
+    let base = toml(&format!("[widgets.button.body]\n{transition}"));
+    assert_eq!(
+        refused(&base, &none),
+        [
+            "widgets.button.body.transitions[0].engine.win_ui_animated_icon.visual: `accept` can be \
+             no visual `token.icons.animated_visuals` holds"
+        ]
+    );
+    assert_eq!(refused(&base, &toml(visual)), NONE);
+    let both = toml(&format!("{visual}[widgets.button.body]\n{transition}"));
+    assert_eq!(refused(&both, &none), NONE);
+    let other = toml(&visual.replace("accept", "check"));
+    assert_eq!(refused(&base, &other).len(), 1);
+
+    // A rule's transition, and a tokens rule holding the visual: refused
+    // where the transition can apply without the visual.
+    let rules = |condition: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ conditions = [\"scheme:dark\"] }}\ntarget = \"button.body\"\n\
+             set = {{ {transition} }}\n[[rules]]\nwhen = {{ conditions = [\"{condition}\"] }}\n\
+             target = \"tokens\"\nset = {{ icons.animated_visuals.accept = {{ duration_ms = \
+             2000, markers = {{ NormalOnToNormalOff_Start = 0.0 }} }} }}"
+        ))
+    };
+    assert_eq!(refused(&rules("scheme:dark"), &none), NONE);
+    assert_eq!(
+        refused(&rules("reduced_motion"), &none),
+        [
+            "rules[0].set.transitions[0].engine.win_ui_animated_icon.visual: `accept` can be no \
+             visual `token.icons.animated_visuals` holds"
+        ]
+    );
+
+    // A later item of the same key replaces the transition wherever it
+    // applies: the hovered state's rule leaves it in effect elsewhere, a
+    // base of the layer above everywhere.
+    let win_ui = "transitions = [{ properties = [\"icon\"], kind = \"interpolate\", \
+                  duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"win_ui\" }]";
+    let hovered = toml(&format!(
+        "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
+         set = {{ {win_ui} }}"
+    ));
+    assert_eq!(refused(&hovered, &base).len(), 1);
+    let replaced = toml(&format!("[widgets.button.body]\n{win_ui}"));
+    assert_eq!(refused(&replaced, &base), NONE);
+}
+
 /// A Breeze test's flags and conditions are read as a `when` writes them
 /// and walked as a rule's are: a keyed flag the widget declares, a keyed
 /// condition the preset declares (S2.7, S10, S11, S12; ADD-A126).
@@ -2756,6 +2824,7 @@ kinds! {
     NoProperties,
     FocusTransitionProperties,
     FromNoState,
+    UnknownVisual { .. },
     RecencyTooSmall,
     RecencyOrder { .. },
     NotInRecencySet { .. },
@@ -3335,6 +3404,16 @@ fn layer_error_every_variant_triggers() {
         (
             V::Unused,
             preset_problems("[declare]\nflavors = [\"widgets\", \"kirigami\"]"),
+        ),
+        (
+            V::UnknownVisual,
+            over(
+                &toml(
+                    "[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = \"interpolate\", duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
+                ),
+                &Declarations::default(),
+                &[],
+            ),
         ),
         (
             V::FromNoState,

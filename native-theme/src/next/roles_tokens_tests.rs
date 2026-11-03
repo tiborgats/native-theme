@@ -138,6 +138,8 @@ fn token_spec_paths() -> Vec<String> {
             "icons.sizes.panel: IconStyle",
             "icons.sizes.keyed: IconStyle",
             "icons.mirroring",
+            "icons.animated_visuals.duration",
+            "icons.animated_visuals.markers",
             "focus: FocusIndicator",
             "caret.color",
             "caret.width",
@@ -198,6 +200,7 @@ fn tokens_registry_has_slice_groups() {
         "text.keyed.body.font.size",
         "text.roles.body.font.size",
         "icons.sizes.keyed.main_toolbar.size",
+        "icons.animated_visuals.accept.markers.NormalOnToNormalOff_Start",
         "size_classes.compact.horizontal",
         "behavior.focus_visible_when.keyboard.timeout",
     ] {

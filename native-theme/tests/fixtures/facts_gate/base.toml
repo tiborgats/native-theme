@@ -165,6 +165,7 @@ set = "freedesktop"
 theme = "absent"
 theme_fallback = "absent"
 mirroring = {}
+animated_visuals = {}
 [tokens.icons.sizes]
 toolbar = "absent"
 small = "absent"

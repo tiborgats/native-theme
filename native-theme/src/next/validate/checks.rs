@@ -1457,8 +1457,14 @@ impl<'a> Checker<'a> {
 
     /// A `Key` leaf, declared where its field or variant names a declaration
     /// (S10); a widget value's key, listed by the widget's `keys` entry for
-    /// the value, every key refused where the widget lists none.
+    /// the value, every key refused where the widget lists none. A
+    /// `WinUiAnimatedIcon` engine's `visual` names a
+    /// `token.icons.animated_visuals` entry, no key a value holds: the
+    /// combinations check it against the map (S2.7, S12).
     fn declared_leaf(&mut self, path: &Path, key: &Key) {
+        if path.slot() == Some(("TransitionEngine", "visual")) {
+            return;
+        }
         let decl = self.decl();
         let at = path.to_string();
         if let Some(declaration) = declaration_of(path.slot()) {
@@ -3205,6 +3211,48 @@ mod tests {
             problems(Some(vec![("mode", vec![key!("compact")])])),
             NO_PROBLEM
         );
+    }
+
+    /// A `WinUiAnimatedIcon` engine's `visual` under a widget's values
+    /// names a `token.icons.animated_visuals` entry, no key the value holds:
+    /// it is not checked against the widget's `keys` (S2.7, S10, S12).
+    #[test]
+    fn a_visual_is_no_widget_values_key() {
+        use crate::next::blocks::motion::{Timing, Transition, TransitionEngine, TransitionKind};
+        use crate::next::selector::StateFlag;
+        let decl = Declarations {
+            widgets: vec![(WidgetKind::Button, WidgetDecl::default())],
+            ..Declarations::default()
+        };
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Application,
+            reader_accent_left_out: false,
+            synthetic: &[],
+            below: &[],
+        };
+        let mut checker = Checker::new(&cx, true);
+        checker.region = Region::Values(WidgetKind::Button);
+        let mut walker = Walker::new("probe", true, &mut checker);
+        walker.field("ButtonValues", "transitions", Marks::default(), "", |w| {
+            Walk::walk(
+                &vec![Transition {
+                    properties: vec![crate::next::blocks::motion::PropertyGroup::Icon],
+                    kind: TransitionKind::Interpolate,
+                    duration: Value::Absent,
+                    delay: Value::Stated(crate::next::units::Ms(0.0)),
+                    timing: Value::Stated(Timing::Linear),
+                    engine: TransitionEngine::WinUiAnimatedIcon {
+                        visual: key!("accept"),
+                    },
+                    from: Some(vec![StateFlag::Hover]),
+                }],
+                w,
+            );
+        });
+        let problems: Vec<String> = checker.problems.iter().map(Problem::to_string).collect();
+        assert_eq!(problems, NO_PROBLEM);
     }
 }
 

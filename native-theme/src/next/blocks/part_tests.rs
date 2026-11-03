@@ -1546,7 +1546,7 @@ fn governing_picks_the_last_that_applies() {
             duration: Some(Ms(ms)),
             delay: Some(Ms(0.0)),
             timing: Some(crate::next::ResolvedTiming::Linear),
-            engine: crate::next::ResolvedTransitionEngine::GtkCss,
+            engine: crate::next::ResolvedEngine::GtkCss,
             from,
         }
     };
@@ -1632,7 +1632,7 @@ fn glyph_draw_governs_glyph_path() {
             duration: Some(Ms(ms)),
             delay: Some(Ms(0.0)),
             timing: Some(crate::next::ResolvedTiming::Linear),
-            engine: crate::next::ResolvedTransitionEngine::GtkCss,
+            engine: crate::next::ResolvedEngine::GtkCss,
             from,
         }
     };

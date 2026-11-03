@@ -221,6 +221,13 @@ pub enum ProblemKind {
     /// A `Transition.from` that is an empty list: it would apply from no
     /// state (S2.7, S12).
     FromNoState,
+    /// A `WinUiAnimatedIcon` transition naming a `visual` that
+    /// `token.icons.animated_visuals` does not hold, under some combination
+    /// (S2.7, S4.5, S12).
+    UnknownVisual {
+        /// The visual as written.
+        visual: String,
+    },
     /// A recency set with fewer than two flags (S10, S12).
     RecencyTooSmall,
     /// A recency set ordering two flags oppositely to another of the
@@ -498,6 +505,12 @@ impl fmt::Display for ProblemKind {
                 f.write_str("a focus indicator's transition names no property group")
             }
             ProblemKind::FromNoState => f.write_str("a transition applying from no state"),
+            ProblemKind::UnknownVisual { visual } => {
+                write!(
+                    f,
+                    "`{visual}` can be no visual `token.icons.animated_visuals` holds"
+                )
+            }
             ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),
             ProblemKind::RecencyOrder { set } => {
                 write!(f, "orders two flags oppositely to the recency set `{set}`")

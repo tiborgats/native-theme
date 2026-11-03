@@ -503,7 +503,7 @@ fn split_by_group(transitions: Vec<Transition>) -> Vec<Transition> {
 /// member implemented once in native-theme to its source. A member is added,
 /// implemented to its source, with the fact that needs it.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_resolved)]
 pub enum TransitionEngine {
     /// GTK's CSS transitions.
     GtkCss,
@@ -539,6 +539,45 @@ pub enum TransitionEngine {
     GtkSwitch,
 }
 
+/// [`TransitionEngine`] resolved (S6.1): its members, a
+/// `WinUiAnimatedIcon` holding the visual its `visual` names, resolved from
+/// `token.icons.animated_visuals`, so the engine reads no token.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ResolvedEngine {
+    /// GTK's CSS transitions.
+    GtkCss,
+    /// An `AdwAnimation` a libadwaita widget's code plays.
+    AdwAnimation {
+        /// The widget plays it again on every change of the element's flags,
+        /// of the window's activity and of its own replay inputs, its end
+        /// unchanged included (AdwEntryRow's title); without it, only as its
+        /// value changes.
+        replays: bool,
+    },
+    /// A QML `Behavior` (Kirigami, qqc2-desktop-style).
+    QtQuick,
+    /// A Breeze state engine, or its decoration's shadow animation.
+    Breeze(BreezeTest),
+    /// Breeze's tab-bar and header-view engines.
+    BreezeTabBar(BreezeTest),
+    /// Compose's `Animatable.animateTo` (`animate*AsState`, the state layer,
+    /// the elevation).
+    ComposeAnimatable,
+    /// A child animation of Compose's `updateTransition`.
+    ComposeTransition,
+    /// `ButtonGroup`'s press fraction, its run back held.
+    ComposeHeld,
+    /// WinUI's brush transitions and visual-state storyboards.
+    WinUi,
+    /// WinUI's `AnimatedIcon` player, with the visual it plays.
+    WinUiAnimatedIcon(ResolvedAnimatedVisual),
+    /// `GtkSwitch`'s own slide of its thumb.
+    GtkSwitch,
+}
+
+/// The derive's name for [`TransitionEngine`]'s resolved type.
+pub(crate) type ResolvedTransitionEngine = ResolvedEngine;
+
 impl TransitionEngine {
     /// The engine's Breeze test: a `Breeze` or `BreezeTabBar` engine's.
     pub(crate) fn breeze_test(&self) -> Option<&BreezeTest> {
@@ -561,7 +600,7 @@ impl TransitionEngine {
 /// holds while one of `any` or of `conditions` holds and none of `none`
 /// does. All three are empty on a stated zero, which reads none.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, own_resolved)]
 #[non_exhaustive]
 pub struct BreezeTest {
     /// The flags one of which holds it.
@@ -570,6 +609,37 @@ pub struct BreezeTest {
     pub none: Vec<StateFlag>,
     /// The conditions one of which holds it.
     pub conditions: Vec<Condition>,
+}
+
+/// The derive's name for [`BreezeTest`]'s resolved type: the test itself,
+/// which holds no `Value` (S6.1).
+pub(crate) type ResolvedBreezeTest = BreezeTest;
+
+/// A WinUI `AnimatedIcon` source (S2.7, S4.5), a
+/// `token.icons.animated_visuals` entry: its play time and its named points
+/// of progress, as its code states them, the inputs of the
+/// `WinUiAnimatedIcon` engine.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block, own_resolved)]
+#[non_exhaustive]
+pub struct AnimatedVisual {
+    /// The source's play time.
+    pub duration: Value<Ms>,
+    /// Its markers, each named as the source names it
+    /// (`NormalOffToNormalOn_Start`), at its point of progress.
+    pub markers: Vec<(String, Value<Fraction>)>,
+}
+
+/// [`AnimatedVisual`] resolved (S6.1): what the `WinUiAnimatedIcon` engine
+/// plays.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ResolvedAnimatedVisual {
+    /// The source's play time.
+    pub duration: Ms,
+    /// Its markers, each named as the source names it, at its point of
+    /// progress.
+    pub markers: Vec<(String, f32)>,
 }
 
 /// How a transition draws a change.

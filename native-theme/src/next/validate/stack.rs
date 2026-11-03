@@ -18,6 +18,7 @@ use crate::next::blocks::motion::{
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
 use crate::next::expr::Expr;
+use crate::next::key::Key;
 use crate::next::layer::{Bases, Layer, Spelled};
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, FieldInfo, PartInfo};
@@ -170,6 +171,20 @@ pub(super) struct Source {
     pub(super) surfaces: Vec<SurfaceSet>,
     /// The keyed lists' items it states (S6.1).
     pub(super) items: Vec<Item>,
+    /// The visuals its `WinUiAnimatedIcon` engines name (S2.7).
+    pub(super) visuals: Vec<Visual>,
+}
+
+/// A `WinUiAnimatedIcon` engine's `visual` a source states (S2.7): a
+/// `token.icons.animated_visuals` entry's key.
+#[derive(Clone, Debug)]
+pub(super) struct Visual {
+    /// Its place (`transitions[3:0].engine.win_ui_animated_icon.visual`).
+    pub(super) place: String,
+    /// Its place as a problem names it, spelled as the layer was written.
+    pub(super) at: String,
+    /// The entry it names.
+    pub(super) key: Key,
 }
 
 /// A rule of the stack.
@@ -311,6 +326,8 @@ struct Flatten {
     cleared: Vec<String>,
     /// Places this source appends to.
     appended: Vec<String>,
+    /// The visuals its engines name.
+    visuals: Vec<Visual>,
 }
 
 impl Flatten {
@@ -384,10 +401,12 @@ impl Flatten {
     }
 
     /// The steps, each `Touch` another step of the source sets below or at
-    /// its place dropped: what remains is a field set to nothing.
-    fn finish(self) -> Vec<Op> {
+    /// its place dropped: what remains is a field set to nothing; and the
+    /// visuals named.
+    fn finish(self) -> (Vec<Op>, Vec<Visual>) {
         let ops = self.ops;
-        ops.iter()
+        let kept = ops
+            .iter()
             .enumerate()
             .filter(|(index, op)| {
                 op.kind != OpKind::Touch
@@ -397,7 +416,8 @@ impl Flatten {
                     })
             })
             .map(|(_, op)| op.clone())
-            .collect()
+            .collect();
+        (kept, self.visuals)
     }
 }
 
@@ -422,10 +442,21 @@ fn text_style(path: &Path) -> Option<String> {
 
 impl Visit for Flatten {
     fn check(&mut self, path: &Path, node: Node<'_>) {
-        if let Node::PaintPatch(PaintPatch::Append(_)) = node {
-            let place = self.place(path);
-            self.appended.push(place.clone());
-            self.push(path, place, OpKind::Append);
+        match node {
+            Node::PaintPatch(PaintPatch::Append(_)) => {
+                let place = self.place(path);
+                self.appended.push(place.clone());
+                self.push(path, place, OpKind::Append);
+            }
+            Node::Key(key) if path.slot() == Some(("TransitionEngine", "visual")) => {
+                let place = self.place(path);
+                self.visuals.push(Visual {
+                    place,
+                    at: path.to_string(),
+                    key: key.clone(),
+                });
+            }
+            _ => {}
         }
     }
 
@@ -480,19 +511,21 @@ impl Visit for Flatten {
 }
 
 /// `value`'s steps, walked from `root` (spelled by TOML's keys where
-/// `toml`), as the style of a part whose catalogue entry is `part`.
+/// `toml`), as the style of a part whose catalogue entry is `part`, and
+/// the visuals it names.
 fn flatten<T: Walk + ?Sized>(
     value: &T,
     root: &str,
     toml: bool,
     source: usize,
     part: Option<&'static [FieldInfo]>,
-) -> Vec<Op> {
+) -> (Vec<Op>, Vec<Visual>) {
     let mut flat = Flatten {
         source,
         ops: Vec::new(),
         cleared: Vec::new(),
         appended: Vec::new(),
+        visuals: Vec::new(),
     };
     {
         let mut walker = Walker::new(root, toml, &mut flat);
@@ -610,12 +643,22 @@ impl<'a> Stack<'a> {
                 for binding in &mut source.bindings {
                     binding.at = shorthands.written(&binding.at, &stacked.layer.rules);
                 }
+                for visual in &mut source.visuals {
+                    visual.at = shorthands.written(&visual.at, &stacked.layer.rules);
+                }
             }
         }
         stack
     }
 
-    fn push(&mut self, target: Target, pos: Pos, layer: usize, rule: Option<usize>, ops: Vec<Op>) {
+    fn push(
+        &mut self,
+        target: Target,
+        pos: Pos,
+        layer: usize,
+        rule: Option<usize>,
+        (ops, visuals): (Vec<Op>, Vec<Visual>),
+    ) {
         self.sources.push(Source {
             target,
             pos,
@@ -626,6 +669,7 @@ impl<'a> Stack<'a> {
             bindings: Vec::new(),
             surfaces: Vec::new(),
             items: Vec::new(),
+            visuals,
         });
     }
 
@@ -673,7 +717,8 @@ impl<'a> Stack<'a> {
         let declared = &self.cx.declarations.surface_sets;
         // A surface set the preset does not declare is refused (S10) or, a
         // palette's, skipped (S14): either way no value of it is read.
-        let ops = flatten(roles, root, toml, number, None)
+        let (ops, visuals) = flatten(roles, root, toml, number, None);
+        let ops = ops
             .into_iter()
             .filter(|op| {
                 op.path
@@ -683,7 +728,7 @@ impl<'a> Stack<'a> {
                     .is_none_or(|set| declared.contains(&set))
             })
             .collect();
-        self.push(target, pos, layer, rule, ops);
+        self.push(target, pos, layer, rule, (ops, visuals));
     }
 
     #[expect(clippy::too_many_arguments, reason = "one source's place in the stack")]
@@ -712,6 +757,7 @@ impl<'a> Stack<'a> {
         let mut bindings = Vec::new();
         let mut surfaces = Vec::new();
         let mut held = Vec::new();
+        let mut visuals = Vec::new();
         let ops = match patch {
             PartPatch::Absent => vec![shown(Shown::Absent)],
             PartPatch::DrawnAs { target, variants } => vec![shown(Shown::DrawnAs {
@@ -746,7 +792,9 @@ impl<'a> Stack<'a> {
                     }));
                 }
                 let mut ops = vec![shown(Shown::Drawn)];
-                ops.extend(flatten(style, at, toml, number, Some(info.fields)));
+                let (flat, named) = flatten(style, at, toml, number, Some(info.fields));
+                ops.extend(flat);
+                visuals = named;
                 for binding in &mut bindings {
                     let place = format!("bindings[{number}:{}].role.value", binding.index);
                     binding.id = ops
@@ -767,6 +815,7 @@ impl<'a> Stack<'a> {
             bindings,
             surfaces,
             items: held,
+            visuals,
         });
     }
 

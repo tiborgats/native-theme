@@ -227,6 +227,7 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
     out.focus_corners();
     out.concentric();
     out.entries();
+    out.visuals();
     out.input_cycles();
     out.problems
 }
@@ -2768,6 +2769,46 @@ impl Checks<'_, '_> {
                             );
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// A `WinUiAnimatedIcon` transition's `visual` that
+    /// `token.icons.animated_visuals` does not hold under some world in
+    /// which the transition is in effect: its source applies and no later
+    /// item replaces it (S2.7, S4.5, S12). The map's entries are only ever
+    /// added, so an entry is held where a source of the tokens applying
+    /// states it.
+    fn visuals(&mut self) {
+        let stack = self.stack;
+        for (number, source) in stack.sources.iter().enumerate() {
+            for visual in &source.visuals {
+                let entry = format!("icons.animated_visuals.{}", visual.key);
+                let seeds = vec![
+                    Seed::Field(source.target, visual.place.clone(), true),
+                    Seed::Field(Target::Tokens, entry.clone(), true),
+                ];
+                let worlds = stack.worlds(seeds);
+                let unheld = worlds.iter().any(|world| {
+                    let replaced = stack
+                        .replaced(world, number, source)
+                        .iter()
+                        .any(|item| is_above(item, &visual.place));
+                    let held = stack.of(Target::Tokens).any(|(_, tokens)| {
+                        stack.applies(world, tokens)
+                            && tokens
+                                .ops
+                                .iter()
+                                .any(|op| op.path == entry || is_above(&entry, &op.path))
+                    });
+                    stack.applies(world, source) && !replaced && !held
+                });
+                if unheld {
+                    let kind = ProblemKind::UnknownVisual {
+                        visual: visual.key.to_string(),
+                    };
+                    self.problem(source.layer, &visual.at, kind);
                 }
             }
         }
