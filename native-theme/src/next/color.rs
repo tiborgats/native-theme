@@ -150,15 +150,17 @@ impl Color {
     }
 }
 
-/// `layer` composited over `base`: source-over with straight (not
-/// premultiplied) alpha in sRGB.
+/// `layer` composited over `base`: source-over in sRGB, drawn as S2.1's
+/// hand-over draws (S16, ADD-A128, ADD-A131).
 ///
-/// The result covers `a = layer.a + base.a × (1 − layer.a)`, and each channel
-/// is the two channels weighted by what each contributes, divided by `a`.
-/// Where one input decides the result, that input is returned exactly: an
-/// opaque layer (`layer.a >= 1`) is the layer; a transparent layer
-/// (`layer.a <= 0`) is `base`; a layer over a transparent base
-/// (`base.a <= 0`) is the layer.
+/// Each colour is premultiplied by its alpha and each premultiplied channel,
+/// the alpha with it, clamped to `0..=1`, as GTK draws a colour on its 8-bit
+/// frame; the two are then blended, `l + b × (1 − l.a)` per premultiplied
+/// channel and alpha, and the composite's straight colour returned. Every
+/// input is drawn so, an opaque or a transparent one included, so an opaque
+/// layer comes back with its channels clamped and no input's channel
+/// outside `0..=1` is returned unchanged; a composite of alpha 0 is
+/// transparent black, `#00000000`.
 ///
 /// This is how a platform lays a translucent colour over what lies beneath,
 /// for a toolkit that draws the composite as one colour. The blend is in sRGB
@@ -175,25 +177,32 @@ impl Color {
 /// ```
 #[must_use]
 pub fn composite_over(layer: Color, base: Color) -> Color {
-    if layer.a >= 1.0 {
-        return layer;
+    let [lr, lg, lb, la] = premultiplied(layer);
+    let [br, bg, bb, ba] = premultiplied(base);
+    let under = 1.0 - la;
+    let a = la + ba * under;
+    if a <= 0.0 {
+        return Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
+        };
     }
-    if layer.a <= 0.0 {
-        return base;
-    }
-    if base.a <= 0.0 {
-        return layer;
-    }
-    // How much of `base` reaches the result, in the composite's own alpha.
-    let under = base.a * (1.0 - layer.a);
-    let a = layer.a + under;
-    let channel = |l: f32, b: f32| (l * layer.a + b * under) / a;
+    let channel = |l: f32, b: f32| (l + b * under) / a;
     Color {
-        r: channel(layer.r, base.r),
-        g: channel(layer.g, base.g),
-        b: channel(layer.b, base.b),
+        r: channel(lr, br),
+        g: channel(lg, bg),
+        b: channel(lb, bb),
         a,
     }
+}
+
+/// `color` premultiplied by its alpha, each channel and the alpha clamped
+/// to `0..=1` (S2.1's hand-over).
+fn premultiplied(color: Color) -> [f32; 4] {
+    let a = color.a.clamp(0.0, 1.0);
+    [color.r * a, color.g * a, color.b * a, a].map(|c| c.clamp(0.0, 1.0))
 }
 
 /// `#rrggbb` or `#rrggbbaa` without its `#`, hex digits in either case.
@@ -441,5 +450,39 @@ mod tests {
         );
         let clear = rgba(0.0, 0.0, 0.0, 0.0);
         assert_eq!(composite_over(half_red, clear), half_red);
+    }
+
+    #[test]
+    fn composite_over_clamps_premultiplied_channels() {
+        // Light teal's standalone red at alpha 0.5 over white (S2.1): its
+        // premultiplied -0.085 clamped to 0, where blending it unclamped
+        // draws about 22 steps of 255 darker.
+        let white = rgba(1.0, 1.0, 1.0, 1.0);
+        let teal = composite_over(rgba(-0.17, 0.5, 0.5, 0.5), white);
+        assert_close(channels(teal), [0.5, 0.75, 0.75, 1.0]);
+        // An opaque layer's channels come back clamped, as do a base's
+        // under a transparent layer: no input passes through unclamped.
+        assert_eq!(
+            composite_over(rgba(1.2, -0.1, 0.5, 1.0), white),
+            rgba(1.0, 0.0, 0.5, 1.0)
+        );
+        assert_eq!(
+            composite_over(rgba(0.3, 0.3, 0.3, 0.0), rgba(1.5, 0.5, -0.5, 1.0)),
+            rgba(1.0, 0.5, 0.0, 1.0)
+        );
+        assert_eq!(
+            composite_over(rgba(1.5, 0.5, -0.5, 1.0), rgba(0.0, 0.0, 0.0, 0.0)),
+            rgba(1.0, 0.5, 0.0, 1.0)
+        );
+    }
+
+    #[test]
+    fn composite_over_of_zero_alpha_is_transparent_black() {
+        let clear = rgba(0.0, 0.0, 0.0, 0.0);
+        assert_eq!(
+            composite_over(rgba(1.0, 0.5, 0.2, 0.0), rgba(0.4, 0.6, 0.8, 0.0)),
+            clear
+        );
+        assert_eq!(composite_over(clear, clear), clear);
     }
 }
