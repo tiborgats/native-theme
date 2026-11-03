@@ -88,7 +88,8 @@ preset's bases apply before its rules, its rules in stated order, the later winn
   combinations take the size an element holds, S10, ADD-A131: of the sizes it takes, its variant entry's or the
   widget's less those its context entry leaves out, the default in force, the context entry's, the variant entry's
   or the widget's, else, the default pending or refused by the `when`, the first the `when` allows, a variant whose
-  entry takes one added where the widget's own are all refused; element_size()).
+  entry takes one added where the widget's own are all refused or do not hold the size the `when` names, and which
+  no `not_drawn` entry excludes; element_size()).
   Where the widget states no `default_size`, an element stating no size holds none (iOS's button), and no fact gives
   the field's value there: no base is written (a size's fact would be a value invented for the element with no size),
   the field is left unstated, so the reader reports it as S12's missing field, and the gap is reported as a facts gap.
@@ -1271,22 +1272,29 @@ def element_size(when: dict, model, ancestors=()):
     `when` does not refuse it, else the first the `when` does not refuse: an element stating that size, as one whose
     default is pending states one (S10's *A pending default*: an element stating none is not available); none where
     the element takes none. Where an element holding only the `when`'s variants takes no size the `when` allows (a
-    `not_sizes` refusing the widget's every size), the first `sizes_by_variant` entry whose variant the `when` does
-    not refuse and no `exclusive_variants` group shares with the `when`'s, and whose sizes it allows, adds its
-    variant: the sizes that variant alone takes."""
+    `not_sizes` refusing the widget's every size, or a size the `when` names that it does not take), the first
+    `sizes_by_variant` entry whose variant the `when` does not refuse, no `exclusive_variants` group shares with the
+    `when`'s, and no `not_drawn` entry of variants alone excludes with them, and whose sizes it allows (or which takes
+    the named sizes), adds its variant: the sizes that variant alone takes."""
     named = list(when.get("sizes", []))
     variants = list(when.get("variants", []))
-    if named or not model:
+    if not model:
         return named, variants
     refused = set(when.get("not_sizes", []))
     entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and isinstance(e.get("sizes"), list)]
     by_context = next((e for e in model.get("sizes_by_context", []) if isinstance(e, dict)
                        and isinstance(e.get("context"), dict) and context_holds(e["context"], list(ancestors))), None)
 
-    def size_of(entry):
+    def taken(entry):
         sizes = entry["sizes"] if entry else [z for z in model.get("sizes", []) if isinstance(z, str)]
         if by_context is not None:
             sizes = [z for z in sizes if z in by_context.get("sizes", [])]
+        return sizes
+
+    def size_of(entry):
+        sizes = taken(entry)
+        if named:
+            return named if all(z in sizes for z in named) else None
         if not sizes:
             return []
         default = next((x["default_size"] for x in (by_context, entry) if x is not None and "default_size" in x),
@@ -1302,9 +1310,13 @@ def element_size(when: dict, model, ancestors=()):
         return got, variants
     not_variants = set(when.get("not_variants", []))
     groups = [set(g) for g in model.get("exclusive_variants", []) if isinstance(g, list)]
+    undrawn = [x for x in model.get("not_drawn", []) if isinstance(x, dict) and x
+               and set(x) <= {"variants", "not_variants"}]
     for e in entries:
         v = e.get("variant")
         if v in not_variants or any(v in g and g & set(variants) for g in groups):
+            continue
+        if any(set_match(x, "variants", set(variants) | {v}) for x in undrawn):
             continue
         got = size_of(e)
         if got:
@@ -2137,11 +2149,21 @@ def self_test() -> int:
              ({"not_sizes": ["regular", "small"]}, (), (["mini"], ["primary"])),
              ({"not_sizes": ["regular", "small"], "variants": ["flat"]}, (), (None, ["flat"])),
              ({"not_sizes": ["regular", "small"], "not_variants": ["primary"]}, (), (None, [])),
-             ({}, bar, (["small"], [])), ({"variants": ["primary"]}, bar, (["large"], ["primary"]))]
+             ({}, bar, (["small"], [])), ({"variants": ["primary"]}, bar, (["large"], ["primary"])),
+             ({"sizes": ["mini"]}, (), (["mini"], ["primary"])), ({"sizes": ["mini"], "variants": ["flat"]}, (),
+                                                                  (None, ["flat"])),
+             ({"sizes": ["small"]}, bar, (["small"], []))]
     for when, ancestors, want in cases:
         got = element_size(when, sized_model, ancestors)
         if got != want:
             failures.append(f"element_size({when}, {ancestors}): {got}, expected {want}")
+    # a variant no element holding the `when`'s variants is drawn with (a `not_drawn` entry of variants alone) adds
+    # no size
+    undrawn_model = dict(sized_model, not_drawn=[{"variants": ["primary"]}])
+    for when, want in (({"not_sizes": ["regular", "small"]}, (None, [])), ({"sizes": ["mini"]}, (None, []))):
+        got = element_size(when, undrawn_model)
+        if got != want:
+            failures.append(f"element_size({when}) under not_drawn: {got}, expected {want}")
     if element_size({}, {"sizes": []}) != ([], []):
         failures.append(f"element_size of an unsized element: {element_size({}, {'sizes': []})}")
     # pending_defaults: each pending default size taken out of [declare] and listed by its declaration's path
