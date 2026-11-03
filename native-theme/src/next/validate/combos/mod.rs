@@ -332,6 +332,15 @@ impl<'a> Stack<'a> {
                     let got = match &op.kind {
                         OpKind::Set(val) => Some(got_of(val)),
                         OpKind::Append { .. } if absent_at.is_some() => None,
+                        // Over a reference the appended layers keep it:
+                        // what it resolves to decides (S2.2).
+                        OpKind::Append { .. }
+                            if local
+                                .as_ref()
+                                .is_some_and(|held| matches!(held.got, Got::Expr(_))) =>
+                        {
+                            None
+                        }
                         OpKind::Append { .. } => Some(Got::Stated(Fact::Unknown)),
                         OpKind::Touch => Some(Got::Stated(Fact::Nothing)),
                         OpKind::Fields { .. } | OpKind::Clear | OpKind::Shown(_) => None,
@@ -339,7 +348,10 @@ impl<'a> Stack<'a> {
                     // Below a reference, a patch kept on it (S2.2).
                     if let Some(got) = got {
                         absent_at = matches!(got, Got::Absent | Got::Auto).then_some(q);
-                        appended = matches!(op.kind, OpKind::Append { .. });
+                        // Appended straight over the reference above, no
+                        // local value beneath.
+                        appended = matches!(op.kind, OpKind::Append { .. })
+                            && (local.is_none() || appended);
                         local = Some(found(got, false));
                     }
                 } else if is_above(&op.path, q) {

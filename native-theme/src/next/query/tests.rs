@@ -440,6 +440,21 @@ fn fields_patch_over_absent_leaves_absent() {
         .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
     let (body, _) = drawn(&theme, &hovered);
     assert_eq!(body.focus, None);
+
+    // The menu's check glyph outside its checked states (S6.3): a glyph's
+    // leaf patched over the glyph a layer states absent.
+    let icon = "[widgets.button.icon]\nabsent = false\nicon = { replace = { size_px = 16, fill = \
+                \"#000000\", rendering_mode = \"from_icon\", weight = 400, symbolic_colors = {}, axes = \
+                {}, symbol_variants = [], scale = \"absent\", state_effect = \"absent\", animation = \
+                \"absent\" } }\nglyph = \"absent\"\ntransitions = []";
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
+                set = { glyph.size_px = 4 }";
+    let theme = validated(&[icon, rule]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(ICON, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    let (icon, _) = drawn(&theme, &hovered);
+    assert_eq!(icon.glyph, None);
 }
 
 /// `append_over_absent_paint_draws_nothing` (S6.1, S6.3, ADD-A126): a

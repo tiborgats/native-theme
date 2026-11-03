@@ -276,6 +276,14 @@ fn fields_over_absent_never_refused() {
                 set = { text.letter_spacing_px = 1 }";
     assert_eq!(over(through, rule, &Declarations::default()), NONE);
 
+    // A `Fields` patch over an absent glyph leaves it absent, its leaves
+    // too (the menu's check glyph outside its checked states, S6.3).
+    let glyph = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.menu_indicator\"\n\
+                 set = { glyph.size_px = 4 }";
+    let unglyphed = "[widgets.button.menu_indicator]\nglyph = \"absent\"";
+    assert_eq!(over(unglyphed, glyph, &Declarations::default()), NONE);
+    assert_eq!(bare(&format!("{unglyphed}\n{glyph}")), NONE);
+
     let reading = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
                    set = { focus.width_px = \"= add(part.touch_target, 1px)\" }";
     let absent = "[widgets.button.body]\nfocus = \"absent\"\ntouch_target_px = \"absent\"";
@@ -285,6 +293,36 @@ fn fields_over_absent_never_refused() {
         over(drawn, reading, &Declarations::default()),
         ["rules[0].set.focus.width_px: `part.touch_target` can be `absent` here"]
     );
+}
+
+/// An `Append` over a paint stated by a reference appends to what the
+/// reference resolves to, nothing where it resolves `Absent` (S2.2, S6.1):
+/// validation follows the reference beneath it, so a text fill reading
+/// such a paint is refused; and a paint stated below a reference above it
+/// and then appended to is the stated paint, not the referent's `Absent`.
+#[test]
+fn append_over_a_reference_follows_it() {
+    let read = "[widgets.button.label]\ntext.fill = \"= widget.body.fill\"\n\
+                [widgets.button.subtitle]\ntext = \"absent\"\n\
+                [widgets.button.body]\nfill = \"= widget.subtitle.text.fill\"\n";
+    let append = "[[rules]]\nwhen = {}\ntarget = \"button.body\"\n\
+                  set = { fill = { append = [\"#ff0000\"] } }";
+    assert_eq!(
+        bare(&format!("{read}{append}")),
+        ["widgets.button.label.text.fill: may not be absent"]
+    );
+
+    let decl = declare("text_styles = [\"body\"]");
+    let keyed = "[tokens.text.keyed.body]\nfont = { family = \"Probe Sans\", size_px = 12, weight = \
+                 400, style = \"normal\", width = \"absent\", axes = {}, features = {} }\n\
+                 scaling_role = \"none\"\nletter_spacing = \"absent\"\nword_spacing = \"absent\"\n\
+                 line_height = \"auto\"\ndecoration = \"absent\"\nmnemonic_decoration = \"absent\"\n\
+                 case = \"mixed\"\nelision = \"end\"\nwrap = \"word\"\nmax_lines = \"none\"\n\
+                 fill = \"absent\"\n[widgets.button.label]\ntext = \"= token.text.keyed.body\"\n";
+    let set = "[[rules]]\nwhen = {}\ntarget = \"button.label\"\nset = { text.fill = \"#000000\" }\n\
+               [[rules]]\nwhen = {}\ntarget = \"button.label\"\n\
+               set = { text.fill = { append = [\"#ff0000\"] } }";
+    assert_eq!(alone(&format!("{keyed}{set}"), &decl), NONE);
 }
 
 /// A paint map's entry an `Append` creates has its paint unset (S6.1, S12,
