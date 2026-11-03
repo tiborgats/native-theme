@@ -620,8 +620,9 @@ impl<'a> Stack<'a> {
         })
     }
 
-    /// What a part is drawn as under `world`: its last `Absent`, `DrawnAs` or
-    /// style patch's say, and where that is stated.
+    /// What a part is drawn as under `world`: its last stated presence
+    /// (`Absent`, `Present`, `DrawnAs`), drawn where none is, and where
+    /// that is stated.
     fn shown(&self, world: &World, part: TypedPart) -> (&Shown, Option<(usize, &str)>) {
         let mut out: (&Shown, Option<(usize, &str)>) = (&Shown::Drawn, None);
         for (_, source) in self.of(Target::Part(part)) {

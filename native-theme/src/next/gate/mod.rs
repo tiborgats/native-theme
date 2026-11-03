@@ -384,7 +384,9 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
         "RenderingMode" => return Some(("", Item::String("original".to_owned()))),
         // S12 refuses a glyph's absent size beside any other source, and
         // accepts a system control beside a stated size and an absent one,
-        // and beside any fill and stroke.
+        // and beside any fill and stroke. S15's placement rule (on a part
+        // drawn in every state, never on one hidden by state) is no S12 check, so the value is
+        // accepted on any glyph; the real source is checked when measured.
         "GlyphSource" => {
             let mut control = Table::new();
             control.insert(

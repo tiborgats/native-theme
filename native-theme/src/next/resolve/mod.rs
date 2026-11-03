@@ -1434,7 +1434,10 @@ impl ResolvedTheme {
     /// last kept step stating a presence is a synthetic layer's and makes
     /// the part other than the last such step of another layer does, no
     /// step's presence counting as drawn (S6.3). A synthetic step stating
-    /// no presence decides nothing of it.
+    /// no presence decides nothing of it. S17's own synthetic layers state
+    /// no presence (a listed presence is drawn, the route stating nothing
+    /// for it), so on the gate's route this is never true; it holds for the
+    /// layers a caller gives `Theme::from_preset_synthetic`.
     pub(crate) fn shown_by_synthetic(
         &self,
         part: TypedPart,

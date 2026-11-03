@@ -1026,7 +1026,8 @@ impl<'t> Cx<'t> {
     }
 
     /// The steps of `target`'s root, in the stack's order: a part's those
-    /// that apply to the element (S8 step 3), its style patches only.
+    /// that apply to the element (S8 step 3), every applying step's fields,
+    /// those kept beneath an `Absent` or `DrawnAs` included (S6.3).
     pub(crate) fn roots(&self, target: Target) -> Vec<Fold<'t>> {
         let mut out = self.own_roots(target);
         if let Some(Extra::Step(fold)) = self.extra

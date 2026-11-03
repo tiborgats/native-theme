@@ -51,8 +51,8 @@ A `[[fact]]` (S17 *Fields*):
   segment, a quoted segment that is no such entry and an entry TOML cannot write bare are findings. Two keys equal as
   TOML keys are one key (canonical_key). `input.<part>…` and `input.values…` are the `input`
   widget's. The registry replaces these sources once it is generated (S18). A whole part's key, `<widget>.<part>` or
-  `component.<key>.<part>` (S17, ADD-A121), takes `"absent"` (`PartPatch::Absent`) or `{ drawn_as = { widget, part,
-  variants } }` (`PartPatch::DrawnAs`, S11's `drawn_as` table: `widget` a catalogue entry, `part` one of its parts,
+  `component.<key>.<part>` (S17, ADD-A121), takes `"absent"` (`PartPresence::Absent`) or `{ drawn_as = { widget, part,
+  variants } }` (`PartPresence::DrawnAs`, S11's `drawn_as` table: `widget` a catalogue entry, `part` one of its parts,
   `variants` its variants), nothing else. A key never goes inside one of the core's enums (enum_inside): an enum
   block is stated whole, by a reference or S11's spelling of its variant (S17, S6.1; ADD-A122).
 - S4.1's motion keys (ADD-A122; motion_key_problems), where the checker can tell: a duration's or timing's key keeps
