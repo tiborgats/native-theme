@@ -9071,11 +9071,12 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
   roles as that path writes them (S9.1); the preset states no `kde_accent`;
 - the reader states kdeglobals' results, the `[Colors:*]` values and the `[Colors:*][Inactive]` values (K3.51,
   K3.54), as Plasma wrote them for the user's scheme and accent;
-- the accent-derivation layer (S9.2; ADD-A132), directly above the preset while a layer above it states
-  `input.accent` (the application's `Accent`, a reader's or a stand-in's), states each as `= kde_accent(<set>, <key>,
-  <group>)` at both schemes, over the accent and the scheme inputs in force, the reader's, a KDE port's, else
-  Breeze's; each layer above replaces the roles it states, and where the application's `Accent` gives the accent in
-  force the reader's or stand-in's results and a port's roles are left out (S8). Group `active` gives
+- the accent-derivation layer (S9.2; ADD-A132), directly above the preset, states each as `= kde_accent(<set>,
+  <key>, <group>)` at each slot where a layer above the preset gives the accent in force (the application's
+  `Accent`, a palette's, a reader's or a stand-in's), and nothing elsewhere, over the accent and the scheme inputs in
+  force, the reader's, a KDE port's, else Breeze's; each layer above replaces the roles it states, and where the
+  `Accent` or a palette gives the accent in force the reader's or stand-in's results and a port's roles are left out
+  (S8). Group `active` gives
   the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
   writes there (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:247-284`):
   - while the scheme tints (`token.kde.tint_factor` is `Some`): every set's own file value
@@ -9654,7 +9655,7 @@ kdeglobals states them, each function clamping them as KColorScheme does), the i
 scheme does not tint) and `titlebar_is_accent_colored` (R25.1), every one stated (S4.8). The icon effects (K3.60, Q3.18) are `IconStyle.state_effect` keys (S2.9, declared
 in `icon_state_effects`), their gray, transparency and gamma parameters `token.params.icon_effect.<key>`. A palette from
 a KDE port states `token.kde` itself (R19, S14). Who states KDE's accent-dependent roles and inactive input roles,
-and how (the preset Breeze's values on Plasma's default path, the reader kdeglobals' results, the accent layer
+and how (the preset Breeze's values on Plasma's default path, the reader kdeglobals' results, the accent-derivation layer
 `kde_accent`, palettes and ports), and `kde-breeze`'s `accent_inputs`, is *KDE's inputs* under *role record*, the
 catalogue's one summary of the core's S2.2, S9.1, S9.2, S12 and S14.
 
