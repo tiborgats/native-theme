@@ -344,8 +344,9 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// holding one element (a paint's layers the colour `#010203`, a
 /// transition's properties `fill`, S12) and an `Option` of a list `none`
 /// (a transition's `from`: any state); a list of two halves, 1 in the
-/// type's unit, `#010203`, the text `Synthetic`, an enum's first variant,
-/// a glyph's named system image `synthetic`; a struct block's every field
+/// type's unit, `#010203`, the text `Synthetic`, an enum's first variant
+/// but an icon's rendering mode `original`, a glyph's named system image
+/// `synthetic`; a struct block's every field
 /// so, `absent` where a field may be absent; a corner's radius 1 px; any
 /// other enum block's first unit variant. `None` for a type with none yet, and for a key: a key names
 /// what the preset declares or what its slot lists (S10), which no
@@ -375,6 +376,9 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
     match ty {
         "(f32,f32)" => return Some(("", Item::Array(vec![Item::Float(0.5), Item::Float(0.5)]))),
         "Scalar" => return Some(("", Item::Integer(1))),
+        // S12 refuses an icon style's absent `fill` beside any other mode,
+        // and accepts `original` beside a stated fill and an absent one.
+        "RenderingMode" => return Some(("", Item::String("original".to_owned()))),
         "GlyphSource" => {
             let mut name = Table::new();
             name.insert("name".to_owned(), Item::String("synthetic".to_owned()));
@@ -445,16 +449,21 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
 }
 
 /// The fields whose `Absent` S12 refuses under a condition of their place
-/// (S12), so a synthetic value states them (S17, ADD-A131: never `Absent`
-/// where a conditional mark refuses it there): a glyph's `size`, absent
-/// only on a `SystemControl` source, and its `fill`, absent beside an
-/// absent `stroke` only there (S6.3); an icon style's `fill`, absent only
+/// (S12), or beside which an absent field the conditional marks read is
+/// refused, so a synthetic value states them (S17, ADD-A131: never
+/// `Absent` where a conditional mark refuses it there): a glyph's `size`,
+/// absent only on a `SystemControl` source, its `fill`, absent beside an
+/// absent `stroke` only there (S6.3), and its `stroke`, beside which, stated,
+/// an absent `fill` is accepted on every source; an edge's `dash`, absent
+/// only where its `width` or `paint` is; an icon style's `fill`, absent only
 /// beside an `original` rendering mode (S2.9, S12); and a text style's
 /// drawn-text leaves, absent in a keyed style and a slot only, which no
 /// part referencing them takes absent (S2.8).
-const STATED_UNDER_CONDITION: [(&str, &str); 7] = [
+const STATED_UNDER_CONDITION: [(&str, &str); 9] = [
     ("Glyph", "size"),
     ("Glyph", "fill"),
+    ("Glyph", "stroke"),
+    ("Edge", "dash"),
     ("IconStyle", "fill"),
     ("TextStyle", "fill"),
     ("TextStyle", "elision"),
@@ -2647,6 +2656,75 @@ mod tests {
         }
     }
 
+    /// The fixture preset `base` with the parts the conditional marks read
+    /// drawn (S12): the button body's stroke drawn on every edge, and the
+    /// icon part drawn with an icon whose fill is absent beside an
+    /// `original` rendering mode and a glyph from a named image whose fill
+    /// is absent beside a stated stroke; every value synthetic, the
+    /// synthetic values' own.
+    fn drawn_variant(base: &str) -> String {
+        let block = |path: &str| {
+            let (info, _) = super::super::toml::read::listed_field(path).unwrap();
+            let Some((_, Item::Table(block))) = synthetic_of(written(info), info) else {
+                panic!("{path}: a block's synthetic value is a table");
+            };
+            block
+        };
+        let absent = Item::String("absent".to_owned());
+        let mut icon = block("widgets.button.icon.icon");
+        icon.insert("fill".to_owned(), absent.clone());
+        let original = Item::String("original".to_owned());
+        icon.insert("rendering_mode".to_owned(), original);
+        let mut glyph = block("widgets.button.icon.glyph");
+        glyph.insert("fill".to_owned(), absent);
+        let glyph_stroke = Item::Table(block("widgets.button.icon.glyph.stroke"));
+        glyph.insert("stroke".to_owned(), glyph_stroke);
+        let mut part = Table::new();
+        part.insert("icon".to_owned(), Item::Table(icon));
+        part.insert("glyph".to_owned(), Item::Table(glyph));
+        part.insert("transitions".to_owned(), Item::Array(Vec::new()));
+        let mut stroke = block("widgets.button.body.stroke");
+        for edge in ["top", "right", "bottom", "left"] {
+            if let Some(Item::Table(edge)) = stroke.get_mut(edge) {
+                edge.insert("width_px".to_owned(), Item::Integer(1));
+                edge.insert("paint".to_owned(), Item::String("#010203".to_owned()));
+                edge.insert("dash".to_owned(), Item::String("solid".to_owned()));
+            }
+        }
+        let text = |keys: &[&str], item: Item| {
+            let keys: Vec<String> = keys.iter().map(|key| (*key).to_owned()).collect();
+            ::toml::to_string(&nested(&keys, item)).unwrap()
+        };
+        let edited = base
+            .replacen(
+                "[widgets.button.icon]\nabsent = true\n",
+                &text(&["widgets", "button", "icon"], Item::Table(part)),
+                1,
+            )
+            .replacen("stroke = \"absent\"\ncorners_px", "corners_px", 1);
+        let stroke = text(&["widgets", "button", "body", "stroke"], Item::Table(stroke));
+        let drawn = format!("{edited}\n{stroke}");
+        assert_eq!(drawn.matches("absent = true").count(), 1, "{drawn}");
+        assert!(!drawn.contains("stroke = \"absent\"\ncorners_px"));
+        drawn
+    }
+
+    /// The drawn variant loads as a preset, so the build test's refusals
+    /// over it are the synthetic values'.
+    #[test]
+    fn drawn_variant_loads() {
+        let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+        let file = read_preset(&drawn_variant(base)).unwrap();
+        crate::next::resolve::Stack::new(
+            None,
+            file.declarations,
+            file.layer,
+            crate::next::selector::Scheme::Light,
+            file.pending,
+        )
+        .unwrap();
+    }
+
     /// Whether a problem is the fixture preset's surroundings of a listed
     /// path, not the synthetic value at its slot: a map key the fixture
     /// does not declare or hold, so the layer creates the entry with its
@@ -2674,6 +2752,7 @@ mod tests {
     #[test]
     fn synthetic_layers_state_every_listable_type() {
         let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+        let drawn = drawn_variant(base);
         let mut paths = Vec::new();
         listable("tokens", registry::tokens(), &mut paths);
         listable("colors.light", registry::colors(), &mut paths);
@@ -2710,23 +2789,26 @@ mod tests {
                     continue;
                 }
             };
-            let file = read_preset(&format!("[pending]\n\"{spelled}\" = \"U1\"\n{base}")).unwrap();
-            let Err(LayerError::Invalid(problems)) = crate::next::resolve::Stack::synthetic(
-                None,
-                file.declarations,
-                file.layer,
-                crate::next::selector::Scheme::Light,
-                file.pending,
-                layers,
-            ) else {
-                continue;
-            };
-            failures.extend(
-                problems
-                    .iter()
-                    .filter(|problem| !surroundings(&problem.kind))
-                    .map(|problem| format!("{spelled}: {problem}")),
-            );
+            for (fixture, text) in [("base", base), ("drawn", drawn.as_str())] {
+                let file =
+                    read_preset(&format!("[pending]\n\"{spelled}\" = \"U1\"\n{text}")).unwrap();
+                let Err(LayerError::Invalid(problems)) = crate::next::resolve::Stack::synthetic(
+                    None,
+                    file.declarations,
+                    file.layer,
+                    crate::next::selector::Scheme::Light,
+                    file.pending,
+                    layers.clone(),
+                ) else {
+                    continue;
+                };
+                failures.extend(
+                    problems
+                        .iter()
+                        .filter(|problem| !surroundings(&problem.kind))
+                        .map(|problem| format!("{spelled} over {fixture}: {problem}")),
+                );
+            }
         }
         assert_eq!(failures, Vec::<String>::new());
         let refused =
@@ -2750,9 +2832,10 @@ mod tests {
 
     /// A field S12 refuses `Absent` at under a condition of its place takes
     /// a stated synthetic value, whole or in a block (S17, ADD-A131): a
-    /// glyph's size and fill, an icon style's fill, and a slot's or keyed
-    /// style's drawn-text leaves, which their places alone mark; a field
-    /// marked wherever it is stays absent.
+    /// glyph's size, fill and stroke, an edge's dash, an icon style's fill,
+    /// and a slot's or keyed style's drawn-text leaves, which their places
+    /// alone mark; an icon's rendering mode is `original`, accepted beside
+    /// any fill; a field marked wherever it is stays absent.
     #[test]
     fn a_conditionally_marked_field_is_stated() {
         let value = |path: &str| synthetic_value(path).unwrap().1;
@@ -2776,6 +2859,18 @@ mod tests {
         assert_eq!(
             value("widgets.button.icon.glyph.draw_start"),
             Item::String("absent".to_owned())
+        );
+        assert!(matches!(
+            value("widgets.button.icon.glyph.stroke"),
+            Item::Table(_)
+        ));
+        assert_eq!(
+            value("widgets.button.body.stroke.top.dash"),
+            Item::String("solid".to_owned())
+        );
+        assert_eq!(
+            value("widgets.button.icon.icon.rendering_mode"),
+            Item::String("original".to_owned())
         );
         for whole in ["widgets.button.icon.icon", "widgets.button.icon.glyph"] {
             let (info, _) = super::super::toml::read::listed_field(whole).unwrap();
