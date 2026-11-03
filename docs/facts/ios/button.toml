@@ -31861,30 +31861,6 @@ tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["@share", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["add", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["back", "with_icon"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["close", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["flat", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "close", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -31897,24 +31873,6 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["@share", "with_icon"], not_variants = ["@paste_control", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["add", "with_icon"], not_variants = ["@paste_control", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["flat", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "close", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -31922,36 +31880,6 @@ rows = ["B-12", "B-9", "TB-4"]
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "close", "flat", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["back", "with_icon"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["add", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["back", "with_icon"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -31981,48 +31909,6 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["back", "with_icon"], not_variants = ["@share", "add", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["@share", "with_icon"], not_variants = ["close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["add", "with_icon"], not_variants = ["close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["@share", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["add", "with_icon"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["back", "with_icon"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["close", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["flat", "with_icon"], not_variants = ["@paste_control", "@share", "add", "back", "close", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -32047,60 +31933,6 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back", "with_icon"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "@share", "add", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share", "with_icon"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add", "with_icon"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close", "with_icon"], not_variants = ["@contact_add", "@info", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"], not_variants = ["@info", "@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@info", "with_icon"], not_variants = ["@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["flat", "with_icon"], not_variants = ["@contact_add", "@info", "@paste_control", "@share", "add", "back", "close", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -32108,84 +31940,6 @@ rows = ["B-12", "B-9", "TB-4"]
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["with_icon"], not_variants = ["@contact_add", "@info", "@paste_control", "@share", "add", "back", "close", "flat", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back", "with_icon"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "@share", "add", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "with_icon"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add", "with_icon"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add", "toggle", "with_icon"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"], not_variants = ["@contact_add", "@info", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"], not_variants = ["@info", "@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"], not_variants = ["@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["@share", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["add", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["back", "icon_only"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["close", "icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -32203,24 +31957,6 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["@share", "icon_only"], not_variants = ["@paste_control", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["add", "icon_only"], not_variants = ["@paste_control", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["flat", "icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "close", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -32228,36 +31964,6 @@ rows = ["B-12", "B-9", "TB-4"]
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "close", "flat", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["back", "icon_only"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["add", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["back", "icon_only"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -32281,49 +31987,7 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["back", "icon_only"], not_variants = ["@share", "add", "close", "flat"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["flat", "icon_only"], not_variants = ["@share", "add", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["@share", "icon_only"], not_variants = ["close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["add", "icon_only"], not_variants = ["close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["@share", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["add", "icon_only"], not_variants = ["@paste_control", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["back", "icon_only"], not_variants = ["@paste_control", "@share", "add", "route"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["close", "icon_only"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_sizes = ["regular"] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -32347,18 +32011,6 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back", "icon_only"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "flat", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "flat"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["flat", "icon_only"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
@@ -32371,61 +32023,7 @@ rows = ["B-12", "B-9", "TB-4"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share", "icon_only"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add", "icon_only"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close", "icon_only"], not_variants = ["@contact_add", "@info", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"], not_variants = ["@info", "@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@info", "icon_only"], not_variants = ["@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["icon_only"], not_variants = ["@contact_add", "@info", "@paste_control", "@share", "add", "back", "close", "flat", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back", "icon_only"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "flat", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "@share", "add", "close", "flat"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -32438,48 +32036,6 @@ rows = ["B-12", "B-9", "TB-4"]
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["flat", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "@share", "add", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "icon_only"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add", "icon_only"], not_variants = ["@contact_add", "@info", "close", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add", "icon_only", "toggle"], not_variants = ["@contact_add", "@info", "close"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"], not_variants = ["@contact_add", "@info", "toggle"], not_sizes = ["regular"] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"], not_variants = ["@info", "@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9", "TB-4"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"], not_variants = ["@share", "add", "back", "close", "flat", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U120"
 rows = ["B-12", "B-9", "TB-4"]
 
@@ -73679,43 +73235,7 @@ rows = ["B-12", "B-9"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close", "with_icon"], not_variants = ["@contact_add", "@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@contact_add", "with_icon"], not_variants = ["@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@info", "with_icon"], not_variants = ["clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["with_icon"], not_variants = ["@contact_add", "@info", "@paste_control", "clear", "close", "glass", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close", "with_icon"], not_variants = ["@contact_add", "@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "with_icon"], not_variants = ["@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@info", "with_icon"], not_variants = ["clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U120"
 rows = ["B-12", "B-9"]
 
@@ -73739,43 +73259,7 @@ rows = ["B-12", "B-9"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close", "icon_only"], not_variants = ["@contact_add", "@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@contact_add", "icon_only"], not_variants = ["@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@info", "icon_only"], not_variants = ["clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["icon_only"], not_variants = ["@contact_add", "@info", "@paste_control", "clear", "close", "glass", "route"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close", "icon_only"], not_variants = ["@contact_add", "@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@contact_add", "icon_only"], not_variants = ["@info", "clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U120"
-rows = ["B-12", "B-9"]
-
-[[fact]]
-key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-26"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@info", "icon_only"], not_variants = ["clear", "glass", "toggle"], not_sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U120"
 rows = ["B-12", "B-9"]
 
