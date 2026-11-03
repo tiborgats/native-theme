@@ -1345,7 +1345,8 @@ hover layer, MAT-I11; R1.6's reading). The members:
     player plays to over the last segment's length (`:386-404`, `:418-425`), is no `Key`, so the model states none. A cut completes nothing: the queue's later states are not played, and each later
     change, finding no segment playing, plays toward the new state and drops the queue's front unplayed (`:243-246`,
     `:303-306`). It runs `TransitionKind::Keyed` icon transitions only, which no value engine runs (S12); GtkSvg's
-    keyed states (GN-P3-19†) are pending facts until their lane adds their member.
+    keyed states (GN-P3-19†) draw on no button at gtk@4.24.1 (`sliders.gpa` has one state, ledger queue #152), so no
+    button fact needs their member.
 - **Breeze's engines**, `Breeze` and `BreezeTabBar` (`breeze@6.8.2 kstyle/animations/`), each follow a test, quoted from
   the engine's `updateState` call: the button's pen `(hovered || visualFocus || down) && enabled`, `any = [hover,
   focus_visible, pressed]`, `none = [disabled]` (`kstyle/breezestyle.cpp:4546-4549`); the line edit's focus `hasFocus`
@@ -5026,7 +5027,7 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   `#argb` and `#aarrggbb`, Qt's and C++'s byte forms, an INI key's `r,g,b[,a]`), XAML's `TimeSpan` `[d.]h:m:s[.f]`, and
   each unit's dimension (`px`, `dp`, `sp` and logical points as px, `sp` being Android's text size before its
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
-  platform states it in px, or measured); a member is added to a list, or to the conversions below, as a class 1
+  platform states it in px, or measured, or, for a factor of the default font size, read through `rem_to_factor`, below); a member is added to a list, or to the conversions below, as a class 1
   change; a span the number, colour or `TimeSpan` notations read (a `TimeSpan`, a byte list) is not read again by the number
   form, while the text notations only add candidate strings and take no span. A literal
   without a unit takes the value literal's dimension in its
@@ -5047,7 +5048,12 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   this list is; its source is WebKit's mapping of the system font's weight trait,
   `WebKit@7624.5.1.11.3 Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739`, which WebKit takes only where
   Core Text gives the font no CSS weight of its own (`kCTFontCSSWeightAttribute`, read first, `:725-728`): a fact
-  whose evidence records that attribute states it unconverted. AppKit's width trait has no conversion: no pinned
+  whose evidence records that attribute states it unconverted. `rem_to_factor` (GTK's `rem`, ledger queue #152) reads each `<n>rem`
+  literal of the citation's quote as the unitless factor n, which GTK multiplies by the default font size
+  (`gtk@4.24.1 gtk/gtkcssnumbervalue.c:405-408`, `gtk_css_font_size_get_default_px`, `gtk/gtkcssenumvalue.c:213-231`,
+  GtkSettings' `gtk-font-name`, not the root widget's computed size): the fact keeps GTK's derivation,
+  `= mul(token.text.keyed.body.font.size, 0.75)` for libadwaita's `0.75rem`; without the conversion a `rem` value keeps no literal,
+  so a `0.75rem` quote never holds a plain `0.75`. AppKit's width trait has no conversion: no pinned
   source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured on the font's `wdth` axis
   (S2.8's *Width*, ADD-A130). A point size stays a
   point size (S9.4 converts it by the preset's font DPI). A JSON-pointer citation's quote occurs in the string value

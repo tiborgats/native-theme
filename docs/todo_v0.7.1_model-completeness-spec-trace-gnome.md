@@ -1100,7 +1100,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-16† | - (the display scale itself) | out (R1.1) |
 | GN-P3-17† | - | preset (R1.3) |
 | GN-P3-18† | - | newest (R1.5) |
-| GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition: sliders.gpa on the font dialog's toggle; ADD-A27, R25.12) | field |
+| GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition; at gtk@4.24.1 none: `sliders.gpa`, the font dialog's toggle, has one state, only `process-working.gpa`, the spinner's, animates, so the fact is `[]`; ADD-A27, R25.12, ledger queue #152) | field |
 | GN-P3-19† | `spinner.icon.glyph, spinner.values.loop (the looping process-working.gpa, R25.12)` | field |
 | GN-P3-20† | `font_chooser.filter_title.text, font_chooser.family_row_label.text, font_chooser.preview.text, font_chooser.values.row_margins, font_chooser.values.grid_gap` | field |
 | GN-P3-20† | `input @ context any layout variant @linked context font_chooser.body (the search entry)` | rule |
