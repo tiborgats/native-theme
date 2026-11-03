@@ -39,7 +39,8 @@ fn every_bundled_preset_validates() {
 /// `[pending]` table is empty, else the synthetic one
 /// (`from_preset_synthetic`'s) with one synthetic layer per listed path,
 /// a refusal naming the listed paths whose synthetic values the refused
-/// stack holds (S17, ADD-A131).
+/// stack holds (S17, ADD-A131): a listed default size and a listed
+/// presence hold none, the route waiving the one and drawing the other.
 fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
     let file = read_preset(text).map_err(|e| e.to_string())?;
     if file.pending.is_empty() {
@@ -47,7 +48,15 @@ fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
     } else {
         let layers = synthetic_layers(&file.pending)?;
         synthetic_stack(id, text, Scheme::Light, layers).map_err(|e| {
-            let listed: Vec<&str> = file.pending.iter().map(|(path, _)| path.as_str()).collect();
+            let listed: Vec<&str> = file
+                .pending
+                .iter()
+                .map(|(path, _)| path.as_str())
+                .filter(|path| {
+                    crate::next::toml::read::listed_default(path).is_none()
+                        && crate::next::toml::read::listed_part(path).is_none()
+                })
+                .collect();
             format!(
                 "{e}; the stack holds the synthetic values of {}",
                 listed.join(", ")
@@ -57,14 +66,24 @@ fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Where no synthetic value S12 accepts exists for a listed path, the
-/// build test fails with S12's problem and names the path (S17,
-/// ADD-A131): the listed touch delay's synthetic value, `absent`, read by
-/// a preset rule where a duration may not be absent.
+/// A synthetic value S12 refuses: the build test fails with S12's problem
+/// and names the listed paths whose synthetic values the stack holds (S17,
+/// ADD-A131): the listed touch delay's synthetic value, `absent`, read by a
+/// preset rule where a duration may not be absent. A stated delay would be
+/// accepted there, so the refusal is the gate's choice of values to fix,
+/// not S17's case of no single accepted value; a listed presence beside it
+/// holds no synthetic value and is not named.
 #[test]
 fn build_test_names_a_refused_synthetic_value() {
     let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.touch.delay\" }\n";
-    let text = format!("{}{rule}", listed_preset());
+    let text = format!(
+        "{}{rule}",
+        listed_preset().replacen(
+            "[pending]\n",
+            "[pending]\n\"widgets.button.subtitle\" = \"U3\"\n",
+            1
+        )
+    );
     let refused = validates(None, &text).unwrap_err();
     assert!(refused.contains("may not be absent"), "{refused}");
     assert!(
@@ -746,9 +765,9 @@ fn a_listed_presence_is_stated_by_an_application_layer() {
 }
 
 /// A synthetic theme keeps the route through its mutations while its
-/// preset is current (S17, ADD-A131): a stand-in, a scheme, a contrast and
-/// a layer change validate with the listed default size waived and the
-/// listed presence drawn; a `set_preset` to the same preset ends the route,
+/// preset is current (S17, ADD-A131): a stand-in, a scheme, a contrast, a
+/// flavour, an accent and a layer added, replaced and removed validate
+/// with the listed default size waived and the listed presence drawn; a `set_preset` to the same preset ends the route,
 /// refused as its listed paths are left unstated, the theme unchanged; one
 /// to a complete preset succeeds and removes the synthetic layers.
 #[test]
@@ -756,8 +775,11 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
     let text = format!(
         "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n\
          \"declare.widget.button.default_size\" = \"U2\"\n\"widgets.button.subtitle\" = \"U3\"\n{}\n\
-         [declare.widget.button]\nsizes = [\"small\", \"regular\"]\n",
+         [declare.widget.button]\nsizes = [\"small\", \"regular\"]\n\
+         [[rules]]\nwhen = {{ conditions = [\"flavor:b\"] }}\ntarget = \"button.body\"\n\
+         set = {{ opacity = 1 }}\n",
         BASE.replacen("\ndelay_ms = \"absent\"\n", "\n", 1)
+            .replacen("[declare]\n", "[declare]\nflavors = [\"a\", \"b\"]\n", 1)
     );
     let file = read_preset(&text).unwrap();
     let layers = synthetic_layers(&file.pending).unwrap();
@@ -773,7 +795,16 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
     stack
         .set_contrast(Some(crate::next::inputs::Contrast::High))
         .unwrap();
+    stack.set_flavor(crate::key!("b")).unwrap();
+    let accent = crate::next::inputs::InputValue::new(crate::next::value::SchemeMap::one(
+        Scheme::Light,
+        crate::next::value::Value::Stated(crate::next::color::Color::parse("#445566").unwrap()),
+    ));
+    stack
+        .set_accent(Some(crate::next::inputs::Accent::new(accent)))
+        .unwrap();
     let id = stack.add_layer(Layer::default()).unwrap();
+    stack.replace_layer(id, Layer::default()).unwrap();
     stack.remove_layer(id).unwrap();
     stack.remove_reader_stand_in().unwrap();
     assert_eq!(stack.synthetic_places(), [1]);
