@@ -18,7 +18,7 @@ use crate::next::roles::SurfaceSet;
 use crate::next::selector::{Scheme, VariantRef};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides};
 use crate::next::value::{SurfaceMap, Value};
-use crate::next::widgets::WidgetKind;
+use crate::next::widgets::{TypedPart, WidgetKind};
 
 /// What a reading collects: every problem, not the first only, and what the
 /// place being read decides.
@@ -78,16 +78,33 @@ pub(crate) fn key_segments(key: &str) -> Option<Vec<String>> {
     (!quoted && !out.iter().any(String::is_empty)).then_some(out)
 }
 
-/// The input a listed path names (S11's `[pending]` key, S17, ADD-A128):
-/// `inputs.<name>`, an input as S11 writes its table, the model's path
-/// `input.<name>` (S9.1); `None` for any other path.
-pub(crate) fn listed_input(path: &str) -> Option<InputName> {
+/// The input and the scheme a listed path names (S11's `[pending]` key,
+/// S17, ADD-A132): `inputs.<name>.<scheme>`, an input listed by the scheme
+/// at which its per-scheme value is pending, the last segment the scheme;
+/// `None` for any other path, an input's name alone among them.
+pub(crate) fn listed_input(path: &str) -> Option<(InputName, Scheme)> {
     let segments = key_segments(path)?;
-    let (head, name) = segments.split_first()?;
+    let (head, rest) = segments.split_first()?;
+    let (scheme, name) = rest.split_last()?;
     if head != "inputs" || name.is_empty() {
         return None;
     }
-    InputName::new(&name.join(".")).ok()
+    let scheme = <Scheme as Named>::from_name(scheme)?;
+    Some((InputName::new(&name.join(".")).ok()?, scheme))
+}
+
+/// The typed part whose presence a listed path names (S11's `[pending]`
+/// key, S17, ADD-A131): `widgets.<widget>.<part>`, a pending presence
+/// listed by its part's path; `None` for any other path.
+pub(crate) fn listed_part(path: &str) -> Option<TypedPart> {
+    let segments = key_segments(path)?;
+    let [head, widget, part] = segments.as_slice() else {
+        return None;
+    };
+    if head != "widgets" {
+        return None;
+    }
+    TypedPart::from_names(registry::widget(widget)?.kind, part)
 }
 
 /// A pending default size's declaration a listed path names (S11's

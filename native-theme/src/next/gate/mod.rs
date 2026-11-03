@@ -294,12 +294,14 @@ impl Preset {
 /// `button.icon.icon.size`, `colors.light.global.status` and
 /// `colors.dark.global.status` are `role.global.status`,
 /// `colors.light.surfaces.window.background` is `role.window.background`,
-/// `colors.light.keyed.badge` is `role.@badge`, `inputs.accent` is
-/// `input.accent`); `None` for a path of no field the gate reads.
+/// `colors.light.keyed.badge` is `role.@badge`, `inputs.accent.dark` is
+/// `input.accent dark`, the key and the scheme it is listed at,
+/// `widgets.button.label` is `button.label`); `None` for a path of no field
+/// the gate reads.
 #[must_use]
 pub fn listed_key(path: &str) -> Option<String> {
-    if let Some(input) = super::toml::read::listed_input(path) {
-        return Some(format!("input.{input}"));
+    if let Some((input, scheme)) = super::toml::read::listed_input(path) {
+        return Some(format!("input.{input} {}", scheme.name()));
     }
     let path = super::toml::read::listed_path(path);
     if let Some(rest) = path.strip_prefix("tokens.") {
@@ -471,17 +473,14 @@ fn unit_suffix(info: &registry::FieldInfo) -> &'static str {
 /// spelled with the unit suffix of the value: `absent` where the field may
 /// be absent, an empty list at a focus indicator's transition's
 /// `properties`, else [`synthetic_of`] its type, or its map's value type
-/// where the path names an entry; an input's, `#010203` under each scheme
-/// (S9.1's `[inputs.<name>]`), which replaces the preset's whole (S9).
+/// where the path names an entry; an input's, `#010203` at its listed
+/// scheme alone (`inputs.<name>.<scheme>`, ADD-A132), which the synthetic
+/// route folds into the preset's own input base.
 fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
     if super::toml::read::listed_input(path).is_some() {
         let keys = super::toml::read::key_segments(path)
             .ok_or_else(|| "a key that does not read".to_owned())?;
-        let mut schemes = Table::new();
-        for scheme in Scheme::ALL {
-            schemes.insert(scheme.name().to_owned(), Item::String("#010203".to_owned()));
-        }
-        return Ok((keys, Item::Table(schemes)));
+        return Ok((keys, Item::String("#010203".to_owned())));
     }
     let (info, levels) = super::toml::read::listed_field(path)
         .ok_or_else(|| "the model holds no field there".to_owned())?;
@@ -539,13 +538,16 @@ fn map_value(ty: &str) -> Option<&str> {
 /// in its bases with a synthetic value (S17's synthetic route, ADD-A128):
 /// the layers [`Preset`] and S19.1's build test load such a preset with.
 /// A listed path the model holds no field at, or of a type with no
-/// synthetic value yet, is refused, naming it. A listed default size has
-/// none: no layer states a declaration, and the synthetic route waives the
-/// checks that read it (S17, ADD-A131).
+/// synthetic value yet, is refused, naming it. A listed default size and a
+/// listed presence have none: no layer states a declaration, and the
+/// synthetic route waives the checks that read it, and it draws the part
+/// (S17, ADD-A131).
 pub fn synthetic_layers(pending: &[(String, Vec<String>)]) -> Result<Vec<Layer>, String> {
     pending
         .iter()
-        .filter(|(path, _)| !is_listed_default(path))
+        .filter(|(path, _)| {
+            !is_listed_default(path) && super::toml::read::listed_part(path).is_none()
+        })
         .map(|(path, ids)| {
             let ids = ids.join(", ");
             let (keys, value) =
@@ -1744,6 +1746,14 @@ impl Resolved {
             }
         }
         Ok(false)
+    }
+
+    /// The scheme an input's key is listed at (`inputs.<name>.<scheme>`,
+    /// S17, ADD-A132): the scheme in force, as S11 writes it; `None` for
+    /// any other key.
+    #[must_use]
+    pub fn listed_scheme(&self, key: &FactKey) -> Option<&'static str> {
+        matches!(key.place, Place::Input(_)).then(|| self.theme.scheme.name())
     }
 
     /// Whether a synthetic layer's step decides a token's or a role's

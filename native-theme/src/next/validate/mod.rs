@@ -193,7 +193,10 @@ pub(crate) fn listed_unstated(
 ) -> Vec<Problem> {
     pending
         .iter()
-        .filter(|(path, _)| crate::next::toml::read::listed_default(path).is_none())
+        .filter(|(path, _)| {
+            crate::next::toml::read::listed_default(path).is_none()
+                && crate::next::toml::read::listed_part(path).is_none()
+        })
         .map(|(path, _)| crate::next::toml::read::listed_path(path))
         .filter(|listed| !layers.iter().any(|layer| checks::states(layer, listed)))
         .map(|listed| Problem::new(&listed, ProblemKind::Missing))

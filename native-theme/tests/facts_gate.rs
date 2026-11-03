@@ -1147,27 +1147,31 @@ fn gate_fixture_pending_ids() {
     );
 }
 
-/// An input listed as pending is found (S17: a listed path is any path
-/// that "has only pending facts on that preset and no fact or base beneath
-/// them"; S11 writes an input's as `inputs.<name>`); listed while the
-/// preset states it, it fails.
+/// An input listed as pending is found per scheme (S17: "a scheme at which
+/// its per-scheme value has only pending facts and nothing beneath them is
+/// listed"; S11 writes it `inputs.<name>.<scheme>`, ADD-A132); listed
+/// while the preset states it, it fails at each scheme.
 #[test]
 fn gate_fixture_pending_input() {
     let report = fixture_report("pending_input");
     assert_eq!(report.failures, Vec::<String>::new());
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
-        ["probe input.accent"]
+        ["probe input.accent dark", "probe input.accent light"]
     );
-    assert_eq!(
-        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
-        Some(vec!["U9"])
+    assert!(
+        report.listed.values().all(|(ids, _)| ids_of(ids) == ["U9"]),
+        "{:?}",
+        report.listed
     );
     let stated = fixture_report_with("pending_input", "stated.toml");
     assert_eq!(
         failing(&stated, "[pending]"),
         [
-            &"probe: `inputs.accent` (U9) is in its [pending] table, and the preset states it"
+            &"probe: `inputs.accent.light` (U9) is in its [pending] table, and the preset states \
+              it"
+            .to_owned(),
+            &"probe: `inputs.accent.dark` (U9) is in its [pending] table, and the preset states it"
                 .to_owned()
         ],
         "{:?}",

@@ -1,6 +1,7 @@
 # A synthetic preset (S17, ADD-A128): preset.toml with the accent input stated, so its [pending] entry fails.
 [pending]
-"inputs.accent" = "U9"
+"inputs.accent.light" = "U9"
+"inputs.accent.dark" = "U9"
 
 [declare.widget.button]
 variants = ["flat"]

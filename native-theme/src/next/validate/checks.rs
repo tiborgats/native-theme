@@ -2534,9 +2534,11 @@ impl Stated {
 /// Whether `layer`'s bases state the listed path `listed` (as
 /// `listed_path` gives it), an element of it where it is a list, or a
 /// value holding it whole: a reference, `Absent`, a part stated `Absent`
-/// or drawn as another (S17, ADD-A128).
-/// Its inputs state no listed path, which names a field of the colour
-/// roles, the tokens or a typed widget (the reader refuses any other).
+/// or drawn as another (S17, ADD-A128); a listed input
+/// (`inputs.<name>.<scheme>`) where its inputs state the input's
+/// per-scheme value at that scheme (ADD-A132); a listed presence
+/// (`widgets.<widget>.<part>`) where its bases state the part `Absent` or
+/// drawn as another (ADD-A131).
 pub(super) fn states(layer: &Layer, listed: &str) -> bool {
     let toml = matches!(layer.spelled, Spelled::Toml);
     let mut stated = Stated::default();
@@ -2546,8 +2548,11 @@ pub(super) fn states(layer: &Layer, listed: &str) -> bool {
         tokens,
         widgets,
     } = &layer.bases;
-    if let Some(input) = crate::next::toml::read::listed_input(listed) {
-        return inputs.entries.iter().any(|(name, _)| *name == input);
+    if let Some((input, scheme)) = crate::next::toml::read::listed_input(listed) {
+        return inputs
+            .entries
+            .iter()
+            .any(|(name, value)| *name == input && value.per_scheme.get(scheme).is_some());
     }
     for (scheme, roles) in [("light", &colors.light), ("dark", &colors.dark)] {
         if let Some(roles) = roles {

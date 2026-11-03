@@ -1678,7 +1678,7 @@ fn check_globals(
                 &combination,
             )
         {
-            found_listed(report, preset, key, id);
+            found_listed(report, preset, key, resolved.listed_scheme(&key.key), id);
         }
         if let Verdict::Compare(value, tolerance) = verdict(
             &key.name,
@@ -1732,12 +1732,23 @@ fn synthetic_skip(report: &mut Report, place: &str, key: &str, pass: Pass) {
 
 /// A listed path found (S17, ADD-A128): the pending fact `id` of `key`
 /// applies where the preset leaves the key, or the set-whole block it is a
-/// leaf of, to its synthetic value.
-fn found_listed(report: &mut Report, preset: &str, key: &KeyFacts<'_>, id: &str) {
+/// leaf of, to its synthetic value; an input's at the scheme `scheme`
+/// (ADD-A132).
+fn found_listed(
+    report: &mut Report,
+    preset: &str,
+    key: &KeyFacts<'_>,
+    scheme: Option<&str>,
+    id: &str,
+) {
     let name = key
         .set_whole
         .as_ref()
         .map_or(key.name.as_str(), |block| block.block.as_str());
+    let name = match scheme {
+        Some(scheme) => format!("{name} {scheme}"),
+        None => name.to_owned(),
+    };
     let entry = report
         .listed
         .entry(format!("{preset} {name}"))
@@ -1829,7 +1840,7 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                 && (!session.drawn(&key.key)
                     || listed_or_failed(session.listed(&key.key), &key.name, report, &describe))
             {
-                found_listed(report, run.preset, key, id);
+                found_listed(report, run.preset, key, None, id);
             }
             if !session.drawn(&key.key) {
                 // A field of a part not drawn: no fact is asked for it and

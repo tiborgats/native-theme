@@ -131,16 +131,16 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
 }
 
 /// `[pending]` (S11, S17): each listed path, its TOML path quoted, with its
-/// register id, `U` and a number (ADD-A122's form), or a list of distinct
-/// ones; an entry of another form is refused, and so is a path naming no
-/// field of `colors`, `tokens` or a typed widget and no input
-/// (`inputs.<name>`, [`read::listed_input`]), or spelled with a unit
-/// suffix its field's type does not take ([`read::listed_field`], the
-/// model's path it maps to). A list is read on any path, broader than
-/// S11's letter ("a list of ids where a field S6.1 sets whole has leaves
-/// pending under different ids"): a plain field pending under different
-/// ids per combination (iOS's and macOS's drafts) has no other encoding; a
-/// spec row is pending to state it.
+/// register id, `U` and a number (ADD-A122's form), or a list of two or
+/// more distinct ones, where the pending facts that leave the path listed
+/// carry several (ADD-A131: one id is always the string); an entry of
+/// another form is refused, and so is a path naming no field of `colors`,
+/// `tokens` or a typed widget, no input at a scheme
+/// (`inputs.<name>.<scheme>`, [`read::listed_input`], ADD-A132), no typed
+/// part's presence (`widgets.<widget>.<part>`, [`read::listed_part`]) and
+/// no default size's declaration ([`read::listed_default`]), or spelled
+/// with a unit suffix its field's type does not take
+/// ([`read::listed_field`], the model's path it maps to).
 fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
     let Some(entries) = table(item, at, cx) else {
         return Vec::new();
@@ -154,7 +154,7 @@ fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
         let at = join(at, path);
         let ids: Option<Vec<String>> = match ids {
             Item::String(id) => Some(vec![id.clone()]),
-            Item::Array(ids) if !ids.is_empty() => ids
+            Item::Array(ids) if ids.len() > 1 => ids
                 .iter()
                 .map(|id| id.as_str().map(str::to_owned))
                 .collect(),
@@ -171,13 +171,14 @@ fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
             cx.problem(
                 &at,
                 ProblemKind::Mistyped {
-                    expected: "a register id, `U<n>`, or a list of distinct ones",
+                    expected: "a register id, `U<n>`, or a list of two or more distinct ones",
                 },
             );
             continue;
         };
         if read::listed_field(path).is_none()
             && read::listed_input(path).is_none()
+            && read::listed_part(path).is_none()
             && read::listed_default(path).is_none()
         {
             cx.problem(&at, ProblemKind::UnknownKey);

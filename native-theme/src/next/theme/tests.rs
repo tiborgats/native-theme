@@ -316,14 +316,16 @@ fn synthetic_layer(text: &str) -> Layer {
     Layer::from_toml(text).unwrap()
 }
 
-/// The reader reads `[pending]` with its register ids (S11), one or a list
-/// of distinct ones, and leaves a listed path out of a block built whole;
-/// it reads an input's (S17: a listed path is any path the preset leaves
-/// unstated); it refuses an entry whose id is not `U<n>` or whose list is
-/// empty or repeats one, or whose path names no field of `colors`, `tokens`
-/// or a typed widget and no input (a rule's key, a field the model lacks,
-/// an input's name that does not read) or is
-/// spelled with a unit suffix its field's type does not take (S17,
+/// The reader reads `[pending]` with its register ids (S11), one as the
+/// string or a list of two or more distinct ones, and leaves a listed path
+/// out of a block built whole; it reads an input's at a scheme
+/// (`inputs.<name>.<scheme>`, ADD-A132) and a typed part's presence
+/// (`widgets.<widget>.<part>`, ADD-A131); it refuses an entry whose id is
+/// not `U<n>` or whose list is empty, holds one id (ADD-A131) or repeats
+/// one, or whose path names no field of `colors`, `tokens` or a typed
+/// widget, no input at a scheme and no part (a rule's key, a field the
+/// model lacks, an input's name that does not read or names no scheme) or
+/// is spelled with a unit suffix its field's type does not take (S17,
 /// ADD-A128). A path the preset states too it reads: the facts gate fails
 /// that entry.
 #[test]
@@ -345,7 +347,7 @@ fn pending_table_read() {
     };
     let not_an_id = [
         "pending.\"tokens.behavior.drag_time_ms\": expected a register id, `U<n>`, \
-                      or a list of distinct ones",
+                      or a list of two or more distinct ones",
     ];
     for ids in [
         "\"151\"",
@@ -353,6 +355,7 @@ fn pending_table_read() {
         "\"U\"",
         "\"U12a\"",
         "[]",
+        "[\"U1\"]",
         "[\"U1\", \"U1\"]",
         "[\"U1\", 2]",
         "[\"U1\", \"V2\"]",
@@ -380,6 +383,11 @@ fn pending_table_read() {
         "tokens.behavior.touch.delay_px",
         "tokens.behavior.touch.delay",
         "inputs.Accent",
+        "inputs.Accent.light",
+        "inputs.accent",
+        "inputs.accent.contrast.high",
+        "widgets.button.bogus",
+        "widgets.bogus.label",
         "rules[0].target",
         "widgets.button.bogus.fill",
     ] {
@@ -406,8 +414,10 @@ fn pending_table_read() {
             "{path}"
         );
     }
-    let input = read_preset(&format!("[pending]\n\"inputs.accent\" = \"U1\"\n{base}")).unwrap();
-    assert_eq!(input.pending.len(), 1);
+    for path in ["inputs.accent.dark", "widgets.button.label"] {
+        let listed = read_preset(&format!("[pending]\n\"{path}\" = \"U1\"\n{base}")).unwrap();
+        assert_eq!(listed.pending.len(), 1, "{path}");
+    }
 }
 
 /// A pending default size is listed by its declaration's path (S11, S17,
@@ -510,17 +520,17 @@ fn from_preset_refuses_a_listed_path_as_missing() {
     );
 }
 
-/// Through the plain route a listed input the preset does not state is
-/// S12's missing field at `inputs.<name>`, as the synthetic route reports
-/// it with no layer stating it (S16, S17, ADD-A128); one the preset states
-/// is not refused for it.
+/// Through the plain route a listed input the preset does not state at its
+/// scheme is S12's missing field at `inputs.<name>.<scheme>`, as the
+/// synthetic route reports it with no layer stating it (S16, S17,
+/// ADD-A132); one the preset states there is not refused for it.
 #[test]
 fn from_preset_refuses_a_listed_input_as_missing() {
     let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
-    let stated = format!("[pending]\n\"inputs.accent\" = \"U1\"\n{base}");
+    let stated = format!("[pending]\n\"inputs.accent.dark\" = \"U1\"\n{base}");
     let listed = stated.replacen(
         "[inputs.accent]\nlight = \"#3366cc\"\ndark = \"#3366cc\"\n",
-        "",
+        "[inputs.accent]\nlight = \"#3366cc\"\n",
         1,
     );
     assert_ne!(listed, stated);
@@ -531,7 +541,7 @@ fn from_preset_refuses_a_listed_input_as_missing() {
     };
     assert_eq!(
         problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
-        ["inputs.accent: missing"]
+        ["inputs.accent.dark: missing"]
     );
     let Err(ThemeError::Preset(LayerError::Invalid(synthetic))) =
         synthetic_stack(None, &listed, Scheme::Light, Vec::new())

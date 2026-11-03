@@ -1,9 +1,10 @@
-# A synthetic preset (S17, ADD-A128): the accent input listed as pending, its table left out.
+# A synthetic preset (S17, ADD-A128): the accent input listed as pending at each scheme, its table left out.
 # base without: [inputs.accent]
 # base without: light = "#3366cc"
 # base without: dark = "#3366cc"
 [pending]
-"inputs.accent" = "U9"
+"inputs.accent.light" = "U9"
+"inputs.accent.dark" = "U9"
 
 [declare.widget.button]
 variants = ["flat"]
