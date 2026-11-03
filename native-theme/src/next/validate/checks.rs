@@ -710,14 +710,12 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A size a rule selects, declared where the widget's sizes or a
+    /// variant entry's take it: a context entry only leaves sizes out, so a
+    /// size it alone names is taken by no element (S10, ADD-A131).
     fn size(&mut self, widget: WidgetKind, size: ControlSize, at: &str) {
         let declared = self.widget_decls(widget).iter().any(|decl| {
             decl.sizes.as_ref().is_some_and(|s| s.contains(&size))
-                || decl
-                    .sizes_by_context
-                    .iter()
-                    .flatten()
-                    .any(|entry| entry.sizes.contains(&size))
                 || decl
                     .sizes_by_variant
                     .iter()
@@ -2278,21 +2276,11 @@ fn sizes(
     let contexts = view.sizes_by_context.as_deref().unwrap_or_default();
     for (index, entry) in contexts.iter().enumerate() {
         let item = |rest: &str| place("sizes_by_context", &format!("[{index}]{rest}"));
-        let selector = &entry.context;
-        let refused = [
-            ("states", !selector.states.all_of.is_empty()),
-            ("not_states", !selector.states.none_of.is_empty()),
-            ("sizes", !selector.sizes.all_of.is_empty()),
-            ("not_sizes", !selector.sizes.none_of.is_empty()),
-            ("surface", selector.surface.is_some()),
-        ];
-        for (key, stated) in refused {
-            if stated {
-                push(
-                    item(&format!(".context.{key}")),
-                    ProblemKind::SizeContextKey { key },
-                );
-            }
+        for key in entry.refused_keys.iter().copied() {
+            push(
+                item(&format!(".context.{key}")),
+                ProblemKind::SizeContextKey { key },
+            );
         }
         if matches!(entry.default_size, Some(DefaultSize::Pending(_))) && !synthetic {
             push(item(".default_size"), ProblemKind::DefaultSizeMissing);
@@ -3216,6 +3204,37 @@ mod tests {
         assert_eq!(
             problems(Some(vec![("mode", vec![key!("compact")])])),
             NO_PROBLEM
+        );
+    }
+
+    /// A call on a `Value` whose type gives no expression type and takes a
+    /// reference only (a `ViewBox`, as the `Walk` default leaves it) is the
+    /// mistype typing would report, which it cannot reach without a type
+    /// (S2.2, S12).
+    #[test]
+    fn a_call_where_the_walk_gives_no_type_is_ill_typed() {
+        let decl = Declarations::default();
+        let cx = Context {
+            declarations: &decl,
+            preset: None,
+            kind: LayerKind::Application,
+            reader_accent_left_out: false,
+            synthetic: &[],
+            below: &[],
+        };
+        let mut checker = Checker::new(&cx, true);
+        let call = crate::next::expr::Expr::parse("mul(1, 2)").unwrap();
+        let value: Value<crate::next::units::ViewBox> = Value::Expr(call);
+        let mut walker = Walker::new("probe", true, &mut checker);
+        walker.field("Glyph", "view_box", Marks::default(), "", |w| {
+            Walk::walk(&value, w);
+        });
+        let problems: Vec<String> = checker.problems.iter().map(Problem::to_string).collect();
+        assert_eq!(
+            problems,
+            [
+                "probe.view_box: the expression does not type: the field's expression is a reference only"
+            ]
         );
     }
 

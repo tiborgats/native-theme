@@ -6,8 +6,8 @@ use super::model::{part_named, widget_key};
 use super::read::{self, FromToml, MapKey, Reader, Spelling, join, read_map, table, text};
 use super::when::{context, density, named, names, state, variant};
 use crate::next::declare::{
-    DataName, DataOwner, Declarations, DefaultSize, FlavorDecl, FontMetric, ParamGroup, ScalarUnit,
-    SettingDecl, SizesByContext, SizesByVariant, WidgetDecl,
+    DataName, DataOwner, Declarations, DefaultSize, FlavorDecl, FontMetric, ParamGroup,
+    SIZE_CONTEXT_REFUSED, ScalarUnit, SettingDecl, SizesByContext, SizesByVariant, WidgetDecl,
 };
 use crate::next::error::ProblemKind;
 use crate::next::expr::ElementDatum;
@@ -356,6 +356,15 @@ fn default_size(item: &Item, at: &str, cx: &mut Reader) -> Option<DefaultSize> {
 fn sizes_by_context(item: &Item, at: &str, cx: &mut Reader) -> Vec<SizesByContext> {
     tables(item, at, cx, |fields, at, cx| {
         let [selector, sizes, default] = take(fields, ["context", "sizes", "default_size"], at, cx);
+        let refused_keys = selector
+            .and_then(Item::as_table)
+            .map(|table| {
+                SIZE_CONTEXT_REFUSED
+                    .into_iter()
+                    .filter(|key| table.contains_key(*key))
+                    .collect()
+            })
+            .unwrap_or_default();
         let selector = read::required(selector, &join(at, "context"), cx)
             .and_then(|item| context(item, &join(at, "context"), cx));
         let sizes = read::required(sizes, &join(at, "sizes"), cx)
@@ -368,6 +377,7 @@ fn sizes_by_context(item: &Item, at: &str, cx: &mut Reader) -> Vec<SizesByContex
             context: selector?,
             sizes: sizes?,
             default_size,
+            refused_keys,
         })
     })
 }

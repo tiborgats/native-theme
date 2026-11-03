@@ -80,13 +80,15 @@ fn sizes_by_context(value: Option<&Value>) -> Vec<(Value, Vec<String>, Option<St
         .unwrap_or_default()
 }
 
-/// An S11 context selector as [`context_spelled`] writes it.
+/// An S11 context selector as [`context_spelled`] writes it, a key stating
+/// an empty list left out, as the crate's selector holds no such key.
 pub fn selector_spelled(selector: &Value) -> String {
     let keys: Vec<(String, String)> = selector
         .as_table()
         .map(|table| {
             table
                 .iter()
+                .filter(|(_, value)| !matches!(value, Value::Array(items) if items.is_empty()))
                 .map(|(key, value)| (key.clone(), value_spelled(value)))
                 .collect()
         })

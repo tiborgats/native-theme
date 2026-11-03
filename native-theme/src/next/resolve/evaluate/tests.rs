@@ -81,6 +81,11 @@ fn toml(text: &str) -> Layer {
 /// evaluation alone is tested), under the light scheme with a stand-in
 /// scaling text by `factor`.
 fn resolved(layers: &[&str], factor: f32) -> ResolvedTheme {
+    resolved_by(layers, ReaderState::new(Scheme::Light, factor))
+}
+
+/// [`resolved`], the stand-in reporting `state`.
+fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
     let mut layers = layers.iter().map(|text| Arc::new(toml(text)));
     let preset = layers.next().unwrap_or_default();
     let stack = Stack {
@@ -88,7 +93,7 @@ fn resolved(layers: &[&str], factor: f32) -> ResolvedTheme {
         declarations: Declarations::default(),
         preset_layer: preset,
         reader: Some(super::super::Reader::StandIn {
-            state: ReaderState::new(Scheme::Light, factor),
+            state,
             layer: Arc::default(),
         }),
         layers: layers
@@ -1504,7 +1509,15 @@ fn each_recording_site_records_a_synthetic_read() {
 
 /// The label's text style, resolved over `layers` (the first the preset's).
 fn label_text(layers: &[&str]) -> crate::next::blocks::text::ResolvedTextStyle {
-    let theme = resolved(layers, 1.0);
+    label_text_by(layers, ReaderState::new(Scheme::Light, 1.0))
+}
+
+/// [`label_text`], the stand-in reporting `state`.
+fn label_text_by(
+    layers: &[&str],
+    state: ReaderState,
+) -> crate::next::blocks::text::ResolvedTextStyle {
+    let theme = resolved_by(layers, state);
     let scope = scope();
     let element = Element::new(PartRef::Typed(LABEL), &scope, &Metrics);
     theme
@@ -1512,6 +1525,27 @@ fn label_text(layers: &[&str]) -> crate::next::blocks::text::ResolvedTextStyle {
         .value
         .and_then(|label| label.text)
         .expect("the label has text")
+}
+
+/// `round_pt` rounds by S9.4's DPI in force: the reader's where it reports
+/// one, else the preset's `token.text.font_dpi` (S2.2, S9.4; ADD-A131). A
+/// body size of 14 px is 10.5 pt at the token's 96 dpi, rounded to 11 pt,
+/// 14.667 px; at the reader's 120 dpi it is 8.4 pt, rounded to 8 pt,
+/// 13.333 px. Synthetic values.
+#[test]
+fn round_pt_rounds_by_the_dpi_in_force() {
+    let body = "[tokens.text.roles.body.font]\nsize_px = 14\n\
+                [widgets.button.label]\n\
+                text.font.size = \"= round_pt(token.text.roles.body.font.size)\"\n";
+    let size = |dpi: Option<f32>| {
+        let mut state = ReaderState::new(Scheme::Light, 1.0);
+        state.font_dpi = dpi;
+        size_of(&label_text_by(&[BASE, body], state).font)
+    };
+    let token = size(None);
+    assert!((token - 14.0 * 11.0 / 10.5).abs() < 1e-3, "{token}");
+    let reader = size(Some(120.0));
+    assert!((reader - 8.0 * 120.0 / 72.0).abs() < 1e-3, "{reader}");
 }
 
 /// A `Value<Option<T>>`'s `"none"` is the option's own `None`, stated, and

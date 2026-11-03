@@ -1416,6 +1416,30 @@ fn pending_default_size_refused_but_on_the_synthetic_route() {
     assert_eq!(synthetic_preset(sizeless), NONE);
 }
 
+/// A size only a `sizes_by_context` entry names is taken by no element,
+/// as a context entry only leaves sizes out: a rule selecting it selects an
+/// undeclared size; a variant entry's size is declared (S10, ADD-A131).
+#[test]
+fn size_only_a_context_names_is_undeclared() {
+    let decl = declare(
+        "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
+         default_size = \"regular\"\nsizes_by_variant = [{ variant = \"primary\", sizes = \
+         [\"small\"], default_size = \"small\" }]\nsizes_by_context = [{ context = { widget = \
+         \"button\", part = \"body\" }, sizes = [\"regular\", \"large\"] }]",
+    );
+    let rule = |size: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ sizes = [\"{size}\"] }}\ntarget = \"button.body\"\n\
+             set = {{ opacity = 0.5 }}"
+        ))
+    };
+    assert_eq!(
+        found(&rule("large"), &decl),
+        ["rules[0].when.sizes[0]: `large` is not declared in `widget.button.sizes`"]
+    );
+    assert_eq!(found(&rule("small"), &decl), NONE);
+}
+
 /// An element taking sizes outside a context and none inside it is
 /// refused, for each variant entry and for none (S10, S12).
 #[test]
@@ -1466,6 +1490,11 @@ fn refusal_size_context_key() {
     assert_eq!(
         selector("states = [\"hover\"], not_sizes = [\"small\"], surface = \"window\""),
         [refused("states"), refused("not_sizes"), refused("surface")]
+    );
+    // A key is refused as stated, an empty list's too.
+    assert_eq!(
+        selector("states = [], sizes = []"),
+        [refused("states"), refused("sizes")]
     );
     assert_eq!(
         selector("scope = \"any\", part = \"body\", variants = [\"primary\"]"),

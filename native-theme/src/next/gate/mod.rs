@@ -607,14 +607,19 @@ pub struct Declared {
 }
 
 /// A default size as the gate compares it: a size's name, or a pending one
-/// as `pending <ids>`, its register ids joined by `, ` (S10's *A pending
-/// default*).
+/// as `pending <ids>`, its register ids sorted, each once, joined by `, `:
+/// a set, as S17 compares ids (S10's *A pending default*).
 #[must_use]
 pub fn default_spelled(size: Option<&str>, pending: &[String]) -> Option<String> {
     match size {
         Some(size) => Some(size.to_owned()),
         None if pending.is_empty() => None,
-        None => Some(format!("pending {}", pending.join(", "))),
+        None => {
+            let mut ids: Vec<&str> = pending.iter().map(String::as_str).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            Some(format!("pending {}", ids.join(", ")))
+        }
     }
 }
 
@@ -2477,6 +2482,22 @@ mod tests {
     #![allow(clippy::unwrap_used)]
 
     use super::*;
+
+    /// A pending default's ids are a set (S17): spelled sorted, each once,
+    /// whatever order the preset or the state model writes them in.
+    #[test]
+    fn default_spelled_takes_ids_as_a_set() {
+        let ids = |list: &[&str]| list.iter().map(|id| (*id).to_owned()).collect::<Vec<_>>();
+        assert_eq!(
+            default_spelled(None, &ids(&["U2", "U1", "U2"])).as_deref(),
+            Some("pending U1, U2")
+        );
+        assert_eq!(
+            default_spelled(None, &ids(&["U2", "U1"])),
+            default_spelled(None, &ids(&["U1", "U2"]))
+        );
+        assert_eq!(default_spelled(None, &[]), None);
+    }
 
     /// Every path a fact's key can name below `fields`, the listed paths
     /// the generator can write (S17, ADD-A128): each field, a struct

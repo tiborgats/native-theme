@@ -633,6 +633,24 @@ fn gate_declarations_each_compared() {
     );
 }
 
+/// A state model's context selector stating an empty list spells as the
+/// one without the key, as the crate's selector holds none (the A131a
+/// review's M1): `states = []` and `variants = []` select as no key does.
+#[test]
+fn gate_selector_empty_list_spelled_as_none() {
+    let spelled = |text: &str| {
+        let table: toml::Table = toml::from_str(&format!("context = {text}")).unwrap();
+        model::selector_spelled(&table["context"])
+    };
+    let bare = spelled("{ widget = \"toolbar\" }");
+    assert_eq!(spelled("{ widget = \"toolbar\", states = [] }"), bare);
+    assert_eq!(spelled("{ widget = \"toolbar\", variants = [] }"), bare);
+    assert_ne!(
+        spelled("{ widget = \"toolbar\", states = [\"hover\"] }"),
+        bare
+    );
+}
+
 /// The declarations run and the combinations are the state model's
 /// projected onto what the enabled units' facts name (ADD-A128): a variant
 /// only skipped facts name (their `when` names a toolbar, whose unit is not

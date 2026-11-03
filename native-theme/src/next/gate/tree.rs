@@ -667,7 +667,10 @@ impl Tree {
 /// A list's items as a map's entries, each key as its text (a `Key`'s) or
 /// else as written (an `AxisTag`'s bytes), and its value: every item a
 /// pair, no key twice; `None` for any other list (a paint's layers),
-/// compared in order.
+/// compared in order. It reads the shape, not the field's type: every
+/// `Vec<(_, _)>` the model holds is a map keyed by its first member, so a
+/// list of unnamed pairs is one; a list of pairs kept in order would need
+/// the registry's type at its path here.
 fn map_entries(items: &[Tree]) -> Option<Vec<(String, &Tree)>> {
     let mut out: Vec<(String, &Tree)> = Vec::new();
     for item in items {

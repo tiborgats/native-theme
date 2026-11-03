@@ -270,7 +270,7 @@ impl WidgetDecl {
 
 impl Declarations {
     /// The widget's own section, empty where it states none.
-    pub(crate) fn own(&self, widget: WidgetKind) -> WidgetDecl {
+    fn own(&self, widget: WidgetKind) -> WidgetDecl {
         self.widgets
             .iter()
             .find(|(held, _)| *held == widget)
@@ -334,7 +334,15 @@ pub(crate) struct SizesByContext {
     pub(crate) sizes: Vec<ControlSize>,
     /// The default size there, before the variant's and the widget's.
     pub(crate) default_size: Option<DefaultSize>,
+    /// The keys S12 refuses in the selector that it states, an empty
+    /// list's too, which the selector itself does not tell from none.
+    pub(crate) refused_keys: Vec<&'static str>,
 }
+
+/// The keys of a context selector S12 refuses in a `sizes_by_context`
+/// entry, which the sizes an element takes do not change with (S10, S12).
+pub(crate) const SIZE_CONTEXT_REFUSED: [&str; 5] =
+    ["states", "not_states", "sizes", "not_sizes", "surface"];
 
 /// The sizes an element holding a variant takes, and its default.
 #[derive(Clone, Debug, PartialEq)]
