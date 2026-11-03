@@ -464,7 +464,9 @@ impl Stack {
         scheme: Scheme,
         pending: Vec<Listed>,
     ) -> Result<Stack, LayerError> {
-        let mut problems = preset_problems(&declarations, &layer, preset, &pending, false)?;
+        let reused = validate::Reused::default();
+        let mut problems =
+            preset_problems(&declarations, &layer, preset, &pending, false, &reused)?;
         let stack = Stack {
             preset,
             declarations,
@@ -480,7 +482,7 @@ impl Stack {
             pending,
             synthetic: None,
         };
-        add_problems(&mut problems, stack.validate())?;
+        add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
         } else {
@@ -506,7 +508,8 @@ impl Stack {
         mut layers: Vec<Layer>,
     ) -> Result<Stack, LayerError> {
         let inputs = fold_inputs(&pending, &mut layer, &mut layers);
-        let mut problems = preset_problems(&declarations, &layer, preset, &pending, true)?;
+        let reused = validate::Reused::default();
+        let mut problems = preset_problems(&declarations, &layer, preset, &pending, true, &reused)?;
         let layers: Vec<(LayerId, Arc<Layer>)> = layers
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
@@ -529,7 +532,7 @@ impl Stack {
             flavor: None,
             pending,
         };
-        add_problems(&mut problems, stack.validate())?;
+        add_problems(&mut problems, stack.validate_reusing(&reused))?;
         if problems.is_empty() {
             Ok(stack)
         } else {
@@ -647,7 +650,14 @@ impl Stack {
         pending: Vec<Listed>,
     ) -> Result<(), LayerError> {
         accent_inputs_held(&declarations, preset, self.accent.as_ref(), self.stand_in())?;
-        let problems = preset_problems(&declarations, &layer, preset, &pending, false)?;
+        let problems = preset_problems(
+            &declarations,
+            &layer,
+            preset,
+            &pending,
+            false,
+            &validate::Reused::default(),
+        )?;
         self.change_beside(problems, |stack| {
             stack.switch(preset, declarations, layer, pending);
         })
@@ -872,6 +882,14 @@ impl Stack {
     /// two layers with one fault at one path are listed once too: the
     /// caller fixing one layer and retrying is shown the other's.
     fn validate(&self) -> Result<(), LayerError> {
+        self.validate_reusing(&validate::Reused::default())
+    }
+
+    /// [`Stack::validate`], each layer's checks over combinations taking
+    /// from `reused` what the check of the layers below it found that the
+    /// layer leaves as it was, the preset's included where it was checked
+    /// with `reused`.
+    fn validate_reusing(&self, reused: &validate::Reused) -> Result<(), LayerError> {
         let stacked = self.stacked();
         let mut problems: Vec<Problem> = self
             .reader_state()
@@ -885,7 +903,7 @@ impl Stack {
                 reader_accent_left_out: self.reader_accent_left_out(),
                 below: stacked.get(..index).unwrap_or_default(),
             };
-            add_problems(&mut problems, validate::check(layer.layer, &cx))?;
+            add_problems(&mut problems, validate::check(layer.layer, &cx, reused))?;
         }
         let listed = validate::listed_unstated(
             &self.pending,
@@ -1184,19 +1202,21 @@ fn group_missing(group: &[InputName], stated: &[(&InputName, &InputValue)]) -> V
 pub(crate) type Listed = crate::next::toml::layer::Listed;
 
 /// The problems of a preset's declarations and layer (S10, S12), its
-/// listed paths `pending` left to the layers above it (S17); a problem
-/// other than a list of S12's is the error.
+/// listed paths `pending` left to the layers above it (S17), what its
+/// checks over combinations found kept in `reused` for the layers' checks
+/// above it; a problem other than a list of S12's is the error.
 fn preset_problems(
     declarations: &Declarations,
     layer: &Layer,
     preset: Option<PresetId>,
     pending: &[Listed],
     synthetic: bool,
+    reused: &validate::Reused,
 ) -> Result<Vec<Problem>, LayerError> {
     let mut problems = Vec::new();
     add_problems(
         &mut problems,
-        validate::check_preset(declarations, layer, preset, pending, synthetic),
+        validate::check_preset(declarations, layer, preset, pending, synthetic, reused),
     )?;
     Ok(problems)
 }

@@ -5,10 +5,10 @@
 //! follows them (S2.2's lazy composition).
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use super::combos::World;
+use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
@@ -40,7 +40,7 @@ pub(crate) struct Stacked<'a> {
 
 /// What a source states values of: the colour roles of a scheme, the
 /// tokens, a typed widget's part or its values.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(super) enum Target {
     /// The colour roles under one scheme.
     Roles(Scheme),
@@ -55,7 +55,7 @@ pub(super) enum Target {
 /// Where a source lies in the stack's order (S8): every layer's bases, in
 /// layer order (a layer's `for_preset` part after its common bases), then
 /// every layer's rules, in layer and stated order.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(super) struct Pos {
     /// A rule's, not a base's.
     pub(super) rule: bool,
@@ -212,6 +212,16 @@ pub(super) struct Stack<'a> {
     pub(super) cx: Context<'a>,
     /// The worlds of each set of rules a check reaches, enumerated once.
     pub(super) cache: RefCell<HashMap<Vec<usize>, Rc<Vec<World>>>>,
+    /// The rules an evaluation under one world reads, while a check records
+    /// them.
+    pub(super) reads: RefCell<Reads>,
+    /// The sources of each target stating a place at or above each place
+    /// looked up, gathered once.
+    pub(super) stating: RefCell<HashMap<(Target, String), Stating>>,
+    /// What the rules' reach meets at each seed, gathered once.
+    pub(super) expanded: RefCell<HashMap<Seed, Rc<Expanded>>>,
+    /// The questions an evaluation asks of the sources, while recorded.
+    pub(super) asked: RefCell<Option<HashSet<Query>>>,
 }
 
 /// The lists that merge by key (S6.1): their items are kept beside the
@@ -597,6 +607,10 @@ impl<'a> Stack<'a> {
             layers: layers.to_vec(),
             cx,
             cache: RefCell::new(HashMap::new()),
+            reads: RefCell::new(Reads::default()),
+            stating: RefCell::new(HashMap::new()),
+            expanded: RefCell::new(HashMap::new()),
+            asked: RefCell::new(None),
         };
         for (index, stacked) in layers.iter().enumerate() {
             let toml = matches!(stacked.layer.spelled, Spelled::Toml);

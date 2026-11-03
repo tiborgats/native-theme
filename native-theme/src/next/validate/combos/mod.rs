@@ -18,6 +18,8 @@
 mod bench;
 mod inputs;
 
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use super::LayerKind;
@@ -31,6 +33,7 @@ use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr, Func, Literal, MAX_CHAIN, Ref};
 use crate::next::key::Key;
+use crate::next::layer::Layer;
 use crate::next::presets::PresetId;
 use crate::next::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
@@ -91,12 +94,228 @@ pub(super) struct World {
     values: Vec<bool>,
 }
 
+/// The rules an evaluation under one world reads, in the order it first
+/// reads each ([`Stack::applies`]): an evaluation reads nothing else of the
+/// world but its scheme and flavour, so another world agreeing with it on
+/// these and on each rule read evaluates the same way.
+#[derive(Debug, Default)]
+pub(super) struct Reads {
+    /// The world read, while one is.
+    world: Option<*const World>,
+    /// Each rule read, with its applicability.
+    rules: Vec<(usize, bool)>,
+    /// The world was read whole (its atoms' values), or copied.
+    whole: bool,
+    /// Per rule, whether it was read.
+    seen: Vec<bool>,
+}
+
+impl Reads {
+    fn read(&mut self, world: &World, rule: usize) {
+        if self.world != Some(std::ptr::from_ref(world)) {
+            return;
+        }
+        if self.seen.len() <= rule {
+            self.seen.resize(rule.saturating_add(1), false);
+        }
+        if let Some(seen) = self.seen.get_mut(rule)
+            && !*seen
+        {
+            *seen = true;
+            let applies = world.applies.get(rule).copied().unwrap_or(false);
+            self.rules.push((rule, applies));
+        }
+    }
+
+    fn read_whole(&mut self, world: &World) {
+        if self.world == Some(std::ptr::from_ref(world)) {
+            self.whole = true;
+        }
+    }
+}
+
+/// What evaluations under worlds gave, as a decision tree over the rules
+/// they read (S12's checks are deterministic, [`Reads`]): a world whose path
+/// through it ends at a leaf evaluates as the earlier one did, to the
+/// leaf's value.
+struct Decided<T> {
+    /// The tree of each scheme and flavour: its nodes, the first the root.
+    trees: Vec<(Scheme, Option<Key>, Vec<Branch<T>>)>,
+}
+
+/// A node of [`Decided`]'s tree: a leaf, or the rule read next and the node
+/// of each of its values.
+enum Branch<T> {
+    Leaf(T),
+    Read(usize, [Option<usize>; 2]),
+}
+
+impl<T> Default for Decided<T> {
+    fn default() -> Self {
+        Decided { trees: Vec::new() }
+    }
+}
+
+impl<T> Decided<T> {
+    /// What an evaluation under `world` gave, where one was done.
+    fn get(&self, world: &World) -> Option<&T> {
+        let (_, _, nodes) = self
+            .trees
+            .iter()
+            .find(|(scheme, flavor, _)| *scheme == world.scheme && *flavor == world.flavor)?;
+        let mut at = 0_usize;
+        loop {
+            match nodes.get(at)? {
+                Branch::Leaf(value) => return Some(value),
+                Branch::Read(rule, next) => {
+                    let applies = world.applies.get(*rule).copied().unwrap_or(false);
+                    at = next.get(usize::from(applies)).copied().flatten()?;
+                }
+            }
+        }
+    }
+
+    /// Records that an evaluation under `world`, reading `rules` in order,
+    /// gave `value`.
+    fn add(&mut self, world: &World, rules: &[(usize, bool)], value: T) {
+        let index = match self
+            .trees
+            .iter()
+            .position(|(scheme, flavor, _)| *scheme == world.scheme && *flavor == world.flavor)
+        {
+            Some(index) => index,
+            None => {
+                self.trees
+                    .push((world.scheme, world.flavor.clone(), Vec::new()));
+                self.trees.len().saturating_sub(1)
+            }
+        };
+        let Some((_, _, nodes)) = self.trees.get_mut(index) else {
+            return;
+        };
+        if nodes.is_empty() {
+            match rules.first() {
+                Some((rule, _)) => nodes.push(Branch::Read(*rule, [None, None])),
+                None => {
+                    nodes.push(Branch::Leaf(value));
+                    return;
+                }
+            }
+        }
+        let mut at = 0_usize;
+        for (read, (rule, applies)) in rules.iter().enumerate() {
+            let len = nodes.len();
+            let Some(Branch::Read(held, next)) = nodes.get_mut(at) else {
+                return;
+            };
+            if held != rule {
+                return;
+            }
+            let Some(slot) = next.get_mut(usize::from(*applies)) else {
+                return;
+            };
+            if let Some(node) = slot {
+                at = *node;
+                continue;
+            }
+            *slot = Some(len);
+            match rules.get(read.saturating_add(1)) {
+                Some((rule, _)) => nodes.push(Branch::Read(*rule, [None, None])),
+                None => {
+                    nodes.push(Branch::Leaf(value));
+                    return;
+                }
+            }
+            at = len;
+        }
+    }
+}
+
+/// What an evaluation asked of the stack's sources (S12's checks read them
+/// through these alone): the sources of a target stating a place at or
+/// above a path, and below it where `subtree`; a part's presence; a part's
+/// bindings and surface sets; a target's keyed items. A layer none of whose
+/// sources answers an evaluation's questions leaves it as it was.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(super) enum Query {
+    Place(Target, String, bool),
+    Shown(TypedPart),
+    Bindings(TypedPart),
+    Items(Target),
+}
+
+impl Query {
+    /// Whether `source` is among the sources the question reads.
+    fn answered_by(&self, source: &Source) -> bool {
+        match self {
+            Query::Place(target, q, subtree) => {
+                source.target == *target
+                    && source.ops.iter().any(|op| {
+                        op.path == *q
+                            || is_above(&op.path, q)
+                            || (*subtree && is_above(q, &op.path))
+                    })
+            }
+            Query::Shown(part) => {
+                source.target == Target::Part(*part)
+                    && source
+                        .ops
+                        .iter()
+                        .any(|op| matches!(op.kind, OpKind::Shown(_)))
+            }
+            Query::Bindings(part) => {
+                source.target == Target::Part(*part)
+                    && (!source.bindings.is_empty() || !source.surfaces.is_empty())
+            }
+            Query::Items(target) => source.target == *target && !source.items.is_empty(),
+        }
+    }
+}
+
+/// What the checks of one stack's layers, each over the layers below it,
+/// found per expression step, kept from one layer's check to the next
+/// ([`Checks::expressions`]): a step a later layer's sources answer none of
+/// the questions of evaluates as it did, so its problems are taken as they
+/// were, not found again.
+#[derive(Default)]
+pub(crate) struct Reused {
+    memory: RefCell<Option<Memory>>,
+}
+
+/// [`Reused`]'s steps, and what they were found over: the layers, each
+/// with what it is to the stack, the preset and its declarations.
+struct Memory {
+    layers: Vec<(Layer, LayerKind)>,
+    preset: Option<PresetId>,
+    declarations: Declarations,
+    steps: HashMap<StepKey, Memo>,
+}
+
+/// An expression step across the stacks of one stack's layers: its layer,
+/// its source's place in the stack's order and target, its index there.
+type StepKey = (usize, Pos, Target, usize);
+
+/// One step's questions and the problems its evaluation found, each as it
+/// found it, the ones found before included.
+struct Memo {
+    asked: Vec<Query>,
+    problems: Vec<(usize, Problem)>,
+}
+
 /// What a part is under a world, and the layer and place that says so.
 type ShownAt = (Shown, Option<(usize, String)>);
 
+/// What [`Stack::reach`] meets at a seed, in order: the rules it reads,
+/// the seeds that lead on, and the questions it asks of the sources.
+pub(super) struct Expanded {
+    rules: Vec<usize>,
+    seeds: Vec<Seed>,
+    asked: Vec<Query>,
+}
+
 /// Which rules a combination's evaluation reads.
-#[derive(Clone, Debug, PartialEq)]
-enum Seed {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(super) enum Seed {
     /// A place of a target, and below it where `subtree`.
     Field(Target, String, bool),
     /// What a part is drawn as.
@@ -198,6 +417,33 @@ enum Bindings {
     None,
 }
 
+/// An expression's step, as [`Checks::expressions`] checks it: its id, its
+/// source and place, the worlds of the rules its evaluation reaches, and
+/// those of them it is in effect in, by index.
+struct Step<'s> {
+    id: (usize, usize),
+    source: &'s Source,
+    op: &'s Op,
+    expr: &'s Expr,
+    worlds: Rc<Vec<World>>,
+    in_effect: Vec<usize>,
+    /// The questions its evaluation asks of the sources.
+    asked: HashSet<Query>,
+    /// Its problems as an earlier layer's check found them, taken as they
+    /// were; `None`: found again.
+    reused: Option<Vec<(usize, Problem)>>,
+}
+
+/// The expression steps of one target sharing their worlds, by place.
+type Places<'s> = Vec<(&'s str, Vec<usize>)>;
+
+/// The steps a place's value is found at, as [`Stack::value_at`] finds it.
+type FoundAt = Vec<Option<(usize, usize)>>;
+
+/// The sources of a target stating a place at or above a path, each with
+/// its steps there ([`Stack::stating`]).
+pub(super) type Stating = Rc<[(usize, Vec<usize>)]>;
+
 /// A node of the cycle search: a place, and the step found there.
 type Node = (Target, String, Option<(usize, usize)>);
 
@@ -215,12 +461,13 @@ const MAX_FOLLOW: usize = MAX_CHAIN.saturating_mul(2).saturating_add(4);
 
 /// Every problem the stack's combinations show (S12), each with the layer
 /// stating the place it names.
-pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
+pub(super) fn check(stack: &Stack<'_>, reused: Option<&Reused>) -> Vec<(usize, Problem)> {
     let mut out = Checks {
         stack,
         problems: Vec::new(),
+        raw: None,
     };
-    out.expressions();
+    out.expressions(reused);
     out.marks();
     out.drawn_as_cycles();
     out.redrawn();
@@ -239,6 +486,9 @@ struct Checks<'s, 'a> {
     stack: &'s Stack<'a>,
     /// Each problem, with the layer stating the place it names.
     problems: Vec<(usize, Problem)>,
+    /// Each problem one step's evaluation finds, the ones found before
+    /// included, while one is evaluated.
+    raw: Option<Vec<(usize, Problem)>>,
 }
 
 impl<'a> Stack<'a> {
@@ -251,15 +501,72 @@ impl<'a> Stack<'a> {
     }
 
     fn applies(&self, world: &World, source: &Source) -> bool {
+        if let Some(rule) = source.rule {
+            self.reads.borrow_mut().read(world, rule);
+        }
         let rule = source
             .rule
             .is_none_or(|rule| world.applies.get(rule).copied().unwrap_or(false));
         rule && source.scheme.is_none_or(|scheme| scheme == world.scheme)
     }
 
+    /// `evaluate`, an evaluation under `world`, with the rules it reads
+    /// recorded in `decided` beside its value, unless it reads the world
+    /// whole.
+    fn recorded<T: Clone>(
+        &self,
+        world: &World,
+        decided: &mut Decided<T>,
+        evaluate: impl FnOnce() -> T,
+    ) -> T {
+        let outer = std::mem::replace(
+            &mut *self.reads.borrow_mut(),
+            Reads {
+                world: Some(std::ptr::from_ref(world)),
+                ..Reads::default()
+            },
+        );
+        let value = evaluate();
+        let reads = std::mem::replace(&mut *self.reads.borrow_mut(), outer);
+        if !reads.whole {
+            decided.add(world, &reads.rules, value.clone());
+        }
+        value
+    }
+
+    /// The sources of `target` stating a place at or above `q`, in order,
+    /// each with those of its steps: a step elsewhere sets nothing there.
+    /// Gathered once per place.
+    fn stating(&self, target: Target, q: &str) -> Stating {
+        self.ask(Query::Place(target, q.to_owned(), false));
+        if let Some(held) = self.stating.borrow().get(&(target, q.to_owned())) {
+            return Rc::clone(held);
+        }
+        let numbers: Stating = self
+            .of(target)
+            .filter_map(|(number, source)| {
+                let indices: Vec<usize> = source
+                    .ops
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, op)| op.path == q || is_above(&op.path, q))
+                    .map(|(index, _)| index)
+                    .collect();
+                (!indices.is_empty()).then_some((number, indices))
+            })
+            .collect();
+        self.stating
+            .borrow_mut()
+            .insert((target, q.to_owned()), Rc::clone(&numbers));
+        numbers
+    }
+
     /// The places of the keyed items the source `number` states that later
     /// sources applying under `world` replace at every key (S6.1).
     fn replaced<'s>(&self, world: &World, number: usize, source: &'s Source) -> Vec<&'s str> {
+        if source.items.iter().any(|item| !item.keys.is_empty()) {
+            self.ask(Query::Items(source.target));
+        }
         source
             .items
             .iter()
@@ -306,12 +613,19 @@ impl<'a> Stack<'a> {
         let mut absent_at: Option<&str> = None;
         // The local value is an `Append`'s, kept on a reference above.
         let mut appended = false;
-        for (number, source) in self.of(target) {
-            if !self.applies(world, source) || !bound.admits(source.pos) {
+        for (number, indices) in self.stating(target, q).iter() {
+            let number = *number;
+            let Some(source) = self.sources.get(number) else {
+                continue;
+            };
+            if !bound.admits(source.pos) || !self.applies(world, source) {
                 continue;
             }
             let replaced = self.replaced(world, number, source);
-            for (index, op) in source.ops.iter().enumerate() {
+            let ops = indices
+                .iter()
+                .filter_map(|index| source.ops.get(*index).map(|op| (*index, op)));
+            for (index, op) in ops {
                 if replaced
                     .iter()
                     .any(|item| op.path == *item || is_above(item, &op.path))
@@ -586,9 +900,12 @@ impl<'a> Stack<'a> {
         held: &dyn Fn(&RoleRef) -> bool,
     ) -> Option<Place<'_>> {
         chain.iter().find_map(|part| {
+            self.ask(Query::Bindings(*part));
             let mut last = None;
             for (_, source) in self.of(Target::Part(*part)) {
-                if !self.applies(world, source) {
+                if !source.bindings.iter().any(|binding| held(&binding.role))
+                    || !self.applies(world, source)
+                {
                     continue;
                 }
                 for binding in &source.bindings {
@@ -613,10 +930,13 @@ impl<'a> Stack<'a> {
         roles: bool,
     ) -> Option<Answer<'_>> {
         chain.iter().find_map(|part| {
+            self.ask(Query::Bindings(*part));
             let mut role = None;
             let mut set = None;
             for (_, source) in self.of(Target::Part(*part)) {
-                if !self.applies(world, source) {
+                if (source.surfaces.is_empty() && (!roles || source.bindings.is_empty()))
+                    || !self.applies(world, source)
+                {
                     continue;
                 }
                 for binding in source.bindings.iter().filter(|_| roles) {
@@ -636,9 +956,15 @@ impl<'a> Stack<'a> {
     /// (`Absent`, `Present`, `DrawnAs`), drawn where none is, and where
     /// that is stated.
     fn shown(&self, world: &World, part: TypedPart) -> (&Shown, Option<(usize, &str)>) {
+        self.ask(Query::Shown(part));
         let mut out: (&Shown, Option<(usize, &str)>) = (&Shown::Drawn, None);
         for (_, source) in self.of(Target::Part(part)) {
-            if !self.applies(world, source) {
+            if !source
+                .ops
+                .iter()
+                .any(|op| matches!(op.kind, OpKind::Shown(_)))
+                || !self.applies(world, source)
+            {
                 continue;
             }
             for op in &source.ops {
@@ -702,104 +1028,137 @@ impl<'a> Stack<'a> {
     /// seed leads to, those stating what they read.
     fn reach(&self, seeds: Vec<Seed>) -> Vec<usize> {
         let mut rules: Vec<usize> = Vec::new();
-        let mut seen: Vec<Seed> = Vec::new();
+        let mut seen: HashSet<Seed> = HashSet::new();
         let mut pending = seeds;
-        let any = self.any_world();
         while let Some(seed) = pending.pop() {
             if seen.contains(&seed) {
                 continue;
             }
-            seen.push(seed.clone());
-            match &seed {
-                Seed::Shown(part) => {
-                    // Where every step states the part drawn, it is drawn
-                    // under every world: no rule decides it.
-                    let varies = self.of(Target::Part(*part)).any(|(_, source)| {
-                        source.ops.iter().any(
-                            |op| matches!(&op.kind, OpKind::Shown(shown) if *shown != Shown::Drawn),
-                        )
-                    });
-                    if !varies {
-                        continue;
+            let expanded = self.expanded(&seed);
+            seen.insert(seed);
+            for rule in &expanded.rules {
+                if !rules.contains(rule) {
+                    rules.push(*rule);
+                }
+            }
+            pending.extend(expanded.seeds.iter().cloned());
+        }
+        rules
+    }
+
+    /// What [`Stack::reach`] meets at `seed`, in order: the rules it reads
+    /// and the seeds that lead on. Gathered once per seed.
+    fn expanded(&self, seed: &Seed) -> Rc<Expanded> {
+        let held = self.expanded.borrow().get(seed).map(Rc::clone);
+        let expanded = held.unwrap_or_else(|| {
+            let outer = self.ask_begin();
+            let (rules, seeds) = self.expand(seed);
+            let asked = self.ask_end(outer).into_iter().collect();
+            let expanded = Rc::new(Expanded {
+                rules,
+                seeds,
+                asked,
+            });
+            self.expanded
+                .borrow_mut()
+                .insert(seed.clone(), Rc::clone(&expanded));
+            expanded
+        });
+        for query in &expanded.asked {
+            self.ask(query.clone());
+        }
+        expanded
+    }
+
+    /// Records `query` while an evaluation's questions are recorded.
+    fn ask(&self, query: Query) {
+        if let Some(asked) = self.asked.borrow_mut().as_mut() {
+            asked.insert(query);
+        }
+    }
+
+    /// Starts recording the questions asked, returning the record of the
+    /// evaluation around, if any.
+    fn ask_begin(&self) -> Option<HashSet<Query>> {
+        self.asked.replace(Some(HashSet::new()))
+    }
+
+    /// The questions asked since [`Stack::ask_begin`], which also count as
+    /// asked by the evaluation around, whose record `outer` is.
+    fn ask_end(&self, outer: Option<HashSet<Query>>) -> HashSet<Query> {
+        let asked = self.asked.replace(outer).unwrap_or_default();
+        if let Some(around) = self.asked.borrow_mut().as_mut() {
+            around.extend(asked.iter().cloned());
+        }
+        asked
+    }
+
+    fn expand(&self, seed: &Seed) -> (Vec<usize>, Vec<Seed>) {
+        let mut rules: Vec<usize> = Vec::new();
+        let mut pending: Vec<Seed> = Vec::new();
+        let any = self.any_world();
+        match seed {
+            Seed::Shown(part) => {
+                // Where every step states the part drawn, it is drawn
+                // under every world: no rule decides it.
+                let varies = self.of(Target::Part(*part)).any(|(_, source)| {
+                    source.ops.iter().any(
+                        |op| matches!(&op.kind, OpKind::Shown(shown) if *shown != Shown::Drawn),
+                    )
+                });
+                if !varies {
+                    return (rules, pending);
+                }
+                for (_, source) in self.of(Target::Part(*part)) {
+                    let shows = source
+                        .ops
+                        .iter()
+                        .any(|op| matches!(op.kind, OpKind::Shown(_)));
+                    if let (true, Some(rule)) = (shows, source.rule)
+                        && !rules.contains(&rule)
+                    {
+                        rules.push(rule);
                     }
-                    for (_, source) in self.of(Target::Part(*part)) {
-                        let shows = source
-                            .ops
+                }
+            }
+            Seed::Field(target, q, subtree) => {
+                let targets: Vec<Target> = match target {
+                    Target::Roles(_) => Scheme::ALL.map(Target::Roles).to_vec(),
+                    other => vec![*other],
+                };
+                for target in targets {
+                    // A keyed item holding the place is gone where a
+                    // later item replaces it at every key (S6.1).
+                    let keys: Vec<&ItemKey> = self
+                        .of(target)
+                        .flat_map(|(_, source)| &source.items)
+                        .filter(|item| item.place == *q || is_above(&item.place, q))
+                        .flat_map(|item| &item.keys)
+                        .collect();
+                    for (_, source) in self.of(target) {
+                        let replaces = source
+                            .items
                             .iter()
-                            .any(|op| matches!(op.kind, OpKind::Shown(_)));
-                        if let (true, Some(rule)) = (shows, source.rule)
+                            .any(|item| item.keys.iter().any(|key| keys.contains(&key)));
+                        if replaces
+                            && let Some(rule) = source.rule
                             && !rules.contains(&rule)
                         {
                             rules.push(rule);
                         }
                     }
-                }
-                Seed::Field(target, q, subtree) => {
-                    let targets: Vec<Target> = match target {
-                        Target::Roles(_) => Scheme::ALL.map(Target::Roles).to_vec(),
-                        other => vec![*other],
-                    };
-                    for target in targets {
-                        // A keyed item holding the place is gone where a
-                        // later item replaces it at every key (S6.1).
-                        let keys: Vec<&ItemKey> = self
-                            .of(target)
-                            .flat_map(|(_, source)| &source.items)
-                            .filter(|item| item.place == *q || is_above(&item.place, q))
-                            .flat_map(|item| &item.keys)
+                    for (_, source) in self.of(target) {
+                        let related: Vec<&Op> = source
+                            .ops
+                            .iter()
+                            .filter(|op| {
+                                !matches!(op.kind, OpKind::Shown(_))
+                                    && (op.path == *q
+                                        || is_above(&op.path, q)
+                                        || (*subtree && is_above(q, &op.path)))
+                            })
                             .collect();
-                        for (_, source) in self.of(target) {
-                            let replaces = source
-                                .items
-                                .iter()
-                                .any(|item| item.keys.iter().any(|key| keys.contains(&key)));
-                            if replaces
-                                && let Some(rule) = source.rule
-                                && !rules.contains(&rule)
-                            {
-                                rules.push(rule);
-                            }
-                        }
-                        for (_, source) in self.of(target) {
-                            let related: Vec<&Op> = source
-                                .ops
-                                .iter()
-                                .filter(|op| {
-                                    !matches!(op.kind, OpKind::Shown(_))
-                                        && (op.path == *q
-                                            || is_above(&op.path, q)
-                                            || (*subtree && is_above(q, &op.path)))
-                                })
-                                .collect();
-                            if related.is_empty() {
-                                continue;
-                            }
-                            if let Some(rule) = source.rule
-                                && !rules.contains(&rule)
-                            {
-                                rules.push(rule);
-                            }
-                            for op in related {
-                                if let OpKind::Set(Val::Expr(expr)) = &op.kind {
-                                    let rest = if is_above(&op.path, q) {
-                                        tail(&op.path, q).to_owned()
-                                    } else {
-                                        String::new()
-                                    };
-                                    pending.extend(self.seeds_of(
-                                        &any,
-                                        expr,
-                                        cx_of(source, op),
-                                        &rest,
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                }
-                Seed::Bindings(part) => {
-                    for (_, source) in self.of(Target::Part(*part)) {
-                        if source.bindings.is_empty() && source.surfaces.is_empty() {
+                        if related.is_empty() {
                             continue;
                         }
                         if let Some(rule) = source.rule
@@ -807,17 +1166,39 @@ impl<'a> Stack<'a> {
                         {
                             rules.push(rule);
                         }
-                        for binding in &source.bindings {
-                            if let Val::Expr(expr) = &binding.value {
-                                let cx = binding_cx(source);
-                                pending.extend(self.seeds_of(&any, expr, cx, ""));
+                        for op in related {
+                            if let OpKind::Set(Val::Expr(expr)) = &op.kind {
+                                let rest = if is_above(&op.path, q) {
+                                    tail(&op.path, q).to_owned()
+                                } else {
+                                    String::new()
+                                };
+                                pending.extend(self.seeds_of(&any, expr, cx_of(source, op), &rest));
                             }
                         }
                     }
                 }
             }
+            Seed::Bindings(part) => {
+                for (_, source) in self.of(Target::Part(*part)) {
+                    if source.bindings.is_empty() && source.surfaces.is_empty() {
+                        continue;
+                    }
+                    if let Some(rule) = source.rule
+                        && !rules.contains(&rule)
+                    {
+                        rules.push(rule);
+                    }
+                    for binding in &source.bindings {
+                        if let Val::Expr(expr) = &binding.value {
+                            let cx = binding_cx(source);
+                            pending.extend(self.seeds_of(&any, expr, cx, ""));
+                        }
+                    }
+                }
+            }
         }
-        rules
+        (rules, pending)
     }
 
     /// The seeds an expression's references give, `rest` below each.
@@ -952,6 +1333,7 @@ impl<'a> Stack<'a> {
             Some(flavor) => decl.in_flavor(widget, flavor),
             None => decl.in_default_flavor(widget),
         };
+        self.reads.borrow_mut().read_whole(world);
         let mut values = world.values.clone();
         for group in decls.exclusive.iter().flatten() {
             let mut kept = false;
@@ -1720,7 +2102,14 @@ impl Stack<'_> {
 impl Checks<'_, '_> {
     /// A problem at `at`, a place stated in the layer `layer`.
     fn problem(&mut self, layer: usize, at: &str, kind: ProblemKind) {
-        let problem = (layer, Problem::new(at, kind));
+        self.found((layer, Problem::new(at, kind)));
+    }
+
+    /// A problem found, listed once.
+    fn found(&mut self, problem: (usize, Problem)) {
+        if let Some(raw) = self.raw.as_mut() {
+            raw.push(problem.clone());
+        }
         if !self.problems.contains(&problem) {
             self.problems.push(problem);
         }
@@ -1732,36 +2121,215 @@ impl Checks<'_, '_> {
     /// likewise), `text_scale`, a `widget.<part>` not drawn, a corner the
     /// connector computes at layout, cycles, chains, and `element.width` or
     /// `element.height` in a field laying the element out (S2.2, S8, S12).
-    fn expressions(&mut self) {
+    /// The steps at one place sharing their worlds look the place up once
+    /// per world.
+    fn expressions(&mut self, reused: Option<&Reused>) {
         let stack = self.stack;
+        let added = stack.layers.len().saturating_sub(1);
+        let below = stack.layers.get(..added).unwrap_or_default();
+        let mut memory = reused.map(|reused| reused.memory.borrow_mut());
+        // What an earlier layer's check kept holds only over the same layers
+        // below the added one, preset and declarations; the added layer is
+        // kept for the check of the layer above it.
+        if let Some(memory) = memory.as_mut() {
+            let same = memory.as_ref().is_some_and(|held| {
+                held.preset == stack.preset()
+                    && held.declarations == *stack.decl()
+                    && held.layers.len() == below.len()
+                    && held
+                        .layers
+                        .iter()
+                        .zip(below)
+                        .all(|((layer, kind), stacked)| {
+                            layer == stacked.layer && *kind == stacked.kind
+                        })
+            });
+            if !same {
+                **memory = Some(Memory {
+                    layers: below
+                        .iter()
+                        .map(|stacked| (stacked.layer.clone(), stacked.kind))
+                        .collect(),
+                    preset: stack.preset(),
+                    declarations: stack.decl().clone(),
+                    steps: HashMap::new(),
+                });
+            }
+            if let (Some(held), Some(stacked)) = (memory.as_mut(), stack.layers.get(added)) {
+                held.layers.push((stacked.layer.clone(), stacked.kind));
+            }
+        }
+        let added_sources: Vec<&Source> = stack
+            .sources
+            .iter()
+            .filter(|source| source.layer == added)
+            .collect();
+        let mut steps: Vec<Step<'_>> = Vec::new();
         for (number, source) in stack.sources.iter().enumerate() {
             for (index, op) in source.ops.iter().enumerate() {
                 let OpKind::Set(Val::Expr(expr)) = &op.kind else {
                     continue;
                 };
+                let key: StepKey = (source.layer, source.pos, source.target, index);
+                let kept = memory
+                    .as_ref()
+                    .and_then(|memory| memory.as_ref())
+                    .and_then(|memory| memory.steps.get(&key))
+                    .filter(|memo| {
+                        source.layer < added
+                            && !memo.asked.iter().any(|query| {
+                                added_sources.iter().any(|added| query.answered_by(added))
+                            })
+                    })
+                    .map(|memo| memo.problems.clone());
+                if let Some(problems) = kept {
+                    steps.push(Step {
+                        id: (number, index),
+                        source,
+                        op,
+                        expr,
+                        worlds: Rc::new(Vec::new()),
+                        in_effect: Vec::new(),
+                        asked: HashSet::new(),
+                        reused: Some(problems),
+                    });
+                    continue;
+                }
                 let mut seeds = vec![Seed::Field(source.target, op.path.clone(), false)];
                 if let Target::Part(part) = source.target {
                     seeds.push(Seed::Shown(part));
                 }
+                let outer = stack.ask_begin();
                 let worlds = stack.worlds(seeds);
-                for world in worlds.iter() {
-                    let in_effect = stack
-                        .value_at(world, source.target, &op.path, Bound::ALL, 0)
-                        .iter()
-                        .any(|found| found.id == Some((number, index)));
-                    let drawn = match source.target {
-                        Target::Part(part) => matches!(stack.shown(world, part).0, Shown::Drawn),
-                        _ => true,
-                    };
-                    let scheme = match source.target {
-                        Target::Roles(scheme) => scheme == world.scheme,
-                        _ => true,
-                    };
-                    if in_effect && drawn && scheme {
-                        self.expression(world, (number, index), source, op, expr);
+                let asked = stack.ask_end(outer);
+                steps.push(Step {
+                    id: (number, index),
+                    source,
+                    op,
+                    expr,
+                    worlds,
+                    in_effect: Vec::new(),
+                    asked,
+                    reused: None,
+                });
+            }
+        }
+        // The steps of one target sharing their worlds, by place.
+        let mut groups: HashMap<(Target, *const Vec<World>), Places<'_>> = HashMap::new();
+        for (number, step) in steps.iter().enumerate() {
+            if step.reused.is_some() {
+                continue;
+            }
+            let places = groups
+                .entry((step.source.target, Rc::as_ptr(&step.worlds)))
+                .or_default();
+            match places
+                .iter_mut()
+                .find(|(path, _)| *path == step.op.path.as_str())
+            {
+                Some((_, members)) => members.push(number),
+                None => places.push((&step.op.path, vec![number])),
+            }
+        }
+        for ((target, _), places) in groups {
+            let Some(worlds) = places
+                .first()
+                .and_then(|(_, members)| members.first())
+                .and_then(|first| steps.get(*first))
+                .map(|step| Rc::clone(&step.worlds))
+            else {
+                continue;
+            };
+            // The steps found at each place, where the target is drawn.
+            let mut decided: Decided<Option<Vec<FoundAt>>> = Decided::default();
+            let outer = stack.ask_begin();
+            for (index, world) in worlds.iter().enumerate() {
+                let found = match decided.get(world) {
+                    Some(found) => found.clone(),
+                    None => stack.recorded(world, &mut decided, || {
+                        let drawn = match target {
+                            Target::Part(part) => {
+                                matches!(stack.shown(world, part).0, Shown::Drawn)
+                            }
+                            _ => true,
+                        };
+                        let scheme = match target {
+                            Target::Roles(scheme) => scheme == world.scheme,
+                            _ => true,
+                        };
+                        (drawn && scheme).then(|| {
+                            places
+                                .iter()
+                                .map(|(path, _)| {
+                                    stack
+                                        .value_at(world, target, path, Bound::ALL, 0)
+                                        .iter()
+                                        .map(|found| found.id)
+                                        .collect()
+                                })
+                                .collect()
+                        })
+                    }),
+                };
+                let Some(found) = found else {
+                    continue;
+                };
+                for ((_, members), found) in places.iter().zip(&found) {
+                    for member in members {
+                        if let Some(step) = steps.get_mut(*member)
+                            && found.contains(&Some(step.id))
+                        {
+                            step.in_effect.push(index);
+                        }
                     }
                 }
             }
+            let asked = stack.ask_end(outer);
+            for member in places.iter().flat_map(|(_, members)| members) {
+                if let Some(step) = steps.get_mut(*member) {
+                    step.asked.extend(asked.iter().cloned());
+                }
+            }
+        }
+        let mut kept: Vec<(StepKey, Memo)> = Vec::new();
+        for step in steps {
+            if let Some(problems) = step.reused {
+                for problem in problems {
+                    self.found(problem);
+                }
+                continue;
+            }
+            self.raw = Some(Vec::new());
+            let outer = stack.ask_begin();
+            let mut done: Decided<()> = Decided::default();
+            for index in &step.in_effect {
+                let Some(world) = step.worlds.get(*index) else {
+                    continue;
+                };
+                if done.get(world).is_none() {
+                    stack.recorded(world, &mut done, || {
+                        self.expression(world, step.id, step.source, step.op, step.expr);
+                    });
+                }
+            }
+            let mut asked = stack.ask_end(outer);
+            asked.extend(step.asked);
+            let key = (
+                step.source.layer,
+                step.source.pos,
+                step.source.target,
+                step.id.1,
+            );
+            kept.push((
+                key,
+                Memo {
+                    asked: asked.into_iter().collect(),
+                    problems: self.raw.take().unwrap_or_default(),
+                },
+            ));
+        }
+        if let Some(Some(memory)) = memory.as_deref_mut() {
+            memory.steps.extend(kept);
         }
     }
 

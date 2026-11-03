@@ -339,7 +339,7 @@ fn checked(layer: &Layer, decl: &Declarations) -> (usize, Duration) {
         below: &[],
     };
     let started = Instant::now();
-    let problems = match super::super::check(layer, &cx) {
+    let problems = match super::super::check(layer, &cx, &super::Reused::default()) {
         Ok(()) => 0,
         Err(crate::next::error::LayerError::Invalid(problems)) => problems.len(),
         Err(other) => panic!("{other}"),

@@ -26,6 +26,7 @@ use super::resolve::ReaderState;
 use super::selector::{Scheme, WidgetRef};
 use super::toml::read::Named;
 pub(crate) use checks::{TypeTarget, type_env};
+pub(crate) use combos::Reused;
 pub(crate) use stack::Stacked;
 
 /// What a layer is to the stack (S8, S9, S14): which checks apply to it.
@@ -63,15 +64,17 @@ pub(crate) struct Context<'a> {
     pub(crate) reader_accent_left_out: bool,
 }
 
-/// Every structural problem `layer` has against `cx` (S12).
-pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
+/// Every structural problem `layer` has against `cx` (S12), the checks
+/// over combinations taking from `reused` what the check of the layer below
+/// found that `layer` leaves as it was.
+pub(crate) fn check(layer: &Layer, cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
     let mut problems = checks::layer(layer, cx);
     let mut layers = cx.below.to_vec();
     layers.push(Stacked {
         layer,
         kind: cx.kind,
     });
-    add(&mut problems, combinations(&layers, *cx));
+    add(&mut problems, combinations(&layers, *cx, reused));
     if problems.is_empty() {
         Ok(())
     } else {
@@ -81,11 +84,12 @@ pub(crate) fn check(layer: &Layer, cx: &Context<'_>) -> Result<(), LayerError> {
 
 /// Every problem the checks over combinations find in `layers`, the last
 /// the layer `cx` adds (S12), each with whether it names a place of that
-/// layer.
-fn combinations(layers: &[Stacked<'_>], cx: Context<'_>) -> Vec<(bool, Problem)> {
+/// layer; what the check of the layers below found is taken from `reused`
+/// where the added layer leaves it as it was.
+fn combinations(layers: &[Stacked<'_>], cx: Context<'_>, reused: &Reused) -> Vec<(bool, Problem)> {
     let stack = stack::Stack::new(layers, cx);
     let added = layers.len().saturating_sub(1);
-    let mut problems: Vec<(bool, Problem)> = combos::check(&stack)
+    let mut problems: Vec<(bool, Problem)> = combos::check(&stack, Some(reused))
         .into_iter()
         .map(|(layer, problem)| (layer == added, problem))
         .collect();
@@ -124,13 +128,15 @@ fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
 /// completeness check, as the layers above it state them
 /// ([`listed_unstated`]; S17, ADD-A131); `synthetic`: the synthetic
 /// route's preset, whose pending default sizes are waived (S10's *A
-/// pending default*, ADD-A131).
+/// pending default*, ADD-A131); `reused` keeps what its checks over
+/// combinations found for the checks of the layers above it.
 pub(crate) fn check_preset(
     declarations: &Declarations,
     layer: &Layer,
     preset: Option<PresetId>,
     pending: &[crate::next::toml::layer::Listed],
     synthetic: bool,
+    reused: &Reused,
 ) -> Result<(), LayerError> {
     let exempt: Vec<String> = pending
         .iter()
@@ -152,7 +158,7 @@ pub(crate) fn check_preset(
     }];
     // A listed path a redrawn part leaves unstated is the layers' over it
     // too (S6.3, S17).
-    let found = combinations(&layers, cx)
+    let found = combinations(&layers, cx, reused)
         .into_iter()
         .filter(|(_, problem)| {
             !(problem.kind == ProblemKind::Missing && exempt.contains(&problem.path))

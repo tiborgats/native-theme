@@ -4,7 +4,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use super::{Context, LayerKind, check, check_preset};
+use super::{Context, LayerKind, Reused, check, check_preset};
 use crate::key;
 use crate::next::blocks::BlockPatch;
 use crate::next::blocks::focus::FocusIndicatorPatch;
@@ -63,7 +63,7 @@ fn found_as(layer: &Layer, decl: &Declarations, kind: LayerKind) -> Vec<String> 
         reader_accent_left_out: false,
         below: &[],
     };
-    strings(check(layer, &cx))
+    strings(check(layer, &cx, &Reused::default()))
 }
 
 /// The problems of an application layer over `decl`, `below` the preset's
@@ -80,7 +80,7 @@ fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> 
         reader_accent_left_out: false,
         below: &below,
     };
-    strings(check(layer, &cx))
+    strings(check(layer, &cx, &Reused::default()))
 }
 
 /// The problems of an application layer over `decl`.
@@ -1291,6 +1291,7 @@ fn present_with_nothing_beneath_is_missing() {
         None,
         &[],
         false,
+        &Reused::default(),
     ));
     assert!(
         own.iter()
@@ -1311,6 +1312,7 @@ fn preset(body: &str) -> Vec<String> {
         None,
         &[],
         false,
+        &Reused::default(),
     ))
     .into_iter()
     .filter(|problem| !problem.ends_with(": missing"))
@@ -1327,6 +1329,7 @@ fn synthetic_preset(body: &str) -> Vec<String> {
         None,
         &[],
         true,
+        &Reused::default(),
     ))
     .into_iter()
     .filter(|problem| !problem.ends_with(": missing"))
@@ -1852,10 +1855,17 @@ fn refusal_unused_variants_models_and_maps() {
         })),
         ..ButtonPatch::default()
     }));
-    let problems: Vec<String> = strings(check_preset(&file.declarations, &layer, None, &[], false))
-        .into_iter()
-        .filter(|problem| !problem.ends_with(": missing"))
-        .collect();
+    let problems: Vec<String> = strings(check_preset(
+        &file.declarations,
+        &layer,
+        None,
+        &[],
+        false,
+        &Reused::default(),
+    ))
+    .into_iter()
+    .filter(|problem| !problem.ends_with(": missing"))
+    .collect();
     assert_eq!(problems, NONE);
 }
 
@@ -1943,6 +1953,7 @@ fn refusal_missing() {
         None,
         &[],
         false,
+        &Reused::default(),
     ));
     assert!(
         found.contains(&"tokens.motion.timings: missing".to_owned()),
@@ -3204,7 +3215,7 @@ fn layer_error_every_variant_triggers() {
             reader_accent_left_out: false,
             below: &below,
         };
-        problems(check(layer, &cx))
+        problems(check(layer, &cx, &Reused::default()))
     };
     let none = Declarations::default();
     // S11's reader: text it refuses.
@@ -3221,6 +3232,7 @@ fn layer_error_every_variant_triggers() {
             None,
             &[],
             false,
+            &Reused::default(),
         ))
     };
     let mut keyed = Layer::default();
@@ -3369,7 +3381,7 @@ fn layer_error_every_variant_triggers() {
             reader_accent_left_out: false,
             below: &[],
         };
-        super::combos::check(&super::stack::Stack::new(&layers, cx))
+        super::combos::check(&super::stack::Stack::new(&layers, cx), None)
             .into_iter()
             .map(|(_, problem)| problem)
             .collect::<Vec<Problem>>()
@@ -3797,6 +3809,7 @@ fn every_layer_error() {
             reader_accent_left_out: false,
             below: &[],
         },
+        &Reused::default(),
     );
     let mut errors = crate::next::resolve::refusals();
     errors.extend(invalid.err());
