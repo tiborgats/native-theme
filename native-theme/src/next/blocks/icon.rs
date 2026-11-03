@@ -83,10 +83,12 @@ pub enum RenderingMode {
 pub struct Glyph {
     /// What the glyph is drawn from.
     pub source: GlyphSource,
-    /// The glyph's size.
+    /// The glyph's size; absent only on a `SystemControl` source, whose
+    /// glyph's size and fill are never drawn (S6.3, S15; S12).
+    #[parts(may_be_absent)]
     pub size: Value<Px>,
     /// The glyph's fill; absent only on a stroked-only path (a spinner's
-    /// arc, whose paint is its stroke's; S12).
+    /// arc, whose paint is its stroke's) or a `SystemControl` source (S12).
     #[parts(block = "append", may_be_absent)]
     pub fill: Value<Paint>,
     /// The glyph's stroke; absent where the glyph is not stroked.

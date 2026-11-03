@@ -2172,7 +2172,9 @@ impl Checks<'_, '_> {
     /// absent where its `width` and `paint` are drawn; an icon style's
     /// `fill` absent, outside an icon-size context, where its
     /// `rendering_mode` is not `Original`; a glyph's `fill` absent where its
-    /// `stroke` is absent too; each under one world, references followed.
+    /// `stroke` is absent too and its `source` is not `SystemControl`, and
+    /// its `size` absent where its `source` is not `SystemControl`; each
+    /// under one world, references followed.
     fn marks(&mut self) {
         let stack = self.stack;
         let mut places: Vec<(Target, String, &'static str)> = Vec::new();
@@ -2189,7 +2191,7 @@ impl Checks<'_, '_> {
                 ) = (&op.kind, op.field)
                     && matches!(
                         (owner, name),
-                        ("Edge", "dash") | ("IconStyle" | "Glyph", "fill")
+                        ("Edge", "dash") | ("IconStyle" | "Glyph", "fill") | ("Glyph", "size")
                     )
                 {
                     let parent = op.path.rsplit_once('.').map_or("", |(parent, _)| parent);
@@ -2217,61 +2219,80 @@ impl Checks<'_, '_> {
             if target == Target::Tokens && place.starts_with("icons.sizes.") {
                 continue;
             }
-            let (absent, others): (&str, &[&str]) = match owner {
-                "Edge" => ("dash", &["width", "paint"]),
-                "IconStyle" => ("fill", &["rendering_mode"]),
-                _ => ("fill", &["stroke"]),
+            let marks: &[(&str, &[&str])] = match owner {
+                "Edge" => &[("dash", &["width", "paint"])],
+                "IconStyle" => &[("fill", &["rendering_mode"])],
+                _ => &[("fill", &["stroke", "source"]), ("size", &["source"])],
             };
-            let mut seeds = vec![Seed::Field(target, below(&place, absent), false)];
-            seeds.extend(
-                others
-                    .iter()
-                    .map(|other| Seed::Field(target, below(&place, other), false)),
-            );
-            if let Target::Part(part) = target {
-                seeds.push(Seed::Shown(part));
+            for (absent, others) in marks {
+                self.mark(target, &place, owner, absent, others);
             }
-            let worlds = stack.worlds(seeds);
-            for world in worlds.iter() {
-                if let Target::Part(part) = target
-                    && !matches!(stack.shown(world, part).0, Shown::Drawn)
-                {
-                    continue;
-                }
-                // A step stating the block itself absent leaves no field of
-                // it to check; a step without an id (a binding's) is never
-                // that step.
-                let whole: Vec<Option<(usize, usize)>> = stack
-                    .effective(world, target, &place)
+        }
+    }
+
+    /// One conditional mark of [`Self::marks`]: the field `absent` of the
+    /// block `owner` at `place` of `target`, under each world its `others`
+    /// give.
+    fn mark(&mut self, target: Target, place: &str, owner: &str, absent: &str, others: &[&str]) {
+        let stack = self.stack;
+        let mut seeds = vec![Seed::Field(target, below(place, absent), false)];
+        seeds.extend(
+            others
+                .iter()
+                .map(|other| Seed::Field(target, below(place, other), false)),
+        );
+        if let Target::Part(part) = target {
+            seeds.push(Seed::Shown(part));
+        }
+        let worlds = stack.worlds(seeds);
+        for world in worlds.iter() {
+            if let Target::Part(part) = target
+                && !matches!(stack.shown(world, part).0, Shown::Drawn)
+            {
+                continue;
+            }
+            // A step stating the block itself absent leaves no field of it
+            // to check; a step without an id (a binding's) is never that
+            // step.
+            let whole: Vec<Option<(usize, usize)>> = stack
+                .effective(world, target, place)
+                .into_iter()
+                .filter(|found| matches!(found.got, Got::Absent))
+                .map(|found| found.id)
+                .collect();
+            let absents: Vec<Found<'_>> = stack
+                .effective(world, target, &below(place, absent))
+                .into_iter()
+                .filter(|found| {
+                    matches!(found.got, Got::Absent)
+                        && !(found.id.is_some() && whole.contains(&found.id))
+                })
+                .collect();
+            if absents.is_empty() {
+                continue;
+            }
+            let other = |name: &str| stack.effective(world, target, &below(place, name));
+            let not_system_control = || {
+                other("source")
+                    .iter()
+                    .any(|f| variant(f) != Some("system_control"))
+            };
+            let refused = match (owner, absent) {
+                ("Edge", _) => ["width", "paint"]
                     .into_iter()
-                    .filter(|found| matches!(found.got, Got::Absent))
-                    .map(|found| found.id)
-                    .collect();
-                let absents: Vec<Found<'_>> = stack
-                    .effective(world, target, &below(&place, absent))
-                    .into_iter()
-                    .filter(|found| {
-                        matches!(found.got, Got::Absent)
-                            && !(found.id.is_some() && whole.contains(&found.id))
-                    })
-                    .collect();
-                if absents.is_empty() {
-                    continue;
+                    .all(|name| other(name).iter().any(|f| !matches!(f.got, Got::Absent))),
+                ("IconStyle", _) => other("rendering_mode")
+                    .iter()
+                    .any(|f| variant(f) != Some("original") && !matches!(f.got, Got::Absent)),
+                (_, "size") => not_system_control(),
+                _ => {
+                    other("stroke").iter().any(|f| matches!(f.got, Got::Absent))
+                        && not_system_control()
                 }
-                let other = |name: &str| stack.effective(world, target, &below(&place, name));
-                let refused = match owner {
-                    "Edge" => ["width", "paint"]
-                        .into_iter()
-                        .all(|name| other(name).iter().any(|f| !matches!(f.got, Got::Absent))),
-                    "IconStyle" => other("rendering_mode")
-                        .iter()
-                        .any(|f| variant(f) != Some("original") && !matches!(f.got, Got::Absent)),
-                    _ => other("stroke").iter().any(|f| matches!(f.got, Got::Absent)),
-                };
-                if refused {
-                    for found in absents {
-                        self.problem(found.layer, found.at, ProblemKind::AbsentNotAllowed);
-                    }
+            };
+            if refused {
+                for found in absents {
+                    self.problem(found.layer, found.at, ProblemKind::AbsentNotAllowed);
                 }
             }
         }

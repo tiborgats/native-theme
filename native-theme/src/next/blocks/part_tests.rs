@@ -568,6 +568,7 @@ fn no_other_field_may_be_absent_or_auto() {
         "Glyph.draw_extent",
         "Glyph.draw_start",
         "Glyph.fill",
+        "Glyph.size",
         "Glyph.stroke",
         "IconStyle.animation",
         "IconStyle.fill",

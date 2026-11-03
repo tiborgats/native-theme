@@ -421,10 +421,12 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
 
 /// The fields whose `Absent` S12 refuses under a condition of their place
 /// (S12), so a synthetic value states them (S17, ADD-A131: never `Absent`
-/// where a conditional mark refuses it there): a text style's drawn-text
+/// where a conditional mark refuses it there): a glyph's `size`, absent
+/// only on a `SystemControl` source (S6.3), and a text style's drawn-text
 /// leaves, absent in a keyed style and a slot only, which no part
 /// referencing them takes absent (S2.8).
-const STATED_UNDER_CONDITION: [(&str, &str); 4] = [
+const STATED_UNDER_CONDITION: [(&str, &str); 5] = [
+    ("Glyph", "size"),
     ("TextStyle", "fill"),
     ("TextStyle", "elision"),
     ("TextStyle", "wrap"),
@@ -2721,11 +2723,12 @@ mod tests {
 
     /// A field S12 refuses `Absent` at under a condition of its place takes
     /// a stated synthetic value, whole or in a block (S17, ADD-A131): a
-    /// slot's or keyed style's drawn-text leaves, which their places alone
-    /// mark; a field marked wherever it is stays absent.
+    /// glyph's size, and a slot's or keyed style's drawn-text leaves, which
+    /// their places alone mark; a field marked wherever it is stays absent.
     #[test]
     fn a_conditionally_marked_field_is_stated() {
         let value = |path: &str| synthetic_value(path).unwrap().1;
+        assert_eq!(value("widgets.button.icon.glyph.size_px"), Item::Integer(1));
         assert_eq!(
             value("tokens.text.roles.body.elision"),
             Item::String("none".to_owned())

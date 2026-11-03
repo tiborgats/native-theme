@@ -155,20 +155,86 @@ fn from_icon_without_fill_refused() {
     );
 }
 
-/// A glyph's `fill` absent where its `stroke` is absent too (S2.9, S12).
+const SYSTEM_CONTROL: &str =
+    "source = { system_control = { control = \"app_kit_checkbox\", replaces = [] } }";
+
+const THEME_ICON: &str = "source = { theme_icon = { name = \"probe\", fallbacks = [] } }";
+
+/// A glyph's `fill` absent where its `stroke` is absent too (S2.9, S12),
+/// on a source other than `SystemControl`
+/// (`glyph_fill_absent_on_system_control`).
 #[test]
 fn combination_glyph_fill_absent() {
-    let base = "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
-                stroke = \"absent\"";
+    let base = format!(
+        "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
+         stroke = \"absent\"\n{THEME_ICON}"
+    );
     let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.menu_indicator\"\n\
                 set = { glyph.fill = \"absent\" }";
     assert_eq!(
-        over(base, rule, &Declarations::default()),
+        over(&base, rule, &Declarations::default()),
         ["rules[0].set.glyph.fill: may not be absent"]
     );
-    let stroked = "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
-                   stroke = { paint = \"#000000\", width_px = 1, cap = \"round\", join = \"round\" }";
-    assert_eq!(over(stroked, rule, &Declarations::default()), NONE);
+    let stroked = format!(
+        "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
+         stroke = {{ paint = \"#000000\", width_px = 1, cap = \"round\", join = \"round\" }}\n\
+         {THEME_ICON}"
+    );
+    assert_eq!(over(&stroked, rule, &Declarations::default()), NONE);
+}
+
+/// A glyph's `size` absent where its `source` can be other than
+/// `SystemControl` (S6.3, S12): a `SystemControl` source's rendering never
+/// draws it; a rule changing the source under a state is refused with it.
+#[test]
+fn glyph_size_absent_only_on_system_control() {
+    let base = |source: &str| {
+        format!(
+            "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
+             stroke = \"absent\"\n{source}"
+        )
+    };
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.menu_indicator\"\n\
+                set = { glyph.size_px = \"absent\" }";
+    assert_eq!(
+        over(&base(SYSTEM_CONTROL), rule, &Declarations::default()),
+        NONE
+    );
+    assert_eq!(
+        over(&base(THEME_ICON), rule, &Declarations::default()),
+        ["rules[0].set.glyph.size_px: may not be absent"]
+    );
+    let source = format!(
+        "{rule}\n[[rules]]\nwhen = {{ states = [\"pressed\"] }}\n\
+         target = \"button.menu_indicator\"\nset = {{ glyph.{THEME_ICON} }}"
+    );
+    assert_eq!(
+        over(&base(SYSTEM_CONTROL), &source, &Declarations::default()),
+        ["rules[0].set.glyph.size_px: may not be absent"]
+    );
+}
+
+/// A glyph's `fill` absent beside an absent stroke is allowed on a
+/// `SystemControl` source (S6.3, S12), and refused on any other
+/// (`combination_glyph_fill_absent`).
+#[test]
+fn glyph_fill_absent_on_system_control() {
+    let base = |source: &str| {
+        format!(
+            "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
+             stroke = \"absent\"\n{source}"
+        )
+    };
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.menu_indicator\"\n\
+                set = { glyph.fill = \"absent\" }";
+    assert_eq!(
+        over(&base(SYSTEM_CONTROL), rule, &Declarations::default()),
+        NONE
+    );
+    assert_eq!(
+        over(&base(THEME_ICON), rule, &Declarations::default()),
+        ["rules[0].set.glyph.fill: may not be absent"]
+    );
 }
 
 /// S12's own examples: an `Absent` under `scheme:dark` and a `Fields` patch
