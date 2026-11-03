@@ -4,15 +4,17 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use super::tests::{body, input, stack, window};
+use super::tests::{body, color, input, stack, window};
 use super::{ReaderState, Stack, WindowState};
 use crate::key;
+use crate::next::color::Color;
 use crate::next::declare::Declarations;
 use crate::next::error::LayerError;
-use crate::next::inputs::{Accent, Contrast, InputName};
+use crate::next::inputs::{Accent, Contrast, InputName, InputValue};
 use crate::next::layer::{Layer, LayerId};
 use crate::next::selector::{Scheme, WidgetRef};
 use crate::next::toml::layer::read_preset;
+use crate::next::value::{SchemeMap, Value};
 use crate::next::widgets::WidgetKind;
 
 /// A mutation of the stack.
@@ -30,10 +32,24 @@ fn declarations(declare: &str) -> Declarations {
     .declarations
 }
 
+/// A layer stating each of `names` at both schemes, red `r`.
+fn stating(names: &[&str], r: f32) -> Layer {
+    let mut layer = Layer::default();
+    for name in names {
+        let entry = (InputName::new(name).unwrap(), input(r));
+        layer.bases.inputs.entries.push(entry);
+    }
+    layer
+}
+
 /// A stack declaring the flavours `a` and `b`, and `accent` and
-/// `accent_ramp.light1` as its accent inputs.
+/// `accent_ramp.light1` as its accent inputs, its preset stating both.
 fn declared() -> Stack {
-    let mut stack = stack(Layer::default(), None, Vec::new());
+    let mut stack = stack(
+        stating(&["accent", "accent_ramp.light1"], 0.5),
+        None,
+        Vec::new(),
+    );
     stack.declarations = declarations(
         "flavors = [\"a\", \"b\"]\n\
          inputs = [\"accent\", \"accent_ramp.light1\"]\n\
@@ -397,4 +413,107 @@ fn stand_in_removal_refused_where_a_layer_needs_it() {
         ["rules[0].set.stroke: patches the fields of a value that can be `absent`"]
     );
     assert_eq!(stack, before);
+}
+
+/// The value of the input `name` in force on `stack` under `scheme`.
+fn in_force(stack: &Stack, scheme: Scheme, name: &InputName) -> Option<Value<Color>> {
+    let mut stack = stack.clone();
+    stack.picked = Some(scheme);
+    let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+    theme
+        .inputs
+        .into_iter()
+        .find(|(held, _)| held == name)
+        .map(|(_, value)| value)
+}
+
+/// The preset's accent inputs as one group per scheme (S9.2, ADD-A132): an
+/// `Accent` stating the group whole at one scheme is accepted, the other
+/// scheme keeping the preset's accent and derived inputs together; one
+/// stating a derived input at one scheme and the accent at both is
+/// refused, naming the input once; a contrast base at a scheme with no
+/// per-scheme value there needs every one's per-scheme value there, which
+/// is all that is refused where the group is the `accent` alone.
+#[test]
+fn accent_inputs_one_group_per_scheme() {
+    let accent = InputName::new("accent").unwrap();
+    let ramp = InputName::new("accent_ramp.light1").unwrap();
+    let light = |r: f32| InputValue::new(SchemeMap::one(Scheme::Light, color(r)));
+    let with = |value: InputValue, derived: InputValue| {
+        let mut out = Accent::new(value);
+        out.derived.push((ramp.clone(), derived));
+        out
+    };
+    let mut stack = declared();
+    stack
+        .set_accent(Some(with(light(0.1), light(0.2))))
+        .unwrap();
+    assert_eq!(in_force(&stack, Scheme::Light, &accent), Some(color(0.1)));
+    assert_eq!(in_force(&stack, Scheme::Light, &ramp), Some(color(0.2)));
+    assert_eq!(in_force(&stack, Scheme::Dark, &accent), Some(color(0.5)));
+    assert_eq!(in_force(&stack, Scheme::Dark, &ramp), Some(color(0.5)));
+    let before = stack.clone();
+    assert_eq!(
+        stack.set_accent(Some(with(input(0.1), light(0.2)))),
+        Err(LayerError::AccentInputsMissing(vec![ramp.clone()]))
+    );
+    let mut based = light(0.1);
+    based
+        .per_contrast
+        .push((Contrast::High, SchemeMap::one(Scheme::Dark, color(0.3))));
+    assert_eq!(
+        stack.set_accent(Some(with(based.clone(), light(0.2)))),
+        Err(LayerError::AccentInputsMissing(vec![
+            accent.clone(),
+            ramp.clone()
+        ]))
+    );
+    assert_eq!(stack, before);
+    let mut alone = super::tests::stack(stating(&["accent"], 0.5), None, Vec::new());
+    alone.declarations = declarations("inputs = [\"accent\"]\naccent_inputs = [\"accent\"]\n");
+    alone.set_accent(Some(Accent::new(light(0.1)))).unwrap();
+    assert_eq!(
+        alone.set_accent(Some(Accent::new(based))),
+        Err(LayerError::AccentInputsMissing(vec![accent]))
+    );
+}
+
+/// A stand-in states the preset's accent inputs as one group (S9.2,
+/// ADD-A132): one stating the `accent` alone is refused where the preset
+/// derives others from it, the stack as it was, and accepted where the
+/// group is the `accent` alone; one stating the group, or none of it, is
+/// accepted; `set_preset` to a preset deriving more from the accent is
+/// refused over that stand-in.
+#[test]
+fn stand_in_states_the_accent_group() {
+    let ramp = InputName::new("accent_ramp.light1").unwrap();
+    let state = || ReaderState::new(Scheme::Light, 1.0);
+    let mut stack = declared();
+    let before = stack.clone();
+    assert_eq!(
+        stack.set_reader_stand_in(state(), stating(&["accent"], 0.7)),
+        Err(LayerError::AccentInputsMissing(vec![ramp.clone()]))
+    );
+    assert_eq!(stack, before);
+    stack
+        .set_reader_stand_in(state(), stating(&["accent", "accent_ramp.light1"], 0.7))
+        .unwrap();
+    stack
+        .set_reader_stand_in(state(), Layer::default())
+        .unwrap();
+    let mut alone = super::tests::stack(stating(&["accent"], 0.5), None, Vec::new());
+    alone.declarations = declarations("inputs = [\"accent\"]\naccent_inputs = [\"accent\"]\n");
+    alone
+        .set_reader_stand_in(state(), stating(&["accent"], 0.7))
+        .unwrap();
+    let derived = declared();
+    assert_eq!(
+        alone.set_preset(
+            None,
+            derived.declarations.clone(),
+            (*derived.preset_layer).clone(),
+            Vec::new()
+        ),
+        Err(LayerError::AccentInputsMissing(vec![ramp]))
+    );
 }

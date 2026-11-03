@@ -242,7 +242,7 @@ fn reader_stand_in_refused_with_reader() {
     ));
 }
 
-fn color(r: f32) -> Value<Color> {
+pub(super) fn color(r: f32) -> Value<Color> {
     Value::Stated(Color {
         r,
         g: 0.0,
@@ -257,7 +257,7 @@ pub(super) fn input(r: f32) -> InputValue {
 
 /// S9.2: the accent layer states the preset's accent inputs; an accent
 /// lacking one is refused, naming it; `None` clears the layer. The accent
-/// layer comes last, over the reader's input.
+/// layer comes last, over the stand-in's inputs.
 #[test]
 fn accent_layer_states_the_accent_inputs() {
     let declarations = read_preset(
@@ -280,6 +280,7 @@ fn accent_layer_states_the_accent_inputs() {
         .inputs
         .entries
         .push((InputName::new("accent").unwrap(), input(0.9)));
+    reader.bases.inputs.entries.push((ramp.clone(), input(0.8)));
     stack
         .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), reader)
         .unwrap();
@@ -296,13 +297,16 @@ fn accent_layer_states_the_accent_inputs() {
         inputs(&stack),
         [
             (InputName::new("accent").unwrap(), color(0.1)),
-            (ramp, color(0.2)),
+            (ramp.clone(), color(0.2)),
         ]
     );
     stack.set_accent(None).unwrap();
     assert_eq!(
         inputs(&stack),
-        [(InputName::new("accent").unwrap(), color(0.9))]
+        [
+            (InputName::new("accent").unwrap(), color(0.9)),
+            (ramp, color(0.8)),
+        ]
     );
 }
 

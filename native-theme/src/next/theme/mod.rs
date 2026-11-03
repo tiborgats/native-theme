@@ -56,9 +56,11 @@ impl Theme {
     /// `[for_preset.<id>]` part and preset-conditioned rules to their own;
     /// the accent layer is derived again; the flavour set is kept where the
     /// new preset declares it, else the new preset's default is in force.
-    /// Refused where the accent set lacks one of the new preset's accent
-    /// inputs (S9.2), where a path its `[pending]` table lists is left that
-    /// no layer states (S17), or where the stack fails validation over it.
+    /// Refused where the accent set or the stand-in (its common inputs with
+    /// its part for the new preset) does not state the new preset's accent
+    /// inputs as one group (`Err(AccentInputsMissing)`, S9.2, S9.5), where a
+    /// path its `[pending]` table lists is left that no layer states (S17),
+    /// or where the stack fails validation over it.
     /// On a theme [`Theme::from_preset_synthetic`] built, it ends the
     /// synthetic route, whose layers and folded values it removes, the same
     /// preset's included (S17, ADD-A131).
@@ -72,7 +74,11 @@ impl Theme {
 
     /// Sets the reader stand-in, or replaces the one set (S8, R2.6): its
     /// state and its layer, validated as a reader's; refused while a reader
-    /// exists (`Err(ReaderPresent)`).
+    /// exists (`Err(ReaderPresent)`), and where its common inputs with its
+    /// part for the current preset do not state the preset's accent inputs
+    /// as one group (`Err(AccentInputsMissing)`, S9.2): a stand-in stating
+    /// the `accent` alone is refused on a preset that derives others from
+    /// it.
     pub fn set_reader_stand_in(
         &mut self,
         state: ReaderState,
@@ -139,8 +145,11 @@ impl Theme {
         self.stack.remove_layer(id)
     }
 
-    /// Sets the accent (S9.2); `None`: the system's again. Refused,
-    /// naming them, where it lacks accent inputs the preset declares.
+    /// Sets the accent (S9.2); `None`: the system's again. It states the
+    /// preset's accent inputs as one group: at every scheme at which it
+    /// states any of them, every one's per-scheme value; refused, naming
+    /// those it lacks, otherwise. A scheme at which it states none keeps
+    /// the accent beneath.
     pub fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError> {
         self.stack.set_accent(accent)
     }

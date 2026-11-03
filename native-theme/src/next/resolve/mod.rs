@@ -601,7 +601,9 @@ impl Stack {
     }
 
     /// Sets the stand-in, or replaces the one set; refused while a reader
-    /// exists (S8, R2.6).
+    /// exists (S8, R2.6), and where its common inputs with its part for the
+    /// current preset do not state the preset's accent inputs as one group,
+    /// naming those it lacks (S9.2).
     pub(crate) fn set_reader_stand_in(
         &mut self,
         state: ReaderState,
@@ -610,6 +612,7 @@ impl Stack {
         if matches!(self.reader, Some(Reader::Read { .. })) {
             return Err(LayerError::ReaderPresent);
         }
+        accent_inputs_held(&self.declarations, self.preset, None, Some(&layer))?;
         let layer = Arc::new(layer);
         self.change(|stack| stack.reader = Some(Reader::StandIn { state, layer }))
     }
@@ -625,8 +628,11 @@ impl Stack {
 
     /// Switches to another preset's declarations, layer and listed paths
     /// `pending` (S16): refused where the preset fails validation, or the
-    /// accent set lacks one of its accent inputs (S9.2), or a listed path
-    /// no layer states is left (S17); the accent layer is derived again
+    /// accent set or the stand-in (its common inputs with its part for the
+    /// new preset) does not state the new preset's accent inputs as one
+    /// group (S9.2, S9.5), or a listed path no layer states is left (S17),
+    /// or a declared input is left with no value at a slot (S12); the
+    /// accent layer is derived again
     /// (S8). On a synthetic theme it ends the synthetic route, removing the
     /// layers it added and the values it folded, the same preset's included
     /// (S17, ADD-A131).
@@ -637,7 +643,7 @@ impl Stack {
         layer: Layer,
         pending: Vec<Listed>,
     ) -> Result<(), LayerError> {
-        accent_inputs_held(&declarations, self.accent.as_ref())?;
+        accent_inputs_held(&declarations, preset, self.accent.as_ref(), self.stand_in())?;
         let problems = preset_problems(&declarations, &layer, preset, &pending, false)?;
         self.change_beside(problems, |stack| {
             stack.switch(preset, declarations, layer, pending);
@@ -704,11 +710,14 @@ impl Stack {
     }
 
     /// Sets the accent (S9.2), or clears it (`None`: the system's again).
-    /// It states every accent input the preset declares, the `accent` by
-    /// [`Accent::accent`] and the others among [`Accent::derived`];
-    /// refused, naming those it lacks, otherwise.
+    /// It states the accent inputs the preset declares as one group, the
+    /// `accent` by [`Accent::accent`] and the others among
+    /// [`Accent::derived`]: at every scheme at which it states any of them
+    /// it states every one's per-scheme value; refused, naming those it
+    /// lacks, otherwise. A scheme at which it states none keeps the layers'
+    /// beneath.
     pub(crate) fn set_accent(&mut self, accent: Option<Accent>) -> Result<(), LayerError> {
-        accent_inputs_held(&self.declarations, accent.as_ref())?;
+        accent_inputs_held(&self.declarations, self.preset, accent.as_ref(), None)?;
         self.change(|stack| stack.accent = accent)
     }
 
@@ -889,6 +898,14 @@ impl Stack {
         }
     }
 
+    /// The stand-in's layer; `None` without one, a reader's included.
+    fn stand_in(&self) -> Option<&Layer> {
+        match &self.reader {
+            Some(Reader::StandIn { layer, .. }) => Some(layer),
+            Some(Reader::Read { .. }) | None => None,
+        }
+    }
+
     /// The state the reader or stand-in reports; `None` without either.
     pub(crate) fn reader_state(&self) -> Option<&ReaderState> {
         match &self.reader {
@@ -1063,28 +1080,104 @@ impl Stack {
     }
 }
 
-/// Whether `accent` states every accent input `declarations` declares: the
-/// `accent` by [`Accent::accent`], the others among [`Accent::derived`];
-/// refused, naming those it lacks, otherwise (S9.2). Clearing the accent
-/// (`None`) lacks none.
+/// Whether the application's `accent` and stand-in `stand_in` state the
+/// accent inputs `declarations` declares as one group under the preset
+/// `preset` (S9.2): each where [`group_missing`] finds none missing, the
+/// stand-in's common inputs with its part for `preset` together; refused,
+/// naming each accent input either lacks once, otherwise. Clearing the
+/// accent (`None`) and no stand-in lack none; a reader states its own
+/// preset's group by construction and is not checked (S9.3).
 fn accent_inputs_held(
     declarations: &Declarations,
+    preset: Option<PresetId>,
     accent: Option<&Accent>,
+    stand_in: Option<&Layer>,
 ) -> Result<(), LayerError> {
-    let Some(accent) = accent else {
-        return Ok(());
-    };
-    let missing: Vec<InputName> = declarations
-        .accent_inputs
-        .iter()
-        .filter(|name| !(is_accent(name) || accent.derived.iter().any(|(held, _)| held == *name)))
-        .cloned()
-        .collect();
+    let group = &declarations.accent_inputs;
+    let mut missing = Vec::new();
+    if let Some(accent) = accent {
+        let name = InputName::new("accent").ok();
+        let stated: Vec<(&InputName, &InputValue)> = name
+            .iter()
+            .map(|name| (name, &accent.accent))
+            .chain(
+                accent
+                    .derived
+                    .iter()
+                    .filter(|(name, _)| !is_accent(name))
+                    .map(|(name, value)| (name, value)),
+            )
+            .collect();
+        missing = group_missing(group, &stated);
+    }
+    if let Some(layer) = stand_in {
+        let stated: Vec<(&InputName, &InputValue)> = applying_bases(layer, preset)
+            .flat_map(|bases| bases.inputs.entries.iter())
+            .map(|(name, value)| (name, value))
+            .collect();
+        for name in group_missing(group, &stated) {
+            if !missing.contains(&name) {
+                missing.push(name);
+            }
+        }
+    }
     if missing.is_empty() {
         Ok(())
     } else {
         Err(LayerError::AccentInputsMissing(missing))
     }
+}
+
+/// The accent inputs of `group` (the current preset's `accent_inputs`,
+/// S9.1) that the inputs `stated`, one layer's, lack where the group needs
+/// them (S9.2): at every scheme at which `stated` gives any of them a
+/// value, a per-scheme value or a contrast base, every one's per-scheme
+/// value. Each is named once, in the group's order, whatever the schemes.
+fn group_missing(group: &[InputName], stated: &[(&InputName, &InputValue)]) -> Vec<InputName> {
+    fn values<'a>(
+        stated: &'a [(&'a InputName, &'a InputValue)],
+        name: &'a InputName,
+    ) -> impl Iterator<Item = &'a InputValue> {
+        stated
+            .iter()
+            .filter(move |(held, _)| *held == name)
+            .map(|(_, value)| *value)
+    }
+    let mut missing: Vec<InputName> = Vec::new();
+    for scheme in Scheme::ALL {
+        let any = group.iter().any(|name| {
+            values(stated, name).any(|value| {
+                value.per_scheme.get(scheme).is_some()
+                    || value
+                        .per_contrast
+                        .iter()
+                        .any(|(_, schemes)| schemes.get(scheme).is_some())
+            })
+        });
+        if !any {
+            continue;
+        }
+        for name in group {
+            let held = values(stated, name).any(|value| value.per_scheme.get(scheme).is_some());
+            if !held && !missing.contains(name) {
+                missing.push(name.clone());
+            }
+        }
+    }
+    missing
+}
+
+/// The bases of `layer` that apply under the preset `preset`, in their
+/// order: its common bases, then its part for `preset` (S8, S11's
+/// `[for_preset.<id>]`).
+fn applying_bases(layer: &Layer, preset: Option<PresetId>) -> impl Iterator<Item = &Bases> {
+    std::iter::once(&layer.bases).chain(
+        layer
+            .for_preset
+            .iter()
+            .filter(move |(held, _)| Some(*held) == preset)
+            .map(|(_, bases)| bases),
+    )
 }
 
 /// A preset's listed path as S11 spells it and its register ids (S17).

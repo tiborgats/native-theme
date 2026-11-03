@@ -43,8 +43,10 @@ pub enum LayerError {
     Invalid(Vec<Problem>),
     /// A reader stand-in set while a reader exists (S8, R2.6).
     ReaderPresent,
-    /// An accent lacking accent inputs the preset declares, which it names
-    /// (S9.2).
+    /// An accent, a stand-in, or either under a new preset, not stating the
+    /// preset's accent inputs as one group (S9.2): at a scheme at which it
+    /// states any of them, those lacking their per-scheme value there, each
+    /// named once whatever the schemes.
     AccentInputsMissing(Vec<InputName>),
     /// `replace_layer` or `remove_layer` given an id this theme does not
     /// hold: already removed, or another theme's (S16).
@@ -64,7 +66,7 @@ impl fmt::Display for LayerError {
                 f.write_str("a reader stand-in is refused while a reader exists")
             }
             LayerError::AccentInputsMissing(names) => {
-                f.write_str("the accent lacks the preset's accent inputs")?;
+                f.write_str("the preset's accent inputs are not stated as one group, lacking")?;
                 names.iter().try_for_each(|name| write!(f, " `{name}`"))
             }
             LayerError::UnknownLayer(id) => write!(f, "the theme holds no {id}"),
