@@ -762,9 +762,10 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     pending input is listed per scheme, as `inputs.<name>.<scheme>`, at each scheme where it applies with no
     contrast condition and the input's base states no per-scheme value there; a pending contrast base is never
     listed, the per-scheme value standing beneath it (S11, S17, ADD-A132). A pending presence (a whole part's fact)
-    is listed by its part's path, `widgets.<widget>.<part>` (`components.<key>.<part>`), where no presence is
-    beneath it: a base of the part's presence (`absent`, `drawn_as`), or an earlier rule of its key holding wherever
-    it does; its fields' bases are none (S6.3, S17, ADD-A131)."""
+    is listed by its part's path, `widgets.<widget>.<part>`, where no presence is beneath it: a base of the part's
+    presence (`absent`, `drawn_as`), or an earlier rule of its key holding wherever it does; its fields' bases are
+    none (S6.3, S17, ADD-A131). A component's (`components.<key>.<part>`) is refused (InputError) until components
+    are typed, as the reader refuses that key."""
     block_of = block_of or set_whole_block
     based = based_paths(bases)
     out, seen = [], {}
@@ -781,6 +782,10 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
             except Untranscribable:
                 continue
             presence = f.kind == "widget" and not f.dotted
+            if presence and f.section == "components":
+                raise InputError(f"{f.key} ({f.item.data['pending']}): a component's pending presence, "
+                                 f"`components.<key>.<part>`, has no [pending] key the reader takes until components "
+                                 f"are typed (S11, S17; ledger #150)")
             slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
@@ -2248,6 +2253,12 @@ def self_test() -> int:
                ("widgets.button.label", "U15")]:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
                         f"the scheme input's dark, the double click under a narrower rule and the label's presence")
+    # a component's pending presence is refused, as the reader refuses its key until components are typed
+    try:
+        pending_table(None, [any_fact("component.rail.item", "U17", "widget")], [])
+        failures.append("pending_table: a component's pending presence listed, expected InputError")
+    except InputError:
+        pass
     # a pending field of a part its base states absent is reported where a `present` fact draws the part again
     got = [(key, uid) for key, uid, _ in redrawn_pending(facts, bases)]
     if got:
