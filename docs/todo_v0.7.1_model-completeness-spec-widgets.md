@@ -9073,9 +9073,9 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
   K3.54), as Plasma wrote them for the user's scheme and accent;
 - the accent-derivation layer (S9.2; ADD-A132), directly above the preset, states each as `= kde_accent(<set>,
   <key>, <group>)` at each slot where a layer above the preset gives the accent in force (the application's
-  `Accent`, a palette's, a reader's or a stand-in's), and nothing elsewhere, over the accent and the scheme inputs in
+  `Accent`, a mapping palette's, a reader's or a stand-in's), and nothing elsewhere, over the accent and the scheme inputs in
   force, the reader's, a KDE port's, else Breeze's; each layer above replaces the roles it states, and where the
-  `Accent` or a palette gives the accent in force the reader's or stand-in's results and a port's roles are left out
+  `Accent` or a mapping palette gives the accent in force the reader's or stand-in's results and a port's roles are left out
   (S8). Group `active` gives
   the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
   writes there (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:247-284`):
@@ -9832,7 +9832,7 @@ holds.
 - kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today): Q3.1, K3.54.
 - kdeglobals `[General] AccentColor` into `input.accent` at both schemes where set and not equal to Qt's
   `transparent`; else the `Selection` set's `BackgroundNormal` at the read scheme, the portal's `Highlight`, and
-  `#00000000` in its `for_preset.kde-breeze` part (S9.3): K3.54.
+  `#00000000` at that scheme in its `for_preset.kde-breeze` part (S9.3): K3.54.
 - kdeglobals `[WM]` `activeBackground`, `activeForeground`, `inactiveBackground`, `inactiveForeground` (the keyed
   roles `role.@wm_*`, the MDI sub-window's title bar; where kdeglobals has no `[WM]`, the reader states Breeze's
   fallback references to the `Selection` set, *keyed roles per platform*): K2.11.
