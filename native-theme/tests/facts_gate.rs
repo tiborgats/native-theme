@@ -1157,6 +1157,8 @@ fn gate_fixture_set_whole_pending_leaf() {
         "{:?}",
         report.pending
     );
+    let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    assert_eq!(skipped, ["role.global.drop_highlight"], "{:?}", report.synthetic);
     let unchecked: Vec<_> = report.unchecked.values().collect();
     assert_eq!(unchecked.len(), 1, "{:?}", report.unchecked);
     let (key, pending, count) = unchecked[0];
@@ -1228,7 +1230,9 @@ fn gate_fixture_pending_ids() {
 /// listed"; S11 writes it `inputs.<name>.<scheme>`, ADD-A132); listed
 /// while the preset states it, it fails at each scheme. Its pending
 /// high-contrast fact, a contrast base never listed, is a pending fact
-/// met, its id no listed input's (the A131b review's SF2).
+/// met, its id no listed input's (the A131b review's SF2). A role read from
+/// the folded input is skipped by the input's mark, its literal fact never
+/// compared with the synthetic value (the review's M4).
 #[test]
 fn gate_fixture_pending_input() {
     let report = fixture_report("pending_input");
