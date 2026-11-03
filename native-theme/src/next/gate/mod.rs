@@ -1538,12 +1538,18 @@ pub fn parse_value(key: &FactKey, value: &Item) -> Result<FactValue, Unread> {
                 }
             }
         }
-        Place::Part(part, path) => Body::Rule(Box::new(rule_at(&part_target(*part), path, value)?)),
+        Place::Part(part, path) => Body::Rule(Box::new(rule_at(
+            &part_target(*part),
+            path,
+            &whole_block(key, value),
+        )?)),
         Place::Values(widget, path) => {
             let target = format!("{}.values", widget_name(&WidgetRef::Typed(*widget)));
-            Body::Rule(Box::new(rule_at(&target, path, value)?))
+            Body::Rule(Box::new(rule_at(&target, path, &whole_block(key, value))?))
         }
-        Place::Token(path) => Body::Rule(Box::new(rule_at("tokens", path, value)?)),
+        Place::Token(path) => {
+            Body::Rule(Box::new(rule_at("tokens", path, &whole_block(key, value))?))
+        }
         Place::Role(_, path) => Body::Rule(Box::new(rule_at("colors", path, value)?)),
         Place::Input(name) => Body::Inputs(inputs_at(&segments_of(name), value)?),
         Place::KdeList(list) => {
@@ -1552,6 +1558,35 @@ pub fn parse_value(key: &FactKey, value: &Item) -> Result<FactValue, Unread> {
         }
     };
     Ok(FactValue { body })
+}
+
+/// A fact's value as a rule's `set` states it: a table at a `Value` struct
+/// block is the whole block (S17: "by a table (the whole block, as the
+/// preset layer's bases spell it, S2.2)"), which a rule states as
+/// `{ replace = { … } }`, a bare table there being a `Fields` patch (S2.2,
+/// S11); a paint, an enum block and every other value as written.
+fn whole_block(key: &FactKey, value: &Item) -> Item {
+    let struct_block = place_fields(key).is_some_and(|(fields, path)| {
+        matches!(
+            registry::find_entry(fields, &path.join(".")),
+            Some((
+                registry::FieldInfo {
+                    ty: registry::FieldType::Block {
+                        ty,
+                        block,
+                        form: registry::BlockForm::Struct,
+                        ..
+                    },
+                    ..
+                },
+                0,
+            )) if ty.starts_with("Value<") && matches!(Ty::block(block), Ty::Block(_))
+        )
+    });
+    match value {
+        Item::Table(_) if struct_block => nested(&["replace".to_owned()], value.clone()),
+        other => other.clone(),
+    }
 }
 
 /// An input's name's segments.

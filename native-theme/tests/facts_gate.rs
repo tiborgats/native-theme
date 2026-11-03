@@ -453,6 +453,29 @@ fn gate_fixture_present() {
     );
 }
 
+/// A fact's table at a `Value` struct block is the whole block (S17: "by a
+/// table (the whole block, as the preset layer's bases spell it, S2.2)"),
+/// so where the preset leaves the block absent it fails, as a `Fields`
+/// patch setting nothing over `Absent` would not (S2.2, S6.1); the preset
+/// whose rule states it by `{ replace = { … } }` passes.
+#[test]
+fn gate_fixture_whole_table_over_absent_base() {
+    let report = fixture_report("whole_table");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+    let absent = fixture_report_with("whole_table", "absent.toml");
+    assert!(!absent.failures.is_empty(), "{absent:?}");
+    assert!(
+        absent
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`button.icon.glyph` at")
+                && failure.contains("[\"flat\"]")),
+        "{:?}",
+        absent.failures
+    );
+}
+
 /// `gate_fixture_declarations_mismatch_fails`: a preset declaring the
 /// widget's variants or exclusive groups otherwise than its state model
 /// fails the declarations run.
