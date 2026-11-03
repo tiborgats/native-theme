@@ -447,11 +447,15 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
 /// The fields whose `Absent` S12 refuses under a condition of their place
 /// (S12), so a synthetic value states them (S17, ADD-A131: never `Absent`
 /// where a conditional mark refuses it there): a glyph's `size`, absent
-/// only on a `SystemControl` source (S6.3), and a text style's drawn-text
-/// leaves, absent in a keyed style and a slot only, which no part
-/// referencing them takes absent (S2.8).
-const STATED_UNDER_CONDITION: [(&str, &str); 5] = [
+/// only on a `SystemControl` source, and its `fill`, absent beside an
+/// absent `stroke` only there (S6.3); an icon style's `fill`, absent only
+/// beside an `original` rendering mode (S2.9, S12); and a text style's
+/// drawn-text leaves, absent in a keyed style and a slot only, which no
+/// part referencing them takes absent (S2.8).
+const STATED_UNDER_CONDITION: [(&str, &str); 7] = [
     ("Glyph", "size"),
+    ("Glyph", "fill"),
+    ("IconStyle", "fill"),
     ("TextStyle", "fill"),
     ("TextStyle", "elision"),
     ("TextStyle", "wrap"),
@@ -2731,12 +2735,21 @@ mod tests {
 
     /// A field S12 refuses `Absent` at under a condition of its place takes
     /// a stated synthetic value, whole or in a block (S17, ADD-A131): a
-    /// glyph's size, and a slot's or keyed style's drawn-text leaves, which
-    /// their places alone mark; a field marked wherever it is stays absent.
+    /// glyph's size and fill, an icon style's fill, and a slot's or keyed
+    /// style's drawn-text leaves, which their places alone mark; a field
+    /// marked wherever it is stays absent.
     #[test]
     fn a_conditionally_marked_field_is_stated() {
         let value = |path: &str| synthetic_value(path).unwrap().1;
         assert_eq!(value("widgets.button.icon.glyph.size_px"), Item::Integer(1));
+        assert_eq!(
+            value("widgets.button.icon.glyph.fill"),
+            Item::String("#010203".to_owned())
+        );
+        assert_eq!(
+            value("widgets.button.icon.icon.fill"),
+            Item::String("#010203".to_owned())
+        );
         assert_eq!(
             value("tokens.text.roles.body.elision"),
             Item::String("none".to_owned())
@@ -2749,6 +2762,17 @@ mod tests {
             value("widgets.button.icon.glyph.draw_start"),
             Item::String("absent".to_owned())
         );
+        for whole in ["widgets.button.icon.icon", "widgets.button.icon.glyph"] {
+            let (info, _) = super::super::toml::read::listed_field(whole).unwrap();
+            let Some((_, Item::Table(block))) = synthetic_of(written(info), info) else {
+                panic!("{whole}: a block's synthetic value is a table");
+            };
+            assert_eq!(
+                block.get("fill"),
+                Some(&Item::String("#010203".to_owned())),
+                "{whole}"
+            );
+        }
         let Item::Table(body) = value("tokens.text.roles.body") else {
             panic!("a slot's synthetic value is a table");
         };
