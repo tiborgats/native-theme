@@ -861,8 +861,9 @@ impl Stack {
     }
 
     /// Every problem of the stack above its preset, each layer checked over
-    /// the layers below it, and the reader's or stand-in's state (S8, S12);
-    /// the preset was checked when it was set. A layer's check meets the
+    /// the layers below it, the reader's or stand-in's state, each listed
+    /// path no layer states and each declared input missing at a slot (S8,
+    /// S12, S17); the preset was checked when it was set. A layer's check meets the
     /// faults below it its combinations reach again: each is listed once.
     /// Problems are compared by value and a [`Problem`] names no layer, so
     /// two layers with one fault at one path are listed once too: the
@@ -883,12 +884,19 @@ impl Stack {
             };
             add_problems(&mut problems, validate::check(layer.layer, &cx))?;
         }
-        for problem in validate::listed_unstated(
+        let listed = validate::listed_unstated(
             &self.pending,
             &stacked,
             self.preset,
             self.synthetic.is_some(),
-        ) {
+        );
+        let inputs = validate::inputs_missing(
+            &self.declarations,
+            &stacked,
+            self.preset,
+            self.reader_accent_left_out(),
+        );
+        for problem in listed.into_iter().chain(inputs) {
             if !problems.contains(&problem) {
                 problems.push(problem);
             }
@@ -1113,7 +1121,7 @@ fn accent_inputs_held(
         missing = group_missing(group, &stated);
     }
     if let Some(layer) = stand_in {
-        let stated: Vec<(&InputName, &InputValue)> = applying_bases(layer, preset)
+        let stated: Vec<(&InputName, &InputValue)> = validate::applying_bases(layer, preset)
             .flat_map(|bases| bases.inputs.entries.iter())
             .map(|(name, value)| (name, value))
             .collect();
@@ -1167,19 +1175,6 @@ fn group_missing(group: &[InputName], stated: &[(&InputName, &InputValue)]) -> V
         }
     }
     missing
-}
-
-/// The bases of `layer` that apply under the preset `preset`, in their
-/// order: its common bases, then its part for `preset` (S8, S11's
-/// `[for_preset.<id>]`).
-fn applying_bases(layer: &Layer, preset: Option<PresetId>) -> impl Iterator<Item = &Bases> {
-    std::iter::once(&layer.bases).chain(
-        layer
-            .for_preset
-            .iter()
-            .filter(move |(held, _)| Some(*held) == preset)
-            .map(|(_, bases)| bases),
-    )
 }
 
 /// A preset's listed path as S11 spells it and its register ids (S17).

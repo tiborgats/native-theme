@@ -888,3 +888,48 @@ fn a_listed_input_is_folded_into_the_preset() {
         .unwrap();
     assert!(marked(&stack).is_empty());
 }
+
+/// A declared input is missing at a slot no applying layer gives it a value
+/// at (S9, S12, ADD-A132), listed or not, through `from_preset` and
+/// `set_preset` alike: at `inputs.<name>.<scheme>` where the preset states
+/// only another scheme, a contrast base there giving no value with no
+/// contrast; a stand-in stating it there is enough, and removing that
+/// stand-in is refused again.
+#[test]
+fn a_declared_input_missing_at_a_slot() {
+    let one = BASE.replacen(
+        "[inputs.accent]\nlight = \"#3366cc\"\ndark = \"#3366cc\"\n",
+        "[inputs.accent]\nlight = \"#3366cc\"\n",
+        1,
+    );
+    assert_ne!(one, BASE);
+    let based = format!("{one}\n[inputs.accent.contrast.high]\ndark = \"#000000\"\n");
+    for text in [&one, &based] {
+        let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+            preset_stack(None, text, Scheme::Light)
+        else {
+            panic!("an input missing at a scheme is refused");
+        };
+        assert_eq!(
+            problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            ["inputs.accent.dark: missing"]
+        );
+    }
+    let mut stack = preset_stack(None, BASE, Scheme::Light).unwrap();
+    assert_eq!(
+        named(switch(&mut stack, &one)),
+        ["inputs.accent.dark: missing"]
+    );
+    let dark = Layer::from_toml("[inputs.accent]\ndark = \"#445566\"\n").unwrap();
+    stack
+        .set_reader_stand_in(
+            crate::next::resolve::ReaderState::new(Scheme::Light, 1.0),
+            dark,
+        )
+        .unwrap();
+    switch(&mut stack, &based).unwrap();
+    assert_eq!(
+        named(stack.remove_reader_stand_in()),
+        ["inputs.accent.dark: missing"]
+    );
+}

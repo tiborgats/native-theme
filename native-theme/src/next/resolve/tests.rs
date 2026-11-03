@@ -471,7 +471,10 @@ fn accent_layer_states_only_the_accent_inputs() {
     // Declared as an input, not an accent input: the reader's stays.
     let mut reader = Layer::default();
     reader.bases.inputs.entries.push((ramp.clone(), input(0.7)));
-    let mut declared = stack(Layer::default(), None, Vec::new());
+    let mut preset = Layer::default();
+    let entry = (InputName::new("accent").unwrap(), input(0.5));
+    preset.bases.inputs.entries.push(entry);
+    let mut declared = stack(preset, None, Vec::new());
     declared.declarations = declarations("\"accent\", \"accent_ramp.light1\"");
     declared
         .set_reader_stand_in(ReaderState::new(Scheme::Light, 1.0), reader)

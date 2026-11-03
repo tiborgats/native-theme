@@ -19,10 +19,12 @@ pub(crate) mod walk;
 
 use super::declare::Declarations;
 use super::error::{LayerError, Problem, ProblemKind};
-use super::layer::Layer;
+use super::inputs::Contrast;
+use super::layer::{Bases, Layer};
 use super::presets::PresetId;
 use super::resolve::ReaderState;
-use super::selector::WidgetRef;
+use super::selector::{Scheme, WidgetRef};
+use super::toml::read::Named;
 pub(crate) use checks::{TypeTarget, type_env};
 pub(crate) use stack::Stacked;
 
@@ -166,10 +168,11 @@ pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
 
 /// Each of a preset's listed paths `pending` (as its `[pending]` table
 /// spells them) that no layer of `layers`, the stack bottom first, states,
-/// as S12's missing field at the model's path (an input's at
-/// `inputs.<name>.<scheme>`): a path a layer states is stated, on every
-/// theme, the preset's own bases and a layer's part for `preset` included
-/// (S12, S17, ADD-A131, ADD-A132). A listed presence counts as stated only
+/// as S12's missing field at the model's path: a path a layer states is
+/// stated, on every theme, the preset's own bases and a layer's part for
+/// `preset` included (S12, S17, ADD-A131). A listed input
+/// (`inputs.<name>.<scheme>`) is a declared input, which
+/// [`inputs_missing`] checks at every slot (ADD-A132). A listed presence counts as stated only
 /// where the preset's or an application layer's bases state the part's
 /// presence, and on the synthetic route (`synthetic`) is drawn, never
 /// refused. A listed default size is no layer's to state: it is S12's
@@ -183,7 +186,9 @@ pub(crate) fn listed_unstated(
 ) -> Vec<Problem> {
     let mut problems = Vec::new();
     for (path, _) in pending {
-        if crate::next::toml::read::listed_default(path).is_some() {
+        if crate::next::toml::read::listed_default(path).is_some()
+            || crate::next::toml::read::listed_input(path).is_some()
+        {
             continue;
         }
         let presence = crate::next::toml::read::listed_part(path).is_some();
@@ -195,14 +200,7 @@ pub(crate) fn listed_unstated(
             if presence && !matches!(stacked.kind, LayerKind::Preset | LayerKind::Application) {
                 return false;
             }
-            let own = stacked
-                .layer
-                .for_preset
-                .iter()
-                .filter(|(held, _)| Some(*held) == preset)
-                .map(|(_, bases)| bases);
-            std::iter::once(&stacked.layer.bases)
-                .chain(own)
+            applying_bases(stacked.layer, preset)
                 .any(|bases| checks::states(bases, stacked.layer, &listed))
         });
         if !stated {
@@ -210,6 +208,78 @@ pub(crate) fn listed_unstated(
         }
     }
     problems
+}
+
+/// Each declared input missing at a slot (S9, S12, ADD-A132): at a scheme
+/// with no contrast or one, no layer of `layers`, the stack bottom first,
+/// whose inputs apply there gives it a value, its contrast base for that
+/// contrast at that scheme or its per-scheme value at that scheme (a
+/// layer's common bases and its part for `preset`; the reader's `accent`
+/// not counting where `reader_accent_left_out`, S8, S9.5). Its problem is
+/// S12's missing field, one per scheme at which it is missing with no
+/// contrast, at `inputs.<name>.<scheme>`, and, at a scheme where it has a
+/// value with no contrast, one per contrast under which it is missing, at
+/// `inputs.<name>.contrast.<contrast>.<scheme>` (S11's spelling): so no
+/// reference evaluates an input to nothing at any scheme or contrast.
+pub(crate) fn inputs_missing(
+    declarations: &Declarations,
+    layers: &[Stacked<'_>],
+    preset: Option<PresetId>,
+    reader_accent_left_out: bool,
+) -> Vec<Problem> {
+    let mut problems = Vec::new();
+    for name in &declarations.inputs {
+        let left_out = |stacked: &Stacked<'_>| {
+            reader_accent_left_out
+                && stacked.kind == LayerKind::Reader
+                && crate::next::resolve::is_accent(name)
+        };
+        let given = |scheme: Scheme, contrast: Option<Contrast>| {
+            layers
+                .iter()
+                .filter(|stacked| !left_out(stacked))
+                .flat_map(|stacked| applying_bases(stacked.layer, preset))
+                .flat_map(|bases| &bases.inputs.entries)
+                .any(|(held, value)| {
+                    held == name
+                        && crate::next::resolve::input_value(value, scheme, contrast).is_some()
+                })
+        };
+        for scheme in Scheme::ALL {
+            if !given(scheme, None) {
+                let at = format!("inputs.{name}.{}", scheme.name());
+                problems.push(Problem::new(&at, ProblemKind::Missing));
+                continue;
+            }
+            for contrast in [Contrast::Increased, Contrast::High] {
+                if !given(scheme, Some(contrast)) {
+                    let at = format!(
+                        "inputs.{name}.contrast.{}.{}",
+                        contrast.name(),
+                        scheme.name()
+                    );
+                    problems.push(Problem::new(&at, ProblemKind::Missing));
+                }
+            }
+        }
+    }
+    problems
+}
+
+/// The bases of `layer` that apply under the preset `preset`, in their
+/// order: its common bases, then its part for `preset` (S8, S11's
+/// `[for_preset.<id>]`).
+pub(crate) fn applying_bases(
+    layer: &Layer,
+    preset: Option<PresetId>,
+) -> impl Iterator<Item = &Bases> {
+    std::iter::once(&layer.bases).chain(
+        layer
+            .for_preset
+            .iter()
+            .filter(move |(held, _)| Some(*held) == preset)
+            .map(|(_, bases)| bases),
+    )
 }
 
 /// Every problem a reader's or stand-in's state has (S9.4, S12): a text
