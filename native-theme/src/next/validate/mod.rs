@@ -262,6 +262,11 @@ pub(crate) fn inputs_missing(
                 problems.push(Problem::new(&at, ProblemKind::Missing));
                 continue;
             }
+            // A layer giving a per-scheme value gives it under every
+            // contrast too (`input_value` falls back to it), so this fires
+            // only once a layer applies at a scheme but not under a contrast
+            // (S8's palette skipped under a contrast it states no colours
+            // for), which `given` must then leave out.
             for contrast in [Contrast::Increased, Contrast::High] {
                 if !given(scheme, Some(contrast)) {
                     let at = format!(

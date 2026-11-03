@@ -382,11 +382,18 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
         // S12 refuses an icon style's absent `fill` beside any other mode,
         // and accepts `original` beside a stated fill and an absent one.
         "RenderingMode" => return Some(("", Item::String("original".to_owned()))),
+        // S12 refuses a glyph's absent size beside any other source, and
+        // accepts a system control beside a stated size and an absent one,
+        // and beside any fill and stroke.
         "GlyphSource" => {
-            let mut name = Table::new();
-            name.insert("name".to_owned(), Item::String("synthetic".to_owned()));
+            let mut control = Table::new();
+            control.insert(
+                "control".to_owned(),
+                Item::String("app_kit_checkbox".to_owned()),
+            );
+            control.insert("replaces".to_owned(), Item::Array(Vec::new()));
             let mut source = Table::new();
-            source.insert("named_system_image".to_owned(), Item::Table(name));
+            source.insert("system_control".to_owned(), Item::Table(control));
             return Some(("", Item::Table(source)));
         }
         _ => {}
@@ -2667,9 +2674,10 @@ mod tests {
     /// drawn (S12): the button body's stroke drawn on every edge, and the
     /// icon part drawn with an icon whose fill is absent beside an
     /// `original` rendering mode and a glyph from a named image whose fill
-    /// is absent beside a stated stroke; every value synthetic, the
-    /// synthetic values' own.
-    fn drawn_variant(base: &str) -> String {
+    /// is absent beside a stated stroke, or, `sizeless`, a glyph from a
+    /// system control whose size is absent; every other value synthetic,
+    /// the synthetic values' own.
+    fn drawn_variant(base: &str, sizeless: bool) -> String {
         let block = |path: &str| {
             let (info, _) = super::super::toml::read::listed_field(path).unwrap();
             let Some((_, Item::Table(block))) = synthetic_of(written(info), info) else {
@@ -2683,6 +2691,22 @@ mod tests {
         let original = Item::String("original".to_owned());
         icon.insert("rendering_mode".to_owned(), original);
         let mut glyph = block("widgets.button.icon.glyph");
+        let mut source = Table::new();
+        if sizeless {
+            glyph.insert("size_px".to_owned(), absent.clone());
+            let mut control = Table::new();
+            control.insert(
+                "control".to_owned(),
+                Item::String("app_kit_radio".to_owned()),
+            );
+            control.insert("replaces".to_owned(), Item::Array(Vec::new()));
+            source.insert("system_control".to_owned(), Item::Table(control));
+        } else {
+            let mut name = Table::new();
+            name.insert("name".to_owned(), Item::String("synthetic".to_owned()));
+            source.insert("named_system_image".to_owned(), Item::Table(name));
+        }
+        glyph.insert("source".to_owned(), Item::Table(source));
         glyph.insert("fill".to_owned(), absent);
         let glyph_stroke = Item::Table(block("widgets.button.icon.glyph.stroke"));
         glyph.insert("stroke".to_owned(), glyph_stroke);
@@ -2724,15 +2748,17 @@ mod tests {
     #[test]
     fn drawn_variant_loads() {
         let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
-        let file = read_preset(&drawn_variant(base)).unwrap();
-        crate::next::resolve::Stack::new(
-            None,
-            file.declarations,
-            file.layer,
-            crate::next::selector::Scheme::Light,
-            file.pending,
-        )
-        .unwrap();
+        for sizeless in [false, true] {
+            let file = read_preset(&drawn_variant(base, sizeless)).unwrap();
+            crate::next::resolve::Stack::new(
+                None,
+                file.declarations,
+                file.layer,
+                crate::next::selector::Scheme::Light,
+                file.pending,
+            )
+            .unwrap();
+        }
     }
 
     /// Whether a problem is the fixture preset's surroundings of a listed
@@ -2762,7 +2788,8 @@ mod tests {
     #[test]
     fn synthetic_layers_state_every_listable_type() {
         let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
-        let drawn = drawn_variant(base);
+        let drawn = drawn_variant(base, false);
+        let sizeless = drawn_variant(base, true);
         let mut paths = Vec::new();
         listable("tokens", registry::tokens(), &mut paths);
         listable("colors.light", registry::colors(), &mut paths);
@@ -2799,7 +2826,11 @@ mod tests {
                     continue;
                 }
             };
-            for (fixture, text) in [("base", base), ("drawn", drawn.as_str())] {
+            for (fixture, text) in [
+                ("base", base),
+                ("drawn", drawn.as_str()),
+                ("sizeless", sizeless.as_str()),
+            ] {
                 let file =
                     read_preset(&format!("[pending]\n\"{spelled}\" = \"U1\"\n{text}")).unwrap();
                 let Err(LayerError::Invalid(problems)) = crate::next::resolve::Stack::synthetic(
@@ -2845,7 +2876,8 @@ mod tests {
     /// glyph's size, fill and stroke, an edge's dash, an icon style's fill,
     /// and a slot's or keyed style's drawn-text leaves, which their places
     /// alone mark; an icon's rendering mode is `original`, accepted beside
-    /// any fill; a field marked wherever it is stays absent.
+    /// any fill, and a glyph's source a system control, accepted beside an
+    /// absent size; a field marked wherever it is stays absent.
     #[test]
     fn a_conditionally_marked_field_is_stated() {
         let value = |path: &str| synthetic_value(path).unwrap().1;
@@ -2882,6 +2914,10 @@ mod tests {
             value("widgets.button.icon.icon.rendering_mode"),
             Item::String("original".to_owned())
         );
+        assert!(matches!(
+            value("widgets.button.icon.glyph.source"),
+            Item::Table(source) if source.contains_key("system_control")
+        ));
         for whole in ["widgets.button.icon.icon", "widgets.button.icon.glyph"] {
             let (info, _) = super::super::toml::read::listed_field(whole).unwrap();
             let Some((_, Item::Table(block))) = synthetic_of(written(info), info) else {

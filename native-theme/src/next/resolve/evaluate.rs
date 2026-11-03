@@ -1276,8 +1276,10 @@ impl<'t> Cx<'t> {
                     }
                     _ => None,
                 };
-                // The input's own layer, so a synthetic layer's is told
-                // apart (S17); the value evaluated in its place, none.
+                // The input's own layer, its place in the stack for the
+                // fold; a listed input's synthetic value is told apart by
+                // the mark (below; S17, ADD-A132). The value evaluated in
+                // its place, none.
                 let (value, layer) = match extra {
                     Some(value) => (value, 0),
                     None => {
