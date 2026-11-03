@@ -2537,7 +2537,9 @@ impl Stated {
 /// (`inputs.<name>.<scheme>`) where its inputs state the input's
 /// per-scheme value at that scheme (ADD-A132); a listed presence
 /// (`widgets.<widget>.<part>`) where its bases state the part `Absent` or
-/// drawn as another (ADD-A131).
+/// drawn as another (ADD-A131). A presence stated drawn (S17: "an
+/// application that draws or hides the part") counts too once the model
+/// spells one (`absent = false`), which this check takes then.
 pub(super) fn states(bases: &Bases, layer: &Layer, listed: &str) -> bool {
     let toml = matches!(layer.spelled, Spelled::Toml);
     let mut stated = Stated::default();

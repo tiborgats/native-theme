@@ -160,8 +160,11 @@ pub(crate) fn check_preset(
 
 /// Whether `layer`'s bases state the listed path `listed` (as
 /// [`listed_path`](crate::next::toml::read::listed_path) gives it), or a
-/// value holding it whole (a reference, `Absent`): a preset's own layer
-/// stating it lists a path it states (S17, ADD-A128).
+/// value holding it whole (a reference, `Absent`), as [`checks::states`]
+/// judges it: a listed input (`inputs.<name>.<scheme>`) by its per-scheme
+/// value at that scheme, a listed presence (`widgets.<widget>.<part>`) by
+/// the part stated `Absent` or drawn as another. A preset's own layer
+/// stating it lists a path it states (S17, ADD-A128, ADD-A131, ADD-A132).
 pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
     checks::states(&layer.bases, layer, listed)
 }
