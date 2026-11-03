@@ -1041,6 +1041,26 @@ mod tests {
             (
                 syn::parse_quote! {
                     #[parts(block)]
+                    pub struct Probe {
+                        #[parts(block = "fields", inner_may_be_absent, only = "fill", only = "fill")]
+                        pub x: TextStyle,
+                    }
+                },
+                "an `inner_may_be_absent` mark names each field once",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe {
+                        #[parts(block = "fields", inner_may_be_absent, required = "size", required = "size")]
+                        pub x: IconStyle,
+                    }
+                },
+                "an `inner_may_be_absent` mark names each field once",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
                     pub struct Probe { #[parts(block = "set", inner_may_be_absent)] pub x: Timing }
                 },
                 "inner_may_be_absent marks a field holding a struct block, `block = \"fields\"`",

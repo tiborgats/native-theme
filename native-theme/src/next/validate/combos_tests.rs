@@ -180,6 +180,11 @@ fn combination_glyph_fill_absent() {
          {THEME_ICON}"
     );
     assert_eq!(over(&stroked, rule, &Declarations::default()), NONE);
+    // The T7 review's M3: with no source stated, the missing source is S12's
+    // missing field alone, and neither conditional mark refuses.
+    let sourceless = "[widgets.button.menu_indicator.glyph]\nsize_px = 8\nfill = \"#000000\"\n\
+                      stroke = \"absent\"\n";
+    assert_eq!(over(sourceless, rule, &Declarations::default()), NONE);
 }
 
 /// A glyph's `size` absent where its `source` can be other than

@@ -2180,6 +2180,8 @@ impl Checks<'_, '_> {
                 continue;
             }
             let other = |name: &str| stack.effective(world, target, &below(place, name));
+            // A glyph no layer states a `source` for is S12's missing field,
+            // judged there alone: neither conditional mark refuses beside it.
             let not_system_control = || {
                 other("source")
                     .iter()

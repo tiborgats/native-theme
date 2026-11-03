@@ -256,7 +256,7 @@ pub(crate) const fn absent_in<const N: usize>(
     out
 }
 
-/// Whether every name in `required` is a `Value` field of `fields`: the
+/// Whether every name in `names` is a `Value` field of `fields`: the
 /// derive asserts it at compile time beside each [`absent_in`], so a
 /// misspelled `required` or `only` name does not compile.
 #[cfg_attr(
@@ -266,8 +266,8 @@ pub(crate) const fn absent_in<const N: usize>(
         reason = "read only by the derive's `const _` assertions, which Rust 1.88 (the MSRV) does not count as a use and stable does; an `allow`, as an `expect` would go unfulfilled on stable"
     )
 )]
-pub(crate) const fn names_values(fields: &[FieldInfo], required: &[&str]) -> bool {
-    let mut rest = required;
+pub(crate) const fn names_values(fields: &[FieldInfo], names: &[&str]) -> bool {
+    let mut rest = names;
     while let Some((name, tail)) = rest.split_first() {
         let mut found = false;
         let mut held = fields;

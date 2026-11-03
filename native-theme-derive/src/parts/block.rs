@@ -810,6 +810,18 @@ pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
             "only names the fields an `inner_may_be_absent` mark holds for",
         ));
     }
+    for names in [&attrs.required, &attrs.only] {
+        if names
+            .iter()
+            .enumerate()
+            .any(|(at, name)| names.iter().take(at).any(|held| held == name))
+        {
+            return Err(Error::new_spanned(
+                &field.ty,
+                "an `inner_may_be_absent` mark names each field once",
+            ));
+        }
+    }
     if !attrs.only.is_empty() && !attrs.required.is_empty() {
         return Err(Error::new_spanned(
             &field.ty,
