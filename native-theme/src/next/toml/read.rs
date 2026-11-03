@@ -472,6 +472,19 @@ pub(crate) trait FromToml: Sized {
         let _ = (at, cx);
         self
     }
+
+    /// [`FromToml::read`] into a box: a large patch the derive writes is
+    /// read in place on the heap ([`read_fields_boxed`]), so its reading
+    /// holds no copy of it on the stack.
+    fn read_boxed(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Box<Self>> {
+        Self::read(item, spelling, at, cx).map(Box::new)
+    }
+
+    /// [`FromToml::finish`] of a boxed value, in its box where finishing
+    /// leaves it as read.
+    fn finish_boxed(self: Box<Self>, at: &str, cx: &mut Reader) -> Box<Self> {
+        Box::new((*self).finish(at, cx))
+    }
 }
 
 /// A struct block's patch, read key by key: the `ThemeParts` derive writes
@@ -502,6 +515,18 @@ pub(crate) trait Build: Sized {
     /// `None` where `options_none` (a list's item or a variant's payload,
     /// S11), else missing too.
     fn build(patch: Self::Patch, at: &str, options_none: bool, cx: &mut Reader) -> Option<Self>;
+}
+
+/// [`read_fields`] into a box, the patch read in place on the heap.
+pub(crate) fn read_fields_boxed<P: Fields>(table: &Table, at: &str, cx: &mut Reader) -> Box<P> {
+    let mut patch = Box::<P>::default();
+    for (key, item) in table {
+        if !patch.read_entry(key, item, at, cx) {
+            cx.problem(&join(at, key), ProblemKind::UnknownKey);
+        }
+    }
+    patch.finish_fields(at, cx);
+    patch
 }
 
 /// `table`'s keys read into a patch of `P`, every unknown key recorded.
@@ -921,7 +946,7 @@ impl<T: FromToml> FromToml for Box<T> {
     }
 
     fn read(item: &Item, spelling: Spelling, at: &str, cx: &mut Reader) -> Option<Self> {
-        T::read(item, spelling, at, cx).map(Box::new)
+        T::read_boxed(item, spelling, at, cx)
     }
 
     fn combine(&mut self, later: Self) -> bool {
@@ -929,7 +954,7 @@ impl<T: FromToml> FromToml for Box<T> {
     }
 
     fn finish(self, at: &str, cx: &mut Reader) -> Self {
-        Box::new((*self).finish(at, cx))
+        T::finish_boxed(self, at, cx)
     }
 }
 

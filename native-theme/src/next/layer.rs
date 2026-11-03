@@ -227,6 +227,11 @@ mod tests {
             "{}",
             size_of::<ButtonPatch>()
         );
+        // The text ramp's slots hold a text style's patch each: boxed, and
+        // read in place on the heap, so reading the tokens holds no copy of
+        // them on the stack (`presets_build_on_a_small_stack`).
+        let text = size_of::<crate::next::tokens::TextTokensPatch>();
+        assert!(text <= 1024, "{text}");
     }
 
     /// `ResolvedTokens`, which `ResolvedTheme::tokens` returns by value, is

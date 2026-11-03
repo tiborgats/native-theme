@@ -204,6 +204,24 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
                 fn combine(&mut self, later: Self) -> bool {
                     #t::Fields::combine_fields(self, later)
                 }
+
+                fn read_boxed(
+                    item: &::toml::Value,
+                    _: #t::Spelling,
+                    at: &str,
+                    cx: &mut #t::Reader,
+                ) -> #o<::std::boxed::Box<Self>> {
+                    let table = #t::table(item, at, cx)?;
+                    #o::Some(#t::read_fields_boxed::<Self>(table, at, cx))
+                }
+
+                fn finish_boxed(
+                    self: ::std::boxed::Box<Self>,
+                    _: &str,
+                    _: &mut #t::Reader,
+                ) -> ::std::boxed::Box<Self> {
+                    self
+                }
             }
 
             impl #t::FromToml for #name {

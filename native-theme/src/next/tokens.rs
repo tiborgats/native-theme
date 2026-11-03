@@ -610,8 +610,9 @@ pub struct TextRoles {
 #[parts(block)]
 #[non_exhaustive]
 pub struct TextTokens {
-    /// The semantic slots.
-    #[parts(block = "fields")]
+    /// The semantic slots; their patch boxed, as it holds a text style's
+    /// patch per slot.
+    #[parts(block = "fields", boxed)]
     pub roles: TextRoles,
     /// The platform's text styles, keyed; each style's `fill`, `elision`,
     /// `wrap` and `max_lines` may be `Absent`, where the platform's style
