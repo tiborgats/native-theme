@@ -34,10 +34,10 @@ mod timing;
 pub mod transform;
 
 pub(crate) use merge::{
-    Apply, Below, Create, Entry, KeyedItem, Merge, MergeConflict, apply_entries, apply_surfaces,
-    apply_value_map, created_value, merge_by_key, merge_by_key_nested, merge_keyed_by, merge_slot,
-    merge_slot_by_key, merge_slot_by_key_nested, merge_slot_entries, merge_slot_keyed,
-    merge_slot_surfaces, merge_slot_value_map, replace_slot,
+    Apply, Below, Create, Entry, KeyedItem, Merge, MergeConflict, apply_entries, apply_entries_in,
+    apply_surfaces, apply_value_map, created_value, merge_by_key, merge_by_key_nested,
+    merge_keyed_by, merge_slot, merge_slot_by_key, merge_slot_by_key_nested, merge_slot_entries,
+    merge_slot_keyed, merge_slot_surfaces, merge_slot_value_map, replace_slot,
 };
 
 /// Seals [`Block`]: only the `ThemeParts` derive implements it.

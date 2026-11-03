@@ -134,8 +134,15 @@ where
 pub(crate) trait Entry<P>: Sized {
     /// Applies `patch` over the held entry.
     fn apply_entry(&mut self, patch: P) -> Result<(), MergeConflict>;
-    /// The entry `patch` builds where the map lacks it.
-    fn create(patch: P) -> Result<Self, MergeConflict>;
+    /// The entry `patch` builds where the map lacks it, in a map whose
+    /// place mark `inner` gives (an `inner_may_be_absent` map, S6.3), as
+    /// [`Create::create_in`] takes it.
+    fn create_in(patch: P, inner: Option<InnerMark>) -> Result<Self, MergeConflict>;
+    /// The entry `patch` builds where the map lacks it, under the entry's
+    /// own marks.
+    fn create(patch: P) -> Result<Self, MergeConflict> {
+        Self::create_in(patch, None)
+    }
 }
 
 /// A struct block built from its patch alone, for a map entry the value
@@ -190,11 +197,11 @@ where
         }
     }
 
-    fn create(patch: BlockPatch<B>) -> Result<Self, MergeConflict> {
+    fn create_in(patch: BlockPatch<B>, inner: Option<InnerMark>) -> Result<Self, MergeConflict> {
         match patch {
             BlockPatch::Set(Value::Stated(block)) => Ok(block),
             BlockPatch::Set(_) => Err(MergeConflict::new(Below::Block)),
-            BlockPatch::Fields(fields) => B::create(fields),
+            BlockPatch::Fields(fields) => B::create_in(fields, inner),
         }
     }
 }
@@ -209,10 +216,10 @@ where
         self.apply(patch)
     }
 
-    fn create(patch: BlockPatch<B>) -> Result<Self, MergeConflict> {
+    fn create_in(patch: BlockPatch<B>, inner: Option<InnerMark>) -> Result<Self, MergeConflict> {
         match patch {
             BlockPatch::Set(value) => Ok(value),
-            BlockPatch::Fields(fields) => B::create(fields).map(Value::Stated),
+            BlockPatch::Fields(fields) => B::create_in(fields, inner).map(Value::Stated),
         }
     }
 }
@@ -243,10 +250,22 @@ pub(crate) fn apply_entries<K: PartialEq, V: Entry<P>, P>(
     value: &mut Vec<(K, V)>,
     patch: Vec<(K, P)>,
 ) -> Result<(), MergeConflict> {
+    apply_entries_in(value, patch, None)
+}
+
+/// [`apply_entries`] over a map whose place mark `inner` gives (an
+/// `inner_may_be_absent` map, S6.3): an entry the map lacks is built with
+/// the fields the mark allows `Absent` where its patch leaves them unset,
+/// as S12 judges the entry's creation (S6.1).
+pub(crate) fn apply_entries_in<K: PartialEq, V: Entry<P>, P>(
+    value: &mut Vec<(K, V)>,
+    patch: Vec<(K, P)>,
+    inner: Option<InnerMark>,
+) -> Result<(), MergeConflict> {
     for (key, entry) in patch {
         match value.iter_mut().find(|(k, _)| *k == key) {
             Some((_, held)) => held.apply_entry(entry)?,
-            None => value.push((key, V::create(entry)?)),
+            None => value.push((key, V::create_in(entry, inner)?)),
         }
     }
     Ok(())

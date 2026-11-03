@@ -44,6 +44,20 @@ pub(super) fn inner_mark(attrs: &FieldAttrs) -> TokenStream {
     }
 }
 
+/// The call applying a map field's entry patches `entries` over `held`:
+/// `apply_entries`, or `apply_entries_in` with the field's place mark where
+/// it is `inner_may_be_absent`, so an entry it creates takes the mark
+/// (S6.1, S6.3).
+fn entries_applied(attrs: &FieldAttrs, held: TokenStream, entries: TokenStream) -> TokenStream {
+    let b = blocks();
+    if attrs.inner_may_be_absent {
+        let mark = inner_mark(attrs);
+        quote!(#b::apply_entries_in(#held, #entries, ::core::option::Option::Some(#mark)))
+    } else {
+        quote!(#b::apply_entries(#held, #entries))
+    }
+}
+
 /// Where a block field's block sits in its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Wrap {
@@ -448,11 +462,14 @@ impl BlockField {
                 #b::apply_surfaces(&mut held, #required).map_err(|c| c.under(#path))?;
                 held
             }},
-            Shape::Map(Some(map)) if map.entry_patch().is_some() => quote! {{
-                let mut held = ::std::vec::Vec::new();
-                #b::apply_entries(&mut held, #required).map_err(|c| c.under(#path))?;
-                held
-            }},
+            Shape::Map(Some(map)) if map.entry_patch().is_some() => {
+                let apply = entries_applied(&self.attrs, quote!(&mut held), required);
+                quote! {{
+                    let mut held = ::std::vec::Vec::new();
+                    #apply.map_err(|c| c.under(#path))?;
+                    held
+                }}
+            }
             _ if self.attrs.keyed => quote! {{
                 let mut held = ::std::vec::Vec::new();
                 #b::KeyedItem::merge_keyed(&mut held, #required);
@@ -1118,11 +1135,14 @@ fn expand_fields(
                     #b::apply_value_map(&mut self.#ident, value).map_err(|c| c.under(#path))?;
                 }
             },
-            MergeKind::Entries => quote! {
-                if let ::core::option::Option::Some(entries) = #ident {
-                    #b::apply_entries(&mut self.#ident, entries).map_err(|c| c.under(#path))?;
+            MergeKind::Entries => {
+                let apply = entries_applied(&f.attrs, quote!(&mut self.#ident), quote!(entries));
+                quote! {
+                    if let ::core::option::Option::Some(entries) = #ident {
+                        #apply.map_err(|c| c.under(#path))?;
+                    }
                 }
-            },
+            }
             MergeKind::ByKeyNested => quote! {
                 if let ::core::option::Option::Some(entries) = #ident {
                     #b::merge_by_key_nested(&mut self.#ident, entries);
@@ -1188,6 +1208,7 @@ fn expand_fields(
         TokenStream::new()
     };
     let locate = super::resolve::struct_locate(name, Some(&patch), fields);
+    let r = registry();
     let resolve = if type_attrs.own_resolved {
         TokenStream::new()
     } else {
@@ -1232,7 +1253,7 @@ fn expand_fields(
         impl #b::Create for #name {
             fn create_in(
                 patch: #patch,
-                inner: ::core::option::Option<crate::next::registry::InnerMark>,
+                inner: ::core::option::Option<#r::InnerMark>,
             ) -> ::core::result::Result<Self, #b::MergeConflict> {
                 let _ = inner;
                 let #patch { #(#idents),* } = patch;
@@ -1300,6 +1321,7 @@ fn expand_append(
     let vis = &input.vis;
     let b = blocks();
     let m = model();
+    let r = registry();
     let (list, list_ty) = match fields {
         [only] if generic_arg(&only.ty, "Vec").is_some() => (&only.ident, &only.ty),
         _ => {
@@ -1409,7 +1431,10 @@ fn expand_append(
                 #b::Apply::apply(self, patch)
             }
 
-            fn create(patch: #patch) -> ::core::result::Result<Self, #b::MergeConflict> {
+            fn create_in(
+                patch: #patch,
+                _: ::core::option::Option<#r::InnerMark>,
+            ) -> ::core::result::Result<Self, #b::MergeConflict> {
                 let mut value = #m::Value::Absent;
                 #b::Apply::apply(&mut value, patch)?;
                 ::core::result::Result::Ok(value)

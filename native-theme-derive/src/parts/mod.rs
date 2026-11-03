@@ -478,6 +478,9 @@ mod tests {
              \"required or only names a field of `IconStyle` that is not a `Value`\") ;",
             "names_values (< TextStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"wrap\"])",
             "may_be_absent : true , auto : false",
+            "crate :: next :: blocks :: apply_entries_in (& mut self . keyed , entries , :: core :: option \
+             :: Option :: Some (crate :: next :: registry :: InnerMark :: Only (& [\"fill\" , \"wrap\"])))",
+            "crate :: next :: blocks :: apply_entries_in (& mut held ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }

@@ -1259,3 +1259,86 @@ fn value_map_creating_entry_takes_stated_map() {
         })
     );
 }
+
+/// The T7 review's SF1: an entry a patch creates in an
+/// `inner_may_be_absent` map takes the map's place mark in the merge, as
+/// S12 judges it (S6.1, S6.3): a keyed text style created with its
+/// drawn-text leaves unset gives them `Absent`, its `case` unset is the
+/// missing field's conflict; a keyed icon context created with its size
+/// and its plain fields gives its `Value` fields `Absent`, its size unset
+/// is the conflict.
+#[test]
+fn creating_an_entry_honours_its_place_mark() {
+    use super::blocks::Create;
+    let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
+    let Ok(preset) = super::toml::layer::read_preset(base) else {
+        panic!("the fixture base reads");
+    };
+    let tokens = preset.layer.bases.tokens;
+    let (Some(text), Some(Some(sizes))) = (tokens.text, tokens.icons.map(|icons| icons.sizes))
+    else {
+        panic!("the fixture base states the text and icon tokens");
+    };
+    let (Ok(text), Ok(sizes)) = (
+        super::tokens::TextTokens::create(*text),
+        super::tokens::IconSizeTokens::create(sizes),
+    ) else {
+        panic!("the fixture base's text and icon tokens are whole");
+    };
+    let later = |patch: &str| {
+        super::layer::Layer::from_toml(patch)
+            .map(|layer| layer.bases.tokens)
+            .unwrap_or_default()
+    };
+    let text_applied = |patch: &str| {
+        let mut held = text.clone();
+        later(patch)
+            .text
+            .map(|patch| held.apply(*patch).map(|()| held))
+    };
+    let icons_applied = |patch: &str| {
+        let mut held = sizes.clone();
+        later(patch)
+            .icons
+            .and_then(|icons| icons.sizes)
+            .map(|patch| held.apply(patch).map(|()| held))
+    };
+    let style = "font = { family = \"Synthetic\", size_px = 10, weight = 400, style = \"normal\", \
+                 width = \"absent\", axes = {}, features = {} }\nscaling_role = \"none\"\n\
+                 letter_spacing = \"absent\"\nword_spacing = \"absent\"\nline_height = \"auto\"\n\
+                 decoration = \"absent\"\nmnemonic_decoration = \"absent\"\n";
+    let caption = key!("caption");
+    let created = text_applied(&format!(
+        "[tokens.text.keyed.caption]\n{style}case = \"mixed\"\n"
+    ))
+    .and_then(Result::ok)
+    .and_then(|text| text.keyed.into_iter().find(|(key, _)| *key == caption))
+    .map(|(_, style)| (style.fill, style.elision, style.wrap, style.max_lines));
+    assert_eq!(
+        created,
+        Some((Value::Absent, Value::Absent, Value::Absent, Value::Absent))
+    );
+    assert_eq!(
+        text_applied(&format!("[tokens.text.keyed.caption]\n{style}")).map(|r| r.map(|_| ())),
+        Some(Err(MergeConflict {
+            path: "keyed.case".to_owned(),
+            below: super::blocks::Below::Missing,
+        }))
+    );
+    let plain = "axes = {}\nsymbol_variants = []\nsymbolic_colors = {}\n";
+    let check = key!("check");
+    let created = icons_applied(&format!(
+        "[tokens.icons.sizes.keyed.check]\nsize_px = 16\n{plain}"
+    ))
+    .and_then(Result::ok)
+    .and_then(|icons| icons.keyed.into_iter().find(|(key, _)| *key == check))
+    .map(|(_, style)| (style.fill, style.rendering_mode));
+    assert_eq!(created, Some((Value::Absent, Value::Absent)));
+    assert_eq!(
+        icons_applied(&format!("[tokens.icons.sizes.keyed.check]\n{plain}")).map(|r| r.map(|_| ())),
+        Some(Err(MergeConflict {
+            path: "keyed.size".to_owned(),
+            below: super::blocks::Below::Missing,
+        }))
+    );
+}
