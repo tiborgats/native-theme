@@ -93,3 +93,15 @@ quote = "synthetic"
 key = "button.subtitle"
 pending = "U7"
 rows = []
+
+# The subtitle's look where it is drawn, compared on the synthetic route, which draws the listed
+# presence (ADD-A131).
+[[fact]]
+key = "button.subtitle.text.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

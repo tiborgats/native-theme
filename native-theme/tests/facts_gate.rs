@@ -1271,8 +1271,9 @@ fn gate_fixture_pending_input() {
 
 /// A pending presence with no presence beneath is listed by its part's
 /// path (S17, ADD-A131: `"widgets.button.label" = "U122"`): found with its
-/// id, the part drawn on the synthetic route, its fields compared there;
-/// listed while the preset states the presence, it fails.
+/// id, the part drawn on the synthetic route, its fields compared there
+/// (a subtitle cased against its fact fails, the review's M5); listed
+/// while the preset states the presence, it fails.
 #[test]
 fn gate_fixture_pending_presence() {
     let report = fixture_report("pending_presence");
@@ -1286,6 +1287,10 @@ fn gate_fixture_pending_presence() {
         Some(vec!["U7"])
     );
     assert!(report.compared > 0, "{report:?}");
+    let upper = fixture_report_with("pending_presence", "upper.toml");
+    let compared = failing(&upper, "button.subtitle.text.case");
+    assert!(!compared.is_empty(), "{:?}", upper.failures);
+    assert_eq!(compared.len(), upper.failures.len(), "{:?}", upper.failures);
     let stated = fixture_report_with("pending_presence", "stated.toml");
     assert_eq!(
         failing(&stated, "[pending]"),
