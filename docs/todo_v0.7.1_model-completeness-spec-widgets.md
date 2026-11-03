@@ -9830,6 +9830,9 @@ holds.
   `[ColorEffects:Inactive]`
   including `ChangeSelectionColor` and `Enable`, and the `[Colors:*][Inactive]` subgroups: K3.40, K3.50, K3.51.
 - kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today): Q3.1, K3.54.
+- kdeglobals `[General] AccentColor` into `input.accent` at both schemes where set and not equal to Qt's
+  `transparent`; else the `Selection` set's `BackgroundNormal` at the read scheme, the portal's `Highlight`, and
+  `#00000000` in its `for_preset.kde-breeze` part (S9.3): K3.54.
 - kdeglobals `[WM]` `activeBackground`, `activeForeground`, `inactiveBackground`, `inactiveForeground` (the keyed
   roles `role.@wm_*`, the MDI sub-window's title bar; where kdeglobals has no `[WM]`, the reader states Breeze's
   fallback references to the `Selection` set, *keyed roles per platform*): K2.11.
