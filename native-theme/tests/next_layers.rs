@@ -8,7 +8,7 @@
 use std::fs;
 use std::path::Path;
 
-use native_theme::next::{Layer, LayerError};
+use native_theme::next::{Layer, LayerError, PartPatch, PartPresence, PartStylePatch};
 
 #[test]
 fn layer_fixtures_report_their_expected_problems() {
@@ -49,4 +49,16 @@ fn layer_fixtures_report_their_expected_problems() {
             }
         }
     }
+}
+
+/// A part's patch is built from `default()` and field assignment, as S1
+/// prescribes for a patch whose every field has a neutral default: it has
+/// no constructor of its own.
+#[test]
+fn part_patch_built_from_default() {
+    let mut patch = PartPatch::default();
+    assert_eq!(patch.presence, None);
+    assert_eq!(*patch.style, PartStylePatch::default());
+    patch.presence = Some(PartPresence::Present);
+    assert_eq!(patch.presence, Some(PartPresence::Present));
 }

@@ -48,9 +48,10 @@ pub enum PartPresence {
     },
 }
 
+#[cfg(test)]
 impl PartPatch {
     /// A patch of the style's fields `style` alone.
-    pub fn of_style(style: PartStylePatch) -> PartPatch {
+    pub(crate) fn of_style(style: PartStylePatch) -> PartPatch {
         PartPatch {
             presence: None,
             style: Box::new(style),
@@ -58,7 +59,7 @@ impl PartPatch {
     }
 
     /// A patch of the presence `presence` alone.
-    pub fn of_presence(presence: PartPresence) -> PartPatch {
+    pub(crate) fn of_presence(presence: PartPresence) -> PartPatch {
         PartPatch {
             presence: Some(presence),
             style: Box::default(),
