@@ -1080,14 +1080,18 @@ impl<'a> Checker<'a> {
             return;
         }
         let found = self.problems.len();
-        // A bool, a text, a key or an enum takes a literal or a reference, a
-        // block (an enum block among them), an option or a map a reference
-        // only: no call.
+        // A bool, a text, a key or an enum takes a literal or a reference
+        // (S12's call item); a block (an enum block among them), an option
+        // or a map a reference only, which typing refuses a call on as the
+        // mistype it is (S2.2), and so the walk here where it gives no type.
         if matches!(expr, Expr::Call(..)) {
             match form {
-                ExprForm::Calls => {}
                 ExprForm::NoCalls => self.problem(&at, ProblemKind::CallNotAllowed),
-                ExprForm::ReferenceOnly => self.problem(&at, ProblemKind::CallNotAReference),
+                ExprForm::ReferenceOnly if ty.is_none() => {
+                    let reason = "the field's expression is a reference only".to_owned();
+                    self.problem(&at, ProblemKind::IllTyped { reason });
+                }
+                ExprForm::Calls | ExprForm::ReferenceOnly => {}
             }
         }
         let in_text_style = path.fields().any(|(owner, _)| owner == "TextStyle");

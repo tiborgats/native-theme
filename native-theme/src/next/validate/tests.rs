@@ -893,7 +893,10 @@ fn scaling_role_reference_types() {
     );
     assert_eq!(
         bare(&label("max_lines = \"= max(1, 2)\"")),
-        ["widgets.button.label.text.max_lines: takes a reference only, not a call"]
+        [
+            "widgets.button.label.text.max_lines: the expression does not type: an option<number> field's expression is a \
+         reference only"
+        ]
     );
 }
 
@@ -937,7 +940,10 @@ fn font_axes_reference_types() {
     );
     assert_eq!(
         bare(&label("font.features = \"= max(1, 2)\"")),
-        ["widgets.button.label.text.font.features: takes a reference only, not a call"]
+        [
+            "widgets.button.label.text.font.features: the expression does not type: a map<FeatureTag, u32> field's expression is a \
+         reference only"
+        ]
     );
 }
 
@@ -2167,7 +2173,10 @@ fn refusal_ill_typed() {
     }
     assert_eq!(
         bare(&called),
-        ["widgets.button.body.transitions[0].timing: takes a reference only, not a call"]
+        [
+            "widgets.button.body.transitions[0].timing: the expression does not type: a Timing field's expression is a \
+         reference only"
+        ]
     );
     // Near misses: a reference of the field's type, a call on a number.
     let decl = declare("timings = [\"fast\"]");
@@ -2740,7 +2749,6 @@ kinds! {
     AbsentNotAllowed,
     AutoNotAllowed,
     CallNotAllowed,
-    CallNotAReference,
     OutOfRange { .. },
     NoLayer,
     MaskAtBottom,
@@ -3060,10 +3068,6 @@ fn layer_error_every_variant_triggers() {
         (
             V::CallNotAllowed,
             read("[widgets.button.values]\nshows_icon = \"= max(1, 2)\""),
-        ),
-        (
-            V::CallNotAReference,
-            read("[widgets.button.label.text]\nfont.axes = \"= max(1, 2)\""),
         ),
         (V::OutOfRange, read("[widgets.button.body]\nopacity = 1.5")),
         (V::NoLayer, over(&body(fill(Vec::new())), &none, &[])),

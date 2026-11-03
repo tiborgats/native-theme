@@ -199,9 +199,6 @@ pub enum ProblemKind {
     /// A call stated on a `Value<bool>`, `Value<Key>`, `Value<String>` or
     /// enum field, which takes a literal or a reference (S12).
     CallNotAllowed,
-    /// A call stated on a field whose expression is a reference only: a
-    /// block's, an option's or a map's (S2.2, S12).
-    CallNotAReference,
     /// A stated number outside its type's range: what the place takes (S12).
     OutOfRange {
         /// The range or the condition the place takes (`0..=1`, `above
@@ -492,7 +489,6 @@ impl fmt::Display for ProblemKind {
             ProblemKind::CallNotAllowed => {
                 f.write_str("takes a literal or a reference, not a call")
             }
-            ProblemKind::CallNotAReference => f.write_str("takes a reference only, not a call"),
             ProblemKind::OutOfRange { expected } => write!(f, "out of range: {expected}"),
             ProblemKind::NoLayer => f.write_str("has no layer"),
             ProblemKind::MaskAtBottom => f.write_str("its bottom layer is a mask"),
