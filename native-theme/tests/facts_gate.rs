@@ -1157,8 +1157,6 @@ fn gate_fixture_set_whole_pending_leaf() {
         "{:?}",
         report.pending
     );
-    let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
-    assert_eq!(skipped, ["role.global.drop_highlight"], "{:?}", report.synthetic);
     let unchecked: Vec<_> = report.unchecked.values().collect();
     assert_eq!(unchecked.len(), 1, "{:?}", report.unchecked);
     let (key, pending, count) = unchecked[0];
@@ -1244,6 +1242,13 @@ fn gate_fixture_pending_input() {
             .any(|(id, key, applied)| id == "U10" && key == "input.accent" && *applied > 0),
         "{:?}",
         report.pending
+    );
+    let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    assert_eq!(
+        skipped,
+        ["role.global.drop_highlight"],
+        "{:?}",
+        report.synthetic
     );
     assert_eq!(
         report.listed.keys().collect::<Vec<_>>(),
