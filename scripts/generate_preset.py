@@ -128,8 +128,12 @@ its fact's citation in a comment"; the fact holds the citations).
 preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `[declare.flavor.<f>.widget.<w>]`),
 the S10 declarations it states: `available` (alone where false), `variants`, `sizes`, `default_size`,
 `densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`, `sizes_by_variant`,
-`sizes_by_context` (each entry with its `default_size`); a pending default size (`default_size = { pending = "U<n>" }`,
-the widget's or an entry's, S10's *A pending default*) is stated nowhere and listed in `[pending]` by its
+`sizes_by_context` (each entry with its `default_size`), and `data`, per part (`values` for the widget's values),
+the element data the expressions of its transcribed facts read (S8, S10: an `element.` operand but the root's inputs,
+`body_font_height`, another part's font metric `widget.<part>.<metric>`), those facts' citations above it, on the
+widget's own declaration, in force under each flavour (element_data()); a pending default size (`default_size = {
+pending = "U<n>" }`, the widget's or an entry's, S10's *A pending default*) is stated nowhere and listed in
+`[pending]` by its
 declaration's path, `declare.widget.<w>.default_size`, `….sizes_by_variant.<variant>.default_size`,
 `….sizes_by_context.<n>.default_size`, a flavour's under `declare.flavor.<f>.` (S17, ADD-A131;
 pending_defaults()); `axes`, `variant_sets`, `variant_products` and `not_drawn` are the gate's,
@@ -204,6 +208,13 @@ INPUT_WHEN = "input under a when S9 gives no base"
 SET_WHOLE_SPLIT = "a set-whole block's leaf its siblings do not join"
 SET_WHOLE_PENDING = "a set-whole block's leaf beside a pending sibling"
 NO_STRUCT_BLOCK = ("Paint",)   # S2.2: "A `Value<Paint>` is no struct block"
+# S8, S10: the element data an expression reads, which its part declares in `data`: an `element.` operand but the
+# root's inputs, `body_font_height`, and another part's font metric `widget.<part>.<metric>`
+DATA_OPERAND = re.compile(r"(?<![\w.])(?:element\.(\w+)|(body_font_height)|widget\.(\w+)\.(\w+))(?![\w.])")
+ROOT_INPUTS = ("window_width", "window_height", "screen_width", "screen_height")
+FONT_METRICS = ("char_width", "max_char_width", "font_x_height", "font_height", "font_underline_offset",
+                "font_underline_thickness", "font_strikeout_offset", "font_strikeout_thickness", "font_size",
+                "line_height")
 
 
 class InputError(Exception):
@@ -1069,7 +1080,10 @@ def declarations(items, platform, preset, units, facts, content):
                 dropped.append((widget, sorted(off)))
             kvs, waiting = pending_defaults(header, kvs, it)
             listed += waiting
-            declare.append((header, kvs, it))
+            data, read_by = element_data(widget, facts) if flavor is None else ({}, [])
+            if data:
+                kvs.append(("data", data))
+            declare.append((header, kvs, it, read_by))
             models[(widget, flavor)] = d
             axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
             settings += [c for c in axes.get("conditions", []) if isinstance(c, str)]
@@ -1079,6 +1093,48 @@ def declarations(items, platform, preset, units, facts, content):
     conditions = list(dict.fromkeys("@" + c[len("system_setting:"):] for c in settings
                                     if c.startswith("system_setting:")))
     return declare, conditions, models, left, dropped, listed
+
+
+def element_data(widget: str, facts) -> tuple:
+    """The `data` of `widget`'s declaration (S8, S10): per part (`values` for the widget's values), the element data
+    the expressions of its transcribed facts read (DATA_OPERAND), each once in the order first read, and those facts,
+    whose citations the line carries. A flavour's section states none: the widget's own is in force under each."""
+    data, read_by = {}, []
+    for f in facts:
+        if f.status not in ("base", "rule") or not f.key.startswith(widget + "."):
+            continue
+        owner = f.key[len(widget) + 1:].split(".", 1)[0]
+        names = [name for text in expression_texts(f.value) for name in data_names(text)]
+        if names:
+            held = data.setdefault(owner, [])
+            held += [n for n in dict.fromkeys(names) if n not in held]
+            read_by.append(f)
+    return data, read_by
+
+
+def expression_texts(value) -> list:
+    """Every expression (`"= …"`) a fact's value holds, at any depth."""
+    if isinstance(value, str):
+        return [value] if value.startswith("=") else []
+    if isinstance(value, dict):
+        return [t for v in value.values() for t in expression_texts(v)]
+    if isinstance(value, list):
+        return [t for v in value for t in expression_texts(v)]
+    return []
+
+
+def data_names(text: str) -> list:
+    """The `data` names an expression reads (DATA_OPERAND), as S10 spells them."""
+    out = []
+    for m in DATA_OPERAND.finditer(text):
+        element, body, part, metric = m.groups()
+        if element and element not in ROOT_INPUTS:
+            out.append(element)
+        elif body:
+            out.append(body)
+        elif part and metric in FONT_METRICS:
+            out.append(f"widget.{part}.{metric}")
+    return out
 
 
 @dataclass
@@ -1205,9 +1261,13 @@ def render(draft: Draft) -> str:
            "", "[preset]", f"id = {toml_inline(draft.preset)}", ""]
     if draft.conditions:
         out += ["[declare]", f"conditions = {toml_inline(draft.conditions)}", ""]
-    for header, kvs, it in draft.declare:
+    for header, kvs, it, read_by in draft.declare:
         out += [f"# {it.file}:{it.line}", f"[{dotted_key(('declare',) + header)}]"]
-        out += [f"{toml_key(k)} = {toml_inline(v)}" for k, v in kvs] + [""]
+        for k, v in kvs:
+            if k == "data":
+                out.append("# " + ", ".join(f.where for f in read_by))
+            out.append(f"{toml_key(k)} = {toml_inline(v)}")
+        out.append("")
     if draft.pending:
         out.append("[pending]")
         for path, uid, f in draft.pending:
@@ -1769,6 +1829,12 @@ quote = "x"
         _fact("button.mark.glyph", '{ source = { named_system_image = { name = "checkmark" } }, stroke = "absent" }',
               '{ states = ["checked"] }'),
         _fact("button.body.fill", '{ layers = ["#ff0000"] }', '{ variants = ["primary"] }'),
+        _fact("button.body.min_width", '"= add(element.font_underline_thickness, widget.label.font_height)"',
+              '{ states = ["pressed"] }'),
+        _fact("button.values.icon_text_gap", '"= max(element.width, element.window_width)"',
+              '{ states = ["checked"] }'),
+        _fact("button.body.min_height", '"= element.progress"', '{ context = [{ scope = "any", '
+                                                               'widget = "toolbar", part = "bar" }] }'),
     ]),
     "docs/facts/gnome/roles.toml": "".join([
         _fact("role.window.background", '"#fafafb"', '{ conditions = ["scheme:light"] }'),
@@ -1816,6 +1882,8 @@ flags = ["@busy"]
 exclusive = [["disabled", "pressed", "hover"]]
 exclusive_variants = [["flat", "primary"]]
 recency = { glow = ["checked", "hover"] }
+# docs/facts/gnome/button.toml:400, docs/facts/gnome/button.toml:411
+data = { body = ["font_underline_thickness", "widget.label.font_height"], values = ["width"] }
 
 [pending]
 # docs/facts/gnome/tokens.toml:93
@@ -2044,6 +2112,22 @@ target = "button.mark"
 [rules.set]
 # docs/facts/gnome/button.toml:378
 glyph = { replace = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" } }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/gnome/button.toml:400
+min_width_px = "= add(element.font_underline_thickness, widget.label.font_height)"
+
+[[rules]]
+when = { states = ["checked"] }
+target = "button.values"
+
+[rules.set]
+# docs/facts/gnome/button.toml:411
+icon_text_gap_px = "= max(element.width, element.window_width)"
 
 [[rules]]
 when = { conditions = ["contrast_high", "scheme:light"] }
@@ -2427,7 +2511,7 @@ def self_test() -> int:
         lines = share_lines(draft, units, trip)
         for needle in ("2 pending", "pending (register id: facts): U1: 1, U8: 1",
                        "[pending]: 1 listed paths, pending with nothing beneath: tokens.text.fallbacks.families (U8)", f"{READ} 1", f"{NOT_HELD} 3",
-                       "20 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
+                       "22 rules", f"{UNIT_NOT_ENABLED} (toolbar) 2", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
         # grouping and order: the second hover rule after the flat rule that states `fill` between them; a later
@@ -2444,10 +2528,14 @@ def self_test() -> int:
         if {"conditions": ["contrast_high", "scheme:light"]} not in narrowed:
             failures.append(f"a role fact alive in one scheme is not narrowed to it: {narrowed}")
         # a state model to [declare]
-        if [(h, [k for k, _ in kvs]) for h, kvs, _ in draft.declare] != [
+        if [(h, [k for k, _ in kvs]) for h, kvs, _, _ in draft.declare] != [
                 (("widget", "button"), ["available", "variants", "sizes", "densities", "flags", "exclusive",
-                                        "exclusive_variants", "recency"])]:
-            failures.append(f"[declare]: {[(h, kvs) for h, kvs, _ in draft.declare]}")
+                                        "exclusive_variants", "recency", "data"])]:
+            failures.append(f"[declare]: {[(h, kvs) for h, kvs, _, _ in draft.declare]}")
+        # the element data the transcribed facts read, per part: a root input and a left-out fact's need none
+        data = dict(draft.declare[0][1]).get("data") if draft.declare else None
+        if data != {"body": ["font_underline_thickness", "widget.label.font_height"], "values": ["width"]}:
+            failures.append(f"[declare] data: {data}")
         # a variant only the toolbar's left-out fact names is left out of [declare], every other kept
         if draft.dropped != [("button", ["@raised"])]:
             failures.append(f"[declare]: variants left out {draft.dropped}, expected only button's @raised")
