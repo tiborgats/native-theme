@@ -42264,67 +42264,67 @@ rows = ["MAC-B01"]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "destructive", "menu", "icon_only", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B04", "MAC-X01"]
+rows = ["MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B04", "MAC-X01"]
+rows = ["MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
@@ -42546,37 +42546,37 @@ rows = ["MAC-B01", "MAC-X16"]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-X16", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-X16", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey"], not_conditions = ["contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey", "contrast_increased"], not_conditions = ["not_main", "window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-monterey", "not_main", "window_inactive"], not_conditions = ["contrast_increased"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U136"
-rows = ["MAC-B01", "MAC-X16", "MAC-B04", "MAC-X01"]
+rows = ["MAC-B01", "MAC-X16", "MAC-B04", "MAC-X01", "MAC-B05"]
 
 [[fact]]
 key = "button.body.stroke"
