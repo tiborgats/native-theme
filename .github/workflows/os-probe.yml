@@ -119,9 +119,11 @@ jobs:
           cat "$out/environment.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
       # The AppKit headers the macOS facts quote, copied from the macOS SDK of
-      # the selected Xcode (xcode-select -p) into sdk-headers/, for the lane to
-      # read and quote exactly (they are not committed); xcode.txt records the
-      # OS, the Xcode and the SDK, each copy's exit status and SHA-256.
+      # the selected Xcode (xcode-select -p) into sdk-headers/, and AVKit's
+      # AVRoutePickerView.h (the route button) from the same SDK into
+      # sdk-headers/AVKit/, for the lane to read and quote exactly (they are
+      # not committed); xcode.txt records the OS, the Xcode and the SDK, each
+      # copy's exit status and SHA-256.
       - name: Copy the AppKit headers (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
@@ -131,6 +133,7 @@ jobs:
           mkdir -p "$out"
           developer="$(xcode-select -p)"
           headers="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers"
+          avkit="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers"
           {
             sw_vers; echo "sw_vers: exit $?"
             echo "xcode-select -p: $developer"
@@ -146,6 +149,13 @@ jobs:
               cp "$headers/$h" "$out/$h"
               echo "copy $h: exit $?"
               shasum -a 256 "$out/$h"
+            done
+            echo "AVKit headers: $avkit"
+            mkdir -p "$out/AVKit"
+            for h in AVRoutePickerView.h; do
+              cp "$avkit/$h" "$out/AVKit/$h"
+              echo "copy AVKit/$h: exit $?"
+              shasum -a 256 "$out/AVKit/$h"
             done
           } > "$out/xcode.txt" 2>&1
           cat "$out/xcode.txt"
@@ -456,6 +466,49 @@ jobs:
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A pass with Reduce Transparency off and wallpaper tinting off, Increase
+      # Contrast the image's: the pair of reduce-transparency-off, which keeps
+      # the image's tinting, so the colours that differ between the two are
+      # those wallpaper tinting changes (under the image's Reduce Transparency,
+      # on, tinting changes nothing). After the probe the image's tinting and
+      # Reduce Transparency are restored, so the passes below keep the image's
+      # settings; settings.txt records each restore, write and read-back.
+      - name: Run the probe with Reduce Transparency and wallpaper tinting off (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reduce-transparency-off-tinting-off
+          mkdir -p "$out"
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          {
+            restore com.apple.universalaccess increaseContrast
+            echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            defaults write com.apple.universalaccess reduceTransparency -bool false
+            echo "write reduceTransparency false: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+            echo "image's AppleReduceDesktopTinting: $(cat "$RUNNER_TEMP/universalaccess/AppleReduceDesktopTinting" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleReduceDesktopTinting -bool true
+            echo "write AppleReduceDesktopTinting true: exit $?"
+            echo "read back: $(defaults read -g AppleReduceDesktopTinting 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+          {
+            restore -g AppleReduceDesktopTinting
+            restore com.apple.universalaccess reduceTransparency
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
       # A pass with the accent set to red (`AppleAccentColor` 0; the image's
       # is recorded above, `absent` being the default blue), the other settings
       # the image's, to see which colours follow the user's accent: the
