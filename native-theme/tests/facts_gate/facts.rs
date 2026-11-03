@@ -130,8 +130,85 @@ fn evidence_preset(root: &Path, evidence: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
-/// A citation's measured tolerance: one number, or one per leaf.
-fn measured(cite: &Table) -> Option<Tolerance> {
+/// The extensions of an image an analysis reads pixels from.
+const IMAGE_EXTENSIONS: [&str; 9] = [
+    "png", "jpg", "jpeg", "bmp", "gif", "tif", "tiff", "webp", "ppm",
+];
+
+/// Whether a `measured` citation's evidence was read from drawn pixels (S17
+/// *`evidence`*): an analysis output whose top-level `input_image` names an
+/// image (one of IMAGE_EXTENSIONS) or a GNOME render-node file (`.node`),
+/// or a render-node file itself. A value an API read (a probe's own value,
+/// a kdeglobals key, an analysis over such reads, whose `input_image`
+/// names those files) is not, and compares as read. The evidence path is
+/// the repository's, `root` its root.
+fn drawn_pixels(root: &Path, evidence: &str) -> bool {
+    let file = evidence.split_once('#').map_or(evidence, |(file, _)| file);
+    let drawn = |name: &str| {
+        Path::new(name)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| {
+                let extension = extension.to_ascii_lowercase();
+                extension == "node" || IMAGE_EXTENSIONS.contains(&extension.as_str())
+            })
+    };
+    if file.ends_with(".node") {
+        return true;
+    }
+    let Ok(text) = std::fs::read_to_string(root.join(file)) else {
+        return false;
+    };
+    let names: Vec<String> = if file.ends_with(".json") {
+        let Ok(document) = serde_json::from_str::<serde_json::Value>(&text) else {
+            return false;
+        };
+        match document.get("input_image") {
+            Some(serde_json::Value::String(name)) => vec![name.clone()],
+            Some(serde_json::Value::Array(names)) => names
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(str::to_owned)
+                .collect(),
+            _ => Vec::new(),
+        }
+    } else if file.ends_with(".toml") {
+        let Ok(table) = toml::from_str::<Table>(&text) else {
+            return false;
+        };
+        match table.get("input_image") {
+            Some(Value::String(name)) => vec![name.clone()],
+            Some(Value::Array(names)) => names
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_owned)
+                .collect(),
+            _ => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+    names.iter().any(|name| drawn(name))
+}
+
+/// A citation's measured tolerance: one number, or one per leaf; its
+/// colours compared as drawn where its evidence was read from drawn pixels
+/// ([`drawn_pixels`]).
+fn measured(root: &Path, cite: &Table) -> Option<Tolerance> {
+    let tolerance = measured_tolerance(cite)?;
+    let drawn = cite
+        .get("evidence")
+        .and_then(Value::as_str)
+        .is_some_and(|evidence| drawn_pixels(root, evidence));
+    Some(if drawn {
+        tolerance.from_drawn_pixels()
+    } else {
+        tolerance
+    })
+}
+
+/// A citation's stated tolerance: one number, or one per leaf.
+fn measured_tolerance(cite: &Table) -> Option<Tolerance> {
     match cite.get("tolerance")? {
         Value::Integer(n) => Some(Tolerance::every(*n as f64)),
         Value::Float(x) => Some(Tolerance::every(*x)),
@@ -211,7 +288,7 @@ pub fn tolerance(fact: &Fact, root: &Path, preset: &str) -> Tolerance {
                 .and_then(|evidence| evidence_preset(root, evidence))
                 .is_some_and(|served| served == preset)
         })
-        .filter_map(measured)
+        .filter_map(|cite| measured(root, cite))
         .reduce(Tolerance::smallest)
         .unwrap_or_else(Tolerance::quote)
         .in_points(&points)
@@ -299,7 +376,7 @@ pub fn derivation_passes(
         let passes = at
             .as_array()
             .ok_or_else(|| format!("{}: {file}#{path} is not a list of passes", fact.place()))?;
-        let tolerance = measured(cite).unwrap_or_else(Tolerance::quote);
+        let tolerance = measured(root, cite).unwrap_or_else(Tolerance::quote);
         let names: Vec<String> = cite
             .get("inputs")
             .and_then(Value::as_array)

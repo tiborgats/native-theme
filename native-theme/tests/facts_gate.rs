@@ -1468,6 +1468,38 @@ fn gate_measured_colour_drawn_per_renderer() {
     );
 }
 
+/// Only a colour measured from drawn pixels is drawn before it is compared
+/// (S17: "a colour measured from drawn pixels is compared with the resolved
+/// colour as the platform draws it"): `measured_drawn`'s evidence is an
+/// image's analysis (its `input_image` a PNG), `measured_read`'s a value an
+/// API read, compared unclamped on every platform, so its out-of-gamut
+/// colour passes where no source states the renderer's drawing too.
+#[test]
+fn gate_measured_colour_drawn_only_from_pixels() {
+    let report = |name: &str, platform: &str| {
+        let (root, presets) = fixture(name, "preset.toml");
+        let presets: Vec<(String, Preset)> = presets
+            .into_iter()
+            .map(|(_, preset)| (platform.to_owned(), preset))
+            .collect();
+        run::run(&root, &presets)
+    };
+    for platform in ["gnome", "kde", "material", "macos"] {
+        let read = report("measured_read", platform);
+        assert_eq!(read.failures, Vec::<String>::new(), "{platform}");
+        assert!(read.compared > 0, "{platform}: {read:?}");
+    }
+    let drawn = report("measured_drawn", "macos");
+    assert!(
+        drawn
+            .failures
+            .iter()
+            .any(|failure| failure.contains("out of the gamut")),
+        "{:?}",
+        drawn.failures
+    );
+}
+
 /// A whole map listed as pending is found (S17: "U150's
 /// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
 /// synthetic value is empty, so reading it reads the synthetic layer's step

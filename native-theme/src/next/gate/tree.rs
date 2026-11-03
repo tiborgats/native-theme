@@ -352,12 +352,14 @@ pub struct Tolerance {
     /// The px a point resolves to where the value is compared; `None`
     /// before the gate knows the place.
     px_per_point: Option<f64>,
-    /// A measured citation serves it: its colours were measured from drawn
-    /// pixels (S17).
-    measured: bool,
+    /// A measured citation read from drawn pixels serves it (S17: an
+    /// image's analysis, or a render-node file): its colours compare as the
+    /// renderer draws the resolved one. A measured value an API read (an
+    /// `NSColor`, a kdeglobals key, a probe's own value) compares as read.
+    from_pixels: bool,
     /// How the measured platform's renderer draws a colour, where its
     /// colours were measured from drawn pixels and the gate knows the
-    /// platform: both sides' colours compared as drawn (S17, ADD-A131).
+    /// platform: the resolved colour compared as drawn (S17, ADD-A131).
     drawn: Option<Drawing>,
 }
 
@@ -427,7 +429,6 @@ impl Tolerance {
     pub fn every(tolerance: f64) -> Tolerance {
         Tolerance {
             every: Some(tolerance),
-            measured: true,
             ..Tolerance::default()
         }
     }
@@ -450,8 +451,18 @@ impl Tolerance {
         Tolerance {
             leaves,
             points,
-            measured: true,
             ..Tolerance::default()
+        }
+    }
+
+    /// The tolerance of a measured citation read from drawn pixels (S17):
+    /// its colours compare as the measured platform's renderer draws the
+    /// resolved one, once [`Tolerance::drawn_by`] names it.
+    #[must_use]
+    pub fn from_drawn_pixels(self) -> Tolerance {
+        Tolerance {
+            from_pixels: true,
+            ..self
         }
     }
 
@@ -469,13 +480,14 @@ impl Tolerance {
         self
     }
 
-    /// The tolerance whose colours, where a measured citation serves it, are
-    /// compared as `drawing` draws them (S17, ADD-A131): the measured
-    /// platform's renderer; the quote check's precision unchanged.
+    /// The tolerance whose colours, where a measured citation read from
+    /// drawn pixels serves it, are compared as `drawing` draws them (S17,
+    /// ADD-A131): the measured platform's renderer; a value read otherwise,
+    /// and the quote check's precision, unchanged.
     #[must_use]
     pub fn drawn_by(&self, drawing: Drawing) -> Tolerance {
         Tolerance {
-            drawn: self.measured.then_some(drawing),
+            drawn: self.from_pixels.then_some(drawing),
             ..self.clone()
         }
     }
@@ -515,7 +527,7 @@ impl Tolerance {
             leaves,
             points,
             px_per_point: self.px_per_point,
-            measured: self.measured || other.measured,
+            from_pixels: self.from_pixels || other.from_pixels,
             drawn: self.drawn.or(other.drawn),
         }
     }
@@ -930,11 +942,13 @@ mod tests {
     /// (S17, S2.1; ADD-A131): light teal's standalone red, -0.17 at alpha
     /// 0.5, draws as 0 premultiplied and clamped; a channel 1.2 clamped
     /// straight draws 1; where no source states the drawing it fails out
-    /// of the gamut; the quote check's tolerance draws nothing.
+    /// of the gamut; the quote check's tolerance, and a measured value read
+    /// from an API rather than from drawn pixels, draw nothing.
     #[test]
     fn measured_colour_drawn_as_its_renderer_draws_it() {
         let colour = |r: f64, a: f64| Tree::Color([r, 0.5, 0.5, a]);
-        let measured = Tolerance::every(1.0);
+        let read = Tolerance::every(1.0);
+        let measured = read.clone().from_drawn_pixels();
         let gtk = measured.drawn_by(Drawing::Premultiplied);
         assert_eq!(colour(-0.17, 0.5).differs(&colour(0.0, 0.5), &gtk), None);
         assert!(
@@ -953,6 +967,16 @@ mod tests {
             Some(
                 ". (out of the gamut, where no source states how the renderer draws it)".to_owned()
             )
+        );
+        let as_read = read.drawn_by(Drawing::Premultiplied);
+        assert!(
+            colour(-0.17, 0.5)
+                .differs(&colour(0.0, 0.5), &as_read)
+                .is_some()
+        );
+        assert_eq!(
+            colour(-0.17, 0.5).differs(&colour(-0.17, 0.5), &read.drawn_by(Drawing::Unread)),
+            None
         );
         let quoted = Tolerance::quote().drawn_by(Drawing::Premultiplied);
         assert!(
