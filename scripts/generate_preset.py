@@ -50,8 +50,7 @@ What is left out, and why (each counted by reason)
   a block in a table whole or per leaf; S2.2 composes a base's `Fields` patch over a reference before every rule,
   which a rule cannot state, so neither form is the fact's).
 - an input whose `when` is not a base (S9: an input has per-scheme and per-contrast bases and no rules): anything but
-  at most one `scheme:` and one of `contrast_increased`, `contrast_high` in `conditions`; and a per-contrast base one
-  of whose schemes no transcribed fact gives (S11: `[inputs.<name>.contrast.<c>]` states `light` and `dark`).
+  at most one `scheme:` and one of `contrast_increased`, `contrast_high` in `conditions`.
 - a set-whole block's leaf its siblings do not join: a leaf of an `Option<B>` struct block (`token.behavior.key_repeat`),
   which S6.1 sets whole and S11 states as one table, whose base table or rule would not state every leaf, as the
   leaves' facts have different `when`s (split_blocks()); S17 composes per-leaf facts into one value per combination,
@@ -99,8 +98,10 @@ preset's bases apply before its rules, its rules in stated order, the later winn
   So for every key the rules state its facts in their file order, and the last matching rule is the last matching
   fact (the round trip below checks it).
 - Inputs (S9): the six cells (light, dark; no contrast, `contrast_increased`, `contrast_high`) each take the fact that
-  applies there; `light` and `dark` the no-contrast cells', `contrast.<increased|high>` both schemes' where either
-  differs from the no-contrast fact.
+  applies there; `light` and `dark` the no-contrast cells', `contrast.<increased|high>.<scheme>` each scheme's where
+  it differs from that scheme's no-contrast fact and is transcribed (S11: a contrast table states `light`, `dark` or
+  both, a scheme it leaves out taking the per-scheme value there, ADD-A132); a pending contrast cell states nothing
+  and is never listed, the per-scheme value standing beneath it (S17).
 
 Targets and paths (S11): `role.<set>.<role>` is `surfaces.<set>.<role>` of `colors` (`role.<set>.disabled.<role>`
 below it), `role.global.<…>` is `global.<…>`, `role.@<key>` is `keyed.<key>` (S3's `ColorRoles.keyed`, a map whose
@@ -199,7 +200,6 @@ UNTYPED_UNIT = "unit literal under an untyped key"
 KEYED_SEGMENT = "keyed segment outside role.@"
 BASE_CLASH = "block and its leaf in one base table"
 INPUT_WHEN = "input under a when S9 gives no base"
-INPUT_CONTRAST = "per-contrast input lacking a scheme"
 SET_WHOLE_SPLIT = "a set-whole block's leaf its siblings do not join"
 SET_WHOLE_PENDING = "a set-whole block's leaf beside a pending sibling"
 
@@ -485,6 +485,10 @@ def place(f: Fact):
         header = tuple(head[-1:] + rest[:1])
         rel = rest[1:]
         if not rel:
+            if "pending" in f.item.data:
+                # a pending presence: no value, its key the part's (S17, ADD-A131)
+                f.header, f.rel, f.dotted, f.value = header, (), (), None
+                return
             if value == "absent":
                 rel, value = ["absent"], True
             elif isinstance(value, dict) and set(value) == {"drawn_as"}:
@@ -754,25 +758,29 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     pending fact does is beneath it too (ruled_beneath()), in that scheme. The list of ids is broader than S11's
     letter ("a list of ids where a field S6.1 sets whole has leaves pending under different ids"): every path whose
     pending facts carry several ids takes one, as a plain field pending under different ids per combination has no
-    other encoding (iOS's and macOS's drafts); a spec row is pending to state it. A pending input with no base of the input is
-    listed too, as `inputs.<name>` (S17: a listed path is any "path that, in some combination, has only pending
-    facts on that preset and no fact or base beneath them"; S11 writes an input's table `[inputs.<name>]`), an
-    input's bases being the input's whole (S9)."""
+    other encoding (iOS's and macOS's drafts; S11, ADD-A131: one id is the string, a list of one never written). A
+    pending input is listed per scheme, as `inputs.<name>.<scheme>`, at each scheme where it applies with no
+    contrast condition and the input's base states no per-scheme value there; a pending contrast base is never
+    listed, the per-scheme value standing beneath it (S11, S17, ADD-A132). A pending presence (a whole part's fact)
+    is listed by its part's path, `widgets.<widget>.<part>` (`components.<key>.<part>`), where no presence is
+    beneath it: a base of the part's presence (`absent`, `drawn_as`), or an earlier rule of its key holding wherever
+    it does; its fields' bases are none (S6.3, S17, ADD-A131)."""
     block_of = block_of or set_whole_block
     based = based_paths(bases)
-    inputs = {tuple(header) for section, _, header, _, _, _ in bases if section == "inputs"}
     out, seen = [], {}
     for f in facts:
         if f.status != PENDING:
             continue
+        presence = False
         if f.kind == "input":
-            name = tuple(f.ckey[1:])
-            paths = [] if name in inputs or not alive(f, facts) else [("inputs",) + name]
+            contrast = any(c in dict(CONTRASTS) for c in f.when.get("conditions", []))
+            paths = [] if contrast else [("inputs",) + tuple(f.ckey[1:]) + (s,) for s in alive(f, facts)]
         else:
             try:
                 place(f)
             except Untranscribable:
                 continue
+            presence = f.kind == "widget" and not f.dotted
             slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
@@ -780,7 +788,10 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
                      for scheme in (schemes if slots else ())]
         for path in paths:
             key = unsuffixed(path)
-            beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
+            if presence:
+                beneath = key in based
+            else:
+                beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
             if beneath:
                 continue
             uid = f.item.data["pending"]
@@ -951,15 +962,10 @@ def inputs_of(fs: list):
         if f is not None and not f.status:
             entries.setdefault(id(f), []).append((s,))
     for cond, name in CONTRASTS:
-        pair = [cells[(s, cond)] for s in SCHEMES]
-        if all(p is cells[(s, None)] for p, s in zip(pair, SCHEMES)):
-            continue
-        if any(p is None or p.status for p in pair):
-            for p, s in zip(pair, SCHEMES):
-                if p is not None and not p.status and p is not cells[(s, None)]:
-                    p.status, p.reason = LEFT_OUT, INPUT_CONTRAST
-            continue
-        for p, s in zip(pair, SCHEMES):
+        for s in SCHEMES:
+            p = cells[(s, cond)]
+            if p is None or p.status or p is cells[(s, None)]:
+                continue
             entries.setdefault(id(p), []).append(("contrast", name, s))
     for f in fs:
         if f.status:
@@ -1766,8 +1772,6 @@ recency = { glow = ["checked", "hover"] }
 light = "#3584e4"
 # docs/facts/gnome/roles.toml:87
 dark = "#3584e4"
-# docs/facts/gnome/roles.toml:87
-contrast.high.dark = "#3584e4"
 # docs/facts/gnome/roles.toml:97
 contrast.high.light = "#1c71d8"
 
@@ -2204,9 +2208,10 @@ def self_test() -> int:
     if got != [("tokens.behavior.key_repeat", ["U2", "U3"])]:
         failures.append(f"pending_table: {got}, expected the key repeat block with U2 and U3")
     # a base above the path (a block stated whole, a whole part) or below it lists nothing; a colour role is listed
-    # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input with no base
-    # of its own is listed whole; one under an earlier rule of its key holding wherever it does lists nothing, one
-    # under an earlier rule holding in less is listed
+    # per scheme its base leaves unstated; a pending fact a later fact covers lists nothing; an input is listed per
+    # scheme its base leaves unstated, a pending contrast base never; one under an earlier rule of its key holding
+    # wherever it does lists nothing, one under an earlier rule holding in less is listed; a pending presence is
+    # listed by its part's path beside its fields' bases, and not under a base of its presence
     def any_fact(key, uid, kind, when=None, widget=None, status=PENDING):
         f = Fact(_Item(uid), key, tuple(key.split(".")), when or {}, kind, widget, None, None, status=status)
         if status != PENDING:
@@ -2231,11 +2236,18 @@ def self_test() -> int:
     narrower = any_fact("token.behavior.double_click", "", "token", {"states": ["focus", "hover"]}, status="rule")
     narrower.rule_when = narrower.when
     over = any_fact("token.behavior.double_click", "U13", "token", {"states": ["focus"]})
-    facts = [families, caret, status, drag, later, mode, accent, scheme, earlier, under, narrower, over]
+    selected = any_fact("input.selected", "U14", "input", {"conditions": ["contrast_high"]})
+    label = any_fact("button.label", "U15", "widget", widget="button")
+    icon = any_fact("button.icon", "U16", "widget", widget="button")
+    bases.append(("widgets", None, ("button", "label"), ("padding",), {}, label))
+    facts = [families, caret, status, drag, later, mode, accent, scheme, earlier, under, narrower, over, selected,
+             label, icon]
     got = [(path, uid) for path, uid, _ in pending_table(None, facts, bases, repeat_block)]
-    if got != [("colors.dark.global.status", "U7"), ("inputs.accent", "U10"), ("tokens.behavior.double_click", "U13")]:
-        failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input and the "
-                        f"double click under a narrower rule")
+    if got != [("colors.dark.global.status", "U7"), ("inputs.accent.light", "U10"), ("inputs.accent.dark", "U10"),
+               ("inputs.scheme.dark", "U11"), ("tokens.behavior.double_click", "U13"),
+               ("widgets.button.label", "U15")]:
+        failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
+                        f"the scheme input's dark, the double click under a narrower rule and the label's presence")
     # a pending field of a part its base states absent is reported where a `present` fact draws the part again
     got = [(key, uid) for key, uid, _ in redrawn_pending(facts, bases)]
     if got:
