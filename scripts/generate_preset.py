@@ -5,19 +5,49 @@ written … decided by how closely the slice's presets transcribe their facts").
 
 Reads the facts as scripts/check_facts.py loads them (`docs/facts/<platform>/*.toml` and its `state-models.toml`;
 `imported/` and `staged/` are no facts), the core and the widget catalogue through it, and the enabled units as
-scripts/check_facts_trace.py reads them (`scripts/widget_units.toml`, its `[prefixes]` and `[staged]` too). Writes a draft of the
-preset's TOML (S11): `[preset]`, `[declare]`, the bases and `[[rules]]`. A draft: the preset's own task places and
-completes it, and the Rust reader validates it there.
+scripts/check_facts_trace.py reads them (`scripts/widget_units.toml`, its `[prefixes]` and `[staged]` too). Writes the
+preset's TOML (S11): `[preset]`, `[declare]`, the bases and `[[rules]]`, with an empty block for each part written by
+hand (below); `--write` writes it over the bundled preset, carrying that preset's hand-written blocks into it, and the
+Rust reader validates it there.
 
 Run from the repository root:
 
-    python3 scripts/generate_preset.py <preset-id> [--out FILE]   # the draft to FILE (default stdout)
+    python3 scripts/generate_preset.py <preset-id> [--out FILE]   # the generated text to FILE (default stdout)
+    python3 scripts/generate_preset.py <preset-id> --write        # native-theme/src/next/presets/<id>.toml
+    python3 scripts/generate_preset.py <preset-id> --check        # whether --write would change that file
     python3 scripts/generate_preset.py --self-test
 
 On stderr: the transcription share (facts transcribed, shadowed, pending, left out by reason; per widget and per
 unit), the rule and base-value counts, the pending facts' register ids, the facts gaps (a field no fact gives where
-the reader needs it), and the round trip's result. Exit 0, 1 when the round trip finds a mismatch (a generator bug),
-2 on an input it cannot read or a wrong command line.
+the reader needs it), and the round trip's result. Exit 0, 1 when the round trip finds a mismatch (a generator bug)
+or `--check` finds the bundled preset differs, 2 on an input it cannot read, a hand-written part `--write` would lose
+(below) or a wrong command line.
+
+The hand-written parts (`--write`)
+----------------------------------
+S11 and S17 name what no fact states, which the preset's task writes by hand: `[preset] generation`, the `[declare]`
+keyed namespaces (`text_styles`, `durations`, `params` with their units, …; every `[declare]` key but `conditions` and
+the state models) and the `read` facts as bases (S17 *`read`*: the reference a key takes from a reader input). The
+generated text holds one block per part, where its lines go: `preset` in `[preset]` after `id`; `declare` in
+`[declare]` after `conditions`, before the state models (its lines may open `[declare.params.<group>]` tables); and
+`bases <table>` at the start of each base table a `read` fact's key lies in (read_tables(): a colour role's per scheme
+it holds in at rest, any other key's where its `when` is empty; a `read` fact under another `when` is reported, its
+rule written by hand). A block is the lines between `# hand-written: begin <part>` and `# hand-written: end <part>`,
+markers included in the generated text, the lines inside written by hand, each value with its citation comment.
+
+`--write` regenerates every line outside the blocks and carries each block's lines into the new text exactly, so no
+hand-written line is dropped, changed or doubled, by this form:
+- the text's fifth line, `# generated lines: sha256 <hex>`, states the digest of every other line outside the
+  blocks (markers included). `--write` refuses a bundled preset whose lines outside the blocks have another digest:
+  a line edited, added or removed there by hand, which the regeneration would drop;
+- a block is found by its part's markers alone, each part once; a marker out of place, a part twice or one never
+  ended is refused, as is a non-empty block whose part the new text has no place for (its `read` fact gone): a person
+  moves or deletes those lines;
+- the result is verified before it is written (verify()): each committed block's lines are its part's block in the
+  result, the same lines in order, no block holds lines the committed file's does not, the digest holds, and the
+  text is valid TOML, so a hand-written key the generator now writes too is a duplicate key, refused.
+Without a bundled preset `--write` writes the generated text, its blocks empty. `--check` compares what `--write`
+would write with the bundled file, byte for byte.
 
 Which facts (S17 *Generations*)
 -------------------------------
@@ -167,6 +197,7 @@ mismatch.
     python3 scripts/generate_preset.py --self-test   # fixture facts against the expected draft, and each rule
 """
 import contextlib
+import hashlib
 import io
 import re
 import sys
@@ -189,6 +220,7 @@ DECLARE_KEYS = ("available", "variants", "sizes", "default_size", "densities", "
                 "exclusive", "exclusive_variants", "recency", "requires_variants", "sizes_by_variant",
                 "sizes_by_context")
 STAGED_BASES = Path("docs/facts/staged/inheritance-bases.toml")
+PRESETS = Path("native-theme/src/next/presets")
 SECTIONS = ("inputs", "colors", "tokens", "widgets", "components")
 LONE = {"first": True, "last": True, "only": True, "parity": "odd"}
 
@@ -641,6 +673,8 @@ class Draft:
     pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id or ids, the first pending fact)
     gaps: list = field(default_factory=list)  # (widget, key): a field per size alone of a widget with no `default_size`
     definitions: list = field(default_factory=list)  # (section, header, dotted, value, the defining section)
+    read_tables: list = field(default_factory=list)  # (section, scheme or None, header): a `read` fact's base table
+    read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -752,8 +786,35 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
             f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases) + waiting
+    tables, read_rules = read_tables(facts)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
-                 listed, gaps, definitions(preset, tree))
+                 listed, gaps, definitions(preset, tree), tables, read_rules)
+
+
+def read_tables(facts) -> tuple:
+    """The base tables the `read` facts' hand-written values go in (S17 *`read`*), each once, in the facts' order:
+    a colour role's under each scheme it holds in at rest, any other key's where its `when` is empty; and the `read`
+    facts whose `when` is no base, which a hand-written rule states (reported, no part opened for them)."""
+    tables, rules = [], []
+    for f in facts:
+        if f.reason != READ:
+            continue
+        g = Fact(f.item, f.key, f.ckey, f.when, f.kind, f.widget, f.typ, f.dim)
+        try:
+            place(g)
+        except Untranscribable:
+            rules.append(f)
+            continue
+        slots = slots_of(f.when)
+        if f.kind == "role" and slots and all(is_rest(f, s) for s in slots):
+            at = [(g.section, s, g.header) for s in slots]
+        elif f.kind != "role" and not f.when:
+            at = [(g.section, None, g.header)]
+        else:
+            rules.append(f)
+            continue
+        tables += [t for t in at if t not in tables]
+    return tables, rules
 
 
 def definitions(preset: str, tree: dict) -> list:
@@ -1287,12 +1348,18 @@ def dotted_key(keys) -> str:
 
 
 def render(draft: Draft) -> str:
-    out = [f"# {draft.preset}: a draft generated by scripts/generate_preset.py from docs/facts/{draft.platform}/ "
-           f"(S11).",
-           "# Each value's comment names its fact. Not a validated preset: the preset's task places and completes it.",
-           "", "[preset]", f"id = {toml_inline(draft.preset)}", ""]
+    """The preset's generated text, each hand-written part an empty block (hand_parts()), its digest stated."""
+    out = [f"# {draft.preset} (S11): generated by scripts/generate_preset.py from docs/facts/{draft.platform}/, each "
+           f"value's comment naming its fact.",
+           "# The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact "
+           "states,",
+           "# written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as "
+           "bases);",
+           "# `generate_preset.py <id> --write` regenerates every other line and carries them over.",
+           "", "[preset]", f"id = {toml_inline(draft.preset)}", *block("preset"), "", "[declare]"]
     if draft.conditions:
-        out += ["[declare]", f"conditions = {toml_inline(draft.conditions)}", ""]
+        out.append(f"conditions = {toml_inline(draft.conditions)}")
+    out += [*block("declare"), ""]
     for header, kvs, it, read_by in draft.declare:
         out += [f"# {it.file}:{it.line}", f"[{dotted_key(('declare',) + header)}]"]
         for k, v in kvs:
@@ -1310,10 +1377,15 @@ def render(draft: Draft) -> str:
         tables.setdefault((section, scheme, header), []).append((dotted, value, f.where))
     for section, header, dotted, value, defined in draft.definitions:
         tables.setdefault((section, None, header), []).append((dotted, value, defined))
+    for t in draft.read_tables:
+        tables.setdefault(t, [])
     order = sorted(tables, key=lambda t: (SECTIONS.index(t[0]), SCHEMES.index(t[1]) if t[1] else -1))
     for t in order:
         section, scheme, header = t
-        out.append(f"[{dotted_key((section,) + ((scheme,) if scheme else ()) + header)}]")
+        path = dotted_key((section,) + ((scheme,) if scheme else ()) + header)
+        out.append(f"[{path}]")
+        if t in draft.read_tables:
+            out += block(f"bases {path}")
         for dotted, value, comment in tables[t]:
             out += [f"# {comment}", f"{dotted_key(dotted)} = {toml_inline(value)}"]
         out.append("")
@@ -1323,7 +1395,113 @@ def render(draft: Draft) -> str:
             value = {"replace": f.value} if f.whole else f.value
             out += [f"# {f.where}", f"{dotted_key(f.rel)} = {toml_inline(value)}"]
         out.append("")
-    return "\n".join(out).rstrip("\n") + "\n"
+    text = "\n".join(out).rstrip("\n") + "\n"
+    _, generated, _ = hand_parts(text)
+    lines = text.split("\n")
+    return "\n".join(lines[:4] + [DIGEST + digest(generated)] + lines[4:])
+
+
+# ------------------------------------------------------------------------------------- the hand-written parts
+
+HAND = "# hand-written: "
+BEGIN, END = "begin ", "end "
+DIGEST = "# generated lines: sha256 "
+
+
+def block(part: str) -> list:
+    """An empty hand-written block for `part`: its two marker lines."""
+    return [f"{HAND}{BEGIN}{part}", f"{HAND}{END}{part}"]
+
+
+def digest(generated: list) -> str:
+    return hashlib.sha256("\n".join(generated).encode("utf-8")).hexdigest()
+
+
+def hand_parts(text: str) -> tuple:
+    """A preset's text split (the docstring's *The hand-written parts*): ({part: its block's lines}, the generated
+    lines, every line outside the blocks but the digest's, markers included, the stated digest or None).
+    InputError on a malformed block: a marker that is neither, an `end` naming another part or none open, a `begin`
+    inside a block or never ended, a part twice, a digest line twice."""
+    blocks, generated, stated, part = {}, [], None, None
+    for n, line in enumerate(text.split("\n"), 1):
+        if line.startswith(HAND):
+            rest = line[len(HAND):]
+            if rest.startswith(BEGIN) and part is None and rest[len(BEGIN):]:
+                part = rest[len(BEGIN):]
+                if part in blocks:
+                    raise InputError(f"line {n}: the hand-written part `{part}` twice")
+                blocks[part] = []
+            elif rest.startswith(END) and part is not None and rest[len(END):] == part:
+                part = None
+            else:
+                raise InputError(f"line {n}: `{line}` opens or ends no hand-written part here"
+                                 + (f" (`{part}` is open)" if part is not None else ""))
+            generated.append(line)
+        elif part is not None:
+            blocks[part].append(line)
+        elif line.startswith(DIGEST):
+            if stated is not None:
+                raise InputError(f"line {n}: a second `{DIGEST.strip()}` line")
+            stated = line[len(DIGEST):]
+        else:
+            generated.append(line)
+    if part is not None:
+        raise InputError(f"the hand-written part `{part}` is never ended")
+    return blocks, generated, stated
+
+
+def carried(text: str, committed) -> str:
+    """The generated `text` with the committed preset's hand-written blocks carried into it (`--write`); the text
+    itself without one. InputError where a hand-written line would be lost or doubled: the committed file's
+    generated lines are not those its digest states (a line edited, added or removed outside the blocks), a
+    non-empty block's part the new text has no place for (a `read` fact gone), or the result fails verify()."""
+    if committed is None:
+        return text
+    blocks, generated, stated = hand_parts(committed)
+    if stated is None:
+        raise InputError(f"no `{DIGEST.strip()}` line: the preset was not written by --write")
+    if digest(generated) != stated:
+        raise InputError("a line outside the hand-written blocks is not what the generator wrote (its digest "
+                         "differs): --write would lose it; move it into its part's block, or restore the line")
+    places = hand_parts(text)[0]
+    lost = [p for p, lines in blocks.items() if p not in places and any(x.strip() for x in lines)]
+    if lost:
+        raise InputError(f"the hand-written parts {lost} have no place in the generated text (their facts gone?): "
+                         f"move or remove their lines by hand")
+    out = []
+    for line in text.split("\n"):
+        out.append(line)
+        if line.startswith(HAND + BEGIN):
+            out += blocks.get(line[len(HAND + BEGIN):], [])
+    result = "\n".join(out)
+    problems = verify(committed, result)
+    if problems:
+        raise InputError("; ".join(problems))
+    return result
+
+
+def verify(committed: str, result: str) -> list:
+    """What carried() must hold of its result, each a problem: every committed block's lines in the result's block
+    of its part, the same lines in order, once (none dropped, changed or doubled), no line in a block the committed
+    file does not have, the result's generated lines as its digest states, and the result valid TOML (a hand-written
+    key the generator also writes is a duplicate key)."""
+    try:
+        before = hand_parts(committed)[0]
+        after, generated, stated = hand_parts(result)
+    except InputError as err:
+        return [str(err)]
+    problems = [f"the hand-written part `{p}` is not carried exactly: {len(lines)} lines committed, "
+                f"{len(after.get(p, []))} written" for p, lines in before.items()
+                if any(x.strip() for x in lines) and after.get(p) != lines]
+    problems += [f"the hand-written part `{p}` holds lines the committed preset's does not"
+                 for p, lines in after.items() if lines and before.get(p) != lines]
+    if stated != digest(generated):
+        problems.append("the generated lines are not those the digest states")
+    try:
+        tomllib.loads(result)
+    except tomllib.TOMLDecodeError as err:
+        problems.append(f"not valid TOML: {err}")
+    return problems
 
 
 # ------------------------------------------------------------------------------------------- combinations
@@ -1727,7 +1905,11 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     for w, vs in draft.dropped:
         out.append(f"# [declare] {w}: variants left out, only facts of units not enabled naming them: {', '.join(vs)}")
     out.append(f"# left for hand-writing: S19.2's staged bases for {draft.preset}: {draft.staged} "
-               f"({STAGED_BASES}); the keyed namespaces of [declare] but `conditions`; `[preset] generation`")
+               f"({STAGED_BASES}); the keyed namespaces of [declare] but `conditions`; `[preset] generation`; "
+               f"the `read` facts as bases, in {len(draft.read_tables)} tables")
+    for f in draft.read_rules:
+        out.append(f"# left for hand-writing: {f.key} ({f.where}), a `read` fact whose `when` is no base: its rule, "
+                   f"which no hand-written part holds")
     for widget, key in draft.gaps:
         out.append(f"# facts gap: {key}: `{widget}` states sizes and no `default_size`: no fact gives the value of an "
                    f"element with no size")
@@ -1898,14 +2080,21 @@ quote = "x"
     ]),
 }
 
-SELF_TEST_EXPECTED = '''# adwaita: a draft generated by scripts/generate_preset.py from docs/facts/gnome/ (S11).
-# Each value's comment names its fact. Not a validated preset: the preset's task places and completes it.
+SELF_TEST_EXPECTED = '''# adwaita (S11): generated by scripts/generate_preset.py from docs/facts/gnome/, each value's comment naming its fact.
+# The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
+# written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
+# `generate_preset.py <id> --write` regenerates every other line and carries them over.
+# generated lines: sha256 <digest>
 
 [preset]
 id = "adwaita"
+# hand-written: begin preset
+# hand-written: end preset
 
 [declare]
 conditions = ["@reduced_chrome"]
+# hand-written: begin declare
+# hand-written: end declare
 
 # docs/facts/gnome/state-models.toml:2
 [declare.widget.button]
@@ -1939,6 +2128,8 @@ background = "#fafafb"
 foreground = "= alpha(#000006, 0.8)"
 
 [colors.light.global]
+# hand-written: begin bases colors.light.global
+# hand-written: end bases colors.light.global
 # docs/facts/gnome/roles.toml:55
 accent_ramp = {}
 
@@ -1953,6 +2144,8 @@ background = "#222226"
 foreground = "= alpha(#000006, 0.8)"
 
 [colors.dark.global]
+# hand-written: begin bases colors.dark.global
+# hand-written: end bases colors.dark.global
 # docs/facts/gnome/roles.toml:55
 accent_ramp = {}
 
@@ -2292,6 +2485,88 @@ def write(root: Path, files: dict):
         p.write_text(text, encoding="utf-8")
 
 
+HAND_PRESET = '''# docs/facts/sources.toml:1
+generation = "libadwaita-1.10"'''
+HAND_DECLARE = """text_styles = [
+    "title_1",  # docs/facts/gnome/tokens.toml:1
+]
+
+[declare.params.opacity]
+# S4.6: one unit per group
+unit = "fraction"
+keys = [
+    "dim",  # docs/facts/gnome/tokens.toml:2
+]"""
+HAND_ACCENT = '''# docs/facts/gnome/roles.toml:3
+accent = "= input.accent"'''
+
+
+def hand_written_cases(text: str) -> list:
+    """--write's form (the docstring's *The hand-written parts*): the blocks carried exactly and the result written
+    again unchanged; each way of losing or doubling a hand-written line refused."""
+    failures = []
+    filled = {"preset": HAND_PRESET, "declare": HAND_DECLARE, "bases colors.light.global": HAND_ACCENT,
+              "bases colors.dark.global": HAND_ACCENT}
+    committed = text
+    for part, lines in filled.items():
+        marker = f"{HAND}{BEGIN}{part}\n"
+        committed = committed.replace(marker, marker + lines + "\n")
+    try:
+        once = carried(text, committed)
+        twice = carried(text, once)
+    except InputError as err:
+        return [f"--write refuses a well-formed preset: {err}"]
+    if once != committed or twice != committed:
+        failures.append("--write does not reproduce a preset whose generated lines are unchanged, byte for byte")
+    if carried(text, None) != text:
+        failures.append("--write without a bundled preset does not write the generated text")
+    # a regeneration that changes a generated line keeps every block
+    regenerated = text.replace('accent_ramp = {}', 'accent_ramp = { a = "#000000" }')
+    regenerated = regenerated.replace(hand_parts(text)[2], digest(hand_parts(regenerated)[1]))
+    kept = carried(regenerated, committed)
+    if hand_parts(kept)[0] != hand_parts(committed)[0] or "accent_ramp = { a" not in kept:
+        failures.append("--write over changed facts does not keep the blocks and take the new generated lines")
+    accent = 'accent = "= input.accent"'
+    refused = [
+        ("a hand-written line edited outside its block", committed.replace(
+            "[declare]\n", '[declare]\ndurations = ["button"]\n'), "its digest differs"),
+        ("a hand-written line moved out of its block", committed.replace(
+            f"{accent}\n{HAND}{END}bases colors.dark.global", f"{HAND}{END}bases colors.dark.global\n{accent}"),
+         "its digest differs"),
+        ("a part twice",
+         committed.replace(f"{BEGIN}preset", f"{BEGIN}declare").replace(f"{END}preset", f"{END}declare"), "twice"),
+        ("a block never ended", committed.replace(f"{HAND}{END}preset\n", ""), "opens or ends no"),
+        ("no digest", "\n".join(x for x in committed.split("\n") if not x.startswith(DIGEST)), "not written by"),
+    ]
+    # the new facts give no place for a block (the dark scheme's `read` fact gone)
+    placeless = text.replace("".join(f"{x}\n" for x in block("bases colors.dark.global")), "")
+    placeless = placeless.replace(hand_parts(text)[2], digest(hand_parts(placeless)[1]))
+    refused = [(what, bad, needle, text) for what, bad, needle in refused] + [
+        ("a block whose part has no place", committed, "no place", placeless)]
+    for what, bad, needle, generated in refused:
+        try:
+            carried(generated, bad)
+            failures.append(f"--write takes {what}")
+        except InputError as err:
+            if needle not in str(err):
+                failures.append(f"--write refuses {what}, but as {err}")
+    # the verification of a result: a hand-written line dropped, changed or doubled, and a duplicate key
+    title = '    "title_1",  # docs/facts/gnome/tokens.toml:1\n'
+    broken = [
+        ("a line dropped", committed.replace(title, "")),
+        ("a line changed", committed.replace('"title_1"', '"title_2"')),
+        ("a line doubled", committed.replace(title, title + title)),
+        ("a key the generator writes too", committed.replace(
+            f"{HAND}{END}bases colors.light.global", f"accent_ramp = {{}}\n{HAND}{END}bases colors.light.global")),
+    ]
+    for what, result in broken:
+        if not verify(committed, result):
+            failures.append(f"verify() takes {what}")
+    if verify(committed, committed):
+        failures.append(f"verify() refuses an exact carry: {verify(committed, committed)}")
+    return failures
+
+
 def self_test() -> int:
     failures = []
     for name, typ, dim, value, want in SPELL_CASES:
@@ -2546,12 +2821,14 @@ def self_test() -> int:
         write(root, SELF_TEST_FILES)
         ctx = fixture_context(root)
         draft, text, trip, units = generate(ctx, "adwaita")
-        # a fact set and its expected preset, byte for byte
-        if text != SELF_TEST_EXPECTED:
+        # a fact set and its expected preset, byte for byte, its digest that of its generated lines
+        expected = SELF_TEST_EXPECTED.replace("<digest>", digest(hand_parts(SELF_TEST_EXPECTED)[1]))
+        if text != expected:
             import difflib
-            diff = "".join(difflib.unified_diff(SELF_TEST_EXPECTED.splitlines(True), text.splitlines(True),
+            diff = "".join(difflib.unified_diff(expected.splitlines(True), text.splitlines(True),
                                                 "expected", "generated"))
             failures.append(f"the fixture's draft differs:\n{diff}")
+        failures += hand_written_cases(text)
         # a whole `Value` struct block in a rule read back without `replace` is a mismatch (S2.2, S11)
         whole = 'glyph = { replace = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" } }'
         bare = 'glyph = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" }'
@@ -2689,24 +2966,36 @@ def main(argv) -> int:
     if not args or args[0].startswith("-"):
         print(__doc__, file=sys.stderr)
         return 2
-    preset, out = args.pop(0), None
+    preset, out, mode = args.pop(0), None, None
     while args:
         a = args.pop(0)
-        if a == "--out" and args:
-            out = Path(args.pop(0))
+        if a == "--out" and args and mode is None:
+            out, mode = Path(args.pop(0)), "out"
+        elif a in ("--write", "--check") and mode is None:
+            mode = a
         else:
             print(__doc__, file=sys.stderr)
             return 2
     try:
         ctx = check_facts.Context(Path("."))
         draft, text, trip, units = generate(ctx, preset)
+        if mode in ("--write", "--check"):
+            path = ctx.root / PRESETS / f"{preset}.toml"
+            committed = path.read_text(encoding="utf-8") if path.exists() else None
+            text = carried(text, committed)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
-    if out is None:
+    if mode is None:
         sys.stdout.write(text)
-    else:
+    elif mode == "out":
         out.write_text(text, encoding="utf-8")
+    elif mode == "--write":
+        path.write_text(text, encoding="utf-8")
+    elif text != committed:
+        print(f"{PRESETS / preset}.toml is not what --write writes from the facts: run "
+              f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
+        return 1
     for line in share_lines(draft, units, trip):
         print(line, file=sys.stderr)
     for m in trip.mismatches:

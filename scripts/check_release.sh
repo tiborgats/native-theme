@@ -82,6 +82,7 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  next's integration tests, doctests and missing-docs gate,
                  CI's MSRV job's checks (each on its toolchain, -D warnings),
                  and the 0.8.0 plan's data checks (generate_widgets.py --check,
+                 generate_preset.py <id> --check per bundled preset,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py)
@@ -488,6 +489,11 @@ if [[ $QUICK_MODE ]]; then
         env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
     run_check "the generated widgets match the catalogue" python3 scripts/generate_widgets.py --check
+    for preset in native-theme/src/next/presets/*.toml; do
+        preset=$(basename "$preset" .toml)
+        run_check "the bundled preset $preset is generated from its facts" \
+            python3 scripts/generate_preset.py "$preset" --check
+    done
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
     run_check "the facts are well formed" python3 scripts/check_facts.py
     run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
@@ -1248,6 +1254,16 @@ run_check "data documents: the generated widgets match the catalogue" \
     python3 scripts/generate_widgets.py --check
 run_check "data documents: widget generator self-test" \
     python3 scripts/generate_widgets.py --self-test
+# The bundled presets of the 0.8.0 model (specification S11, S17): each is what
+# generate_preset.py --write writes from its facts, its hand-written blocks
+# carried over.
+for preset in native-theme/src/next/presets/*.toml; do
+    preset=$(basename "$preset" .toml)
+    run_check "data documents: the bundled preset $preset is generated from its facts" \
+        python3 scripts/generate_preset.py "$preset" --check
+done
+run_check "data documents: preset generator self-test" \
+    python3 scripts/generate_preset.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
