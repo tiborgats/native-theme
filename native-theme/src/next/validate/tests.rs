@@ -450,13 +450,14 @@ fn refusal_border_absent_outside_selection() {
 fn refusal_win_ui_animated_icon_unknown_visual() {
     let engine = "engine = { win_ui_animated_icon = { visual = \"accept\" } }";
     let transition = format!(
-        "transitions = [{{ properties = [\"icon\"], kind = \"interpolate\", duration_ms = \
-         \"absent\", delay_ms = 0, timing = \"linear\", {engine} }}]"
+        "transitions = [{{ properties = [\"icon\"], kind = {{ keyed = {{ key = \"normal_off\", \
+         params = {{}} }} }}, duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", {engine} }}]"
     );
     let visual = "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\n\
                   markers = { NormalOnToNormalOff_Start = 0.0 }\n";
+    let kinds = declare("transition_kinds = { normal_off = {} }");
     let refused = |layer: &Layer, below: &Layer| -> Vec<String> {
-        found_over(layer, &Declarations::default(), below)
+        found_over(layer, &kinds, below)
             .into_iter()
             .filter(|problem| problem.contains(".visual: "))
             .collect()
@@ -466,8 +467,8 @@ fn refusal_win_ui_animated_icon_unknown_visual() {
     assert_eq!(
         refused(&base, &none),
         [
-            "widgets.button.body.transitions[0].engine.win_ui_animated_icon.visual: `accept` can be \
-             no visual `token.icons.animated_visuals` holds"
+            "widgets.button.body.transitions[0].engine.win_ui_animated_icon.visual: `accept` can \
+             name no visual `token.icons.animated_visuals` holds"
         ]
     );
     assert_eq!(refused(&base, &toml(visual)), NONE);
@@ -490,7 +491,7 @@ fn refusal_win_ui_animated_icon_unknown_visual() {
     assert_eq!(
         refused(&rules("reduced_motion"), &none),
         [
-            "rules[0].set.transitions[0].engine.win_ui_animated_icon.visual: `accept` can be no \
+            "rules[0].set.transitions[0].engine.win_ui_animated_icon.visual: `accept` can name no \
              visual `token.icons.animated_visuals` holds"
         ]
     );
@@ -3694,9 +3695,9 @@ fn layer_error_every_variant_triggers() {
             V::UnknownVisual,
             over(
                 &toml(
-                    "[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = \"interpolate\", duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
+                    "[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
                 ),
-                &Declarations::default(),
+                &declare("transition_kinds = { normal_off = {} }"),
                 &[],
             ),
         ),

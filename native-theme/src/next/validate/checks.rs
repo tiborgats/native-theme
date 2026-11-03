@@ -3262,6 +3262,7 @@ mod tests {
         use crate::next::selector::StateFlag;
         let decl = Declarations {
             widgets: vec![(WidgetKind::Button, WidgetDecl::default())],
+            transition_kinds: vec![(key!("normal_off"), Vec::new())],
             ..Declarations::default()
         };
         let cx = Context {
@@ -3278,7 +3279,10 @@ mod tests {
             Walk::walk(
                 &vec![Transition {
                     properties: vec![crate::next::blocks::motion::PropertyGroup::Icon],
-                    kind: TransitionKind::Interpolate,
+                    kind: TransitionKind::Keyed {
+                        key: key!("normal_off"),
+                        params: Vec::new(),
+                    },
                     duration: Value::Absent,
                     delay: Value::Stated(crate::next::units::Ms(0.0)),
                     timing: Value::Stated(Timing::Linear),

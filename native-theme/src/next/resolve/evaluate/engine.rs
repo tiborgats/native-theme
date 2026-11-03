@@ -72,18 +72,3 @@ impl Resolve for AnimatedVisual {
         Some(ResolvedAnimatedVisual { duration, markers })
     }
 }
-
-impl ResolveWhole for AnimatedVisual {
-    fn resolve_whole<'t: 'f, 'f>(
-        &'f self,
-        pos: Pos,
-        cx: &mut Cx<'t>,
-    ) -> Option<ResolvedAnimatedVisual> {
-        let fold = Fold {
-            pos,
-            target: cx.target(),
-            found: compose::Found::Node(self),
-        };
-        <Self as Resolve>::resolve(&[fold], cx)
-    }
-}

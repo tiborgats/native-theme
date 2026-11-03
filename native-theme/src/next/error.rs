@@ -504,7 +504,7 @@ impl fmt::Display for ProblemKind {
             ProblemKind::UnknownVisual { visual } => {
                 write!(
                     f,
-                    "`{visual}` can be no visual `token.icons.animated_visuals` holds"
+                    "`{visual}` can name no visual `token.icons.animated_visuals` holds"
                 )
             }
             ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),

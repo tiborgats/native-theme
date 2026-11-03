@@ -1232,8 +1232,8 @@ fn animated_visual_resolves_into_engine() {
     );
     let over = "[tokens.icons.animated_visuals.accept]\n\
                 markers = { NormalOffToNormalOn_Start = 0.75 }\n\
-                [widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = \
-                \"interpolate\", duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", \
+                [widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = \
+                { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", \
                 engine = { win_ui_animated_icon = { visual = \"accept\" } } }]\n";
     let theme = resolved(&[&preset, over], 1.0);
     let scope = scope();
