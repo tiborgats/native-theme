@@ -1,0 +1,45 @@
+# The fixtures' base with an icon-size context declared and its style stated (the empty keyed maps the base
+# writes inline, `keyed = {}`, dropped and written as tables, so the icon sizes' map can hold the entry).
+# base without: [declare]
+# base without: text_styles = ["body"]
+# base without: inputs = ["accent"]
+# base without: surface_sets = ["window"]
+# base without: keyed = {}
+# base without: keyed = {}
+# base without: [tokens.icons.sizes]
+# base without: toolbar = "absent"
+# base without: small = "absent"
+# base without: large = "absent"
+# base without: dialog = "absent"
+# base without: panel = "absent"
+# base without: keyed = {}
+[declare]
+text_styles = ["body"]
+inputs = ["accent"]
+surface_sets = ["window"]
+icon_contexts = ["status_page"]
+
+[declare.widget.button]
+variants = ["flat"]
+
+[colors.light.keyed]
+
+[colors.dark.keyed]
+
+[tokens.icons.sizes]
+toolbar = "absent"
+small = "absent"
+large = "absent"
+dialog = "absent"
+panel = "absent"
+keyed.status_page = { size_px = 128, fill = "#000000", rendering_mode = "from_icon", weight = 300, symbolic_colors = {}, axes = {}, symbol_variants = [], scale = "absent", state_effect = "absent", animation = "absent" }
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

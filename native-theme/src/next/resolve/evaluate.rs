@@ -535,8 +535,9 @@ pub(crate) struct Cx<'t> {
 /// input's value.
 #[derive(Clone, Copy)]
 pub(crate) enum Extra<'t> {
-    /// A step of a target, its fold at the target's root.
-    Step(Fold<'t>),
+    /// A step of a target, its fold at the target's root, and the place
+    /// below the root its fact's key names.
+    Step(Fold<'t>, &'t [String]),
     /// An input and its value under the scheme and contrast in force.
     Input(&'t InputName, &'t Value<Color>),
 }
@@ -1019,10 +1020,12 @@ impl<'t> Cx<'t> {
     }
 
     /// Whether `fold` is the step of a fact the gate evaluates beside the
-    /// theme's own ([`Extra::Step`]), or a step below it.
+    /// theme's own ([`Extra::Step`]), or a step below it, read at the place
+    /// its key names: a map stated there is the fact's value whole, while a
+    /// key below an entry states that leaf alone (S17).
     fn is_fact(&self, fold: &Fold<'_>) -> bool {
-        matches!(self.extra, Some(Extra::Step(extra))
-            if extra.pos == fold.pos && extra.target == fold.target)
+        matches!(self.extra, Some(Extra::Step(extra, place))
+            if extra.pos == fold.pos && extra.target == fold.target && self.path == place)
     }
 
     /// The steps of `target`'s root, in the stack's order: a part's those
@@ -1030,7 +1033,7 @@ impl<'t> Cx<'t> {
     /// those kept beneath an `Absent` or `DrawnAs` included (S6.3).
     pub(crate) fn roots(&self, target: Target) -> Vec<Fold<'t>> {
         let mut out = self.own_roots(target);
-        if let Some(Extra::Step(fold)) = self.extra
+        if let Some(Extra::Step(fold, _)) = self.extra
             && fold.target == target
         {
             out.push(fold);

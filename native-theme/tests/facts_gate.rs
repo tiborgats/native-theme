@@ -160,6 +160,76 @@ fn gate_fixture_wrong_value_per_key_class() {
     }
 }
 
+/// A block's fact and its leaf's later fact (S17 *Which fact applies*):
+/// the focus ring stated whole by a reference, then its width where the
+/// button is not focused. The leaf's fact applies to the leaf there, the
+/// block's to the rest of the block and to the leaf elsewhere, so a preset
+/// patching the width over the reference passes, with no leaf lacking a
+/// fact; its twin leaving the token's width fails at the leaf alone.
+#[test]
+fn gate_fixture_leaf_facts_over_whole_block() {
+    let report = fixture_report("leaf_over_block");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+    let wrong = fixture_report_with("leaf_over_block", "wrong_width.toml");
+    assert!(
+        !failing(&wrong, "Normal: `button.body.focus.width` at").is_empty(),
+        "{:?}",
+        wrong.failures
+    );
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`button.body.focus.width` at")),
+        "{:?}",
+        wrong.failures
+    );
+}
+
+/// A text style's fact reading its own font size (S2.2: `font_size` in a
+/// text style is its font's size; the query evaluates it so): the fact's
+/// expression, evaluated in the key's place, gives the preset's line
+/// height, and a preset stating another multiple fails it.
+#[test]
+fn gate_fixture_text_style_element_operand() {
+    let report = fixture_report("text_style_operand");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let wrong = fixture_report_with("text_style_operand", "wrong.toml");
+    let line_height = failing(&wrong, "`token.text.keyed.body.line_height` at");
+    assert!(!line_height.is_empty(), "{:?}", wrong.failures);
+    assert!(
+        line_height
+            .iter()
+            .all(|failure| failure.contains("gives Px(16.8)")),
+        "{line_height:?}"
+    );
+}
+
+/// An icon-size context's leaves stated per leaf (`token.icons.sizes.keyed.
+/// status_page.size`): each fact states its leaf below the keyed entry, the
+/// entry's other leaves the preset's, so the gate reads the fact's value
+/// there and a preset stating another size fails at the size alone.
+#[test]
+fn gate_fixture_icon_size_keyed() {
+    let report = fixture_report("icon_size_keyed");
+    assert_eq!(report.failures, Vec::<String>::new());
+    let wrong = fixture_report_with("icon_size_keyed", "wrong.toml");
+    assert!(
+        !failing(&wrong, "`token.icons.sizes.keyed.status_page.size` at").is_empty(),
+        "{:?}",
+        wrong.failures
+    );
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`token.icons.sizes.keyed.status_page.size` at")),
+        "{:?}",
+        wrong.failures
+    );
+}
+
 /// The last fact in file order applies, not the most specific: a later,
 /// unconditional 40px applies where an earlier pressed fact holds too, and
 /// a preset stating 40px everywhere passes (S17 *Which fact applies*).
@@ -1472,8 +1542,12 @@ fn gate_measured_colour_drawn_per_renderer() {
 /// (S17: "a colour measured from drawn pixels is compared with the resolved
 /// colour as the platform draws it"): `measured_drawn`'s evidence is an
 /// image's analysis (its `input_image` a PNG), `measured_read`'s a value an
-/// API read, compared unclamped on every platform, so its out-of-gamut
-/// colour passes where no source states the renderer's drawing too.
+/// API read, `measured_node`'s a render-node file and
+/// `measured_node_analysis`'s an analysis of one (S17: a `.node` file holds
+/// the colour's OKLab coordinates unrounded, which an analysis converts as
+/// the function does), each of the three compared unclamped on every
+/// platform, so its out-of-gamut colour passes where no source states the
+/// renderer's drawing too.
 #[test]
 fn gate_measured_colour_drawn_only_from_pixels() {
     let report = |name: &str, platform: &str| {
@@ -1484,10 +1558,12 @@ fn gate_measured_colour_drawn_only_from_pixels() {
             .collect();
         run::run(&root, &presets)
     };
-    for platform in ["gnome", "kde", "material", "macos"] {
-        let read = report("measured_read", platform);
-        assert_eq!(read.failures, Vec::<String>::new(), "{platform}");
-        assert!(read.compared > 0, "{platform}: {read:?}");
+    for name in ["measured_read", "measured_node", "measured_node_analysis"] {
+        for platform in ["gnome", "kde", "material", "macos"] {
+            let read = report(name, platform);
+            assert_eq!(read.failures, Vec::<String>::new(), "{name} {platform}");
+            assert!(read.compared > 0, "{name} {platform}: {read:?}");
+        }
     }
     let drawn = report("measured_drawn", "macos");
     assert!(

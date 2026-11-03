@@ -500,6 +500,67 @@ impl Tree {
         }
     }
 
+    /// [`Tree::at`], mutably.
+    fn at_mut(&mut self, path: &[String]) -> Option<&mut Tree> {
+        /// The step [`Tree::at`] takes at the first segment.
+        enum Step {
+            Field(usize),
+            Named,
+            Only { consumed: bool },
+            Entry(usize),
+        }
+        let Some((first, rest)) = path.split_first() else {
+            return Some(self);
+        };
+        let step = match &*self {
+            Tree::Fields { name, fields } => {
+                match fields.iter().position(|(held, _)| held == first) {
+                    Some(index) => Step::Field(index),
+                    None if snake(name) == *first => Step::Named,
+                    None => return None,
+                }
+            }
+            Tree::Tuple { name, items } if items.len() == 1 => Step::Only {
+                consumed: snake(name) == *first,
+            },
+            Tree::List(items) => Step::Entry(items.iter().position(|item| match item {
+                Tree::Tuple { name, items } if name.is_empty() => match items.as_slice() {
+                    [key, value] => key.text() == Some(first.as_str()) && value.at(rest).is_some(),
+                    _ => false,
+                },
+                _ => false,
+            })?),
+            _ => return None,
+        };
+        match (step, self) {
+            (Step::Field(index), Tree::Fields { fields, .. }) => fields
+                .get_mut(index)
+                .and_then(|(_, value)| value.at_mut(rest)),
+            (Step::Named, tree) => tree.at_mut(rest),
+            (Step::Only { consumed }, Tree::Tuple { items, .. }) => {
+                let only = items.first_mut()?;
+                if consumed {
+                    only.at_mut(rest)
+                } else {
+                    only.at_mut(path)
+                }
+            }
+            (Step::Entry(index), Tree::List(items)) => match items.get_mut(index)? {
+                Tree::Tuple { items, .. } => items.get_mut(1)?.at_mut(rest),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    /// `self` with the subtree at `path` replaced by `from`'s there, where
+    /// both hold one: a place compared by another key's fact (S17).
+    pub(crate) fn graft(&mut self, path: &[String], from: &Tree) {
+        if let (Some(place), Some(value)) = (self.at_mut(path), from.at(path)) {
+            *place = value.clone();
+        }
+    }
+
     /// The text a map's key holds: a text, or a newtype of one (`Key`).
     fn text(&self) -> Option<&str> {
         match self {

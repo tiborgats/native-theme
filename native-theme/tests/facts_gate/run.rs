@@ -2231,7 +2231,18 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
     let widget_keys = &applying.keys;
     let held = &applying.held;
     let facts = &applying.facts;
-    for (key, fact) in widget_keys.iter().zip(facts.iter().copied()) {
+    for (index, (key, fact)) in widget_keys.iter().zip(facts.iter().copied()).enumerate() {
+        // A later fact of a block holding the key states it (S17 *Which
+        // fact applies*): the block's comparison is the key's.
+        if blocks_of(widget_keys, index).into_iter().any(|block| {
+            facts
+                .get(block)
+                .copied()
+                .flatten()
+                .is_some_and(|stated| later(stated, fact))
+        }) {
+            continue;
+        }
         let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
         // A pending fact applying where the preset leaves its path to the
         // synthetic value is a listed path found; where its part is not
@@ -2281,7 +2292,8 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
                 Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                 Ok(false) => {
                     let tolerance = tolerance.drawn_by(run.drawing);
-                    let outcome = session.compare(&key.key, Some(value), &tolerance);
+                    let except = stated_below(widget_keys, facts, index, fact);
+                    let outcome = session.compare_except(&key.key, value, &tolerance, &except);
                     record(outcome, &key.name, &place, report, &describe, pass);
                 }
                 Err(unread) => {
@@ -2302,6 +2314,49 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
             Verdict::Drawn | Verdict::Done => {}
         }
     }
+}
+
+/// The keys of `keys` that are blocks holding the key at `index`: a part
+/// field's or a widget value's key below which it lies (a whole part's key
+/// is none: its fields' facts state its fields, its own whether it is
+/// drawn, S17).
+fn blocks_of(keys: &[&KeyFacts<'_>], index: usize) -> Vec<usize> {
+    let Some(key) = keys.get(index) else {
+        return Vec::new();
+    };
+    keys.iter()
+        .enumerate()
+        .filter(|(_, block)| key.key.below(&block.key).is_some())
+        .map(|(at, _)| at)
+        .collect()
+}
+
+/// Whether `fact` stands after `than` in their file (S17 *Which fact
+/// applies*: the last in file order applies); a fact of another file is
+/// in no order with it.
+fn later(fact: &Prepared<'_>, than: Option<&Prepared<'_>>) -> bool {
+    than.is_none_or(|than| fact.fact.file == than.fact.file && fact.fact.index > than.fact.index)
+}
+
+/// The places below the key at `index`, a block whose `fact` applies, that
+/// a later fact of their own keys states, each by its path below the
+/// block's.
+fn stated_below(
+    keys: &[&KeyFacts<'_>],
+    facts: &[Option<&Prepared<'_>>],
+    index: usize,
+    fact: Option<&Prepared<'_>>,
+) -> Vec<Vec<String>> {
+    let Some(block) = keys.get(index) else {
+        return Vec::new();
+    };
+    keys.iter()
+        .zip(facts)
+        .filter_map(|(key, stated)| {
+            let below = key.key.below(&block.key)?;
+            later((*stated)?, fact).then_some(below)
+        })
+        .collect()
 }
 
 /// Every measured derivation's passes (S17 *A measured derivation*): for

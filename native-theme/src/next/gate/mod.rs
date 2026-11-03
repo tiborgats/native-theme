@@ -1211,6 +1211,23 @@ impl FactKey {
         matches!(self.place, Place::WholePart(_))
     }
 
+    /// The key's path below the key `block`, where `block` names a part's
+    /// field or a widget value holding it (`offset.top` below
+    /// `button.body.focus` for `button.body.focus.offset.top`); `None`
+    /// where it names no block holding the key.
+    #[must_use]
+    pub fn below(&self, block: &FactKey) -> Option<Vec<String>> {
+        let (path, above) = match (&self.place, &block.place) {
+            (Place::Part(part, path), Place::Part(other, above)) if part == other => (path, above),
+            (Place::Values(widget, path), Place::Values(other, above)) if widget == other => {
+                (path, above)
+            }
+            _ => return None,
+        };
+        let rest = path.strip_prefix(above.as_slice())?;
+        (!rest.is_empty()).then(|| rest.to_vec())
+    }
+
     /// The colour role's path below `colors.<scheme>` the key names
     /// (`global.accent`, `surfaces.window.foreground`, `keyed.<key>`);
     /// `None` for any other key.
@@ -1808,7 +1825,9 @@ impl Resolved {
         let scheme = theme.scheme;
         let contrast = self.stack.contrast();
         let (tree, reach) = match (&value.body, &key.place) {
-            (Body::Rule(body), _) => read(extra_step(body).map(Extra::Step)),
+            (Body::Rule(body), _) => {
+                read(extra_step(body).map(|fold| Extra::Step(fold, path.as_slice())))
+            }
             (Body::Inputs(bases), Place::Input(name)) => bases
                 .entries
                 .iter()
@@ -2439,6 +2458,40 @@ impl Session<'_> {
         }
     }
 
+    /// [`Session::compare`] of a part's field or a widget value, but at the
+    /// places below the key `except` names, each by its path below the
+    /// key's, which a later fact of their own keys states (S17 *Which fact
+    /// applies*: the last fact in file order whose `when` holds, a block's
+    /// leaf stated after the block): their own keys compare them.
+    pub fn compare_except(
+        &self,
+        key: &FactKey,
+        value: &FactValue,
+        tolerance: &Tolerance,
+        except: &[Vec<String>],
+    ) -> Result<Outcome, Unread> {
+        if except.is_empty() || !matches!(key.place, Place::Part(..) | Place::Values(..)) {
+            return self.compare(key, Some(value), tolerance);
+        }
+        let Some((actual, path)) = self.field_tree(key, None)? else {
+            return Ok(Outcome::NotDrawn);
+        };
+        let mut expected = self
+            .field_tree(key, Some(rule_body(Some(value))?))?
+            .and_then(|(read, _)| read.tree.clone());
+        if let (Some(expected), Some(actual)) = (expected.as_mut(), actual.tree.as_ref()) {
+            for below in except {
+                expected.graft(below, actual);
+            }
+        }
+        differs_there(
+            actual.tree.as_ref(),
+            expected.as_ref(),
+            &path,
+            &self.in_scope(key, tolerance),
+        )
+    }
+
     /// A measured derivation's pass (S17 *A measured derivation*): the
     /// fact's `value` evaluated in the key's place for the element, its
     /// operands this resolution's, compared with the pass's measured
@@ -2626,7 +2679,17 @@ impl Session<'_> {
     /// after every other; `None` where the key's part is not drawn.
     fn field_tree(&self, key: &FactKey, body: Option<&RuleBody>) -> Result<Option<Field>, Unread> {
         let theme = &self.resolved.theme;
-        let extra = body.and_then(extra_step).map(Extra::Step);
+        let place: &[String] = match &key.place {
+            Place::Part(_, path) | Place::Values(_, path) => path,
+            Place::WholePart(_)
+            | Place::Token(_)
+            | Place::Role(..)
+            | Place::Input(_)
+            | Place::KdeList(_) => &[],
+        };
+        let extra = body
+            .and_then(extra_step)
+            .map(|fold| Extra::Step(fold, place));
         match &key.place {
             Place::Part(part, path) => {
                 let queried = self

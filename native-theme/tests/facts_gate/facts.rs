@@ -137,11 +137,13 @@ const IMAGE_EXTENSIONS: [&str; 9] = [
 
 /// Whether a `measured` citation's evidence was read from drawn pixels (S17
 /// *`evidence`*): an analysis output whose top-level `input_image` names an
-/// image (one of IMAGE_EXTENSIONS) or a GNOME render-node file (`.node`),
-/// or a render-node file itself. A value an API read (a probe's own value,
-/// a kdeglobals key, an analysis over such reads, whose `input_image`
-/// names those files) is not, and compares as read. The evidence path is
-/// the repository's, `root` its root.
+/// image (one of IMAGE_EXTENSIONS). A value an API read (a probe's own
+/// value, a kdeglobals key, an analysis over such reads, whose
+/// `input_image` names those files) is not, and compares as read; nor is a
+/// GNOME render-node file (`.node`) or an analysis of one, which holds the
+/// colour's OKLab coordinates unrounded, converted as the colour function
+/// converts them (S17), no pixel drawn. The evidence path is the
+/// repository's, `root` its root.
 fn drawn_pixels(root: &Path, evidence: &str) -> bool {
     let file = evidence.split_once('#').map_or(evidence, |(file, _)| file);
     let drawn = |name: &str| {
@@ -149,13 +151,9 @@ fn drawn_pixels(root: &Path, evidence: &str) -> bool {
             .extension()
             .and_then(|extension| extension.to_str())
             .is_some_and(|extension| {
-                let extension = extension.to_ascii_lowercase();
-                extension == "node" || IMAGE_EXTENSIONS.contains(&extension.as_str())
+                IMAGE_EXTENSIONS.contains(&extension.to_ascii_lowercase().as_str())
             })
     };
-    if file.ends_with(".node") {
-        return true;
-    }
     let Ok(text) = std::fs::read_to_string(root.join(file)) else {
         return false;
     };
