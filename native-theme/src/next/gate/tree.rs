@@ -641,6 +641,15 @@ impl Tree {
                 if items.len() != others.len() {
                     return here();
                 }
+                // A map is compared by key, its order no part of its value.
+                if let (Some(entries), Some(other)) = (map_entries(items), map_entries(others)) {
+                    return entries.iter().find_map(|(key, a)| {
+                        match other.iter().find(|(held, _)| held == key) {
+                            Some((_, b)) => a.differs_at(b, tolerance, &below(path, key, false)),
+                            None => Some(written(&below(path, key, false))),
+                        }
+                    });
+                }
                 let path = below(path, "layers", true);
                 items
                     .iter()
@@ -653,6 +662,28 @@ impl Tree {
             _ => here(),
         }
     }
+}
+
+/// A list's items as a map's entries, each key as its text (a `Key`'s) or
+/// else as written (an `AxisTag`'s bytes), and its value: every item a
+/// pair, no key twice; `None` for any other list (a paint's layers),
+/// compared in order.
+fn map_entries(items: &[Tree]) -> Option<Vec<(String, &Tree)>> {
+    let mut out: Vec<(String, &Tree)> = Vec::new();
+    for item in items {
+        let Tree::Tuple { name, items } = item else {
+            return None;
+        };
+        let ([key, value], true) = (items.as_slice(), name.is_empty()) else {
+            return None;
+        };
+        let key = key.text().map_or_else(|| key.to_string(), str::to_owned);
+        if out.iter().any(|(held, _)| *held == key) {
+            return None;
+        }
+        out.push((key, value));
+    }
+    (!out.is_empty()).then_some(out)
 }
 
 #[cfg(test)]

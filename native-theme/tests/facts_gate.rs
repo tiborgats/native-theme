@@ -99,6 +99,27 @@ fn gate_fixture_passes() {
     assert!(report.queried > 0, "{report:?}");
 }
 
+/// A map fact is the value, not a patch (S17, the T6 review's S1): stated
+/// whole (`Font.axes`, a `Value` of a map), it is compared whole, entry by
+/// entry by key, never merged over the theme's map. The fact `{}` fails a
+/// preset whose axes hold an extra axis; a fact of two axes agrees with a
+/// preset stating them in another order and fails one stating fewer or
+/// more.
+#[test]
+fn gate_value_map_fact_whole() {
+    let axes = |report: &run::Report| failing(report, "font.axes").len();
+    let empty = fixture_report("map_whole");
+    assert_eq!(empty.failures, Vec::<String>::new());
+    let extra = fixture_report_with("map_whole", "preset_extra.toml");
+    assert!(axes(&extra) > 0, "{:?}", extra.failures);
+    let order = fixture_report("map_whole_order");
+    assert_eq!(order.failures, Vec::<String>::new());
+    for file in ["preset_fewer.toml", "preset_more.toml"] {
+        let report = fixture_report_with("map_whole_order", file);
+        assert!(axes(&report) > 0, "{file}: {:?}", report.failures);
+    }
+}
+
 /// The negative control's pair: facts stating one wrong value per key
 /// class (a token, a colour role, an input, a widget value and a part's
 /// field) fail at each, so `gate_fixture_passes` passing means each class

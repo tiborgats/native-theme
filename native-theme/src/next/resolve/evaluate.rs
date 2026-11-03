@@ -1018,6 +1018,13 @@ impl<'t> Cx<'t> {
         selector.is_none_or(|selector| (self.applies)(selector))
     }
 
+    /// Whether `fold` is the step of a fact the gate evaluates beside the
+    /// theme's own ([`Extra::Step`]), or a step below it.
+    fn is_fact(&self, fold: &Fold<'_>) -> bool {
+        matches!(self.extra, Some(Extra::Step(extra))
+            if extra.pos == fold.pos && extra.target == fold.target)
+    }
+
     /// The steps of `target`'s root, in the stack's order: a part's those
     /// that apply to the element (S8 step 3), its style patches only.
     pub(crate) fn roots(&self, target: Target) -> Vec<Fold<'t>> {
@@ -2515,6 +2522,17 @@ impl<'t> Cx<'t> {
         V: 'static,
         P: 'static,
     {
+        // A fact the gate evaluates is the map's value, not a patch (S17):
+        // the map it states replaces what lies below.
+        let fact = items.iter().position(|fold| {
+            self.is_fact(fold)
+                && (fold.found.get::<Vec<(K, V)>>().is_some()
+                    || fold.found.get::<Vec<(K, P)>>().is_some())
+        });
+        let items = match fact {
+            Some(at) => items.get(at..).unwrap_or_default(),
+            None => items,
+        };
         let mut keys: Vec<(K, String)> = Vec::new();
         let mut add = |key: &K| {
             let name = key.key_name();
@@ -2571,10 +2589,17 @@ impl<'t> Cx<'t> {
         K: PartialEq + Clone + 'static,
         V: Clone + 'static,
     {
+        // A fact the gate evaluates is the map's value, not a patch (S17):
+        // its stated map replaces what lies below.
         let steps: Vec<(usize, MapStep<'f, K, V>)> = items
             .iter()
             .enumerate()
-            .filter_map(|(index, fold)| map_step(*fold).map(|step| (index, step)))
+            .filter_map(|(index, fold)| {
+                map_step(*fold).map(|step| match step {
+                    MapStep::Patch(value) if self.is_fact(fold) => (index, MapStep::Whole(value)),
+                    step => (index, step),
+                })
+            })
             .collect();
         let set = self.decider(
             steps.iter().map(|(index, step)| (*index, step.sets())),
