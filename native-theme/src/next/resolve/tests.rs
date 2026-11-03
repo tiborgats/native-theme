@@ -45,7 +45,8 @@ pub(super) fn stack(
         default_scheme: Scheme::Light,
         contrast: None,
         flavor: None,
-        synthetic: Vec::new(),
+        pending: Vec::new(),
+        synthetic: None,
     }
 }
 
@@ -210,7 +211,8 @@ fn reader_stand_in_refused_with_reader() {
             None,
             Declarations::default(),
             Layer::default(),
-            Scheme::Light
+            Scheme::Light,
+            Vec::new()
         ),
         Err(LayerError::Invalid(_))
     ));

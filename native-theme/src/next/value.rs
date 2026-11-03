@@ -63,7 +63,8 @@ impl<T> SchemeMap<T> {
         }
     }
 
-    fn slot(&mut self, scheme: Scheme) -> &mut Option<T> {
+    /// The value for `scheme`, to set or clear in place.
+    pub(crate) fn slot(&mut self, scheme: Scheme) -> &mut Option<T> {
         match scheme {
             Scheme::Light => &mut self.light,
             Scheme::Dark => &mut self.dark,

@@ -1212,21 +1212,28 @@ fn refusal_listed_twice() {
 /// The problems of a preset stating `body` after its header.
 fn preset(body: &str) -> Vec<String> {
     let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
-    strings(check_preset(&file.declarations, &file.layer, None))
-        .into_iter()
-        .filter(|problem| !problem.ends_with(": missing"))
-        .collect()
+    strings(check_preset(
+        &file.declarations,
+        &file.layer,
+        None,
+        &[],
+        false,
+    ))
+    .into_iter()
+    .filter(|problem| !problem.ends_with(": missing"))
+    .collect()
 }
 
 /// The problems of a preset stating `body` after its header on the
 /// synthetic route, which waives a pending default size (S17, ADD-A131).
 fn synthetic_preset(body: &str) -> Vec<String> {
     let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
-    strings(super::check_preset_exempt(
+    strings(check_preset(
         &file.declarations,
         &file.layer,
         None,
         &[],
+        true,
     ))
     .into_iter()
     .filter(|problem| !problem.ends_with(": missing"))
@@ -1752,7 +1759,7 @@ fn refusal_unused_variants_models_and_maps() {
         }))),
         ..ButtonPatch::default()
     }));
-    let problems: Vec<String> = strings(check_preset(&file.declarations, &layer, None))
+    let problems: Vec<String> = strings(check_preset(&file.declarations, &layer, None, &[], false))
         .into_iter()
         .filter(|problem| !problem.ends_with(": missing"))
         .collect();
@@ -1837,7 +1844,13 @@ fn refusal_missing() {
         "{PRESET_HEAD}[tokens.motion]\nspeed_factor = 1\ndurations = {{}}"
     ))
     .unwrap();
-    let found = strings(check_preset(&file.declarations, &file.layer, None));
+    let found = strings(check_preset(
+        &file.declarations,
+        &file.layer,
+        None,
+        &[],
+        false,
+    ));
     assert!(
         found.contains(&"tokens.motion.timings: missing".to_owned()),
         "{found:?}"
@@ -3076,7 +3089,13 @@ fn layer_error_every_variant_triggers() {
     };
     let preset_problems = |body: &str| {
         let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
-        problems(check_preset(&file.declarations, &file.layer, None))
+        problems(check_preset(
+            &file.declarations,
+            &file.layer,
+            None,
+            &[],
+            false,
+        ))
     };
     let mut keyed = Layer::default();
     keyed.bases.colors.light = Some(ColorRolesPatch {

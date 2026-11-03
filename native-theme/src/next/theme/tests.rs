@@ -11,7 +11,7 @@ use crate::next::gate::synthetic_layers;
 use crate::next::layer::Layer;
 use crate::next::presets::PresetId;
 use crate::next::query::{Element, FontMetrics, RootInputs, Styled, Unavailable};
-use crate::next::resolve::{WindowConditions, WindowState};
+use crate::next::resolve::{Stack, WindowConditions, WindowState};
 use crate::next::selector::{ControlSize, Direction, InputKind, PartRef, Scheme};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::{Ms, Px, Size};
@@ -645,4 +645,246 @@ fn presets_build_on_a_small_stack() {
             .unwrap_or_default();
         panic!("the preset did not build and answer on 256 KiB: {message}");
     }
+}
+
+/// The facts gate fixtures' complete base, a preset with no listed path.
+const BASE: &str = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+
+/// `stack` switched to the preset `text` states (S16).
+fn switch(stack: &mut Stack, text: &str) -> Result<(), LayerError> {
+    let file = read_preset(text).unwrap();
+    stack.set_preset(None, file.declarations, file.layer, file.pending)
+}
+
+/// The problems a refused change names, as text.
+fn named(refused: Result<(), LayerError>) -> Vec<String> {
+    match refused {
+        Err(LayerError::Invalid(problems)) => problems.iter().map(ToString::to_string).collect(),
+        other => panic!("refused with problems: {other:?}"),
+    }
+}
+
+/// The base with its subtitle's presence listed (S17, ADD-A131): it
+/// states the part's fields and no presence.
+fn listed_presence() -> String {
+    format!("[pending]\n\"widgets.button.subtitle\" = \"U3\"\n{BASE}")
+}
+
+/// One refusal rule on every route but the synthetic one (S12, S17,
+/// ADD-A131): a listed path no layer states is S12's missing field, through
+/// `from_preset` and `set_preset` alike; one an application layer or the
+/// stand-in states is stated (a reader-backed token), and removing that
+/// layer is refused again.
+#[test]
+fn a_listed_path_is_stated_by_a_layer_above() {
+    let mut stack = preset_stack(None, BASE, Scheme::Light).unwrap();
+    assert_eq!(
+        named(switch(&mut stack, &listed_preset())),
+        ["tokens.behavior.touch.delay: missing"]
+    );
+    let delay = Layer::from_toml("[tokens.behavior.touch]\ndelay_ms = 7\n").unwrap();
+    let id = stack.add_layer(delay.clone()).unwrap();
+    switch(&mut stack, &listed_preset()).unwrap();
+    assert_eq!(
+        named(stack.remove_layer(id)),
+        ["tokens.behavior.touch.delay: missing"]
+    );
+    let mut read = preset_stack(None, BASE, Scheme::Light).unwrap();
+    read.set_reader_stand_in(
+        crate::next::resolve::ReaderState::new(Scheme::Light, 1.0),
+        delay,
+    )
+    .unwrap();
+    switch(&mut read, &listed_preset()).unwrap();
+}
+
+/// A listed presence (S17, ADD-A131): refused through the plain route as
+/// S12's missing field at the part's path unless an application layer's
+/// bases state the part's presence, a stand-in's not counting; drawn on
+/// the synthetic route, which states nothing for it.
+#[test]
+fn a_listed_presence_is_stated_by_an_application_layer() {
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &listed_presence(), Scheme::Light)
+    else {
+        panic!("a listed presence is missing through the plain route");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        ["widgets.button.subtitle: missing"]
+    );
+    let hidden = Layer::from_toml("[widgets.button.subtitle]\nabsent = true\n").unwrap();
+    let mut stand_in = preset_stack(None, BASE, Scheme::Light).unwrap();
+    stand_in
+        .set_reader_stand_in(
+            crate::next::resolve::ReaderState::new(Scheme::Light, 1.0),
+            hidden.clone(),
+        )
+        .unwrap();
+    assert_eq!(
+        named(switch(&mut stand_in, &listed_presence())),
+        ["widgets.button.subtitle: missing"]
+    );
+    let mut stack = preset_stack(None, BASE, Scheme::Light).unwrap();
+    stack.add_layer(hidden).unwrap();
+    switch(&mut stack, &listed_presence()).unwrap();
+    let file = read_preset(&listed_presence()).unwrap();
+    assert!(synthetic_layers(&file.pending).unwrap().is_empty());
+    let synthetic = synthetic_stack(None, &listed_presence(), Scheme::Light, Vec::new()).unwrap();
+    let theme = synthetic
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    let subtitle = PartRef::Typed(TypedPart::Button(ButtonPart::Subtitle));
+    assert!(matches!(
+        theme.style(&Element::new(subtitle, &scope, &NoMetrics)),
+        Styled::Style(_)
+    ));
+}
+
+/// A synthetic theme keeps the route through its mutations while its
+/// preset is current (S17, ADD-A131): a stand-in, a scheme, a contrast and
+/// a layer change validate with the listed default size waived and the
+/// listed presence drawn; a `set_preset` to the same preset ends the route,
+/// refused as its listed paths are left unstated, the theme unchanged; one
+/// to a complete preset succeeds and removes the synthetic layers.
+#[test]
+fn a_synthetic_theme_keeps_its_route_until_set_preset() {
+    let text = format!(
+        "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U1\"\n\
+         \"declare.widget.button.default_size\" = \"U2\"\n\"widgets.button.subtitle\" = \"U3\"\n{}\n\
+         [declare.widget.button]\nsizes = [\"small\", \"regular\"]\n",
+        BASE.replacen("\ndelay_ms = \"absent\"\n", "\n", 1)
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    assert_eq!(layers.len(), 1);
+    let mut stack = synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    stack
+        .set_reader_stand_in(
+            crate::next::resolve::ReaderState::new(Scheme::Dark, 1.0),
+            Layer::default(),
+        )
+        .unwrap();
+    stack.pick(Some(Scheme::Light)).unwrap();
+    stack
+        .set_contrast(Some(crate::next::inputs::Contrast::High))
+        .unwrap();
+    let id = stack.add_layer(Layer::default()).unwrap();
+    stack.remove_layer(id).unwrap();
+    stack.remove_reader_stand_in().unwrap();
+    assert_eq!(stack.synthetic_places(), [1]);
+    let kept = stack.clone();
+    let refused = named(switch(&mut stack, &text));
+    assert_eq!(
+        refused,
+        [
+            "declare.widget.button.default_size: no default size where sizes are taken",
+            "tokens.behavior.touch.delay: missing",
+            "widgets.button.subtitle: missing",
+        ]
+    );
+    assert_eq!(stack, kept, "a refused set_preset changes nothing");
+    switch(&mut stack, BASE).unwrap();
+    assert!(stack.synthetic_places().is_empty());
+    assert_eq!(
+        named(switch(&mut stack, &text)),
+        [
+            "declare.widget.button.default_size: no default size where sizes are taken",
+            "tokens.behavior.touch.delay: missing",
+            "widgets.button.subtitle: missing",
+        ],
+        "the synthetic layers are gone with the route"
+    );
+}
+
+/// A listed input's synthetic value is folded into the preset's own input
+/// base at its listed scheme and marked there (S17, ADD-A132): no
+/// synthetic layer holds it; the mark is in force at that scheme alone,
+/// not under a contrast the preset states a base for, and not where a
+/// stand-in replaces the input at that slot.
+#[test]
+fn a_listed_input_is_folded_into_the_preset() {
+    let text = format!(
+        "[pending]\n\"inputs.accent.dark\" = \"U1\"\n{}\n\
+         [inputs.accent.contrast.high]\ndark = \"#000000\"\n",
+        BASE.replacen(
+            "[inputs.accent]\nlight = \"#3366cc\"\ndark = \"#3366cc\"\n",
+            "[inputs.accent]\nlight = \"#3366cc\"\n",
+            1
+        )
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    assert_eq!(layers.len(), 1);
+    assert!(!layers[0].bases.inputs.entries.is_empty());
+    let mut stack = synthetic_stack(None, &text, Scheme::Dark, layers).unwrap();
+    let accent = crate::next::inputs::InputName::new("accent").unwrap();
+    let (_, value) = stack
+        .preset_layer()
+        .bases
+        .inputs
+        .entries
+        .iter()
+        .find(|(name, _)| *name == accent)
+        .unwrap();
+    assert_eq!(
+        value.per_scheme.dark,
+        Some(crate::next::value::Value::Stated(
+            crate::next::color::Color::parse("#010203").unwrap()
+        ))
+    );
+    let marked = |stack: &Stack| {
+        stack
+            .resolve(
+                &mut WindowState::default(),
+                &WindowConditions::new(InputKind::Mouse),
+            )
+            .theme
+            .synthetic_inputs
+    };
+    assert_eq!(marked(&stack), std::slice::from_ref(&accent));
+    let theme = stack
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    let applies: &dyn Fn(&crate::next::selector::Selector) -> bool = &|_| true;
+    let reference = crate::next::expr::Ref::Input(accent.segments().to_vec());
+    let reached = theme.evaluate_in(
+        &scope,
+        None,
+        applies,
+        crate::next::resolve::compose::Target::Roles,
+        None,
+        |cx| {
+            assert!(cx.color_of(&reference).is_some());
+            cx.reached().len()
+        },
+    );
+    assert!(
+        reached > 0,
+        "reading the folded value reaches a synthetic value"
+    );
+    stack.pick(Some(Scheme::Light)).unwrap();
+    assert!(marked(&stack).is_empty());
+    stack.pick(Some(Scheme::Dark)).unwrap();
+    stack
+        .set_contrast(Some(crate::next::inputs::Contrast::High))
+        .unwrap();
+    assert!(marked(&stack).is_empty());
+    stack.set_contrast(None).unwrap();
+    let stand_in = Layer::from_toml("[inputs.accent]\ndark = \"#445566\"\n").unwrap();
+    stack
+        .set_reader_stand_in(
+            crate::next::resolve::ReaderState::new(Scheme::Dark, 1.0),
+            stand_in,
+        )
+        .unwrap();
+    assert!(marked(&stack).is_empty());
 }

@@ -118,39 +118,22 @@ fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
 
 /// Every structural problem a preset's declarations and layer have (S10,
 /// S12): its layer's, its declarations' own, and each declared keyed name
-/// nothing uses.
+/// nothing uses. Its listed paths `pending` are left out of its
+/// completeness check, as the layers above it state them
+/// ([`listed_unstated`]; S17, ADD-A131); `synthetic`: the synthetic
+/// route's preset, whose pending default sizes are waived (S10's *A
+/// pending default*, ADD-A131).
 pub(crate) fn check_preset(
     declarations: &Declarations,
     layer: &Layer,
     preset: Option<PresetId>,
-) -> Result<(), LayerError> {
-    preset_problems(declarations, layer, preset, &[], false)
-}
-
-/// [`check_preset`], the listed paths `exempt` (each as
-/// [`listed_path`](crate::next::toml::read::listed_path) gives it) left out
-/// of its completeness check: the synthetic route's preset, which the
-/// layers over it complete ([`listed_unstated`]; S17, ADD-A128), its
-/// pending default sizes waived (S10's *A pending default*, ADD-A131).
-pub(crate) fn check_preset_exempt(
-    declarations: &Declarations,
-    layer: &Layer,
-    preset: Option<PresetId>,
-    exempt: &[String],
-) -> Result<(), LayerError> {
-    preset_problems(declarations, layer, preset, exempt, true)
-}
-
-/// [`check_preset`]'s problems, the listed paths `exempt` left out of its
-/// completeness check; `synthetic`: the synthetic route's, which waives a
-/// pending default size.
-fn preset_problems(
-    declarations: &Declarations,
-    layer: &Layer,
-    preset: Option<PresetId>,
-    exempt: &[String],
+    pending: &[crate::next::toml::layer::Listed],
     synthetic: bool,
 ) -> Result<(), LayerError> {
+    let exempt: Vec<String> = pending
+        .iter()
+        .map(|(path, _)| crate::next::toml::read::listed_path(path))
+        .collect();
     let cx = Context {
         declarations,
         preset,
@@ -158,7 +141,7 @@ fn preset_problems(
         reader_accent_left_out: false,
         below: &[],
     };
-    let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, exempt);
+    let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, &exempt);
     problems.extend(checks::declarations(declarations, synthetic));
     problems.extend(checks::unused(declarations, layer, preset));
     let layers = [Stacked {
@@ -178,47 +161,55 @@ fn preset_problems(
 /// value holding it whole (a reference, `Absent`): a preset's own layer
 /// stating it lists a path it states (S17, ADD-A128).
 pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
-    checks::states(layer, listed)
+    checks::states(&layer.bases, layer, listed)
 }
 
 /// Each of a preset's listed paths `pending` (as its `[pending]` table
-/// spells them) that none of `layers` states, as S12's missing field at the
-/// model's path, the one the plain route reports it at: the synthetic
-/// route's completeness (S17, ADD-A128). A listed default size is no
-/// layer's to state: the synthetic route waives the checks that read it
-/// instead (S17, ADD-A131).
+/// spells them) that no layer of `layers`, the stack bottom first, states,
+/// as S12's missing field at the model's path (an input's at
+/// `inputs.<name>.<scheme>`): a path a layer states is stated, on every
+/// theme, the preset's own bases and a layer's part for `preset` included
+/// (S12, S17, ADD-A131, ADD-A132). A listed presence counts as stated only
+/// where the preset's or an application layer's bases state the part's
+/// presence, and on the synthetic route (`synthetic`) is drawn, never
+/// refused. A listed default size is no layer's to state: it is S12's
+/// missing default size on every route but the synthetic one, which
+/// waives the checks that read it ([`check_preset`]).
 pub(crate) fn listed_unstated(
     pending: &[crate::next::toml::layer::Listed],
-    layers: &[Layer],
+    layers: &[Stacked<'_>],
+    preset: Option<PresetId>,
+    synthetic: bool,
 ) -> Vec<Problem> {
-    pending
-        .iter()
-        .filter(|(path, _)| {
-            crate::next::toml::read::listed_default(path).is_none()
-                && crate::next::toml::read::listed_part(path).is_none()
-        })
-        .map(|(path, _)| crate::next::toml::read::listed_path(path))
-        .filter(|listed| !layers.iter().any(|layer| checks::states(layer, listed)))
-        .map(|listed| Problem::new(&listed, ProblemKind::Missing))
-        .collect()
-}
-
-/// Each listed input of a preset's `pending` (`inputs.<name>`,
-/// [`listed_input`](crate::next::toml::read::listed_input)) its own `layer`
-/// does not state, as S12's missing field at `inputs.<name>`: the plain
-/// route's refusal of a listed path (S17), which [`check_preset`]'s
-/// completeness check, having no missing input, does not give, as
-/// [`listed_unstated`] gives it on the synthetic route (ADD-A128).
-pub(crate) fn listed_inputs_unstated(
-    pending: &[crate::next::toml::layer::Listed],
-    layer: &Layer,
-) -> Vec<Problem> {
-    let inputs: Vec<crate::next::toml::layer::Listed> = pending
-        .iter()
-        .filter(|(path, _)| crate::next::toml::read::listed_input(path).is_some())
-        .cloned()
-        .collect();
-    listed_unstated(&inputs, std::slice::from_ref(layer))
+    let mut problems = Vec::new();
+    for (path, _) in pending {
+        if crate::next::toml::read::listed_default(path).is_some() {
+            continue;
+        }
+        let presence = crate::next::toml::read::listed_part(path).is_some();
+        if presence && synthetic {
+            continue;
+        }
+        let listed = crate::next::toml::read::listed_path(path);
+        let stated = layers.iter().any(|stacked| {
+            if presence && !matches!(stacked.kind, LayerKind::Preset | LayerKind::Application) {
+                return false;
+            }
+            let own = stacked
+                .layer
+                .for_preset
+                .iter()
+                .filter(|(held, _)| Some(*held) == preset)
+                .map(|(_, bases)| bases);
+            std::iter::once(&stacked.layer.bases)
+                .chain(own)
+                .any(|bases| checks::states(bases, stacked.layer, &listed))
+        });
+        if !stated {
+            problems.push(Problem::new(&listed, ProblemKind::Missing));
+        }
+    }
+    problems
 }
 
 /// Every problem a reader's or stand-in's state has (S9.4, S12): a text

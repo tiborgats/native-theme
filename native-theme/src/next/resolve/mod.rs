@@ -371,6 +371,10 @@ pub struct ResolvedTheme {
     /// `Theme::from_preset_synthetic`, S17, ADD-A128), whose steps
     /// evaluation records read; none outside it.
     pub(crate) synthetic: Vec<usize>,
+    /// The listed inputs whose value in force is the synthetic one the
+    /// synthetic route folded into the preset's input base (S17,
+    /// ADD-A132), which evaluation records read; none outside it.
+    pub(crate) synthetic_inputs: Vec<InputName>,
 }
 
 /// KDE's scheme lists under the scheme in force (S9.1).
@@ -427,19 +431,37 @@ pub(crate) struct Stack {
     contrast: Option<Contrast>,
     /// The flavour the application set; `None`: the preset's default.
     flavor: Option<Key>,
-    /// The application layers the synthetic route added (S17, ADD-A128).
-    synthetic: Vec<LayerId>,
+    /// The current preset's listed paths, its `[pending]` table (S17).
+    pending: Vec<Listed>,
+    /// The synthetic route's state while the preset it loaded is current
+    /// (S16's `Theme::from_preset_synthetic`, S17, ADD-A131); `None` on
+    /// every other theme.
+    synthetic: Option<Synthetic>,
+}
+
+/// What the synthetic route added to a stack (S17, ADD-A131, ADD-A132).
+#[derive(Clone, Debug, Default, PartialEq)]
+struct Synthetic {
+    /// The application layers stating the listed paths.
+    layers: Vec<LayerId>,
+    /// The listed inputs' per-scheme values folded into the preset's own
+    /// input bases, each by its input and scheme.
+    inputs: Vec<(InputName, Scheme)>,
 }
 
 impl Stack {
-    /// The stack of a preset's declarations and layer, with no reader, under
-    /// `scheme`; refused where the preset fails validation (S10, S12).
+    /// The stack of a preset's declarations, layer and listed paths
+    /// `pending`, with no reader, under `scheme`; refused where the preset
+    /// fails validation (S10, S12), a listed path no layer states among its
+    /// problems (S17).
     pub(crate) fn new(
         preset: Option<PresetId>,
         declarations: Declarations,
         layer: Layer,
         scheme: Scheme,
+        pending: Vec<Listed>,
     ) -> Result<Stack, LayerError> {
+        let mut problems = preset_problems(&declarations, &layer, preset, &pending, false)?;
         let stack = Stack {
             preset,
             declarations,
@@ -452,37 +474,36 @@ impl Stack {
             default_scheme: scheme,
             contrast: None,
             flavor: None,
-            synthetic: Vec::new(),
+            pending,
+            synthetic: None,
         };
-        validate::check_preset(&stack.declarations, &stack.preset_layer, preset)?;
-        stack.validate()?;
-        Ok(stack)
+        add_problems(&mut problems, stack.validate())?;
+        if problems.is_empty() {
+            Ok(stack)
+        } else {
+            Err(LayerError::Invalid(problems))
+        }
     }
 
     /// The synthetic route's stack (S16's `Theme::from_preset_synthetic`,
-    /// S17, ADD-A128): the preset's declarations and layer, its listed
-    /// paths `pending` left out of its completeness check, with `layers`
-    /// over it as application layers, all validated at once, so a listed
-    /// path none of them states is S12's missing field.
+    /// S17, ADD-A131): the preset's declarations and layer, with `layers`
+    /// over it as application layers stating its listed paths `pending`,
+    /// all validated at once, so a listed path none of them states is S12's
+    /// missing field. Before validation, the per-scheme value the last of
+    /// the layers stating one gives at each listed input's scheme is folded
+    /// into the preset's own input base there and marked synthetic, never
+    /// staying in its layer (ADD-A132). A listed default size is waived and
+    /// a listed presence drawn while the preset is current.
     pub(crate) fn synthetic(
         preset: Option<PresetId>,
         declarations: Declarations,
-        layer: Layer,
+        mut layer: Layer,
         scheme: Scheme,
-        pending: &[crate::next::toml::layer::Listed],
-        layers: Vec<Layer>,
+        pending: Vec<Listed>,
+        mut layers: Vec<Layer>,
     ) -> Result<Stack, LayerError> {
-        let exempt: Vec<String> = pending
-            .iter()
-            .map(|(path, _)| crate::next::toml::read::listed_path(path))
-            .collect();
-        let mut problems =
-            match validate::check_preset_exempt(&declarations, &layer, preset, &exempt) {
-                Ok(()) => Vec::new(),
-                Err(LayerError::Invalid(problems)) => problems,
-                Err(other) => return Err(other),
-            };
-        problems.extend(validate::listed_unstated(pending, &layers));
+        let inputs = fold_inputs(&pending, &mut layer, &mut layers);
+        let mut problems = preset_problems(&declarations, &layer, preset, &pending, true)?;
         let layers: Vec<(LayerId, Arc<Layer>)> = layers
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
@@ -492,7 +513,10 @@ impl Stack {
             declarations,
             preset_layer: Arc::new(layer),
             reader: None,
-            synthetic: layers.iter().map(|(id, _)| *id).collect(),
+            synthetic: Some(Synthetic {
+                layers: layers.iter().map(|(id, _)| *id).collect(),
+                inputs,
+            }),
             layers,
             accent: None,
             accent_layer: Arc::default(),
@@ -500,14 +524,9 @@ impl Stack {
             default_scheme: scheme,
             contrast: None,
             flavor: None,
+            pending,
         };
-        if let Err(LayerError::Invalid(found)) = stack.validate() {
-            for problem in found {
-                if !problems.contains(&problem) {
-                    problems.push(problem);
-                }
-            }
-        }
+        add_problems(&mut problems, stack.validate())?;
         if problems.is_empty() {
             Ok(stack)
         } else {
@@ -541,17 +560,31 @@ impl Stack {
             default_scheme: Scheme::Light,
             contrast: None,
             flavor,
-            synthetic: Vec::new(),
+            pending: Vec::new(),
+            synthetic: None,
         }
     }
 
     /// `change` over a copy of the stack, kept where the whole stack
     /// validates, else refused with the theme as it was (S8).
     fn change(&mut self, change: impl FnOnce(&mut Stack)) -> Result<(), LayerError> {
+        self.change_beside(Vec::new(), change)
+    }
+
+    /// [`Stack::change`], refused too with the `problems` found before it,
+    /// listed first.
+    fn change_beside(
+        &mut self,
+        mut problems: Vec<Problem>,
+        change: impl FnOnce(&mut Stack),
+    ) -> Result<(), LayerError> {
         let mut changed = Box::new(self.clone());
         change(&mut changed);
         changed.accent_layer = changed.derived_accent();
-        changed.validate()?;
+        add_problems(&mut problems, changed.validate())?;
+        if !problems.is_empty() {
+            return Err(LayerError::Invalid(problems));
+        }
         *self = *changed;
         Ok(())
     }
@@ -590,24 +623,37 @@ impl Stack {
         self.change(|stack| stack.reader = None)
     }
 
-    /// Switches to another preset's declarations and layer (S16): refused
-    /// where the preset fails validation, or the accent set lacks one of
-    /// its accent inputs (S9.2); the accent layer is derived again (S8).
+    /// Switches to another preset's declarations, layer and listed paths
+    /// `pending` (S16): refused where the preset fails validation, or the
+    /// accent set lacks one of its accent inputs (S9.2), or a listed path
+    /// no layer states is left (S17); the accent layer is derived again
+    /// (S8). On a synthetic theme it ends the synthetic route, removing the
+    /// layers it added and the values it folded, the same preset's included
+    /// (S17, ADD-A131).
     pub(crate) fn set_preset(
         &mut self,
         preset: Option<PresetId>,
         declarations: Declarations,
         layer: Layer,
+        pending: Vec<Listed>,
     ) -> Result<(), LayerError> {
         accent_inputs_held(&declarations, self.accent.as_ref())?;
-        validate::check_preset(&declarations, &layer, preset)?;
-        self.change(|stack| stack.switch(preset, declarations, layer))
+        let problems = preset_problems(&declarations, &layer, preset, &pending, false)?;
+        self.change_beside(problems, |stack| {
+            stack.switch(preset, declarations, layer, pending);
+        })
     }
 
     /// The switch of [`Stack::set_preset`], unvalidated: the flavour set is
     /// kept where the new preset declares it, else the new preset's default
-    /// is in force (S16).
-    fn switch(&mut self, preset: Option<PresetId>, declarations: Declarations, layer: Layer) {
+    /// is in force (S16); the synthetic route's layers are removed (S17).
+    fn switch(
+        &mut self,
+        preset: Option<PresetId>,
+        declarations: Declarations,
+        layer: Layer,
+        pending: Vec<Listed>,
+    ) {
         if self
             .flavor
             .as_ref()
@@ -615,9 +661,13 @@ impl Stack {
         {
             self.flavor = None;
         }
+        if let Some(synthetic) = self.synthetic.take() {
+            self.layers.retain(|(id, _)| !synthetic.layers.contains(id));
+        }
         self.preset = preset;
         self.declarations = declarations;
         self.preset_layer = Arc::new(layer);
+        self.pending = pending;
     }
 
     /// Adds an application layer, last, and returns its id.
@@ -736,12 +786,55 @@ impl Stack {
 
     /// The places in the stack's order of the synthetic route's layers.
     pub(crate) fn synthetic_places(&self) -> Vec<usize> {
+        let Some(synthetic) = &self.synthetic else {
+            return Vec::new();
+        };
         let first = if self.reader.is_some() { 2_usize } else { 1 };
         self.layers
             .iter()
             .enumerate()
-            .filter(|(_, (id, _))| self.synthetic.contains(id))
+            .filter(|(_, (id, _))| synthetic.layers.contains(id))
             .map(|(index, _)| first.saturating_add(index))
+            .collect()
+    }
+
+    /// The listed inputs whose folded synthetic value is in force under
+    /// `scheme` and `contrast` (S17, ADD-A132): the preset's own input base
+    /// gives the input, at a listed scheme, with no contrast base of the
+    /// preset's for the contrast in force, and no layer above gives one.
+    fn synthetic_inputs(
+        &self,
+        scheme: Scheme,
+        contrast: Option<Contrast>,
+        input_layers: &[(InputName, usize)],
+    ) -> Vec<InputName> {
+        let Some(synthetic) = &self.synthetic else {
+            return Vec::new();
+        };
+        synthetic
+            .inputs
+            .iter()
+            .filter(|(name, listed)| {
+                *listed == scheme
+                    && input_layers
+                        .iter()
+                        .any(|(held, layer)| held == name && *layer == 0)
+                    && !self
+                        .preset_layer
+                        .bases
+                        .inputs
+                        .entries
+                        .iter()
+                        .any(|(held, value)| {
+                            held == name
+                                && contrast.is_some_and(|contrast| {
+                                    value.per_contrast.iter().any(|(on, schemes)| {
+                                        *on == contrast && schemes.get(scheme).is_some()
+                                    })
+                                })
+                        })
+            })
+            .map(|(name, _)| name.clone())
             .collect()
     }
 
@@ -777,16 +870,16 @@ impl Stack {
                 reader_accent_left_out: self.reader_accent_left_out(),
                 below: stacked.get(..index).unwrap_or_default(),
             };
-            match validate::check(layer.layer, &cx) {
-                Ok(()) => {}
-                Err(LayerError::Invalid(found)) => {
-                    for problem in found {
-                        if !problems.contains(&problem) {
-                            problems.push(problem);
-                        }
-                    }
-                }
-                Err(other) => return Err(other),
+            add_problems(&mut problems, validate::check(layer.layer, &cx))?;
+        }
+        for problem in validate::listed_unstated(
+            &self.pending,
+            &stacked,
+            self.preset,
+            self.synthetic.is_some(),
+        ) {
+            if !problems.contains(&problem) {
+                problems.push(problem);
             }
         }
         if problems.is_empty() {
@@ -927,6 +1020,7 @@ impl Stack {
             declarations: self.declarations.clone(),
             flavor: self.flavor().cloned(),
             synthetic: self.synthetic_places(),
+            synthetic_inputs: Vec::new(),
         };
         let stacked = self.stacked();
         let left_out = self.reader_accent_left_out();
@@ -949,6 +1043,7 @@ impl Stack {
                 out.base(bases, pos, scheme, contrast, drop_accent);
             }
         }
+        out.synthetic_inputs = self.synthetic_inputs(scheme, contrast, &out.input_layers);
         // Steps 2 and 3: every layer's rules whose conditions hold, in
         // order; a part's or widget's kept with its selector for the query.
         for (index, layer) in stacked.iter().enumerate() {
@@ -990,6 +1085,94 @@ fn accent_inputs_held(
     } else {
         Err(LayerError::AccentInputsMissing(missing))
     }
+}
+
+/// A preset's listed path as S11 spells it and its register ids (S17).
+pub(crate) type Listed = crate::next::toml::layer::Listed;
+
+/// The problems of a preset's declarations and layer (S10, S12), its
+/// listed paths `pending` left to the layers above it (S17); a problem
+/// other than a list of S12's is the error.
+fn preset_problems(
+    declarations: &Declarations,
+    layer: &Layer,
+    preset: Option<PresetId>,
+    pending: &[Listed],
+    synthetic: bool,
+) -> Result<Vec<Problem>, LayerError> {
+    let mut problems = Vec::new();
+    add_problems(
+        &mut problems,
+        validate::check_preset(declarations, layer, preset, pending, synthetic),
+    )?;
+    Ok(problems)
+}
+
+/// Adds the problems a check `found` to `problems`, each once; a refusal
+/// other than a list of problems is the error.
+fn add_problems(
+    problems: &mut Vec<Problem>,
+    found: Result<(), LayerError>,
+) -> Result<(), LayerError> {
+    match found {
+        Ok(()) => Ok(()),
+        Err(LayerError::Invalid(found)) => {
+            for problem in found {
+                if !problems.contains(&problem) {
+                    problems.push(problem);
+                }
+            }
+            Ok(())
+        }
+        Err(other) => Err(other),
+    }
+}
+
+/// The synthetic route's fold of the listed inputs (S17, ADD-A132): at
+/// each listed `inputs.<name>.<scheme>` of `pending`, the per-scheme value
+/// the last of `layers` stating one gives is set in `preset`'s own input
+/// base at that scheme and taken out of every one of `layers`; each value
+/// folded, by its input and scheme. The layers' other input values stay.
+fn fold_inputs(
+    pending: &[Listed],
+    preset: &mut Layer,
+    layers: &mut [Layer],
+) -> Vec<(InputName, Scheme)> {
+    let mut folded = Vec::new();
+    for (path, _) in pending {
+        let Some((name, scheme)) = crate::next::toml::read::listed_input(path) else {
+            continue;
+        };
+        let mut value = None;
+        for layer in layers.iter_mut() {
+            let entries = &mut layer.bases.inputs.entries;
+            for (held, stated) in entries.iter_mut() {
+                if *held == name
+                    && let Some(taken) = stated.per_scheme.slot(scheme).take()
+                {
+                    value = Some(taken);
+                }
+            }
+            entries.retain(|(_, stated)| {
+                stated.per_scheme.light.is_some()
+                    || stated.per_scheme.dark.is_some()
+                    || !stated.per_contrast.is_empty()
+            });
+        }
+        let Some(value) = value else {
+            continue;
+        };
+        let entries = &mut preset.bases.inputs.entries;
+        match entries.iter_mut().find(|(held, _)| *held == name) {
+            Some((_, stated)) => *stated.per_scheme.slot(scheme) = Some(value),
+            None => entries.push((
+                name.clone(),
+                InputValue::new(super::value::SchemeMap::one(scheme, value)),
+            )),
+        }
+        folded.push((name, scheme));
+    }
+    folded
 }
 
 /// Whether `name` is the `accent` input.

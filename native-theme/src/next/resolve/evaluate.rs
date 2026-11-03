@@ -1317,6 +1317,16 @@ impl<'t> Cx<'t> {
                     return None;
                 }
                 self.visiting.push(key);
+                // A listed input's folded synthetic value in force (S17,
+                // ADD-A132), read as a synthetic layer's step is.
+                if extra.is_none()
+                    && theme
+                        .synthetic_inputs
+                        .iter()
+                        .any(|name| name.segments() == path.as_slice())
+                {
+                    self.record(true);
+                }
                 let value = self.operand(&[fold]);
                 self.visiting.pop();
                 value.map(Answer::Val)

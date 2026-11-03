@@ -58,8 +58,7 @@ pub(super) fn layer(layer: &Layer, cx: &Context<'_>) -> Vec<Problem> {
 
 /// Every structural problem of `layer` against `cx`, a preset's listed
 /// paths `exempt` (each as `listed_path` gives it) from its completeness
-/// check: the synthetic route's preset, which its layers complete (S17,
-/// ADD-A128).
+/// check, which the layers above it state on every route (S17, ADD-A131).
 pub(super) fn layer_exempt(layer: &Layer, cx: &Context<'_>, exempt: &[String]) -> Vec<Problem> {
     let mut problems = in_flavor(layer, cx, None, exempt);
     // Under each flavour, the declarations in force are the default
@@ -2531,7 +2530,7 @@ impl Stated {
     }
 }
 
-/// Whether `layer`'s bases state the listed path `listed` (as
+/// Whether `bases`, of `layer`, state the listed path `listed` (as
 /// `listed_path` gives it), an element of it where it is a list, or a
 /// value holding it whole: a reference, `Absent`, a part stated `Absent`
 /// or drawn as another (S17, ADD-A128); a listed input
@@ -2539,7 +2538,7 @@ impl Stated {
 /// per-scheme value at that scheme (ADD-A132); a listed presence
 /// (`widgets.<widget>.<part>`) where its bases state the part `Absent` or
 /// drawn as another (ADD-A131).
-pub(super) fn states(layer: &Layer, listed: &str) -> bool {
+pub(super) fn states(bases: &Bases, layer: &Layer, listed: &str) -> bool {
     let toml = matches!(layer.spelled, Spelled::Toml);
     let mut stated = Stated::default();
     let Bases {
@@ -2547,7 +2546,7 @@ pub(super) fn states(layer: &Layer, listed: &str) -> bool {
         inputs,
         tokens,
         widgets,
-    } = &layer.bases;
+    } = bases;
     if let Some((input, scheme)) = crate::next::toml::read::listed_input(listed) {
         return inputs
             .entries

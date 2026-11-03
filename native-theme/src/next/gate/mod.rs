@@ -97,6 +97,9 @@ pub struct Preset {
     stack: Stack,
     id: String,
     pending: Vec<(String, Vec<String>)>,
+    /// The listed paths its own bases state, read before the synthetic
+    /// route folds a listed input into them (S17, ADD-A132).
+    stated: Vec<String>,
 }
 
 impl Preset {
@@ -113,8 +116,20 @@ impl Preset {
 
     fn read(text: &str, id: Option<PresetId>) -> Result<Preset, String> {
         let file = read_preset(text).map_err(|error| refused(&error))?;
+        let pending = file.pending.clone();
+        let stated = pending
+            .iter()
+            .map(|(path, _)| super::toml::read::listed_path(path))
+            .filter(|listed| super::validate::states(&file.layer, listed))
+            .collect();
         let stack = if file.pending.is_empty() {
-            Stack::new(id, file.declarations, file.layer, Scheme::Light)
+            Stack::new(
+                id,
+                file.declarations,
+                file.layer,
+                Scheme::Light,
+                file.pending,
+            )
         } else {
             let layers = synthetic_layers(&file.pending)?;
             Stack::synthetic(
@@ -122,24 +137,25 @@ impl Preset {
                 file.declarations,
                 file.layer,
                 Scheme::Light,
-                &file.pending,
+                file.pending,
                 layers,
             )
         };
         Ok(Preset {
             stack: stack.map_err(|error| refused(&error))?,
             id: file.id,
-            pending: file.pending,
+            pending,
+            stated,
         })
     }
 
     /// Whether the preset's own bases state the listed path `path` (as its
-    /// `[pending]` table spells it), or a value holding it whole: a path it
-    /// states is no listed path (S17, ADD-A128).
+    /// `[pending]` table spells it), or a value holding it whole, as its
+    /// file states them: a path it states is no listed path (S17,
+    /// ADD-A128).
     #[must_use]
     pub fn states(&self, path: &str) -> bool {
-        let listed = super::toml::read::listed_path(path);
-        super::validate::states(self.stack.preset_layer(), &listed)
+        self.stated.contains(&super::toml::read::listed_path(path))
     }
 
     /// Whether the preset's declarations state the default size the
@@ -1667,11 +1683,12 @@ impl Resolved {
                     // states it, a listed input (S17); what it reads
                     // decides nothing of it.
                     let decides = extra.is_none()
-                        && theme
-                            .input_layers
-                            .iter()
-                            .find(|(held, _)| held == name)
-                            .is_some_and(|(_, layer)| theme.synthetic.contains(layer));
+                        && (theme.synthetic_inputs.contains(name)
+                            || theme
+                                .input_layers
+                                .iter()
+                                .find(|(held, _)| held == name)
+                                .is_some_and(|(_, layer)| theme.synthetic.contains(layer)));
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(&reference));
                         let reach = Reach {
@@ -2661,7 +2678,7 @@ mod tests {
                 file.declarations,
                 file.layer,
                 crate::next::selector::Scheme::Light,
-                &file.pending,
+                file.pending,
                 layers,
             ) else {
                 continue;

@@ -85,7 +85,9 @@ fn mutation_refused_whole() {
         (
             "a preset failing validation",
             invalid,
-            Box::new(|stack| stack.set_preset(None, Declarations::default(), Layer::default())),
+            Box::new(|stack| {
+                stack.set_preset(None, Declarations::default(), Layer::default(), Vec::new())
+            }),
         ),
         (
             "a preset whose accent inputs the accent lacks",
@@ -95,7 +97,7 @@ fn mutation_refused_whole() {
                     "inputs = [\"accent\", \"accent_ramp.light1\", \"accent_ramp.light2\"]\n\
                      accent_inputs = [\"accent\", \"accent_ramp.light1\", \"accent_ramp.light2\"]\n",
                 );
-                stack.set_preset(None, more, Layer::default())
+                stack.set_preset(None, more, Layer::default(), Vec::new())
             }),
         ),
         (
@@ -167,7 +169,7 @@ fn mutation_refused_whole() {
 fn preset_change_keeps_a_declared_flavor() {
     let mut stack = declared();
     assert!(matches!(
-        stack.set_preset(None, Declarations::default(), Layer::default()),
+        stack.set_preset(None, Declarations::default(), Layer::default(), Vec::new()),
         Err(LayerError::Invalid(_))
     ));
     stack.set_accent(Some(Accent::new(input(0.1)))).unwrap_err();
@@ -176,13 +178,18 @@ fn preset_change_keeps_a_declared_flavor() {
     stack.set_accent(Some(Accent::new(input(0.1)))).unwrap();
     let ramp = InputName::new("accent_ramp.light1").unwrap();
     assert_eq!(
-        stack.set_preset(None, declared().declarations, Layer::default()),
+        stack.set_preset(None, declared().declarations, Layer::default(), Vec::new()),
         Err(LayerError::AccentInputsMissing(vec![ramp]))
     );
     let mut stack = declared();
     stack.set_flavor(key!("b")).unwrap();
     let mut kept = stack.clone();
-    kept.switch(None, declarations("flavors = [\"c\", \"b\"]\n"), body(0.1));
+    kept.switch(
+        None,
+        declarations("flavors = [\"c\", \"b\"]\n"),
+        body(0.1),
+        Vec::new(),
+    );
     assert_eq!(kept.flavor(), Some(&key!("b")));
     assert_eq!(*kept.preset_layer, body(0.1));
     let mut other = stack.clone();
@@ -190,11 +197,12 @@ fn preset_change_keeps_a_declared_flavor() {
         None,
         declarations("flavors = [\"c\", \"d\"]\n"),
         Layer::default(),
+        Vec::new(),
     );
     assert_eq!(other.flavor(), Some(&key!("c")));
     one.flavors.clear();
     let mut none = stack;
-    none.switch(None, one, Layer::default());
+    none.switch(None, one, Layer::default(), Vec::new());
     assert_eq!(none.flavor(), None);
 }
 

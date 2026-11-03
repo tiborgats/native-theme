@@ -105,7 +105,8 @@ fn resolved_by(layers: &[&str], state: ReaderState) -> ResolvedTheme {
         default_scheme: Scheme::Light,
         contrast: None,
         flavor: None,
-        synthetic: Vec::new(),
+        pending: Vec::new(),
+        synthetic: None,
     };
     stack
         .resolve(

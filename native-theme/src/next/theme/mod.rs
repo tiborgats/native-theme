@@ -10,7 +10,6 @@ use super::presets::PresetId;
 use super::resolve::{ReaderState, Resolution, Stack, WindowConditions, WindowState};
 use super::selector::Scheme;
 use super::toml::layer::read_preset;
-use super::validate::listed_inputs_unstated;
 
 /// A theme: a bundled preset, the reader or its stand-in, the
 /// application's layers and the accent it set, and the application's
@@ -34,10 +33,14 @@ impl Theme {
 
     /// The bundled preset `id` with `layers` over it, under `scheme`: the
     /// facts gate's and S19.1's build test's route while the preset's
-    /// `[pending]` table is not empty (S17, ADD-A128). The preset is
-    /// validated with the layers, added at once as application layers, so
-    /// a listed path they leave unstated is the missing-field problem it is
-    /// through [`Theme::from_preset`].
+    /// `[pending]` table is not empty (S17, ADD-A128, ADD-A131). The preset
+    /// is validated with the layers, added at once as application layers,
+    /// so a listed path they leave unstated is the missing-field problem it
+    /// is through [`Theme::from_preset`]; a listed input's per-scheme value
+    /// is folded into the preset's own input base (ADD-A132). The theme is
+    /// a synthetic one while its preset is current: every mutation keeps
+    /// the route's waivers (a listed default size waived, a listed presence
+    /// drawn), and [`Theme::set_preset`] ends it.
     #[doc(hidden)]
     pub fn from_preset_synthetic(
         id: PresetId,
@@ -54,16 +57,15 @@ impl Theme {
     /// the accent layer is derived again; the flavour set is kept where the
     /// new preset declares it, else the new preset's default is in force.
     /// Refused where the accent set lacks one of the new preset's accent
-    /// inputs (S9.2), where it lists an input its layer does not state
-    /// (S17), or where the stack fails validation over it.
+    /// inputs (S9.2), where a path its `[pending]` table lists is left that
+    /// no layer states (S17), or where the stack fails validation over it.
+    /// On a theme [`Theme::from_preset_synthetic`] built, it ends the
+    /// synthetic route, whose layers and folded values it removes, the same
+    /// preset's included (S17, ADD-A131).
     pub fn set_preset(&mut self, id: PresetId) -> Result<(), LayerError> {
         let file = read_preset(id.source())?;
-        let unstated = listed_inputs_unstated(&file.pending, &file.layer);
-        if !unstated.is_empty() {
-            return Err(LayerError::Invalid(unstated));
-        }
         self.stack
-            .set_preset(Some(id), file.declarations, file.layer)?;
+            .set_preset(Some(id), file.declarations, file.layer, file.pending)?;
         self.preset = id;
         Ok(())
     }
@@ -165,23 +167,15 @@ impl Theme {
 
 /// The stack of the preset `text` states, with no reader, under `scheme`;
 /// `Err(ThemeError::Preset)` where it does not read or fails validation, a
-/// listed input its layer does not state among the problems (S17).
+/// listed path no layer states among the problems (S17).
 fn preset_stack(preset: Option<PresetId>, text: &str, scheme: Scheme) -> Result<Stack, ThemeError> {
     let file = read_preset(text).map_err(ThemeError::Preset)?;
-    let mut problems = listed_inputs_unstated(&file.pending, &file.layer);
-    match Stack::new(preset, file.declarations, file.layer, scheme) {
-        Ok(stack) if problems.is_empty() => Ok(stack),
-        Ok(_) => Err(ThemeError::Preset(LayerError::Invalid(problems))),
-        Err(LayerError::Invalid(found)) => {
-            problems.extend(found);
-            Err(ThemeError::Preset(LayerError::Invalid(problems)))
-        }
-        Err(other) => Err(ThemeError::Preset(other)),
-    }
+    Stack::new(preset, file.declarations, file.layer, scheme, file.pending)
+        .map_err(ThemeError::Preset)
 }
 
 /// The synthetic route's stack of the preset `text` states, `layers` over
-/// it (S17, ADD-A128); `Err(ThemeError::Preset)` where it does not read or
+/// it (S17, ADD-A131); `Err(ThemeError::Preset)` where it does not read or
 /// fails validation.
 fn synthetic_stack(
     preset: Option<PresetId>,
@@ -195,7 +189,7 @@ fn synthetic_stack(
         file.declarations,
         file.layer,
         scheme,
-        &file.pending,
+        file.pending,
         layers,
     )
     .map_err(ThemeError::Preset)
