@@ -1404,6 +1404,16 @@ fn pending_default_size_refused_but_on_the_synthetic_route() {
           not one of the sizes taken there"
         ]
     );
+    // A widget stating no sizes: its pending default, which a variant
+    // entry's sizes fall back on, is missing all the same.
+    let sizeless = "[declare.widget.button]\nvariants = [\"primary\"]\n\
+                   sizes_by_variant = [{ variant = \"primary\", sizes = [\"small\"] }]\n\
+                   [pending]\n\"declare.widget.button.default_size\" = \"U1\"";
+    assert_eq!(
+        preset(sizeless),
+        [missing("declare.widget.button.default_size")]
+    );
+    assert_eq!(synthetic_preset(sizeless), NONE);
 }
 
 /// An element taking sizes outside a context and none inside it is

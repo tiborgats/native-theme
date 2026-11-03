@@ -2214,6 +2214,12 @@ fn sizes(
         Some(DefaultSize::Size(size)) if !sizes.contains(size) => {
             push(default_at, not_taken(*size));
         }
+        // A pending default is missing whatever the sizes, but on the
+        // synthetic route (S10's *A pending default*): a variant entry's
+        // sizes may fall back on it.
+        Some(DefaultSize::Pending(_)) if !synthetic => {
+            push(default_at, ProblemKind::DefaultSizeMissing);
+        }
         default if !sizes.is_empty() && missing(default.as_ref()) => {
             push(default_at, ProblemKind::DefaultSizeMissing);
         }
