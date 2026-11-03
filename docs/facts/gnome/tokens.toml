@@ -2308,6 +2308,577 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtkrange.c:74"
 quote = "#define TIMEOUT_REPEAT      250"
 
+# AdwTabButton's page counter (GN-1.194), the label over its counter icon while the view holds fewer than 10 pages
+# (`adw-tab-button.c:113`, `:123-126`; from 10 the label takes `.small`, 8px, `_buttons.scss:653-655`)
+# the rule sets no family: the default font's, inherited
+[[fact]]
+key = "token.text.keyed.tab_counter.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+# an absolute size, which libadwaita states in px as a part of the icon
+[[fact]]
+key = "token.text.keyed.tab_counter.font.size"
+value = "10.5px"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact]]
+key = "token.text.keyed.tab_counter.font.weight"
+value = 800
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-649"
+quote = "tabbutton { label { font-weight: 800;"
+
+[[fact]]
+key = "token.text.keyed.tab_counter.font.style"
+value = "normal"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+# the rule sets no line height: GTK's default, the font's own spacing
+[[fact]]
+key = "token.text.keyed.tab_counter.line_height"
+value = "auto"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.tab_counter.letter_spacing"
+value = "0px"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.tab_counter.case"
+value = "mixed"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-651"
+quote = "tabbutton { label { font-weight: 800; // We're intentionally using pixels here, as this label is a part of the icon font-size: 10.5px;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.tab_counter.decoration"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+# the rule sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.tab_counter.font.width"
+value = 100
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-663"
+quote = "tabbutton {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the rule sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.tab_counter.font.axes"
+value = {}
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-663"
+quote = "tabbutton {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the counter's label carries `.numeric`: tabular figures, its only feature
+[[fact]]
+key = "token.text.keyed.tab_counter.font.features"
+value = { tnum = 1 }
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-tab-button.ui:20-25"
+quote = "<object class=\"GtkLabel\" id=\"label\"> <property name=\"halign\">center</property> <property name=\"justify\">center</property> <style> <class name=\"numeric\"/>"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_labels.scss:86-88"
+quote = ".numeric { font-variant-numeric: tabular-nums; }"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:649-650"
+quote = "if (numeric & GTK_CSS_FONT_VARIANT_NUMERIC_TABULAR_NUMS) append_separated (&s, \"tnum 1\");"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.tab_counter.scaling_role"
+value = "none"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.tab_counter.word_spacing"
+value = "0px"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the rule sets no decoration (S2.8)
+[[fact]]
+key = "token.text.keyed.tab_counter.mnemonic_decoration"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-663"
+quote = "tabbutton {"
+absent = ["text-decoration", "text-decoration-line"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
+[[fact]]
+key = "token.text.keyed.tab_counter.elision"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+[[fact]]
+key = "token.text.keyed.tab_counter.wrap"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+[[fact]]
+key = "token.text.keyed.tab_counter.max_lines"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+# the rule sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
+[[fact]]
+key = "token.text.keyed.tab_counter.fill"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:647-663"
+quote = "tabbutton {"
+absent = ["color"]
+
+# the window title's subtitle and the progress bar's text: `font-size: smaller` (GN-1.194)
+# the rule sets no family: the default font's, inherited
+[[fact]]
+key = "token.text.keyed.smaller.font.family"
+value = "= token.text.keyed.body.font.family"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
+quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
+
+# GTK's `smaller`: the parent's size over 1.2, the parent here the default font (a token reads no element data,
+# S2.2)
+[[fact]]
+key = "token.text.keyed.smaller.font.size"
+value = "= div(token.text.keyed.body.font.size, 1.2)"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_progress-bar.scss:17-20"
+quote = "> text { @extend .dimmed; @extend .numeric; font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssenumvalue.c:270-276"
+quote = "case GTK_CSS_FONT_SIZE_SMALLER: if (parent_style) font_size = gtk_css_number_value_get (parent_style->core->font_size, 100); else font_size = gtk_css_font_size_get_default_px (provider, style); /* This is what WebKit does... */ font_size /= 1.2;"
+
+# the rule sets no weight: CSS's initial `normal`, as GTK registers it
+[[fact]]
+key = "token.text.keyed.smaller.font.weight"
+value = 400
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
+quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:136"
+quote = "PANGO_WEIGHT_NORMAL = 400,"
+
+[[fact]]
+key = "token.text.keyed.smaller.font.style"
+value = "normal"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:915-920"
+quote = "gtk_css_style_property_register (\"font-style\", GTK_CSS_PROPERTY_FONT_STYLE, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_style_parse, _gtk_css_font_style_value_new (PANGO_STYLE_NORMAL));"
+
+# the rule sets no line height: GTK's default, the font's own spacing
+[[fact]]
+key = "token.text.keyed.smaller.line_height"
+value = "auto"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1472-1477"
+quote = "gtk_css_style_property_register (\"line-height\", GTK_CSS_PROPERTY_LINE_HEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_line_height, gtk_css_value_ref (gtk_css_line_height_value_get_default ()));"
+
+[[fact]]
+key = "token.text.keyed.smaller.letter_spacing"
+value = "0px"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:934-939"
+quote = "gtk_css_style_property_register (\"letter-spacing\", GTK_CSS_PROPERTY_LETTER_SPACING, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_letter_spacing, gtk_css_number_value_new (0.0, GTK_CSS_PX));"
+
+[[fact]]
+key = "token.text.keyed.smaller.case"
+value = "mixed"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-222"
+quote = ".subtitle { font-size: smaller;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:959-964"
+quote = "gtk_css_style_property_register (\"text-transform\", GTK_CSS_PROPERTY_TEXT_TRANSFORM, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_text_transform, _gtk_css_text_transform_value_new (GTK_CSS_TEXT_TRANSFORM_NONE));"
+
+[[fact]]
+key = "token.text.keyed.smaller.decoration"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:941-946"
+quote = "gtk_css_style_property_register (\"text-decoration-line\", GTK_CSS_PROPERTY_TEXT_DECORATION_LINE, 0, GTK_CSS_AFFECTS_TEXT_ATTRS, parse_text_decoration_line, _gtk_css_text_decoration_line_value_new (GTK_CSS_TEXT_DECORATION_LINE_NONE));"
+absent = ["underline", "overline"]
+
+# the rule sets no width: GTK's initial `normal`, Pango's 1000 (tenths of a percent), fontconfig's 100
+[[fact]]
+key = "token.text.keyed.smaller.font.width"
+value = 100
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-226"
+quote = ".subtitle {"
+absent = ["font-width", "font-stretch"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:927-932"
+quote = "gtk_css_style_property_register (\"font-width\", GTK_CSS_PROPERTY_FONT_WIDTH, GTK_STYLE_PROPERTY_INHERIT, GTK_CSS_AFFECTS_TEXT_SIZE, font_width_parse, _gtk_css_font_width_value_new (PANGO_WIDTH_NORMAL));"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:198"
+quote = "PANGO_WIDTH_NORMAL = 1000,"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pangofc-fontmap.c:2066-2069"
+quote = "pango_fc_convert_width_to_fc (PangoWidth pango_width) { return (double) pango_width / 10.0; }"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 fontconfig/fontconfig.h.in:184"
+quote = "#define FC_WIDTH_NORMAL 100"
+
+# the rule sets no variations: GTK's initial value, empty
+[[fact]]
+key = "token.text.keyed.smaller.font.axes"
+value = {}
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-226"
+quote = ".subtitle {"
+absent = ["font-variation-settings"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1466-1471"
+quote = "gtk_css_style_property_register (\"font-variation-settings\", GTK_CSS_PROPERTY_FONT_VARIATION_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_variation_settings, gtk_css_font_variations_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontvariationsvalue.c:185-186"
+quote = "if (default_font_variations == NULL) default_font_variations = gtk_css_font_variations_value_new_empty ();"
+
+# the rule sets no features and no font-variant: GTK's initial values, which add none (the progress bar's text adds
+# `.numeric` beside it, its part's own)
+[[fact]]
+key = "token.text.keyed.smaller.font.features"
+value = {}
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-226"
+quote = ".subtitle {"
+absent = ["font-feature-settings", "font-variant-numeric", "font-variant-ligatures", "font-variant-caps", "font-kerning"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:1460-1465"
+quote = "gtk_css_style_property_register (\"font-feature-settings\", GTK_CSS_PROPERTY_FONT_FEATURE_SETTINGS, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_ATTRS | GTK_CSS_AFFECTS_TEXT_SIZE, parse_font_feature_settings, gtk_css_font_features_value_new_default ());"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssfontfeaturesvalue.c:182-183"
+quote = "if (default_font_features == NULL) default_font_features = gtk_css_font_features_value_new_empty ();"
+
+# one factor scales every text (`token.text.scaling` linear): no style has a curve of its own
+[[fact]]
+key = "token.text.keyed.smaller.scaling_role"
+value = "none"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:121-127"
+quote = "<key name=\"text-scaling-factor\" type=\"d\"> <range min=\"0.5\" max=\"3.0\"/> <default>1.0</default> <summary>Text scaling factor</summary> <description> Factor used to enlarge or reduce text display, without changing font size. </description>"
+
+# GTK registers no word-spacing and passes Pango none (S17's zero stated by omission)
+[[fact]]
+key = "token.text.keyed.smaller.word_spacing"
+value = "0px"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstyle.c:711-821"
+quote = "gtk_css_style_get_pango_attributes (GtkCssStyle *style)"
+absent = ["word-spacing", "word_spacing"]
+
+# a token reads no element data (S2.2), so the mnemonic's underline, Pango's low underline over the font's own
+# underline thickness, is stated on each label that takes a mnemonic; the rule sets no decoration (S2.8)
+[[fact]]
+key = "token.text.keyed.smaller.mnemonic_decoration"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-226"
+quote = ".subtitle {"
+absent = ["text-decoration", "text-decoration-line"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
+quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
+
+# GTK's CSS has no elision, wrapping or line limit (GtkLabel's `ellipsize`, `wrap` and `lines` are the label's
+# properties): the style leaves them absent, each part that draws text stating its own (S2.8)
+[[fact]]
+key = "token.text.keyed.smaller.elision"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+[[fact]]
+key = "token.text.keyed.smaller.wrap"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+[[fact]]
+key = "token.text.keyed.smaller.max_lines"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:867-1478"
+quote = "_gtk_css_style_property_init_properties (void)"
+absent = ["text-overflow", "white-space", "line-clamp"]
+
+# the rule sets no colour: the style leaves `fill` absent, each part that draws text stating its own (S2.8)
+[[fact]]
+key = "token.text.keyed.smaller.fill"
+value = "absent"
+rows = ["GN-1.194"]
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_header-bar.scss:221-226"
+quote = ".subtitle {"
+absent = ["color"]
+
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_1.font.family"
