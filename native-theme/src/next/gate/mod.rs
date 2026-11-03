@@ -2389,20 +2389,39 @@ impl Session<'_> {
     /// Whether a synthetic layer's step decides the key's value for the
     /// element itself (S17, ADD-A128): the preset leaves the place, or a
     /// block it is a leaf of, unstated here, a listed path. A whole part's
-    /// key is never one.
+    /// key is one where no step for the element states the part's presence
+    /// (`absent`, `drawn_as`), a listed presence (ADD-A131).
     pub fn listed(&self, key: &FactKey) -> Result<bool, Unread> {
         let (target, path) = match &key.place {
             Place::Part(part, path) => (Target::Part(*part), path),
             Place::Values(widget, path) => (Target::Values(*widget), path),
-            Place::WholePart(_)
-            | Place::Token(_)
-            | Place::Role(..)
-            | Place::Input(_)
-            | Place::KdeList(_) => return Ok(false),
+            Place::WholePart(part) => return Ok(!self.presence_stated(*part)),
+            Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => {
+                return Ok(false);
+            }
         };
         Ok(self
             .field_tree(key, None)?
             .is_some_and(|(_, _, reached)| Reach::of(&reached, target, path).decides))
+    }
+
+    /// Whether a step kept for the element states `part`'s presence:
+    /// `Absent` or drawn as another (S6.3).
+    fn presence_stated(&self, part: TypedPart) -> bool {
+        let Some(queried) = self.queried(part) else {
+            return false;
+        };
+        let theme = &self.resolved.theme;
+        self.with_element(queried.part, &queried.scope, |element| {
+            let Ok(matched) = Matched::new(theme, element) else {
+                return false;
+            };
+            theme.presence_stated(part, |step| {
+                step.selector
+                    .as_ref()
+                    .is_none_or(|selector| matched.matches(selector))
+            })
+        })
     }
 
     /// Whether a synthetic layer's step decides whether `part` is drawn

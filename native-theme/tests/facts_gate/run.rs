@@ -1607,6 +1607,11 @@ fn check(
             };
             if global_vectors.contains(vector) {
                 check_globals(preset.id(), &resolved, keys, vector, pass, &root, report);
+                if pass == Pass::Normal {
+                    definitions(preset.id(), &resolved, &root, report, &|| {
+                        format!("{vector:?}")
+                    });
+                }
             }
             let run = Run {
                 preset: preset.id(),
@@ -1619,6 +1624,41 @@ fn check(
             };
             check_widgets(&run, combinations, report);
         }
+    }
+}
+
+/// The values the specification itself defines, which no fact states
+/// (S17, ADD-A125, ADD-A131): `token.text.font_dpi` 72 on the Apple presets
+/// (S9.4), `token.icons.animated_visuals` `{}` on every preset but
+/// `windows-11` (S4.5); each compared with the resolved token as a fact
+/// would be.
+pub fn definitions(
+    preset: &str,
+    resolved: &Resolved,
+    root: &RootInputs,
+    report: &mut Report,
+    combination: &dyn Fn() -> String,
+) {
+    let apple = preset.starts_with("macos-") || preset.starts_with("ios-");
+    let defined = [
+        (apple, "token.text.font_dpi", Value::Integer(72), "S9.4"),
+        (
+            preset != "windows-11",
+            "token.icons.animated_visuals",
+            Value::Table(toml::Table::new()),
+            "S4.5",
+        ),
+    ];
+    for (applies, name, value, section) in defined {
+        if !applies {
+            continue;
+        }
+        let place = format!("the definition of {section}");
+        let outcome = parse_key(name).and_then(|key| {
+            let value = parse_value(&key, &value)?;
+            resolved.compare_global(&key, &value, root, &Tolerance::quote())
+        });
+        record(outcome, name, &place, report, combination, Pass::Normal);
     }
 }
 

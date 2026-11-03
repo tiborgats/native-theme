@@ -1320,6 +1320,21 @@ impl ResolvedTheme {
             .unwrap_or_default()
     }
 
+    /// Whether a step the element keeps (`kept`) states `part`'s presence,
+    /// `Absent` or drawn as another (S6.3): where none does, a pending
+    /// presence fact has no presence beneath it, a listed presence (S17,
+    /// ADD-A131).
+    pub(crate) fn presence_stated(
+        &self,
+        part: TypedPart,
+        kept: impl Fn(&Step<PartPatch>) -> bool,
+    ) -> bool {
+        self.part_steps(part)
+            .iter()
+            .filter(|step| kept(step))
+            .any(|step| !matches!(step.patch, PartPatch::Style(_)))
+    }
+
     /// Whether a synthetic layer's step decides whether `part` is drawn
     /// (S17, ADD-A128), `kept` telling the steps the element keeps: the
     /// last kept step is a synthetic layer's and changes what the steps

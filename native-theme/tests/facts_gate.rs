@@ -1179,6 +1179,65 @@ fn gate_fixture_pending_input() {
     );
 }
 
+/// A pending presence with no presence beneath is listed by its part's
+/// path (S17, ADD-A131: `"widgets.button.label" = "U122"`): found with its
+/// id, the part drawn on the synthetic route, its fields compared there;
+/// listed while the preset states the presence, it fails.
+#[test]
+fn gate_fixture_pending_presence() {
+    let report = fixture_report("pending_presence");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe button.subtitle"]
+    );
+    assert_eq!(
+        report.listed.values().next().map(|(ids, _)| ids_of(ids)),
+        Some(vec!["U7"])
+    );
+    assert!(report.compared > 0, "{report:?}");
+    let stated = fixture_report_with("pending_presence", "stated.toml");
+    assert_eq!(
+        failing(&stated, "[pending]"),
+        [
+            &"probe: `widgets.button.subtitle` (U7) is in its [pending] table, and the preset \
+              states it"
+                .to_owned()
+        ],
+        "{:?}",
+        stated.failures
+    );
+}
+
+/// A value the specification defines is compared with its definition
+/// (S17, ADD-A125, ADD-A131): the base's `font_dpi` of 96 fails on an
+/// Apple preset, which defines 72, and its empty `animated_visuals` agrees
+/// on every preset but `windows-11`, which states its own.
+#[test]
+fn gate_definitions_compared() {
+    let (_, presets) = fixture("passes", "preset.toml");
+    let (_, preset) = &presets[0];
+    let conditions = native_theme::next::gate::Conditions::new("light").unwrap();
+    let resolved = preset
+        .resolve(&conditions, &native_theme::next::Layer::default())
+        .unwrap();
+    let root = run::root_inputs();
+    let failures = |id: &str| {
+        let mut report = run::Report::default();
+        run::definitions(id, &resolved, &root, &mut report, &|| "[]".to_owned());
+        (report.failures, report.compared)
+    };
+    assert_eq!(failures("probe"), (Vec::new(), 1));
+    assert_eq!(failures("windows-11"), (Vec::new(), 0));
+    let (apple, compared) = failures("ios-26");
+    assert_eq!(compared, 2);
+    assert_eq!(apple.len(), 1, "{apple:?}");
+    assert!(
+        apple[0].contains("token.text.font_dpi") && apple[0].contains("the definition of S9.4"),
+        "{apple:?}"
+    );
+}
+
 /// A whole map listed as pending is found (S17: "U150's
 /// `token.text.fallbacks.per_language` … on `adwaita`"): the map's
 /// synthetic value is empty, so reading it reads the synthetic layer's step
