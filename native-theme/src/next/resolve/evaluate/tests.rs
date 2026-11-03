@@ -1720,6 +1720,28 @@ fn value_map_over_reference_composes_lazily() {
     );
 }
 
+/// The T6 review's M3: the patches stated in rules over a reference each
+/// apply at its rule's position (S2.2): a part rule on the label's axes and
+/// a `Tokens` rule on the referenced style's, stating one axis, the later
+/// rule's value is the label's, in either order.
+#[test]
+fn value_map_rules_over_reference_by_position() {
+    let preset = format!("{BASE}{}", text_style("tokens.text.keyed.x"));
+    let referenced = body_axes("\"= token.text.keyed.x.font.axes\"");
+    let part = "[[rules]]\ntarget = \"button.label\"\n\
+                set = { text.font.axes = { GRAD = { fixed = 2 } } }\n";
+    let tokens = "[[rules]]\ntarget = \"tokens\"\n\
+                  set = { text.keyed.x.font.axes = { GRAD = { fixed = 7 } } }\n";
+    assert_eq!(
+        label_axes(&[&preset, &referenced, &format!("{tokens}{part}")]),
+        Some(axes(&[("GRAD", 2.0)]))
+    );
+    assert_eq!(
+        label_axes(&[&preset, &referenced, &format!("{part}{tokens}")]),
+        Some(axes(&[("GRAD", 7.0)]))
+    );
+}
+
 /// A `Value` struct block nothing states resolves `None`, as a `Value`
 /// nothing states does (S6.1), not a block of `None` fields: a drawn part
 /// whose table leaves its `text` out has no text. `Cx::value_block` gives

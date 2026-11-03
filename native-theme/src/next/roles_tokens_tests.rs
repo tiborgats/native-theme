@@ -1192,3 +1192,40 @@ fn status_roles_created_by_their_place_marks() {
         Ok((color(0.4), Value::Absent, Value::Absent))
     );
 }
+
+/// The T6 review's M2: a stated map in a patch that creates an entry is
+/// that entry's map (S6.1): a `Fields` patch creating a keyed text style
+/// with every field stated and `font.axes = {}` gives the entry the empty
+/// map, and the same patch without `font.axes` is the missing field's
+/// merge conflict at `font.axes`, no map invented for it.
+#[test]
+fn value_map_creating_entry_takes_stated_map() {
+    let fields = "font = { family = \"Synthetic\", size_px = 10, weight = 400, style = \"normal\", \
+                  width = \"absent\", axes = {}, features = {} }\nscaling_role = \"none\"\n\
+                  letter_spacing = \"absent\"\nword_spacing = \"absent\"\nline_height = \"auto\"\n\
+                  decoration = \"absent\"\nmnemonic_decoration = \"absent\"\ncase = \"mixed\"\n\
+                  elision = \"end\"\nwrap = \"word\"\nmax_lines = \"none\"\nfill = \"absent\"\n";
+    let created = |fields: &str| {
+        let patch = super::layer::Layer::from_toml(&format!("[tokens.text.keyed.y]\n{fields}"))
+            .ok()
+            .and_then(|layer| layer.bases.tokens.text)
+            .and_then(|text| text.keyed)
+            .unwrap_or_default();
+        let mut held: Vec<(Key, TextStyle)> = Vec::new();
+        super::blocks::apply_entries(&mut held, patch).map(|()| held)
+    };
+    let axes: Vec<_> = created(fields)
+        .iter()
+        .flatten()
+        .map(|(_, style)| style.font.axes.clone())
+        .collect();
+    assert_eq!(axes, [Value::Stated(Vec::new())]);
+    let without = fields.replace("axes = {}, ", "");
+    assert_eq!(
+        created(&without),
+        Err(MergeConflict {
+            path: "font.axes".to_owned(),
+            below: super::blocks::Below::Missing,
+        })
+    );
+}
