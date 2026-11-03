@@ -367,7 +367,11 @@ pub enum TextRole {
     Numeric,
 }
 
-/// A part's text style.
+/// A part's text style. Its drawn-text leaves, `fill`, `elision`, `wrap`
+/// and `max_lines`, may be `Absent` in a keyed text style and a slot, where
+/// the platform's style does not set them, and on a part only where its
+/// catalogue entry marks them (S2.8, S6.3): a part referencing a style's
+/// absent leaf is refused (S12).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]

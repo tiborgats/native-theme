@@ -460,16 +460,23 @@ mod tests {
                 pub toolbar: Value<IconStyle>,
                 #[parts(block = "fields", inner_may_be_absent)]
                 pub success: StatusColors,
+                #[parts(block = "fields", inner_may_be_absent, only = "fill", only = "wrap")]
+                pub keyed: Vec<(Key, TextStyle)>,
             }
         });
         for expected in [
             "const LEN : usize = < IconStyle as crate :: next :: blocks :: Table > :: FIELDS . len () ;",
             "const MARKED : [crate :: next :: registry :: FieldInfo ; LEN] = crate :: next :: registry :: \
-             absent_but (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) ;",
-            "absent_but (< StatusColors as crate :: next :: blocks :: Table > :: FIELDS , & []) ;",
+             absent_in (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+             registry :: InnerMark :: AllBut (& [\"size\"])) ;",
+            "absent_in (< StatusColors as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+             registry :: InnerMark :: AllBut (& [])) ;",
+            "absent_in (< TextStyle as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+             registry :: InnerMark :: Only (& [\"fill\" , \"wrap\"])) ;",
             "const _ : () = :: core :: assert ! (crate :: next :: registry :: names_values \
              (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) , \
-             \"required names a field of `IconStyle` that is not a `Value`\") ;",
+             \"required or only names a field of `IconStyle` that is not a `Value`\") ;",
+            "names_values (< TextStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"wrap\"])",
             "may_be_absent : true , auto : false",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -539,7 +546,8 @@ mod tests {
         });
         for expected in [
             "impl crate :: next :: blocks :: Create for Probe",
-            "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < & [& str] > ,)",
+            "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < crate :: next :: \
+             registry :: InnerMark > ,)",
             "width : crate :: next :: blocks :: created_value (width , false , inner , \"width\") ?",
             "inset : crate :: next :: blocks :: created_value (inset , true , inner , \"inset\") ?",
             "top : crate :: next :: blocks :: created_value (held . top , true , inner , \"margin.top\" ,) ?",
@@ -550,7 +558,8 @@ mod tests {
             "edge : < Edge as crate :: next :: blocks :: Create > :: create_in (edge . unwrap_or_default () , \
              :: core :: option :: Option :: None)",
             "status : < StatusColors as crate :: next :: blocks :: Create > :: create_in (status . unwrap_or_default () , \
-             :: core :: option :: Option :: Some (& [\"fill\"]))",
+             :: core :: option :: Option :: Some (crate :: next :: registry :: InnerMark :: AllBut \
+             (& [\"fill\"])))",
             "< crate :: next :: Value < Stroke > as crate :: next :: blocks :: Entry < crate :: next :: blocks :: \
              BlockPatch < Stroke > >> :: create (patch)",
             ":: core :: option :: Option :: None => crate :: next :: blocks :: created_value (:: core :: option :: \
@@ -718,7 +727,7 @@ mod tests {
             "crate :: next :: validate :: walk :: walk_map (& self . params , w) ;",
             "if let :: core :: option :: Option :: Some (map) = & self . params { \
              crate :: next :: validate :: walk :: walk_map (map , w) ; }",
-            "w . place (& [\"fill\"] ,",
+            "w . place (crate :: next :: registry :: InnerMark :: AllBut (& [\"fill\"]) ,",
             "w . patch (& [\"margin\" , \"params\" , \"status\"] ,",
             "if self . margin . is_some () { set . push (\"margin\") ; }",
         ] {
@@ -1008,6 +1017,23 @@ mod tests {
                     pub struct Probe { #[parts(block = "fields", required = "size")] pub x: IconStyle }
                 },
                 "required names the fields an `inner_may_be_absent` mark leaves out",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe { #[parts(block = "fields", only = "fill")] pub x: TextStyle }
+                },
+                "only names the fields an `inner_may_be_absent` mark holds for",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block)]
+                    pub struct Probe {
+                        #[parts(block = "fields", inner_may_be_absent, required = "size", only = "fill")]
+                        pub x: IconStyle,
+                    }
+                },
+                "an `inner_may_be_absent` mark names its fields by required or by only, not both",
             ),
             (
                 syn::parse_quote! {

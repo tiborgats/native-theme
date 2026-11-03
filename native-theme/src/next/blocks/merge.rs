@@ -2,6 +2,7 @@
 //! over a value.
 
 use super::{BlockPatch, FieldsBlock};
+use crate::next::registry::InnerMark;
 use crate::next::value::{SurfaceMap, Value};
 
 /// What stops a merge: a `Fields` patch or an `Append` over a value it
@@ -145,11 +146,10 @@ pub(crate) trait Entry<P>: Sized {
 /// merge conflict S12 refuses, as no value is invented for it.
 pub(crate) trait Create: FieldsBlock {
     /// The block `patch` states in a place whose marks `inner` gives: `None`,
-    /// the block's own; `Some(required)`, every `Value` field but those
-    /// named may also be `Absent` there (an `inner_may_be_absent` place).
-    /// The first field it leaves unset that may not be `Absent` is the
-    /// error.
-    fn create_in(patch: Self::Patch, inner: Option<&[&str]>) -> Result<Self, MergeConflict>;
+    /// the block's own; `Some(mark)`, the `Value` fields the mark allows may
+    /// also be `Absent` there (an `inner_may_be_absent` place). The first
+    /// field it leaves unset that may not be `Absent` is the error.
+    fn create_in(patch: Self::Patch, inner: Option<InnerMark>) -> Result<Self, MergeConflict>;
 
     /// The block `patch` states, under the block's own marks.
     fn create(patch: Self::Patch) -> Result<Self, MergeConflict> {
@@ -158,19 +158,17 @@ pub(crate) trait Create: FieldsBlock {
 }
 
 /// A created block's `Value` field: as the patch states it, else `Absent`
-/// where the field may be (`marked`, or the place's `inner` marks not
-/// requiring it), else a [`Below::Missing`] conflict at `field`.
+/// where the field may be (`marked`, or the place's `inner` mark allowing
+/// it), else a [`Below::Missing`] conflict at `field`.
 pub(crate) fn created_value<T>(
     value: Option<Value<T>>,
     marked: bool,
-    inner: Option<&[&str]>,
+    inner: Option<InnerMark>,
     field: &str,
 ) -> Result<Value<T>, MergeConflict> {
     match value {
         Some(value) => Ok(value),
-        None if marked || inner.is_some_and(|required| !required.contains(&field)) => {
-            Ok(Value::Absent)
-        }
+        None if marked || inner.is_some_and(|mark| mark.allows(field)) => Ok(Value::Absent),
         None => Err(MergeConflict::new(Below::Missing).under(field)),
     }
 }

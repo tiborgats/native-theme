@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Fields, Ident, Result};
 
-use super::block::{BlockField, Shape, parse_field, snake_case};
+use super::block::{BlockField, Shape, inner_mark, parse_field, snake_case};
 
 /// The module the walk's types live in.
 fn walk() -> TokenStream {
@@ -73,8 +73,8 @@ fn field_walk(f: &BlockField, value: &TokenStream, optional: bool) -> TokenStrea
         None => quote!(#w::Walk::walk(#value, w);),
     };
     if f.attrs.inner_may_be_absent {
-        let required = &f.attrs.required;
-        quote!(w.place(&[#(#required),*], |w| { #inner });)
+        let mark = inner_mark(&f.attrs);
+        quote!(w.place(#mark, |w| { #inner });)
     } else {
         inner
     }

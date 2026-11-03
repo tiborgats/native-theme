@@ -394,15 +394,17 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
         registry::FieldType::Block {
             form: registry::BlockForm::Struct,
             fields,
+            block,
             ..
         } => {
             let mut table = Table::new();
             for field in fields {
-                let (suffix, item) = if field.may_be_absent {
-                    (unit_suffix(field), Item::String("absent".to_owned()))
-                } else {
-                    synthetic_of(written(field), field)?
-                };
+                let (suffix, item) =
+                    if field.may_be_absent && absent_synthetic(Some(block), field.path) {
+                        (unit_suffix(field), Item::String("absent".to_owned()))
+                    } else {
+                        synthetic_of(written(field), field)?
+                    };
                 table.insert(format!("{}{suffix}", field.path), item);
             }
             Some(("", Item::Table(table)))
@@ -415,6 +417,25 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
             .map(|first| ("", Item::String((*first).to_owned()))),
         registry::FieldType::Leaf(_) | registry::FieldType::Patch { .. } => None,
     }
+}
+
+/// The fields whose `Absent` S12 refuses under a condition of their place
+/// (S12), so a synthetic value states them (S17, ADD-A131: never `Absent`
+/// where a conditional mark refuses it there): a text style's drawn-text
+/// leaves, absent in a keyed style and a slot only, which no part
+/// referencing them takes absent (S2.8).
+const STATED_UNDER_CONDITION: [(&str, &str); 4] = [
+    ("TextStyle", "fill"),
+    ("TextStyle", "elision"),
+    ("TextStyle", "wrap"),
+    ("TextStyle", "max_lines"),
+];
+
+/// Whether a synthetic value states `absent` at the field `field` of the
+/// block `owner`, marked may be absent: where no condition of its place
+/// can refuse it ([`STATED_UNDER_CONDITION`]).
+fn absent_synthetic(owner: Option<&str>, field: &str) -> bool {
+    !owner.is_some_and(|owner| STATED_UNDER_CONDITION.contains(&(owner, field)))
 }
 
 /// A field's type as the model writes it.
@@ -459,7 +480,9 @@ fn synthetic_value(path: &str) -> Result<(Vec<String>, Item), String> {
     for _ in 0..levels {
         ty = map_value(ty).ok_or_else(|| format!("`{ty}` is no map"))?;
     }
-    let (suffix, item) = if levels == 0 && info.may_be_absent {
+    let owner = super::toml::read::listed_owner(path);
+    let (suffix, item) = if levels == 0 && info.may_be_absent && absent_synthetic(owner, info.path)
+    {
         (unit_suffix(info), Item::String("absent".to_owned()))
     } else if focus_properties(path) {
         ("", Item::Array(Vec::new()))
@@ -2636,17 +2659,39 @@ mod tests {
         // focus indicator reads `follow_part` corners beside offsets that
         // can differ, a listed whole edge an absent `dash` beside a drawn
         // `width` and `paint`. No synthetic value avoids either, so such a
-        // path is refused on any preset; a ledger row is pending.
+        // path is refused on any preset; a ledger row is pending. A listed
+        // slot, or a block holding one, reads its drawn-text leaves absent
+        // too, as the slot's mark allows, which the parts referencing it
+        // may not take (S2.8, S12): ADD-A131 reads the synthetic values as
+        // stated instead, and those state the leaves
+        // ([`STATED_UNDER_CONDITION`]).
         let corners = ["top_left", "top_right", "bottom_right", "bottom_left"];
         let edges = ["top", "right", "bottom", "left"];
-        let conservative: Vec<String> = corners
-            .iter()
-            .map(|corner| {
+        let leaves = ["elision", "wrap", "max_lines", "fill"];
+        let parts = ["label", "subtitle"];
+        let refused = |listed: &str, part: &str, leaf: &str| {
+            format!("{listed}: widgets.button.{part}.text.{leaf}: may not be absent")
+        };
+        let mut text = Vec::new();
+        for listed in ["tokens.text", "tokens.text.roles", "tokens.text.roles.body"] {
+            for part in parts {
+                text.extend(leaves.iter().map(|leaf| refused(listed, part, leaf)));
+            }
+        }
+        for leaf in leaves {
+            let listed = format!("tokens.text.roles.body.{leaf}");
+            text.extend(parts.iter().map(|part| refused(&listed, part, leaf)));
+        }
+        let layers = "tokens.text.roles.body.fill.layers";
+        text.extend(parts.iter().map(|part| refused(layers, part, "fill")));
+        let conservative: Vec<String> = text
+            .into_iter()
+            .chain(corners.iter().map(|corner| {
                 format!(
                     "tokens.focus: tokens.focus.corners.{corner}: `follow_part` on `{corner}`, \
                      whose sides' offsets can differ"
                 )
-            })
+            }))
             .chain(edges.iter().map(|edge| {
                 format!(
                     "widgets.button.body.stroke.{edge}: widgets.button.body.stroke.{edge}.dash: \
@@ -2672,6 +2717,35 @@ mod tests {
         assert!(synthetic_of(written(info), info).is_none());
         let (_, absent) = synthetic_value(key).unwrap();
         assert_eq!(absent, Item::String("absent".to_owned()));
+    }
+
+    /// A field S12 refuses `Absent` at under a condition of its place takes
+    /// a stated synthetic value, whole or in a block (S17, ADD-A131): a
+    /// slot's or keyed style's drawn-text leaves, which their places alone
+    /// mark; a field marked wherever it is stays absent.
+    #[test]
+    fn a_conditionally_marked_field_is_stated() {
+        let value = |path: &str| synthetic_value(path).unwrap().1;
+        assert_eq!(
+            value("tokens.text.roles.body.elision"),
+            Item::String("none".to_owned())
+        );
+        assert_eq!(
+            value("tokens.text.keyed.title.fill"),
+            Item::String("#010203".to_owned())
+        );
+        assert_eq!(
+            value("widgets.button.icon.glyph.draw_start"),
+            Item::String("absent".to_owned())
+        );
+        let Item::Table(body) = value("tokens.text.roles.body") else {
+            panic!("a slot's synthetic value is a table");
+        };
+        assert_eq!(body.get("max_lines"), Some(&Item::Integer(1)));
+        assert_eq!(
+            body.get("letter_spacing"),
+            Some(&Item::String("absent".to_owned()))
+        );
     }
 
     /// The synthetic layers of a set-whole block (`Option<KeyRepeat>`), a

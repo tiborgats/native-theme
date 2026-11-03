@@ -67,6 +67,10 @@ pub(crate) struct FieldAttrs {
     /// `#[parts(required = "size")]`, beside `inner_may_be_absent`: the
     /// block's fields the mark leaves out.
     pub required: Vec<LitStr>,
+    /// `#[parts(only = "fill")]`, beside `inner_may_be_absent`: the block's
+    /// only fields the mark holds for (S6.3: `TextStyle`'s drawn-text leaves
+    /// in a keyed text style and a slot).
+    pub only: Vec<LitStr>,
     /// `#[parts(patch)]`: the field holds a struct block's patch (`<B>Patch`),
     /// resolved as `Resolved<B>Patch`, its fields below its path as `B`'s.
     pub patch: bool,
@@ -154,6 +158,9 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
             } else if meta.path.is_ident("required") {
                 out.required.push(meta.value()?.parse()?);
                 Ok(())
+            } else if meta.path.is_ident("only") {
+                out.only.push(meta.value()?.parse()?);
+                Ok(())
             } else if meta.path.is_ident("block") {
                 if out.block.is_some() {
                     return Err(meta.error("duplicate parts attribute"));
@@ -176,7 +183,7 @@ pub(crate) fn parse_field_attrs(attrs: &[Attribute]) -> Result<FieldAttrs> {
             } else {
                 Err(meta.error(
                     "unknown parts field attribute: expected may_be_absent, auto, keyed, \
-                     inner_may_be_absent, required, patch, signed, boxed or block",
+                     inner_may_be_absent, required, only, patch, signed, boxed or block",
                 ))
             }
         })?;

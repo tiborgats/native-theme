@@ -30,6 +30,20 @@ fn option() -> TokenStream {
     quote!(::core::option::Option)
 }
 
+/// The place mark of a field marked `inner_may_be_absent` (S6.3): every
+/// `Value` field of its block but those `required` names, or only those
+/// `only` names.
+pub(super) fn inner_mark(attrs: &FieldAttrs) -> TokenStream {
+    let r = registry();
+    if attrs.only.is_empty() {
+        let required = &attrs.required;
+        quote!(#r::InnerMark::AllBut(&[#(#required),*]))
+    } else {
+        let only = &attrs.only;
+        quote!(#r::InnerMark::Only(&[#(#only),*]))
+    }
+}
+
 /// Where a block field's block sits in its type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Wrap {
@@ -393,8 +407,8 @@ impl BlockField {
             } => {
                 let ty = &block.ty;
                 let place = if self.attrs.inner_may_be_absent {
-                    let required = &self.attrs.required;
-                    quote!(#o::Some(&[#(#required),*]))
+                    let mark = inner_mark(&self.attrs);
+                    quote!(#o::Some(#mark))
                 } else {
                     quote!(#o::None)
                 };
@@ -504,19 +518,20 @@ impl BlockField {
             (Some(block), _, None) => {
                 let inner = &block.ty;
                 let fields = if self.attrs.inner_may_be_absent {
-                    let required = &self.attrs.required;
+                    let named = self.attrs.required.iter().chain(&self.attrs.only);
+                    let mark = inner_mark(&self.attrs);
                     let message = format!(
-                        "required names a field of `{}` that is not a `Value`",
+                        "required or only names a field of `{}` that is not a `Value`",
                         block.name
                     );
                     quote! {{
                         const _: () = ::core::assert!(
-                            #r::names_values(<#inner as #b::Table>::FIELDS, &[#(#required),*]),
+                            #r::names_values(<#inner as #b::Table>::FIELDS, &[#(#named),*]),
                             #message
                         );
                         const LEN: usize = <#inner as #b::Table>::FIELDS.len();
                         const MARKED: [#r::FieldInfo; LEN] =
-                            #r::absent_but(<#inner as #b::Table>::FIELDS, &[#(#required),*]);
+                            #r::absent_in(<#inner as #b::Table>::FIELDS, #mark);
                         &MARKED
                     }}
                 } else {
@@ -770,6 +785,18 @@ pub(super) fn parse_field(field: &syn::Field) -> Result<BlockField> {
         return Err(Error::new_spanned(
             &field.ty,
             "required names the fields an `inner_may_be_absent` mark leaves out",
+        ));
+    }
+    if !attrs.only.is_empty() && !attrs.inner_may_be_absent {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "only names the fields an `inner_may_be_absent` mark holds for",
+        ));
+    }
+    if !attrs.only.is_empty() && !attrs.required.is_empty() {
+        return Err(Error::new_spanned(
+            &field.ty,
+            "an `inner_may_be_absent` mark names its fields by required or by only, not both",
         ));
     }
     if attrs.boxed
@@ -1205,7 +1232,7 @@ fn expand_fields(
         impl #b::Create for #name {
             fn create_in(
                 patch: #patch,
-                inner: ::core::option::Option<&[&str]>,
+                inner: ::core::option::Option<crate::next::registry::InnerMark>,
             ) -> ::core::result::Result<Self, #b::MergeConflict> {
                 let _ = inner;
                 let #patch { #(#idents),* } = patch;

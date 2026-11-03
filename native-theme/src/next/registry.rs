@@ -196,7 +196,7 @@ pub(crate) fn role_entry_may_be_absent(path: &str) -> bool {
     })
 }
 
-/// A field's info before a place's mark; the placeholder [`absent_but`]
+/// A field's info before a place's mark; the placeholder [`absent_in`]
 /// overwrites, slot by slot.
 const UNSET: FieldInfo = FieldInfo {
     path: "",
@@ -206,14 +206,36 @@ const UNSET: FieldInfo = FieldInfo {
     value: no_type,
 };
 
-/// `fields` with every `Value` field not named in `required` marked may be
-/// `Absent`: a mark holding in one place only (S6.3: `IconStyle`'s fields in
-/// an icon-size context), which the `ThemeParts` derive writes for a field
-/// marked `inner_may_be_absent`, `N` being `fields.len()`. A field's own
-/// fields keep their marks.
-pub(crate) const fn absent_but<const N: usize>(
+/// A mark holding in one place only (S6.3), on the `Value` fields of the
+/// struct block a field holds: the derive writes it for a field marked
+/// `inner_may_be_absent`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum InnerMark {
+    /// Every `Value` field but those named may be `Absent` (`required`:
+    /// `IconStyle`'s fields in an icon-size context, but `size`, S4.5).
+    AllBut(&'static [&'static str]),
+    /// Only the `Value` fields named may be `Absent` (`only`: `TextStyle`'s
+    /// drawn-text leaves in a keyed text style and a slot, S2.8).
+    Only(&'static [&'static str]),
+}
+
+impl InnerMark {
+    /// Whether the mark lets the field `name` be `Absent`.
+    pub(crate) const fn allows(self, name: &str) -> bool {
+        match self {
+            InnerMark::AllBut(required) => !names(required, name),
+            InnerMark::Only(fields) => names(fields, name),
+        }
+    }
+}
+
+/// `fields` with every `Value` field `mark` allows marked may be `Absent`,
+/// the place's mark (S6.3), which the `ThemeParts` derive writes for a
+/// field marked `inner_may_be_absent`, `N` being `fields.len()`. A field's
+/// own fields keep their marks.
+pub(crate) const fn absent_in<const N: usize>(
     fields: &[FieldInfo],
-    required: &[&str],
+    mark: InnerMark,
 ) -> [FieldInfo; N] {
     let mut out = [UNSET; N];
     let mut rest = fields;
@@ -225,7 +247,7 @@ pub(crate) const fn absent_but<const N: usize>(
         let written = match field.ty {
             FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
         };
-        if starts_with(written, "Value<") && !names(required, field.path) {
+        if starts_with(written, "Value<") && mark.allows(field.path) {
             slot.may_be_absent = true;
         }
         rest = tail;
@@ -235,8 +257,8 @@ pub(crate) const fn absent_but<const N: usize>(
 }
 
 /// Whether every name in `required` is a `Value` field of `fields`: the
-/// derive asserts it at compile time beside each [`absent_but`], so a
-/// misspelled `required` name does not compile.
+/// derive asserts it at compile time beside each [`absent_in`], so a
+/// misspelled `required` or `only` name does not compile.
 #[cfg_attr(
     not(test),
     allow(

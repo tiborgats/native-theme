@@ -20,7 +20,7 @@ use super::selector::Scheme;
 use super::tokens::{
     Behavior, BehaviorPatch, Caret, IconSizeTokens, IconTokens, KdeEffects, KdeTokens, KeyRepeat,
     MaterialScheme, MaterialVariant, Mnemonics, PointerTokens, SizeClassThreshold,
-    SizeClassThresholdPatch, TextRendering, TokensPatch, TouchBehavior,
+    SizeClassThresholdPatch, TextRendering, TextRoles, TextTokens, TokensPatch, TouchBehavior,
 };
 use super::units::{Ms, Scalar};
 use super::value::{SchemeMap, SurfaceMap, Value};
@@ -501,8 +501,35 @@ fn icon_size_context_fields_but_size_may_be_absent() {
     assert!(!marked(IconStyle::FIELDS, "rendering_mode"));
 }
 
+/// A keyed text style's and a slot's drawn-text leaves may be absent, and
+/// only they (S2.8, S6.3); a part's text style keeps the block's own marks.
 #[test]
-fn absent_but_required_names_value_fields_only() {
+fn text_style_place_marks_only_the_drawn_text_leaves() {
+    let drawn = ["fill", "elision", "wrap", "max_lines"];
+    let values = value_fields(TextStyle::FIELDS);
+    for place in [
+        "keyed.title",
+        "roles.body",
+        "roles.caption2",
+        "roles.numeric",
+    ] {
+        for path in &values {
+            assert_eq!(
+                marked(TextTokens::FIELDS, &format!("{place}.{path}")),
+                drawn.contains(path) || marked(TextStyle::FIELDS, path),
+                "{place}.{path}"
+            );
+        }
+        assert!(!marked(TextTokens::FIELDS, &format!("{place}.font.family")));
+    }
+    assert_eq!(TextRoles::FIELDS.len(), 19);
+    for path in drawn {
+        assert!(!marked(TextStyle::FIELDS, path), "{path}");
+    }
+}
+
+#[test]
+fn absent_in_names_value_fields_only() {
     assert!(registry::names_values(IconStyle::FIELDS, &["size"]));
     assert!(registry::names_values(
         IconStyle::FIELDS,

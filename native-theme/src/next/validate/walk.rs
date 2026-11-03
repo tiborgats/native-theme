@@ -25,7 +25,7 @@ use crate::next::blocks::text::{Font, FontPatch, LanguageTag};
 use crate::next::color::Color;
 use crate::next::expr::{EnumTy, Expr, SURFACE_SET, Ty};
 use crate::next::key::Key;
-use crate::next::registry::{self, FieldInfo};
+use crate::next::registry::{self, FieldInfo, InnerMark};
 use crate::next::roles::{GlobalRole, SurfaceRole, SurfaceSet};
 use crate::next::selector::{Condition, PartRef, StateFlag, VariantRef, WidgetRef};
 use crate::next::toml::read::{MapKey, toml_key};
@@ -205,8 +205,8 @@ pub(crate) struct Path {
     /// (S6.3), for the block walked next.
     part: Option<&'static [FieldInfo]>,
     /// An `inner_may_be_absent` place: the fields of the block walked next
-    /// may be `Absent`, but those named.
-    place: Option<&'static [&'static str]>,
+    /// its mark allows may be `Absent`.
+    place: Option<InnerMark>,
 }
 
 impl Path {
@@ -441,8 +441,8 @@ impl<'v> Walker<'v> {
             marks.may_be_absent |= info.may_be_absent;
             marks.auto |= info.auto;
         }
-        if let Some(required) = self.path.place {
-            marks.may_be_absent |= !required.contains(&name);
+        if let Some(mark) = self.path.place {
+            marks.may_be_absent |= mark.allows(name);
         }
         marks.may_be_absent |= self.in_absent_entry(owner, name);
         let (part, place) = (self.path.part.take(), self.path.place.take());
@@ -516,14 +516,10 @@ impl<'v> Walker<'v> {
         self.path.part = outer;
     }
 
-    /// Walks the block `walk` walks in an `inner_may_be_absent` place,
-    /// `required` the fields it leaves out.
-    pub(crate) fn place(
-        &mut self,
-        required: &'static [&'static str],
-        walk: impl FnOnce(&mut Walker<'_>),
-    ) {
-        let outer = self.path.place.replace(required);
+    /// Walks the block `walk` walks in an `inner_may_be_absent` place of
+    /// mark `mark`.
+    pub(crate) fn place(&mut self, mark: InnerMark, walk: impl FnOnce(&mut Walker<'_>)) {
+        let outer = self.path.place.replace(mark);
         walk(self);
         self.path.place = outer;
     }

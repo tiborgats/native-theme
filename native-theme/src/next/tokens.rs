@@ -404,67 +404,204 @@ pub enum Mnemonics {
 }
 
 /// The text ramp's nineteen semantic slots (S4.4), each filled by every
-/// preset: a reference to a keyed style, or to the slot that owns it.
+/// preset: a reference to a keyed style, or to the slot that owns it. In a
+/// slot, as in a keyed style, a style's `fill`, `elision`, `wrap` and
+/// `max_lines` may be `Absent` where the platform's style does not set
+/// them (S2.8, S6.3); a part referencing it takes none of them absent
+/// (S12).
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
 #[non_exhaustive]
 pub struct TextRoles {
     /// `body`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub body: Value<TextStyle>,
     /// `body_emphasized`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub body_emphasized: Value<TextStyle>,
     /// `caption`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub caption: Value<TextStyle>,
     /// `caption_emphasized`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub caption_emphasized: Value<TextStyle>,
     /// `caption2`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub caption2: Value<TextStyle>,
     /// `footnote`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub footnote: Value<TextStyle>,
     /// `subheadline`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub subheadline: Value<TextStyle>,
     /// `callout`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub callout: Value<TextStyle>,
     /// `headline`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub headline: Value<TextStyle>,
     /// `title1`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub title1: Value<TextStyle>,
     /// `title2`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub title2: Value<TextStyle>,
     /// `title3`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub title3: Value<TextStyle>,
     /// `large_title`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub large_title: Value<TextStyle>,
     /// `display_large`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub display_large: Value<TextStyle>,
     /// `display_medium`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub display_medium: Value<TextStyle>,
     /// `display_small`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub display_small: Value<TextStyle>,
     /// `label`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub label: Value<TextStyle>,
     /// `monospace`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub monospace: Value<TextStyle>,
     /// `numeric`.
-    #[parts(block = "fields")]
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub numeric: Value<TextStyle>,
 }
 
@@ -476,8 +613,17 @@ pub struct TextTokens {
     /// The semantic slots.
     #[parts(block = "fields")]
     pub roles: TextRoles,
-    /// The platform's text styles, keyed.
-    #[parts(block = "fields")]
+    /// The platform's text styles, keyed; each style's `fill`, `elision`,
+    /// `wrap` and `max_lines` may be `Absent`, where the platform's style
+    /// does not set it (S2.8, S6.3).
+    #[parts(
+        block = "fields",
+        inner_may_be_absent,
+        only = "fill",
+        only = "elision",
+        only = "wrap",
+        only = "max_lines"
+    )]
     pub keyed: Vec<(Key, TextStyle)>,
     /// The font fallbacks.
     #[parts(block = "fields")]

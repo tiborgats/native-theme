@@ -176,6 +176,19 @@ pub(crate) fn listed_field(path: &str) -> Option<(&'static FieldInfo, usize)> {
         .or_else(|| field_at(&segments).filter(|(field, levels)| spelled_with(field, *levels, "")))
 }
 
+/// The block holding the field a listed path names (`Glyph` for
+/// `widgets.button.icon.glyph.size_px`, `TextStyle` for
+/// `tokens.text.keyed.title.fill`); `None` where a part, a widget's values
+/// or the root holds it.
+pub(crate) fn listed_owner(path: &str) -> Option<&'static str> {
+    let segments = key_segments(path)?;
+    let (_, parent) = segments.split_last()?;
+    match field_at(parent)?.0.ty {
+        FieldType::Block { block, .. } => Some(block),
+        FieldType::Leaf(_) | FieldType::Patch { .. } => None,
+    }
+}
+
 /// The field `segments` name below `colors.<scheme>`, `tokens` or a typed
 /// widget's part or values.
 fn field_at(segments: &[String]) -> Option<(&'static FieldInfo, usize)> {

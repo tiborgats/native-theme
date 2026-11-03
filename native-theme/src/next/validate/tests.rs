@@ -2145,6 +2145,129 @@ fn keyed_icon_context_fields_may_be_absent() {
     );
 }
 
+/// A keyed text style's and a slot's drawn-text leaves, `fill`, `elision`,
+/// `wrap` and `max_lines`, may be `Absent`, a mark of those places only
+/// (S2.8, S6.3): no other leaf there, and none of the four on a part.
+#[test]
+fn keyed_style_drawn_text_leaves_may_be_absent() {
+    let decl = declare("text_styles = [\"title\"]");
+    let leaves = "fill = \"absent\"\nelision = \"absent\"\nwrap = \"absent\"\n\
+                  max_lines = \"absent\"";
+    // The preset beneath states the style, so the patch creates no entry.
+    let preset = toml("[tokens.text.keyed.title]\nfont.family = \"Probe Sans\"");
+    let keyed = |text: &str| toml(&format!("[tokens.text.keyed.title]\n{text}"));
+    assert_eq!(found_over(&keyed(leaves), &decl, &preset), NONE);
+    assert_eq!(
+        found_over(&keyed("case = \"absent\""), &decl, &preset),
+        ["tokens.text.keyed.title.case: may not be absent"]
+    );
+    let slot = |text: &str| toml(&format!("[tokens.text.roles.body]\n{text}"));
+    assert_eq!(bare(&slot(leaves)), NONE);
+    assert_eq!(
+        bare(&slot("case = \"absent\"")),
+        ["tokens.text.roles.body.case: may not be absent"]
+    );
+    assert_eq!(
+        bare(&toml(&format!("[widgets.button.label.text]\n{leaves}"))),
+        [
+            "widgets.button.label.text.elision: may not be absent",
+            "widgets.button.label.text.wrap: may not be absent",
+            "widgets.button.label.text.max_lines: may not be absent",
+            "widgets.button.label.text.fill: may not be absent",
+        ]
+    );
+}
+
+/// A mark of one place does not travel with a reference (S12): a part's
+/// text taking a style's absent leaf, by a leaf's reference, the whole
+/// style's or a slot's referencing it, is refused; a stated leaf is not.
+#[test]
+fn part_text_reaching_absent_style_leaf_refused() {
+    let decl = declare("text_styles = [\"title\"]");
+    let preset = |elision: &str| {
+        toml(&format!(
+            "[tokens.text.keyed.title]\nfont.family = \"Probe Sans\"\nelision = \"{elision}\"\n\
+             [tokens.text.roles]\nbody = \"= token.text.keyed.title\""
+        ))
+    };
+    let label = |text: &str| toml(&format!("[widgets.button.label]\n{text}"));
+    for text in [
+        "text.elision = \"= token.text.keyed.title.elision\"",
+        "text.elision = \"= token.text.roles.body.elision\"",
+        "text = \"= token.text.keyed.title\"",
+        "text = \"= token.text.roles.body\"",
+    ] {
+        assert_eq!(
+            found_over(&label(text), &decl, &preset("absent")),
+            ["widgets.button.label.text.elision: may not be absent"],
+            "{text}"
+        );
+        assert_eq!(
+            found_over(&label(text), &decl, &preset("end")),
+            NONE,
+            "{text}"
+        );
+    }
+}
+
+/// A slot referencing a style takes its absence with the mark (S12): the
+/// slot's own place allows the drawn-text leaves absent, whole or leaf by
+/// leaf.
+#[test]
+fn slot_takes_style_absence() {
+    let decl = declare("text_styles = [\"title\"]");
+    let preset = toml(
+        "[tokens.text.keyed.title]\nfont.family = \"Probe Sans\"\nfill = \"absent\"\n\
+         elision = \"absent\"\nwrap = \"absent\"\nmax_lines = \"absent\"",
+    );
+    let roles = |text: &str| toml(&format!("[tokens.text.roles]\n{text}"));
+    assert_eq!(
+        found_over(
+            &roles("body = \"= token.text.keyed.title\""),
+            &decl,
+            &preset
+        ),
+        NONE
+    );
+    assert_eq!(
+        found_over(
+            &roles("body.fill = \"= token.text.keyed.title.fill\""),
+            &decl,
+            &preset
+        ),
+        NONE
+    );
+}
+
+/// A part's icon taking an icon-size context's absent `rendering_mode`,
+/// which only that context may leave absent (S4.5), is refused (S12); a
+/// stated mode is not.
+#[test]
+fn part_icon_reaching_absent_context_mode_refused() {
+    let preset = |mode: &str| {
+        toml(&format!(
+            "[tokens.icons.sizes.toolbar]\nsize_px = 16\nrendering_mode = \"{mode}\""
+        ))
+    };
+    let decl = Declarations::default();
+    let icon = |text: &str| toml(&format!("[widgets.button.icon]\n{text}"));
+    for text in [
+        "icon.rendering_mode = \"= token.icons.sizes.toolbar.rendering_mode\"",
+        "icon = \"= token.icons.sizes.toolbar\"",
+    ] {
+        assert_eq!(
+            found_over(&icon(text), &decl, &preset("absent")),
+            ["widgets.button.icon.icon.rendering_mode: may not be absent"],
+            "{text}"
+        );
+        assert_eq!(
+            found_over(&icon(text), &decl, &preset("template")),
+            NONE,
+            "{text}"
+        );
+    }
+}
+
 /// A text-keyed map's key stated twice is one problem at the key as TOML
 /// writes it, quoted (S11, S12).
 #[test]
