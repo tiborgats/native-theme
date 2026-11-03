@@ -9071,8 +9071,12 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
   roles as that path writes them (S9.1); the preset states no `kde_accent`;
 - the reader states kdeglobals' results, the `[Colors:*]` values and the `[Colors:*][Inactive]` values (K3.51,
   K3.54), as Plasma wrote them for the user's scheme and accent;
-- the accent layer (`set_accent`, while no mapping palette applies) states each as `= kde_accent(<set>, <key>,
-  <group>)` over the scheme inputs in force, the reader's, a KDE port's, else Breeze's (S9.2). Group `active` gives
+- the accent-derivation layer (S9.2; ADD-A132), directly above the preset, states each as `= kde_accent(<set>,
+  <key>, <group>)` at each slot where a layer above the preset gives the accent in force (the application's
+  `Accent`, a mapping palette's, a reader's or a stand-in's), and nothing elsewhere, over the accent and the scheme inputs in
+  force, the reader's, a KDE port's, else Breeze's; each layer above replaces the roles it states, and where the
+  `Accent` or a mapping palette gives the accent in force the reader's or stand-in's results and a port's roles are left out
+  (S8). Group `active` gives
   the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
   writes there (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:247-284`):
   - while the scheme tints (`token.kde.tint_factor` is `Some`): every set's own file value
@@ -9100,8 +9104,9 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 
 `kde-breeze`'s `[declare] accent_inputs` is `["accent"]` alone: the scheme inputs and the inactive input roles are the
 scheme's, which Plasma's derivation reads (S9.1). So a reader's `input.accent` from another platform applies on
-`kde-breeze`, where the accent layer derives the accent-dependent roles from it by `kde_accent` over Breeze's scheme
-inputs, as for `set_accent` (S9.2); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
+`kde-breeze`, where the accent-derivation layer, beneath the reader or stand-in, derives the accent-dependent roles
+from it by `kde_accent` over Breeze's scheme inputs, as for `set_accent`, at both schemes, each layer above replacing
+the roles it states (the KDE reader's results at the scheme it read, S9.2; ADD-A132); under a preset whose `accent_inputs` go beyond `accent` (`windows-11`, `macos-*`, `ios-*`), `Theme`
 leaves a foreign reader's `input.accent` out, so no accent mixes with another platform's derived inputs (S8, S9.5).
 
 Each key names one record field, the same in all three namespaces and in `kde_accent`'s `key` operand:
@@ -9176,10 +9181,10 @@ MDI sub-windows (`hp:87-117`) [K2.11]. Who states them:
   and its text; the accent title bar's background and its text, `:318-338`). Where kdeglobals has no `[WM]` (one the
   colours KCM never wrote), Breeze falls back to the palette's `Highlight` and `HighlightedText`, the active group's
   for the active title bar and the disabled group's for the inactive one (`breeze@c97883a kstyle/breezehelper.cpp:98-102`),
-  which the reader states, in its `for_preset.kde-breeze` part, as references: `= active(role.selection.background)`,
+  which the reader states, in its `for_preset.kde-breeze` part and under the scheme it read (S9.3), as references: `= active(role.selection.background)`,
   `= active(role.selection.foreground)`, `= role.selection.disabled.background`, `= role.selection.disabled.foreground`;
-- the accent layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the accent layer states
-  these four roles too, each `= kde_accent_wm(<key>)` (S2.2, S9.2), over the scheme inputs in force, among them
+- the accent-derivation layer: the accent's override (`:318-338`) is part of Plasma's derivation, so the layer
+  states these four roles too, each `= kde_accent_wm(<key>)` (S2.2, S9.2; ADD-A132), over the scheme inputs in force, among them
   `input.kde_scheme.wm.<key>` (S9.1: the scheme file's `[WM]` key, or the `Header` default above where the file has
   none);
 - a mapping palette states the four roles in `[for_preset.kde-breeze]` (the project's colours, or as `applyScheme()`'s
@@ -9650,7 +9655,7 @@ kdeglobals states them, each function clamping them as KColorScheme does), the i
 scheme does not tint) and `titlebar_is_accent_colored` (R25.1), every one stated (S4.8). The icon effects (K3.60, Q3.18) are `IconStyle.state_effect` keys (S2.9, declared
 in `icon_state_effects`), their gray, transparency and gamma parameters `token.params.icon_effect.<key>`. A palette from
 a KDE port states `token.kde` itself (R19, S14). Who states KDE's accent-dependent roles and inactive input roles,
-and how (the preset Breeze's values on Plasma's default path, the reader kdeglobals' results, the accent layer
+and how (the preset Breeze's values on Plasma's default path, the reader kdeglobals' results, the accent-derivation layer
 `kde_accent`, palettes and ports), and `kde-breeze`'s `accent_inputs`, is *KDE's inputs* under *role record*, the
 catalogue's one summary of the core's S2.2, S9.1, S9.2, S12 and S14.
 
@@ -9825,6 +9830,9 @@ holds.
   `[ColorEffects:Inactive]`
   including `ChangeSelectionColor` and `Enable`, and the `[Colors:*][Inactive]` subgroups: K3.40, K3.50, K3.51.
 - kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today): Q3.1, K3.54.
+- kdeglobals `[General] AccentColor` into `input.accent` at both schemes where set and not equal to Qt's
+  `transparent`; else the `Selection` set's `BackgroundNormal` at the read scheme, the portal's `Highlight`, and
+  `#00000000` at that scheme in its `for_preset.kde-breeze` part (S9.3): K3.54.
 - kdeglobals `[WM]` `activeBackground`, `activeForeground`, `inactiveBackground`, `inactiveForeground` (the keyed
   roles `role.@wm_*`, the MDI sub-window's title bar; where kdeglobals has no `[WM]`, the reader states Breeze's
   fallback references to the `Selection` set, *keyed roles per platform*): K2.11.

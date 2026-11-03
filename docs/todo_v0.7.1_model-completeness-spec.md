@@ -99,7 +99,7 @@ platform is stated here: values come from the facts (S17) in the value phase.
   Value<WidgetValue>)> }` and `ComponentValues = Vec<(Key, ResolvedWidgetValue)>`; `ResolvedWidgetValue` is a
   `WidgetValue` with every `Value` in it evaluated; `<T>Patch` is `T`'s derive-generated patch type (S6.1:
   `PartStylePatch`, `ColorRolesPatch`, `TokensPatch`, `<W>ValuesPatch`), and `WidgetsPatch` holds, per typed widget,
-  its parts' `PartPatch`es and its values' patch; `TextRole` is the enum of the nineteen `TextRoles` slots (S4.4), one
+  an `Option<Box<<W>Patch>>` holding its parts' `PartPatch`es and its values' patch; `TextRole` is the enum of the nineteen `TextRoles` slots (S4.4), one
   variant per field (`Body`, `BodyEmphasized`, … `Numeric`); `DataNeeds` is a set of element-data
   operands and metrics, with a flag for a part whose glyph or icon is drawn to its box (S8); `LayerId`, `PaletteId` are opaque ids; `KeyError` is `Key::new`'s error (the text and the
   first character outside the key grammar). `SchemeMap<T>` holds at most one `T` per `Scheme` (`Default`: none; a
@@ -130,7 +130,8 @@ pub enum LayerError { Invalid(Vec<Problem>),             // every problem, not t
                                                           // the other variants are no validation's but the API's
                                                           // (ADD-A123): `ReaderPresent` `set_reader_stand_in`'s
                                                           // (S8), `AccentInputsMissing` `set_accent`'s, a preset
-                                                          // change's and the palettes' (S9.2, S14),
+                                                          // change's, the palettes' and a stand-in's (S9.2,
+                                                          // S14: the accent inputs as one group, ADD-A132),
                                                           // `SchemeNotInPalette`, `PaletteNotForPreset` the
                                                           // palettes' (S14), `UnknownLayer` S16's
                       ReaderPresent, AccentInputsMissing(Vec<InputName>), SchemeNotInPalette(Scheme),
@@ -148,7 +149,9 @@ pub enum ThemeError { PlatformUnsupported, FeatureDisabled,
                                                           // test rules out in a release (S19.1)
 pub enum ReaderStatus { Read, NoReader, StandIn,
                         Fallback(ReaderFailure),            // read, but one source failed and another stood in for
-                                                            // it, which the failure names (the KDE scheme file, S9.1)
+                                                            // it, which the failure names (the KDE scheme file, S9.1,
+                                                            // or an accent input the reader could not read, S9.3;
+                                                            // the first failure where several)
                         Failed(ReaderFailure) }             // Failed: a re-read failed; the previous
 pub enum ReaderFailure { Platform(String), Invalid(LayerError) }           // reader layer stays (S8, S16)
 pub enum PortError { Parse { line: u32 } }   // a `.colors` file it cannot read; a group or key the file lacks is
@@ -2962,7 +2965,8 @@ caption buttons' layout (R13).
 ## S6. The derive macro and the model's metadata
 
 **S6.1** `#[derive(ThemeWidget)]` is replaced by `#[derive(ThemeParts)]`, which generates, per widget struct: its
-patch type (every field `Option<…>`, where `None` is "this patch does not set it"; paints with `Set`/`Append`), its
+patch type (every field `Option<…>`, where `None` is "this patch does not set it"; paints with `Set`/`Append`; a bare struct block field the model marks `boxed`, `Tokens.text` and `Tokens.icons`,
+holding its patch boxed, `Option<Box<<T>Patch>>`), its
 resolved type (every `Value<T>` resolved to `Option<T>`, where `None` is "not drawn", possible only where
 `may_be_absent` allows), for `PartStyle` also a resolved patch type, `ResolvedPartStylePatch`, a keyframe's resolved
 `patch` (every field an `Option` of that field's type in `ResolvedPartStyle`, `None` where the patch does not set it, or where it sets a field that resolves `Absent`, or on a part that resolves
@@ -3008,7 +3012,7 @@ archived); hand-written entries with no drift check.
 
 ```rust
 pub struct PartPatch { pub presence: Option<PartPresence>,   // None: this patch says nothing of it (S6.3)
-                       pub style: PartStylePatch }             // the fields it sets
+                       pub style: Box<PartStylePatch> }        // the fields it sets, boxed (one per part)
 pub enum PartPresence { Absent,                       // the whole part is not drawn (S6.3)
                         Present,                      // drawn again over an `Absent` or `DrawnAs` below
                         DrawnAs { target: WidgetOrPart,       // drawn by another widget, or a part
@@ -3018,7 +3022,7 @@ pub enum PartPresence { Absent,                       // the whole part is not d
 // Two `PartPatch`es merge as two patches: the later `presence` that is `Some` replaces the earlier, and `style`
 // merges field by field (S6.1), so the fields stated before an `Absent` stay beneath it (S6.3; ADD-A126).
 pub enum ValuesPatch { Typed(WidgetValuesPatch), Component(ComponentValuesPatch) }
-// WidgetValuesPatch: a derive-generated enum with one variant per typed widget, holding <W>ValuesPatch.
+// WidgetValuesPatch: a derive-generated enum with one variant per typed widget, holding Box<<W>ValuesPatch>.
 pub enum BlockPatch<T: FieldsBlock> { Set(Value<T>),     // a `Value` struct block field's patch (S2.2): the whole block, a
                                       Fields(T::Patch) } // reference or `Absent`; or its fields over the block below
                                                          // (a struct bare-block map entry's `Set` holds a stated block
@@ -3175,7 +3179,7 @@ else is an error when the layer is added (S12).
 
 ```rust
 pub struct Rule { pub selector: Selector, pub body: RuleBody }
-pub enum RuleBody { Colors(ColorRolesPatch), Tokens(TokensPatch), Part(PartRef, PartPatch),
+pub enum RuleBody { Colors(Box<ColorRolesPatch>), Tokens(Box<TokensPatch>), Part(PartRef, PartPatch),
                     Values(ValuesPatch) }        // the target and its patch in one: a mismatch cannot be written
 pub enum WidgetRef { Typed(WidgetKind), Component(Key) }
 pub struct Selector {
@@ -3344,9 +3348,12 @@ pub struct Layer { pub bases: Bases, pub for_preset: Vec<(PresetId, Bases)>,  //
                    pub rules: Vec<Rule> }             // Layer::from_toml (S1); a preset's own bases apply after the
                                                       // layer's common bases while that preset is current, and are
                                                       // validated only then (S11's `[for_preset.<id>]`)
-pub struct Bases { pub colors: SchemeMap<ColorRolesPatch>, pub inputs: InputBases, pub tokens: TokensPatch,
-                   pub widgets: WidgetsPatch,              // derive-generated: per widget, parts and values
+pub struct Bases { pub colors: Box<SchemeMap<ColorRolesPatch>>, pub inputs: InputBases, pub tokens: Box<TokensPatch>,
+                   pub widgets: WidgetsPatch,              // derive-generated: per widget an Option<Box<<W>Patch>>, its parts and values
                    pub components: Vec<(Key, ComponentBase)> }
+// The patches are boxed where they fan out (per widget, per part, the tokens', the colour roles', a rule's and a
+// widget's values'), so a `Layer`'s and a `Rule`'s value stays small and a typed widget adds one pointer to a layer;
+// a layer is held by value on a thread's stack while it is read and validated (ADD-A132).
 pub struct ReaderState {                                   // the system conditions a reader reports (R2.3, S7.1)
     pub scheme: Scheme, pub contrast: Option<Contrast>, pub reduced_transparency: bool, pub reduced_motion: bool,
     pub animations_off: bool, pub bold_text: bool, pub button_shapes: bool, pub differentiate_without_color: bool,
@@ -3383,21 +3390,26 @@ Typed structs make a condition from the wrong source unrepresentable: a connecto
 reader a window's state. The application's conditions (flavour, the scheme and the contrast it picks, R2.3, R25.2)
 come from `Theme`'s setters, and win over the reader's.
 
-**Layers and order.** The stack is: the preset; the reader, or the stand-in an application without a reader sets
+**Layers and order.** The stack is: the preset; on `kde-breeze`, the accent-derivation layer `Theme` derives, stating
+its roles at the slots where a layer above the preset gives the accent in force (S9.2; ADD-A132); the reader, or the stand-in an application without a reader sets
 (`set_reader_stand_in`, R2.6; refused while a reader exists, `Err(ReaderPresent)`); then the application's layers in
 the order it adds them (R2.4), the palette `apply_palette` adds among them where it was first added; and last the
 accent layer, which `Theme` derives from the `Accent` the application set on every change of the stack (preset,
-palette, reader re-read), so which accent shows never depends on call order (on `kde-breeze` also from another
-platform's reader's accent, S9.2). The accent is a setting, not a layer
+palette, reader re-read), so which accent shows never depends on call order. The accent is a setting, not a layer
 the application stacks. Every layer's bases apply in that order, then every
-layer's rules in that order. While a palette applies, the reader's colour bases, colour rules, colour inputs (the
+layer's rules in that order. While a palette applies, the reader's or stand-in's colour bases, colour rules, colour inputs (the
 `kde_scheme.*` scheme inputs and their `groups`, `inactive_groups` and `unset_keys` lists among them) and `token.kde` are left out; the palette does not apply while `ContrastIncreased` or `ContrastHigh` holds unless it
-states colours for that condition (colour rules under it, or per-contrast input bases for it, S9), and the reader's
-colours then apply as without it (R19). While the current preset is not the reader's own (S9.5) and declares
+states colours for that condition (colour rules under it, or per-contrast input bases for it, S9), and the reader's or
+stand-in's colours then apply as without it (R19). While the current preset is not the reader's own (S9.5) and declares
 `accent_inputs` beyond `accent` (S9.1), `Theme` leaves the reader's common `input.accent`, with its per-contrast
 bases, out, as it leaves the reader's `for_preset` part out: that preset keeps its own accent and derived inputs,
 and no accent mixes with derived inputs of another (S9.5). On the reader's own preset its accent applies with its
-derived inputs.
+derived inputs. On `kde-breeze`, at a slot (S9) where a layer above the reader or stand-in gives the `input.accent` in
+force (the accent layer; a mapping palette, under which the reader's or stand-in's accent is left out), the reader's or stand-in's stated
+accent-dependent roles and inactive input roles (S9.1's list, the `[WM]` keyed roles among them), in its bases and
+rules, are left out, and a
+KDE port's likewise where the accent layer gives it: each holds the derivation of its own accent, or of none, so the
+accent-derivation layer's roles over the accent in force show there instead (S9.2; ADD-A132).
 
 **Validation** (S12) runs on every change of the stack (S16): it validates the whole stack, conservatively (every
 rule and binding an expression can meet, under every combination of conditions that can hold together, S12,
@@ -3416,8 +3428,10 @@ application's) separately, and only a change of the first kind, or of `Scheme` o
 change. After any change but `Unchanged` a connector rebuilds the
 scopes it kept, whose bound colours are the old resolution's (an inactive window changes roles too):
 
-1. merge bases in order; for colours, the base of the conditions' scheme; for each input, its per-contrast base
-   where a contrast condition holds (S9);
+1. merge bases in order; for colours, the base of the conditions' scheme; for each input, its value at the scheme
+   and contrast in force, that of the last layer whose value of the input applies there and that has one (S9: its
+   contrast base for a contrast condition that holds, else its per-scheme value; an input S8 leaves out, a reader's,
+   a stand-in's or a port's, and a palette suspended or skipped, not counting);
 2. apply the `Colors` and `Tokens` rules whose conditions hold, in order (choosing expressions, not evaluating);
 3. for each part and widget, keep its base and its rules whose conditions hold, in order.
 
@@ -3577,8 +3591,14 @@ pub struct InputValue { pub per_scheme: SchemeMap<Value<Color>>,
                         pub per_contrast: Vec<(Contrast, SchemeMap<Value<Color>>)> }
 pub enum Contrast { Increased, High }         // one at a time: `ReaderState.contrast` and `set_contrast` hold one,
                                               // so the two conditions exclude each other (S12)
-// An input a later layer states replaces the earlier one whole (per_scheme and per_contrast together); where it states
-// no contrast base, its per_scheme value applies under contrast too.
+// An input is replaced slot by slot, never whole (ADD-A132). A slot is a scheme with no contrast or one `Contrast`, six
+// in all; a layer's value of an input at a slot is its contrast base for that contrast at that scheme, else its
+// per_scheme value at that scheme (so its per_scheme value applies under every contrast it states no base for), and
+// the input's value at the slot in force is that of the last layer whose value of the input applies there (S8: an
+// input it leaves out, a reader's, a stand-in's or a port's, a palette suspended or skipped, not counting): a layer with none leaves the earlier
+// layers' (S9.3's one-scheme reader, S14's port beside a mapping). A layer's `for_preset` part for the current preset
+// is taken after its common bases, slot by slot, as a layer above them (S8). Either SchemeMap may hold one scheme; a
+// preset's accent inputs are stated as one group by every layer above it (S9.2), judged over both parts together.
 ```
 
 **S9.1 Declared inputs per preset:** `accent` (all); `accent_ramp` entries (`windows-11`); on `macos-*` the AppKit colours that follow the
@@ -3620,10 +3640,10 @@ as the inactive colour rules apply it (S2.2) over `input.kde_scheme.header.inact
 ones where it does not. The `kde-breeze` preset's own bases state each role as `applyScheme()` writes it on
 Plasma's default path, "Accent color from color scheme" (no `AccentColor`): Breeze's scheme values with no accent
 derivation applied, the inactive roles as that path writes them. `kde_accent` applies only when an accent is set:
-the reader states the results kdeglobals holds when the user chose one, and the accent layer (`set_accent`, or
-another platform's reader's accent, S9.2) states each accent-dependent role and inactive input role as `=
-kde_accent(<set>, <key>, <group>)`, and each `[WM]` keyed role as `= kde_accent_wm(<key>)`, over the scheme inputs in
-force (the reader's, a KDE port's, else Breeze's).
+the reader states the results kdeglobals holds when the user chose one, and the accent-derivation layer (S9.2)
+states each accent-dependent role and inactive input role as `= kde_accent(<set>, <key>, <group>)`, and each `[WM]`
+keyed role as `= kde_accent_wm(<key>)`, over the accent and the scheme inputs in force (the reader's, a KDE port's,
+else Breeze's).
 
 **The KDE reader without its scheme file.** The reader reads kdeglobals as KConfig does, with Plasma's
 `kdedefaults/kdeglobals` beneath the user's file (`startplasma.cpp:421-426`, as today's reader does), and its scheme
@@ -3643,7 +3663,7 @@ there), which the status tells the application.
 
 **Accent-dependent roles** (`kde-breeze`): the roles `applyScheme()` writes from the accent
 (`colorsapplicator.cpp` at v6.8.2), named by scheme key per set (the catalogue's key table gives each key's
-`SurfaceRoles` field), the one list the accent layer states (S9.2) and S12 checks a mapping palette against:
+`SurfaceRoles` field), the one list the accent-derivation layer states (S9.2) and S12 checks a mapping palette against:
 
 - in every declared set, `foreground_active`, `foreground_link`, `decoration_focus` and `decoration_hover`
   (`:178-218`);
@@ -3664,34 +3684,114 @@ conditional entries are harmless under a combination where their condition does 
 
 **Accent inputs.** A preset declares which of its inputs follow the accent, `[declare] accent_inputs` (S10, a subset
 of `inputs`): the inputs `set_accent` sets and requires, `set_preset` checks an `Accent` against
-(`AccentInputsMissing`), a mapping palette must state (S14), and an application layer may not state (S12). On
+(`AccentInputsMissing`), a mapping palette must state (S14), an application layer may not state (S12), and every
+layer above the preset states as one group (S9.2). On
 `kde-breeze` that is `accent` alone: its other inputs are the scheme's, which Plasma's derivation reads (R25.1). On
 every other preset it is every declared input, `macos-*`'s `highlight` included: whether or not the user's highlight
 follows the accent, an application or palette replacing the accent states the text-selection colour with it, or the
 user's selection colour shows beside the application's accent (R2.6).
 
 **S9.2 Setting the accent:** `Theme::set_accent(Some(accent))` sets the preset's accent inputs (S9.1) in the accent
-layer's bases (S8); it requires every one of them and otherwise returns `Err(AccentInputsMissing)` (on `adwaita`,
-`material-3` and `kde-breeze` the `accent` alone). On `kde-breeze`, while no mapping palette applies, the accent
-layer also states each accent-dependent role (S9.1's list) and each inactive input role as `= kde_accent(<set>, <key>, <group>)`,
-and each `[WM]` keyed role (`role.@wm_active_background` …) as `= kde_accent_wm(<key>)` (whether tinting is on or
-off: each function gives the untinted value when it is off), so they follow Plasma's
-derivation over the scheme inputs in force (R25.1): the reader's, or a KDE port palette's (S14), whose stated roles
-the layer so replaces. While a mapping palette applies, the layer states the `accent` input only: a mapping states
-its roles itself, the accent-dependent ones (the `[WM]` keyed roles among them) by reference to `input.accent` where
-they follow it and the inactive input roles as S14 says, and has no scheme inputs for `kde_accent` or `kde_accent_wm`
-to derive over (S14). The choice is per scheme, as a palette's source is (S14): where a palette serves one scheme by
-a KDE port and another by its mapping, the layer's colour bases (a `SchemeMap`) state the `kde_accent` and
-`kde_accent_wm` roles under the port's scheme and the `accent` input alone under the mapping's.
+layer's bases (S8), at the slots the `Accent` states them (S9); it requires them as one group (below): at every scheme
+at which the `Accent` states any of them it states every one's per-scheme value, and otherwise `set_accent` returns
+`Err(AccentInputsMissing)`, naming each that lacks it once (on `adwaita`, `material-3` and `kde-breeze` the group is the
+`accent` alone, so what is refused there is an `accent` contrast base at a scheme where it states no per-scheme
+value). A scheme at which the `Accent` states none keeps the layers' beneath, the accent and its derived inputs
+together, so an application may set an accent for one scheme (ADD-A132). On `kde-breeze` the accent layer states the `accent` alone, at every
+slot as on any preset; Plasma's derivation is the accent-derivation layer's (below; ADD-A132).
 
-**Another platform's accent on `kde-breeze`.** `kde-breeze`'s accent input is the accent alone (S9.1), so a reader's
-or stand-in's common `input.accent` from another platform reaches it (S9.5); its accent-dependent roles are the
-preset's literals of Plasma's no-accent path, which follow no `input.accent`. So where the application sets no accent
-and the `input.accent` in force comes from a reader or stand-in whose own preset (S9.5) is not `kde-breeze`, `Theme`
-derives the accent layer from that accent as from `set_accent`'s: it states the same `kde_accent` and `kde_accent_wm`
-roles over the scheme inputs in force, Breeze's (no other platform's reader states KDE scheme inputs, and a palette
-leaves the reader's accent out, S8), so the user's accent changes every role Plasma's derivation changes, never
-`role.global.accent` alone. The KDE reader's own accent needs none: its results already hold the derivation.
+**The accent-derivation layer** (`kde-breeze`; ADD-A132). `kde-breeze`'s accent input is the accent alone (S9.1), so
+the application's accent, and a reader's or stand-in's common `input.accent`, from another platform too (S9.5), reach
+it, while the preset's accent-dependent roles are Plasma's no-accent path, references to the scheme inputs that
+follow no `input.accent`. So on `kde-breeze` `Theme` derives one layer directly above the preset, beneath the reader
+or stand-in (S8), which at each slot (S9) where a layer above the preset gives the `input.accent` in force, and at no
+other, states each accent-dependent role (S9.1's list) and each inactive input role as `= kde_accent(<set>, <key>,
+<group>)` and each `[WM]` keyed role (`role.@wm_active_background` …) as `= kde_accent_wm(<key>)` (whether tinting is
+on or off: each function gives the untinted value when it is off), and nothing else (no accent input, no scheme input,
+no rule); at a slot where the preset's own `input.accent` is in force it states nothing, so the preset's own
+statements show there, as without it (an `Accent` or a stand-in's accent for one scheme leaves the other scheme the
+preset's). `Theme` derives the layer for the slot in force on every change of the stack and of the slot (`pick`,
+`set_contrast` and a reader's re-read among them, S16), its colour bases and inactive input roles that slot's; S12 validates it,
+as the S8 leave-out, at every slot where it can state its roles. Its expressions are evaluated at the slot in force over the accent and the scheme inputs in force there
+(S8, S9), as bases, so every rule (the preset's inactive
+rules, a contrast's) and `active(…)` (S2.2) read them as any base, and every layer above replaces the roles it states
+where they apply: at every scheme and contrast the accent in force changes every role Plasma's derivation changes,
+never `role.global.accent` alone, what `applyScheme()` gives for that scheme with that accent
+(`plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:125-137`):
+
+- the KDE reader: at the scheme it read, its results, which hold the derivation of its accent, replace the layer's;
+  at the other, where it states its accent but no results (S9.3), the derivation of its accent over Breeze's inputs
+  there shows, as Plasma would apply that scheme with that accent; with no `AccentColor`, the preset's own accent is
+  in force at the other scheme, so the layer states nothing there (S9.3);
+- another platform's reader, whose roles are in its own `for_preset` part: the derivation over Breeze's inputs at
+  both schemes;
+- a stand-in: the roles it states replace the layer's, the rest derived (a partial set is the stand-in's choice);
+- an application layer stating an accent-dependent role: its role over the layer's, base or rule, as on every
+  preset (in ADD-A112's form the `Accent`'s roles won over such a base);
+- an application's `Accent`: where its accent is in force, the reader's or stand-in's results and a KDE port's roles
+  are left out (S8), so the derivation of the `Accent` over the scheme inputs in force shows (the reader's, the
+  port's, else Breeze's), whose stated roles it so replaces, as `set_accent` requires (R25.1);
+- a mapping palette, which states every such role, following `input.accent` by reference where it does (S12, S14):
+  its roles over the layer's, the `Accent`'s accent reaching them by reference; under a contrast for which it is
+  skipped (S8), at a scheme it does not serve, or while it is suspended, the derivation of the accent in force shows,
+  as without it;
+- an accent of `#00000000` from a layer above the preset (the KDE reader's on `kde-breeze` at the scheme it read with
+  no `AccentColor`, where its results replace the layer's, S9.3, or one an application or a stand-in states): `kde_accent` and `kde_accent_wm` then give `applyScheme()`'s output with no accent over the scheme
+  inputs in force (S2.2): `hasAccent` false (`colorsapplicator.cpp:129-137`), every key copied from the file
+  (`:225-227`), an `[Inactive]` group tinted toward that accent only where the file sets `TintFactor` (`:154`,
+  `:253-255`) and `Header`'s `[Inactive]` the file's `Window` values otherwise (`:256-262`). That is the file's
+  no-accent scheme as Plasma writes it, equal to the preset's statements over Breeze's files, which set no
+  `TintFactor`, and not the file's raw values in a tinting scheme; the accent run compares both (S17);
+- the gate's normal and perturbed runs, whose stand-ins state no accent on `kde-breeze` (S17), meet no slot where it
+  states anything, so the preset's facts, references to the scheme inputs, are compared as stated, while the accent
+  run's `set_accent` gives it its roles (S17).
+
+Rejected: the layer stating its roles at every slot while any layer above states an accent (a one-scheme `Accent`
+sends the other scheme through `kde_accent`'s no-accent branch where the preset's own statements are exact; ADD-A132's
+fourth draft); a layer always present on `kde-breeze` (the preset's own statements would never show, nor be compared);
+the accent layer stating the roles itself above every layer (it was ADD-A112's form: it must choose per
+scheme and contrast between the roles and the accent alone under a mapping, and under a contrast a mapping is skipped
+for it can state the roles only as a rule, which overrides the preset's inactive rules, which `active(…)` does not
+read, and under which the disabled roles, the inactive `Selection` tint and the `[WM]` roles leave the `Accent`: three
+checks in a row found such a case; the layer also lets an application layer's base on such a role win, as on every
+preset); deciding per scheme by what the reader's or stand-in's layer states (it misses a
+contrast under which a mapping is skipped, and turns the derivation off for every role where a stand-in states one);
+deciding by the layer's own preset (S9.5 defines it for a reader only, and at the KDE reader's unread scheme its accent
+would sit beside Breeze's no-accent roles); the KDE reader stating its accent at the scheme it read alone (the user's
+accent is lost when the application `pick`s the other scheme, S9.3); the preset stating `= kde_accent(…)` and `=
+kde_accent_wm(…)` itself (equal in value at every slot, Breeze's `#00000000` giving the no-accent path, with the S8
+leave-out above; it needs no layer, no existence condition and no change of S8's order or of the stack's place indices,
+but the preset's expressions would no longer be its facts' references to the scheme inputs, so either the KDE facts are
+restated or `generate_preset.py` takes a `kde-breeze` exception, and R2.6's and S9.1's statement of the preset as the
+scheme's values with no accent derivation, the maintainer's decision, would change; the layer keeps both as they
+are). The layer's own costs: one derived layer in S8's order, whose roles at a slot depend on which layer gives the accent
+in force there, and the S8 leave-out, judged per slot the same way.
+
+**The accent inputs as one group** (ADD-A132). Every layer above the preset states the current preset's accent inputs
+(S9.1), those of its inputs that apply (S8), as one group: at a scheme at which it states any of them, a per-scheme
+value or a contrast base, it states every one's per-scheme value. So at every slot (S9) a layer gives all of them a
+value or none, and the accent inputs in force at a slot all come from one layer, the last that gives any there: no
+accent mixes with derived inputs of another, at any scheme or contrast (S8, S9.5). The preset, the bottom layer, needs
+no check, as nothing beneath it can mix with it. `Theme` checks the group where an application supplies the values,
+and refuses a change that breaks it with `Err(AccentInputsMissing)`, naming each accent input that lacks its
+per-scheme value where the group needs it, once whatever the schemes (rejected: `Vec<(InputName, Scheme)>`, a public
+type changed for a diagnostic the caller reads off its own `Accent`): `set_accent` (the `Accent`), `apply_palette` (the mapping's inputs, S14),
+`set_reader_stand_in` (the stand-in's common inputs with its `[for_preset.<id>]` part for the current preset) and
+`set_preset` (each of the three under the new preset, S9.5). A reader states its own preset's group so by
+construction (S9.3), and an application layer states no accent input (S12). So a stand-in stating `accent` alone is
+refused on `macos-*`, `windows-11` and `ios-*`: a stand-in there states the derived inputs beside the accent (in its
+common bases or a `for_preset` part), or no accent input at all; it is accepted where the group is the `accent`
+alone. Weighed: the group per slot
+alone, a layer giving all of them a value or none at each slot (it needs a second condition, all or none of the
+contrast bases at a scheme where the layer states no per-scheme value, only to admit a group stated under a contrast
+alone, which no reader, palette or gate states); the check by input name it replaces (an `Accent` or a mapping stating a derived input at one scheme and the
+`accent` at both mixes them at the other); every `Accent` required at both schemes, as a mapping is at
+its palette's (it removes the one-scheme `Accent`, an application's own choice, and leaves a stand-in's partial
+group); the stand-in's `accent` left
+out as the reader's is under a preset declaring derived inputs (a silent drop of an application's value, whose
+reason, that a reader from another platform cannot state those inputs, does not hold for an application, which can);
+an S12 problem on every layer, the reader's included (the reader's layer is the crate's own, and the error the API
+already reports for an application's accent serves the same check).
 
 **S9.3 Readers** state each value under the conditions they read it in: base conditions into the reader layer's bases,
 other conditions into reader rules (or inputs' per-contrast bases). A reader rule carries the condition
@@ -3703,7 +3803,49 @@ system's current scheme, while inputs and colour bases are per scheme (S9, S3.1)
 defines independently of the scheme (the accent setting on GNOME, Windows and KDE, which the facts mark so) under
 both schemes, so the user's accent
 shows when the application `pick`s the other scheme; a scheme-dependent value it states only under the scheme it read,
-and the other scheme keeps the preset's value until the system switches and the reader reads again. The new reads per
+and the other scheme keeps the value of the layers beneath, the preset's, until the system switches and the reader
+reads again (S9: an input is replaced slot by slot). Likewise for a contrast: a reader states an input's base for each
+contrast under which its platform gives the input a value of its own, beside its per-scheme value, which would
+otherwise stand under that contrast over the preset's base for it (S9): the macOS reader states its five inputs
+under the increased-contrast appearances (MAC-X22), as the macOS presets state their `contrast.increased`
+bases, and whether the Windows reader states the accent's and the ramp's `contrast.high` bases follows the Windows
+facts' high-contrast inputs (S22's follow-up). A reader states its own preset's accent inputs as one group (S9.2),
+every one at each scheme at which it states any (the macOS reader the five, read under the same appearances; the
+Windows reader the accent with its ramp; the GNOME and KDE readers the accent alone); a reader that cannot read one of
+its group's per-scheme values at a scheme states none of the group at that scheme, the layers beneath keeping theirs;
+one that cannot read one of its bases for a contrast at a scheme states none of the group's bases for that contrast
+there, its per-scheme values then standing under that contrast over the layers beneath (as for a platform that gives
+none); either reports it (`ReaderStatus::Fallback`, the failure naming the input), never part of the group beside the
+preset's rest (ADD-A132; weighed: keeping the portable accent on a preset whose group is the accent alone, where the
+Windows reader's unreadable ramp shade costs the user's accent too, needs another S8 leave-out for a rare failure;
+dropping the whole group at the scheme for a failure under one contrast would cost the user's accent under every
+contrast for no gain where the preset's contrast base follows its default accent (macOS's increased contrast), and
+where it does not (a high-contrast theme's colours, if the Windows facts give them) the per-scheme values standing
+under that contrast cost what a reader stating no base there costs, for a rare failure). The KDE reader states its results, the `[WM]` fallback references among them (the catalogue's `[WM]`
+roles), under the scheme it read only. Its `input.accent` (ADD-A132), read from kdeglobals with Plasma's
+`kdedefaults` beneath, as KConfig reads it:
+- where `[General] AccentColor` is set and not equal to Qt's `transparent` (`#00000000`, as `applyScheme()` compares
+  it, `plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:130`), that colour, in its common bases at both
+  schemes, the accent the user chose, which `applyScheme()` writes verbatim into each set's `DecorationFocus`
+  (`:178-217`);
+- where it is absent or equal to `transparent`, Plasma's default "Accent color from color scheme"
+  (`colorssettings.kcfg:12-15`, no failure, no `Fallback`): in its common bases, the scheme's own accent as KDE
+  publishes it to other toolkits, the palette's `Highlight` (`xdg-desktop-portal-kde@6.8.2 src/settings.cpp:280-284`),
+  which is the `Selection` set's `BackgroundNormal` (`kcolorscheme@6.31.0 src/kcolorscheme.cpp:676`), under the scheme
+  it read only, a scheme-dependent value; and in its `for_preset.kde-breeze` part `#00000000` at that scheme alone,
+  taken after the common bases slot by slot (S9), so on `kde-breeze` the reader's results show at the scheme it read
+  and the preset's own statements at the other, where the preset's `#00000000` is in force and the accent-derivation
+  layer states nothing (S9.2).
+So another preset on KDE shows the accent every KDE application shows, the colour KDE's portal publishes as
+`accent-color` (which libadwaita rounds to its nearest named accent, `libadwaita@1.10.0
+src/adw-settings-impl-portal.c:123-140`). Weighed: no accent where `AccentColor` is absent (every other preset then shows its own accent, unlike
+every application on that desktop); the `Highlight` also where `AccentColor` is set (it is the accent blended at 70 %
+over the `View` background, `colorsapplicator.cpp:230-238`, `colorsapplicator.h:45-50`, not the colour the user
+chose, which `material-3`'s seed and `adwaita`'s own derivations take); `[Colors:View] DecorationFocus` where
+`AccentColor` is absent (today's reader's key, equal to the `Selection` background in Breeze's files,
+`BreezeLight.colors` and `BreezeDark.colors` in `kcolorscheme@6.31.0 src/color-schemes/`, but not what KDE publishes
+in a scheme where they differ); `#00000000` in the common bases (S9.5 carries it to `adwaita` and `material-3`, which
+would mix and seed from transparent black). The new reads per
 platform are the rows of the traceability whose target is a reader read (S20); each is a `reader::<platform>` change.
 
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
@@ -3779,11 +3921,13 @@ with `body`. Its rules split the same way (S9.3): a rule on the portable part (a
 read under a condition) applies to any preset, every other rule carries `preset:<its own preset>`, so the portable
 part is the same for bases and rules. Its own preset is the one the theme was built with (`from_system`, S16: by the
 OS version, or the generation the application names). `set_preset` applies the common part to the new preset and the rest only while its own
-preset is current; it is refused (`Err(AccentInputsMissing)`) when the `Accent` the application set, or the applied
-mapping palette's per-preset section (S14), lacks accent inputs the new preset declares, and
+preset is current; it is refused (`Err(AccentInputsMissing)`) when the `Accent` the application set, the applied
+mapping palette's inputs (S14) or the stand-in's (its common inputs with its part for the new preset) do not state
+the accent inputs the new preset declares as one group, or the mapping's per-preset section lacks one at one of the palette's schemes (S9.2, S14;
+ADD-A132), and
 (`Err(PaletteNotForPreset)`) when the applied palette has neither a port nor a mapping for the new preset (S14). The
 reader's `input.accent` is portable only to a preset whose `accent_inputs` is `accent` alone (on `kde-breeze` the
-accent layer then derives Plasma's accent-dependent roles from it, S9.2), or to its own preset:
+accent-derivation layer then derives Plasma's accent-dependent roles from it, S9.2), or to its own preset:
 under another preset that declares derived accent inputs (`windows-11`'s ramp, the AppKit- and UIKit-derived roles),
 which no reader from another platform states, `Theme` leaves the reader's accent out (S8), so that preset keeps its own
 accent and derived inputs, and nothing mixes.
@@ -4047,8 +4191,8 @@ set = { fill.append = ["= alpha(surface.foreground, <fraction>)"] }
 | a condition | wherever a `Condition` is stated (a `when`'s `conditions` and `not_conditions`, a `BreezeTest`'s and a `ThemeChange::Suspend`'s `conditions`; ADD-A131), `"<name>"` in snake_case (`"window_inactive"`); with a parameter `"<name>:<value>"`: `"scheme:dark"`, `"tiled:left,top"`, `"input:touch"`, `"idiom:pad"`, `"flavor:kirigami"`, `"preset:adwaita"`, `"system_setting:<key>"`, `"container_size:sidebar:<key>"` |
 | a rule's target | `"colors"`, `"tokens"`, `"<widget>.<part>"`, `"<widget>.values"`, `"component.<key>.<part>"`, `"component.<key>.values"` |
 | a rule's patch | the table `set`; the keys `when`, `target` and `set` are the rule's own |
-| per-contrast input bases | `[inputs.<name>.contrast.increased]`, `[inputs.<name>.contrast.high]`, each with `light` and `dark` |
-| a path pending in a preset (S17) | `[pending]`, one entry per path, its TOML path quoted and its register id: `"tokens.behavior.touch.delay_ms" = "U151"`, or, where the path's pending facts (or a state model's pending `default_size`) that leave it listed carry two or more ids, the list of them, each id once, in any order (one id is always the string, a list of one being mistyped): a field S6.1 sets whole whose leaves are pending under different ids (`"tokens.behavior.key_repeat" = ["<id>", "<id>"]`), or a field whose pending facts differ by combination (`"widgets.button.body.corners.curve" = ["<id>", "<id>"]`, two facts split by `variants` and `not_variants`; ADD-A131), a pending `default_size` by its declaration's path (`"declare.widget.button.sizes_by_variant.@gray.default_size" = "U129"`: a `sizes_by_variant` entry's by its variant's name as the segment, `@` included, a `sizes_by_context` entry's by its position, a flavour's under `declare.flavor.<f>.`; S17), a pending presence by its part's path (`"widgets.button.label" = "U122"`, S17), the path as S11 writes its key, unit suffix included, which the reader maps to the model's path (`token.behavior.touch.delay`), the spelling of the problems and of the synthetic values; a preset's only, written by `generate_preset.py`, empty at the release (ADD-A128) |
+| an input's bases | `[inputs.<name>]` with `light`, `dark` or both (the per-scheme value; a preset states both but a listed scheme, S17), and the per-contrast bases `[inputs.<name>.contrast.increased]`, `[inputs.<name>.contrast.high]`, each with `light`, `dark` or both, a scheme a contrast table leaves out taking the per-scheme value there (S9; ADD-A132) |
+| a path pending in a preset (S17) | `[pending]`, one entry per path, its TOML path quoted and its register id: `"tokens.behavior.touch.delay_ms" = "U151"`, or, where the path's pending facts (or a state model's pending `default_size`) that leave it listed carry two or more ids, the list of them, each id once, in any order (one id is always the string, a list of one being mistyped): a field S6.1 sets whole whose leaves are pending under different ids (`"tokens.behavior.key_repeat" = ["<id>", "<id>"]`), or a field whose pending facts differ by combination (`"widgets.button.body.corners.curve" = ["<id>", "<id>"]`, two facts split by `variants` and `not_variants`; ADD-A131), a pending `default_size` by its declaration's path (`"declare.widget.button.sizes_by_variant.@gray.default_size" = "U129"`: a `sizes_by_variant` entry's by its variant's name as the segment, `@` included, a `sizes_by_context` entry's by its position, a flavour's under `declare.flavor.<f>.`; S17), a pending presence by its part's path (`"widgets.button.label" = "U122"`, S17), a pending input by its scheme, `"inputs.<name>.<scheme>"` (`"inputs.accent.dark" = "U<n>"`, the last segment the scheme; only a per-scheme value is listed, a pending contrast base standing over its scheme's per-scheme value, S9, S17; ADD-A132), the path as S11 writes its key, unit suffix included, which the reader maps to the model's path (`token.behavior.touch.delay`), the spelling of the problems and of the synthetic values; a preset's only, written by `generate_preset.py`, empty at the release (ADD-A128) |
 | one preset's part of a layer | `[for_preset.<id>.…]` (bases naming that preset's keyed names, in an application layer or a palette) |
 | widget values, component parts | `[widgets.<widget>.values]`, `[components.<key>.<part>]`, `[components.<key>.values]` |
 
@@ -4101,7 +4245,7 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   other than `SystemControl`, or a `RippleStyle.color`, `alpha` or `padding` absent where, under some
   combination of the rules, its `effect` is stated (S12's combinations, the merged value checked, not a patch alone);
   the other marks conservatively, following references and rules (S2.4, S2.9, S2.12); on a synthetic theme (S17) a listed path's synthetic value is validated as stated,
-  as any layer's value (S17; ADD-A131); a mark of one place does not travel with a reference: a part's `text` whose `fill`, `elision`, `wrap` or `max_lines` can resolve `Absent` from the style or slot it references (a slot referencing a style takes its absence with the mark), a caret part whose width can resolve an absent `token.caret.width`, and a part's icon whose `rendering_mode` can resolve `Absent` from the icon-size context it references are refused (S2.8, S4.2, S4.5; ADD-A130); a declared input (S10's `inputs`) that no layer states is missing likewise, its `Problem` the missing field's at `inputs.<name>` (a listed input's too, S17), so no reference evaluates an input to nothing; how an input is replaced and read per scheme and per contrast, and so whether one scheme left unstated is missing, is ADD-A132's (ADD-A131); a table at an `Option` of a plain block that lacks a field is no missing field but the TOML reader's mistyped value naming the leaf (S11), the block being stated whole in one layer, which no other layer completes (ADD-A131);
+  as any layer's value (S17; ADD-A131); a mark of one place does not travel with a reference: a part's `text` whose `fill`, `elision`, `wrap` or `max_lines` can resolve `Absent` from the style or slot it references (a slot referencing a style takes its absence with the mark), a caret part whose width can resolve an absent `token.caret.width`, and a part's icon whose `rendering_mode` can resolve `Absent` from the icon-size context it references are refused (S2.8, S4.2, S4.5; ADD-A130); a declared input (S10's `inputs`) is missing likewise at a slot (S9) at which no layer whose inputs apply there gives it a value, its contrast base for that contrast or its per-scheme value at that scheme (the inputs S8 leaves out, a reader's, a stand-in's or a port's, a palette suspended at that scheme or skipped under that contrast, and another preset's `for_preset` part not counting): its `Problem` the missing field's, one per scheme at which it is missing with no contrast, at `inputs.<name>.<scheme>` (a listed input's too, S17), and, at a scheme where it has a value with no contrast, one per contrast under which it is missing, at `inputs.<name>.contrast.<contrast>.<scheme>` (S11's spelling; a contrast base gives no value with no contrast), so no reference evaluates an input to nothing at any scheme or contrast (ADD-A131, ADD-A132); a table at an `Option` of a plain block that lacks a field is no missing field but the TOML reader's mistyped value naming the leaf (S11), the block being stated whole in one layer, which no other layer completes (ADD-A131);
 - a keyframe of a loop stated as a widget's or a component's value leaves its `part` out (`None`): such a loop is on
   no part, so each keyframe names the part it sets (S2.7);
 - a name is undeclared (S10), except a palette's typed role or surface set the current preset does not declare,
@@ -4126,7 +4270,8 @@ Adding a layer (S8) fails with `LayerError` (listing every problem) when:
   `.<set>.inactive.<key>` input;
 - an application layer that is neither a palette nor a reader stand-in states an accent input (S9.1's
   `accent_inputs`, in its bases or a `for_preset` part): the accent is `Theme::set_accent`'s (S9.2), the one route
-  that checks the derived inputs and restates `kde-breeze`'s roles;
+  that checks the derived inputs and, on `kde-breeze`, has Plasma's derivation replace the user's results (S8, S9.2; a palette and a stand-in state them as one group,
+  S9.2's `AccentInputsMissing`);
 - a map or table has a duplicate key (two TOML keys for one field included, S11); `Auto` is stated on a field
   marked `auto` neither by the catalogue for that part nor by the core (S6.3); a call is stated on a `Value<bool>`, `Value<Key>`, `Value<String>` or enum field (a
   reference is allowed); a paint has no layer, or its bottom layer is a `Mask`, or a `Shadow::Layers` no layer (S2.3,
@@ -4381,8 +4526,9 @@ A palette's bases name typed roles, the `accent` input and the declared inputs o
 typed role or surface set the current preset does not declare is skipped, not refused (S12). On `windows-11`,
 `macos-*` and `ios-*`, whose accent derivations are not published (R2.6), the mapping states the preset's accent
 inputs (S9.1) in a per-preset section (`[for_preset.windows-11.inputs]`), each labelled as native-theme's pick (R19), and
-`apply_palette` refuses a mapping that lacks one of the current preset's (`Err(AccentInputsMissing)`), as `set_accent`
-does (S9.2). On `kde-breeze` (S9.1), a mapping states the accent-dependent roles and the inactive input roles itself, in `[for_preset.kde-breeze]`
+`apply_palette` refuses a mapping that lacks one of the current preset's at one of the palette's schemes (its
+per-scheme value there), or that states them otherwise than as one group (S9.2), with `Err(AccentInputsMissing)`, as
+`set_accent` does (S9.2; ADD-A132). On `kde-breeze` (S9.1), a mapping states the accent-dependent roles and the inactive input roles itself, in `[for_preset.kde-breeze]`
 (no `kde_accent`: a mapping has no scheme inputs, and the preset's would be Breeze's): each accent-dependent role as
 the project's colour or by reference to `input.accent` where it follows the accent; each inactive input role as the
 project's colour where it publishes an inactive one, else as its own set's active role, `= active(role.<set>.<role>)`,
@@ -4420,7 +4566,7 @@ A `Palette` holds the mapping and the ports it has, per preset (a port carries i
 same preset, and is refused where the port's scheme is not one of the palette's (`Err(SchemeNotInPalette)`), so an
 application builds a mapping (`from_toml`) with its project's port (`from_port`) as the bundled palettes are built;
 `Theme::apply_palette(Some(palette))` adds, as an
-application layer that replaces the reader's colours (S8), the port for the current preset where there is one (a KDE port
+application layer that replaces the reader's or stand-in's colours (S8), the port for the current preset where there is one (a KDE port
 converts to the `kde_scheme.*` inputs, the colour roles and `token.kde`), else the mapping. The source is chosen per
 preset and scheme: where a preset has a port with fewer schemes than the mapping (a one-scheme `.colors` file beside
 a two-scheme mapping), the port serves its scheme and the mapping the palette's others, so each scheme has one
@@ -4432,8 +4578,8 @@ scheme returns (R19); `ResolvedTheme::palette_status()` reports `Applied`, `Susp
 no palette). A palette carries no icon set. A palette states its schemes in its `[declare] schemes` (S10);
 `Theme::pick(Some(s))` of a scheme the applied palette lacks is refused like `apply_palette`, while `pick(None)`, which
 follows the system's scheme, suspends the palette while that scheme is one it lacks, as a system change does; a
-`set_preset` to a preset whose accent inputs the applied mapping's per-preset section lacks is refused
-(`Err(AccentInputsMissing)`), as `apply_palette` refuses it; a palette that has neither a
+`set_preset` to a preset whose accent inputs the applied mapping's per-preset section lacks at one of the palette's
+schemes is refused (`Err(AccentInputsMissing)`), as `apply_palette` refuses it; a palette that has neither a
 mapping nor a port for the current preset (a KDE port alone, on `adwaita`) is refused (`Err(PaletteNotForPreset)`).
 The palette's source, port or mapping, is chosen again on every change of the stack, as the accent layer is derived
 again (S8), so `set_preset` switches it to the new preset's; a `set_preset` to a preset the applied palette can
@@ -4510,9 +4656,9 @@ impl Theme {
                                                           // unstated is the missing-field problem; a listed
                                                           // `default_size`, which no layer can state, exempt from
                                                           // S12's default-size checks; a listed part drawn, no
-                                                          // value stated for it; a preset listing an input
-                                                          // refused as `from_preset` refuses it, S12's missing
-                                                          // field at `inputs.<name>`, until ADD-A132; kept by the
+                                                          // value stated for it; a listed input's per-scheme
+                                                          // value these layers state folded into the preset's
+                                                          // own input base, marked synthetic (ADD-A132); kept by the
                                                           // theme's later mutations while this preset is current,
                                                           // a successful `set_preset` ending it and removing these
                                                           // layers (S17; ADD-A131)
@@ -4520,7 +4666,8 @@ impl Theme {
                                                           // applies its portable part (accent, scheme, fonts, text
                                                           // scaling, conditions) to any preset and its
                                                           // `[for_preset.<id>]` part and preset-conditioned rules
-                                                          // to its own; the accent layer is derived again and the
+                                                          // to its own; the accent layer (and on `kde-breeze`
+                                                          // the accent-derivation layer) is derived again and the
                                                           // palette's source chosen again for the new preset (S9.5,
                                                           // S14); the flavour is kept where the new preset declares
                                                           // it, else it becomes the new preset's default (its first
@@ -4528,7 +4675,9 @@ impl Theme {
                                                           // `flavor()` reports
     pub fn set_reader_stand_in(&mut self, state: ReaderState, layer: Layer) -> Result<(), LayerError>;
                                                           // sets it, or replaces the one set (the facts gate replaces
-                                                          // it per combination, S17); refused while a reader exists
+                                                          // it per combination, S17); refused while a reader exists,
+                                                          // and (`Err(AccentInputsMissing)`) where it states the
+                                                          // preset's accent inputs otherwise than as one group (S9.2)
     pub fn remove_reader_stand_in(&mut self) -> Result<(), LayerError>;   // back to the no-reader state (below);
                                                           // a no-op without a stand-in
     pub fn pick(&mut self, scheme: Option<Scheme>) -> Result<(), LayerError>;     // None: follow the reader's or
@@ -4557,7 +4706,8 @@ impl Theme {
                                                           // refused as S14 says (a scheme it lacks, no source for
                                                           // the preset, missing accent inputs)
     pub fn reader_status(&self) -> ReaderStatus;         // `Fallback` where a read succeeded with a source standing
-                                                          // in (S9.1): `from_system` returns the theme then
+                                                          // in (S9.1) or an accent group left out (S9.3):
+                                                          // `from_system` returns the theme then
     pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
                                                           // (a failure keeps the old layer); the application calls it
                                                           // from its event loop on the watcher's `on_theme_change`
@@ -4741,6 +4891,10 @@ top_px = 5, right_px = 17, bottom_px = 5, left_px = 17 }`, each leaf a value or,
 reference, the gate comparing it leaf by leaf as it compares leaves stated one by one, a `Value` field of an enum block (S6.1 lists them: `Value<Timing>`, `Value<Shadow>`) whole, by S11's spelling of
 its variant (`{ cubic_bezier = […] }`), a reference, or `"absent"` where S6.3 allows it (`button.body.shadow =
 "absent"`), a plain or bare enum block (a `Corners` corner, a `token.motion.timings` entry) by its variant only;
+a map field (`Vec<(K, V)>`, or a `Value` of one: `Font.axes`, `Font.features`) stated whole, by a table (`{}` the
+empty map) or, in a `Value`, a reference, is compared whole, entry by entry by key and in no order, as the preset
+layer's bases state it, never merged over the theme's value as a patch's map is (S6.1): a fact is the value, not a
+patch, so `{}` says the map has no entries and an entry the theme holds beyond the fact's fails it (ADD-A132);
 which fields are struct blocks the valid keys decide (below).
   **Per-leaf facts of a field set whole** (ADD-A128): facts stated per leaf of a block that S6.1 sets whole (an
   `Option<B>`: `token.behavior.key_repeat.delay` and `.interval`, each a setting of its own in the sources) are
@@ -4954,6 +5108,10 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   `declare.widget.<widget>.sizes_by_context.<n>.default_size`, `<n>` its position from 0), a listed path no synthetic
   layer states (as a pending presence, below), as no layer states a declaration: the synthetic route waives S12's
   checks that read it instead (ADD-A131).
+  An input is listed by scheme, `inputs.<name>.<scheme>` (S11): a scheme at which its per-scheme value has only
+  pending facts and nothing beneath them is listed; a pending contrast base is never listed, the same layer's
+  per-scheme value at that scheme standing beneath it (S9), so its slot holds that value and the gate lists the
+  pending fact with its id as any (ADD-A132).
   A pending part fact (`<widget>.<part>`, a presence, S17's *Keys and values*) with nothing beneath it (beneath a presence only a presence: an earlier part fact holding there, or a base or rule stating
   `absent` or `drawn_as`; its fields' bases are none, S6.3) lists the part by its path as S11 writes it
   (`"widgets.button.label" = "U122"`; a component's `components.<key>.<part>`): every theme but a synthetic one
@@ -4978,28 +5136,43 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   field the preset does not state, while one a layer states (a reader-backed token) is stated, as any path a layer
   states (ADD-A131): `ThemeError::Preset(LayerError::Invalid)` (from
   `set_preset`, `LayerError::Invalid`) reports it as S12's missing field (a listed `default_size` as S12's missing default size), its `Problem` the existing one, path and kind as they are (a listed input's at
-  `inputs.<name>`, S12; ADD-A131), so no value is invented and no
+  `inputs.<name>.<scheme>`, S12; ADD-A131, ADD-A132), so no value is invented and no
   type, field or variant is added; the register ids are the `[pending]` table's and the gate's report's. The gate, and
   S19.1's build test, load such a preset by `Theme::from_preset_synthetic` (doc-hidden, S16), the route a developer
   may use too: one layer per listed path but a declaration's or a presence's (above) states it with a value marked synthetic in the gate's source, never
   bundled, in the layer's bases, so the preset's own rules still win where they state the path, the layers added at
   once and validated with the preset, so a listed path they leave unstated is the same missing-field problem, a listed
-  `default_size` exempt from S12's default-size checks and a listed presence drawn there (above); a preset whose `[pending]` table lists an input
-  is refused on this route as `from_preset` refuses it, `ThemeError::Preset(LayerError::Invalid)` with S12's missing
-  field at `inputs.<name>`, whatever the layers state, until ADD-A132 settles where a pending input's synthetic value
-  goes (S9; no preset lists one; ADD-A131). The theme `from_preset_synthetic` returns is a **synthetic theme**
+  `default_size` exempt from S12's default-size checks and a listed presence drawn there (above); a listed input's synthetic
+  value does not stay in its layer (ADD-A132): the route folds, before validation, the per-scheme value the last of these layers
+  stating one gives at each listed `inputs.<name>.<scheme>` into the preset's own input base at that scheme, beside
+  the preset's own contrast bases of the input, and marks that value synthetic, per input and scheme, never the
+  contrast bases (a listed scheme none of them states is judged by S12 as on every route); every other value of these
+  layers, an input's contrast base or its value at a scheme `[pending]` does not list among them, stays in its layer
+  and is validated as an application layer's (an accent input refused, S12). So every layer above the preset
+  replaces the folded value slot by slot as it replaces the preset's own (S9): the perturbed run's stand-in gives the
+  derivations reading the input its own values at the listed scheme and they are compared; the preset's contrast base
+  at that scheme still wins under its contrast, inside the preset layer, so no measured value is masked; and the group
+  rule needs no exemption, the preset being the bottom layer (S9.2). Rejected: the synthetic value in a layer above
+  the stand-in, as for the other listed paths (it beats the perturbed value at the listed scheme, so the derivations
+  reading the input there go uncompared, its per-scheme value masks the preset's contrast base there, and it meets
+  the accent-input refusal and the group rule); a slot of its own beneath the reader or stand-in for every listed path
+  (no fold and no mark, but its per-scheme value masks the preset's contrast base at the listed scheme just as well,
+  so the normal run holds the synthetic value where the preset states a measured one, and it needs exemptions from
+  both accent rules); the fold for inputs with that slot for the other listed paths (a second placement, whose one
+  gain, a listed colour-role operand the perturbed run varies, no preset has). The theme `from_preset_synthetic` returns is a **synthetic theme**
   while its preset is current: every later mutation of it (`set_reader_stand_in`, `remove_reader_stand_in`, `pick`,
   `set_flavor`, `set_accent`, `set_contrast`, `apply_palette`, `add_layer`, `replace_layer`, `remove_layer`)
   validates the stack as the route does, the listed `default_size` waived, a listed presence drawn and a listed
-  input refused, and a `set_preset` that succeeds ends it and removes the layers `from_preset_synthetic` added, chosen
+  input's folded value kept, and a `set_preset` that succeeds ends it and removes the layers `from_preset_synthetic`
+  added and the values it folded, chosen
   for that preset's listed paths (one to the same preset included, refused where a listed path no remaining layer states is left; a refused one changes
   nothing, S16), the new preset validated as on every other theme, so the gate replaces
   its stand-in per combination and changes scheme, flavour and accent through the ordinary mutations (ADD-A131;
   rejected: the waivers on the constructor alone, which the gate's first stand-in change would undo; a fresh theme
   per combination through extra constructor parameters, a doc-hidden parameter per mutation that would bypass the
   mutations the gate exercises). Those
-  bases also override a stand-in's value at a listed path (S8's layer order), so a fact reading that reader value
-  reaches the synthetic one. S12 validates the synthetic values as stated, as it validates any
+  bases also override a stand-in's value at a listed path but an input's (S8's layer order), so a fact reading that
+  reader value reaches the synthetic one. S12 validates the synthetic values as stated, as it validates any
   layer's (ADD-A131): each is a value S12 accepts at its place, beside the values the preset states and the other
   synthetic ones (never `Absent` where a conditional mark refuses it there, no `FollowPart` corner beside unequal
   offsets), chosen so in the gate's source, one value per listed path accepted at every combination it reaches, which the
@@ -5016,7 +5189,8 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   The gate checks that the table holds exactly the preset's listed paths, each with exactly the ids of the pending
   facts, or of the state model's pending `default_size`, that leave it listed (compared as sets, ADD-A131), compares every other fact as before,
   skips every fact whose evaluation reaches a synthetic value (the synthetic value itself, any value referencing it,
-  a reader-backed fact at a listed path), reporting each, which costs coverage and nothing else, while the facts
+  a reader-backed fact at a listed path; a listed input's folded value where it is the value in force, at its scheme
+  under no contrast or a contrast the preset states no base for, and no layer above gives one; ADD-A132), reporting each, which costs coverage and nothing else, while the facts
   where the preset's rules state the path are compared, and reports each listed path with its id; 0.8.0 is released
   with every `[pending]` table empty, as R21 and
   ADD-A122 require of pending facts. Rejected: the preset left out of the bundle (the gate then resolves none of its
@@ -5282,8 +5456,17 @@ perturbed and accent runs skip it too. That list, the register and `check_ledger
 0.8.0 is released with no pending fact (ADD-A122).
 
 **The perturbed run** (R4's derivation check) repeats this with the stand-in's layer stating, under each scheme, a
-fixed colour for every declared input and for each colour role a derivation fact names as an operand, the colours
-pinned in the gate's source and documented there, so the run is reproducible. It compares only the keys whose fact is a
+fixed colour for every declared input but one whose fact that applies is a derivation (and `kde-breeze`'s `accent`, below), an input with no fact yet included
+and for each colour role a derivation fact names as an operand whose own fact is not a derivation, the colours pinned
+in the gate's source and documented there, so the run is reproducible; each input it states stands under every
+contrast too with its per-scheme value, over the preset's contrast bases and a listed input's folded value (S9, S17),
+and a derived input or role, unstated, follows its perturbed operands and is compared (on `kde-breeze` the inactive
+input roles and the scheme inputs of the sets with no `[Inactive]` group, S9.1); no preset's accent input having a
+derivation fact, the layer states each preset's group whole (S9.2), and a derived accent input fact,
+none today, takes a spec row when it first appears, as the stand-in would then state its group in part; on
+`kde-breeze` it states no `accent`, though its fact is the literal `#00000000`, so no accent-derivation layer is
+derived (S9.2), the preset's no-accent derivations are compared over the perturbed scheme inputs, and `kde_accent` is
+the accent run's (ADD-A132). It compares only the keys whose fact is a
 derivation, evaluated over the same perturbed values in the same scope: a literal fact is the preset's own base
 colour, which the perturbation replaces, so comparing it would always fail, while a preset stating a literal where
 the platform derives fails here. iOS's facts are `docs/facts/ios/…` like any platform's (R22).
@@ -5293,14 +5476,20 @@ the platform derives fails here. iOS's facts are `docs/facts/ios/…` like any p
 For each KDE scheme the facts hold (the scheme files the preset's inputs come from, the bundled ports, and the further
 `.colors` files the facts pin as sources) and each accent the facts were measured with, the gate resolves `kde-breeze`
 with that scheme's inputs in force (the preset's own for its files; for every other file a palette converted by
-`Palette::from_port` and applied, under the scheme the facts name for it) and the accent set through `set_accent`, and compares every accent-dependent role, every inactive input
+`Palette::from_port` and applied, under the scheme the facts name for it) and the accent set through `set_accent`, which gives the accent-derivation layer its roles (S9.2; a port's roles left
+out under it, S8), and compares every accent-dependent role, every inactive input
 role and the four `wm_*` keyed roles with the facts recorded from Plasma with that scheme and accent applied (kind
 `measured`: `applyScheme()`'s output in kdeglobals, read back as the KDE reader reads kdeglobals). Each such fact names, beside
 its `when`, the scheme file and the accent it was measured with (fact-level `scheme_file = "<entry> <path>"` and
 `accent = "<colour>"`, both or neither, in the `kde` directory only). The
 schemes include at least one that tints, one with the accent-coloured title bar option and a `Header` group, one with
 that option and no `Header` group, and one that lacks a colour group the others have; the value phase chooses the
-files and the accents and records them as sources.
+files and the accents and records them as sources. Beside the measured accents, the run sets Breeze's own `#00000000` (`plasma-workspace@6.8.2
+kcms/colors/colorssettings.kcfg:12-15`) on each of the preset's own scheme files and compares the same roles with the
+facts that apply without `scheme_file` and `accent`, the preset's no-accent facts, in the same scope, and on the
+tinting file (SUSE-Cafe's) with the facts measured with no `AccentColor` (`accent = "#00000000"`): so `kde_accent`'s
+and `kde_accent_wm`'s no-accent branch, which a stated `#00000000` reaches (S9.2, S9.3), is compared, its tinted
+`[Inactive]` groups included (ADD-A132).
 
 ## S18. Documents and scripts
 
@@ -5336,7 +5525,7 @@ variant the project publishes, their invented light variants and their `icon_set
 validates every bundled preset and palette (each palette over every preset it has a source for, Dracula's KDE port,
 which lacks two colour groups, among them, S14), so `Theme::from_preset` and `Palette::bundled` never meet their error in a
 release (S16). The test validates each bundled preset through `from_preset` where its `[pending]` table is empty,
-and through `from_preset_synthetic` with one synthetic layer per listed path, a listed `default_size` exempt from its check rather than stated and a listed part drawn (S17; ADD-A131), where
+and through `from_preset_synthetic` with one synthetic layer per listed path, a listed `default_size` exempt from its check rather than stated, a listed part drawn (S17; ADD-A131) and a listed input's value folded into the preset's input base (S17; ADD-A132), where
 it is not; every table is
 empty at the release, so it is the plain route then (ADD-A128).
 **S19.2** Today's inheritance rules (`[uniform]`, `[per_platform]`) become expressions in each preset's bases,
@@ -5545,6 +5734,7 @@ lines that cite it.
 | ADD-A129 | pending: to be drafted; its inputs `docs/todo_v0.7.1_model-completeness-a129-inputs.md`, queue #118 (every popup's presentation on every platform: a `popup` part's opening and closing, an expander's collapsed content and its reveal, an interrupted presentation; S2.7 states what holds meanwhile) | pending |
 | ADD-A130 | the slice's model gaps (queue #120–#124, the adwaita and macos-tahoe presets' pass 1 and the GNOME fill's audit, decided from the sources, then the first checks' fixes): the caret's width `Absent` where it follows each caret, GTK's caret parts stating `floor(caret_height × aspect ratio) + 1` over `ElementData.caret_height`, the toolkit's own caret rectangle; the wheel's steps `Behavior.scroll`'s, `wheel_step_lines` and `wheel_step_distance`, staged with it; `hover_open_delay` renamed `hover_time`, the system's one hover time (Windows' tooltip delays its multiples), absent on GTK; `drag_time` Qt's held press and `drag_min_delay` GTK's earliest drag; `mnemonic_when_disabled`; `DecorationLine::UnderlineLow`, Pango's low underline, its offset from the run's ink; `RenderingMode::FromIcon`, the icon's own colouring path by path (`adwaita`, `kde-breeze`), and the check context's `Template`; AdwTabButton's frame a `ThemeIcon` glyph with `@tab_overflow`; a paintable a widget's element, not an icon animation (the status page's spinner); a keyed text style's and a slot's `fill`, `elision`, `wrap` and `max_lines` `Value`s, absent where the platform's style does not set them, every part that draws text stating all four in its base table, `max_lines` a `Value<Option<u32>>`; `scaling_role`'s `None` and `macos-*`'s `linear`; no conversion for AppKit's width trait, the width measured on the font's axis; `macos-*`'s status roles and set status colours absent (U101) and its Selection set's `border` may be absent; the gate comparing no field, and failing no field's fact, where its part is not drawn, a part with no applying part fact expected drawn; `IconStyle.status_colors` renamed `symbolic_colors`, keyed by each platform's marks (libadwaita's `success`, `warning`, `error`, `accent`; KIconLoader's seven stylesheet classes); `scaling_role` a `Value<Option<TextRole>>`; every part that only marks text another part lays out states its layout leaves absent and reaches the text's font by reference; adwaita's mnemonic decoration stated per label; Qt's drawn underline, wavy and strike lines register U180's, one form per drawing path (QPainter's for what QStyle draws, Qt Quick's for Qt Quick text); `misspelling` an *(element)* part on `input`, `text_area` and `code_editor`, `text_area`'s with the connector-set keyed flag `@holds_caret`, Sonnet's background on the word holding the caret under it; libadwaita's transparent selection text a mark setting no colour | S2.2, S2.8, S2.9, S2.11, S4.2, S4.4, S4.5, S6.1, S6.3, S8, S10, S12, S17, S20; catalogue; traces; R4, R5, R10, R11, R12, R17 |
 | ADD-A131 | the small questions of the code inventory and task 15d's review on ADD-A125–ADD-A130 (queue #108, #142–#146, the inventory's Q-A1–Q-A6, Q-B1–Q-B4, Q-C1, the macOS lane's motion prefix and task 15e's review's listed-path reading), then its seventeen checks' fixes: `round_pt(x)`, a font size rounded to whole points by S9.4's DPI in f64, a half point within a relative 2^-21, on a `Font.size` alone (KTitleWidget's `QFont::pointSize()`), `floor` and `round` of a font size in px whatever states it; `[pending]`'s list of two or more ids wherever the pending facts that leave a path listed carry several, the gate comparing id sets; a part's presence no base of its fields, so a redrawn part's pending field is listed; a pending presence listed by its path, refused on every theme but a synthetic one unless an application layer's bases state it, drawn on a synthetic theme; a synthetic theme keeping the route through its mutations while its preset is current; a listed path stated by a layer above on every route; a declared input no layer states S12's missing field at `inputs.<name>`, S9's input replaced whole and S9.3's and the code's per scheme left as they disagree, with a pending input's synthetic value, to ADD-A132, the synthetic route refusing a preset that lists an input meanwhile; ADD-A128's any-value reading of a listed path replaced by S12 validating the synthetic values as stated, each one S12 accepts there, the build test checking them; `default_size` stated with any non-empty `sizes`, under each flavour, holding in every variant and context, a `sizes_by_context` entry's `context` one S11 context selector of `scope`, `widget`, `part`, `variants` and `not_variants`, the first matching entry applying, an element taking its variant entry's sizes (else `sizes`) less those its matching context entry leaves out (#108), a variant's default in its `sizes_by_variant` entry, `default_size_by_variant` removed, a one-size element stated by `sizes`, and its own `default_size` where the container sets the size (`macos-tahoe`'s default toolbar, `extra_large`), a pending one `{ pending = "U<n>" }` in the state model, listed in `[pending]` and exempt from S12's checks that read it on the synthetic route alone, an unsized element `NotAvailable(Size)` there (S8); `interpolate_color`'s members checked by vector tables, and the plan's M2.1 runtime task, S4.3's theme change with M3's tokens unit (Q-A4; the M1a design's decision 9, on `v0.8.0-rc1` only, names that unit); S12's `GtkCss` curve check on what the crate sees, the CSS list's order `check_fact_citations.py`'s; `token.icons.animated_visuals = {}` a value the specification defines on every preset but `windows-11` (`# S4.5`); `IndicationBox.part` a `PartRef`; a `Condition`'s spelling wherever stated; one presence key beside a part's fields; an `Append` creating a paint-map entry a merge conflict; a partial `Option`-block table the reader's mistyped value; the gate's measured drawn colours drawn by each renderer's source (GTK's and Qt's raster premultiplied then clamped, Compose's clamped straight, a failure out of gamut where no source is read); `composite_over` clamping every input, alpha 0 transparent black; Core Animation's `kCAMediaTimingFunction` prefix. Follow-ups: facts, `kde/title_widget.toml`'s four sizes by `round_pt` (KDE lane), `macos-tahoe`'s toolbar context default `extra_large` under each toolbar style and size mode, whether a variant keeps its own size there and the toolbar's other item controls' `controlSize` (macOS lane, U94), `material-3` baseline's `sizes = ["regular"]` with the FAB's sizes in its entry and the Expressive `default_size_by_variant` (`docs/facts/material/state-models.toml:246`, its comment `:26`) moved into the `sizes_by_variant` entries, one fact (Material lane), the iOS state models' `sizes = ["regular"]` with each configuration style's `mini` … `large` and pending `default_size` in its `sizes_by_variant` entry in place of the three size `not_drawn` lines (iOS lane), the iOS 26 toolbar's prominent item at one size, a `sizes_by_context` entry `{ context = { scope = "any", widget = "toolbar", part = "bar" }, sizes = ["regular"], default_size = "regular" }` (iOS lane), and a `default_size` in every state model that declares `sizes`, and in each non-empty `sizes_by_variant` entry where the widget has none or the entry leaves it out (Material's button groups among them), each unit's lanes (the catalogue's `macos-*` control sizes among them); presets, `animated_visuals = {}  # S4.5` on the seven, by hand; scripts, `check_preset_citations.py` and `check_fact_citations.py` (the `# S4.5` key; the `GtkCss` list order), `check_function_vectors.py`'s `ARITHMETIC` with `round_pt`, `check_facts.py`'s self-test function list with `round_pt` and its refusal of an `animated_visuals` fact off `windows/` (as `APPLE_FONT_DPI`'s), `check_facts.py`, `check_facts_trace.py` and `generate_preset.py` (`default_size_by_variant` removed, a `sizes_by_variant` entry's `default_size`), `check_facts.py` (a `sizes_by_context` entry's selector `context`, its keys and its `default_size`, an entry matched to a combination's chain and one matching none refused, `default_size` with `sizes`, a default size `not_drawn` excludes for a drawn variant set, its pending form, the sizes-by-variant and -context rules, `MOTION_PREFIXES` with `kCAMediaTimingFunction` in its form), `check_ledger.py` (the pending declaration), `check_function_vectors.py` (`interpolate_color`'s tables), `generate_preset.py` (a `sizes_by_context` entry's `default_size` written, a pending presence listed, lists of ids by what lies beneath, a redrawn part's field listed, the pending `default_size` listed, no base written from a size for a no-size element); code, `default_size_by_variant` removed (`declare.rs`, `query/matching.rs`, the gate's declaration comparison, its `error.rs` problem) and a `sizes_by_variant` entry's `default_size`, `SizesByContext` holding a `ContextMatch` and its `default_size` and their reader, the query's sizes lookup (`takes`: the variant's entry, else `sizes`, narrowed by the first matching selector's entry) and default lookup (context, then variant, then widget, stopping at a listed default, S10's *A pending default*: the synthetic theme keeps its preset's listed declarations), the gate's declaration comparison and its fixture, `round_pt` (its half-point precision and test), every declared input's missing problem, S12's `default_size` checks and `from_preset_synthetic`'s exemption with the query's `NotAvailable(Size)`, the build test's route, the `[pending]` reader refusing a one-id list and reading `declare.…default_size` and a part's key, the gate listing a pending presence, the gate comparing id sets and comparing `font_dpi` and `animated_visuals` with their definitions, `from_preset_synthetic` refusing a preset whose `[pending]` lists an input, S12 validating synthetic values as stated (the any-value reading of a synthetic step removed: `value_at`, the stack's rewrite to an unknown value, `any_value`), one synthetic value per listed path accepted at every combination it reaches, the build test failing and naming a path where none exists, `synthetic_value` choosing values S12 accepts at their places (not `absent` under a conditional mark) and the build test validating the synthetic layers, `round_pt` refused outside a `Font.size` expression, `tokens.rs`'s staging comment naming M3's tokens unit, the reader's presence beside fields (`toml/layer.rs`), an `Append`-created entry refused (the derive's entry creation), the partial `Option` table as `Mistyped`, `IndicationBox.part: PartRef`, the gate's measured colours per renderer, `composite_over` without unclamped shortcuts | S2.1, S2.2, S2.7, S2.12, S4.1, S4.5, S6.1, S6.3, S8, S9.4, S10, S11, S12, S16, S17, S19.1; catalogue (the format's sizes line, `button`'s and `segmented_control`'s default sizes); traces KDE and Material; the plan's M2 and M3 |
+| ADD-A132 | inputs per scheme and contrast (ledger queue #148, from its survey, ADD-A131's checks 4–6), and the T6 code review's spec items (its S1 and F4), then its eight checks' fixes: an input replaced slot by slot, a slot a scheme with no contrast or one, a layer's value there its contrast base, else its per-scheme value, the last applying layer's that has one winning (the code's `input_value`); the preset's accent inputs one group in every layer above the preset, a layer stating any at a scheme stating every one's per-scheme value there, so the inputs in force at a slot come from one layer, `AccentInputsMissing` judged so per scheme for an `Accent`, a mapping (also at each of the palette's schemes), a stand-in (one stating `accent` alone refused on `macos-*`, `windows-11`, `ios-*`) and each under `set_preset`, a reader stating its group by construction; on `kde-breeze` Plasma's derivation in one accent-derivation layer, directly above the preset, its `kde_accent` and `kde_accent_wm` roles and inactive input roles as bases over the accent in force at each slot where a layer above the preset gives that accent and nothing elsewhere (the preset's own statements showing there), its no-accent branch compared by the accent run's `#00000000` row, each layer above replacing the roles it states, and the accent layer stating the `accent` alone (ADD-A112's roles in the accent layer, and their per-slot rule under a skipped mapping, removed), a reader's or stand-in's results and a KDE port's roles left out (S8) at a slot where the accent layer or a palette gives the accent in force; a reader's partial group stated as none at that scheme, or, for a failure under one contrast, without that contrast's group bases, its per-scheme values kept, reported as `ReaderStatus::Fallback`; a reader stating an input's contrast base where its platform gives one (macOS's increased contrast); the KDE reader's `input.accent`: `AccentColor` where set and not equal to `transparent`, else the portal's `Highlight` (the `Selection` background) at the read scheme in its common bases and `#00000000` at that scheme in its `for_preset.kde-breeze` part; S8's and S14's palette leave-out naming a stand-in's colours too; S12's missing input per slot over the layers whose inputs apply, at `inputs.<name>.<scheme>` and `inputs.<name>.contrast.<c>.<scheme>`; an input listed per scheme, `inputs.<name>.<scheme>`, a pending contrast base never listed; a listed input's synthetic per-scheme value folded into the preset's own input base, marked synthetic per input and scheme, ending ADD-A131's refusal of a preset listing an input; one-scheme input tables in S11; a map fact compared whole, `{}` no entries; the boxed patches in the sketches. Rejected: whole replacement (a one-scheme reader and a port beside a mapping erase a scheme), per scheme without the group (an accent mixes with another layer's derived inputs at a scheme or contrast), the group per slot without the per-scheme anchor, the stand-in's accent left out, `kde-breeze`'s roles in the accent layer above every layer or stated by the preset itself, the synthetic input in a layer above the stand-in or in a slot beneath it. Follow-ups: code, the stale "whole" comments (`next/inputs.rs`, `resolve/mod.rs`, `gate/mod.rs`), `accent_inputs_held` per scheme for `set_accent`, `set_preset` and `set_reader_stand_in` (and the mapping when palettes land), S12's missing input per slot over applying layers in place of `listed_inputs_unstated` and the preset-only test in `set_preset` and `preset_stack`, the `[pending]` reader taking `inputs.<name>.<scheme>` (`toml/read.rs`'s `listed_input`), `from_preset_synthetic`'s fold with its per-input-and-scheme mark in place of `input_layers`' tag for inputs and the refusal of a listed input removed, the gate's synthetic input at its listed scheme alone (`synthetic_value`) and its skip by the mark, `derived_accent`'s stale doc comment (`resolve/mod.rs`: "`kde-breeze`'s derived roles enter with its preset, M1b"), the accent-derivation layer in S8's order, its roles only at the slots where a layer above the preset gives the accent in force, its own `LayerKind` (Theme-derived, stating no accent input) in `stacked` and `validate` (`resolve/mod.rs`'s stack: `stacked`, `shared_layers` and `synthetic_places`, whose place indices assume the application layers start at 1 or 2; derived on every change as the accent layer is) with S8's per-slot leave-out of a reader's, stand-in's or port's results, a test on `kde-breeze` (`accent_derivation_layer`: a stand-in stating accent X gives at both schemes the roles, inactive input roles and `[WM]` roles `set_accent(X)` gives with an empty stand-in, but those it states; an `Accent` or a stand-in's accent at one scheme leaves the other scheme's roles, inactive input roles and `[WM]` roles equal to the theme without it; a stand-in shaped as the KDE reader, results at one scheme, shows them there and the derivation at the other, and under `set_accent` the derivation of the `Accent` at both; no stated accent, no layer), the gate's perturbed stand-in (`stand_in`, `tests/facts_gate/run.rs`) stating every input but one whose applying fact is a derivation (an input with no fact stated), as it filters roles, the accent run's `#00000000` row on the preset's own scheme files against the no-accent facts, and no `accent` on `kde-breeze`, the KDE reader's results and `[WM]` references under its read scheme only, `reader::kde`'s accent read (`AccentColor` where set and not equal to `transparent`, else the `Selection` background and, for `kde-breeze`, `#00000000`, both at the read scheme; a test: a stand-in shaped as that reader with no `AccentColor`, under `set_preset(adwaita)`, shows the `Selection` background at the read scheme and `adwaita`'s accent at the other, and on `kde-breeze` the preset's look at the unread scheme), the accent-derivation layer derived for the slot in force on every change of the stack and slot and validated at every slot where it states its roles, the `ReaderStatus::Fallback` failure for an accent input, the gate's `listed_key` (`gate/mod.rs`) mapping a listed input with its scheme and its table check taking each listed input's schemes from the pending facts' `scheme:` conditions, `validate/checks.rs`'s `states` judging an input per slot (it takes any entry as stated), the stale doc comments of `toml/read.rs` (`listed_input`), `toml/layer.rs`, `validate/mod.rs` (`listed_inputs_unstated`) and `resolve/mod.rs` (the synthetic input tag), the test `from_preset_refuses_a_listed_input_as_missing` (`theme/tests.rs`) re-pinned to `inputs.<name>.<scheme>`, the gate comparing a map fact whole (fixture `gate_value_map_fact_whole`: a preset's extra entry against `{}` differs, maps differing in order alone agree), and in M1b the macOS reader's `contrast.increased` bases of its five inputs and the Windows reader's accent and ramp all or none per scheme and their contrast bases all or none per contrast (today's `read_accent_shades` keeps the shades it could read), reported as `ReaderStatus::Fallback`; scripts, `generate_preset.py` listing a pending input per scheme and writing a per-contrast base's stated schemes (its `INPUT_CONTRAST` left-out removed); facts, the KDE lane's SUSE-Cafe facts measured with no `AccentColor` (`scheme_file` SUSE-Cafe's, `accent = "#00000000"`) for the accent run's tinting no-accent row, the Windows lane's high-contrast accent and ramp facts, which decide the Windows reader's `contrast.high` bases, and each lane's input facts (`windows-11`, `ios-*`, `material-3` have none yet) per scheme, per contrast where the platform differs; ledger, #148 decided, and #149's "a preset listing an input refused" and "a missing declared input" (at `inputs.<name>`) superseded by this row (the fold; the per-slot check) | S1, S6.1, S7, S8, S9, S9.1, S9.2, S9.3, S9.5, S11, S12, S14, S16, S17, S19.1; catalogue (the `kde-breeze` accent-derivation layer: the inactive input roles, a reader's accent, the `[WM]` roles; the KDE readers list's `AccentColor` read); trace KDE (K2.11, K3.51, K3.54, the reader's `AccentColor` row); rationale R2.6 (the accent-dependent roles' derivation) |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |
