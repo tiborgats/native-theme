@@ -1478,7 +1478,7 @@ spaces:
     expression on `element.color` under `contentTintColor`, MAC-B07; on `kde-breeze` the clear-field, inline-action and
     chip-remove buttons' size is `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100): Q1.15, Q1.18, Q2.24; on `adwaita` and `kde-breeze` its `rendering_mode` `from_icon`, the icon's own colouring path by path, GTK's symbolic paths and KDE's colour-scheme stylesheet classes taking the style's colours, S2.9, ADD-A130), `glyph` (for system button types, B-12; for the icon the platform itself names, a `ThemeIcon` glyph: `adwaita`'s AdwTabButton frame, `adw-tab-counter-symbolic` under `@tab_button` and `adw-tab-overflow-symbolic` under `@tab_overflow`, `adw-tab-button.c:103-131`, an icon of libadwaita's resources, which it adds to the icon theme's search path, `src/adw-main.c:95-96`, so a connector finds it by name where those resources are loaded, as under GTK, and elsewhere draws none and records it, R23; GN-2.37, ADD-A130),
     `transitions` (state-triggered icon animations, `TransitionKind::Keyed` of group `Icon`: WinUI's AnimatedIcon
-    states, W1-024, W3-28; GtkSvg's state transitions, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
+    states, W1-024, W3-28; GtkSvg's state transitions, none on a button at gtk@4.24.1, GN-P3-19†; the SF Symbols content transition, B-16; ADD-A27,
     R25.12).
   - `menu_indicator` — the arrow or chevron of a button that opens a menu (GN-1.40, K1.27, B-18†, MAT-N8; KDE's
     inline small and large arrows, K1.155): `glyph`, `min_width`, `min_height`, `margin` (by
