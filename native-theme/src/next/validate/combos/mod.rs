@@ -29,10 +29,10 @@ use super::stack::{
 use crate::next::blocks::part_style::RoleRef;
 use crate::next::declare::{DataName, DataOwner, Declarations};
 use crate::next::error::{Problem, ProblemKind};
-use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref, Ty};
+use crate::next::expr::{ElementDatum, Expr, MAX_CHAIN, Ref};
 use crate::next::key::Key;
 use crate::next::presets::PresetId;
-use crate::next::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
+use crate::next::registry::{self, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
     Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme,
@@ -295,10 +295,6 @@ impl<'a> Stack<'a> {
         depth: usize,
     ) -> Vec<Found<'_>> {
         let mut local: Option<Found<'_>> = None;
-        // A listed path's synthetic value is read as any value of its type
-        // (S12, S17, ADD-A128): each variant of an enum, `Absent` where the
-        // field may be absent.
-        let mut listed: Vec<Found<'_>> = Vec::new();
         let mut via: Option<(usize, &Source, &Op)> = None;
         for (number, source) in self.of(target) {
             if !self.applies(world, source) || !bound.admits(source.pos) {
@@ -330,46 +326,23 @@ impl<'a> Stack<'a> {
                     // Below a reference, a patch kept on it (S2.2).
                     if let Some(got) = got {
                         local = Some(found(got));
-                        listed = if self.cx.synthetic.contains(&source.layer) {
-                            // An `Option` field, the path itself or one above
-                            // it (a block S6.1 sets whole, which the layer
-                            // states whole, or a leaf), may be `None` too.
-                            let none = q
-                                .match_indices('.')
-                                .map(|(at, _)| q.get(..at).unwrap_or(q))
-                                .chain([q])
-                                .any(|path| may_be_none(target, path));
-                            any_value(target, q, op.marks.may_be_absent || none)
-                                .into_iter()
-                                .map(found)
-                                .collect()
-                        } else {
-                            Vec::new()
-                        };
-                        if !listed.is_empty() {
-                            local = None;
-                        }
                     }
                 } else if is_above(&op.path, q) {
                     match &op.kind {
                         OpKind::Set(Val::Absent) => {
                             local = Some(found(Got::Absent));
-                            listed.clear();
                             via = None;
                         }
                         OpKind::Set(Val::Auto) => {
                             local = Some(found(Got::Auto));
-                            listed.clear();
                             via = None;
                         }
                         OpKind::Set(Val::Expr(_)) => {
                             local = None;
-                            listed.clear();
                             via = Some((number, source, op));
                         }
                         OpKind::Set(Val::Stated(_)) | OpKind::Clear => {
                             local = None;
-                            listed.clear();
                             via = None;
                         }
                         OpKind::Fields { .. }
@@ -381,13 +354,13 @@ impl<'a> Stack<'a> {
             }
         }
         let Some((_, source, op)) = via else {
-            return local.into_iter().chain(listed).collect();
+            return local.into_iter().collect();
         };
         let OpKind::Set(Val::Expr(Expr::Ref(reference))) = &op.kind else {
-            return local.into_iter().chain(listed).collect();
+            return local.into_iter().collect();
         };
         if depth >= MAX_FOLLOW {
-            return local.into_iter().chain(listed).collect();
+            return local.into_iter().collect();
         }
         let rest = tail(&op.path, q);
         let mut out = Vec::new();
@@ -404,17 +377,12 @@ impl<'a> Stack<'a> {
             };
             if referents.is_empty() {
                 out.extend(local);
-                out.extend(listed.iter().copied());
             }
             for referent in referents {
-                let held = local.or_else(|| listed.first().copied());
                 let later = referent.cx.pos.rule
-                    && held.is_none_or(|held| !held.cx.pos.rule || referent.cx.pos > held.cx.pos);
-                match held {
-                    Some(_) if !later => {
-                        out.extend(local);
-                        out.extend(listed.iter().copied());
-                    }
+                    && local.is_none_or(|held| !held.cx.pos.rule || referent.cx.pos > held.cx.pos);
+                match local {
+                    Some(_) if !later => out.extend(local),
                     _ => out.push(Found {
                         via: true,
                         ..referent
@@ -1403,66 +1371,6 @@ fn literals(
             })
             .collect()
     })
-}
-
-/// Whether the field at `path` of `target` is an `Option`, a block's
-/// (which S6.1 sets whole) or a leaf's, whose `None` reads as `Absent`: any
-/// value of its type (S12).
-fn may_be_none(target: Target, path: &str) -> bool {
-    registry::find(table(target), path).is_some_and(|field| {
-        let ty = match field.ty {
-            FieldType::Leaf(ty) | FieldType::Block { ty, .. } | FieldType::Patch { ty, .. } => ty,
-        };
-        ty.starts_with("Option<")
-    })
-}
-
-/// What a synthetic layer's value at a listed path `path` of `target` is
-/// read as (S12, S17, ADD-A128): any value of its type, each variant of an
-/// enum (an enum block's unit and data variants) else a value stated
-/// unread, and `Absent` where the field may be absent.
-fn any_value(target: Target, path: &str, may_be_absent: bool) -> Vec<Got<'static>> {
-    let field = registry::find(table(target), path);
-    let mut out: Vec<Got<'static>> = Vec::new();
-    match field.map(|field| (field.ty, (field.value)())) {
-        Some((_, Some(Ty::Enum(names)))) => {
-            out.extend(
-                names
-                    .variants
-                    .iter()
-                    .map(|name| Got::Stated(Fact::Variant(name))),
-            );
-        }
-        Some((
-            FieldType::Block {
-                form: BlockForm::Enum { unit_variants },
-                fields,
-                ..
-            },
-            _,
-        )) => {
-            let mut names: Vec<&'static str> = unit_variants.to_vec();
-            for field in fields {
-                let name = field.path.split('.').next().unwrap_or(field.path);
-                if !names.contains(&name) {
-                    names.push(name);
-                }
-            }
-            out.extend(
-                names
-                    .into_iter()
-                    .map(|name| Got::Stated(Fact::Variant(name))),
-            );
-        }
-        _ => {}
-    }
-    if out.is_empty() {
-        out.push(Got::Stated(Fact::Unknown));
-    }
-    if may_be_absent {
-        out.push(Got::Absent);
-    }
-    out
 }
 
 /// The part's catalogue fields, a target's table.

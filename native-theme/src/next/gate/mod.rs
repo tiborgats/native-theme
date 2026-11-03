@@ -328,8 +328,8 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// (a transition's `from`: any state); a list of two halves, 1 in the
 /// type's unit, `#010203`, the text `Synthetic`, an enum's first variant,
 /// a glyph's named system image `synthetic`; a struct block's every field
-/// so, `absent` where a field may be absent; an enum block's first unit
-/// variant. `None` for a type with none yet, and for a key: a key names
+/// so, `absent` where a field may be absent; a corner's radius 1 px; any
+/// other enum block's first unit variant. `None` for a type with none yet, and for a key: a key names
 /// what the preset declares or what its slot lists (S10), which no
 /// synthetic name is, so a listed key is refused by name until the layers
 /// take the preset's declarations.
@@ -409,6 +409,13 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
             }
             Some(("", Item::Table(table)))
         }
+        // A corner's plain radius: `ellipse` is refused but on all four
+        // corners with a `circular` curve, and `follow_part` outside a
+        // focus indicator or beside offsets that can differ (S12), which
+        // the corners beside a listed one need not give.
+        registry::FieldType::Block {
+            block: "Radius", ..
+        } => Some(("_px", Item::Integer(1))),
         registry::FieldType::Block {
             form: registry::BlockForm::Enum { unit_variants },
             ..
@@ -2593,12 +2600,12 @@ mod tests {
     /// into `[pending]`, of every type the model holds there, each spelled
     /// as its type takes it, and loads through the synthetic route over the
     /// facts gate's fixture preset with the path in its `[pending]` table,
-    /// so validation takes its value at its slot (S11, S17, ADD-A128): a
-    /// type with no synthetic value, or one validation refuses, fails here
-    /// until it has one; a refusal of the fixture's surroundings
-    /// ([`surroundings`]) is not the value's. A map's key is one validation
-    /// takes (an axis no field routes). A path the model holds no field at
-    /// is refused, naming it.
+    /// so validation takes its value at its slot (S11, S17, ADD-A128) as
+    /// stated (ADD-A131): a type with no synthetic value, or one validation
+    /// refuses at any combination it reaches, fails here until it has one;
+    /// a refusal of the fixture's surroundings ([`surroundings`]) is not the
+    /// value's. A map's key is one validation takes (an axis no field
+    /// routes). A path the model holds no field at is refused, naming it.
     #[test]
     fn synthetic_layers_state_every_listable_type() {
         let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
@@ -2656,52 +2663,7 @@ mod tests {
                     .map(|problem| format!("{spelled}: {problem}")),
             );
         }
-        // S12's conservative reading takes each leaf a synthetic layer
-        // states as any value of its type, each on its own: a listed whole
-        // focus indicator reads `follow_part` corners beside offsets that
-        // can differ, a listed whole edge an absent `dash` beside a drawn
-        // `width` and `paint`. No synthetic value avoids either, so such a
-        // path is refused on any preset; a ledger row is pending. A listed
-        // slot, or a block holding one, reads its drawn-text leaves absent
-        // too, as the slot's mark allows, which the parts referencing it
-        // may not take (S2.8, S12): ADD-A131 reads the synthetic values as
-        // stated instead, and those state the leaves
-        // ([`STATED_UNDER_CONDITION`]).
-        let corners = ["top_left", "top_right", "bottom_right", "bottom_left"];
-        let edges = ["top", "right", "bottom", "left"];
-        let leaves = ["elision", "wrap", "max_lines", "fill"];
-        let parts = ["label", "subtitle"];
-        let refused = |listed: &str, part: &str, leaf: &str| {
-            format!("{listed}: widgets.button.{part}.text.{leaf}: may not be absent")
-        };
-        let mut text = Vec::new();
-        for listed in ["tokens.text", "tokens.text.roles", "tokens.text.roles.body"] {
-            for part in parts {
-                text.extend(leaves.iter().map(|leaf| refused(listed, part, leaf)));
-            }
-        }
-        for leaf in leaves {
-            let listed = format!("tokens.text.roles.body.{leaf}");
-            text.extend(parts.iter().map(|part| refused(&listed, part, leaf)));
-        }
-        let layers = "tokens.text.roles.body.fill.layers";
-        text.extend(parts.iter().map(|part| refused(layers, part, "fill")));
-        let conservative: Vec<String> = text
-            .into_iter()
-            .chain(corners.iter().map(|corner| {
-                format!(
-                    "tokens.focus: tokens.focus.corners.{corner}: `follow_part` on `{corner}`, \
-                     whose sides' offsets can differ"
-                )
-            }))
-            .chain(edges.iter().map(|edge| {
-                format!(
-                    "widgets.button.body.stroke.{edge}: widgets.button.body.stroke.{edge}.dash: \
-                     may not be absent"
-                )
-            }))
-            .collect();
-        assert_eq!(failures, conservative);
+        assert_eq!(failures, Vec::<String>::new());
         let refused =
             synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])])
                 .unwrap_err();

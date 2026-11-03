@@ -184,13 +184,12 @@ fn synthetic_route_waives_a_pending_default_size() {
     assert!(matches!(theme.style(&sized), Styled::Style(_)));
 }
 
-/// S12's conservative reading of a listed path (S17, ADD-A128): an
-/// enum-typed one is read as each of its variants, whatever its synthetic
-/// value, so `text_scale` read where the listed `text.scaling` could be
-/// `dynamic_type` is refused, though the synthetic layer states `linear`;
-/// the preset stating `linear` itself is accepted.
+/// S12 validates a listed path's synthetic value as stated (S17,
+/// ADD-A131): `text_scale` read where the listed `text.scaling` is stated
+/// `linear` is accepted, as the preset stating it is, and refused where
+/// the layer states `dynamic_type`, never read as each variant of its type.
 #[test]
-fn a_listed_enum_is_read_as_each_variant() {
+fn a_listed_enum_is_validated_as_stated() {
     let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
     let line = "\nscaling = \"linear\"\n";
     assert!(base.contains(line));
@@ -200,11 +199,13 @@ fn a_listed_enum_is_read_as_each_variant() {
         "[pending]\n\"tokens.text.scaling\" = \"U1\"\n{}{rule}",
         base.replacen(line, "\n", 1)
     );
-    let layer = synthetic_layer("[tokens.text]\nscaling = \"linear\"\n");
+    let linear = synthetic_layer("[tokens.text]\nscaling = \"linear\"\n");
+    synthetic_stack(None, &text, Scheme::Light, vec![linear]).unwrap();
+    let dynamic = synthetic_layer("[tokens.text]\nscaling = \"dynamic_type\"\n");
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
-        synthetic_stack(None, &text, Scheme::Light, vec![layer])
+        synthetic_stack(None, &text, Scheme::Light, vec![dynamic])
     else {
-        panic!("text_scale is refused where the listed scaling can be dynamic_type");
+        panic!("text_scale is refused where the listed scaling is dynamic_type");
     };
     assert!(
         problems
@@ -214,13 +215,12 @@ fn a_listed_enum_is_read_as_each_variant() {
     );
 }
 
-/// S12's conservative reading of a listed path below a block S6.1 sets
-/// whole (S17, ADD-A128): the listed `key_repeat` may be `none`, a value of
-/// its type, so its delay read where a duration may not be absent is
-/// refused, though the synthetic layer states the block; the preset
-/// stating the block itself is accepted.
+/// S12 validates a listed block S6.1 sets whole as stated (S17,
+/// ADD-A131): the listed `key_repeat` stated as a block, its delay read
+/// where a duration may not be absent is accepted, as the preset stating
+/// it is, never read as `none` beside the stated block.
 #[test]
-fn a_listed_option_block_is_read_as_none_too() {
+fn a_listed_option_block_is_validated_as_stated() {
     let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
     let line = "\nkey_repeat = \"none\"\n";
     assert!(base.contains(line));
@@ -235,17 +235,8 @@ fn a_listed_option_block_is_read_as_none_too() {
         "[pending]\n\"tokens.behavior.key_repeat\" = \"U1\"\n{}{rule}",
         base.replacen(line, "\n", 1)
     );
-    let layer = synthetic_layer("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n");
-    let refused = synthetic_stack(None, &text, Scheme::Light, vec![layer]);
-    let Err(ThemeError::Preset(LayerError::Invalid(problems))) = refused else {
-        panic!("the delay is read where the listed key repeat can be none");
-    };
-    assert!(
-        problems
-            .iter()
-            .any(|problem| problem.kind == ProblemKind::AbsentNotAllowed),
-        "{problems:?}"
-    );
+    let block = synthetic_layer("[tokens.behavior.key_repeat]\ndelay_ms = 1\ninterval_ms = 1\n");
+    synthetic_stack(None, &text, Scheme::Light, vec![block]).unwrap();
 }
 
 /// A window's root inputs, synthetic.

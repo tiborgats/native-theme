@@ -2954,7 +2954,6 @@ pub(super) mod triggers {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
-            synthetic: &[],
             below: &[],
         };
         let mut checker = checker_over(&cx);
@@ -2970,7 +2969,6 @@ pub(super) mod triggers {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
-            synthetic: &[],
             below: &[],
         };
         let mut checker = checker_over(&cx);
@@ -3012,7 +3010,6 @@ mod tests {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
-            synthetic: &[],
             below: &[],
         };
         let mut checker = Checker::new(&cx, false);
@@ -3092,7 +3089,6 @@ mod tests {
                 preset: None,
                 kind: LayerKind::Application,
                 reader_accent_left_out: false,
-                synthetic: &[],
                 below: &[],
             };
             let mut checker = Checker::new(&cx, false);
@@ -3181,7 +3177,6 @@ mod tests {
                 preset: None,
                 kind: LayerKind::Application,
                 reader_accent_left_out: false,
-                synthetic: &[],
                 below: &[],
             };
             let mut checker = Checker::new(&cx, false);
@@ -3219,7 +3214,6 @@ mod tests {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
-            synthetic: &[],
             below: &[],
         };
         let mut checker = Checker::new(&cx, true);
@@ -3254,7 +3248,6 @@ mod tests {
             preset: None,
             kind: LayerKind::Application,
             reader_accent_left_out: false,
-            synthetic: &[],
             below: &[],
         };
         let mut checker = Checker::new(&cx, true);

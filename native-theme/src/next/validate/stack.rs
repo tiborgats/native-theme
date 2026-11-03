@@ -625,16 +625,6 @@ impl<'a> Stack<'a> {
             }
         }
         for source in &mut stack.sources {
-            // A synthetic layer's value at its listed path is read as any
-            // value of its type (S12, S17, ADD-A128); `Absent` among them
-            // where the field may be absent (`value_at` in the checks).
-            if cx.synthetic.contains(&source.layer) {
-                for op in &mut source.ops {
-                    if matches!(op.kind, OpKind::Set(_) | OpKind::Touch) {
-                        op.kind = OpKind::Set(Val::Stated(Fact::Unknown));
-                    }
-                }
-            }
             if let Some(stacked) = layers.get(source.layer) {
                 let shorthands = &stacked.layer.shorthands;
                 for op in &mut source.ops {

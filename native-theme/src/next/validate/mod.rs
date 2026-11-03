@@ -59,11 +59,6 @@ pub(crate) struct Context<'a> {
     /// The reader's common accent is left out of the stack (S8, S9.5), so
     /// the reader layer's `accent` input is not in force.
     pub(crate) reader_accent_left_out: bool,
-    /// The places in the stack of the synthetic route's layers (S17,
-    /// ADD-A128): each states a listed path, which the checks over
-    /// combinations read as able to take any value of its type, whatever
-    /// the layer states (S12).
-    pub(crate) synthetic: &'a [usize],
 }
 
 /// Every structural problem `layer` has against `cx` (S12).
@@ -161,7 +156,6 @@ fn preset_problems(
         preset,
         kind: LayerKind::Preset,
         reader_accent_left_out: false,
-        synthetic: &[],
         below: &[],
     };
     let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, exempt);
