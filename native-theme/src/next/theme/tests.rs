@@ -554,31 +554,70 @@ fn from_preset_synthetic_validates_and_resolves() {
     );
 }
 
-/// A theme builds on a small stack: every bundled preset through
-/// `Theme::from_preset`, and the facts gate's complete base as a preset,
-/// in both schemes, validated and resolved on a 256 KiB thread, an eighth
-/// of a spawned thread's default (it takes under 192 KiB here). The patches a layer holds are boxed where
-/// they fan out (`layer.rs`'s `patch_holders_stay_small`), so the stack this
-/// takes does not grow with the catalogue's widgets.
+/// A theme builds and answers its queries on a small stack: every bundled
+/// preset through `Theme::from_preset`, and the facts gate's complete base
+/// as a preset, in both schemes, validated, resolved, and queried (the
+/// tokens, which `ResolvedTheme::tokens` returns by value, each button
+/// part's style and the button's values) on a 256 KiB thread, an eighth of
+/// a spawned thread's default. The patches a layer holds are boxed where
+/// they fan out (`layer.rs`'s `patch_holders_stay_small`), and
+/// `ResolvedTokens` is bounded (`resolved_tokens_stay_bounded`), so the
+/// stack this takes does not grow with the catalogue's widgets. A failure
+/// shows the panic's message.
 #[test]
 fn presets_build_on_a_small_stack() {
+    fn query(theme: &crate::next::resolve::ResolvedTheme) {
+        let scope = theme.root_scope(&root());
+        assert!(theme.tokens(&scope).is_some());
+        let parts = crate::next::registry::widget("button")
+            .map(|info| info.parts)
+            .unwrap_or_default();
+        for part in parts {
+            let typed = TypedPart::from_names(crate::next::widgets::WidgetKind::Button, part.name)
+                .unwrap_or_else(|| panic!("button.{}", part.name));
+            let element = Element::new(PartRef::Typed(typed), &scope, &NoMetrics);
+            let _ = theme.style(&element);
+        }
+        let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+        let element = Element::new(body, &scope, &NoMetrics);
+        let _ = theme.values::<crate::next::widgets::ButtonValues>(&element);
+    }
     let run = || {
         let complete = include_str!("../../../tests/fixtures/facts_gate/base.toml");
         for scheme in [Scheme::Light, Scheme::Dark] {
             for &id in PresetId::all() {
-                super::Theme::from_preset(id, scheme)
-                    .unwrap_or_else(|e| panic!("{}: {e}", id.key()));
+                query(
+                    &super::Theme::from_preset(id, scheme)
+                        .unwrap_or_else(|e| panic!("{}: {e}", id.key()))
+                        .resolve(
+                            &mut WindowState::default(),
+                            &WindowConditions::new(InputKind::Mouse),
+                        )
+                        .theme,
+                );
             }
             let resolution = preset_stack(None, complete, scheme).unwrap().resolve(
                 &mut WindowState::default(),
                 &WindowConditions::new(InputKind::Mouse),
             );
             assert!(!resolution.theme.tokens.is_empty());
+            query(&resolution.theme);
         }
     };
     let thread = std::thread::Builder::new()
         .stack_size(256 << 10)
         .spawn(run)
         .unwrap();
-    assert!(thread.join().is_ok(), "the preset did not build on 256 KiB");
+    if let Err(payload) = thread.join() {
+        let message = payload
+            .downcast_ref::<String>()
+            .cloned()
+            .or_else(|| {
+                payload
+                    .downcast_ref::<&str>()
+                    .map(|text| (*text).to_owned())
+            })
+            .unwrap_or_default();
+        panic!("the preset did not build and answer on 256 KiB: {message}");
+    }
 }

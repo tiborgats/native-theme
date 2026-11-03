@@ -197,12 +197,24 @@ mod tests {
     /// the patches are boxed where they fan out (per widget, per part, the
     /// tokens', the colour roles', a rule's and a widget's values'), so a
     /// layer or a list of them held by value takes little stack, and a
-    /// widget unit added costs a layer one pointer.
+    /// widget unit added costs a layer one pointer: the layer and its bases
+    /// are bounded less their widgets' slots, which are one pointer each.
     #[test]
     fn patch_holders_stay_small() {
         let pointer = size_of::<usize>();
-        assert!(size_of::<Layer>() <= 512, "{}", size_of::<Layer>());
-        assert!(size_of::<Bases>() <= 512, "{}", size_of::<Bases>());
+        // The widgets' slots grow by one pointer per unit (below); the rest
+        // must not grow with the catalogue.
+        let widgets = size_of::<WidgetsPatch>();
+        assert!(
+            size_of::<Layer>() - widgets <= 512,
+            "{}",
+            size_of::<Layer>()
+        );
+        assert!(
+            size_of::<Bases>() - widgets <= 256,
+            "{}",
+            size_of::<Bases>()
+        );
         assert!(size_of::<Rule>() <= 1024, "{}", size_of::<Rule>());
         assert!(size_of::<RuleBody>() <= 128, "{}", size_of::<RuleBody>());
         assert!(size_of::<PartPatch>() <= 128, "{}", size_of::<PartPatch>());
@@ -215,5 +227,16 @@ mod tests {
             "{}",
             size_of::<ButtonPatch>()
         );
+    }
+
+    /// `ResolvedTokens`, which `ResolvedTheme::tokens` returns by value, is
+    /// the hand-written token blocks resolved: it grows with a token unit,
+    /// never with the widget catalogue, and its growth is seen here
+    /// (`theme/tests.rs`' `presets_build_on_a_small_stack` runs the query
+    /// on the stated stack).
+    #[test]
+    fn resolved_tokens_stay_bounded() {
+        let size = size_of::<crate::next::tokens::ResolvedTokens>();
+        assert!(size <= 16 * 1024, "{size}");
     }
 }
