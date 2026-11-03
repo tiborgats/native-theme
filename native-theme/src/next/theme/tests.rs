@@ -719,8 +719,9 @@ fn a_listed_path_is_stated_by_a_layer_above() {
 
 /// A listed presence (S17, ADD-A131): refused through the plain route as
 /// S12's missing field at the part's path unless an application layer's
-/// bases state the part's presence, a stand-in's not counting; drawn on
-/// the synthetic route, which states nothing for it.
+/// bases state the part's presence (`absent = true`, or `absent = false`
+/// drawing it), a stand-in's not counting; drawn on the synthetic route,
+/// which states nothing for it.
 #[test]
 fn a_listed_presence_is_stated_by_an_application_layer() {
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
@@ -747,6 +748,23 @@ fn a_listed_presence_is_stated_by_an_application_layer() {
     let mut stack = preset_stack(None, BASE, Scheme::Light).unwrap();
     stack.add_layer(hidden).unwrap();
     switch(&mut stack, &listed_presence()).unwrap();
+    // An application drawing the part: `absent = false` states it too.
+    let drawn = Layer::from_toml("[widgets.button.subtitle]\nabsent = false\n").unwrap();
+    let mut drawing = preset_stack(None, BASE, Scheme::Light).unwrap();
+    drawing.add_layer(drawn).unwrap();
+    switch(&mut drawing, &listed_presence()).unwrap();
+    let theme = drawing
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    let subtitle = PartRef::Typed(TypedPart::Button(ButtonPart::Subtitle));
+    assert!(matches!(
+        theme.style(&Element::new(subtitle.clone(), &scope, &NoMetrics)),
+        Styled::Style(_)
+    ));
     let file = read_preset(&listed_presence()).unwrap();
     assert!(synthetic_layers(&file.pending).unwrap().is_empty());
     let synthetic = synthetic_stack(None, &listed_presence(), Scheme::Light, Vec::new()).unwrap();
@@ -757,7 +775,6 @@ fn a_listed_presence_is_stated_by_an_application_layer() {
         )
         .theme;
     let scope = theme.root_scope(&root());
-    let subtitle = PartRef::Typed(TypedPart::Button(ButtonPart::Subtitle));
     assert!(matches!(
         theme.style(&Element::new(subtitle, &scope, &NoMetrics)),
         Styled::Style(_)
