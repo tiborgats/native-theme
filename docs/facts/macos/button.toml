@@ -329,7 +329,7 @@ tolerance = 0.5
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-N10"]
 
 [[fact.cite]]
 kind = "measured"
@@ -1166,7 +1166,7 @@ tolerance = 0.5
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-N10"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2003,7 +2003,7 @@ tolerance = 0.5
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-N10"]
 
 [[fact.cite]]
 kind = "measured"
@@ -2840,7 +2840,7 @@ tolerance = 0.5
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
 value = { full = { maximum_px = "absent" } }
-rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
+rows = ["MAC-B08", "MAC-X17", "MAC-B01", "MAC-N10"]
 
 [[fact.cite]]
 kind = "measured"
@@ -3785,7 +3785,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["glass"] }
 value = "#141414ff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -3816,7 +3816,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], variants = ["glass"] }
 value = "#f2f2f2ff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4182,7 +4182,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["default", "pressed"] }
 value = "= mix(input.accent, #000000, 0.1)"
-rows = ["MAC-B01", "MAC-B02"]
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4218,7 +4218,7 @@ inputs = ["input.accent"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["default", "pressed"] }
 value = "= mix(input.accent, #ffffff, 0.1)"
-rows = ["MAC-B01", "MAC-B02"]
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4254,7 +4254,7 @@ inputs = ["input.accent"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"], states = ["pressed"], variants = ["glass"] }
 value = "#272727ff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4285,7 +4285,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"], states = ["pressed"], variants = ["glass"] }
 value = "#dededeff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -4976,7 +4976,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"], variants = ["glass"] }
 value = "#fefefeff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -5548,7 +5548,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], states = ["default", "pressed"] }
 value = "#5c9ee5ff"
-rows = ["MAC-B01", "MAC-B02"]
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -5579,7 +5579,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], states = ["default", "pressed"] }
 value = "#002a90ff"
-rows = ["MAC-B01", "MAC-B02"]
+rows = ["MAC-B01", "MAC-B02", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -5610,7 +5610,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"], states = ["pressed"], variants = ["glass"] }
 value = "#eaeaeaff"
-rows = ["MAC-B01", "MAC-B07"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6191,7 +6191,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "not_main", "window_inactive"], variants = ["glass"] }
 value = "#fafafaff"
-rows = ["MAC-B01", "MAC-B07", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X16", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6595,7 +6595,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "not_main", "window_inactive"], states = ["default", "disabled"] }
 value = "#ffffff0a"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6651,7 +6651,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "not_main", "window_inactive"], states = ["default", "disabled"] }
 value = "#0000000a"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6707,7 +6707,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "not_main", "window_inactive"], states = ["default", "pressed"] }
 value = "#ffffff2a"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6763,7 +6763,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "not_main", "window_inactive"], states = ["default", "pressed"] }
 value = "#0000002a"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -6819,7 +6819,7 @@ tolerance = 2
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "not_main", "window_inactive"], states = ["pressed"], variants = ["glass"] }
 value = "#e6e6e6ff"
-rows = ["MAC-B01", "MAC-B07", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B07", "MAC-X16", "MAC-X04"]
 
 [[fact.cite]]
 kind = "measured"
@@ -10305,7 +10305,7 @@ tolerance = 2
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "not_main", "window_inactive"], states = ["default", "disabled"] }
 value = "#ffffff3f"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -10361,7 +10361,7 @@ tolerance = 2
 key = "button.label.text.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "not_main", "window_inactive"], states = ["default", "disabled"] }
 value = "#00000042"
-rows = ["MAC-B01", "MAC-B02", "MAC-X16"]
+rows = ["MAC-B01", "MAC-B02", "MAC-X16", "MAC-B03"]
 
 [[fact.cite]]
 kind = "measured"
@@ -14147,7 +14147,7 @@ rows = ["MAC-X16"]
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -14321,13 +14321,13 @@ rows = ["MAC-B02"]
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -14555,7 +14555,7 @@ rows = ["MAC-X16"]
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.corners.top_right"
@@ -14729,13 +14729,13 @@ rows = ["MAC-B02"]
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.top_right"
@@ -14963,7 +14963,7 @@ rows = ["MAC-X16"]
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -15137,13 +15137,13 @@ rows = ["MAC-B02"]
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -15371,7 +15371,7 @@ rows = ["MAC-X16"]
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -15545,13 +15545,13 @@ rows = ["MAC-B02"]
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -15779,7 +15779,7 @@ rows = ["MAC-X16"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.fill"
@@ -15887,13 +15887,13 @@ rows = ["MAC-B02"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
@@ -15911,13 +15911,13 @@ rows = ["MAC-B02"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16403,49 +16403,49 @@ rows = ["MAC-B01"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked", "default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["help"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["help"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked", "default", "disabled"], variants = ["help"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["help"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["help"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N10"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16571,13 +16571,13 @@ rows = ["MAC-B01"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["default", "disabled"], not_states = ["checked", "pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "scheme:light", "contrast_increased"], not_conditions = ["window_inactive"], states = ["default", "disabled"], not_states = ["checked", "pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U97"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16697,7 +16697,7 @@ rows = ["MAC-X16"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["pressed", "default"], not_states = ["checked", "disabled"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16739,37 +16739,37 @@ rows = ["MAC-X16"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light"], not_conditions = ["contrast_increased", "scheme:dark", "window_inactive"], states = ["disabled", "default"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], states = ["disabled", "default"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:light", "contrast_increased"], not_conditions = ["scheme:dark", "window_inactive"], states = ["disabled", "default", "checked"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["contrast_increased", "window_inactive"], states = ["disabled", "default"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled", "default"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled", "default", "checked"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], sizes = ["extra_large"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-B03"]
 
 [[fact]]
 key = "button.body.fill"
@@ -16943,79 +16943,79 @@ rows = ["MAC-X16"]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main"], not_states = ["default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "window_inactive"], not_conditions = ["not_main"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main"], not_conditions = ["scheme:dark", "window_inactive"], not_states = ["default", "disabled", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["contrast_increased", "window_inactive"], not_states = ["default", "disabled", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["checked"], not_states = ["default", "disabled", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main"], not_conditions = ["scheme:dark", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["contrast_increased", "window_inactive"], states = ["pressed"], not_states = ["default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["pressed", "checked"], not_states = ["default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main"], not_conditions = ["scheme:dark", "window_inactive"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark"], not_conditions = ["contrast_increased", "window_inactive"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "not_main", "scheme:dark", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled", "checked"], not_states = ["default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased", "not_main", "window_inactive"], not_states = ["default", "disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased", "not_main", "window_inactive"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U93"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-X04"]
 
 [[fact]]
 key = "button.body.fill"
@@ -17747,241 +17747,241 @@ rows = ["MAC-B01"]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@flexible_push"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@small_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@shadowless_square"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@accessory_bar"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@accessory_bar_action"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@badge"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@badge"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["circular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["tool"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["tinted"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["destructive"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["pill"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["@rounded_rectangle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], variants = ["with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U92"
-rows = ["MAC-B02"]
+rows = ["MAC-B02", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default"], not_states = ["disabled"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U99"
-rows = ["MAC-B09"]
+rows = ["MAC-B09", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["default", "disabled"], not_states = ["pressed"], not_variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U99"
-rows = ["MAC-B09"]
+rows = ["MAC-B09", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
@@ -18107,13 +18107,13 @@ rows = ["MAC-B09"]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], not_states = ["default", "disabled"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U99"
-rows = ["MAC-B09"]
+rows = ["MAC-B09", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:macos-tahoe"], states = ["disabled"], not_states = ["default", "pressed"], variants = ["primary"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U99"
-rows = ["MAC-B09"]
+rows = ["MAC-B09", "MAC-X19"]
 
 [[fact]]
 key = "button.icon.icon.fill"
@@ -18247,7 +18247,7 @@ rows = ["MAC-X16"]
 key = "button.body.min_height"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"], sizes = ["extra_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U94"
-rows = ["MAC-X16"]
+rows = ["MAC-X16", "MAC-N10"]
 
 [[fact]]
 key = "button.body.min_height"
@@ -21345,7 +21345,7 @@ rows = ["MAC-X16"]
 key = "button.body.shadow"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.shadow"
@@ -21489,7 +21489,7 @@ rows = ["MAC-X16"]
 key = "button.body.stroke"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U96"
-rows = ["MAC-B01"]
+rows = ["MAC-B01", "MAC-N29†"]
 
 [[fact]]
 key = "button.body.stroke"
@@ -21789,19 +21789,19 @@ rows = ["MAC-B01", "MAC-X22"]
 key = "button.body.stroke"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditions = ["window_inactive"], states = ["disabled"], not_states = ["checked", "default", "pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U95"
-rows = ["MAC-B01", "MAC-X22"]
+rows = ["MAC-B01", "MAC-X22", "MAC-N10"]
 
 [[fact]]
 key = "button.body.stroke"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditions = ["window_inactive"], states = ["pressed"], not_states = ["checked", "default", "disabled"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U95"
-rows = ["MAC-B01", "MAC-X22"]
+rows = ["MAC-B01", "MAC-X22", "MAC-N10"]
 
 [[fact]]
 key = "button.body.stroke"
 when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditions = ["window_inactive"], not_states = ["checked", "default", "disabled", "pressed"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U95"
-rows = ["MAC-B01", "MAC-X22"]
+rows = ["MAC-B01", "MAC-X22", "MAC-N10"]
 
 [[fact]]
 key = "button.body.stroke"
@@ -44166,3 +44166,104 @@ quote = "+ (NSFont *)preferredFontForTextStyle:(NSFontTextStyle)style options:(N
 kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:59"
 quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE(macos(11.0));"
+
+# --- macos-tahoe: facts lane t16b (MAC-B09, MAC-N10, MAC-N29†)
+
+# The image beside the title: AppKit's standard image-and-title push button puts the image on the leading side,
+# left of the title left to right and right of it right to left (the probe's `with_icon` buttons, `imageLeading`,
+# draw it so: run 41006842699 `button-pass/probe.toml` `styles_c` `<size>-with_icon` `cell_imageRectForBounds_xywh`
+# before `cell_titleRectForBounds_xywh`)
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "leading"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:27"
+quote = "In left-to-right localizations, the image is displayed to the left of the title. In right-to-left localizations, it is displayed to the right."
+
+# the symbol's size AppKit gives a button's image per control size (U102: the pass reads the image it set)
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-B09"]
+
+# an image-only push button's padding (its image rect differs from a titled button's; U313)
+[[fact]]
+key = "button.body.padding.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U313"
+rows = ["MAC-B09"]
+
+[[fact]]
+key = "button.body.padding.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U313"
+rows = ["MAC-B09"]
+
+[[fact]]
+key = "button.body.padding.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U313"
+rows = ["MAC-B09"]
+
+[[fact]]
+key = "button.body.padding.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["icon_only"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U313"
+rows = ["MAC-B09"]
+
+# the help bezel's question mark (U314: AppKit names no image for it)
+[[fact]]
+key = "button.icon.glyph"
+when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
+pending = "U314"
+rows = ["MAC-N10"]
+
+# A button draws no menu indicator but NSComboButton (`menu`): NSButton and NSButtonCell declare none (the
+# catalogue's rule `@ !variants {menu}`); the platform's name for it is NSComboButton's (NSComboButton.h:15)
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:172-188"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = ["menu indicator"]
+
+# NSComboButton's menu indicator and its gap to the title (U315)
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]

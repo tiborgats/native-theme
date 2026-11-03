@@ -421,7 +421,7 @@ tolerance = 0
 key = "role.global.find_highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffff00"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -442,7 +442,7 @@ tolerance = 0
 key = "role.global.find_highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffff00"
-rows = ["MAC-DF04"]
+rows = ["MAC-DF04", "MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -9119,7 +9119,7 @@ tolerance = 0
 key = "role.selection.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
 value = "#ffffffb3"
-rows = []
+rows = ["MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -9157,7 +9157,7 @@ tolerance = 1
 key = "role.selection.foreground_inactive"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 value = "#ffffffb3"
-rows = []
+rows = ["MAC-X15"]
 
 [[fact.cite]]
 kind = "measured"
@@ -11953,3 +11953,11 @@ key = "role.selection.disabled.foreground"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U236"
 rows = []
+
+# --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
+
+[[fact]]
+key = "role.global.drop_highlight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U322"
+rows = ["MAC-X21"]
