@@ -129,18 +129,32 @@ pub(crate) fn check_preset(
     layer: &Layer,
     preset: Option<PresetId>,
 ) -> Result<(), LayerError> {
-    check_preset_exempt(declarations, layer, preset, &[])
+    preset_problems(declarations, layer, preset, &[], false)
 }
 
 /// [`check_preset`], the listed paths `exempt` (each as
 /// [`listed_path`](crate::next::toml::read::listed_path) gives it) left out
 /// of its completeness check: the synthetic route's preset, which the
-/// layers over it complete ([`listed_unstated`]; S17, ADD-A128).
+/// layers over it complete ([`listed_unstated`]; S17, ADD-A128), its
+/// pending default sizes waived (S10's *A pending default*, ADD-A131).
 pub(crate) fn check_preset_exempt(
     declarations: &Declarations,
     layer: &Layer,
     preset: Option<PresetId>,
     exempt: &[String],
+) -> Result<(), LayerError> {
+    preset_problems(declarations, layer, preset, exempt, true)
+}
+
+/// [`check_preset`]'s problems, the listed paths `exempt` left out of its
+/// completeness check; `synthetic`: the synthetic route's, which waives a
+/// pending default size.
+fn preset_problems(
+    declarations: &Declarations,
+    layer: &Layer,
+    preset: Option<PresetId>,
+    exempt: &[String],
+    synthetic: bool,
 ) -> Result<(), LayerError> {
     let cx = Context {
         declarations,
@@ -151,7 +165,7 @@ pub(crate) fn check_preset_exempt(
         below: &[],
     };
     let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, exempt);
-    problems.extend(checks::declarations(declarations));
+    problems.extend(checks::declarations(declarations, synthetic));
     problems.extend(checks::unused(declarations, layer, preset));
     let layers = [Stacked {
         layer,
@@ -176,13 +190,16 @@ pub(crate) fn states(layer: &Layer, listed: &str) -> bool {
 /// Each of a preset's listed paths `pending` (as its `[pending]` table
 /// spells them) that none of `layers` states, as S12's missing field at the
 /// model's path, the one the plain route reports it at: the synthetic
-/// route's completeness (S17, ADD-A128).
+/// route's completeness (S17, ADD-A128). A listed default size is no
+/// layer's to state: the synthetic route waives the checks that read it
+/// instead (S17, ADD-A131).
 pub(crate) fn listed_unstated(
     pending: &[crate::next::toml::layer::Listed],
     layers: &[Layer],
 ) -> Vec<Problem> {
     pending
         .iter()
+        .filter(|(path, _)| crate::next::toml::read::listed_default(path).is_none())
         .map(|(path, _)| crate::next::toml::read::listed_path(path))
         .filter(|listed| !layers.iter().any(|layer| checks::states(layer, listed)))
         .map(|listed| Problem::new(&listed, ProblemKind::Missing))

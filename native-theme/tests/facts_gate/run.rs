@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 
 use native_theme::next::gate::{
     Combination, Conditions, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole, Tolerance,
-    Unread, When, content_variants, listed_key, parse_key, parse_value, parse_when, parts,
-    set_whole, widgets,
+    Unread, When, content_variants, is_listed_default, listed_key, parse_key, parse_value,
+    parse_when, parts, set_whole, widgets,
 };
 use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
@@ -758,8 +758,8 @@ fn when_variants(when: &Value, widget: &str, own: bool) -> Vec<String> {
 /// its `when` names, is not enabled (S6.1: a unit enters the model in the
 /// commit whose presets state it). A variant no fact names is checked like
 /// any other; a variant S12 exempts from being selected on stays (a content
-/// variant, one `requires_variants`, `sizes_by_variant` or
-/// `default_size_by_variant` names). Each recorded in the report.
+/// variant, one `requires_variants` or `sizes_by_variant` names). Each
+/// recorded in the report.
 fn skipped_variants(
     platform: &Platform,
     entry: &Model,
@@ -810,13 +810,7 @@ fn skipped_variants(
         entry
             .sizes_by_variant
             .iter()
-            .map(|(variant, _)| variant.clone()),
-    );
-    exempt.extend(
-        entry
-            .default_size_by_variant
-            .iter()
-            .map(|(variant, _)| variant.clone()),
+            .map(|(variant, _, _)| variant.clone()),
     );
     let out: Vec<String> = entry
         .variants
@@ -1172,6 +1166,11 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
 /// is pending to state it.
 fn listed_paths(preset: &Preset, report: &mut Report) {
     for (path, ids) in preset.pending() {
+        // A pending default size is a declaration, which the declarations
+        // run compares with its ids (S17, ADD-A131).
+        if is_listed_default(path) {
+            continue;
+        }
         let id = ids.join(", ");
         if preset.states(path) {
             report.fail(format!(
@@ -1252,10 +1251,10 @@ pub fn declarations_run(
                 .collect::<BTreeSet<_>>()
         };
         // In written order: the query takes the first entry that holds (S10).
-        let pairs = |pairs: &[(String, Vec<String>)]| {
-            pairs
+        let sized = |entries: &[(String, Vec<String>, Option<String>)]| {
+            entries
                 .iter()
-                .map(|(name, list)| (name.clone(), set(list)))
+                .map(|(name, list, default)| (name.clone(), set(list), default.clone()))
                 .collect::<Vec<_>>()
         };
         let mut differ = |what: &str, preset_side: String, model_side: String| {
@@ -1292,25 +1291,6 @@ pub fn declarations_run(
             "default_size",
             format!("{:?}", declared.default_size),
             format!("{:?}", entry.default_size),
-        );
-        differ(
-            "default_size_by_variant",
-            format!(
-                "{:?}",
-                declared
-                    .default_size_by_variant
-                    .iter()
-                    .cloned()
-                    .collect::<BTreeMap<_, _>>()
-            ),
-            format!(
-                "{:?}",
-                entry
-                    .default_size_by_variant
-                    .iter()
-                    .cloned()
-                    .collect::<BTreeMap<_, _>>()
-            ),
         );
         differ(
             "densities",
@@ -1356,13 +1336,24 @@ pub fn declarations_run(
         );
         differ(
             "sizes_by_variant",
-            format!("{:?}", pairs(&declared.sizes_by_variant)),
-            format!("{:?}", pairs(&entry.sizes_by_variant)),
+            format!("{:?}", sized(&declared.sizes_by_variant)),
+            format!("{:?}", sized(&entry.sizes_by_variant)),
         );
+        let contexts: Vec<(String, Vec<String>, Option<String>)> = entry
+            .sizes_by_context
+            .iter()
+            .map(|(selector, sizes, default)| {
+                (
+                    model::selector_spelled(selector),
+                    sizes.clone(),
+                    default.clone(),
+                )
+            })
+            .collect();
         differ(
             "sizes_by_context",
-            format!("{:?}", pairs(&declared.sizes_by_context)),
-            format!("{:?}", pairs(&entry.sizes_by_context)),
+            format!("{:?}", sized(&declared.sizes_by_context)),
+            format!("{:?}", sized(&contexts)),
         );
     }
 }
@@ -1501,13 +1492,7 @@ fn check(
                 declared
                     .sizes_by_variant
                     .into_iter()
-                    .map(|(variant, _)| variant),
-            );
-            mentioned.variants.extend(
-                declared
-                    .default_size_by_variant
-                    .into_iter()
-                    .map(|(variant, _)| variant),
+                    .map(|(variant, _, _)| variant),
             );
         }
         let declared = declared_variants(&entry.widget);

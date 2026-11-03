@@ -5,6 +5,7 @@
 
 use std::collections::{BTreeSet, HashMap};
 
+use native_theme::next::gate::{context_spelled, default_spelled, names_spelled};
 use toml::{Table, Value};
 
 /// The strings of a TOML list; none where it is not one.
@@ -28,20 +29,133 @@ fn groups(value: Option<&Value>) -> Vec<Vec<String>> {
         .unwrap_or_default()
 }
 
-/// `[{ variant, sizes }]` or `[{ context, sizes }]` as pairs.
-fn sizes_by(value: Option<&Value>, by: &str) -> Vec<(String, Vec<String>)> {
+/// A `default_size` as the gate compares it ([`default_spelled`]): a
+/// size's name, or `{ pending = "U<n>" }` as `pending U<n>`.
+fn default_of(value: Option<&Value>) -> Option<String> {
+    match value? {
+        Value::String(size) => default_spelled(Some(size), &[]),
+        Value::Table(table) => {
+            let ids = match table.get("pending")? {
+                Value::String(id) => vec![id.clone()],
+                ids => strings(Some(ids)),
+            };
+            default_spelled(None, &ids)
+        }
+        _ => None,
+    }
+}
+
+/// `[{ variant, sizes[, default_size] }]` (S10).
+fn sizes_by_variant(value: Option<&Value>) -> Vec<(String, Vec<String>, Option<String>)> {
     value
         .and_then(Value::as_array)
         .map(|items| {
             items
                 .iter()
                 .filter_map(|item| {
-                    let name = item.get(by)?.as_str()?.to_owned();
-                    Some((name, strings(item.get("sizes"))))
+                    let name = item.get("variant")?.as_str()?.to_owned();
+                    let default = default_of(item.get("default_size"));
+                    Some((name, strings(item.get("sizes")), default))
                 })
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// `[{ context, sizes[, default_size] }]` (S10), each selector kept as
+/// stated.
+fn sizes_by_context(value: Option<&Value>) -> Vec<(Value, Vec<String>, Option<String>)> {
+    value
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    let context = item.get("context")?.clone();
+                    let default = default_of(item.get("default_size"));
+                    Some((context, strings(item.get("sizes")), default))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// An S11 context selector as [`context_spelled`] writes it.
+pub fn selector_spelled(selector: &Value) -> String {
+    let keys: Vec<(String, String)> = selector
+        .as_table()
+        .map(|table| {
+            table
+                .iter()
+                .map(|(key, value)| (key.clone(), value_spelled(value)))
+                .collect()
+        })
+        .unwrap_or_default();
+    context_spelled(&keys)
+}
+
+/// A selector's value as [`context_spelled`] writes it: a list's names
+/// sorted, `scope`'s `nearest` table by its list.
+fn value_spelled(value: &Value) -> String {
+    match value {
+        Value::Array(_) => names_spelled(&strings(Some(value))),
+        Value::Table(table) => {
+            let fields: Vec<String> = table
+                .iter()
+                .map(|(key, value)| format!("{key} = {}", value_spelled(value)))
+                .collect();
+            format!("{{ {} }}", fields.join(", "))
+        }
+        Value::String(text) => format!("{text:?}"),
+        other => other.to_string(),
+    }
+}
+
+/// Whether the S11 context selector `selector` matches the ancestors an
+/// `axes.contexts` entry `context` builds (S17's chain, outermost first:
+/// each ancestor its `widget`, `part`, `variants` and `states`), as
+/// `check_facts.py`'s `selector_matches` reads it; `None` for no context.
+pub fn selector_matches(selector: &Value, context: Option<&Value>) -> bool {
+    let chain: Vec<&Value> = match context {
+        None => Vec::new(),
+        Some(Value::Array(items)) => items.iter().collect(),
+        Some(table) => vec![table],
+    };
+    let candidates: Vec<&Value> = match selector.get("scope") {
+        Some(Value::Table(scope)) => {
+            let nearest = strings(scope.get("nearest"));
+            chain
+                .iter()
+                .rev()
+                .find(|ancestor| {
+                    ancestor
+                        .get("widget")
+                        .and_then(Value::as_str)
+                        .is_some_and(|widget| nearest.iter().any(|held| held == widget))
+                })
+                .into_iter()
+                .copied()
+                .collect()
+        }
+        _ => chain,
+    };
+    let holds = |ancestor: &&Value| {
+        let same = |key: &str| {
+            selector
+                .get(key)
+                .is_none_or(|wanted| ancestor.get(key) == Some(wanted))
+        };
+        let held = strings(ancestor.get("variants"));
+        same("widget")
+            && same("part")
+            && strings(selector.get("variants"))
+                .iter()
+                .all(|variant| held.contains(variant))
+            && !strings(selector.get("not_variants"))
+                .iter()
+                .any(|variant| held.contains(variant))
+    };
+    candidates.iter().any(holds)
 }
 
 /// One group of a variant product (S17 *Variant products*).
@@ -65,7 +179,6 @@ pub struct Model {
     pub variants: Vec<String>,
     pub sizes: Vec<String>,
     pub default_size: Option<String>,
-    pub default_size_by_variant: Vec<(String, String)>,
     pub densities: Vec<String>,
     pub flags: Vec<String>,
     pub states: Vec<String>,
@@ -75,8 +188,8 @@ pub struct Model {
     pub exclusive_variants: Vec<Vec<String>>,
     pub recency: Vec<(String, Vec<String>)>,
     pub requires_variants: Vec<String>,
-    pub sizes_by_variant: Vec<(String, Vec<String>)>,
-    pub sizes_by_context: Vec<(String, Vec<String>)>,
+    pub sizes_by_variant: Vec<(String, Vec<String>, Option<String>)>,
+    pub sizes_by_context: Vec<(Value, Vec<String>, Option<String>)>,
     pub variant_sets: Vec<Vec<String>>,
     pub variant_products: Vec<Vec<Group>>,
     pub not_drawn: Vec<Table>,
@@ -177,25 +290,7 @@ impl Model {
                 .unwrap_or(false),
             variants: strings(entry.get("variants")),
             sizes: strings(entry.get("sizes")),
-            default_size: entry
-                .get("default_size")
-                .and_then(Value::as_str)
-                .map(str::to_owned),
-            default_size_by_variant: entry
-                .get("default_size_by_variant")
-                .and_then(Value::as_array)
-                .map(|items| {
-                    items
-                        .iter()
-                        .filter_map(|item| {
-                            Some((
-                                item.get("variant")?.as_str()?.to_owned(),
-                                item.get("size")?.as_str()?.to_owned(),
-                            ))
-                        })
-                        .collect()
-                })
-                .unwrap_or_default(),
+            default_size: default_of(entry.get("default_size")),
             densities: strings(entry.get("densities")),
             flags: strings(entry.get("flags")),
             states: strings(axes.and_then(|axes| axes.get("states"))),
@@ -209,8 +304,8 @@ impl Model {
             exclusive_variants: groups(entry.get("exclusive_variants")),
             recency,
             requires_variants: strings(entry.get("requires_variants")),
-            sizes_by_variant: sizes_by(entry.get("sizes_by_variant"), "variant"),
-            sizes_by_context: sizes_by(entry.get("sizes_by_context"), "context"),
+            sizes_by_variant: sizes_by_variant(entry.get("sizes_by_variant")),
+            sizes_by_context: sizes_by_context(entry.get("sizes_by_context")),
             variant_sets: groups(entry.get("variant_sets")),
             variant_products: products,
             not_drawn: entry
@@ -519,33 +614,31 @@ pub fn variant_options(model: &Model) -> Vec<Vec<String>> {
 
 /// The sizes an option takes (S10's rule as the query applies it): the
 /// first `sizes_by_variant` entry's whose variant it holds, else the
-/// context's of `sizes_by_context`, else the entry's `sizes`; one `None`
-/// where the list is empty.
+/// entry's `sizes`, less those the first `sizes_by_context` entry whose
+/// selector the context's ancestors match leaves out; one `None` where it
+/// takes none.
 pub fn size_options(
     model: &Model,
     variants: &[String],
     context: Option<&Value>,
 ) -> Vec<Option<String>> {
-    let by_variant = model
+    let sizes = model
         .sizes_by_variant
         .iter()
-        .find(|(variant, _)| variants.contains(variant));
-    let context_widget = context
-        .and_then(|context| context.get("widget"))
-        .and_then(Value::as_str);
-    let by_context = model
+        .find(|(variant, _, _)| variants.contains(variant))
+        .map_or(&model.sizes, |(_, sizes, _)| sizes);
+    let kept = model
         .sizes_by_context
         .iter()
-        .find(|(widget, _)| Some(widget.as_str()) == context_widget);
-    let sizes = match (by_variant, by_context) {
-        (Some((_, sizes)), _) | (None, Some((_, sizes))) => sizes,
-        (None, None) => &model.sizes,
-    };
-    if sizes.is_empty() {
-        vec![None]
-    } else {
-        sizes.iter().cloned().map(Some).collect()
-    }
+        .find(|(selector, _, _)| selector_matches(selector, context))
+        .map(|(_, sizes, _)| sizes);
+    let taken: Vec<Option<String>> = sizes
+        .iter()
+        .filter(|size| kept.is_none_or(|kept| kept.contains(size)))
+        .cloned()
+        .map(Some)
+        .collect();
+    if taken.is_empty() { vec![None] } else { taken }
 }
 
 /// One combination as data (S17), before the model reads it.
@@ -663,13 +756,7 @@ impl Mentioned {
             model
                 .sizes_by_variant
                 .iter()
-                .map(|(variant, _)| variant.clone()),
-        );
-        out.variants.extend(
-            model
-                .default_size_by_variant
-                .iter()
-                .map(|(variant, _)| variant.clone()),
+                .map(|(variant, _, _)| variant.clone()),
         );
         out
     }

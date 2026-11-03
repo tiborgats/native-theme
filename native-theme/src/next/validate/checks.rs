@@ -15,7 +15,9 @@ use crate::next::blocks::paint::{BlendMode, PaintKind, PaintPatch};
 use crate::next::blocks::part_style::PartStylePatch;
 use crate::next::blocks::shadow::Shadow;
 use crate::next::blocks::text::{AxisTag, AxisValue, FeatureTag};
-use crate::next::declare::{DataName, DataOwner, Declarations, FontMetric, ScalarUnit, WidgetDecl};
+use crate::next::declare::{
+    DataName, DataOwner, Declarations, DefaultSize, FontMetric, ScalarUnit, WidgetDecl,
+};
 use crate::next::error::{Problem, ProblemKind};
 use crate::next::expr::{
     Bound, ElementDatum, Expr, FieldType, Func, Literal, MAX_DEPTH, Name, Ref, Ty, TypeEnv,
@@ -2065,26 +2067,35 @@ fn unit_type(unit: ScalarUnit) -> Ty {
 }
 
 /// Every structural problem of a preset's declarations (S10, S12): an
-/// `exclusive_variants` group naming a variant twice; a
-/// `default_size_by_variant` entry naming an undeclared variant, a size the
-/// variant does not take, or a variant an earlier entry names.
-pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
+/// `exclusive_variants` group naming a variant twice; a section's recency
+/// sets; its sizes and default sizes ([`sizes`]). `synthetic`: the
+/// synthetic route's preset, whose pending default sizes are waived (S17).
+pub(super) fn declarations(decl: &Declarations, synthetic: bool) -> Vec<Problem> {
     // Each section's entries against the declarations in force where they
     // apply: the widget's own under the default flavour, a flavour's
     // section under that flavour, each key it leaves out the widget's own
     // (S10).
     let own = decl.widgets.iter().map(|(widget, section)| {
         let at = format!("declare.widget.{}", widget_name(*widget));
-        (at, section, decl.in_default_flavor(*widget))
+        (
+            at,
+            section,
+            decl.in_default_flavor(*widget),
+            section.clone(),
+            *widget,
+        )
     });
     let flavors = decl.flavor.iter().flat_map(|(flavor, section)| {
         section.widgets.iter().map(move |(widget, section)| {
             let at = format!("declare.flavor.{flavor}.widget.{}", widget_name(*widget));
-            (at, section, decl.in_flavor(*widget, flavor))
+            let in_force = decl.in_flavor(*widget, flavor);
+            (at, section, in_force.clone(), in_force, *widget)
         })
     });
     let mut problems = Vec::new();
-    for (at, section, in_force) in own.chain(flavors) {
+    for (at, section, in_force, view, widget) in own.chain(flavors) {
+        let own_at = format!("declare.widget.{}", widget_name(widget));
+        problems.extend(sizes(&at, &own_at, section, &view, synthetic));
         for (group_index, group) in section.exclusive_variants.iter().flatten().enumerate() {
             for (index, variant) in group.iter().enumerate() {
                 if group.iter().take(index).any(|earlier| earlier == variant) {
@@ -2117,60 +2128,185 @@ pub(super) fn declarations(decl: &Declarations) -> Vec<Problem> {
                 }
             }
         }
-        let inherited = section.default_size_by_variant.is_none()
-            && (section.variants.is_some()
-                || section.sizes.is_some()
-                || section.sizes_by_variant.is_some());
-        let entries: Vec<_> = if inherited {
-            in_force.default_size_by_variant.iter().flatten().collect()
+    }
+    problems
+}
+
+/// A section's sizes and default sizes (S10, S12) as `view` holds them in
+/// force: the widget's own section, or a flavour's section over it, which
+/// is checked where it states a key of them, each key it leaves out the
+/// widget's own (`own_at`), a problem of one it leaves out reported at the
+/// first it states. Refused: a `default_size` missing where sizes are
+/// taken, or not one of them; a `sizes_by_variant` entry naming an
+/// undeclared variant, a variant an earlier entry names, a default that is
+/// not one of its sizes, or none where it leaves the widget's out; a
+/// `sizes_by_context` entry's selector stating what S12 refuses there,
+/// and, for each variant entry and for none, an element taking sizes
+/// outside the context and none inside it, or a default in force there
+/// that is not among them. A pending default is the missing default size,
+/// but where `synthetic`, which waives every check reading it (S10's *A
+/// pending default*, S17).
+fn sizes(
+    at: &str,
+    own_at: &str,
+    section: &WidgetDecl,
+    view: &WidgetDecl,
+    synthetic: bool,
+) -> Vec<Problem> {
+    let states = |key: &str| match key {
+        "sizes" => section.sizes.is_some(),
+        "default_size" => section.default_size.is_some(),
+        "variants" => section.variants.is_some(),
+        "sizes_by_variant" => section.sizes_by_variant.is_some(),
+        "sizes_by_context" => section.sizes_by_context.is_some(),
+        _ => false,
+    };
+    let keys = [
+        "sizes",
+        "default_size",
+        "variants",
+        "sizes_by_variant",
+        "sizes_by_context",
+    ];
+    let Some(changed) = keys.into_iter().find(|key| states(key)) else {
+        return Vec::new();
+    };
+    let place = |key: &str, rest: &str| {
+        if states(key) {
+            format!("{at}.{key}{rest}")
         } else {
-            section.default_size_by_variant.iter().flatten().collect()
-        };
-        for (index, entry) in entries.iter().enumerate() {
-            let item = format!("{at}.default_size_by_variant[{index}]");
-            let name = variant_name(&entry.variant);
-            if !inherited
-                && entries
-                    .iter()
-                    .take(index)
-                    .any(|earlier| earlier.variant == entry.variant)
+            format!("{at}.{changed}")
+        }
+    };
+    let mut out: Vec<Problem> = Vec::new();
+    let mut push = |path: String, kind: ProblemKind| {
+        let problem = Problem::new(&path, kind);
+        if !out.contains(&problem) {
+            out.push(problem);
+        }
+    };
+    let missing = |default: Option<&DefaultSize>| match default {
+        None => true,
+        Some(DefaultSize::Pending(_)) => !synthetic,
+        Some(DefaultSize::Size(_)) => false,
+    };
+    let not_taken = |size: ControlSize| ProblemKind::SizeNotTaken {
+        size: size.name().to_owned(),
+    };
+    // The widget's default, stated with its sizes.
+    let sizes = view.sizes.as_deref().unwrap_or_default();
+    let default_at = if states("sizes") || states("default_size") {
+        format!("{at}.default_size")
+    } else {
+        format!("{at}.{changed}")
+    };
+    match &view.default_size {
+        Some(DefaultSize::Size(size)) if !sizes.contains(size) => {
+            push(default_at, not_taken(*size));
+        }
+        default if !sizes.is_empty() && missing(default.as_ref()) => {
+            push(default_at, ProblemKind::DefaultSizeMissing);
+        }
+        _ => {}
+    }
+    // The variants' entries.
+    let declared = view.variants.as_deref().unwrap_or_default();
+    let declaration = if states("variants") {
+        format!("{at}.variants")
+    } else {
+        format!("{own_at}.variants")
+    };
+    let entries = view.sizes_by_variant.as_deref().unwrap_or_default();
+    for (index, entry) in entries.iter().enumerate() {
+        let item = |rest: &str| place("sizes_by_variant", &format!("[{index}]{rest}"));
+        let name = variant_name(&entry.variant);
+        if entries
+            .iter()
+            .take(index)
+            .any(|earlier| earlier.variant == entry.variant)
+        {
+            push(item(""), ProblemKind::ListedTwice { name: name.clone() });
+        }
+        if !declared.contains(&entry.variant) {
+            let declaration = declaration.clone();
+            let place = if !states("sizes_by_variant") && states("variants") {
+                format!("{at}.variants")
+            } else {
+                item(".variant")
+            };
+            push(place, ProblemKind::Undeclared { name, declaration });
+        }
+        match &entry.default_size {
+            Some(DefaultSize::Size(size)) if !entry.sizes.contains(size) => {
+                push(item(".default_size"), not_taken(*size));
+            }
+            Some(DefaultSize::Pending(_)) if !synthetic => {
+                push(item(".default_size"), ProblemKind::DefaultSizeMissing);
+            }
+            None if !entry.sizes.is_empty() => {
+                let widgets = match &view.default_size {
+                    Some(DefaultSize::Size(size)) => entry.sizes.contains(size),
+                    // The widget's pending default is the missing default
+                    // size at its own place, or waived.
+                    Some(DefaultSize::Pending(_)) => true,
+                    None => false,
+                };
+                if !widgets {
+                    push(item(".default_size"), ProblemKind::DefaultSizeMissing);
+                }
+            }
+            _ => {}
+        }
+    }
+    // The contexts' entries, for each variant entry and for none.
+    let contexts = view.sizes_by_context.as_deref().unwrap_or_default();
+    for (index, entry) in contexts.iter().enumerate() {
+        let item = |rest: &str| place("sizes_by_context", &format!("[{index}]{rest}"));
+        let selector = &entry.context;
+        let refused = [
+            ("states", !selector.states.all_of.is_empty()),
+            ("not_states", !selector.states.none_of.is_empty()),
+            ("sizes", !selector.sizes.all_of.is_empty()),
+            ("not_sizes", !selector.sizes.none_of.is_empty()),
+            ("surface", selector.surface.is_some()),
+        ];
+        for (key, stated) in refused {
+            if stated {
+                push(
+                    item(&format!(".context.{key}")),
+                    ProblemKind::SizeContextKey { key },
+                );
+            }
+        }
+        if matches!(entry.default_size, Some(DefaultSize::Pending(_))) && !synthetic {
+            push(item(".default_size"), ProblemKind::DefaultSizeMissing);
+        }
+        let holders = std::iter::once(None).chain(entries.iter().map(Some));
+        for by_variant in holders {
+            let outside = view.sizes_taken(by_variant, None);
+            let inside = view.sizes_taken(by_variant, Some(entry));
+            if inside.is_empty() {
+                if !outside.is_empty() {
+                    let variant = by_variant.map(|by| variant_name(&by.variant));
+                    push(item(""), ProblemKind::NoSizeInContext { variant });
+                }
+                continue;
+            }
+            // A missing or pending default is reported, or waived, at its
+            // own place.
+            if let Some(DefaultSize::Size(size)) = view.default_in_force(by_variant, Some(entry))
+                && !inside.contains(size)
             {
-                let kind = ProblemKind::ListedTwice { name: name.clone() };
-                problems.push(Problem::new(&item, kind));
-            }
-            let declared = in_force
-                .variants
-                .as_ref()
-                .is_some_and(|variants| variants.contains(&entry.variant));
-            if !declared {
-                let declaration = format!("{at}.variants");
-                let place = if inherited {
-                    declaration.clone()
+                let rest = if entry.default_size.is_some() {
+                    ".default_size"
                 } else {
-                    join(&item, "variant")
+                    ""
                 };
-                let kind = ProblemKind::Undeclared { name, declaration };
-                problems.push(Problem::new(&place, kind));
-            }
-            let sizes = in_force
-                .sizes_by_variant
-                .iter()
-                .flatten()
-                .find(|by| by.variant == entry.variant)
-                .map(|by| &by.sizes)
-                .or(in_force.sizes.as_ref());
-            if !sizes.is_some_and(|sizes| sizes.contains(&entry.size)) {
-                let size = entry.size.name().to_owned();
-                let place = if inherited {
-                    format!("{at}.sizes")
-                } else {
-                    join(&item, "size")
-                };
-                problems.push(Problem::new(&place, ProblemKind::SizeNotTaken { size }));
+                push(item(rest), not_taken(*size));
             }
         }
     }
-    problems
+    out
 }
 
 /// A section's recency sets (S10, S12): each of two flags or more, no flag

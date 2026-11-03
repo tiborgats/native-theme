@@ -4,7 +4,7 @@
 //! rule matched against it.
 
 use super::{Element, ScopeEntry, Sibling, Unavailable};
-use crate::next::declare::WidgetDecl;
+use crate::next::declare::{DefaultSize, WidgetDecl};
 use crate::next::key::Key;
 use crate::next::registry;
 use crate::next::resolve::ResolvedTheme;
@@ -278,20 +278,21 @@ impl<'e> Matched<'e> {
         if two_of_a_group {
             return Err(Unavailable::Variant);
         }
+        let by_variant = decl.variant_entry(|variant| variants.contains(variant));
+        let by_context = decl
+            .sizes_by_context
+            .iter()
+            .flatten()
+            .find(|entry| context_holds(outer, &entry.context));
+        let taken = decl.sizes_taken(by_variant, by_context);
         let size = match element.size {
-            Some(size) => {
-                if !takes(&decl, &variants, outer).is_some_and(|sizes| sizes.contains(&size)) {
-                    return Err(Unavailable::Size);
-                }
-                Some(size)
-            }
-            None => decl
-                .default_size_by_variant
-                .iter()
-                .flatten()
-                .find(|by| variants.contains(&by.variant))
-                .map(|by| by.size)
-                .or(decl.default_size),
+            Some(size) if taken.contains(&size) => Some(size),
+            Some(_) => return Err(Unavailable::Size),
+            None if taken.is_empty() => None,
+            None => match decl.default_in_force(by_variant, by_context) {
+                Some(DefaultSize::Size(size)) => Some(*size),
+                Some(DefaultSize::Pending(_)) | None => return Err(Unavailable::Size),
+            },
         };
         let scope = element.scope;
         let density = element
@@ -368,32 +369,9 @@ impl<'e> Matched<'e> {
     }
 
     /// Whether a context match holds over the element's ancestors, its own
-    /// parts' entries skipped (S8): any of them, or the nearest ancestor
-    /// instance of one of the widgets named, by any of its parts' entries.
+    /// parts' entries skipped (S8).
     fn context(&self, context: &ContextMatch) -> bool {
-        let holds = |entry: &ScopeEntry| {
-            is_target(context.target.as_ref(), &entry.part)
-                && one_holds(&context.sizes, entry.size.as_ref())
-                && context
-                    .surface
-                    .is_none_or(|surface| entry.surface == Some(surface))
-                && set_holds(&context.variants, |variant| {
-                    entry.variants.contains(variant)
-                })
-                && set_holds(&context.states, |flag| entry.states.contains(flag))
-        };
-        match &context.scope {
-            ContextScope::AnyAncestor => self.outer.iter().any(holds),
-            ContextScope::NearestAmong(widgets) => instances(self.outer)
-                .into_iter()
-                .rev()
-                .find(|entries| {
-                    entries
-                        .first()
-                        .is_some_and(|head| widgets.contains(&widget_ref(&head.part)))
-                })
-                .is_some_and(|entries| entries.iter().any(holds)),
-        }
+        context_holds(self.outer, context)
     }
 
     /// Whether a position holds among the element's siblings (S7, S8):
@@ -481,31 +459,32 @@ fn set_by_connector(decl: &WidgetDecl, part: TypedPart, variant: &VariantRef) ->
             .any(|breakpoint| breakpoint.variant == *variant)
 }
 
-/// The sizes an element takes (S10): those of the first
-/// `sizes_by_variant` entry, in written order, whose variant the element
-/// holds, else the nearest ancestor's of `sizes_by_context`, else the
-/// widget's `sizes`; `None` where none is declared.
-fn takes<'d>(
-    decl: &'d WidgetDecl,
-    variants: &[VariantRef],
-    outer: &[ScopeEntry],
-) -> Option<&'d [ControlSize]> {
-    let by_variant = decl
-        .sizes_by_variant
-        .iter()
-        .flatten()
-        .find(|by| variants.contains(&by.variant));
-    if let Some(by) = by_variant {
-        return Some(&by.sizes);
-    }
-    let by_context = decl.sizes_by_context.iter().flatten();
-    let nearest = outer.iter().rev().find_map(|entry| {
-        let widget = widget_ref(&entry.part);
-        by_context.clone().find(|by| by.context == widget)
-    });
-    match nearest {
-        Some(by) => Some(&by.sizes),
-        None => decl.sizes.as_deref(),
+/// Whether a context match holds over `outer`, an element's ancestors'
+/// entries (S8): any of them, or the nearest ancestor instance of one of
+/// the widgets named, by any of its parts' entries.
+fn context_holds(outer: &[ScopeEntry], context: &ContextMatch) -> bool {
+    let holds = |entry: &ScopeEntry| {
+        is_target(context.target.as_ref(), &entry.part)
+            && one_holds(&context.sizes, entry.size.as_ref())
+            && context
+                .surface
+                .is_none_or(|surface| entry.surface == Some(surface))
+            && set_holds(&context.variants, |variant| {
+                entry.variants.contains(variant)
+            })
+            && set_holds(&context.states, |flag| entry.states.contains(flag))
+    };
+    match &context.scope {
+        ContextScope::AnyAncestor => outer.iter().any(holds),
+        ContextScope::NearestAmong(widgets) => instances(outer)
+            .into_iter()
+            .rev()
+            .find(|entries| {
+                entries
+                    .first()
+                    .is_some_and(|head| widgets.contains(&widget_ref(&head.part)))
+            })
+            .is_some_and(|entries| entries.iter().any(holds)),
     }
 }
 

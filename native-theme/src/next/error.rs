@@ -326,11 +326,30 @@ pub enum ProblemKind {
         /// The name as written.
         name: String,
     },
-    /// A `default_size_by_variant` entry's size its variant does not take
-    /// (S10, S12).
+    /// A default size that is not one of the sizes it goes with: a
+    /// declaration's, a `sizes_by_variant` entry's, or the one in force in a
+    /// `sizes_by_context` entry's context (S10, S12).
     SizeNotTaken {
         /// The size.
         size: String,
+    },
+    /// The missing default size (S10, S12): sizes taken and no
+    /// `default_size` in force, or a pending one outside the synthetic
+    /// route (S10's *A pending default*, S17).
+    DefaultSizeMissing,
+    /// An element taking sizes outside a `sizes_by_context` entry's context
+    /// and none inside it (S10, S12).
+    NoSizeInContext {
+        /// The `sizes_by_variant` entry's variant the element holds; `None`:
+        /// an element holding none.
+        variant: Option<String>,
+    },
+    /// A `sizes_by_context` entry's selector stating `states`,
+    /// `not_states`, `sizes`, `not_sizes` or `surface`, which the sizes an
+    /// element takes do not change with (S10, S12).
+    SizeContextKey {
+        /// The key.
+        key: &'static str,
     },
     /// An entry of a map of bare blocks (`token.text.keyed`,
     /// `token.icons.sizes.keyed`, `ColorRoles.surfaces`) set to a reference,
@@ -541,7 +560,24 @@ impl fmt::Display for ProblemKind {
             ProblemKind::AccentInput => f.write_str("the accent is `Theme::set_accent`'s"),
             ProblemKind::ListedTwice { name } => write!(f, "`{name}` listed twice"),
             ProblemKind::SizeNotTaken { size } => {
-                write!(f, "the variant does not take the size `{size}`")
+                write!(
+                    f,
+                    "the default size `{size}` is not one of the sizes taken there"
+                )
+            }
+            ProblemKind::DefaultSizeMissing => f.write_str("no default size where sizes are taken"),
+            ProblemKind::NoSizeInContext { variant } => match variant {
+                Some(variant) => write!(
+                    f,
+                    "an element holding `{variant}` takes sizes outside the context and none in it"
+                ),
+                None => f.write_str(
+                    "an element holding no variant of an entry takes sizes outside the context and \
+                     none in it",
+                ),
+            },
+            ProblemKind::SizeContextKey { key } => {
+                write!(f, "a `sizes_by_context` selector may not state `{key}`")
             }
             ProblemKind::NotABlock => f.write_str(
                 "an entry of a map of blocks holds a block, never a reference, `absent` or `auto`",

@@ -8,7 +8,9 @@ use super::expr::ElementDatum;
 use super::inputs::InputName;
 use super::key::Key;
 use super::roles::SurfaceSet;
-use super::selector::{Breakpoint, ControlSize, Density, Scheme, StateFlag, VariantRef, WidgetRef};
+use super::selector::{
+    Breakpoint, ContextMatch, ControlSize, Density, Scheme, StateFlag, VariantRef, WidgetRef,
+};
 use super::widgets::{TypedPart, WidgetKind};
 
 /// A preset's `[declare]` table (S10); each list empty where the preset
@@ -147,14 +149,15 @@ pub(crate) struct WidgetDecl {
     /// The recency sets, each by its name, its flags in the stated order,
     /// the first the latest where the connector reports no order (S7.2).
     pub(crate) recency: Option<Vec<(Key, Vec<StateFlag>)>>,
-    /// The sizes in the nearest ancestor of a widget.
+    /// The sizes an element keeps in a context, the first entry whose
+    /// selector matches applying.
     pub(crate) sizes_by_context: Option<Vec<SizesByContext>>,
-    /// The sizes of an element holding a variant.
+    /// The sizes of an element holding a variant, and its default, the
+    /// first entry whose variant it holds applying.
     pub(crate) sizes_by_variant: Option<Vec<SizesByVariant>>,
-    /// The size of an element that states none.
-    pub(crate) default_size: Option<ControlSize>,
-    /// The default size of an element holding a variant, first match first.
-    pub(crate) default_size_by_variant: Option<Vec<DefaultSizeByVariant>>,
+    /// The size of an element that states none; stated with `sizes`, so a
+    /// flavour's section stating `sizes` replaces it too (S10).
+    pub(crate) default_size: Option<DefaultSize>,
     /// Whether the platform has such a control.
     pub(crate) available: Option<bool>,
     /// The forms the platform draws the widget only as: an element holding
@@ -171,7 +174,9 @@ pub(crate) struct WidgetDecl {
 
 impl WidgetDecl {
     /// This section with each key `over` states replacing this one's: a
-    /// flavour's section over the widget's own (S10).
+    /// flavour's section over the widget's own (S10), `default_size` going
+    /// with `sizes`, so a section stating `sizes` and no `default_size`
+    /// leaves none in force.
     pub(crate) fn replaced_by(&self, over: &WidgetDecl) -> WidgetDecl {
         let WidgetDecl {
             variants,
@@ -184,7 +189,6 @@ impl WidgetDecl {
             sizes_by_context,
             sizes_by_variant,
             default_size,
-            default_size_by_variant,
             available,
             requires_variants,
             data,
@@ -204,8 +208,11 @@ impl WidgetDecl {
             recency: pick(recency, &self.recency),
             sizes_by_context: pick(sizes_by_context, &self.sizes_by_context),
             sizes_by_variant: pick(sizes_by_variant, &self.sizes_by_variant),
-            default_size: pick(default_size, &self.default_size),
-            default_size_by_variant: pick(default_size_by_variant, &self.default_size_by_variant),
+            default_size: if sizes.is_some() {
+                default_size.clone()
+            } else {
+                pick(default_size, &self.default_size)
+            },
             available: pick(available, &self.available),
             requires_variants: pick(requires_variants, &self.requires_variants),
             data: pick(data, &self.data),
@@ -215,9 +222,55 @@ impl WidgetDecl {
     }
 }
 
+impl WidgetDecl {
+    /// The first `sizes_by_variant` entry, in written order, whose variant
+    /// `holds` (S10).
+    pub(crate) fn variant_entry(
+        &self,
+        holds: impl Fn(&VariantRef) -> bool,
+    ) -> Option<&SizesByVariant> {
+        self.sizes_by_variant
+            .iter()
+            .flatten()
+            .find(|entry| holds(&entry.variant))
+    }
+
+    /// The sizes an element takes (S10): its variant entry's, else
+    /// `sizes`, less those its context entry leaves out.
+    pub(crate) fn sizes_taken(
+        &self,
+        by_variant: Option<&SizesByVariant>,
+        by_context: Option<&SizesByContext>,
+    ) -> Vec<ControlSize> {
+        let sizes = match by_variant {
+            Some(entry) => entry.sizes.as_slice(),
+            None => self.sizes.as_deref().unwrap_or_default(),
+        };
+        sizes
+            .iter()
+            .filter(|size| by_context.is_none_or(|entry| entry.sizes.contains(size)))
+            .copied()
+            .collect()
+    }
+
+    /// The default size in force (S10): the context entry's where it
+    /// states one, else the variant entry's, else the widget's; the lookup
+    /// stops at the first it reaches, a pending one included.
+    pub(crate) fn default_in_force<'d>(
+        &'d self,
+        by_variant: Option<&'d SizesByVariant>,
+        by_context: Option<&'d SizesByContext>,
+    ) -> Option<&'d DefaultSize> {
+        by_context
+            .and_then(|entry| entry.default_size.as_ref())
+            .or_else(|| by_variant.and_then(|entry| entry.default_size.as_ref()))
+            .or(self.default_size.as_ref())
+    }
+}
+
 impl Declarations {
     /// The widget's own section, empty where it states none.
-    fn own(&self, widget: WidgetKind) -> WidgetDecl {
+    pub(crate) fn own(&self, widget: WidgetKind) -> WidgetDecl {
         self.widgets
             .iter()
             .find(|(held, _)| *held == widget)
@@ -259,31 +312,39 @@ impl Declarations {
     }
 }
 
-/// The sizes an element takes in the nearest ancestor of a widget.
+/// A declared default size (S10): a size, or a default no source gives
+/// yet, listed in the preset's `[pending]` table with its register ids
+/// (S10's *A pending default*, S17), which the default lookup stops at.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct SizesByContext {
-    /// The ancestor's widget.
-    pub(crate) context: WidgetRef,
-    /// The sizes.
-    pub(crate) sizes: Vec<ControlSize>,
+pub(crate) enum DefaultSize {
+    /// The size.
+    Size(ControlSize),
+    /// Pending, under these register ids.
+    Pending(Vec<String>),
 }
 
-/// The sizes an element holding a variant takes.
+/// The sizes an element keeps where an ancestor matches a context selector
+/// (S10, S11), and the size the container gives one that states none.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct SizesByContext {
+    /// The context selector: `scope`, `widget`, `part`, `variants` and
+    /// `not_variants` (S12 refuses the others).
+    pub(crate) context: ContextMatch,
+    /// The sizes an element keeps there.
+    pub(crate) sizes: Vec<ControlSize>,
+    /// The default size there, before the variant's and the widget's.
+    pub(crate) default_size: Option<DefaultSize>,
+}
+
+/// The sizes an element holding a variant takes, and its default.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct SizesByVariant {
     /// The variant.
     pub(crate) variant: VariantRef,
     /// The sizes.
     pub(crate) sizes: Vec<ControlSize>,
-}
-
-/// The default size of an element holding a variant.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct DefaultSizeByVariant {
-    /// The variant.
-    pub(crate) variant: VariantRef,
-    /// The size.
-    pub(crate) size: ControlSize,
+    /// The default size, where it differs from the widget's.
+    pub(crate) default_size: Option<DefaultSize>,
 }
 
 /// What reads element data: a part's values, or the widget's values.

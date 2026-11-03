@@ -370,11 +370,14 @@ fn gate_declarations_each_compared() {
             "sizes = [\"small\", \"regular\"]\ndefault_size = \"small\"\n".to_owned(),
         ),
         (
-            "default_size_by_variant",
+            "sizes_by_variant",
             format!(
-                "{sized}default_size_by_variant = [{{ variant = \"flat\", size = \"small\" }}]\n"
+                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"], \
+                 default_size = \"small\" }}]\n"
             ),
-            sized.to_owned(),
+            format!(
+                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"] }}]\n"
+            ),
         ),
         (
             "densities",
@@ -414,26 +417,41 @@ fn gate_declarations_each_compared() {
         ),
         (
             "sizes_by_variant",
-            format!("{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"] }}]\n"),
+            format!(
+                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"], \
+                 default_size = \"small\" }}]\n"
+            ),
             sized.to_owned(),
         ),
         (
             "sizes_by_variant",
             format!(
-                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"] }}, \
-                 {{ variant = \"primary\", sizes = [\"regular\"] }}]\n"
+                "{sized}sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\"], \
+                 default_size = \"small\" }}, {{ variant = \"primary\", sizes = [\"regular\"] }}]\n"
             ),
             format!(
                 "{sized}sizes_by_variant = [{{ variant = \"primary\", sizes = [\"regular\"] }}, \
-                 {{ variant = \"flat\", sizes = [\"small\"] }}]\n"
+                 {{ variant = \"flat\", sizes = [\"small\"], default_size = \"small\" }}]\n"
             ),
         ),
         (
             "sizes_by_context",
             format!(
-                "{sized}sizes_by_context = [{{ context = \"button\", sizes = [\"small\"] }}]\n"
+                "{sized}sizes_by_context = [{{ context = {{ widget = \"button\" }}, sizes = \
+                 [\"small\"], default_size = \"small\" }}]\n"
             ),
             sized.to_owned(),
+        ),
+        (
+            "sizes_by_context",
+            format!(
+                "{sized}sizes_by_context = [{{ context = {{ widget = \"button\" }}, sizes = \
+                 [\"small\"], default_size = \"small\" }}]\n"
+            ),
+            format!(
+                "{sized}sizes_by_context = [{{ context = {{ widget = \"button\", part = \
+                 \"body\" }}, sizes = [\"small\"], default_size = \"small\" }}]\n"
+            ),
         ),
     ];
     for (declaration, declared, stated) in &cases {
@@ -468,6 +486,44 @@ fn gate_declarations_each_compared() {
                 .any(|failure| failure.contains(&needle)),
             "{declaration}: {declare} against {stated}: {:?}",
             report.failures
+        );
+    }
+    // A pending default size: the preset lists its declaration, the state
+    // model states it pending, compared with its ids (S10's *A pending
+    // default*, ADD-A131).
+    let pending = |listed: &str, stated: &str| {
+        let declare = format!(
+            "[declare.widget.button]\nvariants = [\"flat\", \"primary\"]\n\
+             sizes = [\"small\", \"regular\"]\n\
+             sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"] }}]\n\
+             [pending]\n\"declare.widget.button.sizes_by_variant.flat.default_size\" = \"{listed}\"\n\
+             \"declare.widget.button.default_size\" = \"U1\"\n"
+        );
+        let preset = Preset::from_toml(&format!("{base}\n{declare}"))
+            .unwrap_or_else(|error| panic!("{declare}: {error}"));
+        let stated = format!(
+            "sizes = [\"small\", \"regular\"]\ndefault_size = {{ pending = \"U1\" }}\n\
+             sizes_by_variant = [{{ variant = \"flat\", sizes = [\"small\", \"regular\"], \
+             default_size = {stated} }}]\n"
+        );
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts: Vec::new(),
+            keys: Vec::new(),
+            models: model::Model::read("gnome/state-models.toml", &model_of(&stated)).unwrap(),
+        };
+        let mut report = run::Report::default();
+        run::declarations_run(&platform, &preset, None, &mut report);
+        report.failures
+    };
+    assert_eq!(pending("U2", "{ pending = \"U2\" }"), Vec::<String>::new());
+    for stated in ["{ pending = \"U3\" }", "\"small\""] {
+        let failures = pending("U2", stated);
+        assert!(
+            failures
+                .iter()
+                .any(|failure| failure.contains("`button` sizes_by_variant under")),
+            "{stated}: {failures:?}"
         );
     }
     let preset = Preset::from_toml(&format!(

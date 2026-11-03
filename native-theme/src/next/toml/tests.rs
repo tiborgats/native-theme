@@ -17,7 +17,7 @@ use crate::next::blocks::part_style::PartStylePatch;
 use crate::next::blocks::shadow::Shadow;
 use crate::next::blocks::text::TextStylePatch;
 use crate::next::color::Color;
-use crate::next::declare::{DataName, DataOwner, ScalarUnit};
+use crate::next::declare::{DataName, DataOwner, DefaultSize, ScalarUnit};
 use crate::next::error::{LayerError, Problem, ProblemKind};
 use crate::next::expr::{ElementDatum, Expr};
 use crate::next::inputs::{Contrast, InputName};
@@ -1001,12 +1001,13 @@ fn declarations_read_s10s_keys() {
          sizes = [\"small\", \"regular\"]\ndensities = [\"compact\"]\nflags = \
          [\"@keyboard_focus_change\"]\nexclusive = [[\"disabled\", \"pressed\", \"hover\"]]\n\
          exclusive_variants = [[\"primary\", \"flat\"]]\nsizes_by_variant = [{{ variant = \
-         \"@pill\", sizes = [\"small\"] }}]\ndefault_size = \"regular\"\n\
-         default_size_by_variant = [{{ variant = \"@pill\", size = \"small\" }}]\navailable = \
+         \"@pill\", sizes = [\"small\"], default_size = \"small\" }}]\ndefault_size = \"regular\"\n\
+         sizes_by_context = [{{ context = {{ scope = \"any\", widget = \"button\", part = \
+         \"body\" }}, sizes = [\"small\"], default_size = \"small\" }}]\navailable = \
          true\nrequires_variants = []\ndata = {{ body = [\"color\", \"width\"], icon = \
          [\"body_font_height\", \"widget.label.char_width\"] }}\nbreakpoints = [{{ measured = {{ \
          part = \"body\" }}, width = {{ at_most = 400 }}, variant = \"@narrow\" }}]\n\
-         [declare.flavor.kirigami.widget.button]\nsizes = [\"regular\"]"
+         [declare.flavor.kirigami.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"regular\""
     ))
     .unwrap();
     let declared = preset.declarations;
@@ -1045,7 +1046,28 @@ fn declarations_read_s10s_keys() {
         decl.exclusive.as_ref().map(|groups| groups[0].len()),
         Some(3)
     );
-    assert_eq!(decl.default_size, Some(ControlSize::Regular));
+    assert_eq!(
+        decl.default_size,
+        Some(DefaultSize::Size(ControlSize::Regular))
+    );
+    let by_variant = &decl.sizes_by_variant.as_ref().unwrap()[0];
+    assert_eq!(by_variant.variant, VariantRef::Keyed(key!("pill")));
+    assert_eq!(
+        by_variant.default_size,
+        Some(DefaultSize::Size(ControlSize::Small))
+    );
+    let by_context = &decl.sizes_by_context.as_ref().unwrap()[0];
+    assert_eq!(
+        by_context.context.target,
+        Some(crate::next::selector::WidgetOrPart::Part(button(
+            ButtonPart::Body
+        )))
+    );
+    assert_eq!(by_context.sizes, [ControlSize::Small]);
+    assert_eq!(
+        by_context.default_size,
+        Some(DefaultSize::Size(ControlSize::Small))
+    );
     assert_eq!(decl.available, Some(true));
     assert_eq!(decl.requires_variants, Some(Vec::new()));
     let data = decl.data.as_ref().unwrap();
@@ -1089,6 +1111,8 @@ fn declarations_refuse_what_s10_does_not_spell() {
          conditions = [\"graphic_effects_level\"]\n\
          params = {{ layout = {{ unit = \"em\", keys = [] }} }}\n[declare.widget.button]\n\
          sizes = [\"huge\"]\ndata = {{ knob = [\"width\"], body = [\"heat\"] }}\n\
+         default_size_by_variant = []\nsizes_by_context = [{{ context = \"toolbar\", sizes = [] }}]\n\
+         sizes_by_variant = [{{ variant = \"flat\", sizes = [], size = \"small\" }}]\n\
          breakpoints = [{{ measured = \"window\", width = {{ at_most = 1 }}, height = {{ \
          at_most = 2 }}, variant = \"@x\" }}]\n[declare.widget.slider]\nsizes = []\n\
          [declare.component.rule_editor]\navailable = true"
@@ -1109,6 +1133,9 @@ fn declarations_refuse_what_s10_does_not_spell() {
             "declare.widget.button.sizes[0]: unknown name \"huge\"",
             "declare.widget.button.data.knob: unknown name \"knob\"",
             "declare.widget.button.data.body[0]: unknown name \"heat\"",
+            "declare.widget.button.default_size_by_variant: unknown key",
+            "declare.widget.button.sizes_by_context[0].context: expected a table",
+            "declare.widget.button.sizes_by_variant[0].size: unknown key",
             "declare.widget.button.breakpoints[0].combine: missing",
             "declare.widget.slider: unknown key",
             "declare.component: unknown key",

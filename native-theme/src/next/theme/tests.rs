@@ -4,15 +4,18 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::{preset_stack, synthetic_stack};
+use crate::next::blocks::text::ResolvedFont;
+use crate::next::declare::DefaultSize;
 use crate::next::error::{LayerError, ProblemKind, ThemeError};
 use crate::next::gate::synthetic_layers;
 use crate::next::layer::Layer;
 use crate::next::presets::PresetId;
-use crate::next::query::RootInputs;
+use crate::next::query::{Element, FontMetrics, RootInputs, Styled, Unavailable};
 use crate::next::resolve::{WindowConditions, WindowState};
-use crate::next::selector::{Direction, InputKind, Scheme};
+use crate::next::selector::{ControlSize, Direction, InputKind, PartRef, Scheme};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::{Ms, Px, Size};
+use crate::next::widgets::{ButtonPart, TypedPart};
 
 /// S19.1's build test: every bundled preset reads, states its own key as
 /// its `id`, and validates, so `Theme::from_preset` never meets its error
@@ -104,6 +107,81 @@ fn synthetic_route_takes_every_layer_at_once() {
             [format!("{other}: missing")]
         );
     }
+}
+
+/// Synthetic measurement: every metric zero.
+struct NoMetrics;
+
+impl FontMetrics for NoMetrics {
+    fn char_width(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn max_char_width(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn x_height(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn height(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn line_spacing(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn underline_offset(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn underline_thickness(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn strikeout_offset(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+    fn strikeout_thickness(&self, _: &ResolvedFont) -> Px {
+        Px(0.0)
+    }
+}
+
+/// A pending default size (S10's *A pending default*, S17, ADD-A131):
+/// listed by its declaration's path, it is S12's missing default size on
+/// the plain route; the synthetic route states no layer for it, waives the
+/// checks that read it, and answers an element that states no size and
+/// whose default is pending `NotAvailable(Size)`.
+#[test]
+fn synthetic_route_waives_a_pending_default_size() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let text = format!(
+        "[pending]\n\"declare.widget.button.default_size\" = \"U1\"\n{base}\n\
+         [declare.widget.button]\nsizes = [\"small\", \"regular\"]\n"
+    );
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &text, Scheme::Light)
+    else {
+        panic!("the plain route refuses a pending default size");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        ["declare.widget.button.default_size: no default size where sizes are taken"]
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    assert!(layers.is_empty());
+    let stack = synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    let theme = stack
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = theme.root_scope(&root());
+    let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+    let element = Element::new(body.clone(), &scope, &NoMetrics);
+    assert_eq!(
+        theme.style(&element),
+        Styled::NotAvailable(Unavailable::Size)
+    );
+    let sized = Element::new(body, &scope, &NoMetrics).with_size(ControlSize::Small);
+    assert!(matches!(theme.style(&sized), Styled::Style(_)));
 }
 
 /// S12's conservative reading of a listed path (S17, ADD-A128): an
@@ -315,6 +393,63 @@ fn pending_table_read() {
     }
     let input = read_preset(&format!("[pending]\n\"inputs.accent\" = \"U1\"\n{base}")).unwrap();
     assert_eq!(input.pending.len(), 1);
+}
+
+/// A pending default size is listed by its declaration's path (S11, S17,
+/// ADD-A131): the widget's, a `sizes_by_variant` entry's by its variant,
+/// `@` included, a `sizes_by_context` entry's by its position, a
+/// flavour's under `declare.flavor.<f>.`; the reader sets each pending
+/// with its ids, and refuses a path naming no section or entry the
+/// declarations state, or no default size.
+#[test]
+fn pending_default_sizes_read() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let declare = "[declare.widget.button]\nvariants = [\"@gray\"]\nsizes = [\"regular\"]\n\
+                   sizes_by_variant = [{ variant = \"@gray\", sizes = [\"small\"] }]\n\
+                   sizes_by_context = [{ context = { widget = \"button\" }, sizes = [\"regular\"] }]\n\
+                   [declare.flavor.kirigami.widget.button]\nsizes = [\"small\"]\n";
+    let read = |pending: &str| read_preset(&format!("[pending]\n{pending}\n{base}\n{declare}"));
+    let file = read(
+        "\"declare.widget.button.default_size\" = \"U1\"\n\
+         \"declare.widget.button.sizes_by_variant.@gray.default_size\" = [\"U2\", \"U3\"]\n\
+         \"declare.widget.button.sizes_by_context.0.default_size\" = \"U4\"\n\
+         \"declare.flavor.kirigami.widget.button.default_size\" = \"U5\"",
+    )
+    .unwrap();
+    let pending = |ids: &[&str]| {
+        Some(DefaultSize::Pending(
+            ids.iter().map(|id| (*id).to_owned()).collect(),
+        ))
+    };
+    let (_, button) = &file.declarations.widgets[0];
+    assert_eq!(button.default_size, pending(&["U1"]));
+    assert_eq!(
+        button.sizes_by_variant.as_ref().unwrap()[0].default_size,
+        pending(&["U2", "U3"])
+    );
+    assert_eq!(
+        button.sizes_by_context.as_ref().unwrap()[0].default_size,
+        pending(&["U4"])
+    );
+    let (_, flavor) = &file.declarations.flavor[0];
+    assert_eq!(flavor.widgets[0].1.default_size, pending(&["U5"]));
+    for path in [
+        "declare.widget.button.sizes_by_variant.flat.default_size",
+        "declare.widget.button.sizes_by_context.1.default_size",
+        "declare.flavor.widgets.widget.button.default_size",
+        "declare.widget.button.sizes",
+        "declare.widget.button.sizes_by_context.x.default_size",
+        "declare.component.rule_editor.default_size",
+    ] {
+        let Err(LayerError::Invalid(problems)) = read(&format!("\"{path}\" = \"U1\"")) else {
+            panic!("{path}");
+        };
+        assert_eq!(
+            problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            [format!("pending.\"{path}\": unknown key")],
+            "{path}"
+        );
+    }
 }
 
 /// The reader's exemption covers exactly the listed leaves: a map entry

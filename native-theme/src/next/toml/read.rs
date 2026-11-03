@@ -15,7 +15,7 @@ use crate::next::key::Key;
 use crate::next::layer::Shorthands;
 use crate::next::registry::{self, FieldInfo, FieldType};
 use crate::next::roles::SurfaceSet;
-use crate::next::selector::Scheme;
+use crate::next::selector::{Scheme, VariantRef};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Ms, Px, Scalar, Sides};
 use crate::next::value::{SurfaceMap, Value};
 use crate::next::widgets::WidgetKind;
@@ -88,6 +88,70 @@ pub(crate) fn listed_input(path: &str) -> Option<InputName> {
         return None;
     }
     InputName::new(&name.join(".")).ok()
+}
+
+/// A pending default size's declaration a listed path names (S11's
+/// `[pending]` key, S17's *A pending fact with nothing beneath it*,
+/// ADD-A131).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ListedDefault {
+    /// The flavour whose section states it; `None`: the widget's own.
+    pub(crate) flavor: Option<Key>,
+    /// The widget.
+    pub(crate) widget: WidgetKind,
+    /// Which default of the section.
+    pub(crate) at: DefaultAt,
+}
+
+/// Which default size of a widget's section a listed path names.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum DefaultAt {
+    /// `default_size`.
+    Widget,
+    /// The `sizes_by_variant` entry of this variant.
+    Variant(VariantRef),
+    /// The `sizes_by_context` entry at this position, from 0.
+    Context(usize),
+}
+
+/// The default size a listed path names (S11, S17, ADD-A131):
+/// `declare.widget.<widget>.default_size`, a `sizes_by_variant` entry's
+/// `declare.widget.<widget>.sizes_by_variant.<variant>.default_size` (the
+/// variant as S11 writes it, `@` included), a `sizes_by_context` entry's
+/// `declare.widget.<widget>.sizes_by_context.<n>.default_size`, a
+/// flavour's under `declare.flavor.<f>.`; `None` for any other path, a
+/// component's among them, whose declarations the model does not read yet.
+pub(crate) fn listed_default(path: &str) -> Option<ListedDefault> {
+    let segments = key_segments(path)?;
+    let (head, rest) = segments.split_first()?;
+    if head != "declare" {
+        return None;
+    }
+    let (flavor, rest) = match rest {
+        [section, flavor, rest @ ..] if section == "flavor" => (Some(Key::new(flavor).ok()?), rest),
+        _ => (None, rest),
+    };
+    let [section, widget, rest @ ..] = rest else {
+        return None;
+    };
+    if section != "widget" {
+        return None;
+    }
+    let widget = registry::widget(widget)?.kind;
+    let at = match rest {
+        [last] if last == "default_size" => DefaultAt::Widget,
+        [list, name, last] if last == "default_size" && list == "sizes_by_variant" => {
+            let mut cx = Reader::default();
+            let variant = crate::next::toml::when::variant(name, path, &mut cx);
+            DefaultAt::Variant(variant.filter(|_| !cx.failed())?)
+        }
+        [list, index, last] if last == "default_size" && list == "sizes_by_context" => {
+            let digits = !index.is_empty() && index.bytes().all(|b| b.is_ascii_digit());
+            DefaultAt::Context(index.parse().ok().filter(|_| digits)?)
+        }
+        _ => return None,
+    };
+    Some(ListedDefault { flavor, widget, at })
 }
 
 /// What a listed path names (S11's `[pending]` key, S17, ADD-A128): a

@@ -4,10 +4,10 @@ use ::toml::{Table, Value as Item};
 
 use super::model::{part_named, widget_key};
 use super::read::{self, FromToml, MapKey, Reader, Spelling, join, read_map, table, text};
-use super::when::{density, named, names, state, variant};
+use super::when::{context, density, named, names, state, variant};
 use crate::next::declare::{
-    DataName, DataOwner, Declarations, DefaultSizeByVariant, FlavorDecl, FontMetric, ParamGroup,
-    ScalarUnit, SettingDecl, SizesByContext, SizesByVariant, WidgetDecl,
+    DataName, DataOwner, Declarations, DefaultSize, FlavorDecl, FontMetric, ParamGroup, ScalarUnit,
+    SettingDecl, SizesByContext, SizesByVariant, WidgetDecl,
 };
 use crate::next::error::ProblemKind;
 use crate::next::expr::ElementDatum;
@@ -261,10 +261,7 @@ fn widget_decl(widget: WidgetKind, fields: &Table, at: &str, cx: &mut Reader) ->
             "recency" => decl.recency = Some(recency(item, &at, cx)),
             "sizes_by_context" => decl.sizes_by_context = Some(sizes_by_context(item, &at, cx)),
             "sizes_by_variant" => decl.sizes_by_variant = Some(sizes_by_variant(item, &at, cx)),
-            "default_size" => decl.default_size = read::named::<ControlSize>(item, &at, cx),
-            "default_size_by_variant" => {
-                decl.default_size_by_variant = Some(default_size_by_variant(item, &at, cx));
-            }
+            "default_size" => decl.default_size = default_size(item, &at, cx),
             "available" => decl.available = bool::read(item, Spelling::Bare, &at, cx),
             "requires_variants" => decl.requires_variants = Some(names(item, &at, cx, variant)),
             "data" => decl.data = Some(data(widget, item, &at, cx)),
@@ -349,47 +346,50 @@ fn take<'t, const N: usize>(
     wanted.map(|key| fields.get(key))
 }
 
-/// `sizes_by_context = [{ context = "<widget>", sizes = [ … ] }]`.
+/// A `default_size`: a control size's name.
+fn default_size(item: &Item, at: &str, cx: &mut Reader) -> Option<DefaultSize> {
+    read::named::<ControlSize>(item, at, cx).map(DefaultSize::Size)
+}
+
+/// `sizes_by_context = [{ context = { <S11 context selector> }, sizes = [ …
+/// ], default_size = "<size>" }]`, `default_size` optional (S10).
 fn sizes_by_context(item: &Item, at: &str, cx: &mut Reader) -> Vec<SizesByContext> {
     tables(item, at, cx, |fields, at, cx| {
-        let [context, sizes] = take(fields, ["context", "sizes"], at, cx);
-        let context = read::required(context, &join(at, "context"), cx)
-            .and_then(|item| WidgetRef::read(item, Spelling::Bare, &join(at, "context"), cx));
+        let [selector, sizes, default] = take(fields, ["context", "sizes", "default_size"], at, cx);
+        let selector = read::required(selector, &join(at, "context"), cx)
+            .and_then(|item| context(item, &join(at, "context"), cx));
         let sizes = read::required(sizes, &join(at, "sizes"), cx)
             .map(|item| names(item, &join(at, "sizes"), cx, named::<ControlSize>));
+        let default_size = match default {
+            Some(item) => Some(default_size(item, &join(at, "default_size"), cx)?),
+            None => None,
+        };
         Some(SizesByContext {
-            context: context?,
+            context: selector?,
             sizes: sizes?,
+            default_size,
         })
     })
 }
 
-/// `sizes_by_variant = [{ variant = "<v>", sizes = [ … ] }]`.
+/// `sizes_by_variant = [{ variant = "<v>", sizes = [ … ], default_size =
+/// "<size>" }]`, `default_size` optional (S10).
 fn sizes_by_variant(item: &Item, at: &str, cx: &mut Reader) -> Vec<SizesByVariant> {
     tables(item, at, cx, |fields, at, cx| {
-        let [variant_item, sizes] = take(fields, ["variant", "sizes"], at, cx);
+        let [variant_item, sizes, default] =
+            take(fields, ["variant", "sizes", "default_size"], at, cx);
         let variant = read::required(variant_item, &join(at, "variant"), cx)
             .and_then(|item| VariantRef::read(item, Spelling::Bare, &join(at, "variant"), cx));
         let sizes = read::required(sizes, &join(at, "sizes"), cx)
             .map(|item| names(item, &join(at, "sizes"), cx, named::<ControlSize>));
+        let default_size = match default {
+            Some(item) => Some(default_size(item, &join(at, "default_size"), cx)?),
+            None => None,
+        };
         Some(SizesByVariant {
             variant: variant?,
             sizes: sizes?,
-        })
-    })
-}
-
-/// `default_size_by_variant = [{ variant = "<v>", size = "<size>" }]`.
-fn default_size_by_variant(item: &Item, at: &str, cx: &mut Reader) -> Vec<DefaultSizeByVariant> {
-    tables(item, at, cx, |fields, at, cx| {
-        let [variant_item, size] = take(fields, ["variant", "size"], at, cx);
-        let variant = read::required(variant_item, &join(at, "variant"), cx)
-            .and_then(|item| VariantRef::read(item, Spelling::Bare, &join(at, "variant"), cx));
-        let size = read::required(size, &join(at, "size"), cx)
-            .and_then(|item| read::named::<ControlSize>(item, &join(at, "size"), cx));
-        Some(DefaultSizeByVariant {
-            variant: variant?,
-            size: size?,
+            default_size,
         })
     })
 }

@@ -14,7 +14,7 @@ use ::toml::{Table, Value as Item};
 
 pub use tree::{Tolerance, Tree};
 
-use super::declare::WidgetDecl;
+use super::declare::{DefaultSize, WidgetDecl};
 use super::error::{LayerError, Problem, ProblemKind};
 use super::expr::{Expr, Ref, Ty};
 use super::inputs::{Contrast, InputBases, InputName};
@@ -31,8 +31,9 @@ use super::resolve::{
     Pos, ReaderState, ResolvedTheme, Stack, WindowConditions, WindowState, input_value,
 };
 use super::selector::{
-    Condition, ControlSize, Density, Direction, InputKind, PartRef, RuleBody, Scheme, Selector,
-    StateFlag, StateFlags, ValuesPatch, VariantRef, WidgetOrPart, WidgetRef,
+    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, InputKind, PartRef,
+    RuleBody, Scheme, Selector, StateFlag, StateFlags, ValuesPatch, VariantRef, WidgetOrPart,
+    WidgetRef,
 };
 use super::tokens::Tokens;
 use super::toml::layer::{read_inputs_table, read_preset, read_rule_body};
@@ -490,10 +491,13 @@ fn map_value(ty: &str) -> Option<&str> {
 /// in its bases with a synthetic value (S17's synthetic route, ADD-A128):
 /// the layers [`Preset`] and S19.1's build test load such a preset with.
 /// A listed path the model holds no field at, or of a type with no
-/// synthetic value yet, is refused, naming it.
+/// synthetic value yet, is refused, naming it. A listed default size has
+/// none: no layer states a declaration, and the synthetic route waives the
+/// checks that read it (S17, ADD-A131).
 pub fn synthetic_layers(pending: &[(String, Vec<String>)]) -> Result<Vec<Layer>, String> {
     pending
         .iter()
+        .filter(|(path, _)| !is_listed_default(path))
         .map(|(path, ids)| {
             let ids = ids.join(", ");
             let (keys, value) =
@@ -503,6 +507,13 @@ pub fn synthetic_layers(pending: &[(String, Vec<String>)]) -> Result<Vec<Layer>,
             Layer::from_toml(&text).map_err(|error| format!("`{path}` ({ids}): {error}"))
         })
         .collect()
+}
+
+/// Whether the listed path `path` names a pending default size's
+/// declaration (S17, ADD-A131), which the declarations run compares.
+#[must_use]
+pub fn is_listed_default(path: &str) -> bool {
+    super::toml::read::listed_default(path).is_some()
 }
 
 /// The typed widgets the model holds, each as S11 writes it.
@@ -556,10 +567,9 @@ pub struct Declared {
     pub variants: Vec<String>,
     /// `sizes`.
     pub sizes: Vec<String>,
-    /// `default_size`.
+    /// `default_size`: a size's name, or a pending one spelled `pending
+    /// <ids>` ([`default_spelled`]).
     pub default_size: Option<String>,
-    /// `default_size_by_variant`: each variant and its size.
-    pub default_size_by_variant: Vec<(String, String)>,
     /// `densities`.
     pub densities: Vec<String>,
     /// `flags`.
@@ -572,10 +582,140 @@ pub struct Declared {
     pub recency: Vec<(String, Vec<String>)>,
     /// `requires_variants`.
     pub requires_variants: Vec<String>,
-    /// `sizes_by_variant`: each variant and its sizes.
-    pub sizes_by_variant: Vec<(String, Vec<String>)>,
-    /// `sizes_by_context`: each context widget and its sizes.
-    pub sizes_by_context: Vec<(String, Vec<String>)>,
+    /// `sizes_by_variant`: each variant, its sizes and its default size,
+    /// in written order.
+    pub sizes_by_variant: Vec<(String, Vec<String>, Option<String>)>,
+    /// `sizes_by_context`: each context selector ([`context_spelled`]), its
+    /// sizes and its default size, in written order.
+    pub sizes_by_context: Vec<(String, Vec<String>, Option<String>)>,
+}
+
+/// A default size as the gate compares it: a size's name, or a pending one
+/// as `pending <ids>`, its register ids joined by `, ` (S10's *A pending
+/// default*).
+#[must_use]
+pub fn default_spelled(size: Option<&str>, pending: &[String]) -> Option<String> {
+    match size {
+        Some(size) => Some(size.to_owned()),
+        None if pending.is_empty() => None,
+        None => Some(format!("pending {}", pending.join(", "))),
+    }
+}
+
+/// An S11 context selector as the gate compares it: its keys sorted, each
+/// `<key> = <value>`, a list's names sorted, `scope` stated (`"any"` where
+/// it is left out); the form [`Declared::sizes_by_context`] spells and a
+/// state model's selector is brought to.
+#[must_use]
+pub fn context_spelled(keys: &[(String, String)]) -> String {
+    let mut keys: Vec<(String, String)> = keys.to_vec();
+    if !keys.iter().any(|(key, _)| key == "scope") {
+        keys.push(("scope".to_owned(), "\"any\"".to_owned()));
+    }
+    keys.sort();
+    let fields: Vec<String> = keys
+        .iter()
+        .map(|(key, value)| format!("{key} = {value}"))
+        .collect();
+    format!("{{ {} }}", fields.join(", "))
+}
+
+/// A list of names as [`context_spelled`] writes it: sorted, each quoted.
+#[must_use]
+pub fn names_spelled(names: &[String]) -> String {
+    let mut names: Vec<String> = names.iter().map(|name| format!("{name:?}")).collect();
+    names.sort();
+    format!("[{}]", names.join(", "))
+}
+
+/// A declared default size as [`default_spelled`] writes it.
+fn declared_default(default: Option<&DefaultSize>) -> Option<String> {
+    match default {
+        Some(DefaultSize::Size(size)) => default_spelled(Some(size.name()), &[]),
+        Some(DefaultSize::Pending(ids)) => default_spelled(None, ids),
+        None => None,
+    }
+}
+
+/// A `sizes_by_context` entry's selector as [`context_spelled`] writes it.
+fn selector_spelled(context: &ContextMatch) -> String {
+    let mut keys = Vec::new();
+    let scope = match &context.scope {
+        ContextScope::AnyAncestor => "\"any\"".to_owned(),
+        ContextScope::NearestAmong(widgets) => {
+            let names: Vec<String> = widgets.iter().map(widget_name).collect();
+            format!("{{ nearest = {} }}", names_spelled(&names))
+        }
+    };
+    keys.push(("scope".to_owned(), scope));
+    match &context.target {
+        Some(WidgetOrPart::Widget(widget)) => {
+            keys.push(("widget".to_owned(), format!("{:?}", widget_name(widget))));
+        }
+        Some(WidgetOrPart::Part(PartRef::Typed(part))) => {
+            let widget = widget_name(&WidgetRef::Typed(part.widget()));
+            keys.push(("widget".to_owned(), format!("{widget:?}")));
+            keys.push(("part".to_owned(), format!("{:?}", part.name())));
+        }
+        Some(WidgetOrPart::Part(PartRef::Component { key, part })) => {
+            keys.push((
+                "widget".to_owned(),
+                format!("{:?}", format!("component.{key}")),
+            ));
+            keys.push(("part".to_owned(), format!("{:?}", part.as_str())));
+        }
+        None => {}
+    }
+    let lists = [
+        (
+            "variants",
+            context
+                .variants
+                .all_of
+                .iter()
+                .map(variant_name)
+                .collect::<Vec<_>>(),
+        ),
+        (
+            "not_variants",
+            context.variants.none_of.iter().map(variant_name).collect(),
+        ),
+        (
+            "states",
+            context.states.all_of.iter().map(StateFlag::name).collect(),
+        ),
+        (
+            "not_states",
+            context.states.none_of.iter().map(StateFlag::name).collect(),
+        ),
+        (
+            "sizes",
+            context
+                .sizes
+                .all_of
+                .iter()
+                .map(|size| size.name().to_owned())
+                .collect(),
+        ),
+        (
+            "not_sizes",
+            context
+                .sizes
+                .none_of
+                .iter()
+                .map(|size| size.name().to_owned())
+                .collect(),
+        ),
+    ];
+    for (key, names) in lists {
+        if !names.is_empty() {
+            keys.push((key.to_owned(), names_spelled(&names)));
+        }
+    }
+    if let Some(surface) = context.surface {
+        keys.push(("surface".to_owned(), format!("{:?}", surface.name())));
+    }
+    context_spelled(&keys)
 }
 
 /// A variant as S11 writes it: a typed one's name, a keyed one's `@key`.
@@ -619,13 +759,7 @@ impl Declared {
             available: decl.available.unwrap_or(true),
             variants: variants(decl.variants.as_deref().unwrap_or_default()),
             sizes: sizes(decl.sizes.as_deref().unwrap_or_default()),
-            default_size: decl.default_size.map(|size| size.name().to_owned()),
-            default_size_by_variant: decl
-                .default_size_by_variant
-                .iter()
-                .flatten()
-                .map(|by| (variant_name(&by.variant), by.size.name().to_owned()))
-                .collect(),
+            default_size: declared_default(decl.default_size.as_ref()),
             densities: decl.densities.iter().flatten().map(density_name).collect(),
             flags: flags(decl.flags.as_deref().unwrap_or_default()),
             exclusive: decl
@@ -651,13 +785,19 @@ impl Declared {
                 .sizes_by_variant
                 .iter()
                 .flatten()
-                .map(|by| (variant_name(&by.variant), sizes(&by.sizes)))
+                .map(|by| {
+                    let default = declared_default(by.default_size.as_ref());
+                    (variant_name(&by.variant), sizes(&by.sizes), default)
+                })
                 .collect(),
             sizes_by_context: decl
                 .sizes_by_context
                 .iter()
                 .flatten()
-                .map(|by| (widget_name(&by.context), sizes(&by.sizes)))
+                .map(|by| {
+                    let default = declared_default(by.default_size.as_ref());
+                    (selector_spelled(&by.context), sizes(&by.sizes), default)
+                })
                 .collect(),
         }
     }

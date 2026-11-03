@@ -73,9 +73,8 @@ flags = ["@armed"]
 exclusive = [["disabled", "pressed"]]
 exclusive_variants = [["primary", "flat"]]
 recency = { lift = ["pressed", "focus_visible", "hover"] }
-sizes_by_variant = [{ variant = "destructive", sizes = ["large"] }]
+sizes_by_variant = [{ variant = "destructive", sizes = ["large"], default_size = "large" }]
 default_size = "regular"
-default_size_by_variant = [{ variant = "destructive", size = "large" }]
 data = { label = ["char_width"] }
 "#;
 
@@ -414,6 +413,102 @@ fn not_available_size() {
     assert_eq!(theme.style(&small), Styled::NotAvailable(Unavailable::Size));
     let large = large.with_variants(&destructive);
     assert!(matches!(theme.style(&large), Styled::Style(_)));
+}
+
+/// S10's sizes and defaults (ADD-A131): an element takes its variant
+/// entry's sizes, else the widget's, less those its context entry leaves
+/// out; its default is the context entry's, else the variant entry's,
+/// else the widget's; an element taking no size resolves with none, and a
+/// size it is given is not available.
+#[test]
+fn sizes_by_variant_then_context() {
+    let declare = "[declare.widget.button]\nvariants = [\"primary\", \"flat\"]\n\
+                   sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+                   sizes_by_variant = [{ variant = \"primary\", sizes = [\"regular\", \"large\"], \
+                   default_size = \"large\" }, { variant = \"flat\", sizes = [] }]\n\
+                   sizes_by_context = [{ context = { widget = \"button\", part = \"body\" }, \
+                   sizes = [\"regular\", \"large\"], default_size = \"regular\" }]";
+    let theme = theme_with(declare, &[]);
+    let root = root(&theme, Direction::Ltr);
+    let primary = [VariantRef::Typed(Variant::Primary)];
+    let flat = [VariantRef::Typed(Variant::Flat)];
+    let size_of = |element: &Element<'_>| match theme.style(element) {
+        Styled::Style((_, scope)) => Ok(scope.entries.last().and_then(|entry| entry.size)),
+        Styled::NotAvailable(why) => Err(why),
+        other => panic!("{other:?}"),
+    };
+    let body = |scope| Element::new(BODY, scope, &Metrics);
+    assert_eq!(size_of(&body(&root)), Ok(Some(ControlSize::Regular)));
+    assert_eq!(
+        size_of(&body(&root).with_variants(&primary)),
+        Ok(Some(ControlSize::Large))
+    );
+    assert_eq!(
+        size_of(
+            &body(&root)
+                .with_variants(&primary)
+                .with_size(ControlSize::Small)
+        ),
+        Err(Unavailable::Size)
+    );
+    assert_eq!(size_of(&body(&root).with_variants(&flat)), Ok(None));
+    assert_eq!(
+        size_of(
+            &body(&root)
+                .with_variants(&flat)
+                .with_size(ControlSize::Regular)
+        ),
+        Err(Unavailable::Size)
+    );
+    // Inside another button's body: the context entry keeps `regular` of
+    // the widget's sizes, and its default comes before the variant's.
+    let (_, outer) = drawn(&theme, &body(&root));
+    assert_eq!(size_of(&body(&outer)), Ok(Some(ControlSize::Regular)));
+    assert_eq!(
+        size_of(&body(&outer).with_size(ControlSize::Small)),
+        Err(Unavailable::Size)
+    );
+    assert_eq!(
+        size_of(&body(&outer).with_variants(&primary)),
+        Ok(Some(ControlSize::Regular))
+    );
+    assert_eq!(
+        size_of(
+            &body(&outer)
+                .with_variants(&primary)
+                .with_size(ControlSize::Large)
+        ),
+        Ok(Some(ControlSize::Large))
+    );
+}
+
+/// A pending default size (S10's *A pending default*): the lookup stops at
+/// it, so an element that states no size and whose default is pending is
+/// not available, as the synthetic theme answers it (S8, S17); one stating
+/// a size it takes is drawn, and another variant's default stands.
+#[test]
+fn pending_default_size_not_available() {
+    let declare = "[declare.widget.button]\nvariants = [\"primary\"]\n\
+                   sizes = [\"small\", \"regular\"]\ndefault_size = \"regular\"\n\
+                   sizes_by_variant = [{ variant = \"primary\", sizes = [\"regular\", \"large\"] }]\n\
+                   [pending]\n\
+                   \"declare.widget.button.sizes_by_variant.primary.default_size\" = \"U1\"";
+    let theme = theme_with(declare, &[]);
+    let scope = root(&theme, Direction::Ltr);
+    let primary = [VariantRef::Typed(Variant::Primary)];
+    let body = Element::new(BODY, &scope, &Metrics);
+    assert_eq!(
+        theme.style(&body.with_variants(&primary)),
+        Styled::NotAvailable(Unavailable::Size)
+    );
+    let large = Element::new(BODY, &scope, &Metrics)
+        .with_variants(&primary)
+        .with_size(ControlSize::Large);
+    assert!(matches!(theme.style(&large), Styled::Style(_)));
+    assert!(matches!(
+        theme.style(&Element::new(BODY, &scope, &Metrics)),
+        Styled::Style(_)
+    ));
 }
 
 /// `NotAvailable(Variant)` (S8, S10): none of the forms the widget requires,

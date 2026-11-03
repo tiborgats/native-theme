@@ -1146,21 +1146,247 @@ fn preset(body: &str) -> Vec<String> {
         .collect()
 }
 
+/// The problems of a preset stating `body` after its header on the
+/// synthetic route, which waives a pending default size (S17, ADD-A131).
+fn synthetic_preset(body: &str) -> Vec<String> {
+    let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();
+    strings(super::check_preset_exempt(
+        &file.declarations,
+        &file.layer,
+        None,
+        &[],
+    ))
+    .into_iter()
+    .filter(|problem| !problem.ends_with(": missing"))
+    .collect()
+}
+
+/// A default size is one of the sizes it goes with: the widget's, a
+/// variant entry's, and the one in force in a context (S10, S12).
 #[test]
 fn refusal_size_not_taken() {
-    let entry = |size: &str| {
+    let widget = |default: &str| {
         preset(&format!(
-            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"small\", \"regular\"]\n\
-             default_size_by_variant = [{{ variant = \"primary\", size = \"{size}\" }}]"
+            "[declare.widget.button]\nsizes = [\"small\", \"regular\"]\ndefault_size = \"{default}\""
         ))
     };
     assert_eq!(
-        entry("large"),
+        widget("large"),
         [
-            "declare.widget.button.default_size_by_variant[0].size: the variant does not take the size `large`"
+            "declare.widget.button.default_size: the default size `large` is not one of the sizes \
+          taken there"
         ]
     );
-    assert_eq!(entry("regular"), NONE);
+    assert_eq!(widget("regular"), NONE);
+    assert_eq!(
+        preset("[declare.widget.button]\ndefault_size = \"regular\""),
+        [
+            "declare.widget.button.default_size: the default size `regular` is not one of the sizes \
+          taken there"
+        ]
+    );
+    let entry = |default: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"small\", \"regular\"]\n\
+             default_size = \"regular\"\nsizes_by_variant = [{{ variant = \"primary\", sizes = \
+             [\"small\", \"large\"], default_size = \"{default}\" }}]"
+        ))
+    };
+    assert_eq!(
+        entry("regular"),
+        [
+            "declare.widget.button.sizes_by_variant[0].default_size: the default size `regular` is \
+          not one of the sizes taken there"
+        ]
+    );
+    assert_eq!(entry("large"), NONE);
+    // In a context: the widget's default left out there, and the context's
+    // own default outside the sizes a variant keeps there.
+    let context = |entry: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"small\", \"regular\"]\n\
+             default_size = \"regular\"\nsizes_by_variant = [{{ variant = \"primary\", sizes = \
+             [\"large\", \"small\"], default_size = \"large\" }}]\nsizes_by_context = [{entry}]"
+        ))
+    };
+    assert_eq!(
+        context("{ context = { widget = \"button\", part = \"body\" }, sizes = [\"small\"] }"),
+        [
+            "declare.widget.button.sizes_by_context[0]: the default size `regular` is not one of \
+             the sizes taken there",
+            "declare.widget.button.sizes_by_context[0]: the default size `large` is not one of \
+             the sizes taken there",
+        ]
+    );
+    assert_eq!(
+        context(
+            "{ context = { widget = \"button\", part = \"body\" }, sizes = [\"small\"], \
+             default_size = \"small\" }"
+        ),
+        NONE
+    );
+}
+
+/// `default_size` is stated wherever sizes are taken, with them under each
+/// flavour, and in a variant entry that leaves the widget's out (S10,
+/// S12).
+#[test]
+fn refusal_default_size_missing() {
+    let missing = |path: &str| format!("{path}: no default size where sizes are taken");
+    assert_eq!(
+        preset("[declare.widget.button]\nsizes = [\"small\", \"regular\"]"),
+        [missing("declare.widget.button.default_size")]
+    );
+    assert_eq!(preset("[declare.widget.button]\nsizes = []"), NONE);
+    let entry = |sizes: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
+             default_size = \"regular\"\nsizes_by_variant = [{{ variant = \"primary\", sizes = \
+             {sizes} }}]"
+        ))
+    };
+    assert_eq!(
+        entry("[\"small\"]"),
+        [missing(
+            "declare.widget.button.sizes_by_variant[0].default_size"
+        )]
+    );
+    assert_eq!(entry("[\"small\", \"regular\"]"), NONE);
+    assert_eq!(entry("[]"), NONE);
+    // A variant's entry where the widget takes no size states its own.
+    assert_eq!(
+        preset(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes_by_variant = [{ variant = \
+             \"primary\", sizes = [\"small\"] }]"
+        ),
+        [missing(
+            "declare.widget.button.sizes_by_variant[0].default_size"
+        )]
+    );
+    // A flavour's section states `default_size` with its `sizes`: the
+    // widget's default goes with the widget's sizes.
+    let flavored = |section: &str| {
+        preset(&format!(
+            "[declare]\nflavors = [\"widgets\", \"kirigami\"]\n[declare.widget.button]\n\
+             sizes = [\"small\", \"regular\"]\ndefault_size = \"small\"\n\
+             [declare.flavor.kirigami.widget.button]\n{section}"
+        ))
+        .into_iter()
+        .filter(|problem| !problem.starts_with("declare.flavors:"))
+        .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        flavored("sizes = [\"regular\"]"),
+        [missing(
+            "declare.flavor.kirigami.widget.button.default_size"
+        )]
+    );
+    assert_eq!(
+        flavored("sizes = [\"regular\"]\ndefault_size = \"regular\""),
+        NONE
+    );
+    assert_eq!(flavored("sizes = []"), NONE);
+    assert_eq!(
+        flavored("default_size = \"large\""),
+        [
+            "declare.flavor.kirigami.widget.button.default_size: the default size `large` is not \
+          one of the sizes taken there"
+        ]
+    );
+}
+
+/// A pending default size, listed in the preset's `[pending]` table, is
+/// the missing default size on every route but the synthetic one, which
+/// waives the checks that read it (S10's *A pending default*, S17).
+#[test]
+fn pending_default_size_refused_but_on_the_synthetic_route() {
+    let body = "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"small\", \"regular\"]\n\
+                sizes_by_variant = [{ variant = \"primary\", sizes = [\"small\", \"large\"] }]\n\
+                sizes_by_context = [{ context = { widget = \"button\", part = \"body\" }, sizes = \
+                [\"small\"] }]\n\
+                [pending]\n\"declare.widget.button.default_size\" = \"U1\"\n\
+                \"declare.widget.button.sizes_by_variant.primary.default_size\" = \"U2\"\n\
+                \"declare.widget.button.sizes_by_context.0.default_size\" = \"U3\"";
+    let missing = |path: &str| format!("{path}: no default size where sizes are taken");
+    assert_eq!(
+        preset(body),
+        [
+            missing("declare.widget.button.default_size"),
+            missing("declare.widget.button.sizes_by_variant[0].default_size"),
+            missing("declare.widget.button.sizes_by_context[0].default_size"),
+        ]
+    );
+    assert_eq!(synthetic_preset(body), NONE);
+    // The waiver covers the pending default alone: a stated default the
+    // synthetic route checks as any.
+    let stated = body.replace(
+        "sizes = [\"small\", \"large\"] }",
+        "sizes = [\"small\", \"large\"], default_size = \"regular\" }",
+    );
+    assert_eq!(
+        synthetic_preset(&stated),
+        [
+            "declare.widget.button.sizes_by_variant[0].default_size: the default size `regular` is \
+          not one of the sizes taken there"
+        ]
+    );
+}
+
+/// An element taking sizes outside a context and none inside it is
+/// refused, for each variant entry and for none (S10, S12).
+#[test]
+fn refusal_no_size_in_context() {
+    let context = |kept: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"small\", \"regular\"]\n\
+             default_size = \"regular\"\nsizes_by_variant = [{{ variant = \"primary\", sizes = \
+             [\"large\"], default_size = \"large\" }}]\nsizes_by_context = [{{ context = {{ widget = \
+             \"button\", part = \"body\" }}, sizes = {kept}, default_size = \"regular\" }}]"
+        ))
+    };
+    assert_eq!(
+        context("[\"regular\"]"),
+        [
+            "declare.widget.button.sizes_by_context[0]: an element holding `primary` takes sizes \
+          outside the context and none in it"
+        ]
+    );
+    assert_eq!(
+        context("[\"large\"]"),
+        [
+            "declare.widget.button.sizes_by_context[0]: an element holding no variant of an entry \
+             takes sizes outside the context and none in it",
+            "declare.widget.button.sizes_by_context[0].default_size: the default size `regular` is \
+             not one of the sizes taken there",
+        ]
+    );
+}
+
+/// A `sizes_by_context` entry's selector states only `scope`, `widget`,
+/// `part`, `variants` and `not_variants` (S10, S12).
+#[test]
+fn refusal_size_context_key() {
+    let selector = |keys: &str| {
+        preset(&format!(
+            "[declare.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"regular\"\n\
+             sizes_by_context = [{{ context = {{ widget = \"button\", {keys} }}, sizes = \
+             [\"regular\"] }}]"
+        ))
+    };
+    let refused = |key: &str| {
+        format!(
+            "declare.widget.button.sizes_by_context[0].context.{key}: a `sizes_by_context` \
+             selector may not state `{key}`"
+        )
+    };
+    assert_eq!(
+        selector("states = [\"hover\"], not_sizes = [\"small\"], surface = \"window\""),
+        [refused("states"), refused("not_sizes"), refused("surface")]
+    );
+    assert_eq!(
+        selector("scope = \"any\", part = \"body\", variants = [\"primary\"]"),
+        NONE
+    );
 }
 
 /// The display radii may be `Absent`, for a device model the preset does
@@ -1194,9 +1420,10 @@ fn display_params_may_be_absent() {
 #[test]
 fn flavour_sections_inherit_the_widgets_keys() {
     let entry = "[declare]\nflavors = [\"widgets\", \"kirigami\"]\n[declare.widget.button]\n\
-                 variants = [\"@fab\"]\nsizes = [\"regular\"]\n\
+                 variants = [\"@fab\"]\nsizes = [\"regular\"]\ndefault_size = \"regular\"\n\
                  [declare.flavor.kirigami.widget.button]\n\
-                 default_size_by_variant = [{ variant = \"@fab\", size = \"regular\" }]";
+                 sizes_by_variant = [{ variant = \"@fab\", sizes = [\"regular\"], default_size = \
+                \"regular\" }]";
     let rule = "\n[[rules]]\nwhen = { conditions = [\"flavor:kirigami\"], variants = [\"@fab\"] }\n\
                 target = \"button.body\"\nset = { opacity = 0.5 }";
     assert_eq!(preset(&format!("{entry}{rule}")), NONE);
@@ -1217,8 +1444,8 @@ fn flavour_sections_inherit_the_widgets_keys() {
              `flavor.widgets.widget.button.variants`",
             "rules[1].when.variants[0]: `@fab` is not declared in \
              `flavor.kirigami.widget.button.variants`",
-            "declare.flavor.kirigami.widget.button.default_size_by_variant[0].variant: `@fab` is \
-             not declared in `declare.flavor.kirigami.widget.button.variants`"
+            "declare.flavor.kirigami.widget.button.sizes_by_variant[0].variant: `@fab` is not \
+             declared in `declare.flavor.kirigami.widget.button.variants`"
         ]
     );
 }
@@ -1230,8 +1457,9 @@ fn flavour_sections_inherit_the_widgets_keys() {
 fn flavour_sections_check_the_keys_they_keep() {
     let entry = "[declare]\nflavors = [\"widgets\", \"kirigami\"]\n[declare.widget.button]\n\
                  variants = [\"@fab\"]\nsizes = [\"small\", \"regular\"]\nflags = [\"@armed\"]\n\
-                 recency = { lift = [\"@armed\", \"hover\"] }\n\
-                 default_size_by_variant = [{ variant = \"@fab\", size = \"small\" }]\n\
+                 recency = { lift = [\"@armed\", \"hover\"] }\ndefault_size = \"regular\"\n\
+                 sizes_by_variant = [{ variant = \"@fab\", sizes = [\"small\", \"regular\"], \
+                 default_size = \"small\" }]\n\
                  [declare.flavor.kirigami.widget.button]\n";
     let rules = "\n[[rules]]\nwhen = { variants = [\"@fab\"], latest = { lift = \"@armed\" } }\n\
                  target = \"button.body\"\nset = { opacity = 0.5 }";
@@ -1245,11 +1473,14 @@ fn flavour_sections_check_the_keys_they_keep() {
     };
     assert_eq!(declared("available = true"), NONE);
     assert_eq!(
-        declared("flags = []\nvariants = [\"@fab\"]\nsizes = [\"regular\"]"),
+        declared(
+            "flags = []\nvariants = [\"@pill\"]\nsizes = [\"regular\"]\ndefault_size = \"regular\""
+        ),
         [
+            "declare.flavor.kirigami.widget.button.variants: `@fab` is not declared in \
+             `declare.flavor.kirigami.widget.button.variants`",
             "declare.flavor.kirigami.widget.button.flags: `@armed` is not declared in \
              `declare.flavor.kirigami.widget.button.flags`",
-            "declare.flavor.kirigami.widget.button.sizes: the variant does not take the size `small`",
         ]
     );
 }
@@ -1373,7 +1604,8 @@ fn refusal_unused_variants_models_and_maps() {
     let head = "[declare]\ndevice_models = [\"phone_x\"]\nicon_contexts = [\"menu\"]\n\
                 symbolic_colors = [\"error\"]\n[declare.widget.button]\nvariants = [\"@pill\", \
                 \"@with_arrow\", \"@tall\", \"@fab\"]\nrequires_variants = [\"@tall\"]\n\
-                sizes_by_variant = [{ variant = \"@fab\", sizes = [\"regular\"] }]";
+                sizes_by_variant = [{ variant = \"@fab\", sizes = [\"regular\"], default_size = \
+                \"regular\" }]";
     assert_eq!(
         preset(head),
         [
@@ -2408,7 +2640,7 @@ fn refusal_other_items() {
 }
 
 /// The declarations' own items (S10, S12): an exclusive variant group
-/// naming a variant twice; a `default_size_by_variant` entry naming an
+/// naming a variant twice; a `sizes_by_variant` entry naming an
 /// undeclared variant, or a variant an earlier entry names.
 #[test]
 fn refusal_declarations() {
@@ -2424,22 +2656,22 @@ fn refusal_declarations() {
     let entries = |entries: &str| {
         preset(&format!(
             "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
-             default_size_by_variant = {entries}"
+             default_size = \"regular\"\nsizes_by_variant = {entries}"
         ))
     };
     assert_eq!(
         entries(
-            "[{ variant = \"primary\", size = \"regular\" }, { variant = \"primary\", size = \
-             \"regular\" }, { variant = \"flat\", size = \"regular\" }]"
+            "[{ variant = \"primary\", sizes = [\"regular\"] }, { variant = \"primary\", sizes = \
+             [\"regular\"] }, { variant = \"flat\", sizes = [\"regular\"] }]"
         ),
         [
-            "declare.widget.button.default_size_by_variant[1]: `primary` listed twice",
-            "declare.widget.button.default_size_by_variant[2].variant: `flat` is not declared in \
+            "declare.widget.button.sizes_by_variant[1]: `primary` listed twice",
+            "declare.widget.button.sizes_by_variant[2].variant: `flat` is not declared in \
              `declare.widget.button.variants`",
         ]
     );
     assert_eq!(
-        entries("[{ variant = \"primary\", size = \"regular\" }]"),
+        entries("[{ variant = \"primary\", sizes = [\"regular\"] }]"),
         NONE
     );
 }
@@ -2540,6 +2772,9 @@ kinds! {
     AccentInput,
     ListedTwice { .. },
     SizeNotTaken { .. },
+    DefaultSizeMissing,
+    NoSizeInContext { .. },
+    SizeContextKey { .. },
     NotABlock,
     UnitMismatch { .. },
     FieldsOver { .. },
@@ -2944,8 +3179,26 @@ fn layer_error_every_variant_triggers() {
         (
             V::SizeNotTaken,
             preset_problems(
-                "[declare.widget.button]\nvariants = [\"primary\"]\nsizes = [\"regular\"]\n\
-                 default_size_by_variant = [{ variant = \"primary\", size = \"large\" }]",
+                "[declare.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"large\"",
+            ),
+        ),
+        (
+            V::DefaultSizeMissing,
+            preset_problems("[declare.widget.button]\nsizes = [\"regular\"]"),
+        ),
+        (
+            V::NoSizeInContext,
+            preset_problems(
+                "[declare.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"regular\"\n\
+                 sizes_by_context = [{ context = { widget = \"button\" }, sizes = [\"small\"] }]",
+            ),
+        ),
+        (
+            V::SizeContextKey,
+            preset_problems(
+                "[declare.widget.button]\nsizes = [\"regular\"]\ndefault_size = \"regular\"\n\
+                 sizes_by_context = [{ context = { widget = \"button\", states = [\"hover\"] }, \
+                 sizes = [\"regular\"] }]",
             ),
         ),
         (

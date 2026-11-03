@@ -249,7 +249,7 @@ fn contexts(item: &Item, at: &str, cx: &mut Reader) -> Vec<ContextMatch> {
 /// variants, not_variants, states, not_states }`; `scope` left out is any
 /// ancestor, as a bare `context w` is `context any w` (the catalogue's
 /// selector notation).
-fn context(item: &Item, at: &str, cx: &mut Reader) -> Option<ContextMatch> {
+pub(crate) fn context(item: &Item, at: &str, cx: &mut Reader) -> Option<ContextMatch> {
     let fields = table(item, at, cx)?;
     let mut scope = Some(ContextScope::AnyAncestor);
     let mut matched = ContextMatch::new(ContextScope::AnyAncestor);

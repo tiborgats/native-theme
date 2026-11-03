@@ -5,11 +5,11 @@ use ::toml::{Table, Value as Item};
 
 use super::declare::read_declarations;
 use super::model::{part_named, widget_named, widget_or_part};
-use super::read::{self, FromToml, Reader, Spelling, join, table, text};
+use super::read::{self, DefaultAt, FromToml, Reader, Spelling, join, table, text};
 use super::when::read_selector;
 use crate::next::blocks::part_style::PartStylePatch;
 use crate::next::color::Color;
-use crate::next::declare::Declarations;
+use crate::next::declare::{Declarations, DefaultSize};
 use crate::next::error::{LayerError, Problem, ProblemKind};
 use crate::next::inputs::{Contrast, InputBases, InputName, InputValue};
 use crate::next::layer::{Bases, Layer, Spelled};
@@ -112,7 +112,8 @@ pub(crate) fn read_preset(text: &str) -> Result<PresetFile, LayerError> {
         }
     }
     let header = read::required(header, "preset", &mut cx);
-    let declarations = declarations.unwrap_or_default();
+    let mut declarations = declarations.unwrap_or_default();
+    mark_pending_defaults(&mut declarations, &pending, &mut cx);
     let layer = finished(layer, cx)?;
     match header {
         Some((id, generation)) => Ok(PresetFile {
@@ -175,13 +176,65 @@ fn read_pending(item: &Item, at: &str, cx: &mut Reader) -> Vec<Listed> {
             );
             continue;
         };
-        if read::listed_field(path).is_none() && read::listed_input(path).is_none() {
+        if read::listed_field(path).is_none()
+            && read::listed_input(path).is_none()
+            && read::listed_default(path).is_none()
+        {
             cx.problem(&at, ProblemKind::UnknownKey);
             continue;
         }
         out.push((path.clone(), ids));
     }
     out
+}
+
+/// Each pending default size `pending` lists set in `decl` as pending, with
+/// its ids, where the declaration states none (S10's *A pending default*,
+/// S17); a listed default whose section or entry the declarations do not
+/// state names nothing, an unknown key.
+fn mark_pending_defaults(decl: &mut Declarations, pending: &[Listed], cx: &mut Reader) {
+    for (path, ids) in pending {
+        let Some(listed) = read::listed_default(path) else {
+            continue;
+        };
+        let widgets = match &listed.flavor {
+            None => Some(&mut decl.widgets),
+            Some(flavor) => decl
+                .flavor
+                .iter_mut()
+                .find(|(held, _)| held == flavor)
+                .map(|(_, section)| &mut section.widgets),
+        };
+        let section = widgets.and_then(|widgets| {
+            widgets
+                .iter_mut()
+                .find(|(held, _)| *held == listed.widget)
+                .map(|(_, section)| section)
+        });
+        let slot = section.and_then(|section| match &listed.at {
+            DefaultAt::Widget => Some(&mut section.default_size),
+            DefaultAt::Variant(variant) => section
+                .sizes_by_variant
+                .iter_mut()
+                .flatten()
+                .find(|entry| entry.variant == *variant)
+                .map(|entry| &mut entry.default_size),
+            DefaultAt::Context(index) => section
+                .sizes_by_context
+                .iter_mut()
+                .flatten()
+                .nth(*index)
+                .map(|entry| &mut entry.default_size),
+        });
+        match slot {
+            Some(slot) => {
+                if slot.is_none() {
+                    *slot = Some(DefaultSize::Pending(ids.clone()));
+                }
+            }
+            None => cx.problem(&join("pending", path), ProblemKind::UnknownKey),
+        }
+    }
 }
 
 /// `text` as a TOML table, or its parse error.
