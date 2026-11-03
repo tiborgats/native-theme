@@ -1,7 +1,15 @@
 //! Colours in extended sRGB, their literal forms and conversions (S2.1).
 
 /// Extended sRGB, straight (not premultiplied) alpha. Channels may lie outside
-/// `0..=1` (Display P3 colours expressed in extended sRGB); alpha is `0..=1`.
+/// `0..=1` (Display P3 colours expressed in extended sRGB, or a derivation's
+/// result, S2.2); alpha is `0..=1`.
+///
+/// A channel outside `0..=1` is clamped where the colour is drawn, as GTK
+/// draws it (S2.1's hand-over): a connector hands a premultiplied colour
+/// type [`Color::to_srgb8_premultiplied`], a straight float type the
+/// toolkit premultiplies itself the unclamped value, and any other type
+/// [`Color::to_srgb8_clamped`] or the clamped floats, which cannot be exact
+/// for a translucent colour out of the gamut.
 ///
 /// Its literal forms, in TOML and in expressions: `#rrggbb`, `#rrggbbaa`,
 /// `srgb(r, g, b[, a])` and `display_p3(r, g, b[, a])`, the last a colour as
@@ -118,6 +126,16 @@ impl Color {
     #[must_use]
     pub fn to_srgb8_clamped(self) -> [u8; 4] {
         [self.r, self.g, self.b, self.a].map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8)
+    }
+
+    /// `[r, g, b, a]` in 8-bit premultiplied sRGB: each channel times the
+    /// alpha, then clamped to `0..=1` and rounded, the alpha with it, as GTK
+    /// draws a colour (S2.1's hand-over): for a connector whose toolkit
+    /// takes premultiplied bytes.
+    #[must_use]
+    pub fn to_srgb8_premultiplied(self) -> [u8; 4] {
+        let a = self.a;
+        [self.r * a, self.g * a, self.b * a, a].map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8)
     }
 
     /// `[r, g, b, a]` in Display P3, gamma-encoded and not clamped.
@@ -386,6 +404,25 @@ mod tests {
         assert_eq!(
             rgba(0.2, 0.4, 0.6, 0.0).to_srgb8_clamped(),
             [51, 102, 153, 0]
+        );
+    }
+
+    #[test]
+    fn to_srgb8_premultiplied_clamps_after_premultiplying() {
+        // Light teal's standalone red at alpha 0.5 (S2.1): -0.085, clamped
+        // to 0; a channel of 1.2 at 0.5 is 0.6, which clamping first would
+        // make 0.5.
+        assert_eq!(
+            rgba(-0.17, 1.2, 0.5, 0.5).to_srgb8_premultiplied(),
+            [0, 153, 64, 128]
+        );
+        assert_eq!(
+            rgba(1.5, -0.2, 0.2, 1.0).to_srgb8_premultiplied(),
+            [255, 0, 51, 255]
+        );
+        assert_eq!(
+            rgba(0.2, 0.4, 0.6, 0.0).to_srgb8_premultiplied(),
+            [0, 0, 0, 0]
         );
     }
 
