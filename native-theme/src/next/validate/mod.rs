@@ -150,7 +150,15 @@ pub(crate) fn check_preset(
         layer,
         kind: LayerKind::Preset,
     }];
-    add(&mut problems, combinations(&layers, cx));
+    // A listed path a redrawn part leaves unstated is the layers' over it
+    // too (S6.3, S17).
+    let found = combinations(&layers, cx)
+        .into_iter()
+        .filter(|(_, problem)| {
+            !(problem.kind == ProblemKind::Missing && exempt.contains(&problem.path))
+        })
+        .collect();
+    add(&mut problems, found);
     if problems.is_empty() {
         Ok(())
     } else {

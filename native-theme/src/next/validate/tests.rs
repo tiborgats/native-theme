@@ -1209,6 +1209,73 @@ fn refusal_listed_twice() {
     assert_eq!(found(&groups("[\"window\", \"view\"]"), &decl), NONE);
 }
 
+/// `present_with_nothing_beneath_is_missing` (S6.3, S12, ADD-A126): under
+/// each combination in which `absent = false` draws a part again, every
+/// field of it no patch states is missing, the fields beside the absence
+/// stated beneath it; a patch of fields alone draws nothing, so nothing is
+/// missing; a preset's own absent part needs no fields, those beside its
+/// absence kept for a later `absent = false`.
+#[test]
+fn present_with_nothing_beneath_is_missing() {
+    let decl = Declarations::default();
+    let redraw = |set: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.menu_indicator\"\n\
+             set = {set}"
+        ))
+    };
+    let missing = |fields: &[&str]| -> Vec<String> {
+        fields
+            .iter()
+            .map(|field| format!("widgets.button.menu_indicator.{field}: missing"))
+            .collect()
+    };
+    let bare = toml("[widgets.button.menu_indicator]\nabsent = true");
+    assert_eq!(
+        found_over(&redraw("{ absent = false }"), &decl, &bare),
+        missing(&[
+            "glyph",
+            "min_width",
+            "min_height",
+            "margin",
+            "transform",
+            "transitions"
+        ])
+    );
+    assert_eq!(
+        found_over(&redraw("{ min_width_px = 4 }"), &decl, &bare),
+        NONE
+    );
+    let beneath = toml("[widgets.button.menu_indicator]\nabsent = true\nmin_width_px = 4");
+    assert_eq!(
+        found_over(
+            &redraw("{ absent = false, min_height_px = 4, transitions = [] }"),
+            &decl,
+            &beneath
+        ),
+        missing(&["glyph", "margin", "transform"])
+    );
+    let file = read_preset(&format!(
+        "{PRESET_HEAD}[widgets.button.menu_indicator]\nabsent = true\nmin_width_px = 4"
+    ))
+    .unwrap();
+    let own = strings(check_preset(
+        &file.declarations,
+        &file.layer,
+        None,
+        &[],
+        false,
+    ));
+    assert!(
+        own.iter()
+            .any(|problem| problem.contains("widgets.button.body"))
+    );
+    assert!(
+        !own.iter().any(|problem| problem.contains("menu_indicator")),
+        "{own:?}"
+    );
+}
+
 /// The problems of a preset stating `body` after its header.
 fn preset(body: &str) -> Vec<String> {
     let file = read_preset(&format!("{PRESET_HEAD}{body}")).unwrap();

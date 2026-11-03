@@ -221,6 +221,7 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
     out.fields_over();
     out.marks();
     out.drawn_as_cycles();
+    out.redrawn();
     out.text_roles();
     out.shapes();
     out.ellipses();
@@ -2203,6 +2204,64 @@ impl Checks<'_, '_> {
             if refused {
                 for found in absents {
                     self.problem(found.layer, found.at, ProblemKind::AbsentNotAllowed);
+                }
+            }
+        }
+    }
+
+    /// Each field of a part drawn again over an `Absent` or `DrawnAs` that
+    /// no layer states under a combination in which the part resolves
+    /// drawn (S6.3, S12): a `Present` over a part with nothing beneath is
+    /// missing every field no other patch states. Only a `Present` draws a
+    /// part a patch made absent, so a part none redraws needs no check
+    /// here: its bases state its fields (S2.2), or leave it absent.
+    fn redrawn(&mut self) {
+        let stack = self.stack;
+        for info in registry::widgets() {
+            for part_info in info.parts {
+                let Some(part) = TypedPart::from_names(info.kind, part_info.name) else {
+                    continue;
+                };
+                let redrawn = stack.of(Target::Part(part)).any(|(_, source)| {
+                    source
+                        .ops
+                        .iter()
+                        .any(|op| matches!(op.kind, OpKind::Shown(Shown::Drawn)))
+                });
+                if !redrawn {
+                    continue;
+                }
+                let mut seeds = vec![Seed::Shown(part)];
+                seeds.extend(
+                    part_info
+                        .fields
+                        .iter()
+                        .map(|field| Seed::Field(Target::Part(part), field.path.to_owned(), true)),
+                );
+                let worlds = stack.worlds(seeds);
+                let mut missing: Vec<&str> = Vec::new();
+                for world in worlds.iter() {
+                    let (Shown::Drawn, Some((layer, _))) = stack.shown(world, part) else {
+                        continue;
+                    };
+                    for field in part_info.fields {
+                        let stated = stack.of(Target::Part(part)).any(|(_, source)| {
+                            stack.applies(world, source)
+                                && source.ops.iter().any(|op| {
+                                    !matches!(op.kind, OpKind::Shown(_))
+                                        && (op.path == field.path
+                                            || is_above(&op.path, field.path)
+                                            || is_above(field.path, &op.path))
+                                })
+                        });
+                        if !stated && !missing.contains(&field.path) {
+                            missing.push(field.path);
+                            let at =
+                                format!("widgets.{}.{}.{}", info.name, part_info.name, field.path);
+                            self.problems
+                                .push((layer, Problem::new(&at, ProblemKind::Missing)));
+                        }
+                    }
                 }
             }
         }
