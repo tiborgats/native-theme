@@ -9072,7 +9072,8 @@ S2.2 `kde_accent` row, S9.1, S9.2, S12 and S14 are the rule, and win where this 
 - the reader states kdeglobals' results, the `[Colors:*]` values and the `[Colors:*][Inactive]` values (K3.51,
   K3.54), as Plasma wrote them for the user's scheme and accent;
 - the accent layer (`set_accent`, while no mapping palette applies) states each as `= kde_accent(<set>, <key>,
-  <group>)` over the scheme inputs in force, the reader's, a KDE port's, else Breeze's (S9.2). Group `active` gives
+  <group>)` over the scheme inputs in force, the reader's, a KDE port's, else Breeze's, at the schemes the `Accent`
+  states and no other (S9.2; ADD-A132). Group `active` gives
   the active role; group `inactive`, for a set `input.kde_scheme.inactive_groups` names, what `applyScheme()`
   writes there (`plasma-workspace@v6.8.2 kcms/colors/colorsapplicator.cpp:247-284`):
   - while the scheme tints (`token.kde.tint_factor` is `Some`): every set's own file value
