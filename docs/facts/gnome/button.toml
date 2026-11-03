@@ -545,7 +545,7 @@ quote = "PANGO_WEIGHT_BOLD = 700,"
 [[fact]]
 key = "button.label.text.fill"
 value = "= surface.foreground"
-rows = []
+rows = ["GN-1.25", "GN-1.31"]
 
 [[fact.cite]]
 kind = "published"
@@ -576,7 +576,7 @@ quote = "gtk_css_number_value_new (16, GTK_CSS_PX));"
 [[fact]]
 key = "button.icon.icon.fill"
 value = "= surface.foreground"
-rows = []
+rows = ["GN-1.25"]
 
 [[fact.cite]]
 kind = "published"
@@ -689,15 +689,30 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
 quote = "%button, button {"
 
+# GtkSvg's state transitions (GN-P3-19†) on a button: the one button GTK gives a GtkSvg image, the font dialog's
+# "Change Font Features" toggle, shows sliders.gpa, one state with no state-bound paths or animations, and never sets
+# its state, so it has no icon transitions either
 [[fact]]
 key = "button.icon.transitions"
 value = []
-rows = []
+rows = ["GN-P3-19†"]
 
 [[fact.cite]]
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:17-366"
 quote = "%button, button {"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/icons/sliders.gpa:1-22"
+quote = "<svg xmlns='http://www.w3.org/2000/svg'"
+absent = ["gpa:states", "gpa:animation-type", "StateChange", "<animate"]
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkfontchooserdialog.c:174-217"
+quote = "setup_tweak_button (GtkFontChooserDialog *dialog)"
+absent = ["gtk_svg_set_state", "gtk_svg_play"]
 
 # GtkButton draws its image as a themed icon (the part's `icon`), not a glyph
 [[fact]]

@@ -173,7 +173,8 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   quoted string, its entries already the font description's families. A text value matches a whole candidate only:
   `Noto Sans` is not in `Noto Sans Mono`, nor `go-next` in `go-next-symbolic`.
 - Units (UNITS) by dimension: px, dp, sp (Android's text size before its scaling) are px; pt; ms and s (×1000) are
-  ms; deg; rem and em have none (a literal in them is no literal). A literal without a unit takes the value
+  ms; deg; rem and em have none (a literal in them is no literal; `rem_to_factor`, below, reads a rem literal under a
+  citation that names it). A literal without a unit takes the value
   literal's dimension; with one it must be of it, px and pt being distinct. Apple's `pt` is a logical point, px (the
   previous item); everywhere else `pt` is a typographic point.
 - Conversions (CONVERSIONS), applied in order to a quote's or an evidence value's unitless numbers:
@@ -184,7 +185,14 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
   and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
   WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
-  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739).
+  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739), `rem_to_factor` (S17's class 1 member for GTK's
+  `rem`: under a citation naming it, each `<n>rem` literal of the quote, otherwise no literal, reads as the unitless
+  number n, the factor of the default font size that GTK multiplies a rem length by, `gtk@4.24.1
+  gtk/gtkcssnumbervalue.c:405-408`, "case GTK_CSS_REM: return gtk_css_dimension_value_new (value *
+  gtk_css_font_size_get_default_px (provider, style), GTK_CSS_PX);", the default size being GtkSettings' font size,
+  `gtk/gtkcssenumvalue.c:213-231`; so a fact states `0.75rem` as `mul(<the default font size>, 0.75)`; on the numbers
+  it is the identity, the conversions after it applying to the factor as to any unitless number; without it a rem
+  literal stays no literal, so a `0.75rem` quote never holds a `0.75` fact).
 - Equality: numbers to a relative 1e-4, colours as 8-bit sRGB channels with alpha to 1e-3 (S17), a character
   reference's code point exactly (it names one glyph; at 1e-4, U+E975 would be U+E974); `srgb(…)` and
   `display_p3(…)` literals in their own space. A `display_p3(…)` value is the colour as Apple publishes it (S2.1: the
@@ -232,6 +240,8 @@ CONVERSIONS = {
     "ticks_to_ms": lambda x: x / 10000,
     "negate": lambda x: -x,
     "ns_font_weight": lambda x: 100 * (1 + sum(t <= x for t in NS_WEIGHT_THRESHOLDS)),
+    # the reading is quote_literals' (`rem`): each `<n>rem` gives the unitless n; on a number it changes nothing
+    "rem_to_factor": lambda x: x,
 }
 # unit -> (dimension, factor to the dimension's canonical unit); None: no dimension (no literal)
 UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("pt", 1), "ms": ("duration", 1),
@@ -394,9 +404,10 @@ def xaml_linear_angle(text: str, tag):
     return math.degrees(math.atan2(dx, -dy)) % 360
 
 
-def quote_literals(text: str, notation: str, apple: bool = False) -> list:
+def quote_literals(text: str, notation: str, apple: bool = False, rem: bool = False) -> list:
     """Every literal of `text` read by `notation` (the closed lists of the docstring), in text order; `apple`: the
-    text is a source that serves only Apple's presets, whose points are logical points (px)."""
+    text is a source that serves only Apple's presets, whose points are logical points (px); `rem`: the citation
+    names `rem_to_factor`, so each `<n>rem` reads as the unitless n (otherwise no literal)."""
     found = []   # (start, end, Lit or None): None masks a span that reads nothing
     taken = []
 
@@ -526,6 +537,8 @@ def quote_literals(text: str, notation: str, apple: bool = False) -> list:
         elif unit in UNITS and UNITS[unit] is not None:
             dim, factor = UNITS[unit]
             found.append((m.start(), Lit("num", dim, x * factor)))
+        elif unit == "rem" and rem:
+            found.append((m.start(), Lit("num", None, x)))
     return [lit for _, lit in sorted(found, key=lambda t: t[0]) if lit is not None]
 
 
@@ -914,7 +927,8 @@ def compare(fact_value, ev_value, tolerance, conversion, notation, apple=False) 
         if isinstance(ev, bool) or not isinstance(ev, (int, float, str)):
             out.append(f"{where}the evidence holds {ev!r}, not a number or a colour")
             continue
-        elits = [Lit("num", None, float(ev))] if isinstance(ev, (int, float)) else quote_literals(ev, notation, apple)
+        elits = [Lit("num", None, float(ev))] if isinstance(ev, (int, float)) else quote_literals(
+            ev, notation, apple, "rem_to_factor" in conversion)
         elits = converted_only(elits, conversion)
         if len(elits) != 1:
             out.append(f"{where}the evidence value {ev!r} holds {len(elits)} literals, not one")
@@ -1260,7 +1274,7 @@ class Run:
                 notation = "text" if not src or src[4] is not None else notation_of(src[1])
                 conv = conversions_of(c.data)
                 quote = c.data.get("quote") if isinstance(c.data.get("quote"), str) else ""
-                union += convert(quote_literals(quote, notation, self.apple_only(c.data)), conv)
+                union += convert(quote_literals(quote, notation, self.apple_only(c.data), "rem_to_factor" in conv), conv)
                 text_union |= quote_texts(quote, notation)
                 zero = zero or isinstance(c.data.get("absent"), list)
                 brush = brush or (notation == "xaml" and XAML_LINEAR_RX.search(quote) is not None)
@@ -1721,6 +1735,19 @@ conditions = ["scheme:dark"]
         '<ResourceDictionary>\n\n\n\n\n<VisualState x:Name="PointerOver">\n'
         '  <DoubleAnimation Storyboard.TargetProperty="Opacity" Duration="0:0:0.083" />\n</VisualState>\n'
         '<x:Double x:Key="Button_MinWidth">80</x:Double>\n<Setter Property="FocusVisualMargin" Value="-3" />\n',
+    "docs/facts/gnome/rem.toml": '''
+[[fact]]
+key = "button.label.text.font.size"
+value = "= mul(token.text.keyed.body.font.size, 0.75)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_view-switcher.scss:2"
+quote = "font-size: 0.75rem;"
+conversion = ["rem_to_factor"]
+''',
+    "cache/libadwaita@1.10.0/src/stylesheet/widgets/_view-switcher.scss": "&.narrow {\n  font-size: 0.75rem;\n}\n",
     "docs/facts/gnome/zero.toml": '''
 [[fact]]
 key = "button.values.repeat_delay"
@@ -1864,6 +1891,14 @@ SELF_TEST_CASES = [
      ["no file src/stylesheet/_colours.scss at the pin"]),
     ("libadwaita: an absent name present", "docs/facts/gnome/more.toml", 'absent = ["box-shadow"]',
      'absent = ["box-shadow", "background-color"]', ["absent name 'background-color' occurs"]),
+    # `rem_to_factor` (S17, class 1): GTK's rem factor holds a fact only under the conversion
+    ("rem: a rem factor without rem_to_factor", "docs/facts/gnome/rem.toml", 'conversion = ["rem_to_factor"]\n', "",
+     ["0.75 is in no quote serving adwaita"]),
+    ("rem: another factor", "docs/facts/gnome/rem.toml", "0.75)", "0.6)", ["0.6 is in no quote serving adwaita"]),
+    ("rem: a 0.75rem quote never holds a plain 0.75", "docs/facts/gnome/rem.toml",
+     [('key = "button.label.text.font.size"\nvalue = "= mul(token.text.keyed.body.font.size, 0.75)"',
+       'key = "button.body.opacity"\nvalue = 0.75'), ('conversion = ["rem_to_factor"]\n', "")], None,
+     ["0.75 is in no quote serving adwaita"]),
     ("libadwaita: a percentage without its conversion", "docs/facts/gnome/more.toml",
      'conversion = ["percent_to_fraction"]\n', "", ["0.5 is in no quote serving adwaita"]),
     ("Breeze: another colour", "docs/facts/kde/colors.toml", 'value = "#eff0f1"', 'value = "#eff0f2"',
@@ -2187,6 +2222,12 @@ def self_test() -> int:
         got = [str(v) for v in convert([Lit("num", None, x)], names)]
         if got != [f"{x:g}", want]:
             failures.append(f"conversion {names}: got {got}")
+    # `rem_to_factor` (S17): a rem literal reads as its factor only under the conversion, and nothing else changes
+    for text, rem, want in (("font-size: 0.75rem;", True, ["0.75"]), ("font-size: 0.75rem;", False, []),
+                            ("0.6rem 2px 3", True, ["0.6", "2px", "3"]), ("2em 1rem", True, ["1"])):
+        got = [str(x) for x in quote_literals(text, "css", False, rem)]
+        if got != want:
+            failures.append(f"rem_to_factor {text!r} (rem {rem}): got {got}, want {want}")
     for quote, text, want in SELF_TEST_TEXTS:
         if (text in quote_texts(quote)) != want:
             failures.append(f"text {text!r} in {quote!r}: got {not want}, want {want}")
@@ -2205,7 +2246,7 @@ def self_test() -> int:
         if got != want:
             failures.append(f"ns_font_weight {x!r}: got {got}, want {want}")
     if sorted(CONVERSIONS) != ["byte_to_fraction", "complement", "negate", "ns_font_weight", "percent_to_fraction",
-                               "seconds_to_ms", "ticks_to_ms"]:
+                               "rem_to_factor", "seconds_to_ms", "ticks_to_ms"]:
         failures.append(f"conversions: got {sorted(CONVERSIONS)}")
     for path, want in (("a/b.scss", "css"), ("x.xaml", "xaml"), ("BreezeLight.colors", "ini"), ("kdeglobals", "ini"),
                        ("kwinrc", "ini"), ("kcolorscheme.cpp", "cpp"), ("NSButton.h", "cpp"), ("Button.qml", "qml"),

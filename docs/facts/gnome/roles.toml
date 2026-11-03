@@ -724,7 +724,7 @@ quote = "@define-color destructive_fg_color white;"
 key = "role.global.status.success.fill"
 when = { conditions = ["scheme:light"] }
 value = "#2ec27e"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -740,7 +740,7 @@ quote = "$green_4: #2ec27e;"
 key = "role.global.status.success.fill"
 when = { conditions = ["scheme:dark"] }
 value = "#26a269"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -755,7 +755,7 @@ quote = "$green_5: #26a269;"
 [[fact]]
 key = "role.global.status.success.foreground"
 value = "#ffffff"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -766,7 +766,7 @@ quote = "@define-color success_fg_color white;"
 key = "role.global.status.warning.fill"
 when = { conditions = ["scheme:light"] }
 value = "#e5a50a"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -782,7 +782,7 @@ quote = "$yellow_5: #e5a50a;"
 key = "role.global.status.warning.fill"
 when = { conditions = ["scheme:dark"] }
 value = "#cd9309"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -792,7 +792,7 @@ quote = "@define-color warning_bg_color #cd9309;"
 [[fact]]
 key = "role.global.status.warning.foreground"
 value = "#000000cc"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -803,7 +803,7 @@ quote = "@define-color warning_fg_color RGB(0 0 0 / 80%);"
 key = "role.global.status.error.fill"
 when = { conditions = ["scheme:light"] }
 value = "#e01b24"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -819,7 +819,7 @@ quote = "$red_3: #e01b24;"
 key = "role.global.status.error.fill"
 when = { conditions = ["scheme:dark"] }
 value = "#c01c28"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -834,7 +834,7 @@ quote = "$red_4: #c01c28;"
 [[fact]]
 key = "role.global.status.error.foreground"
 value = "#ffffff"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12"]
 
 [[fact.cite]]
 kind = "published"
@@ -866,7 +866,7 @@ quote = "--standalone-color-oklab: max(l, 0.85) a b;"
 [[fact]]
 key = "role.global.status.success.standalone"
 value = "= adw_standalone(role.global.status.success.fill, scheme)"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12", "GN-3.58"]
 
 [[fact.cite]]
 kind = "published"
@@ -887,7 +887,7 @@ quote = "--standalone-color-oklab: max(l, 0.85) a b;"
 [[fact]]
 key = "role.global.status.warning.standalone"
 value = "= adw_standalone(role.global.status.warning.fill, scheme)"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12", "GN-3.58"]
 
 [[fact.cite]]
 kind = "published"
@@ -908,7 +908,7 @@ quote = "--standalone-color-oklab: max(l, 0.85) a b;"
 [[fact]]
 key = "role.global.status.error.standalone"
 value = "= adw_standalone(role.global.status.error.fill, scheme)"
-rows = ["GN-1.269"]
+rows = ["GN-1.269", "GN-3.12", "GN-3.58"]
 
 [[fact.cite]]
 kind = "published"
