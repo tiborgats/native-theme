@@ -917,6 +917,36 @@ fn a_whole_block_replaces_and_reports_its_missing_fields() {
     );
 }
 
+/// In a preset's own bases a table is the whole block, so `replace` is an
+/// unknown key there (S11: "where the type is the block itself (the preset
+/// layer's bases outside a keyframe's `patch`, …) … it is an unknown key");
+/// a rule of the preset states a whole block by it.
+#[test]
+fn refusal_replace_in_preset_bases() {
+    let replace = "corners = { replace = { top_left_px = 1, top_right_px = 1, bottom_right_px = \
+                   1, bottom_left_px = 1, curve = \"circular\" } }";
+    let found = |text: &str| -> Vec<String> {
+        match read_preset(&format!("{PRESET_HEAD}{text}")) {
+            Ok(_) => Vec::new(),
+            Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
+            Err(other) => panic!("{other}"),
+        }
+    };
+    let based = found(&format!("[widgets.button.body]\n{replace}"));
+    assert!(
+        based.contains(&"widgets.button.body.corners.replace: unknown key".to_owned()),
+        "{based:?}"
+    );
+    let ruled = found(&format!(
+        "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\nset = {{ \
+         {replace} }}"
+    ));
+    assert!(
+        !ruled.iter().any(|problem| problem.contains("corners")),
+        "{ruled:?}"
+    );
+}
+
 // `when` (S7).
 
 #[test]

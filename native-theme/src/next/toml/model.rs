@@ -27,7 +27,7 @@ use crate::next::widgets::{TypedPart, Variant, WidgetKind};
 /// A struct block field's patch (S2.2): in a rule's `set` or an
 /// application layer's bases a table is a `Fields` patch, a whole block
 /// stated by `{ replace = { … } }` or a reference; in a preset's own bases a
-/// table is the whole block.
+/// table is the whole block, and `replace` an unknown key (S11).
 impl<T> FromToml for BlockPatch<T>
 where
     T: FieldsBlock + Build<Patch = <T as FieldsBlock>::Patch> + FromToml,
@@ -43,6 +43,10 @@ where
         match item {
             Item::Table(fields) if fields.len() == 1 && fields.contains_key("replace") => {
                 let at = join(at, "replace");
+                if cx.whole {
+                    cx.problem(&at, ProblemKind::UnknownKey);
+                    return None;
+                }
                 let whole = fields.get("replace")?;
                 let patch =
                     <<T as FieldsBlock>::Patch as FromToml>::read(whole, Spelling::Bare, &at, cx)?;
