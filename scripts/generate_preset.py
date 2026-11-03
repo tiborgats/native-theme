@@ -171,6 +171,7 @@ from pathlib import Path
 
 import check_facts
 import check_facts_trace
+import check_preset_citations
 from generate_platform_facts import toml_inline, toml_key
 
 SCHEMES = ("light", "dark")
@@ -202,6 +203,7 @@ BASE_CLASH = "block and its leaf in one base table"
 INPUT_WHEN = "input under a when S9 gives no base"
 SET_WHOLE_SPLIT = "a set-whole block's leaf its siblings do not join"
 SET_WHOLE_PENDING = "a set-whole block's leaf beside a pending sibling"
+NO_STRUCT_BLOCK = ("Paint",)   # S2.2: "A `Value<Paint>` is no struct block"
 
 
 class InputError(Exception):
@@ -233,6 +235,7 @@ class Fact:
     slots: tuple = ()         # the schemes it is alive in
     base_slots: tuple = ()    # the schemes whose base it gives (a colour role's), or SCHEMES
     rule_when: object = None  # the `when` of its rule (its own, or narrowed to the scheme it is alive in)
+    whole: bool = False       # a table at a `Value` struct block: `{ replace = { … } }` in a rule (whole_block())
 
     @property
     def where(self):
@@ -600,6 +603,7 @@ class Draft:
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
     pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id or ids, the first pending fact)
     gaps: list = field(default_factory=list)  # (widget, key): a field per size alone of a widget with no `default_size`
+    definitions: list = field(default_factory=list)  # (section, header, dotted, value, the defining section)
 
 
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
@@ -636,6 +640,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         else:
             try:
                 place(f)
+                f.whole = whole_block(ctx, f)
             except Untranscribable as err:
                 f.status, f.reason = LEFT_OUT, str(err)
     by_key = {}
@@ -705,7 +710,23 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.reason = SET_WHOLE_PENDING
     listed = pending_table(ctx, facts, bases) + waiting
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
-                 listed, gaps)
+                 listed, gaps, definitions(preset, tree))
+
+
+def definitions(preset: str, tree: dict) -> list:
+    """The values the specification itself defines for the preset, which no fact states (S9.4's `font_dpi = 72` on
+    `macos-*` and `ios-*`, S4.5's `animated_visuals = {}` on every preset but `windows-11`; S11, S17, ADD-A125,
+    ADD-A131), as check_preset_citations.DEFINITIONS lists them: each a base value carrying its section as its
+    comment (`# S9.4`). A fact stating such a key is refused by check_facts.py, so its base path is free."""
+    out = []
+    for section, (path, value, presets) in check_preset_citations.DEFINITIONS.items():
+        if not presets(preset):
+            continue
+        keys = tuple(path.split("."))
+        if not insert(tree, keys, Leaf(None)):
+            raise InputError(f"{path}: a fact states the value {section} defines")
+        out.append((keys[0], keys[1:2], keys[2:], value, section))
+    return out
 
 
 def unsuffixed(path: tuple) -> tuple:
@@ -902,6 +923,14 @@ def set_whole_block(ctx, f: Fact):
     m = re.fullmatch(r"Option<\s*(\w+)\s*>", typ or "")
     fields = ctx.structs.get(m.group(1)) if m else None
     return tuple(fields) if isinstance(fields, dict) else None
+
+
+def whole_block(ctx, f: Fact) -> bool:
+    """Whether `f`'s value is a table at a `Value` struct block, the whole block (S17), which a rule's `set` states as
+    `{ replace = { … } }`, a bare table there being a `Fields` patch, and the preset's own bases as the table (S2.2,
+    S11, ADD-A125). A `Value<Paint>` is no struct block (S2.2), an enum block is spelt by its variant."""
+    m = re.fullmatch(r"Value<\s*(\w+)\s*>", (f.typ or "").strip())
+    return bool(m) and m.group(1) in ctx.structs and m.group(1) not in NO_STRUCT_BLOCK and isinstance(f.value, dict)
 
 
 def split_blocks(ctx, bases, rules, block_of=None) -> list:
@@ -1186,18 +1215,21 @@ def render(draft: Draft) -> str:
         out.append("")
     tables = {}
     for section, scheme, header, dotted, value, f in draft.bases:
-        tables.setdefault((section, scheme, header), []).append((dotted, value, f))
+        tables.setdefault((section, scheme, header), []).append((dotted, value, f.where))
+    for section, header, dotted, value, defined in draft.definitions:
+        tables.setdefault((section, None, header), []).append((dotted, value, defined))
     order = sorted(tables, key=lambda t: (SECTIONS.index(t[0]), SCHEMES.index(t[1]) if t[1] else -1))
     for t in order:
         section, scheme, header = t
         out.append(f"[{dotted_key((section,) + ((scheme,) if scheme else ()) + header)}]")
-        for dotted, value, f in tables[t]:
-            out += [f"# {f.where}", f"{dotted_key(dotted)} = {toml_inline(value)}"]
+        for dotted, value, comment in tables[t]:
+            out += [f"# {comment}", f"{dotted_key(dotted)} = {toml_inline(value)}"]
         out.append("")
     for r in draft.rules:
         out += ["[[rules]]", f"when = {toml_inline(r.when)}", f"target = {toml_inline(r.target)}", "", "[rules.set]"]
         for f in r.facts:
-            out += [f"# {f.where}", f"{dotted_key(f.rel)} = {toml_inline(f.value)}"]
+            value = {"replace": f.value} if f.whole else f.value
+            out += [f"# {f.where}", f"{dotted_key(f.rel)} = {toml_inline(value)}"]
         out.append("")
     return "\n".join(out).rstrip("\n") + "\n"
 
@@ -1431,6 +1463,12 @@ def round_trip(draft: Draft, text: str) -> Trip:
             entry["base"][slot] = node
         else:
             entry["base"][scheme] = back_value(f, node)
+    for section, header, dotted, value, defined in draft.definitions:
+        path = (section,) + header + dotted
+        expected_base.add(path)
+        node, found = lookup(data, path)
+        if not found or normal(node) != normal(value):
+            trip.mismatches.append(f"{dotted_key(path)}: the value {defined} defines reads back otherwise")
     for i, r in enumerate(rules[:len(draft.rules)]):
         g = draft.rules[i]
         if not isinstance(r, dict) or check_facts.canonical_when(r.get("when")) != check_facts.canonical_when(
@@ -1444,6 +1482,12 @@ def round_trip(draft: Draft, text: str) -> Trip:
             if not found:
                 trip.mismatches.append(f"{f.where}: {f.key}: rule {i + 1} states no {dotted_key(f.rel)}")
                 continue
+            if f.whole:
+                if not (isinstance(node, dict) and set(node) == {"replace"}):
+                    trip.mismatches.append(f"{f.where}: {f.key}: rule {i + 1} states the whole block without "
+                                           f"`replace`")
+                    continue
+                node = node["replace"]
             value = back_value(f, node)
             back.setdefault(f.ckey, {"base": {}, "rules": []})["rules"].append((r.get("when"), value))
     extra = []
@@ -1567,7 +1611,8 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     out += [f"#   unit {u}: {tally(fs)}" for u, fs in unit_groups.items()]
     nbase = len(draft.bases)
     out.append(f"# the draft: {len(draft.rules)} rules, {sum(len(r.facts) for r in draft.rules)} rule values, "
-               f"{nbase} base values, {len(draft.declare)} [declare] tables")
+               f"{nbase} base values, {len(draft.definitions)} values the specification defines "
+               f"({', '.join(d[4] for d in draft.definitions) or 'none'}), {len(draft.declare)} [declare] tables")
     pend = {}
     for f in draft.facts:
         if f.status == PENDING:
@@ -1720,6 +1765,10 @@ quote = "x"
         _pending("pull_to_refresh.body.opacity", "U9", '{ states = ["hover"] }'),
         _fact("button.body.min_width", '"30px"', '{ variants = ["@lifted"], not_context = [{ scope = "any", '
                                                  'widget = "toolbar", part = "bar" }] }'),
+        _fact("button.mark.glyph", '{ source = { named_system_image = { name = "circle" } }, stroke = "absent" }'),
+        _fact("button.mark.glyph", '{ source = { named_system_image = { name = "checkmark" } }, stroke = "absent" }',
+              '{ states = ["checked"] }'),
+        _fact("button.body.fill", '{ layers = ["#ff0000"] }', '{ variants = ["primary"] }'),
     ]),
     "docs/facts/gnome/roles.toml": "".join([
         _fact("role.window.background", '"#fafafb"', '{ conditions = ["scheme:light"] }'),
@@ -1825,6 +1874,8 @@ width_px = 2
 [tokens.icons]
 # docs/facts/gnome/tokens.toml:83
 theme = "Adwaita"
+# S4.5
+animated_visuals = {}
 
 [widgets.button.body]
 # docs/facts/gnome/button.toml:2
@@ -1845,6 +1896,10 @@ text = "= token.text.roles.body"
 icon_text_gap_px = 6
 # docs/facts/gnome/button.toml:320
 repeat_delay_ms = "absent"
+
+[widgets.button.mark]
+# docs/facts/gnome/button.toml:368
+glyph = { source = { named_system_image = { name = "circle" } }, stroke = "absent" }
 
 [[rules]]
 when = { states = ["hover"] }
@@ -1915,6 +1970,8 @@ target = "button.body"
 [rules.set]
 # docs/facts/gnome/button.toml:196
 min_width_px = "= token.focus.width"
+# docs/facts/gnome/button.toml:389
+fill = { layers = ["#ff0000"] }
 
 [[rules]]
 when = { variants = ["@pill"] }
@@ -1979,6 +2036,14 @@ target = "button.body"
 [rules.set]
 # docs/facts/gnome/button.toml:357
 min_width_px = 30
+
+[[rules]]
+when = { states = ["checked"] }
+target = "button.mark"
+
+[rules.set]
+# docs/facts/gnome/button.toml:378
+glyph = { replace = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" } }
 
 [[rules]]
 when = { conditions = ["contrast_high", "scheme:light"] }
@@ -2139,6 +2204,20 @@ def self_test() -> int:
         got = split_blocks(None, bases, rules, repeat_block)
         if [f.key for f in got] != [f.key for f in want]:
             failures.append(f"split_blocks: {[f.key for f in got]}, expected {[f.key for f in want]}")
+    # the values the specification defines (S9.4, S4.5): `font_dpi` on the Apple presets, `animated_visuals` on every
+    # preset but windows-11, each a base value of its own; a fact stating the key leaves no room for it
+    for preset, want in (("macos-tahoe", ["S9.4", "S4.5"]), ("ios-26", ["S9.4", "S4.5"]), ("windows-11", []),
+                         ("kde-breeze", ["S4.5"])):
+        got = [(d[4], d[0], d[1], d[2], d[3]) for d in definitions(preset, {})]
+        spelt = {"S9.4": ("tokens", ("text",), ("font_dpi",), 72),
+                 "S4.5": ("tokens", ("icons",), ("animated_visuals",), {})}
+        if got != [(s,) + spelt[s] for s in want]:
+            failures.append(f"definitions({preset!r}): {got}, expected {want}")
+    try:
+        definitions("adwaita", {"tokens": {"icons": {"animated_visuals": Leaf(None)}}})
+        failures.append("definitions: a fact's base at a defined key not refused")
+    except InputError:
+        pass
     # unspell: a suffix only where the key's type takes it; element_size: the size an element holds
     if unspell("edge_px", 1, "Value<Scalar>") != ("edge_px", 1) or unspell("gap_px", 6, "Value<Px>") != ("gap", "6px"):
         failures.append("unspell: a suffix stripped where the type takes none, or kept where it takes one")
@@ -2334,6 +2413,11 @@ def self_test() -> int:
             diff = "".join(difflib.unified_diff(SELF_TEST_EXPECTED.splitlines(True), text.splitlines(True),
                                                 "expected", "generated"))
             failures.append(f"the fixture's draft differs:\n{diff}")
+        # a whole `Value` struct block in a rule read back without `replace` is a mismatch (S2.2, S11)
+        whole = 'glyph = { replace = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" } }'
+        bare = 'glyph = { source = { named_system_image = { name = "checkmark" } }, stroke = "absent" }'
+        if not any("without `replace`" in m for m in round_trip(draft, text.replace(whole, bare)).mismatches):
+            failures.append("round trip: a whole block in a rule without `replace` reads back as the fact's")
         # a pending fact left out, an untranscribable fact reported, each by its reason
         status = {(f.key, repr(f.item.data.get("value", f.item.data.get("pending")))): (f.status, f.reason)
                   for f in draft.facts}
@@ -2343,7 +2427,7 @@ def self_test() -> int:
         lines = share_lines(draft, units, trip)
         for needle in ("2 pending", "pending (register id: facts): U1: 1, U8: 1",
                        "[pending]: 1 listed paths, pending with nothing beneath: tokens.text.fallbacks.families (U8)", f"{READ} 1", f"{NOT_HELD} 3",
-                       "19 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
+                       "20 rules", f"{UNIT_NOT_ENABLED} (toolbar) 1", "[declare] left out: toolbar"):
             if not any(needle in line for line in lines):
                 failures.append(f"the report lacks {needle!r}")
         # grouping and order: the second hover rule after the flat rule that states `fill` between them; a later
