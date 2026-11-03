@@ -42,8 +42,10 @@ What is left out, and why (each counted by reason)
 - accent run: a fact with `scheme_file` and `accent` (S17 *The accent run*), which the preset's own resolution never
   reaches.
 - two files: a key whose facts lie in two files, whose order S17 *Which fact applies* does not give.
-- an S11 spelling a fact alone does not give (spell()): a `Scalar` entry stated with a unit (S11: "its number in the
-  unit its declaration names", which no fact states); `"absent"`, `"auto"` or `"none"` on a `Radius` corner (S11
+- an S11 spelling a fact alone does not give (spell()): a `Scalar` entry stated with a unit outside a `token.params`
+  group whose literals share one unit (param_units(): S11's "its number in the unit its declaration names", the
+  group's one unit, S10, so `token.params.pointer_repeat.delay = "500ms"` is `params.pointer_repeat.delay = 500`, the
+  hand-written `[declare.params.pointer_repeat]` declaring `unit = "ms"`); `"absent"`, `"auto"` or `"none"` on a `Radius` corner (S11
   names `<corner>_px` for `Radius::Px` and the bare name for its other variants, neither for a `Value` keyword); a
   unit literal of another dimension than the key's, or under a key whose type the core does not give (its suffix is
   unknown); a keyed segment (`@…`) outside `role.@…`; a whole block and a leaf of it both in one base table (S11 states
@@ -247,6 +249,7 @@ class Fact:
     base_slots: tuple = ()    # the schemes whose base it gives (a colour role's), or SCHEMES
     rule_when: object = None  # the `when` of its rule (its own, or narrowed to the scheme it is alive in)
     whole: bool = False       # a table at a `Value` struct block: `{ replace = { … } }` in a rule (whole_block())
+    param_unit: str = ""      # a keyed param's group unit, its unit literal's (param_units()), its number in it
 
     @property
     def where(self):
@@ -469,6 +472,23 @@ def normal(v):
     return ("other", repr(v))
 
 
+PARAM_UNITS = ("px", "ms", "deg")
+
+
+def param_units(facts) -> dict:
+    """{group: unit}: each `token.params` group whose facts state unit literals all of one unit, which S10's
+    declaration names (`[declare.params.<group>] unit`, one unit per group, S4.6) and S11 spells each value in, its
+    number alone (`params.pointer_repeat.delay = 500` for `500ms`); a group mixing units has none, its literals
+    left out as S11 gives them no spelling."""
+    seen = {}
+    for f in facts:
+        value = f.item.data.get("value")
+        unit = check_facts.UNIT_LITERAL.match(value) if isinstance(value, str) else None
+        if f.kind == "token" and len(f.ckey) == 4 and f.ckey[1] == "params" and unit:
+            seen.setdefault(f.ckey[2], set()).add(unit.group(2))
+    return {g: next(iter(us)) for g, us in seen.items() if len(us) == 1 and next(iter(us)) in PARAM_UNITS}
+
+
 def place(f: Fact):
     """Set the fact's target, base table and TOML keys below them (the docstring's *Targets and paths*), its value
     spelled; Untranscribable where S11 gives no spelling. A pending fact has no value: its key is spelled by its type
@@ -516,6 +536,12 @@ def place(f: Fact):
     f.header = header
     if f.kind == "input":
         f.value = value
+        return
+    if f.param_unit:
+        # a keyed param (S4.6): its number in the unit its group declares (S10, S11), no suffix
+        f.rel = tuple(rel)
+        below = len(header)
+        f.dotted, f.value = f.rel[below:], number(check_facts.UNIT_LITERAL.match(value).group(1))
         return
     name, value = spell(rel[-1], f.typ, f.dim, value)
     f.rel = tuple(rel[:-1]) + (name,)
@@ -633,6 +659,12 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     files = {}
     for f in facts:
         files.setdefault(f.ckey, set()).add(f.item.file)
+    groups = param_units(facts)
+    for f in facts:
+        value = f.item.data.get("value")
+        if (f.kind == "token" and len(f.ckey) == 4 and f.ckey[1] == "params" and f.ckey[2] in groups
+                and isinstance(value, str) and check_facts.UNIT_LITERAL.match(value)):
+            f.param_unit = groups[f.ckey[2]]
     for f in facts:
         d = f.item.data
         if not held(units, f.key, f.kind):
@@ -1627,6 +1659,8 @@ def back_value(f: Fact, node):
     """A read-back TOML value as the fact writes it (unspell; a whole part's `absent = true` and `drawn_as`)."""
     if f.kind == "widget" and len(f.ckey) == len(f.target.split(".")):
         return "absent" if f.rel == ("absent",) and node is True else {f.rel[-1]: node}
+    if f.param_unit and isinstance(node, (int, float)) and not isinstance(node, bool):
+        return f"{node}{f.param_unit}"
     return unspell(f.rel[-1], node, f.typ)[1]
 
 
@@ -2269,6 +2303,26 @@ def self_test() -> int:
             failures.append(f"spell({name!r}, {typ!r}, {value!r}): {got!r}, expected {want!r}")
         elif isinstance(want, tuple) and normal(unspell(want[0], want[1], typ)[1]) != normal(canonical(value, typ)):
             failures.append(f"unspell({want[0]!r}, {want[1]!r}): not {value!r}")
+    # a keyed param group's unit literals (S4.6, S10, S11): their number in the group's one unit, read back with it;
+    # a group mixing units has none
+    class Item:
+        def __init__(self, value):
+            self.data, self.file, self.line, self.cites = {"value": value}, "tokens.toml", 1, []
+
+    def param(group, key, value):
+        return Fact(Item(value), f"token.params.{group}.{key}", ("token", "params", group, key), {}, "token", None,
+                    "Scalar", None)
+
+    params = [param("pointer_repeat", "delay", "500ms"), param("pointer_repeat", "interval", "250ms"),
+              param("mixed", "a", "2px"), param("mixed", "b", "3ms"), param("opacity", "dim", 0.5)]
+    if param_units(params) != {"pointer_repeat": "ms"}:
+        failures.append(f"param_units: {param_units(params)}")
+    delay = params[0]
+    delay.param_unit = "ms"
+    place(delay)
+    if (delay.header, delay.dotted, delay.value, back_value(delay, delay.value)) != (
+            ("params",), ("pointer_repeat", "delay"), 500, "500ms"):
+        failures.append(f"a keyed param's unit literal: {delay.header} {delay.dotted} {delay.value!r}")
     # a set-whole block's leaves: whole in one base, or in one rule; split between a base and a rule, both left out
     def leaf(name, rel):
         return Fact(None, f"token.behavior.key_repeat.{name}", ("token", "behavior", "key_repeat", name), {}, "token",
