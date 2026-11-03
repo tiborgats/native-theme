@@ -83,6 +83,7 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  CI's MSRV job's checks (each on its toolchain, -D warnings),
                  and the 0.8.0 plan's data checks (generate_widgets.py --check,
                  generate_preset.py <id> --check per bundled preset,
+                 generate_sf_tracking.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py)
@@ -494,6 +495,7 @@ if [[ $QUICK_MODE ]]; then
         run_check "the bundled preset $preset is generated from its facts" \
             python3 scripts/generate_preset.py "$preset" --check
     done
+    run_check "sf_tracking's tables are the HIG snapshot's" python3 scripts/generate_sf_tracking.py --check
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
     run_check "the facts are well formed" python3 scripts/check_facts.py
     run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
@@ -1264,6 +1266,16 @@ for preset in native-theme/src/next/presets/*.toml; do
 done
 run_check "data documents: preset generator self-test" \
     python3 scripts/generate_preset.py --self-test
+# sf_tracking's tables and vector table (specification S2.2): generated from
+# the HIG snapshot in the source cache, which --commit mode may lack.
+if [[ $COMMIT_MODE && ! -d "${NATIVE_THEME_SOURCES:-/run/media/tibi/work/cargo-build/native-theme-sources}" ]]; then
+    print_skipped "sf_tracking's tables (no source cache)"
+else
+    run_check "data documents: sf_tracking's tables are the HIG snapshot's" \
+        python3 scripts/generate_sf_tracking.py --check
+fi
+run_check "data documents: sf_tracking generator self-test" \
+    python3 scripts/generate_sf_tracking.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

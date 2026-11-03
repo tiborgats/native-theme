@@ -7,6 +7,7 @@ use super::{Func, Name, Ref};
 use crate::next::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::next::color::Color;
 use crate::next::platform::kde_shade::KdeShadeRole;
+use crate::next::platform::sf_tracking::TrackingDesign;
 use crate::next::selector::Scheme;
 use crate::next::units::{Deg, FontSize, Ms, Px};
 
@@ -93,6 +94,8 @@ pub(super) enum Platform {
     KdeShade,
     /// `kirigami_lerp(a, b, balance)`.
     KirigamiLerp,
+    /// `sf_tracking(font_size, design)`, which reads the font DPI itself.
+    SfTracking,
 }
 
 impl Platform {
@@ -103,6 +106,7 @@ impl Platform {
             Func::AdwStandalone => Some(Platform::AdwStandalone),
             Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
+            Func::SfTracking => Some(Platform::SfTracking),
             _ => None,
         }
     }
@@ -160,6 +164,23 @@ impl Platform {
                     balance.as_ref().map_or(0.0, number),
                 );
                 Val::Color(lerped.map_or_else(transparent, from_channels))
+            }
+            Platform::SfTracking => {
+                let (size, design) = (arg(0), arg(1));
+                let design = match design {
+                    Some(Val::Name(Name::Variant(name))) => {
+                        <TrackingDesign as crate::next::toml::read::Named>::from_name(name.as_str())
+                    }
+                    _ => None,
+                };
+                // Without a DPI (validation requires one, S9.4) the size has
+                // no points: zero, as a non-finite result is (S2.2's
+                // *Totality*).
+                let dpi = env.font_dpi().unwrap_or(f32::NAN);
+                let size = size.as_ref().map_or(0.0, number);
+                Val::Length(Px(design.map_or(0.0, |design| {
+                    crate::next::platform::sf_tracking::sf_tracking(size, design, dpi)
+                })))
             }
         }
     }
@@ -532,6 +553,16 @@ mod tests {
             panic!("a colour");
         };
         assert!(dark.b > 1.0, "{dark:?}");
+        // SF Pro's tracking at 17 pt, 34 px at the fixture's DPI, which the
+        // function reads itself to find the points (`next::platform::sf_tracking`).
+        assert_eq!(
+            value("sf_tracking(17pt, sf_pro)", Ty::Length),
+            Val::Length(Px(crate::next::platform::sf_tracking::sf_tracking(
+                34.0,
+                TrackingDesign::SfPro,
+                144.0
+            )))
+        );
         assert_eq!(
             value("with_alpha(surface.foreground, 0.8)", Ty::Color),
             Val::Color(Color {

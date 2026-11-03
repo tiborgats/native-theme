@@ -9,6 +9,7 @@ use super::{ElementDatum, Expr, Func, Literal, MAX_DEPTH, Name, Ref};
 use crate::next::inputs::{KdeSchemeKey, KdeWmKey};
 use crate::next::key::Key;
 use crate::next::platform::kde_shade::KdeShadeRole;
+use crate::next::platform::sf_tracking::TrackingDesign;
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::Scheme;
 use crate::next::tokens::{KdeGroup, KdeRoleKind};
@@ -165,7 +166,7 @@ pub(crate) static KDE_SHADE_ROLE: EnumTy = EnumTy {
 /// `TrackingDesign` (S2.2), `sf_tracking`'s `design`.
 pub(crate) static TRACKING_DESIGN: EnumTy = EnumTy {
     name: "TrackingDesign",
-    variants: &["sf_pro", "sf_pro_rounded", "new_york"],
+    variants: &TrackingDesign::NAMES,
 };
 
 /// `NameIndexMethod` (S2.2), `name_index`'s `method`.
@@ -1611,11 +1612,6 @@ mod tests {
                 Func::KdeAccentWm,
             ),
             (
-                "sf_tracking(17pt, sf_pro_rounded)",
-                Ty::Length,
-                Func::SfTracking,
-            ),
-            (
                 "name_index(element.text, 8, adwaita)",
                 Ty::Number,
                 Func::NameIndex,
@@ -1717,6 +1713,21 @@ mod tests {
             TypeError::Arity {
                 func: Func::KdeShade,
                 found: 2
+            }
+        );
+    }
+
+    #[test]
+    fn sf_tracking_is_implemented() {
+        assert_eq!(
+            typed("sf_tracking(17pt, sf_pro_rounded)", Ty::Length),
+            Ty::Length
+        );
+        assert_eq!(
+            refused("sf_tracking(17pt, sf_mono)", Ty::Length),
+            TypeError::UnknownVariant {
+                ty: "TrackingDesign",
+                name: Key::new("sf_mono").unwrap()
             }
         );
     }

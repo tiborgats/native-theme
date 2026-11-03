@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use native_theme::next::platform::adw_standalone::adw_standalone;
 use native_theme::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use native_theme::next::platform::kirigami_lerp::kirigami_lerp;
+use native_theme::next::platform::sf_tracking::{TrackingDesign, sf_tracking};
 use native_theme::next::{Color, Scheme};
 
 /// A table's rows, each by its column names; the header lines skipped.
@@ -135,5 +136,34 @@ fn vectors_adw_standalone() {
         };
         let got = adw_standalone(channels(color(&row["c"])), scheme);
         assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+/// A published row's value, `<n>px` (S2.2: Apple's tables, every row).
+fn px(cell: &str) -> f64 {
+    cell.strip_suffix("px").expect(cell).parse().expect(cell)
+}
+
+#[test]
+fn vectors_sf_tracking() {
+    let rows = rows("sf_tracking");
+    assert_eq!(rows.len(), 185);
+    for row in rows {
+        let design = match row["design"].as_str() {
+            "sf_pro" => TrackingDesign::SfPro,
+            "sf_pro_rounded" => TrackingDesign::SfProRounded,
+            "new_york" => TrackingDesign::NewYork,
+            other => panic!("no design `{other}`"),
+        };
+        let got = sf_tracking(
+            number(row["font_size"].strip_suffix("px").expect("a size in px")),
+            design,
+            number(&row["font_dpi"]),
+        );
+        let expected = px(&row["tracking"]);
+        assert!(
+            (f64::from(got) - expected).abs() <= 1e-6 * expected.abs().max(1.0),
+            "{got} for {expected}: {row:?}"
+        );
     }
 }

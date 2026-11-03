@@ -1,14 +1,18 @@
 //! S2.2's platform functions, one file each; public for their vector tests
 //! (`tests/platform_vectors.rs`). `adw_standalone`, `kde_shade` and
 //! `kirigami_lerp` were written in a clean room, from behavioural descriptions
-//! and the vector tables alone (the plan's D10); the model's names for their
-//! operands are here.
+//! and the vector tables alone (the plan's D10); `sf_tracking` reads Apple's
+//! published tables, `gen_sf_tracking` generated from them. The model's names
+//! for their operands are here.
 
 pub mod adw_standalone;
+mod gen_sf_tracking;
 pub mod kde_shade;
 pub mod kirigami_lerp;
+pub mod sf_tracking;
 
 use kde_shade::KdeShadeRole;
+use sf_tracking::TrackingDesign;
 
 use crate::next::toml::read::Named;
 
@@ -46,9 +50,39 @@ impl Named for KdeShadeRole {
     }
 }
 
+impl TrackingDesign {
+    /// Every design, in declaration order.
+    pub(crate) const ALL: [TrackingDesign; 3] = [
+        TrackingDesign::SfPro,
+        TrackingDesign::SfProRounded,
+        TrackingDesign::NewYork,
+    ];
+
+    /// Every design's name, in [`TrackingDesign::ALL`]'s order, as
+    /// expressions spell it.
+    pub(crate) const NAMES: [&'static str; 3] = ["sf_pro", "sf_pro_rounded", "new_york"];
+}
+
+/// `sf_tracking`'s `design` as expressions spell it (S2.2).
+impl Named for TrackingDesign {
+    fn name(&self) -> &'static str {
+        match self {
+            TrackingDesign::SfPro => "sf_pro",
+            TrackingDesign::SfProRounded => "sf_pro_rounded",
+            TrackingDesign::NewYork => "new_york",
+        }
+    }
+
+    fn from_name(name: &str) -> Option<TrackingDesign> {
+        TrackingDesign::ALL
+            .into_iter()
+            .find(|design| design.name() == name)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::KdeShadeRole;
+    use super::{KdeShadeRole, TrackingDesign};
     use crate::next::toml::read::Named;
 
     /// `NAMES`, which types `kde_shade`'s `role`, and the names evaluation
@@ -58,6 +92,16 @@ mod tests {
         for (role, name) in KdeShadeRole::ALL.into_iter().zip(KdeShadeRole::NAMES) {
             assert_eq!(role.name(), name);
             assert_eq!(KdeShadeRole::from_name(name), Some(role));
+        }
+    }
+
+    /// `NAMES`, which types `sf_tracking`'s `design`, and the names
+    /// evaluation reads agree, design by design.
+    #[test]
+    fn tracking_design_names_agree() {
+        for (design, name) in TrackingDesign::ALL.into_iter().zip(TrackingDesign::NAMES) {
+            assert_eq!(design.name(), name);
+            assert_eq!(TrackingDesign::from_name(name), Some(design));
         }
     }
 }
