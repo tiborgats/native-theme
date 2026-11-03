@@ -270,10 +270,13 @@ fn fields_over_absent_never_refused() {
     ] {
         assert_eq!(alone(&rules(first, second), &decl), NONE);
     }
+    // Through a reference to an absent block, a leaf's expression reading
+    // an absent operand is not in effect.
     let through = "[widgets.button.subtitle]\ntext = \"absent\"\n\
-                   [widgets.button.label]\ntext = \"= widget.subtitle.text\"";
+                   [widgets.button.label]\ntext = \"= widget.subtitle.text\"\n\
+                   [widgets.button.body]\ntouch_target_px = \"absent\"";
     let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
-                set = { text.letter_spacing_px = 1 }";
+                set = { text.letter_spacing = \"= add(widget.body.touch_target, 1px)\" }";
     assert_eq!(over(through, rule, &Declarations::default()), NONE);
 
     // A `Fields` patch over an absent glyph leaves it absent, its leaves
@@ -1338,26 +1341,37 @@ fn combination_latest_of_a_recency_set() {
 
 /// Two positions among the same widgets, listed in another order or with
 /// one twice, count among one set of siblings: one parity at a time (S12),
-/// so an `Absent` under odd and a `Fields` patch under even never meet; an
-/// ancestor scope alike.
+/// so an `Absent` under odd and an expression reading it under even never
+/// meet; an ancestor scope alike. Under one parity, or the same scope both
+/// times, they meet and are refused, so each pass is the set comparison's.
 #[test]
 fn combination_sibling_lists_compared_as_sets() {
+    const REFUSED: &str = "rules[1].set.min_width_px: `part.touch_target` can be `absent` here";
     let decl = declare("");
-    let rules = "[[rules]]\nwhen = { position = { among = [\"button\", \"button\"], parity = \"odd\" } }\n\
-                 target = \"button.body\"\nset = { stroke = \"absent\" }\n\
-                 [[rules]]\nwhen = { position = { among = [\"button\"], parity = \"even\" } }\n\
-                 target = \"button.body\"\nset = { stroke.top.width_px = 2 }";
-    assert_eq!(alone(rules, &decl), NONE);
-    let contexts = "[[rules]]\nwhen = { context = [{ scope = { nearest = [\"button\", \"button\"] }, \
-                    widget = \"button\" }] }\ntarget = \"button.body\"\nset = { stroke = \"absent\" }\n\
-                    [[rules]]\nwhen = { not_context = [{ scope = { nearest = [\"button\"] }, \
-                    widget = \"button\" }] }\ntarget = \"button.body\"\n\
-                    set = { stroke.top.width_px = 2 }";
-    assert_eq!(alone(contexts, &decl), NONE);
+    let pair = |first: &str, second: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ {first} }}\ntarget = \"button.body\"\n\
+             set = {{ touch_target_px = \"absent\" }}\n\
+             [[rules]]\nwhen = {{ {second} }}\ntarget = \"button.body\"\n\
+             set = {{ min_width_px = \"= add(part.touch_target, 4px)\" }}"
+        )
+    };
+    let odd = "position = { among = [\"button\", \"button\"], parity = \"odd\" }";
+    let even = "position = { among = [\"button\"], parity = \"even\" }";
+    let also_odd = "position = { among = [\"button\"], parity = \"odd\" }";
+    assert_eq!(alone(&pair(odd, even), &decl), NONE);
+    assert_eq!(alone(&pair(odd, also_odd), &decl), [REFUSED]);
+    let within =
+        "context = [{ scope = { nearest = [\"button\", \"button\"] }, widget = \"button\" }]";
+    let outside = "not_context = [{ scope = { nearest = [\"button\"] }, widget = \"button\" }]";
+    let also_within = "context = [{ scope = { nearest = [\"button\"] }, widget = \"button\" }]";
+    assert_eq!(alone(&pair(within, outside), &decl), NONE);
+    assert_eq!(alone(&pair(within, also_within), &decl), [REFUSED]);
 }
 
-/// S12's exclusions, one by one: an `Absent` under one `when` and a
-/// `Fields` patch under another meet only where the two can hold together.
+/// S12's exclusions, one by one: an `Absent` under one `when` and an
+/// expression reading it under another meet only where the two can hold
+/// together.
 /// Each pair the spec excludes passes; the same pair made independent is
 /// refused, so the pass is the exclusion's.
 #[test]
