@@ -36,7 +36,7 @@ use super::selector::{
 use super::tokens::TokensPatch;
 use super::validate::{self, Context, LayerKind, Stacked};
 use super::value::Value;
-use super::widgets::{PartPatch, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch};
+use super::widgets::{PartPatch, Shown, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch};
 
 /// The system conditions a reader reports (S8, R2.3, S7.1), and its text
 /// scaling factor and font DPI (S9.4).
@@ -1415,9 +1415,9 @@ impl ResolvedTheme {
     }
 
     /// Whether a step the element keeps (`kept`) states `part`'s presence,
-    /// `Absent` or drawn as another (S6.3): where none does, a pending
-    /// presence fact has no presence beneath it, a listed presence (S17,
-    /// ADD-A131).
+    /// `Absent`, `Present` or drawn as another (S6.3): where none does, a
+    /// pending presence fact has no presence beneath it, a listed presence
+    /// (S17, ADD-A131).
     pub(crate) fn presence_stated(
         &self,
         part: TypedPart,
@@ -1426,34 +1426,36 @@ impl ResolvedTheme {
         self.part_steps(part)
             .iter()
             .filter(|step| kept(step))
-            .any(|step| !matches!(step.patch, PartPatch::Style(_)))
+            .any(|step| step.patch.presence.is_some())
     }
 
     /// Whether a synthetic layer's step decides whether `part` is drawn
     /// (S17, ADD-A128), `kept` telling the steps the element keeps: the
-    /// last kept step is a synthetic layer's and changes what the steps
-    /// before it make the part, as a `Style` does only over a last kept
-    /// other step that leaves the part absent or drawn as another widget
-    /// (S6.3). A synthetic `Style` over a part drawn as itself decides
-    /// nothing of its presence.
+    /// last kept step stating a presence is a synthetic layer's and makes
+    /// the part other than the last such step of another layer does, no
+    /// step's presence counting as drawn (S6.3). A synthetic step stating
+    /// no presence decides nothing of it.
     pub(crate) fn shown_by_synthetic(
         &self,
         part: TypedPart,
         kept: impl Fn(&Step<PartPatch>) -> bool,
     ) -> bool {
-        let mut steps = self.part_steps(part).iter().rev().filter(|step| kept(step));
-        let Some(last) = steps.next() else {
+        let mut steps = self
+            .part_steps(part)
+            .iter()
+            .rev()
+            .filter(|step| kept(step))
+            .filter_map(|step| Some((step.pos.layer, step.patch.presence.as_ref()?)));
+        let Some((layer, last)) = steps.next() else {
             return false;
         };
-        if !self.synthetic.contains(&last.pos.layer) {
+        if !self.synthetic.contains(&layer) {
             return false;
         }
-        if !matches!(last.patch, PartPatch::Style(_)) {
-            return true;
-        }
-        steps
-            .find(|step| !self.synthetic.contains(&step.pos.layer))
-            .is_some_and(|step| !matches!(step.patch, PartPatch::Style(_)))
+        let below = steps
+            .find(|(layer, _)| !self.synthetic.contains(layer))
+            .map_or(Shown::Drawn, |(_, presence)| Shown::from(presence));
+        Shown::from(last) != below
     }
 }
 

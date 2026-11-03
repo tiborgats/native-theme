@@ -324,6 +324,87 @@ fn absent_part_not_drawn() {
     );
 }
 
+/// `field_rule_does_not_redraw_absent_part` (S6.3, ADD-A126): a later rule
+/// patching a field of a part a condition made absent, or drawn as another
+/// widget, states no presence and leaves the part as it was (an
+/// application's colour `@ {hover}`).
+#[test]
+fn field_rule_does_not_redraw_absent_part() {
+    let rules = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
+                 set = { absent = true }\n\
+                 [[rules]]\nwhen = { states = [\"focus_visible\"] }\ntarget = \"button.icon\"\n\
+                 set = { drawn_as = { widget = \"button\", part = \"body\", variants = [] } }";
+    let fields = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
+                  set = { padding = { top_px = 2 } }\n\
+                  [[rules]]\nwhen = { states = [\"focus_visible\"] }\ntarget = \"button.icon\"\n\
+                  set = { icon.size_px = 16 }";
+    let theme = fixture(&[rules, fields]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(LABEL, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    assert_eq!(theme.style(&hovered), Styled::NotDrawn);
+    let focused = Element::new(ICON, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::FocusVisible), &[]);
+    assert_eq!(
+        theme.style(&focused),
+        Styled::DrawnAs {
+            target: WidgetOrPart::Part(BODY),
+            variants: Vec::new(),
+        }
+    );
+}
+
+/// `absent_false_draws_part_again` (S6.3, S11, ADD-A126, ADD-A131): a rule
+/// stating `absent = false` draws a part a broader rule made absent, with
+/// the fields beside it over those beneath.
+#[test]
+fn absent_false_draws_part_again() {
+    let rules = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
+                 set = { absent = true }\n\
+                 [[rules]]\nwhen = { states = [\"pressed\"] }\ntarget = \"button.label\"\n\
+                 set = { absent = false, padding = { top_px = 3 } }";
+    let theme = fixture(&[rules]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(LABEL, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    assert_eq!(theme.style(&hovered), Styled::NotDrawn);
+    let pressed = Element::new(LABEL, &scope, &Metrics).with_states(
+        StateFlags::new()
+            .with(StateFlag::Hover)
+            .with(StateFlag::Pressed),
+        &[],
+    );
+    let (label, _) = drawn(&theme, &pressed);
+    assert_eq!(label.padding.top, Some(Px(3.0)));
+    assert_eq!(label.padding.left, Some(Px(0.0)));
+}
+
+/// `fields_before_absent_kept_beneath` (S6.1, S6.3, ADD-A131): the fields a
+/// patch states before an `Absent`, and beside it, stay beneath it, so a
+/// later `absent = false` draws the part with them.
+#[test]
+fn fields_before_absent_kept_beneath() {
+    let rules = "[[rules]]\ntarget = \"button.label\"\nset = { padding = { top_px = 6 } }\n\
+                 [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
+                 set = { absent = true, padding = { left_px = 8 } }\n\
+                 [[rules]]\nwhen = { states = [\"pressed\"] }\ntarget = \"button.label\"\n\
+                 set = { absent = false }";
+    let theme = fixture(&[rules]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(LABEL, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    assert_eq!(theme.style(&hovered), Styled::NotDrawn);
+    let pressed = Element::new(LABEL, &scope, &Metrics).with_states(
+        StateFlags::new()
+            .with(StateFlag::Hover)
+            .with(StateFlag::Pressed),
+        &[],
+    );
+    let (label, _) = drawn(&theme, &pressed);
+    assert_eq!(label.padding.top, Some(Px(6.0)));
+    assert_eq!(label.padding.left, Some(Px(8.0)));
+}
+
 /// `scope_bindings_once` (S3.3, S8): a part's binding is evaluated once, in
 /// the scope outside it, and its children read the bound colour through
 /// the returned scope as it is: a binding darkening `surface.background`

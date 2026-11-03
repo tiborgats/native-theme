@@ -101,7 +101,7 @@ fn toml(text: &str) -> Layer {
 fn body(style: PartStylePatch) -> Layer {
     let mut layer = Layer::default();
     layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-        body: Some(PartPatch::Style(Box::new(style))),
+        body: Some(PartPatch::of_style(style)),
         ..ButtonPatch::default()
     }));
     layer
@@ -660,13 +660,13 @@ fn refusal_keyframes_not_increasing() {
         };
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            icon: Some(PartPatch::Style(Box::new(PartStylePatch {
+            icon: Some(PartPatch::of_style(PartStylePatch {
                 icon: Some(BlockPatch::Fields(IconStylePatch {
                     animation: Some(BlockPatch::Set(Value::Stated(animation))),
                     ..IconStylePatch::default()
                 })),
                 ..PartStylePatch::default()
-            }))),
+            })),
             ..ButtonPatch::default()
         }));
         layer
@@ -763,7 +763,7 @@ fn refusal_route_duplicated() {
     let axis = |tag: &str| {
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            label: Some(PartPatch::Style(Box::new(PartStylePatch {
+            label: Some(PartPatch::of_style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
                         axes: Some(Value::Stated(vec![(
@@ -775,7 +775,7 @@ fn refusal_route_duplicated() {
                     ..TextStylePatch::default()
                 })),
                 ..PartStylePatch::default()
-            }))),
+            })),
             ..ButtonPatch::default()
         }));
         layer
@@ -1059,7 +1059,7 @@ fn refusal_append_in_bases() {
             crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
                 crate::next::widgets::ButtonPart::Body,
             )),
-            PartPatch::Style(Box::new(append)),
+            PartPatch::of_style(append),
         ),
     ));
     assert_eq!(bare(&rule), NONE);
@@ -1750,13 +1750,13 @@ fn refusal_unused_variants_models_and_maps() {
         layers: vec![layer_of(BlendMode::Normal)],
     }));
     layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-        icon: Some(PartPatch::Style(Box::new(PartStylePatch {
+        icon: Some(PartPatch::of_style(PartStylePatch {
             icon: Some(BlockPatch::Fields(IconStylePatch {
                 symbolic_colors: Some(vec![(key!("error"), error)]),
                 ..IconStylePatch::default()
             })),
             ..PartStylePatch::default()
-        }))),
+        })),
         ..ButtonPatch::default()
     }));
     let problems: Vec<String> = strings(check_preset(&file.declarations, &layer, None, &[], false))
@@ -1793,7 +1793,7 @@ fn refusal_not_a_part_field() {
     let label = |style: PartStylePatch| {
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            label: Some(PartPatch::Style(Box::new(style))),
+            label: Some(PartPatch::of_style(style)),
             ..ButtonPatch::default()
         }));
         layer
@@ -1972,14 +1972,16 @@ fn problem_paths_spell_the_layer() {
     let unavailable = declare("[declare.widget.button]\navailable = false");
     let mut drawn = Layer::default();
     drawn.bases.widgets.button = Some(Box::new(ButtonPatch {
-        icon: Some(PartPatch::DrawnAs {
-            target: crate::next::selector::WidgetOrPart::Part(
-                crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
-                    crate::next::widgets::ButtonPart::Body,
-                )),
-            ),
-            variants: Vec::new(),
-        }),
+        icon: Some(PartPatch::of_presence(
+            crate::next::widgets::PartPresence::DrawnAs {
+                target: crate::next::selector::WidgetOrPart::Part(
+                    crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
+                        crate::next::widgets::ButtonPart::Body,
+                    )),
+                ),
+                variants: Vec::new(),
+            },
+        )),
         ..ButtonPatch::default()
     }));
     assert_eq!(
@@ -2069,13 +2071,13 @@ fn rust_built_rules_spell_model_paths() {
             crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
                 crate::next::widgets::ButtonPart::Body,
             )),
-            PartPatch::Style(Box::new(PartStylePatch {
+            PartPatch::of_style(PartStylePatch {
                 fill: Some(PaintPatch::Append(vec![PaintLayer {
                     kind: PaintKind::Color(Value::Expr(Expr::parse("4px").unwrap())),
                     blend: BlendMode::Normal,
                 }])),
                 ..PartStylePatch::default()
-            })),
+            }),
         ),
     ));
     assert_eq!(
@@ -2432,7 +2434,7 @@ fn refusal_ill_typed() {
     // A call on a block-mode enum's field.
     let mut called = transitions(vec![transition(vec![PropertyGroup::Fill], Timing::Linear)]);
     if let Some(button) = called.bases.widgets.button.as_mut()
-        && let Some(PartPatch::Style(style)) = button.body.as_mut()
+        && let Some(PartPatch { style, .. }) = button.body.as_mut()
         && let Some(items) = style.transitions.as_mut()
         && let Some(first) = items.first_mut()
     {
@@ -2470,10 +2472,10 @@ fn refusal_ill_typed() {
 fn icon(icon: IconStylePatch) -> Layer {
     let mut layer = Layer::default();
     layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-        icon: Some(PartPatch::Style(Box::new(PartStylePatch {
+        icon: Some(PartPatch::of_style(PartStylePatch {
             icon: Some(BlockPatch::Fields(icon)),
             ..PartStylePatch::default()
-        }))),
+        })),
         ..ButtonPatch::default()
     }));
     layer
@@ -2754,7 +2756,7 @@ fn refusal_undeclared_every_kind() {
                 key: key!("sidebar"),
                 part: key!("body"),
             },
-            PartPatch::Style(Box::default()),
+            PartPatch::default(),
         ),
     ));
     assert_eq!(
@@ -2772,7 +2774,7 @@ fn refusal_other_items() {
     let features = |tag: &str| {
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            label: Some(PartPatch::Style(Box::new(PartStylePatch {
+            label: Some(PartPatch::of_style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
                         features: Some(Value::Stated(vec![(
@@ -2784,7 +2786,7 @@ fn refusal_other_items() {
                     ..TextStylePatch::default()
                 })),
                 ..PartStylePatch::default()
-            }))),
+            })),
             ..ButtonPatch::default()
         }));
         layer
@@ -3170,7 +3172,7 @@ fn layer_error_every_variant_triggers() {
             .collect();
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            icon: Some(PartPatch::Style(Box::new(PartStylePatch {
+            icon: Some(PartPatch::of_style(PartStylePatch {
                 icon: Some(BlockPatch::Fields(IconStylePatch {
                     animation: Some(BlockPatch::Set(Value::Stated(Loop {
                         period: Value::Stated(Ms(1000.0)),
@@ -3180,7 +3182,7 @@ fn layer_error_every_variant_triggers() {
                     ..IconStylePatch::default()
                 })),
                 ..PartStylePatch::default()
-            }))),
+            })),
             ..ButtonPatch::default()
         }));
         layer
@@ -3188,7 +3190,7 @@ fn layer_error_every_variant_triggers() {
     let route = {
         let mut layer = Layer::default();
         layer.bases.widgets.button = Some(Box::new(ButtonPatch {
-            label: Some(PartPatch::Style(Box::new(PartStylePatch {
+            label: Some(PartPatch::of_style(PartStylePatch {
                 text: Some(BlockPatch::Fields(TextStylePatch {
                     font: Some(FontPatch {
                         axes: Some(Value::Stated(vec![(
@@ -3200,7 +3202,7 @@ fn layer_error_every_variant_triggers() {
                     ..TextStylePatch::default()
                 })),
                 ..PartStylePatch::default()
-            }))),
+            })),
             ..ButtonPatch::default()
         }));
         layer
@@ -3254,14 +3256,14 @@ fn layer_error_every_variant_triggers() {
                 crate::next::selector::PartRef::Typed(crate::next::widgets::TypedPart::Button(
                     crate::next::widgets::ButtonPart::Body,
                 )),
-                PartPatch::Style(Box::new(PartStylePatch {
+                PartPatch::of_style(PartStylePatch {
                     shape: Some(Value::Expr(Expr::Ref(Ref::Base))),
                     corners: Some(BlockPatch::Fields(CornersPatch {
                         curve: Some(crate::next::blocks::outline::CornerCurve::Continuous),
                         ..CornersPatch::default()
                     })),
                     ..PartStylePatch::default()
-                })),
+                }),
             ),
         ));
         let layers = [super::Stacked {

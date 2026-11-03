@@ -10,7 +10,7 @@ use crate::next::resolve::compose::{Found, Locate, Target};
 use crate::next::selector::PartRef;
 use crate::next::validate::walk::Node;
 use crate::next::validate::walk::{ExprForm, Form, Number, Path, Visit, Walker};
-use crate::next::widgets::{PartPatch, TypedPart, WidgetValuesPatch};
+use crate::next::widgets::{TypedPart, WidgetValuesPatch};
 
 use super::matching::declarations;
 use crate::next::resolve::evaluate::references;
@@ -181,13 +181,12 @@ impl ResolvedTheme {
     /// Whether some step of `part` can make the corner at `path` `Full`:
     /// one stating it so, or a reference above it (conservatively).
     fn can_be_full(&self, part: TypedPart, path: &[&str]) -> bool {
-        self.part_steps(part).iter().any(|step| match &step.patch {
-            PartPatch::Style(style) => match style.locate(path) {
+        self.part_steps(part)
+            .iter()
+            .any(|step| match step.patch.style.locate(path) {
                 Found::Through { .. } => true,
                 found => matches!(found.get::<Radius>(), Some(Radius::Full { .. })),
-            },
-            PartPatch::Absent | PartPatch::DrawnAs { .. } => false,
-        })
+            })
     }
 
     /// Every expression the steps of `target` state, by place.
@@ -196,9 +195,7 @@ impl ResolvedTheme {
         match target {
             Target::Part(part) => {
                 for step in self.part_steps(part) {
-                    if let PartPatch::Style(style) = &step.patch {
-                        Walker::new("", false, &mut exprs).walk(style);
-                    }
+                    Walker::new("", false, &mut exprs).walk(&*step.patch.style);
                 }
             }
             Target::Values(widget) => {

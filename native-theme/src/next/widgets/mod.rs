@@ -14,16 +14,29 @@ mod gen_index;
 
 pub use gen_index::*;
 
-/// A part's patch (S6.1): its style's fields, or that the whole part is not
-/// drawn, or that another widget, or a part of one, draws it.
+/// A part's patch (S6.1): what it says of the part's presence, and the
+/// style's fields it sets. A patch stating no presence sets fields only and
+/// never brings an absent or redrawn part back (S6.3).
+#[derive(Clone, Debug, Default, PartialEq)]
+#[non_exhaustive]
+pub struct PartPatch {
+    /// The part's presence; `None`: this patch says nothing of it (S6.3).
+    pub presence: Option<PartPresence>,
+    /// The fields it sets, boxed: a widget's patch holds one per part and a
+    /// layer one per widget, so inline they would make a layer's value grow
+    /// with the catalogue.
+    pub style: Box<PartStylePatch>,
+}
+
+/// A part's presence, as the last of its patches stating one decides it
+/// (S6.3).
 #[derive(Clone, Debug, PartialEq)]
-pub enum PartPatch {
-    /// The part's style's fields, boxed: a widget's patch holds one per part
-    /// and a layer one per widget, so inline they would make a layer's value
-    /// grow with the catalogue.
-    Style(Box<PartStylePatch>),
-    /// The whole part is not drawn (S6.3); the query answers `NotDrawn`.
+pub enum PartPresence {
+    /// The whole part is not drawn; the query answers `NotDrawn`.
     Absent,
+    /// Drawn again, with its own style, over an `Absent` or `DrawnAs`
+    /// below.
+    Present,
     /// Another widget, or a part of one, draws the part, in the host's
     /// context; the query answers `DrawnAs` and the connector builds that
     /// widget.
@@ -35,14 +48,20 @@ pub enum PartPatch {
     },
 }
 
-#[cfg(test)]
 impl PartPatch {
-    /// The style a `Style` patch holds, unboxed, so a test's pattern reaches
-    /// its fields; `None` for the other patches.
-    pub(crate) fn into_style(self) -> Option<PartStylePatch> {
-        match self {
-            PartPatch::Style(style) => Some(*style),
-            PartPatch::Absent | PartPatch::DrawnAs { .. } => None,
+    /// A patch of the style's fields `style` alone.
+    pub fn of_style(style: PartStylePatch) -> PartPatch {
+        PartPatch {
+            presence: None,
+            style: Box::new(style),
+        }
+    }
+
+    /// A patch of the presence `presence` alone.
+    pub fn of_presence(presence: PartPresence) -> PartPatch {
+        PartPatch {
+            presence: Some(presence),
+            style: Box::default(),
         }
     }
 }
@@ -64,10 +83,23 @@ pub(crate) enum Shown {
     },
 }
 
+impl From<&PartPresence> for Shown {
+    fn from(presence: &PartPresence) -> Shown {
+        match presence {
+            PartPresence::Absent => Shown::Absent,
+            PartPresence::Present => Shown::Drawn,
+            PartPresence::DrawnAs { target, variants } => Shown::DrawnAs {
+                target: target.clone(),
+                variants: variants.clone(),
+            },
+        }
+    }
+}
+
 /// A part's patches applied in order (S6.1, S6.3): what the part is drawn
-/// as, and its style's fields stated so far, which an `Absent` or a
-/// `DrawnAs` leaves in place, so a later `Style` brings the part back with
-/// the fields stated below them.
+/// as, by the last patch stating a presence, and its style's fields stated
+/// so far, which an `Absent` or a `DrawnAs` keeps beneath it, so a later
+/// `Present` draws the part with them.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct PartSlot {
     /// What the part is drawn as.
@@ -78,20 +110,10 @@ pub(crate) struct PartSlot {
 
 impl Apply<PartPatch> for PartSlot {
     fn apply(&mut self, patch: PartPatch) -> Result<(), MergeConflict> {
-        match patch {
-            PartPatch::Style(style) => {
-                self.shown = Shown::Drawn;
-                merge_slot(&mut self.style, Some(*style))
-            }
-            PartPatch::Absent => {
-                self.shown = Shown::Absent;
-                Ok(())
-            }
-            PartPatch::DrawnAs { target, variants } => {
-                self.shown = Shown::DrawnAs { target, variants };
-                Ok(())
-            }
+        if let Some(presence) = &patch.presence {
+            self.shown = Shown::from(presence);
         }
+        merge_slot(&mut self.style, Some(*patch.style))
     }
 }
 

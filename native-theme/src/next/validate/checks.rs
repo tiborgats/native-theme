@@ -37,7 +37,7 @@ use crate::next::toml::read::{Named, listed_path, toml_key};
 use crate::next::units::Scalar;
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
 use crate::next::widgets::{
-    ButtonPatch, PartPatch, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch,
+    ButtonPatch, PartPatch, PartPresence, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch,
 };
 
 /// KDE's seven colour sets, `kde_accent`'s `set` (S2.2).
@@ -460,6 +460,9 @@ struct Checker<'a> {
     /// The listed paths a preset's completeness check leaves to the layers
     /// over it (S17, ADD-A128).
     exempt: Vec<String>,
+    /// Walking the fields kept beneath a part's `Absent` or `DrawnAs`: the
+    /// part needs none, so its list is no completeness check (S6.3).
+    latent: bool,
 }
 
 impl<'a> Checker<'a> {
@@ -474,6 +477,7 @@ impl<'a> Checker<'a> {
             keyed_kind: None,
             widget_decls: Vec::new(),
             exempt: Vec::new(),
+            latent: false,
         }
     }
 
@@ -578,32 +582,40 @@ impl<'a> Checker<'a> {
     }
 
     /// A part's patch (S6.1, S6.3): absent only where the part may be, a
-    /// style only of the part's fields, a `DrawnAs` of an available widget
-    /// and declared variants.
+    /// `DrawnAs` of an available widget and declared variants, a style only
+    /// of the part's fields; the fields beside an `Absent` or a `DrawnAs`
+    /// are kept beneath it, so none is missing there (ADD-A131).
     fn part(&mut self, part: TypedPart, patch: &PartPatch, at: &str) {
         let widget = widget_of(part);
         let Some(info) = part_info(part) else {
             return;
         };
-        match patch {
-            PartPatch::Absent => {
+        match &patch.presence {
+            Some(PartPresence::Absent) => {
                 if info.root || !info.may_be_absent {
                     self.problem(at, ProblemKind::AbsentNotAllowed);
                 }
             }
-            PartPatch::Style(style) => {
-                self.part_fields(style, widget, info, at);
-                let parts = registry::widgets()
-                    .iter()
-                    .find(|w| w.kind == widget)
-                    .map_or(&[] as &[PartInfo], |w| w.parts);
-                self.region = Region::Part(widget, part, info, parts);
-                let toml = self.toml;
-                let mut walker = Walker::new(at, toml, self);
-                walker.part(info.fields, |w| w.walk(style));
+            Some(PartPresence::DrawnAs { target, variants }) => {
+                self.drawn_as(target, variants, at);
             }
-            PartPatch::DrawnAs { target, variants } => self.drawn_as(target, variants, at),
+            Some(PartPresence::Present) | None => {}
         }
+        let style = &*patch.style;
+        self.part_fields(style, widget, info, at);
+        let parts = registry::widgets()
+            .iter()
+            .find(|w| w.kind == widget)
+            .map_or(&[] as &[PartInfo], |w| w.parts);
+        self.region = Region::Part(widget, part, info, parts);
+        let toml = self.toml;
+        let latent = std::mem::replace(
+            &mut self.latent,
+            !matches!(patch.presence, Some(PartPresence::Present) | None),
+        );
+        let mut walker = Walker::new(at, toml, self);
+        walker.part(info.fields, |w| w.walk(style));
+        self.latent = latent;
     }
 
     /// A style's fields, each one its part's catalogue entry lists (S2.11).
@@ -1836,6 +1848,7 @@ impl Visit for Checker<'_> {
             return;
         }
         let missing: Vec<&str> = match path.part_fields() {
+            Some(_) if self.latent => Vec::new(),
             Some(fields) => fields
                 .iter()
                 .map(|field| field.path)
@@ -2450,9 +2463,7 @@ impl Uses {
 
     /// A part's patch: its style's keyed names.
     fn part(&mut self, patch: &PartPatch) {
-        if let PartPatch::Style(style) = patch {
-            self.walk(style);
-        }
+        self.walk(&*patch.style);
     }
 
     fn walk<T: Walk + ?Sized>(&mut self, value: &T) {
@@ -2536,10 +2547,10 @@ impl Stated {
 /// or drawn as another (S17, ADD-A128); a listed input
 /// (`inputs.<name>.<scheme>`) where its inputs state the input's
 /// per-scheme value at that scheme (ADD-A132); a listed presence
-/// (`widgets.<widget>.<part>`) where its bases state the part `Absent` or
-/// drawn as another (ADD-A131). A presence stated drawn (S17: "an
-/// application that draws or hides the part") counts too once the model
-/// spells one (`absent = false`), which this check takes then.
+/// (`widgets.<widget>.<part>`) where its bases state the part's presence,
+/// `Absent`, drawn as another or `Present` (S17: "an application that
+/// draws or hides the part", ADD-A131), a `Present` stating none of the
+/// part's fields.
 pub(super) fn states(bases: &Bases, layer: &Layer, listed: &str) -> bool {
     let toml = matches!(layer.spelled, Spelled::Toml);
     let mut stated = Stated::default();
@@ -2566,9 +2577,13 @@ pub(super) fn states(bases: &Bases, layer: &Layer, listed: &str) -> bool {
         let (parts, values) = button.clone().into_parts();
         for (part, patch) in parts {
             let at = format!("widgets.button.{}", part.name());
-            match patch {
-                PartPatch::Style(style) => stated.walk(&at, toml, &style),
-                PartPatch::Absent | PartPatch::DrawnAs { .. } => stated.wholes.push(at),
+            stated.walk(&at, toml, &*patch.style);
+            match patch.presence {
+                Some(PartPresence::Absent | PartPresence::DrawnAs { .. }) => {
+                    stated.wholes.push(at);
+                }
+                Some(PartPresence::Present) => stated.paths.push(at),
+                None => {}
             }
         }
         if let Some(values) = values {

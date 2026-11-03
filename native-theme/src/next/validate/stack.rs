@@ -747,54 +747,48 @@ impl<'a> Stack<'a> {
         let mut bindings = Vec::new();
         let mut surfaces = Vec::new();
         let mut held = Vec::new();
-        let mut visuals = Vec::new();
-        let ops = match patch {
-            PartPatch::Absent => vec![shown(Shown::Absent)],
-            PartPatch::DrawnAs { target, variants } => vec![shown(Shown::DrawnAs {
-                target: target.clone(),
-                variants: variants.clone(),
-            })],
-            PartPatch::Style(style) => {
-                for (index, binding) in style.bindings.iter().flatten().enumerate() {
-                    match binding {
-                        Binding::Role { role, value } => bindings.push(BindingOp {
-                            role: role.clone(),
-                            value: binding_val(value),
-                            at: format!("{at}.bindings[{index}].value"),
-                            id: None,
-                            index,
-                        }),
-                        Binding::Surface(set) => surfaces.push(*set),
-                    }
-                }
-                if let Some(transitions) = &style.transitions {
-                    held = transition_items("", number, transitions);
-                }
-                // The bindings by role or surface (S6.1): a later binding of
-                // the same key replaces this one, whose value is then never
-                // evaluated.
-                if let Some(bindings) = &style.bindings {
-                    held.extend(items("bindings", number, bindings, |binding| {
-                        vec![match binding {
-                            Binding::Role { role, .. } => ItemKey::Role(role.clone()),
-                            Binding::Surface(_) => ItemKey::Surface,
-                        }]
-                    }));
-                }
-                let mut ops = vec![shown(Shown::Drawn)];
-                let (flat, named) = flatten(style, at, toml, number, Some(info.fields));
-                ops.extend(flat);
-                visuals = named;
-                for binding in &mut bindings {
-                    let place = format!("bindings[{number}:{}].role.value", binding.index);
-                    binding.id = ops
-                        .iter()
-                        .position(|op| op.path == place)
-                        .map(|step| (number, step));
-                }
-                ops
+        let style = &*patch.style;
+        for (index, binding) in style.bindings.iter().flatten().enumerate() {
+            match binding {
+                Binding::Role { role, value } => bindings.push(BindingOp {
+                    role: role.clone(),
+                    value: binding_val(value),
+                    at: format!("{at}.bindings[{index}].value"),
+                    id: None,
+                    index,
+                }),
+                Binding::Surface(set) => surfaces.push(*set),
             }
-        };
+        }
+        if let Some(transitions) = &style.transitions {
+            held = transition_items("", number, transitions);
+        }
+        // The bindings by role or surface (S6.1): a later binding of the
+        // same key replaces this one, whose value is then never evaluated.
+        if let Some(bindings) = &style.bindings {
+            held.extend(items("bindings", number, bindings, |binding| {
+                vec![match binding {
+                    Binding::Role { role, .. } => ItemKey::Role(role.clone()),
+                    Binding::Surface(_) => ItemKey::Surface,
+                }]
+            }));
+        }
+        // Only a stated presence says what the part is drawn as (S6.3): a
+        // patch of fields alone leaves it as the patches below make it.
+        let mut ops: Vec<Op> = patch
+            .presence
+            .iter()
+            .map(|presence| shown(Shown::from(presence)))
+            .collect();
+        let (flat, visuals) = flatten(style, at, toml, number, Some(info.fields));
+        ops.extend(flat);
+        for binding in &mut bindings {
+            let place = format!("bindings[{number}:{}].role.value", binding.index);
+            binding.id = ops
+                .iter()
+                .position(|op| op.path == place)
+                .map(|step| (number, step));
+        }
         self.sources.push(Source {
             target: Target::Part(part),
             pos,

@@ -170,7 +170,7 @@ fn rule(selector: Selector, part: ButtonPart, patch: PartStylePatch) -> Rule {
         selector,
         RuleBody::Part(
             PartRef::Typed(TypedPart::Button(part)),
-            PartPatch::Style(Box::new(patch)),
+            PartPatch::of_style(patch),
         ),
     )
 }

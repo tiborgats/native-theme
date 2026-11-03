@@ -14,6 +14,7 @@ use ::toml::{Table, Value as Item};
 
 pub use tree::{Tolerance, Tree};
 
+use super::blocks::part_style::PartStylePatch;
 use super::declare::{DefaultSize, WidgetDecl};
 use super::error::{LayerError, Problem, ProblemKind};
 use super::expr::{Expr, Ref, Ty};
@@ -39,7 +40,9 @@ use super::tokens::Tokens;
 use super::toml::layer::{read_inputs_table, read_preset, read_rule_body};
 use super::toml::read::{Named, Reader};
 use super::toml::when;
-use super::widgets::{ButtonValues, PartPatch, TypedPart, WidgetKind, WidgetValuesPatch};
+use super::widgets::{
+    ButtonValues, PartPatch, PartPresence, TypedPart, WidgetKind, WidgetValuesPatch,
+};
 
 /// Why the gate cannot read a fact's key, `when` or value: a name or a key
 /// the model does not hold yet, which the gate skips while 0.8.0 is built
@@ -1314,8 +1317,9 @@ pub struct FactValue {
 enum Body {
     /// A rule's patch of the key's target, stating the key alone.
     Rule(Box<RuleBody>),
-    /// A whole part's absence or substitution.
-    Part(Box<PartPatch>),
+    /// A whole part's presence: its absence, its substitution or its being
+    /// drawn again.
+    Part(PartPresence),
     /// An input's or one of KDE's lists' value under both schemes, as a
     /// layer's bases state it.
     Inputs(InputBases),
@@ -1501,9 +1505,9 @@ pub fn parse_value(key: &FactKey, value: &Item) -> Result<FactValue, Unread> {
     let body = match &key.place {
         Place::WholePart(part) => {
             let set = match value {
-                Item::String(text) if text == "absent" => {
+                Item::String(text) if text == "absent" || text == "present" => {
                     let mut table = Table::new();
-                    table.insert("absent".to_owned(), Item::Boolean(true));
+                    table.insert("absent".to_owned(), Item::Boolean(text == "absent"));
                     Item::Table(table)
                 }
                 other => other.clone(),
@@ -1511,12 +1515,16 @@ pub fn parse_value(key: &FactKey, value: &Item) -> Result<FactValue, Unread> {
             match read_rule_body(&part_target(*part), &set)
                 .map_err(|problems| Unread::of(&problems))?
             {
-                RuleBody::Part(_, patch @ (PartPatch::Absent | PartPatch::DrawnAs { .. })) => {
-                    Body::Part(Box::new(patch))
-                }
+                RuleBody::Part(
+                    _,
+                    PartPatch {
+                        presence: Some(presence),
+                        style,
+                    },
+                ) if *style == PartStylePatch::default() => Body::Part(presence),
                 _ => {
                     return Err(Unread::Refused(
-                        "a whole part's value is `absent` or its `drawn_as`".to_owned(),
+                        "a whole part's value is `absent`, `present` or its `drawn_as`".to_owned(),
                     ));
                 }
             }
@@ -1650,8 +1658,8 @@ fn extra_step(body: &RuleBody) -> Option<Fold<'_>> {
     let (target, found) = match body {
         RuleBody::Colors(roles) => (Target::Roles, Found::Node(&**roles)),
         RuleBody::Tokens(tokens) => (Target::Tokens, Found::Node(&**tokens)),
-        RuleBody::Part(PartRef::Typed(part), PartPatch::Style(style)) => {
-            (Target::Part(*part), Found::Node(&**style))
+        RuleBody::Part(PartRef::Typed(part), patch) => {
+            (Target::Part(*part), Found::Node(&*patch.style))
         }
         RuleBody::Values(ValuesPatch::Typed(WidgetValuesPatch::Button(values))) => {
             (Target::Values(WidgetKind::Button), Found::Node(&**values))
@@ -2270,20 +2278,23 @@ impl Session<'_> {
                 let queried = self
                     .queried(*part)
                     .ok_or_else(|| Unread::Refused("a part the widget does not have".to_owned()))?;
-                let patch = value.and_then(|value| match &value.body {
-                    Body::Part(patch) => Some(patch.as_ref()),
+                let presence = value.and_then(|value| match &value.body {
+                    Body::Part(presence) => Some(presence),
                     Body::Rule(_) | Body::Inputs(_) => None,
                 });
-                let expected = match (value, patch) {
-                    (None, _) => Answer::Drawn,
-                    (Some(_), Some(PartPatch::Absent)) => Answer::NotDrawn,
-                    (Some(_), Some(PartPatch::DrawnAs { target, variants })) => Answer::DrawnAs {
-                        target: target.clone(),
-                        variants: variants.clone(),
-                    },
-                    (Some(_), Some(PartPatch::Style(_)) | None) => {
+                let expected = match (value, presence) {
+                    (None, _) | (Some(_), Some(PartPresence::Present)) => Answer::Drawn,
+                    (Some(_), Some(PartPresence::Absent)) => Answer::NotDrawn,
+                    (Some(_), Some(PartPresence::DrawnAs { target, variants })) => {
+                        Answer::DrawnAs {
+                            target: target.clone(),
+                            variants: variants.clone(),
+                        }
+                    }
+                    (Some(_), None) => {
                         return Err(Unread::Refused(
-                            "a whole part's value is `absent` or its `drawn_as`".to_owned(),
+                            "a whole part's value is `absent`, `present` or its `drawn_as`"
+                                .to_owned(),
                         ));
                     }
                 };
@@ -2413,7 +2424,8 @@ impl Session<'_> {
     /// element itself (S17, ADD-A128): the preset leaves the place, or a
     /// block it is a leaf of, unstated here, a listed path. A whole part's
     /// key is one where no step for the element states the part's presence
-    /// (`absent`, `drawn_as`), a listed presence (ADD-A131).
+    /// (`absent = true`, `absent = false`, `drawn_as`), a listed presence
+    /// (ADD-A131).
     pub fn listed(&self, key: &FactKey) -> Result<bool, Unread> {
         let (target, path) = match &key.place {
             Place::Part(part, path) => (Target::Part(*part), path),
@@ -2429,7 +2441,7 @@ impl Session<'_> {
     }
 
     /// Whether a step kept for the element states `part`'s presence:
-    /// `Absent` or drawn as another (S6.3).
+    /// `Absent`, `Present` or drawn as another (S6.3).
     fn presence_stated(&self, part: TypedPart) -> bool {
         let Some(queried) = self.queried(part) else {
             return false;

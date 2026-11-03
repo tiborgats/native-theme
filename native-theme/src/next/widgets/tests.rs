@@ -198,8 +198,8 @@ fn values(gap: f32) -> ButtonValuesPatch {
 #[test]
 fn button_patch_splits_into_its_parts_in_catalogue_order() {
     let patch = ButtonPatch {
-        menu_indicator: Some(PartPatch::Absent),
-        body: Some(PartPatch::Style(Box::new(style(0.5)))),
+        menu_indicator: Some(PartPatch::of_presence(PartPresence::Absent)),
+        body: Some(PartPatch::of_style(style(0.5))),
         values: Some(values(4.0)),
         ..ButtonPatch::default()
     };
@@ -207,8 +207,11 @@ fn button_patch_splits_into_its_parts_in_catalogue_order() {
     assert_eq!(
         parts,
         vec![
-            (ButtonPart::Body, PartPatch::Style(Box::new(style(0.5)))),
-            (ButtonPart::MenuIndicator, PartPatch::Absent),
+            (ButtonPart::Body, PartPatch::of_style(style(0.5))),
+            (
+                ButtonPart::MenuIndicator,
+                PartPatch::of_presence(PartPresence::Absent)
+            ),
         ]
     );
     assert_eq!(values_patch, Some(values(4.0)));
@@ -219,11 +222,11 @@ fn button_patches_merge_in_order() {
     let mut slots = WidgetSlots::default();
     let base = WidgetsPatch {
         button: Some(Box::new(ButtonPatch {
-            body: Some(PartPatch::Style(Box::new(PartStylePatch {
+            body: Some(PartPatch::of_style(PartStylePatch {
                 min_width: Some(Value::Stated(Px(10.0))),
                 ..style(0.5)
-            }))),
-            label: Some(PartPatch::Style(Box::new(style(1.0)))),
+            })),
+            label: Some(PartPatch::of_style(style(1.0))),
             values: Some(ButtonValuesPatch {
                 repeat_delay: Some(Value::Stated(Ms(300.0))),
                 ..values(4.0)
@@ -234,7 +237,7 @@ fn button_patches_merge_in_order() {
     assert_eq!(slots.apply(base), Ok(()));
     let later = WidgetsPatch {
         button: Some(Box::new(ButtonPatch {
-            body: Some(PartPatch::Absent),
+            body: Some(PartPatch::of_presence(PartPresence::Absent)),
             values: Some(ButtonValuesPatch {
                 hit_extension: Some(Sides {
                     top: Some(Value::Absent),
@@ -248,19 +251,22 @@ fn button_patches_merge_in_order() {
         })),
     };
     assert_eq!(slots.apply(later), Ok(()));
-    // A style after `Absent` brings the part back with the fields stated
-    // below the `Absent` (S6.3).
+    // `Present` after `Absent` draws the part again with the fields
+    // stated below the `Absent` and beside it (S6.3).
     assert_eq!(
         slots.apply_part(
             TypedPart::Button(ButtonPart::Body),
-            PartPatch::Style(Box::new(style(0.8)))
+            PartPatch {
+                presence: Some(PartPresence::Present),
+                style: Box::new(style(0.8)),
+            }
         ),
         Ok(())
     );
-    let drawn_as = PartPatch::DrawnAs {
+    let drawn_as = PartPatch::of_presence(PartPresence::DrawnAs {
         target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
         variants: Vec::new(),
-    };
+    });
     assert_eq!(
         slots.apply_part(TypedPart::Button(ButtonPart::Subtitle), drawn_as.clone()),
         Ok(())
@@ -289,7 +295,7 @@ fn button_patches_merge_in_order() {
             target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
             variants: Vec::new(),
         },
-        style: None,
+        style: Some(PartStylePatch::default()),
     };
     assert_eq!(
         slots.button.parts,
@@ -318,8 +324,11 @@ fn button_patches_merge_in_order() {
 #[test]
 fn an_absent_part_keeps_its_style_until_brought_back() {
     let mut slot = PartSlot::default();
-    assert_eq!(slot.apply(PartPatch::Style(Box::new(style(0.3)))), Ok(()));
-    assert_eq!(slot.apply(PartPatch::Absent), Ok(()));
+    assert_eq!(slot.apply(PartPatch::of_style(style(0.3))), Ok(()));
+    assert_eq!(
+        slot.apply(PartPatch::of_presence(PartPresence::Absent)),
+        Ok(())
+    );
     assert_eq!(
         slot,
         PartSlot {
@@ -327,7 +336,13 @@ fn an_absent_part_keeps_its_style_until_brought_back() {
             style: Some(style(0.3)),
         }
     );
-    assert_eq!(slot.apply(PartPatch::Style(Box::default())), Ok(()));
+    // A patch stating no presence sets fields only (S6.3).
+    assert_eq!(slot.apply(PartPatch::default()), Ok(()));
+    assert_eq!(slot.shown, Shown::Absent);
+    assert_eq!(
+        slot.apply(PartPatch::of_presence(PartPresence::Present)),
+        Ok(())
+    );
     assert_eq!(slot.shown, Shown::Drawn);
     assert_eq!(slot.style, Some(style(0.3)));
 }
@@ -417,21 +432,27 @@ fn indicator_anchor_inline_top_reads() {
 
 #[test]
 fn a_drawn_as_part_keeps_its_style_until_brought_back() {
-    // ADD-A123: a `Style` after a `DrawnAs` brings the part back as after
-    // `Absent`, the fields stated before the `DrawnAs` kept.
+    // `Present` after a `DrawnAs` draws the part again as after `Absent`,
+    // the fields stated before the `DrawnAs` kept (S6.3, ADD-A126); a
+    // patch of fields alone leaves it drawn as the other widget.
     let mut slot = PartSlot::default();
-    assert_eq!(slot.apply(PartPatch::Style(Box::new(style(0.3)))), Ok(()));
-    let drawn_as = PartPatch::DrawnAs {
+    assert_eq!(slot.apply(PartPatch::of_style(style(0.3))), Ok(()));
+    let drawn_as = PartPatch::of_presence(PartPresence::DrawnAs {
         target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
         variants: Vec::new(),
-    };
+    });
     assert_eq!(slot.apply(drawn_as), Ok(()));
     assert_eq!(slot.style, Some(style(0.3)));
     let width = PartStylePatch {
         min_width: Some(Value::Stated(Px(8.0))),
         ..PartStylePatch::default()
     };
-    assert_eq!(slot.apply(PartPatch::Style(Box::new(width))), Ok(()));
+    assert_eq!(slot.apply(PartPatch::of_style(width)), Ok(()));
+    assert!(matches!(slot.shown, Shown::DrawnAs { .. }));
+    assert_eq!(
+        slot.apply(PartPatch::of_presence(PartPresence::Present)),
+        Ok(())
+    );
     assert_eq!(
         slot,
         PartSlot {

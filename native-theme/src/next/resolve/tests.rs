@@ -55,10 +55,10 @@ pub(super) fn window() -> WindowConditions {
 }
 
 fn opacity(n: f32) -> PartPatch {
-    PartPatch::Style(Box::new(PartStylePatch {
+    PartPatch::of_style(PartStylePatch {
         opacity: Some(Value::Stated(Fraction(n))),
         ..PartStylePatch::default()
-    }))
+    })
 }
 
 /// A layer whose bases set the button body's opacity.

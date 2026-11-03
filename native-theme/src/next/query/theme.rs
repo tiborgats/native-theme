@@ -21,7 +21,7 @@ use crate::next::selector::{
 use crate::next::tokens::{ResolvedTokens, Tokens};
 use crate::next::toml::read::Named;
 use crate::next::units::{Px, Scalar, Size};
-use crate::next::widgets::{PartPatch, TypedPart, WidgetKind};
+use crate::next::widgets::{PartPresence, TypedPart, WidgetKind};
 
 /// R2.7's answer for an element: its style, or why there is none to draw;
 /// not an error (S8).
@@ -201,21 +201,21 @@ impl ResolvedTheme {
             Err(unavailable) => return Styled::NotAvailable(unavailable),
         };
         let applies = |selector: &Selector| matched.matches(selector);
-        let shown_step = self
+        let presence = self
             .part_steps(matched.part)
             .iter()
             .rev()
-            .find(|step| step.selector.as_ref().is_none_or(applies));
-        let shown = shown_step.map(|step| &step.patch);
-        match shown {
-            Some(PartPatch::Absent) => return Styled::NotDrawn,
-            Some(PartPatch::DrawnAs { target, variants }) => {
+            .filter(|step| step.selector.as_ref().is_none_or(applies))
+            .find_map(|step| step.patch.presence.as_ref());
+        match presence {
+            Some(PartPresence::Absent) => return Styled::NotDrawn,
+            Some(PartPresence::DrawnAs { target, variants }) => {
                 return Styled::DrawnAs {
                     target: target.clone(),
                     variants: variants.clone(),
                 };
             }
-            Some(PartPatch::Style(_)) | None => {}
+            Some(PartPresence::Present) | None => {}
         }
         let evaluated = self.evaluate_part(matched.part, element, &applies);
         let bindings = ["bindings".to_owned()];

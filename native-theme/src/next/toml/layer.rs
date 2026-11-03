@@ -21,7 +21,7 @@ use crate::next::selector::{
 };
 use crate::next::tokens::TokensPatch;
 use crate::next::value::{SchemeMap, Value};
-use crate::next::widgets::{PartPatch, WidgetKind, WidgetValuesPatch};
+use crate::next::widgets::{PartPatch, PartPresence, WidgetKind, WidgetValuesPatch};
 
 /// A typed widget's patch, as the `ThemeParts` derive writes it: a slot per
 /// part and one for its values.
@@ -561,8 +561,10 @@ pub(crate) fn read_widget<P: WidgetPatch>(
     cx.widget = outer;
 }
 
-/// A part's table (S6.1, S11): `absent = true`, a `drawn_as` table, or its
-/// style's fields, only those its catalogue entry lists (S2.11).
+/// A part's table (S6.1, S6.3, S11): at most one presence, `absent =
+/// true`, `absent = false` or a `drawn_as` table, a second refused as a
+/// duplicate key, beside its style's fields, only those its catalogue entry
+/// lists (S2.11), the one patch holding both (ADD-A131).
 fn read_part(
     widget: WidgetKind,
     part: &str,
@@ -572,31 +574,47 @@ fn read_part(
 ) -> Option<PartPatch> {
     let fields = table(item, at, cx)?;
     let outer = cx.widget.replace(widget);
-    let read = if let Some(absent) = fields.get("absent") {
-        others_unknown(fields, "absent", at, cx);
-        match absent {
-            Item::Boolean(true) => Some(PartPatch::Absent),
-            _ => cx.mistyped(&join(at, "absent"), "`true`: the whole part is not drawn"),
+    let mut presence: Option<Option<PartPresence>> = None;
+    let mut first: Option<&str> = None;
+    for (key, item) in fields {
+        if !PRESENCE_KEYS.contains(&key.as_str()) {
+            continue;
         }
-    } else if let Some(drawn_as) = fields.get("drawn_as") {
-        others_unknown(fields, "drawn_as", at, cx);
-        read_drawn_as(drawn_as, &join(at, "drawn_as"), cx)
-    } else {
-        Some(PartPatch::Style(Box::new(read_style(
-            widget, part, fields, at, cx,
-        ))))
-    };
+        let key_at = join(at, key);
+        if let Some(other) = first {
+            cx.problem(
+                &key_at,
+                ProblemKind::DuplicateKey {
+                    other: other.to_owned(),
+                },
+            );
+            continue;
+        }
+        first = Some(key);
+        presence = Some(match (key.as_str(), item) {
+            ("absent", Item::Boolean(true)) => Some(PartPresence::Absent),
+            ("absent", Item::Boolean(false)) => Some(PartPresence::Present),
+            ("absent", _) => cx.mistyped(
+                &key_at,
+                "`true`, the whole part not drawn, or `false`, drawn again",
+            ),
+            _ => read_drawn_as(item, &key_at, cx),
+        });
+    }
+    let style = read_style(widget, part, fields, at, cx);
     cx.widget = outer;
-    read
+    let presence = match presence {
+        Some(read) => Some(read?),
+        None => None,
+    };
+    Some(PartPatch {
+        presence,
+        style: Box::new(style),
+    })
 }
 
-/// Every key of `fields` but `kept` refused: an absent or drawn-as part
-/// states nothing else.
-fn others_unknown(fields: &Table, kept: &str, at: &str, cx: &mut Reader) {
-    for key in fields.keys().filter(|key| *key != kept) {
-        cx.problem(&join(at, key), ProblemKind::UnknownKey);
-    }
-}
+/// The keys of a part's table that state its presence (S6.3, S11).
+const PRESENCE_KEYS: [&str; 2] = ["absent", "drawn_as"];
 
 /// A part's style fields: each key a field of the part's catalogue list.
 fn read_style(
@@ -612,6 +630,9 @@ fn read_style(
         .and_then(|info| info.part(part).map(|part| (info.name, part)));
     let mut patch = PartStylePatch::default();
     for (key, item) in fields {
+        if PRESENCE_KEYS.contains(&key.as_str()) {
+            continue;
+        }
         let key_at = join(at, key);
         let field = <PartStylePatch as read::Fields>::field_of(key);
         match (field, listed) {
@@ -635,7 +656,7 @@ fn read_style(
 }
 
 /// `drawn_as = { widget, part, variants }` (S6.1, S11).
-fn read_drawn_as(item: &Item, at: &str, cx: &mut Reader) -> Option<PartPatch> {
+fn read_drawn_as(item: &Item, at: &str, cx: &mut Reader) -> Option<PartPresence> {
     let fields = table(item, at, cx)?;
     let mut variants = None;
     for (key, item) in fields {
@@ -653,7 +674,7 @@ fn read_drawn_as(item: &Item, at: &str, cx: &mut Reader) -> Option<PartPatch> {
         None => None,
     };
     let variants = read::required(variants, &join(at, "variants"), cx);
-    Some(PartPatch::DrawnAs {
+    Some(PartPresence::DrawnAs {
         target: target?,
         variants: variants?,
     })

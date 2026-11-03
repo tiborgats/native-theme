@@ -45,7 +45,7 @@ use crate::next::toml::read::{MapKey, Named};
 use crate::next::units::{Axes, Deg, FontSize, Fraction, Length, Ms, Px, Scalar, Sides};
 use crate::next::validate::{TypeTarget, type_env};
 use crate::next::value::{SurfaceMap, Value};
-use crate::next::widgets::{PartPatch, TypedPart, WidgetKind, WidgetValuesPatch};
+use crate::next::widgets::{PartPresence, TypedPart, WidgetKind, WidgetValuesPatch};
 
 /// A struct block resolved from the steps of its place (S8), which the
 /// `ThemeParts` derive writes.
@@ -1057,10 +1057,7 @@ impl<'t> Cx<'t> {
                 .part_steps(part)
                 .iter()
                 .filter(|step| self.kept(step.selector.as_ref()))
-                .filter_map(|step| match &step.patch {
-                    PartPatch::Style(style) => Some(fold(step.pos, Found::Node(&**style))),
-                    PartPatch::Absent | PartPatch::DrawnAs { .. } => None,
-                })
+                .map(|step| fold(step.pos, Found::Node(&*step.patch.style)))
                 .collect(),
             Target::Values(widget) => theme
                 .values
@@ -2760,17 +2757,17 @@ impl<'t> Cx<'t> {
     }
 
     /// The element's part's style (S8 step 3): `None` where its last patch
-    /// that says what it is makes it `Absent` or drawn as another widget
+    /// that states a presence makes it `Absent` or drawn as another widget
     /// (S6.3); its own bindings evaluated first, in the scope outside it.
     pub(crate) fn part(&mut self, part: TypedPart) -> Option<<PartStyle as Block>::Resolved> {
-        let shown = self
+        let presence = self
             .theme
             .part_steps(part)
             .iter()
             .rev()
-            .find(|step| self.kept(step.selector.as_ref()))
-            .map(|step| matches!(step.patch, PartPatch::Style(_)));
-        if shown == Some(false) {
+            .filter(|step| self.kept(step.selector.as_ref()))
+            .find_map(|step| step.patch.presence.as_ref());
+        if presence.is_some_and(|presence| *presence != PartPresence::Present) {
             return None;
         }
         let folds = self.roots(Target::Part(part));

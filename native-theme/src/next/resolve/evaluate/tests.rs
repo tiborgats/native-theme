@@ -1257,14 +1257,17 @@ fn animated_visual_resolves_into_engine() {
 }
 
 /// A synthetic layer's step decides whether a part is drawn only where it
-/// changes what the steps before it make the part (S6.3, S17, ADD-A128): a
-/// `Style` over a part a lower step leaves absent draws it again, and over
-/// a part drawn as itself decides nothing; an `Absent` decides; a later
-/// step of another layer decides over it.
+/// states a presence that changes what the steps before it make the part
+/// (S6.3, S17, ADD-A128, ADD-A126): a step of fields alone decides
+/// nothing, over a part a lower step leaves absent too; `absent = false`
+/// over an absent part decides, and over a part drawn as itself decides
+/// nothing; an `Absent` decides; a later step of another layer decides
+/// over it.
 #[test]
 fn synthetic_steps_decide_presence_only_by_changing_it() {
     let style = "[widgets.button.body]\nopacity = 1\n";
     let absent = "[widgets.button.body]\nabsent = true\n";
+    let present = "[widgets.button.body]\nabsent = false\n";
     // The stack's places: the preset, the stand-in, then the layers.
     let decides = |layers: &[&str], synthetic: usize| {
         let mut theme = resolved(layers, 1.0);
@@ -1272,9 +1275,11 @@ fn synthetic_steps_decide_presence_only_by_changing_it() {
         theme.shown_by_synthetic(BODY, |_| true)
     };
     assert!(!decides(&[BASE, style], 2));
-    assert!(decides(&[BASE, absent, style], 3));
+    assert!(!decides(&[BASE, absent, style], 3));
+    assert!(decides(&[BASE, absent, present], 3));
+    assert!(!decides(&[BASE, present], 2));
     assert!(decides(&[BASE, absent], 2));
-    assert!(!decides(&[BASE, absent, style], 2));
+    assert!(!decides(&[BASE, absent, present], 2));
 }
 
 /// What evaluation records it read of the synthetic route's layers (S17,
@@ -1560,7 +1565,6 @@ fn value_option_none_is_not_absent() {
     use crate::next::blocks::text::{TextRole, TextStylePatch, Wrap};
     use crate::next::gate::{Tolerance, Tree};
     use crate::next::value::Value;
-    use crate::next::widgets::PartPatch;
 
     let read = |set: &str| -> TextStylePatch {
         let label = toml(&format!("[widgets.button.label.text]\n{set}"))
@@ -1568,7 +1572,7 @@ fn value_option_none_is_not_absent() {
             .widgets
             .button
             .and_then(|button| button.label);
-        match label.and_then(PartPatch::into_style) {
+        match label.map(|patch| *patch.style) {
             Some(PartStylePatch {
                 text: Some(BlockPatch::Fields(text)),
                 ..

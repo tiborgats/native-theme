@@ -31,8 +31,8 @@ use crate::next::selector::{
 use crate::next::units::{FontSize, Fraction, Px, Scalar};
 use crate::next::value::Value;
 use crate::next::widgets::{
-    ButtonPart, ButtonValuesPatch, IconPlacement, PartPatch, TypedPart, Variant, WidgetKind,
-    WidgetValuesPatch,
+    ButtonPart, ButtonValuesPatch, IconPlacement, PartPatch, PartPresence, TypedPart, Variant,
+    WidgetKind, WidgetValuesPatch,
 };
 
 /// The layer `text` states, or a failure naming its problems.
@@ -61,7 +61,10 @@ fn body(layer: &Layer) -> PartStylePatch {
         .as_ref()
         .and_then(|b| b.body.clone())
     {
-        Some(PartPatch::Style(style)) => *style,
+        Some(PartPatch {
+            presence: None,
+            style,
+        }) => *style,
         other => panic!("not a style: {other:?}"),
     }
 }
@@ -109,7 +112,7 @@ fn spelling_stated_value() {
         .button
         .unwrap()
         .label
-        .and_then(PartPatch::into_style)
+        .map(|patch| *patch.style)
     else {
         panic!("a table under an application layer's bases is a `Fields` patch");
     };
@@ -134,7 +137,7 @@ fn spelling_key_of_a_field_with_a_unit() {
     let text = |lines: &str| {
         let layer = layer(&format!("[widgets.button.label.text]\n{lines}"));
         let label = layer.bases.widgets.button.unwrap().label;
-        match label.and_then(PartPatch::into_style) {
+        match label.map(|patch| *patch.style) {
             Some(PartStylePatch {
                 text: Some(BlockPatch::Fields(text)),
                 ..
@@ -223,7 +226,7 @@ fn spelling_text_value() {
             .button
             .unwrap()
             .label
-            .and_then(PartPatch::into_style)
+            .map(|patch| *patch.style)
         {
             Some(PartStylePatch {
                 text:
@@ -252,7 +255,7 @@ fn spelling_text_value() {
         "[widgets.button.icon.glyph]\nsource = { theme_icon = { name = \"absent\", fallbacks = \
          [\"none\"] } }",
     );
-    let Some(PartPatch::Style(icon)) = layer.bases.widgets.button.unwrap().icon else {
+    let Some(PartPatch { style: icon, .. }) = layer.bases.widgets.button.unwrap().icon else {
         panic!("a style");
     };
     let Some(BlockPatch::Fields(glyph)) = icon.glyph else {
@@ -301,16 +304,79 @@ fn spelling_absent() {
     let layer = layer("[widgets.button.subtitle]\nabsent = true");
     assert_eq!(
         layer.bases.widgets.button.unwrap().subtitle,
-        Some(PartPatch::Absent)
-    );
-    assert_eq!(
-        problems("[widgets.button.subtitle]\nabsent = true\ntext.case = \"upper\""),
-        ["widgets.button.subtitle.text: unknown key"]
+        Some(PartPatch::of_presence(PartPresence::Absent))
     );
     let set = layer_rule("target = \"button.icon\"\nset = { absent = true }");
     assert_eq!(
         set,
-        RuleBody::Part(button(ButtonPart::Icon), PartPatch::Absent)
+        RuleBody::Part(
+            button(ButtonPart::Icon),
+            PartPatch::of_presence(PartPresence::Absent)
+        )
+    );
+}
+
+/// A part's table states at most one presence, `absent = true`, `absent =
+/// false` (`Present`) or `drawn_as`, beside any of its fields, the one
+/// patch holding both (S6.3, S11, ADD-A126, ADD-A131).
+#[test]
+fn spelling_presence_beside_fields() {
+    let set = layer_rule("target = \"button.label\"\nset = { absent = false }");
+    assert_eq!(
+        set,
+        RuleBody::Part(
+            button(ButtonPart::Label),
+            PartPatch::of_presence(PartPresence::Present)
+        )
+    );
+    let beside = |text: &str| {
+        layer(&format!(
+            "[widgets.button.subtitle]\n{text}\ntext.case = \"upper\""
+        ))
+        .bases
+        .widgets
+        .button
+        .unwrap()
+        .subtitle
+        .unwrap()
+    };
+    for (text, presence) in [
+        ("absent = true", PartPresence::Absent),
+        ("absent = false", PartPresence::Present),
+    ] {
+        let read = beside(text);
+        assert_eq!(read.presence, Some(presence));
+        assert!(
+            matches!(&read.style.text, Some(BlockPatch::Fields(text)) if text.case.is_some()),
+            "{read:?}"
+        );
+    }
+    assert_eq!(
+        problems("[widgets.button.subtitle]\nabsent = \"no\""),
+        [
+            "widgets.button.subtitle.absent: expected `true`, the whole part not drawn, or \
+             `false`, drawn again"
+        ]
+    );
+}
+
+/// A second presence in one part's table is a duplicate key (S11, S12,
+/// ADD-A131): one table states at most one.
+#[test]
+fn refusal_second_presence() {
+    assert_eq!(
+        problems(
+            "[widgets.button.icon]\nabsent = true\ndrawn_as = { widget = \"button\", \
+             variants = [] }"
+        ),
+        ["widgets.button.icon.drawn_as: states the field absent states too"]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"button.icon\"\nset = { drawn_as = { widget = \"button\", \
+             variants = [] }, absent = false }"
+        ),
+        ["rules[0].set.absent: states the field drawn_as states too"]
     );
 }
 
@@ -326,7 +392,7 @@ fn spelling_none() {
         .unwrap()
         .label;
     assert!(matches!(
-        label.and_then(PartPatch::into_style),
+        label.map(|patch| *patch.style),
         Some(PartStylePatch {
             text: Some(BlockPatch::Fields(TextStylePatch {
                 max_lines: Some(Value::Stated(None)),
@@ -378,7 +444,7 @@ fn decoration_line_underline_low_reads() {
                 ..
             })),
         ..
-    }) = label.clone().and_then(PartPatch::into_style)
+    }) = label.clone().map(|patch| *patch.style)
     else {
         panic!("not a stated decoration: {label:?}");
     };
@@ -498,20 +564,20 @@ fn spelling_drawn_as() {
     };
     assert_eq!(
         read("{ widget = \"button\", part = \"icon\", variants = [\"flat\", \"@raised\"] }"),
-        PartPatch::DrawnAs {
+        PartPatch::of_presence(PartPresence::DrawnAs {
             target: WidgetOrPart::Part(button(ButtonPart::Icon)),
             variants: vec![
                 VariantRef::Typed(Variant::Flat),
                 VariantRef::Keyed(key!("raised"))
             ],
-        }
+        })
     );
     assert_eq!(
         read("{ widget = \"button\", variants = [] }"),
-        PartPatch::DrawnAs {
+        PartPatch::of_presence(PartPresence::DrawnAs {
             target: WidgetOrPart::Widget(WidgetRef::Typed(WidgetKind::Button)),
             variants: Vec::new(),
-        }
+        })
     );
     assert_eq!(
         problems("[widgets.button.icon]\ndrawn_as = { part = \"icon\", variants = [] }"),
@@ -595,7 +661,7 @@ fn spelling_rule_target() {
     ));
     assert!(matches!(
         layer_rule("target = \"button.body\"\nset = { opacity = 0.5 }"),
-        RuleBody::Part(part, PartPatch::Style(_)) if part == button(ButtonPart::Body)
+        RuleBody::Part(part, PartPatch { presence: None, .. }) if part == button(ButtonPart::Body)
     ));
     assert_eq!(
         layer_rule("target = \"button.values\"\nset = { icon_placement = \"top\" }"),
@@ -630,7 +696,7 @@ fn spelling_rule_patch() {
     );
     let rule = &layer.rules[0];
     assert_eq!(rule.selector.states.all_of, [StateFlag::Hover]);
-    let RuleBody::Part(_, PartPatch::Style(style)) = &rule.body else {
+    let RuleBody::Part(_, PartPatch { style, .. }) = &rule.body else {
         panic!("a part's style");
     };
     assert!(matches!(&style.fill, Some(PaintPatch::Append(layers)) if layers.len() == 1));
