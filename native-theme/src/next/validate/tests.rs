@@ -642,6 +642,56 @@ fn refusal_follow_part_outside_focus() {
     assert_eq!(bare(&corner(true)), NONE);
 }
 
+/// `round_pt` is stated only in an expression on a `Font.size`, on a
+/// reference to a font size (S2.2, S12).
+#[test]
+fn refusal_round_pt_misused() {
+    let label = |key: &str, expr: &str| {
+        bare(&toml(&format!(
+            "[widgets.button.label]\n{key} = \"= {expr}\""
+        )))
+    };
+    let misused = |path: &str| {
+        vec![format!(
+            "{path}: `round_pt` takes a reference to a font size, in an expression on a \
+             `Font.size`"
+        )]
+    };
+    assert_eq!(
+        label(
+            "text.font.size",
+            "mul(round_pt(token.text.roles.body.font.size), 1.2)"
+        ),
+        NONE
+    );
+    assert_eq!(
+        label(
+            "padding.top_px",
+            "round_pt(token.text.roles.body.font.size)"
+        ),
+        misused("widgets.button.label.padding.top_px")
+    );
+    assert_eq!(
+        label("text.font.size", "round_pt(10pt)"),
+        misused("widgets.button.label.text.font.size")
+    );
+    assert_eq!(
+        label(
+            "text.font.size",
+            "round_pt(add(token.text.roles.body.font.size, 1px))"
+        ),
+        misused("widgets.button.label.text.font.size")
+    );
+    assert_eq!(
+        label("text.font.size", "round_pt(token.text.font_dpi)"),
+        misused("widgets.button.label.text.font.size")
+    );
+    let style = toml(
+        "[tokens.text.roles.caption]\nfont.size = \"= round_pt(token.text.roles.body.font.size)\"",
+    );
+    assert_eq!(bare(&style), NONE);
+}
+
 #[test]
 fn refusal_route_duplicated() {
     let axis = |tag: &str| {
@@ -2473,6 +2523,7 @@ kinds! {
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
     FollowPartOutsideFocus,
+    RoundPtMisused,
     RouteDuplicated { .. },
     KdeAccentArgument { .. },
     PickWithoutColors,
@@ -2817,6 +2868,12 @@ fn layer_error_every_variant_triggers() {
         (
             V::FollowPartOutsideFocus,
             read("[widgets.button.body]\ncorners.top_left = \"follow_part\""),
+        ),
+        (
+            V::RoundPtMisused,
+            read(
+                "[widgets.button.label]\npadding.top_px = \"= round_pt(token.text.roles.body.font.size)\"",
+            ),
         ),
         (V::RouteDuplicated, over(&route, &none, &[])),
         (

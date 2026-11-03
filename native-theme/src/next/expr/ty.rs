@@ -509,6 +509,8 @@ pub(super) enum Node {
     Floor(Box<Node>, Ty),
     /// `round(x)`, with its result's type.
     Round(Box<Node>, Ty),
+    /// `round_pt(x)`, a font size.
+    RoundPt(Box<Node>),
     /// `alpha(c, a)`.
     Alpha(Box<[Node; 2]>),
     /// `with_alpha(c, a)`.
@@ -783,6 +785,11 @@ impl Checker<'_> {
                     Node::Round(node, ty.clone())
                 };
                 Ok((node, ty))
+            }
+            Func::RoundPt => {
+                let nodes = self.arguments(func, args, depth, &[Param::Of(Ty::FontSize)])?;
+                let [node] = <[Node; 1]>::try_from(nodes).map_err(|_| arity(func, args))?;
+                Ok((Node::RoundPt(Box::new(node)), Ty::FontSize))
             }
             Func::Pick => self.pick(args, depth),
             Func::Alpha | Func::WithAlpha => {

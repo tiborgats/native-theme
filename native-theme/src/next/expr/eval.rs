@@ -72,6 +72,11 @@ pub(crate) trait Env {
     /// A stated font size in logical pixels: converted from points by the
     /// font DPI, and scaled where the expression's place scales it (S9.4).
     fn font_size(&self, size: FontSize) -> Px;
+
+    /// The DPI points convert by (S9.4): the reader's, else the preset's
+    /// `token.text.font_dpi`; `None` where neither is stated, which
+    /// validation refuses.
+    fn font_dpi(&self) -> Option<f32>;
 }
 
 /// A platform function implemented to its source (S2.2), the only kind a
@@ -186,6 +191,11 @@ fn eval(node: &Node, env: &dyn Env) -> Val {
         }
         Node::Floor(x, ty) => of_type(ty, arith::floor(number(&eval(x, env)))),
         Node::Round(x, ty) => of_type(ty, arith::round(number(&eval(x, env)))),
+        Node::RoundPt(x) => {
+            let x = number(&eval(x, env));
+            let dpi = env.font_dpi().unwrap_or(f32::NAN);
+            Val::FontSize(Px(arith::round_pt(x, dpi)))
+        }
         Node::Alpha(operands) => {
             let [c, a] = operands.as_ref();
             Val::Color(arith::alpha(color(&eval(c, env)), number(&eval(a, env))))
@@ -330,7 +340,7 @@ mod tests {
                 "token.gap" | "part.min_width" | "widget.frame.width" => Some(Ty::Length),
                 "token.speed" | "token.nan" | "values.weight" => Some(Ty::Number),
                 "token.duration" => Some(Ty::Duration),
-                "token.label_size" => Some(Ty::FontSize),
+                "token.label_size" | "token.title_size" => Some(Ty::FontSize),
                 "surface.foreground"
                 | "role.global.accent"
                 | "input.accent"
@@ -365,6 +375,7 @@ mod tests {
                     "values.weight" => Val::Number(2.5),
                     "token.duration" => Val::Duration(Ms(200.0)),
                     "token.label_size" => Val::FontSize(Px(16.0)),
+                    "token.title_size" => Val::FontSize(Px(17.0)),
                     "surface.foreground" => rgba(1.0, 0.0, 0.0, 0.5),
                     "role.global.accent" => rgba(0.0, 0.0, 1.0, 1.0),
                     "part.max_width" => Val::Auto,
@@ -379,6 +390,11 @@ mod tests {
                 FontSize::Pt(pt) => Px(pt + pt),
                 FontSize::Px(px) => Px(px),
             }
+        }
+
+        /// The synthetic two px per point's DPI.
+        fn font_dpi(&self) -> Option<f32> {
+            Some(144.0)
         }
     }
 
@@ -567,6 +583,15 @@ mod tests {
         assert_eq!(
             value("mul(font_size, 1.5)", Ty::FontSize),
             Val::Length(Px(19.5))
+        );
+        // 17px at 144 dpi is 8.5 points, rounded to 9, back to 18px.
+        assert_eq!(
+            value("round_pt(token.title_size)", Ty::FontSize),
+            Val::FontSize(Px(18.0))
+        );
+        assert_eq!(
+            value("mul(round_pt(token.label_size), 1.5)", Ty::FontSize),
+            Val::FontSize(Px(24.0))
         );
     }
 

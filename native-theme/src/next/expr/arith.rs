@@ -94,6 +94,27 @@ pub(super) fn round(x: f32) -> f32 {
     finite(x.round())
 }
 
+/// `round_pt(x)`: the font size `x`, in px, rounded to whole points by
+/// `dpi` and converted back, `round(x · 72 / dpi) · dpi / 72`, computed in
+/// f64; a point size within a relative 2^-21 of a half point is taken as
+/// that half, so a size stored with six significant digits rounds as Qt's
+/// `qRound` rounds the stored point size (S2.2). A `dpi` that is not
+/// finite and above zero gives zero (S2.2's *Totality*).
+pub(super) fn round_pt(x: f32, dpi: f32) -> f32 {
+    let (x, dpi) = (f64::from(x), f64::from(dpi));
+    let points = x * 72.0 / dpi;
+    let half = points.floor() + 0.5;
+    let points = if (points - half).abs() <= HALF_POINT_TOLERANCE * half.abs() {
+        half
+    } else {
+        points
+    };
+    finite((points.round() * dpi / 72.0) as f32)
+}
+
+/// `round_pt`'s relative tolerance around a half point, 2^-21 (S2.2).
+const HALF_POINT_TOLERANCE: f64 = 1.0 / 2_097_152.0;
+
 /// `pick(index, c0, c1, …)`: the colour at the floored index's Euclidean
 /// remainder by the number of colours; `None` only where there is no colour,
 /// which typing refuses.
@@ -171,6 +192,26 @@ mod tests {
             mix(wide, rgba(0.25, 0.75, 0.0, 1.0), 0.5),
             rgba(0.75, 0.25, 0.0, 1.0),
         );
+    }
+
+    /// S2.2's unit tests: a point size reaches `round_pt` converted to px
+    /// in single precision (S9.4), and rounds as `qRound` on the stored
+    /// point size.
+    #[test]
+    fn round_pt_rounds_whole_points() {
+        let px = |points: f32, dpi: f32| points * dpi / 72.0;
+        let close = |actual: f32, expected: f32| (actual - expected).abs() < 1e-4;
+        let half = round_pt(px(10.5, 97.0), 97.0);
+        assert!(close(half, px(11.0, 97.0)), "{half}");
+        let below = round_pt(px(10.4999, 96.0), 96.0);
+        assert!(close(below, px(10.0, 96.0)), "{below}");
+        // The half point lies within the tolerance only: the single
+        // precision conversion leaves it below 10.5 points at 97 dpi.
+        let stored = f64::from(px(10.5, 97.0)) * 72.0 / 97.0;
+        assert!(stored != 10.5, "{stored}");
+        assert!(close(round_pt(px(12.0, 96.0), 96.0), 16.0));
+        assert_eq!(round_pt(px(10.0, 96.0), 0.0), 0.0);
+        assert_eq!(round_pt(px(10.0, 96.0), f32::NAN), 0.0);
     }
 
     #[test]

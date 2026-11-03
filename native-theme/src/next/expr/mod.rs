@@ -314,6 +314,9 @@ pub enum Func {
     Floor,
     /// `round(x)`: to the nearest integer, a half away from zero.
     Round,
+    /// `round_pt(x)`: a font size rounded to whole points by the font DPI
+    /// (S9.4), as `QFont::pointSize()` rounds the application font's.
+    RoundPt,
     /// `qt_lighter(c, factor)`: `QColor::lighter`.
     QtLighter,
     /// `qt_darker(c, factor)`: `QColor::darker`.
@@ -365,7 +368,7 @@ pub enum Func {
 
 impl Func {
     /// Every function, in S2.2's table's order.
-    pub const ALL: [Func; 42] = [
+    pub const ALL: [Func; 43] = [
         Func::Alpha,
         Func::WithAlpha,
         Func::Mix,
@@ -385,6 +388,7 @@ impl Func {
         Func::Max,
         Func::Floor,
         Func::Round,
+        Func::RoundPt,
         Func::QtLighter,
         Func::QtDarker,
         Func::KcuOverlay,
@@ -433,6 +437,7 @@ impl Func {
             Func::Max => "max",
             Func::Floor => "floor",
             Func::Round => "round",
+            Func::RoundPt => "round_pt",
             Func::QtLighter => "qt_lighter",
             Func::QtDarker => "qt_darker",
             Func::KcuOverlay => "kcu_overlay",

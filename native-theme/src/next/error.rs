@@ -251,6 +251,9 @@ pub enum ProblemKind {
     KeyframeWithoutPart,
     /// `Radius::FollowPart` outside a `FocusIndicator.corners` (S2.4, S12).
     FollowPartOutsideFocus,
+    /// `round_pt` called outside an expression stated on a `Font.size`, or
+    /// with an operand that is not a reference to a font size (S2.2, S12).
+    RoundPtMisused,
     /// An axis or feature duplicating a field's route (`wght` in
     /// `Font.axes`, S2.8, S12).
     RouteDuplicated {
@@ -499,6 +502,9 @@ impl fmt::Display for ProblemKind {
             ProblemKind::FollowPartOutsideFocus => {
                 f.write_str("`follow_part` outside a focus indicator's corners")
             }
+            ProblemKind::RoundPtMisused => f.write_str(
+                "`round_pt` takes a reference to a font size, in an expression on a `Font.size`",
+            ),
             ProblemKind::RouteDuplicated { tag } => {
                 write!(f, "`{tag}` duplicates a field's route")
             }

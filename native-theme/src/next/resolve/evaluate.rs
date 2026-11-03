@@ -591,7 +591,7 @@ struct Operands {
     values: Vec<(Ref, Val)>,
     dpi: Option<f32>,
     factor: Option<f32>,
-    /// A font size literal was converted.
+    /// A font size literal was converted, or `round_pt` read the DPI.
     converted: Cell<bool>,
 }
 
@@ -613,6 +613,11 @@ impl Env for Operands {
             (Some(px), None) => px,
             (None, _) => Px(f32::NAN),
         }
+    }
+
+    fn font_dpi(&self) -> Option<f32> {
+        self.converted.set(true);
+        self.dpi
     }
 }
 

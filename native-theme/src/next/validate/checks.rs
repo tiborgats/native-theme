@@ -1089,7 +1089,8 @@ impl<'a> Checker<'a> {
             }
         }
         let in_text_style = path.fields().any(|(owner, _)| owner == "TextStyle");
-        self.expr_node(expr, &at, in_text_style);
+        let on_font_size = path.last_field() == Some(("Font", "size"));
+        self.expr_node(expr, &at, in_text_style, on_font_size);
         let ty = match ty {
             Some(Ty::Key(set)) if set == KEY_OF_PLACE => self.key_type(path),
             Some(ty) => Some(ty),
@@ -1123,22 +1124,34 @@ impl<'a> Checker<'a> {
 
     /// One node's checks, then its arguments'; `expression` has bounded the
     /// nesting by [`MAX_DEPTH`].
-    fn expr_node(&mut self, expr: &Expr, at: &str, in_text_style: bool) {
+    fn expr_node(&mut self, expr: &Expr, at: &str, in_text_style: bool, on_font_size: bool) {
         match expr {
             Expr::Lit(_) => {}
             Expr::Ref(reference) => self.reference(reference, at, in_text_style),
             Expr::Call(func, args) => {
-                self.call(*func, args, at);
+                self.call(*func, args, at, on_font_size);
                 for arg in args {
-                    self.expr_node(arg, at, in_text_style);
+                    self.expr_node(arg, at, in_text_style, on_font_size);
                 }
             }
         }
     }
 
-    fn call(&mut self, func: Func, args: &[Expr], at: &str) {
+    /// A call's own checks; `on_font_size`: its expression is stated on a
+    /// `Font.size`.
+    fn call(&mut self, func: Func, args: &[Expr], at: &str, on_font_size: bool) {
         match func {
             Func::Pick if args.len() < 2 => self.problem(at, ProblemKind::PickWithoutColors),
+            Func::RoundPt => {
+                let operand_refused = match args {
+                    [Expr::Ref(reference)] => !self.is_font_size(reference),
+                    [_] => true,
+                    _ => false,
+                };
+                if !on_font_size || operand_refused {
+                    self.problem(at, ProblemKind::RoundPtMisused);
+                }
+            }
             Func::KirigamiLerp => {
                 if let Some(Expr::Lit(Literal::Number(balance))) = args.get(2)
                     && !(0.0..=1.0).contains(balance)
@@ -1169,6 +1182,18 @@ impl<'a> Checker<'a> {
             }
             _ => {}
         }
+    }
+
+    /// Whether `reference` names a font size (S2.2): a field of that type,
+    /// or another part's `font_size` metric.
+    fn is_font_size(&self, reference: &Ref) -> bool {
+        let types = Types {
+            decl: self.decl(),
+            region: self.region,
+        };
+        let metric = matches!(reference, Ref::Widget { path, .. }
+            if matches!(path.as_slice(), [metric] if metric.as_str() == "font_size"));
+        metric || types.reference(reference) == Some(Ty::FontSize)
     }
 
     fn reference(&mut self, reference: &Ref, at: &str, in_text_style: bool) {
