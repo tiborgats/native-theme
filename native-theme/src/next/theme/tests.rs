@@ -37,16 +37,40 @@ fn every_bundled_preset_validates() {
 /// The build test's route for the preset `text` states, as `Theme` reads
 /// the bundled preset `id`: the plain one (`from_preset`'s) where its
 /// `[pending]` table is empty, else the synthetic one
-/// (`from_preset_synthetic`'s) with one synthetic layer per listed path.
+/// (`from_preset_synthetic`'s) with one synthetic layer per listed path,
+/// a refusal naming the listed paths whose synthetic values the refused
+/// stack holds (S17, ADD-A131).
 fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
     let file = read_preset(text).map_err(|e| e.to_string())?;
     if file.pending.is_empty() {
         preset_stack(id, text, Scheme::Light).map_err(|e| e.to_string())?;
     } else {
         let layers = synthetic_layers(&file.pending)?;
-        synthetic_stack(id, text, Scheme::Light, layers).map_err(|e| e.to_string())?;
+        synthetic_stack(id, text, Scheme::Light, layers).map_err(|e| {
+            let listed: Vec<&str> = file.pending.iter().map(|(path, _)| path.as_str()).collect();
+            format!(
+                "{e}; the stack holds the synthetic values of {}",
+                listed.join(", ")
+            )
+        })?;
     }
     Ok(())
+}
+
+/// Where no synthetic value S12 accepts exists for a listed path, the
+/// build test fails with S12's problem and names the path (S17,
+/// ADD-A131): the listed touch delay's synthetic value, `absent`, read by
+/// a preset rule where a duration may not be absent.
+#[test]
+fn build_test_names_a_refused_synthetic_value() {
+    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.touch.delay\" }\n";
+    let text = format!("{}{rule}", listed_preset());
+    let refused = validates(None, &text).unwrap_err();
+    assert!(refused.contains("may not be absent"), "{refused}");
+    assert!(
+        refused.ends_with("the stack holds the synthetic values of tokens.behavior.touch.delay_ms"),
+        "{refused}"
+    );
 }
 
 /// The build test's two routes, over the fixture preset with a listed
