@@ -2221,6 +2221,38 @@ fn part_text_reaching_absent_style_leaf_refused() {
     }
 }
 
+/// The T7 review's SF3: a block a plain reference brings absent whole has
+/// no fields (S2.2), so none of its fields is refused again below it: a
+/// part's icon, which may be absent, referencing an icon context stated
+/// `absent` is accepted, though the context's size may not be absent where
+/// the context is stated. No block field that may not be absent can
+/// reference a block that may be: each block type a reference reaches
+/// absent (a part's `text` and `icon`, an icon context) is marked at every
+/// place a reference can read it from.
+#[test]
+fn block_referenced_absent_whole_refuses_no_field() {
+    let preset = toml("[tokens.icons.sizes]\ntoolbar = \"absent\"");
+    let icon = toml("[widgets.button.icon]\nicon = \"= token.icons.sizes.toolbar\"");
+    assert_eq!(found_over(&icon, &Declarations::default(), &preset), NONE);
+}
+
+/// The T7 review's SF4: `token.caret.width`'s mark does not travel with a
+/// reference (S4.2, S12): a part's length reading it where it is `absent`
+/// is refused, and accepted where it is stated. The catalogue has no caret
+/// part yet (its unit is not enabled), so a button body's length stands in
+/// for a caret part's width.
+#[test]
+fn part_length_reaching_absent_caret_width_refused() {
+    let caret = |width: &str| toml(&format!("[tokens.caret]\nwidth_px = {width}"));
+    let body = toml("[widgets.button.body]\nmin_width_px = \"= token.caret.width\"");
+    let decl = Declarations::default();
+    assert_eq!(
+        found_over(&body, &decl, &caret("\"absent\"")),
+        ["widgets.button.body.min_width_px: may not be absent"]
+    );
+    assert_eq!(found_over(&body, &decl, &caret("1")), NONE);
+}
+
 /// A slot referencing a style takes its absence with the mark (S12): the
 /// slot's own place allows the drawn-text leaves absent, whole or leaf by
 /// leaf.
