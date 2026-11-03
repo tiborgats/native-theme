@@ -5,7 +5,7 @@ use ::toml::{Table, Value as Item};
 
 use super::declare::read_declarations;
 use super::model::{part_named, widget_named, widget_or_part};
-use super::read::{self, DefaultAt, FromToml, Reader, Spelling, join, table, text};
+use super::read::{self, DefaultAt, FromToml, ListedDefault, Reader, Spelling, join, table, text};
 use super::when::read_selector;
 use crate::next::blocks::part_style::PartStylePatch;
 use crate::next::color::Color;
@@ -197,36 +197,7 @@ fn mark_pending_defaults(decl: &mut Declarations, pending: &[Listed], cx: &mut R
         let Some(listed) = read::listed_default(path) else {
             continue;
         };
-        let widgets = match &listed.flavor {
-            None => Some(&mut decl.widgets),
-            Some(flavor) => decl
-                .flavor
-                .iter_mut()
-                .find(|(held, _)| held == flavor)
-                .map(|(_, section)| &mut section.widgets),
-        };
-        let section = widgets.and_then(|widgets| {
-            widgets
-                .iter_mut()
-                .find(|(held, _)| *held == listed.widget)
-                .map(|(_, section)| section)
-        });
-        let slot = section.and_then(|section| match &listed.at {
-            DefaultAt::Widget => Some(&mut section.default_size),
-            DefaultAt::Variant(variant) => section
-                .sizes_by_variant
-                .iter_mut()
-                .flatten()
-                .find(|entry| entry.variant == *variant)
-                .map(|entry| &mut entry.default_size),
-            DefaultAt::Context(index) => section
-                .sizes_by_context
-                .iter_mut()
-                .flatten()
-                .nth(*index)
-                .map(|entry| &mut entry.default_size),
-        });
-        match slot {
+        match default_slot(decl, &listed) {
             Some(slot) => {
                 if slot.is_none() {
                     *slot = Some(DefaultSize::Pending(ids.clone()));
@@ -234,6 +205,43 @@ fn mark_pending_defaults(decl: &mut Declarations, pending: &[Listed], cx: &mut R
             }
             None => cx.problem(&join("pending", path), ProblemKind::UnknownKey),
         }
+    }
+}
+
+/// The default size `listed` names in `decl`, where its section, and its
+/// entry, are stated: `None` inside where the declaration states none.
+pub(crate) fn default_slot<'d>(
+    decl: &'d mut Declarations,
+    listed: &ListedDefault,
+) -> Option<&'d mut Option<DefaultSize>> {
+    let widgets = match &listed.flavor {
+        None => Some(&mut decl.widgets),
+        Some(flavor) => decl
+            .flavor
+            .iter_mut()
+            .find(|(held, _)| held == flavor)
+            .map(|(_, section)| &mut section.widgets),
+    };
+    let section = widgets.and_then(|widgets| {
+        widgets
+            .iter_mut()
+            .find(|(held, _)| *held == listed.widget)
+            .map(|(_, section)| section)
+    })?;
+    match &listed.at {
+        DefaultAt::Widget => Some(&mut section.default_size),
+        DefaultAt::Variant(variant) => section
+            .sizes_by_variant
+            .iter_mut()
+            .flatten()
+            .find(|entry| entry.variant == *variant)
+            .map(|entry| &mut entry.default_size),
+        DefaultAt::Context(index) => section
+            .sizes_by_context
+            .iter_mut()
+            .flatten()
+            .nth(*index)
+            .map(|entry| &mut entry.default_size),
     }
 }
 

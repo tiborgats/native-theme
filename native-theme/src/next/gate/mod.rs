@@ -142,6 +142,22 @@ impl Preset {
         super::validate::states(self.stack.preset_layer(), &listed)
     }
 
+    /// Whether the preset's declarations state the default size the
+    /// listed declaration `path` names (as its `[pending]` table spells
+    /// it): a pending default is stated nowhere (S10's *A pending default*,
+    /// S17, ADD-A131).
+    #[must_use]
+    pub fn states_default(&self, path: &str) -> bool {
+        let Some(listed) = super::toml::read::listed_default(path) else {
+            return false;
+        };
+        let mut declarations = self.stack.declarations().clone();
+        matches!(
+            super::toml::layer::default_slot(&mut declarations, &listed),
+            Some(Some(DefaultSize::Size(_)))
+        )
+    }
+
     /// Its `[pending]` table: each listed path as S11 spells it, with its
     /// register ids (S17, ADD-A128).
     #[must_use]

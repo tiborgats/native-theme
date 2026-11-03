@@ -109,7 +109,8 @@ pub struct Report {
     /// Each listed path found: a pending fact applying where the preset
     /// leaves the path to the synthetic value, by `<preset> <key>`: the
     /// pending facts' register ids (a set-whole block's, its pending
-    /// leaves') and how many combinations.
+    /// leaves') and how many combinations; and each pending default size
+    /// listed, by `<preset> <declaration path>`, with its listed ids, once.
     pub listed: BTreeMap<String, (BTreeSet<String>, u64)>,
     /// Each set-whole leaf's fact left unchecked as a sibling leaf's
     /// applying fact is pending (ADD-A128): its place, its key, the pending
@@ -1164,14 +1165,26 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
 /// whole has leaves pending under different ids"): a plain field pending
 /// under different ids per combination has no other encoding; a spec row
 /// is pending to state it.
-fn listed_paths(preset: &Preset, report: &mut Report) {
+pub fn listed_paths(preset: &Preset, report: &mut Report) {
     for (path, ids) in preset.pending() {
+        let id = ids.join(", ");
         // A pending default size is a declaration, which the declarations
-        // run compares with its ids (S17, ADD-A131).
+        // run compares with its ids: listed once, at its declaration, and
+        // stated nowhere (S17, ADD-A131).
         if is_listed_default(path) {
+            if preset.states_default(path) {
+                report.fail(format!(
+                    "{}: `{path}` ({id}) is in its [pending] table, and the preset states it",
+                    preset.id()
+                ));
+            } else {
+                report.listed.insert(
+                    format!("{} {path}", preset.id()),
+                    (ids.iter().cloned().collect(), 1),
+                );
+            }
             continue;
         }
-        let id = ids.join(", ");
         if preset.states(path) {
             report.fail(format!(
                 "{}: `{path}` ({id}) is in its [pending] table, and the preset states it",

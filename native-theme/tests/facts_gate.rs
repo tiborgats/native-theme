@@ -556,6 +556,52 @@ fn gate_declarations_each_compared() {
         report.failures
     };
     assert_eq!(pending("U2", "{ pending = \"U2\" }"), Vec::<String>::new());
+    // A default both stated and listed: the declarations run agrees with a
+    // model stating it, and the [pending] table's entry fails; listed
+    // alone, it is recorded with its ids (S17, ADD-A131).
+    let listed = |stated: &str| {
+        let preset = Preset::from_toml(&format!(
+            "{base}\n[declare.widget.button]\nvariants = [\"flat\", \"primary\"]\nsizes = [\"small\"]\n\
+             {stated}[pending]\n\"declare.widget.button.default_size\" = \"U4\"\n"
+        ))
+        .unwrap();
+        let platform = run::Platform {
+            name: "gnome".to_owned(),
+            facts: Vec::new(),
+            keys: Vec::new(),
+            models: model::Model::read(
+                "gnome/state-models.toml",
+                &model_of("sizes = [\"small\"]\ndefault_size = \"small\"\n"),
+            )
+            .unwrap(),
+        };
+        let mut report = run::Report::default();
+        run::declarations_run(&platform, &preset, None, &mut report);
+        let declared = report.failures.clone();
+        report.failures.clear();
+        run::listed_paths(&preset, &mut report);
+        (declared, report)
+    };
+    let (declared, stated) = listed("default_size = \"small\"\n");
+    assert_eq!(declared, Vec::<String>::new());
+    assert_eq!(
+        stated.failures,
+        [
+            "probe: `declare.widget.button.default_size` (U4) is in its [pending] table, and the \
+             preset states it"
+        ]
+    );
+    assert!(stated.listed.is_empty(), "{:?}", stated.listed);
+    let (_, alone) = listed("");
+    assert_eq!(alone.failures, Vec::<String>::new());
+    assert_eq!(
+        alone
+            .listed
+            .iter()
+            .map(|(key, (ids, _))| (key.as_str(), ids_of(ids)))
+            .collect::<Vec<_>>(),
+        [("probe declare.widget.button.default_size", vec!["U4"])]
+    );
     for stated in ["{ pending = \"U3\" }", "\"small\""] {
         let failures = pending("U2", stated);
         assert!(
