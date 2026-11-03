@@ -106,7 +106,10 @@ pub(super) enum OpKind {
         entry: bool,
     },
     /// An `Append`: layers added over the paint below.
-    Append,
+    Append {
+        /// The paint is a map entry's (S6.1).
+        entry: bool,
+    },
     /// A list replaced whole: its earlier items are gone.
     Clear,
     /// A field a patch sets to a value holding nothing (`None`, an empty
@@ -446,7 +449,8 @@ impl Visit for Flatten {
             Node::PaintPatch(PaintPatch::Append(_)) => {
                 let place = self.place(path);
                 self.appended.push(place.clone());
-                self.push(path, place, OpKind::Append);
+                let entry = path.map_entry().is_some();
+                self.push(path, place, OpKind::Append { entry });
             }
             Node::Key(key) if path.slot() == Some(("TransitionEngine", "visual")) => {
                 let place = self.place(path);

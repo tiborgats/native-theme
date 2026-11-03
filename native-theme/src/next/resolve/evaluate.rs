@@ -2339,9 +2339,9 @@ impl<'t> Cx<'t> {
     }
 
     /// A paint (S2.3, S6.1): the last step that sets it, the layers each
-    /// `Append` after it adds over it (over `Absent`, the appended layers
-    /// alone), a reference composed lazily with them, a colour expression
-    /// one `Color` layer; `None`: not drawn.
+    /// `Append` after it adds over it (over `Absent`, or nothing, none: the
+    /// paint stays not drawn), a reference composed lazily with them, a
+    /// colour expression one `Color` layer; `None`: not drawn.
     fn paint<'f>(&mut self, items: &[Fold<'f>]) -> Option<ResolvedPaint>
     where
         't: 'f,
@@ -2433,17 +2433,19 @@ impl<'t> Cx<'t> {
             }
             None => 0,
         };
+        if !drawn {
+            return None;
+        }
         for (at, step) in steps.iter().skip(from) {
             if let PaintStep::Appended(appended) = step {
                 let pos = items.get(*at)?.pos;
                 self.touch(pos);
                 for layer in *appended {
-                    drawn = true;
                     layers.push(layer.resolve_whole(pos, self)?);
                 }
             }
         }
-        drawn.then_some(ResolvedPaint { layers })
+        Some(ResolvedPaint { layers })
     }
 
     /// A list replaced whole: the last step's, each item resolved; empty

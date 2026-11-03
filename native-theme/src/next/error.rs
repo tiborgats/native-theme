@@ -368,12 +368,6 @@ pub enum ProblemKind {
         /// The declared unit.
         unit: &'static str,
     },
-    /// `Absent` or `Auto` below a `Fields` patch under some combination of
-    /// the rules before it, references followed (S2.2, S12).
-    FieldsOver {
-        /// What lies below: `absent` or `auto`.
-        below: &'static str,
-    },
     /// `DrawnAs` patches forming a cycle under some combination: the part,
     /// followed through `DrawnAs`, is drawn again (S6.1, S12).
     DrawnAsCycle,
@@ -595,9 +589,6 @@ impl fmt::Display for ProblemKind {
             ),
             ProblemKind::UnitMismatch { unit } => write!(f, "declared in `{unit}`"),
             ProblemKind::Unused { name } => write!(f, "`{name}` is declared but unused"),
-            ProblemKind::FieldsOver { below } => {
-                write!(f, "patches the fields of a value that can be `{below}`")
-            }
             ProblemKind::DrawnAsCycle => f.write_str("drawn as itself through `drawn_as`"),
             ProblemKind::TextScaleUnderDynamicType => {
                 f.write_str("`text_scale` where the text scaling can be `dynamic_type`")

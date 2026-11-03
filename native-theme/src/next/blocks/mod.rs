@@ -5,8 +5,8 @@
 //! value; a map (every `Vec` of pairs) merges by key, the later entry
 //! replacing the earlier; any other list is replaced whole; a struct block's
 //! `Fields` patch applies its fields over the block below, and a paint's
-//! `Append` adds layers over the paint below, over an `Absent` one giving a
-//! paint of the appended layers.
+//! `Append` adds layers over the paint below; over an `Absent` block or
+//! paint either sets nothing, leaving it absent (S2.2, S6.3).
 
 use std::fmt::Debug;
 
@@ -73,8 +73,9 @@ pub trait FieldsBlock: Block + Clone + Debug + PartialEq {
 pub enum BlockPatch<T: FieldsBlock> {
     /// Sets the field: a whole block, a reference or `Absent`.
     Set(Value<T>),
-    /// Applies these fields over the block below; refused over an `Absent`
-    /// or `Auto` value (S12), and composed lazily over a reference (S2.2).
+    /// Applies these fields over the block below; over an `Absent` one it
+    /// sets nothing, leaving it absent, and over a reference it composes
+    /// lazily (S2.2).
     Fields(T::Patch),
 }
 

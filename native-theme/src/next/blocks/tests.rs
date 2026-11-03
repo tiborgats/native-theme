@@ -14,8 +14,9 @@ use super::paint::{
 };
 use super::shadow::{ResolvedShadow, Shadow, ShadowLayer};
 use super::transform::Transform;
-use super::{Apply, BlockPatch, Merge, MergeConflict, Table};
+use super::{Apply, BlockPatch, Merge, MergeConflict, Table, apply_entries};
 use crate::key;
+use crate::next::Key;
 use crate::next::color::Color;
 use crate::next::expr::{Expr, Ref};
 use crate::next::registry::{BlockForm, FieldInfo, FieldType};
@@ -70,21 +71,42 @@ fn stroke() -> Stroke {
     }
 }
 
+/// `paint_append_over_absent_stays_absent` (S6.1, S6.3, ADD-A126): an
+/// `Append` over an `Absent` paint appends to nothing, merged or applied,
+/// and a paint map's entry an `Append` would create is the merge conflict,
+/// its paint unset (ADD-A131).
 #[test]
-fn paint_append_over_absent() {
+fn paint_append_over_absent_stays_absent() {
     let mut patch = PaintPatch::Set(Value::Absent);
     assert_eq!(
         patch.merge(PaintPatch::Append(vec![color_layer(0.1)])),
         Ok(())
     );
-    assert_eq!(patch, PaintPatch::Set(paint(vec![color_layer(0.1)])));
+    assert_eq!(patch, PaintPatch::Set(Value::Absent));
 
     let mut value: Value<Paint> = Value::Absent;
     assert_eq!(
         value.apply(PaintPatch::Append(vec![color_layer(0.1), color_layer(0.2)])),
         Ok(())
     );
-    assert_eq!(value, paint(vec![color_layer(0.1), color_layer(0.2)]));
+    assert_eq!(value, Value::Absent);
+
+    let mut map: Vec<(Key, Value<Paint>)> = vec![(key!("held"), Value::Absent)];
+    assert_eq!(
+        apply_entries(
+            &mut map,
+            vec![(key!("held"), PaintPatch::Append(vec![color_layer(0.1)]))]
+        ),
+        Ok(())
+    );
+    assert_eq!(map, [(key!("held"), Value::Absent)]);
+    assert_eq!(
+        apply_entries(
+            &mut map,
+            vec![(key!("new"), PaintPatch::Append(vec![color_layer(0.1)]))]
+        ),
+        conflict("", Below::Missing)
+    );
 }
 
 #[test]
@@ -128,16 +150,11 @@ fn set_replaces_a_paint_whole() {
 }
 
 #[test]
-fn append_over_reference_or_auto_is_not_merged() {
+fn append_over_reference_is_not_merged() {
     let mut value: Value<Paint> = Value::Expr(reference());
     assert_eq!(
         value.apply(PaintPatch::Append(vec![color_layer(0.1)])),
         conflict("", Below::Reference)
-    );
-    let mut patch = PaintPatch::Set(Value::Auto);
-    assert_eq!(
-        patch.merge(PaintPatch::Append(vec![color_layer(0.1)])),
-        conflict("", Below::Auto)
     );
 }
 
@@ -301,24 +318,28 @@ fn set_after_fields_replaces_the_block() {
     assert_eq!(patch, BlockPatch::<Stroke>::Set(Value::Absent));
 }
 
+/// A `Fields` patch over an `Absent` block sets nothing, the block staying
+/// absent (S2.2, S6.3, ADD-A126); over a reference it is not merged, the
+/// resolver composing it lazily.
 #[test]
-fn fields_over_absent_auto_or_a_reference_are_not_merged() {
+fn fields_over_absent_leave_it_absent() {
     let fields = || {
         BlockPatch::Fields(StrokePatch {
             position: Some(StrokePosition::Center),
             ..StrokePatch::default()
         })
     };
-    for (below, expected) in [
-        (Value::Absent, Below::Absent),
-        (Value::Auto, Below::Auto),
-        (Value::Expr(reference()), Below::Reference),
-    ] {
-        let mut patch = BlockPatch::<Stroke>::Set(below.clone());
-        assert_eq!(patch.merge(fields()), conflict("", expected));
-        let mut value = below;
-        assert_eq!(value.apply(fields()), conflict("", expected));
-    }
+    let mut patch = BlockPatch::<Stroke>::Set(Value::Absent);
+    assert_eq!(patch.merge(fields()), Ok(()));
+    assert_eq!(patch, BlockPatch::Set(Value::Absent));
+    let mut value: Value<Stroke> = Value::Absent;
+    assert_eq!(value.apply(fields()), Ok(()));
+    assert_eq!(value, Value::Absent);
+
+    let mut patch = BlockPatch::<Stroke>::Set(Value::Expr(reference()));
+    assert_eq!(patch.merge(fields()), conflict("", Below::Reference));
+    let mut value: Value<Stroke> = Value::Expr(reference());
+    assert_eq!(value.apply(fields()), conflict("", Below::Reference));
 }
 
 #[test]
@@ -338,12 +359,15 @@ fn a_conflict_names_its_field_path() {
     );
     let mut earlier = StrokePatch {
         top: Some(EdgePatch {
-            paint: Some(PaintPatch::Set(Value::Auto)),
+            paint: Some(PaintPatch::Set(Value::Expr(reference()))),
             ..EdgePatch::default()
         }),
         ..StrokePatch::default()
     };
-    assert_eq!(earlier.merge(patch), conflict("top.paint", Below::Auto));
+    assert_eq!(
+        earlier.merge(patch),
+        conflict("top.paint", Below::Reference)
+    );
 }
 
 /// A probe block, for what the model's blocks do not hold: a list of blocks
@@ -442,7 +466,7 @@ fn a_map_of_paints_patches_each_entry_by_set_or_append() {
         earlier.paints,
         Some(vec![
             (key!("a"), PaintPatch::Set(paint(vec![color_layer(0.1)]))),
-            (key!("b"), PaintPatch::Set(paint(vec![color_layer(0.2)]))),
+            (key!("b"), PaintPatch::Set(Value::Absent)),
             (key!("c"), PaintPatch::Append(vec![color_layer(0.3)])),
         ])
     );
@@ -451,7 +475,7 @@ fn a_map_of_paints_patches_each_entry_by_set_or_append() {
     let patch = MapProbePatch {
         paints: Some(vec![
             (key!("a"), PaintPatch::Append(vec![color_layer(0.4)])),
-            (key!("d"), PaintPatch::Append(vec![color_layer(0.5)])),
+            (key!("d"), PaintPatch::Set(paint(vec![color_layer(0.5)]))),
         ]),
         ..MapProbePatch::default()
     };
@@ -463,6 +487,15 @@ fn a_map_of_paints_patches_each_entry_by_set_or_append() {
             (key!("d"), paint(vec![color_layer(0.5)])),
         ]
     );
+    // An entry an `Append` would create has no paint to append to (S6.1).
+    let patch = MapProbePatch {
+        paints: Some(vec![(
+            key!("e"),
+            PaintPatch::Append(vec![color_layer(0.6)]),
+        )]),
+        ..MapProbePatch::default()
+    };
+    assert_eq!(value.apply(patch), conflict("paints", Below::Missing));
 }
 
 #[test]
@@ -571,12 +604,15 @@ fn a_merge_can_succeed_where_applying_in_order_conflicts() {
     });
     let later = BlockPatch::Set(Value::Stated(stroke()));
 
-    let mut in_order: Value<Stroke> = Value::Absent;
-    assert_eq!(in_order.apply(earlier.clone()), conflict("", Below::Absent));
+    let mut in_order: Value<Stroke> = Value::Expr(reference());
+    assert_eq!(
+        in_order.apply(earlier.clone()),
+        conflict("", Below::Reference)
+    );
 
     let mut merged = earlier;
     assert_eq!(merged.merge(later), Ok(()));
-    let mut value: Value<Stroke> = Value::Absent;
+    let mut value: Value<Stroke> = Value::Expr(reference());
     assert_eq!(value.apply(merged), Ok(()));
     assert_eq!(value, Value::Stated(stroke()));
 }

@@ -731,7 +731,8 @@ fn a_part_styles_struct_blocks_patch_by_set_or_fields() {
         text: Some(BlockPatch::Fields(TextStylePatch::default())),
         ..PartStylePatch::default()
     };
-    assert!(over_absent.merge(fields).is_err());
+    assert_eq!(over_absent.merge(fields), Ok(()));
+    assert_eq!(over_absent.text, Some(BlockPatch::Set(Value::Absent)));
 
     let mut set_after_fields = PartStylePatch {
         text: Some(BlockPatch::Fields(TextStylePatch {

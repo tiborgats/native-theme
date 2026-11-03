@@ -172,6 +172,9 @@ struct Found<'s> {
     id: Option<(usize, usize)>,
     /// The value came through a reference above the place looked up.
     via: bool,
+    /// The value is set at a place above the place looked up: a block
+    /// holding it set whole.
+    above: bool,
 }
 
 /// What a reference reads.
@@ -218,7 +221,6 @@ pub(super) fn check(stack: &Stack<'_>) -> Vec<(usize, Problem)> {
         problems: Vec::new(),
     };
     out.expressions();
-    out.fields_over();
     out.marks();
     out.drawn_as_cycles();
     out.redrawn();
@@ -286,7 +288,9 @@ impl<'a> Stack<'a> {
     /// What `q` of `target` resolves to under `world`, reading the sources
     /// `bound` admits: the last step setting it or a place above it, a
     /// reference above it followed to the referenced value, whose own rules
-    /// interleave with the patches kept on the reference by position.
+    /// interleave with the patches kept on the reference by position. A
+    /// `Fields` patch or an `Append` over a value that resolves `Absent`
+    /// sets nothing, the value staying absent (S2.2, S6.1, S6.3).
     fn value_at(
         &self,
         world: &World,
@@ -297,6 +301,11 @@ impl<'a> Stack<'a> {
     ) -> Vec<Found<'_>> {
         let mut local: Option<Found<'_>> = None;
         let mut via: Option<(usize, &Source, &Op)> = None;
+        // The place an `Absent` or `Auto` at or above `q` was set at: the
+        // steps below it patch nothing (no block is `Auto`, S6.3).
+        let mut absent_at: Option<&str> = None;
+        // The local value is an `Append`'s, kept on a reference above.
+        let mut appended = false;
         for (number, source) in self.of(target) {
             if !self.applies(world, source) || !bound.admits(source.pos) {
                 continue;
@@ -306,48 +315,57 @@ impl<'a> Stack<'a> {
                 if replaced
                     .iter()
                     .any(|item| op.path == *item || is_above(item, &op.path))
+                    || absent_at.is_some_and(|absent| is_above(absent, &op.path))
                 {
                     continue;
                 }
-                let found = |got| Found {
+                let found = |got, above| Found {
                     got,
                     at: &op.at,
                     cx: cx_of(source, op),
                     layer: source.layer,
                     id: Some((number, index)),
                     via: false,
+                    above,
                 };
                 if op.path == q {
                     let got = match &op.kind {
                         OpKind::Set(val) => Some(got_of(val)),
-                        OpKind::Append => Some(Got::Stated(Fact::Unknown)),
+                        OpKind::Append { .. } if absent_at.is_some() => None,
+                        OpKind::Append { .. } => Some(Got::Stated(Fact::Unknown)),
                         OpKind::Touch => Some(Got::Stated(Fact::Nothing)),
                         OpKind::Fields { .. } | OpKind::Clear | OpKind::Shown(_) => None,
                     };
                     // Below a reference, a patch kept on it (S2.2).
                     if let Some(got) = got {
-                        local = Some(found(got));
+                        absent_at = matches!(got, Got::Absent | Got::Auto).then_some(q);
+                        appended = matches!(op.kind, OpKind::Append { .. });
+                        local = Some(found(got, false));
                     }
                 } else if is_above(&op.path, q) {
                     match &op.kind {
                         OpKind::Set(Val::Absent) => {
-                            local = Some(found(Got::Absent));
+                            local = Some(found(Got::Absent, true));
                             via = None;
+                            absent_at = Some(&op.path);
                         }
                         OpKind::Set(Val::Auto) => {
-                            local = Some(found(Got::Auto));
+                            local = Some(found(Got::Auto, true));
                             via = None;
+                            absent_at = Some(&op.path);
                         }
                         OpKind::Set(Val::Expr(_)) => {
                             local = None;
                             via = Some((number, source, op));
+                            absent_at = None;
                         }
                         OpKind::Set(Val::Stated(_)) | OpKind::Clear => {
                             local = None;
                             via = None;
+                            absent_at = None;
                         }
                         OpKind::Fields { .. }
-                        | OpKind::Append
+                        | OpKind::Append { .. }
                         | OpKind::Touch
                         | OpKind::Shown(_) => {}
                     }
@@ -382,8 +400,13 @@ impl<'a> Stack<'a> {
             for referent in referents {
                 let later = referent.cx.pos.rule
                     && local.is_none_or(|held| !held.cx.pos.rule || referent.cx.pos > held.cx.pos);
+                // The patches kept on the reference set nothing over a
+                // referenced value that resolves `Absent` (S2.2): a block
+                // above `q`, or the paint an `Append` appends to.
+                let absent =
+                    matches!(referent.got, Got::Absent | Got::Auto) && (referent.above || appended);
                 match local {
-                    Some(_) if !later => out.extend(local),
+                    Some(_) if !later && !absent => out.extend(local),
                     _ => out.push(Found {
                         via: true,
                         ..referent
@@ -1030,6 +1053,7 @@ fn binding_found<'s>(source: &'s Source, binding: &'s BindingOp) -> Found<'s> {
         layer: source.layer,
         id: binding.id,
         via: false,
+        above: false,
     }
 }
 
@@ -1743,6 +1767,7 @@ impl Checks<'_, '_> {
                 layer: source.layer,
                 id: None,
                 via: false,
+                above: false,
             };
             if !cycle && stack.follow(world, found).1 > MAX_CHAIN {
                 self.problem(source.layer, &op.at, ProblemKind::ChainTooLong);
@@ -2026,55 +2051,6 @@ impl Checks<'_, '_> {
                 })
                 && !maxes.is_empty()
         })
-    }
-
-    /// Every `Fields` patch, under each world its rule applies in: refused
-    /// where the value below it, references followed, can be `Absent` or
-    /// `Auto` (S2.2, S12).
-    fn fields_over(&mut self) {
-        let stack = self.stack;
-        for source in &stack.sources {
-            for op in &source.ops {
-                let OpKind::Fields { .. } = op.kind else {
-                    continue;
-                };
-                let seeds = vec![Seed::Field(source.target, op.path.clone(), false)];
-                let rule_seed = source.rule;
-                let worlds = stack.worlds(seeds);
-                for world in worlds.iter() {
-                    if rule_seed.is_some() && !stack.applies(world, source) {
-                        continue;
-                    }
-                    let bound = Bound {
-                        before: Some(source.pos),
-                        bases_only: false,
-                    };
-                    let founds = stack
-                        .value_at(world, source.target, &op.path, bound, 0)
-                        .into_iter()
-                        .flat_map(|found| stack.follow(world, found).0);
-                    for found in founds {
-                        let below = match found.got {
-                            Got::Absent => "absent",
-                            Got::Auto => "auto",
-                            Got::Expr(_) | Got::Stated(_) => continue,
-                        };
-                        // One problem per fault: the outermost of the
-                        // source's patches over that value.
-                        let outer = source.ops.iter().any(|other| {
-                            matches!(other.kind, OpKind::Fields { .. })
-                                && is_above(&other.path, &op.path)
-                                && (other.path == found.cx.path
-                                    || is_above(found.cx.path, &other.path))
-                        });
-                        if outer {
-                            continue;
-                        }
-                        self.problem(source.layer, &op.at, ProblemKind::FieldsOver { below });
-                    }
-                }
-            }
-        }
     }
 
     /// The conditional `Absent` marks (S2.4, S2.9, S12): an edge's `dash`
@@ -2705,7 +2681,9 @@ impl Checks<'_, '_> {
     /// A map entry's patch that can create its entry with a field left
     /// unset that may not be `Absent` (S6.1, S12, ADD-A122): a base's where
     /// no base before it states the entry's field, a rule's where some
-    /// world of the bases and rules before it leaves the field unstated.
+    /// world of the bases and rules before it leaves the field unstated. A
+    /// paint map's entry an `Append` creates has its paint so unset, as it
+    /// has none to append to (ADD-A131).
     fn entries(&mut self) {
         let stack = self.stack;
         for source in &stack.sources {
@@ -2720,21 +2698,22 @@ impl Checks<'_, '_> {
                 continue;
             }
             for op in &source.ops {
-                let OpKind::Fields { unset, entry: true } = &op.kind else {
-                    continue;
+                let required: Vec<&str> = match &op.kind {
+                    OpKind::Fields { unset, entry: true } => unset
+                        .iter()
+                        .copied()
+                        .filter(|field| {
+                            let path = below(&op.path, field);
+                            let marked = matches!(source.target, Target::Roles(_))
+                                && registry::role_entry_may_be_absent(&path);
+                            !marked
+                                && registry::find(table(source.target), &path)
+                                    .is_none_or(|info| !info.may_be_absent)
+                        })
+                        .collect(),
+                    OpKind::Append { entry: true } => vec!["paint"],
+                    _ => continue,
                 };
-                let required: Vec<&str> = unset
-                    .iter()
-                    .copied()
-                    .filter(|field| {
-                        let path = below(&op.path, field);
-                        let marked = matches!(source.target, Target::Roles(_))
-                            && registry::role_entry_may_be_absent(&path);
-                        !marked
-                            && registry::find(table(source.target), &path)
-                                .is_none_or(|info| !info.may_be_absent)
-                    })
-                    .collect();
                 if required.is_empty() {
                     continue;
                 }

@@ -2764,14 +2764,11 @@ mod tests {
     /// Whether a problem is the fixture preset's surroundings of a listed
     /// path, not the synthetic value at its slot: a map key the fixture
     /// does not declare or hold, so the layer creates the entry with its
-    /// other fields unset, or an enclosing value the fixture states
-    /// `absent`, which a preset listing a path below it states as a block.
+    /// other fields unset.
     fn surroundings(kind: &ProblemKind) -> bool {
         matches!(
             kind,
-            ProblemKind::Undeclared { .. }
-                | ProblemKind::EntryCreatedUnset { .. }
-                | ProblemKind::FieldsOver { .. }
+            ProblemKind::Undeclared { .. } | ProblemKind::EntryCreatedUnset { .. }
         )
     }
 

@@ -5,8 +5,8 @@ use super::{BlockPatch, FieldsBlock};
 use crate::next::registry::InnerMark;
 use crate::next::value::{SurfaceMap, Value};
 
-/// What stops a merge: a `Fields` patch or an `Append` over a value it
-/// cannot be applied to now.
+/// What stops a merge: a `Fields` patch or an `Append` over a reference,
+/// which the merge cannot apply now, or a map entry it cannot build.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct MergeConflict {
     /// The field's path below the merged patch or block, in Rust names.
@@ -21,14 +21,11 @@ pub(crate) enum Below {
     /// A reference: the patch composes lazily, applied where the reference
     /// is evaluated (S2.2), which the resolver does.
     Reference,
-    /// `Absent`: refused (S12).
-    Absent,
-    /// `Auto`: refused (S12).
-    Auto,
-    /// Nothing: a map entry's fields patched over a map lacking the entry,
-    /// which no block can be built for from the patch alone, as a field the
-    /// patch leaves unset may not be `Absent` (S12 refuses it; no value is
-    /// invented for the field).
+    /// Nothing: a map entry's patch over a map lacking the entry, which no
+    /// entry can be built for from the patch alone, as a field the patch
+    /// leaves unset may not be `Absent` (a struct block's fields, or a
+    /// paint's own value, which an `Append` has none to append to; S6.1;
+    /// S12 refuses it; no value is invented for the field).
     Missing,
     /// A bare block: a map of bare blocks' entry set to a reference,
     /// `Absent` or `Auto`, which the entry cannot hold. That is no merge
@@ -55,14 +52,14 @@ impl MergeConflict {
         self
     }
 
-    /// The conflict a `Fields` patch or an `Append` meets over `value`;
-    /// `None` over a stated value.
+    /// The conflict a `Fields` patch or an `Append` meets over `value`: a
+    /// reference's. Over `Absent` it sets or appends nothing, the value
+    /// staying absent (S2.2, S6.1, S6.3), and no block or paint is ever
+    /// `Auto` (S6.3), so neither is a conflict.
     pub(crate) fn over<T>(value: &Value<T>) -> Option<Self> {
         match value {
-            Value::Stated(_) => None,
             Value::Expr(_) => Some(Self::new(Below::Reference)),
-            Value::Absent => Some(Self::new(Below::Absent)),
-            Value::Auto => Some(Self::new(Below::Auto)),
+            Value::Stated(_) | Value::Absent | Value::Auto => None,
         }
     }
 }
@@ -71,10 +68,8 @@ impl MergeConflict {
 /// over a value succeeds, applying the merged patch gives the same value. The
 /// merge does not see that value, so it can succeed where the ordered
 /// application conflicts: a later `Set` drops an earlier `Fields` or `Append`
-/// unchecked, which over an `Absent` or `Auto` value would have conflicted;
-/// such a conflict is the earlier patch's, refused where the layer is
-/// validated (S12). On a conflict `self` is left partly merged and is to be
-/// discarded.
+/// unchecked, which over a reference would have conflicted. On a conflict
+/// `self` is left partly merged and is to be discarded.
 pub(crate) trait Merge: Sized {
     fn merge(&mut self, later: Self) -> Result<(), MergeConflict>;
 }
@@ -294,8 +289,8 @@ pub(crate) fn merge_slot_value_map<K: PartialEq, V>(
 /// stated one, so no patch removes an entry (`{}` is no change); a
 /// reference, `Absent` or `Auto` replaces the map whole; a stated map over a
 /// reference composes lazily ([`Below::Reference`], which the resolver
-/// does); over `Absent` or `Auto` it meets what a `Fields` patch meets
-/// there ([`MergeConflict::over`]).
+/// does); over `Absent` or `Auto` it changes nothing, as a `Fields` patch
+/// there does ([`MergeConflict::over`]).
 pub(crate) fn apply_value_map<K: PartialEq, V>(
     value: &mut ValueMap<K, V>,
     patch: ValueMap<K, V>,

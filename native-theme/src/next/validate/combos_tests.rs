@@ -241,12 +241,13 @@ fn glyph_fill_absent_on_system_control() {
     );
 }
 
-/// S12's own examples: an `Absent` under `scheme:dark` and a `Fields` patch
-/// under `scheme:light` pass, the two conditions never holding together; a
-/// part's stroke absent under `sizes = ["mini"]` and patched under `sizes =
-/// ["regular"]` likewise; under two independent conditions they fail.
+/// A `Fields` patch is never refused for what lies below it (S2.2, S6.3,
+/// S12, ADD-A126): over a stroke an earlier rule makes absent under any
+/// combination, or a reference that resolves `Absent`, it sets nothing; an
+/// expression in it reading an absent operand is not evaluated where the
+/// block it patches is absent, and is refused where it is drawn.
 #[test]
-fn combination_fields_over_absent() {
+fn fields_over_absent_never_refused() {
     let rules = |first: &str, second: &str| {
         format!(
             "[[rules]]\nwhen = {first}\ntarget = \"button.body\"\nset = {{ stroke = \"absent\" }}\n\
@@ -255,46 +256,51 @@ fn combination_fields_over_absent() {
         )
     };
     let decl = declare("[declare.widget.button]\nsizes = [\"mini\", \"regular\"]");
-    assert_eq!(
-        alone(
-            &rules(
-                "{ conditions = [\"scheme:dark\"] }",
-                "{ conditions = [\"scheme:light\"] }"
-            ),
-            &decl
+    for (first, second) in [
+        (
+            "{ conditions = [\"scheme:dark\"] }",
+            "{ conditions = [\"scheme:light\"] }",
         ),
-        NONE
-    );
-    assert_eq!(
-        alone(
-            &rules("{ sizes = [\"mini\"] }", "{ sizes = [\"regular\"] }"),
-            &decl
+        ("{ sizes = [\"mini\"] }", "{ sizes = [\"regular\"] }"),
+        (
+            "{ conditions = [\"scheme:dark\"] }",
+            "{ conditions = [\"reduced_motion\"] }",
         ),
-        NONE
-    );
+        ("{}", "{ states = [\"hover\"] }"),
+    ] {
+        assert_eq!(alone(&rules(first, second), &decl), NONE);
+    }
+    let through = "[widgets.button.subtitle]\ntext = \"absent\"\n\
+                   [widgets.button.label]\ntext = \"= widget.subtitle.text\"";
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.label\"\n\
+                set = { text.letter_spacing_px = 1 }";
+    assert_eq!(over(through, rule, &Declarations::default()), NONE);
+
+    let reading = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+                   set = { focus.width_px = \"= add(part.touch_target, 1px)\" }";
+    let absent = "[widgets.button.body]\nfocus = \"absent\"\ntouch_target_px = \"absent\"";
+    assert_eq!(over(absent, reading, &Declarations::default()), NONE);
+    let drawn = "[widgets.button.body]\ntouch_target_px = \"absent\"";
     assert_eq!(
-        alone(
-            &rules(
-                "{ conditions = [\"scheme:dark\"] }",
-                "{ conditions = [\"reduced_motion\"] }"
-            ),
-            &decl
-        ),
-        ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
+        over(drawn, reading, &Declarations::default()),
+        ["rules[0].set.focus.width_px: `part.touch_target` can be `absent` here"]
     );
-    // A rule between them restoring the stroke under the same condition.
-    let restored = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
-                    set = { stroke = \"absent\" }\n\
-                    [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
-                    set = { stroke = { replace = { top = { width_px = 1, paint = \"#000000\", \
-                    dash = \"solid\", snap = \"none\" }, right = { width_px = 1, paint = \
-                    \"#000000\", dash = \"solid\", snap = \"none\" }, bottom = { width_px = 1, \
-                    paint = \"#000000\", dash = \"solid\", snap = \"none\" }, left = { width_px \
-                    = 1, paint = \"#000000\", dash = \"solid\", snap = \"none\" }, position = \
-                    \"inside\", outset_px = \"absent\", fill_clip = \"box\" } } }\n\
-                    [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
-                    set = { stroke.top.width_px = 2 }";
-    assert_eq!(bare(restored), NONE);
+}
+
+/// A paint map's entry an `Append` creates has its paint unset (S6.1, S12,
+/// ADD-A131): refused where no layer below holds the entry, accepted where
+/// one does.
+#[test]
+fn combination_entry_created_by_append() {
+    let decl = declare("symbolic_colors = [\"error\"]");
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\n\
+                set = { icon.symbolic_colors.error = { append = [\"#ff0000\"] } }";
+    assert_eq!(
+        alone(rule, &decl),
+        ["rules[0].set.icon.symbolic_colors.error: can create the entry with `paint` unset"]
+    );
+    let held = "[widgets.button.icon.icon.symbolic_colors]\nerror = \"#00ff00\"";
+    assert_eq!(over(held, rule, &decl), NONE);
 }
 
 /// `DrawnAs` patches forming a cycle (S6.1, S12): a button's icon drawn as
@@ -1146,21 +1152,21 @@ fn combination_context_states_reduced_by_their_groups() {
     let rules = |states: &str| {
         format!(
             "[[rules]]\nwhen = {{ context = [{{ widget = \"button\", states = {states} }}] }}\n\
-             target = \"button.body\"\nset = {{ stroke = \"absent\" }}\n\
+             target = \"button.body\"\nset = {{ touch_target_px = \"absent\" }}\n\
              [[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\n\
-             set = {{ stroke.top.width_px = 2 }}"
+             set = {{ min_width_px = \"= add(part.touch_target, 4px)\" }}"
         )
     };
     assert_eq!(alone(&rules("[\"hover\", \"pressed\"]"), &decl), NONE);
     assert_eq!(
         alone(&rules("[\"hover\"]"), &decl),
-        ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
+        ["rules[1].set.min_width_px: `part.touch_target` can be `absent` here"]
     );
     let siblings = "[[rules]]\nwhen = { position = { among = \"any\", next = { widget = \"button\", \
                     states = [\"hover\", \"pressed\"] } } }\ntarget = \"button.body\"\n\
-                    set = { stroke = \"absent\" }\n\
+                    set = { touch_target_px = \"absent\" }\n\
                     [[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
-                    set = { stroke.top.width_px = 2 }";
+                    set = { min_width_px = \"= add(part.touch_target, 4px)\" }";
     assert_eq!(alone(siblings, &decl), NONE);
 }
 
@@ -1276,9 +1282,9 @@ fn combination_latest_of_a_recency_set() {
     let rules = |second: &str| {
         format!(
             "[[rules]]\nwhen = {{ latest = {{ glow = \"hover\" }} }}\ntarget = \"button.body\"\n\
-             set = {{ stroke = \"absent\" }}\n\
+             set = {{ touch_target_px = \"absent\" }}\n\
              [[rules]]\nwhen = {second}\ntarget = \"button.body\"\n\
-             set = {{ stroke.top.width_px = 2 }}"
+             set = {{ min_width_px = \"= add(part.touch_target, 4px)\" }}"
         )
     };
     assert_eq!(
@@ -1288,7 +1294,7 @@ fn combination_latest_of_a_recency_set() {
     assert_eq!(alone(&rules("{ not_states = [\"hover\"] }"), &decl), NONE);
     assert_eq!(
         alone(&rules("{ states = [\"focus_visible\"] }"), &decl),
-        ["rules[1].set.stroke: patches the fields of a value that can be `absent`"]
+        ["rules[1].set.min_width_px: `part.touch_target` can be `absent` here"]
     );
 }
 
@@ -1318,12 +1324,12 @@ fn combination_sibling_lists_compared_as_sets() {
 /// refused, so the pass is the exclusion's.
 #[test]
 fn combination_exclusions_are_s12s() {
-    const REFUSED: &str = "rules[1].set.stroke: patches the fields of a value that can be `absent`";
+    const REFUSED: &str = "rules[1].set.min_width_px: `part.touch_target` can be `absent` here";
     let pair = |first: &str, second: &str, decl: &str| {
         let rules = format!(
-            "[[rules]]\nwhen = {{ {first} }}\ntarget = \"button.body\"\nset = {{ stroke = \"absent\" }}\n\
+            "[[rules]]\nwhen = {{ {first} }}\ntarget = \"button.body\"\nset = {{ touch_target_px = \"absent\" }}\n\
              [[rules]]\nwhen = {{ {second} }}\ntarget = \"button.body\"\n\
-             set = {{ stroke.top.width_px = 2 }}"
+             set = {{ min_width_px = \"= add(part.touch_target, 4px)\" }}"
         );
         // `decl` above the widget's declarations, or after them where it
         // starts with a newline.
@@ -1703,11 +1709,7 @@ fn combination_field_absent_by_another_step_than_its_block() {
              set = { text.roles.body.decoration.thickness_px = \"absent\" }\n",
             &decl
         ),
-        [
-            "rules[0].set.text.roles.body.decoration.thickness_px: may not be absent",
-            "rules[0].set.text.roles.body.decoration: patches the fields of a value that can be \
-             `absent`"
-        ]
+        ["rules[0].set.text.roles.body.decoration.thickness_px: may not be absent",]
     );
 }
 

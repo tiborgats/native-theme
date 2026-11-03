@@ -384,22 +384,16 @@ fn reader_state_names_a_container_once() {
 }
 
 /// Removing the stand-in validates the stack again (S8, S12): an
-/// application layer patching the fields of a stroke only the stand-in
+/// application layer's call reading a touch target only the stand-in
 /// states, over the preset's `absent`, is refused without it, and the
 /// stand-in stays.
 #[test]
 fn stand_in_removal_refused_where_a_layer_needs_it() {
-    let edge = "{ width_px = 1, paint = \"#000000\", dash = \"solid\", snap = \"none\" }";
-    let preset = Layer::from_toml("[widgets.button.body]\nstroke = \"absent\"").unwrap();
-    let stand_in = Layer::from_toml(&format!(
-        "[widgets.button.body]\nstroke = {{ replace = {{ top = {edge}, right = {edge}, \
-         bottom = {edge}, left = {edge}, position = \"inside\", outset_px = \"absent\", \
-         fill_clip = \"box\" }} }}"
-    ))
-    .unwrap();
+    let preset = Layer::from_toml("[widgets.button.body]\ntouch_target_px = \"absent\"").unwrap();
+    let stand_in = Layer::from_toml("[widgets.button.body]\ntouch_target_px = 30").unwrap();
     let application = Layer::from_toml(
         "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
-         set = { stroke.top.width_px = 2 }",
+         set = { min_width_px = \"= add(part.touch_target, 4px)\" }",
     )
     .unwrap();
     let mut stack = stack(preset, None, Vec::new());
@@ -410,7 +404,7 @@ fn stand_in_removal_refused_where_a_layer_needs_it() {
     let before = stack.clone();
     assert_eq!(
         problems(stack.remove_reader_stand_in()),
-        ["rules[0].set.stroke: patches the fields of a value that can be `absent`"]
+        ["rules[0].set.min_width_px: `part.touch_target` can be `absent` here"]
     );
     assert_eq!(stack, before);
 }

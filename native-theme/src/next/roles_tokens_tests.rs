@@ -1073,7 +1073,8 @@ fn kde_tokens_patch_by_set_or_fields() {
 
     let mut absent: BlockPatch<MaterialScheme> = BlockPatch::Set(Value::Absent);
     let fields = BlockPatch::Fields(super::tokens::MaterialSchemePatch::default());
-    assert!(absent.merge(fields).is_err());
+    assert_eq!(absent.merge(fields), Ok(()));
+    assert_eq!(absent, BlockPatch::Set(Value::Absent));
 }
 
 #[test]

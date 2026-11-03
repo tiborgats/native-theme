@@ -433,22 +433,32 @@ impl BlockField {
                 }
             }
             Shape::Block {
-                kind: kind @ (BlockKind::Fields | BlockKind::Append),
+                kind: BlockKind::Fields,
                 wrap: Wrap::Value,
                 block,
             } => {
                 let ty = &block.ty;
-                let patch = if *kind == BlockKind::Fields {
-                    quote!(#b::BlockPatch<#ty>)
-                } else {
-                    let patch = renamed(ty, &format_ident!("{}Patch", block.name));
-                    quote!(#patch)
-                };
+                let patch = quote!(#b::BlockPatch<#ty>);
                 quote! {
                     match #ident {
                         #o::Some(patch) => <#m::Value<#ty> as #b::Entry<#patch>>::create(patch)
                             .map_err(|c| c.under(#path))?,
                         #o::None => #unset_value,
+                    }
+                }
+            }
+            Shape::Block {
+                kind: BlockKind::Append,
+                wrap: Wrap::Value,
+                block,
+            } => {
+                // An `Append` has nothing to append to, so it leaves the
+                // value unset (S6.1).
+                let patch = renamed(&block.ty, &format_ident!("{}Patch", block.name));
+                quote! {
+                    match #ident {
+                        #o::Some(#patch::Set(value)) => value,
+                        #o::Some(#patch::Append(_)) | #o::None => #unset_value,
                     }
                 }
             }
@@ -1366,8 +1376,8 @@ fn expand_append(
         type_attrs.check,
     );
     let append_doc = format!(
-        "Appends to `{list_name}` over the value below; over `Absent`, the appended items \
-         are the whole value. Composed lazily over a reference (S2.2)."
+        "Appends to `{list_name}` over the value below; over `Absent`, nothing, the value \
+         staying absent (S6.1). Composed lazily over a reference (S2.2)."
     );
     let c = quote!(crate::next::resolve::compose);
     let locate = super::resolve::struct_locate(name, None, fields);
@@ -1447,9 +1457,12 @@ fn expand_append(
                 patch: #patch,
                 _: ::core::option::Option<#r::InnerMark>,
             ) -> ::core::result::Result<Self, #b::MergeConflict> {
-                let mut value = #m::Value::Absent;
-                #b::Apply::apply(&mut value, patch)?;
-                ::core::result::Result::Ok(value)
+                match patch {
+                    #patch::Set(value) => ::core::result::Result::Ok(value),
+                    #patch::Append(_) => ::core::result::Result::Err(
+                        #b::MergeConflict::new(#b::Below::Missing),
+                    ),
+                }
             }
         }
 
@@ -1463,10 +1476,6 @@ fn expand_append(
                     #patch::Append(items) => match self {
                         #m::Value::Stated(block) => {
                             block.#list.extend(items);
-                            ::core::result::Result::Ok(())
-                        }
-                        #m::Value::Absent => {
-                            *self = #m::Value::Stated(#name { #list: items });
                             ::core::result::Result::Ok(())
                         }
                         other => #b::MergeConflict::over(other).map_or(::core::result::Result::Ok(()), ::core::result::Result::Err),

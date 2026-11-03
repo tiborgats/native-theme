@@ -405,6 +405,59 @@ fn fields_before_absent_kept_beneath() {
     assert_eq!(label.padding.left, Some(Px(8.0)));
 }
 
+/// The theme of the fixture's preset and `layers`, each added as an
+/// application layer, so validated (S12).
+fn validated(layers: &[&str]) -> ResolvedTheme {
+    let file = read_preset(&format!(
+        "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n{DECLARE}"
+    ))
+    .unwrap_or_else(|e| panic!("{e}"));
+    let mut stack = Stack::unvalidated(file.declarations, vec![layer(PRESET)], None);
+    for text in layers {
+        stack
+            .add_layer(layer(text))
+            .unwrap_or_else(|e| panic!("{e}"));
+    }
+    stack
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme
+}
+
+/// `fields_patch_over_absent_leaves_absent` (S2.2, S6.3, S12, ADD-A126): a
+/// rule's `Fields` patch over the focus indicator the base states `absent`
+/// validates, its expression reading an absent operand not evaluated
+/// there, and sets nothing: the indicator resolves `None`.
+#[test]
+fn fields_patch_over_absent_leaves_absent() {
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+                set = { focus.kind = \"ring\", focus.width_px = \"= add(part.touch_target, 1px)\" }";
+    let theme = validated(&[rule]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(BODY, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    let (body, _) = drawn(&theme, &hovered);
+    assert_eq!(body.focus, None);
+}
+
+/// `append_over_absent_paint_draws_nothing` (S6.1, S6.3, ADD-A126): a
+/// rule's `Append` over a fill a layer states `absent` validates and
+/// appends to nothing: the fill resolves `None`.
+#[test]
+fn append_over_absent_paint_draws_nothing() {
+    let absent = "[widgets.button.body]\nfill = \"absent\"";
+    let rule = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+                set = { fill = { append = [\"#ff0000\"] } }";
+    let theme = validated(&[absent, rule]);
+    let scope = root(&theme, Direction::Ltr);
+    let hovered = Element::new(BODY, &scope, &Metrics)
+        .with_states(StateFlags::new().with(StateFlag::Hover), &[]);
+    let (body, _) = drawn(&theme, &hovered);
+    assert_eq!(body.fill, None);
+}
+
 /// `scope_bindings_once` (S3.3, S8): a part's binding is evaluated once, in
 /// the scope outside it, and its children read the bound colour through
 /// the returned scope as it is: a binding darkening `surface.background`

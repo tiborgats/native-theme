@@ -3128,7 +3128,6 @@ kinds! {
     SizeContextKey { .. },
     NotABlock,
     UnitMismatch { .. },
-    FieldsOver { .. },
     DrawnAsCycle,
     TextScaleUnderDynamicType,
     AbsentOperand { .. },
@@ -3560,22 +3559,6 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (V::UnitMismatch, over(&mismatch, &layout, &[])),
-        (
-            V::FieldsOver,
-            read(&format!(
-                "{}{}",
-                rule(
-                    "{ conditions = [\"scheme:dark\"] }",
-                    "button.body",
-                    "{ stroke = \"absent\" }"
-                ),
-                rule(
-                    "{ conditions = [\"reduced_motion\"] }",
-                    "button.body",
-                    "{ stroke.top.width_px = 2 }"
-                )
-            )),
-        ),
         (
             V::DrawnAsCycle,
             read("[widgets.button.icon]\ndrawn_as = { widget = \"button\", variants = [] }"),

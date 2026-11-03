@@ -545,6 +545,8 @@ mod tests {
                 pub status: StatusColors,
                 #[parts(block = "fields")]
                 pub stroke: Value<Stroke>,
+                #[parts(block = "append", may_be_absent)]
+                pub fill: Value<Paint>,
             }
         });
         for expected in [
@@ -567,6 +569,9 @@ mod tests {
              BlockPatch < Stroke > >> :: create (patch)",
             ":: core :: option :: Option :: None => crate :: next :: blocks :: created_value (:: core :: option :: \
              Option :: None , false , inner , \"stroke\") ?",
+            ":: core :: option :: Option :: Some (PaintPatch :: Set (value)) => value , :: core :: option :: \
+             Option :: Some (PaintPatch :: Append (_)) | :: core :: option :: Option :: None => crate :: next :: \
+             blocks :: created_value (:: core :: option :: Option :: None , true , inner , \"fill\") ?",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -621,8 +626,9 @@ mod tests {
             "Append (Vec < PaintLayer >)",
             "pub layers : :: std :: vec :: Vec < ResolvedPaintLayer >",
             "impl crate :: next :: blocks :: Apply < PaintPatch > for crate :: next :: Value < Paint >",
-            "Paint { layers : items }",
             "impl crate :: next :: blocks :: Entry < PaintPatch > for crate :: next :: Value < Paint >",
+            "PaintPatch :: Append (_) => :: core :: result :: Result :: Err (crate :: next :: blocks :: \
+             MergeConflict :: new (crate :: next :: blocks :: Below :: Missing) ,) ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
