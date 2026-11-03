@@ -122,6 +122,19 @@ fn gate_value_map_fact_whole() {
     }
 }
 
+/// A colour role's map fact (`role.global.accent_ramp`, stated whole) is
+/// the value too (S17), read at the role's own place: the fact `{}` agrees
+/// with a preset whose ramp is empty and fails one whose ramp holds an
+/// entry.
+#[test]
+fn gate_role_map_fact_whole() {
+    let ramp = |report: &run::Report| failing(report, "accent_ramp").len();
+    let empty = fixture_report("map_whole_role");
+    assert_eq!(empty.failures, Vec::<String>::new());
+    let extra = fixture_report_with("map_whole_role", "preset_extra.toml");
+    assert!(ramp(&extra) > 0, "{:?}", extra.failures);
+}
+
 /// A plain map's fact (`token.icons.mirroring`, a `Vec<(K, V)>` stated
 /// whole) is the value too (S17, the T6 review's S1): the fact `{}` fails
 /// a preset whose map holds an entry and agrees with one holding none; a
@@ -184,6 +197,57 @@ fn gate_fixture_leaf_facts_over_whole_block() {
             .failures
             .iter()
             .all(|failure| failure.contains("`button.body.focus.width` at")),
+        "{:?}",
+        wrong.failures
+    );
+}
+
+/// A whole-block fact after its leaf's (S17 *Which fact applies*: the last
+/// applying fact in file order, the block's counting for each of its
+/// leaves): the block's later fact applies to the width wherever the
+/// leaf's holds, so the token's width passes everywhere and a preset
+/// stating the leaf's zero where the button is not focused fails at the
+/// block's width; neither a leaf skipped only where no leaf fact applies
+/// nor every leaf with an applying fact grafted out of the block passes it.
+#[test]
+fn gate_fixture_whole_block_over_leaf_facts() {
+    let report = fixture_report("block_over_leaf");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+    let wrong = fixture_report_with("block_over_leaf", "wrong_width.toml");
+    let width = failing(&wrong, "Normal: `button.body.focus` at");
+    assert!(!width.is_empty(), "{:?}", wrong.failures);
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`button.body.focus` at")),
+        "{:?}",
+        wrong.failures
+    );
+}
+
+/// A token's block stated whole and its leaf after it (S17 *Which fact
+/// applies*, for every key): the block's fact compares the block but the
+/// leaf where the leaf's later fact applies, which compares the leaf; a
+/// preset patching the leaf there passes, its twin stating the block's
+/// value there fails at the leaf alone.
+#[test]
+fn gate_fixture_token_leaf_over_whole_block() {
+    let report = fixture_report("token_leaf_over_block");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+    let wrong = fixture_report_with("token_leaf_over_block", "wrong_top.toml");
+    assert!(
+        !failing(&wrong, "Normal: `token.focus.offset.top` at").is_empty(),
+        "{:?}",
+        wrong.failures
+    );
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("`token.focus.offset.top` at")),
         "{:?}",
         wrong.failures
     );

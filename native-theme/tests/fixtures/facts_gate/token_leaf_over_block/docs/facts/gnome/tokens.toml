@@ -1,0 +1,35 @@
+# Synthetic token facts (S17).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# The focus offset stated whole by a table, and its top per leaf after it in the dark scheme (S17 *Which fact
+# applies*: the last fact in file order whose `when` holds; the leaf's fact stands after the block's, so it applies
+# to the leaf there, the block's to the rest).
+[[fact]]
+key = "token.focus.offset"
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.focus.offset.top"
+when = { conditions = ["scheme:dark"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

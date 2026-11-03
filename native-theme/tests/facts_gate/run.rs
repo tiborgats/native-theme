@@ -1950,13 +1950,34 @@ fn check_globals(
     report: &mut Report,
 ) {
     let combination = || format!("{vector:?}");
-    for key in keys.iter().filter(|key| key.key.widget().is_none()) {
-        let fact = applying(
-            &key.facts,
-            |when| resolved.conditions_hold(when),
-            report,
-            &combination,
-        );
+    let globals: Vec<&KeyFacts<'_>> = keys
+        .iter()
+        .filter(|key| key.key.widget().is_none())
+        .collect();
+    let facts: Vec<Option<&Prepared<'_>>> = globals
+        .iter()
+        .map(|key| {
+            applying(
+                &key.facts,
+                |when| resolved.conditions_hold(when),
+                report,
+                &combination,
+            )
+        })
+        .collect();
+    for (index, (key, fact)) in globals.iter().zip(facts.iter().copied()).enumerate() {
+        // A later fact of a block holding the key states it (S17 *Which
+        // fact applies*, as for a widget's keys): the block's comparison is
+        // the key's.
+        if blocks_of(&globals, index).into_iter().any(|block| {
+            facts
+                .get(block)
+                .copied()
+                .flatten()
+                .is_some_and(|stated| later(stated, fact))
+        }) {
+            continue;
+        }
         let place = fact.map(|fact| fact.fact.place()).unwrap_or_default();
         let holds = |when: &When, _: &FactKey| resolved.conditions_hold(when);
         let whole = composed(
@@ -1999,7 +2020,9 @@ fn check_globals(
                 Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                 Ok(false) => {
                     let tolerance = tolerance.drawn_by(drawing);
-                    let outcome = resolved.compare_global(&key.key, value, root, &tolerance);
+                    let except = stated_below(&globals, &facts, index, fact);
+                    let outcome =
+                        resolved.compare_global_except(&key.key, value, root, &tolerance, &except);
                     record(outcome, &key.name, &place, report, &combination, pass);
                 }
                 Err(unread) => record(Err(unread), &key.name, &place, report, &combination, pass),
@@ -2218,7 +2241,8 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
         }
     };
     // Probed in chunks, each chunk's findings recorded in order before the
-    // next is probed, so only a chunk's signatures are held at once.
+    // next is probed, so only a chunk's probes are held at once (the
+    // signatures span every chunk).
     let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
     let mut queried: Vec<&Combination> = Vec::new();
     for chunk in combinations.chunks(PROBED_AT_ONCE) {

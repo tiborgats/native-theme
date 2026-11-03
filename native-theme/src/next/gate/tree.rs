@@ -1108,6 +1108,91 @@ mod tests {
 
     #[derive(Debug)]
     #[allow(dead_code, reason = "read through its Debug form only")]
+    enum Shape {
+        Rounded(Px),
+        Plain,
+    }
+
+    #[derive(Debug)]
+    #[allow(dead_code, reason = "read through its Debug form only")]
+    struct Holder {
+        width: Option<Px>,
+        none: Option<Option<Px>>,
+        color: Color,
+        shape: Shape,
+        map: Vec<(String, Option<f32>)>,
+    }
+
+    fn holder(width: f32) -> Holder {
+        Holder {
+            width: Some(Px(width)),
+            none: Some(None),
+            color: Color {
+                r: 0.25,
+                g: 0.5,
+                b: 0.0,
+                a: 1.0,
+            },
+            shape: Shape::Rounded(Px(width)),
+            map: vec![("a".to_owned(), Some(2.0)), ("b".to_owned(), None)],
+        }
+    }
+
+    /// `Tree::of_at` is `Tree::of` read at the path (`Tree::at`), which the
+    /// gate takes it for: through `Some`, at a field, a `Some(None)`, a
+    /// colour, a variant named in snake_case, a map's entry, the whole
+    /// value at the empty path, and nothing where the path names nothing;
+    /// and `graft` replaces the subtree at a path with another tree's there,
+    /// the rest kept, a path either side lacks changing nothing.
+    #[test]
+    fn of_at_reads_as_at_and_graft_replaces_there() {
+        let value = holder(4.0);
+        let whole = Tree::of(&value).unwrap();
+        for text in [
+            "",
+            "width",
+            "none",
+            "color",
+            "color.r",
+            "shape",
+            "shape.rounded",
+            "shape.plain",
+            "map",
+            "map.a",
+            "map.b",
+            "map.c",
+            "missing",
+        ] {
+            let path: Vec<String> = text
+                .split('.')
+                .filter(|segment| !segment.is_empty())
+                .map(str::to_owned)
+                .collect();
+            assert_eq!(
+                Tree::of_at(&value, &path),
+                whole.at(&path).cloned(),
+                "{text:?}"
+            );
+        }
+        assert!(
+            whole
+                .at(&["shape".to_owned(), "rounded".to_owned()])
+                .is_some()
+        );
+        let wider = Tree::of(&holder(5.0)).unwrap();
+        let width = vec!["width".to_owned()];
+        let mut grafted = whole.clone();
+        grafted.graft(&width, &wider);
+        assert_eq!(grafted.at(&width), wider.at(&width));
+        let shape = vec!["shape".to_owned()];
+        assert_eq!(grafted.at(&shape), whole.at(&shape));
+        let mut unchanged = whole.clone();
+        unchanged.graft(&["missing".to_owned()], &wider);
+        assert_eq!(unchanged, whole);
+    }
+
+    #[derive(Debug)]
+    #[allow(dead_code, reason = "read through its Debug form only")]
     struct ResolvedShadowLayer {
         x: Px,
         y: Px,

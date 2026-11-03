@@ -137,7 +137,8 @@ inputs = [
 accent_inputs = ["accent"]
 
 [declare.params.opacity]
-# S4.6: one unit per group, the opacity group's a fraction
+# S4.6, S10: one unit per group, the opacity group's `fraction` (S10's `opacity = { unit = "fraction" }`): its facts
+# state fractions, each converted from its quote's percent (percent_to_fraction, docs/facts/gnome/tokens.toml:1303)
 unit = "fraction"
 keys = [
     "border",  # docs/facts/gnome/tokens.toml:1294

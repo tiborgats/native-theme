@@ -32,6 +32,7 @@ use super::resolve::evaluate::{Extra, Reached, Resolve};
 use super::resolve::{
     Pos, ReaderState, ResolvedTheme, Stack, WindowConditions, WindowState, input_value,
 };
+use super::roles::ColorRoles;
 use super::selector::{
     Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, InputKind, PartRef,
     RuleBody, Scheme, Selector, StateFlag, StateFlags, ValuesPatch, VariantRef, WidgetOrPart,
@@ -1088,6 +1089,14 @@ fn holds_field(fields: &'static [registry::FieldInfo], path: &[String]) -> bool 
     registry::find(fields, &path.join(".")).is_some()
 }
 
+/// Whether a colour role's path below the colour roles names a map whole
+/// (`global.accent_ramp`), not a colour.
+fn names_map(path: &[String]) -> bool {
+    let path = path.join(".");
+    registry::find(registry::colors(), &path).is_some()
+        && registry::find_value(registry::colors(), &path).is_none()
+}
+
 /// A colour role reference's path below the colour roles.
 fn role_path(reference: &Ref) -> Option<Vec<String>> {
     fn names(head: &[&str], path: &[Key]) -> Vec<String> {
@@ -1212,9 +1221,11 @@ impl FactKey {
     }
 
     /// The key's path below the key `block`, where `block` names a part's
-    /// field or a widget value holding it (`offset.top` below
-    /// `button.body.focus` for `button.body.focus.offset.top`); `None`
-    /// where it names no block holding the key.
+    /// field, a widget value, a token or a colour role holding it
+    /// (`offset.top` below `button.body.focus` for
+    /// `button.body.focus.offset.top`, below `token.focus` for
+    /// `token.focus.offset.top`); `None` where it names no block holding the
+    /// key.
     #[must_use]
     pub fn below(&self, block: &FactKey) -> Option<Vec<String>> {
         let (path, above) = match (&self.place, &block.place) {
@@ -1222,6 +1233,8 @@ impl FactKey {
             (Place::Values(widget, path), Place::Values(other, above)) if widget == other => {
                 (path, above)
             }
+            (Place::Token(path), Place::Token(above))
+            | (Place::Role(_, path), Place::Role(_, above)) => (path, above),
             _ => return None,
         };
         let rest = path.strip_prefix(above.as_slice())?;
@@ -1773,6 +1786,17 @@ impl Resolved {
                         (tree, Reach::of(cx.reached(), Target::Tokens, path))
                     })
                 }
+                // A role naming a map (`role.global.accent_ramp`) is read in
+                // the colour roles resolved whole, so a fact stating it is
+                // compared whole (S17); a colour role through its reference,
+                // as an expression reads it (S3.3).
+                Place::Role(_, path) if names_map(path) => {
+                    theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
+                        let folds = cx.roots(Target::Roles);
+                        let tree = Tree::of(&ColorRoles::resolve(&folds, cx));
+                        (tree, Reach::of(cx.reached(), Target::Roles, path))
+                    })
+                }
                 Place::Role(reference, _) => {
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let tree = Tree::of(&cx.color_of(reference));
@@ -1811,6 +1835,7 @@ impl Resolved {
         };
         let path = match &key.place {
             Place::Token(path) => path.clone(),
+            Place::Role(_, path) if names_map(path) => path.clone(),
             Place::Role(..) | Place::Input(_) | Place::KdeList(_) => Vec::new(),
             Place::WholePart(_) | Place::Part(..) | Place::Values(..) => {
                 return Err(Unread::Refused(
@@ -1824,10 +1849,15 @@ impl Resolved {
         };
         let scheme = theme.scheme;
         let contrast = self.stack.contrast();
+        // The fact's step is read at the place its key names below the
+        // target's root (a role's below the colour roles), the tree read
+        // there being the key's own value (`path` below it).
+        let place = match &key.place {
+            Place::Role(_, below) => below.as_slice(),
+            _ => path.as_slice(),
+        };
         let (tree, reach) = match (&value.body, &key.place) {
-            (Body::Rule(body), _) => {
-                read(extra_step(body).map(|fold| Extra::Step(fold, path.as_slice())))
-            }
+            (Body::Rule(body), _) => read(extra_step(body).map(|fold| Extra::Step(fold, place))),
             (Body::Inputs(bases), Place::Input(name)) => bases
                 .entries
                 .iter()
@@ -1890,6 +1920,31 @@ impl Resolved {
     ) -> Result<Outcome, Unread> {
         let (actual, path, _) = self.global_tree(key, None, root)?;
         let (expected, _, _) = self.global_tree(key, Some(value), root)?;
+        let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
+        differs(actual.as_ref(), expected.as_ref(), &path, &tolerance)
+    }
+
+    /// [`Resolved::compare_global`] but at the places below the key
+    /// `except` names, each by its path below the key's, which a later
+    /// fact of their own keys states (S17 *Which fact applies*: the last
+    /// fact in file order whose `when` holds, a block's leaf stated after
+    /// the block): their own keys compare them.
+    pub fn compare_global_except(
+        &self,
+        key: &FactKey,
+        value: &FactValue,
+        root: &RootInputs,
+        tolerance: &Tolerance,
+        except: &[Vec<String>],
+    ) -> Result<Outcome, Unread> {
+        let (actual, path, _) = self.global_tree(key, None, root)?;
+        let (mut expected, _, _) = self.global_tree(key, Some(value), root)?;
+        if let (Some(expected), Some(actual)) = (expected.as_mut(), actual.as_ref()) {
+            for below in except {
+                let at: Vec<String> = path.iter().chain(below).cloned().collect();
+                expected.graft(&at, actual);
+            }
+        }
         let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
         differs(actual.as_ref(), expected.as_ref(), &path, &tolerance)
     }
@@ -2267,30 +2322,11 @@ impl Session<'_> {
         }
     }
 
-    /// Whether `when` holds for the element of the key's part (its root's
-    /// for a value): its conditions as resolution decided them, the rest
-    /// matched against the element as the query matches a rule (S8).
-    #[must_use]
-    pub fn holds(&self, when: &When, key: &FactKey) -> bool {
-        if !self.resolved.conditions_hold(when) {
-            return false;
-        }
-        let part = match &key.place {
-            Place::WholePart(part) | Place::Part(part, _) => self.queried(*part),
-            Place::Values(..) => self.root(),
-            Place::Token(_) | Place::Role(..) | Place::Input(_) | Place::KdeList(_) => return true,
-        };
-        let Some(queried) = part else {
-            return false;
-        };
-        let theme = &self.resolved.theme;
-        self.with_element(queried.part, &queried.scope, |element| {
-            Matched::new(theme, element).is_ok_and(|matched| matched.matches(&when.0))
-        })
-    }
-
-    /// [`Session::holds`] of each `when` with its key, each part's element
-    /// matched once.
+    /// Whether each `when` holds for the element of its key's part (its
+    /// root's for a value; a token's, a role's or an input's by its
+    /// conditions alone): its conditions as resolution decided them, the
+    /// rest matched against the element as the query matches a rule (S8),
+    /// each part's element matched once.
     #[must_use]
     pub fn holds_each(&self, whens: &[(&When, &FactKey)]) -> Vec<bool> {
         let mut out: Vec<bool> = whens
