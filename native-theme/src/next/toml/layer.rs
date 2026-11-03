@@ -601,7 +601,13 @@ fn read_part(
             _ => read_drawn_as(item, &key_at, cx),
         });
     }
+    let beneath = matches!(
+        presence,
+        Some(Some(PartPresence::Absent | PartPresence::DrawnAs { .. }))
+    );
+    let latent = std::mem::replace(&mut cx.latent, cx.whole && beneath);
     let style = read_style(widget, part, fields, at, cx);
+    cx.latent = latent;
     cx.widget = outer;
     let presence = match presence {
         Some(read) => Some(read?),

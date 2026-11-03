@@ -27,7 +27,8 @@ use crate::next::widgets::{TypedPart, Variant, WidgetKind};
 /// A struct block field's patch (S2.2): in a rule's `set` or an
 /// application layer's bases a table is a `Fields` patch, a whole block
 /// stated by `{ replace = { … } }` or a reference; in a preset's own bases a
-/// table is the whole block, and `replace` an unknown key (S11).
+/// table is the whole block, and `replace` an unknown key (S11); beside
+/// the part's `absent = true` or `drawn_as` there, a patch kept beneath it.
 impl<T> FromToml for BlockPatch<T>
 where
     T: FieldsBlock + Build<Patch = <T as FieldsBlock>::Patch> + FromToml,
@@ -67,7 +68,7 @@ where
 
     fn finish(self, at: &str, cx: &mut Reader) -> Self {
         match self {
-            BlockPatch::Fields(fields) if cx.whole => {
+            BlockPatch::Fields(fields) if cx.whole && !cx.latent => {
                 match T::build(fields.clone(), at, false, cx) {
                     Some(block) => BlockPatch::Set(Value::Stated(block)),
                     None => BlockPatch::Fields(fields),

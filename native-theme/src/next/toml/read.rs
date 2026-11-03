@@ -30,6 +30,11 @@ pub(crate) struct Reader {
     pub(crate) whole: bool,
     /// Reading a layer's bases, where `append` is refused (S6.1).
     pub(crate) bases: bool,
+    /// Reading the fields a preset's own bases keep beneath a part's
+    /// `absent = true` or `drawn_as`: a block's table there stays a patch,
+    /// its completeness S12's where a later `absent = false` draws the part
+    /// (S6.3, S11, S12).
+    pub(crate) latent: bool,
     /// The typed widget whose table is read: a bare part name names one of
     /// its parts.
     pub(crate) widget: Option<WidgetKind>,

@@ -1282,7 +1282,7 @@ fn present_with_nothing_beneath_is_missing() {
     );
     let file = read_preset(&format!(
         "{PRESET_HEAD}[widgets.button.menu_indicator]\nabsent = true\nmin_width_px = 4\n\
-         margin = {{ top_px = 4 }}"
+         margin = {{ top_px = 4 }}\nglyph = {{ size_px = 4 }}"
     ))
     .unwrap();
     let own = strings(check_preset(
