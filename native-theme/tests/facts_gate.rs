@@ -120,6 +120,24 @@ fn gate_value_map_fact_whole() {
     }
 }
 
+/// A plain map's fact (`token.icons.mirroring`, a `Vec<(K, V)>` stated
+/// whole) is the value too (S17, the T6 review's S1): the fact `{}` fails
+/// a preset whose map holds an entry and agrees with one holding none; a
+/// fact of that entry agrees with the preset holding it and fails one
+/// holding none.
+#[test]
+fn gate_plain_map_fact_whole() {
+    let mirroring = |report: &run::Report| failing(report, "icons.mirroring").len();
+    let empty = fixture_report("map_whole_plain");
+    assert_eq!(empty.failures, Vec::<String>::new());
+    let extra = fixture_report_with("map_whole_plain", "preset_extra.toml");
+    assert!(mirroring(&extra) > 0, "{:?}", extra.failures);
+    let entry = fixture_report("map_whole_plain_entry");
+    assert_eq!(entry.failures, Vec::<String>::new());
+    let none = fixture_report_with("map_whole_plain_entry", "preset_empty.toml");
+    assert!(mirroring(&none) > 0, "{:?}", none.failures);
+}
+
 /// The negative control's pair: facts stating one wrong value per key
 /// class (a token, a colour role, an input, a widget value and a part's
 /// field) fail at each, so `gate_fixture_passes` passing means each class
