@@ -3167,13 +3167,57 @@ mod tests {
         assert_eq!(depth(&nested(200)), MAX_DEPTH + 1);
     }
 
-    /// A rule names no preset here: no preset is bundled, so `PresetId` has
-    /// no value to name (S16). The test that a rule naming another preset
-    /// is skipped enters with the first bundled preset (M1a task 15).
+    /// A rule naming no preset is validated under any; one whose `Preset`
+    /// condition names another preset than the current one is not, nor one
+    /// whose `not_conditions` names the current preset, so one layer can
+    /// carry rules for several presets' keyed names (S12): a timing
+    /// `adwaita` does not declare, named under `preset:adwaita`, is refused
+    /// on `adwaita` alone.
     #[test]
-    fn a_rule_naming_no_preset_is_validated() {
+    fn a_rule_naming_another_preset_is_not_validated() {
         let rule = Rule::new(Selector::default(), RuleBody::Tokens(Box::default()));
         assert!(!excluded(&rule, None));
+        assert!(!excluded(&rule, Some(PresetId::Adwaita)));
+        let mut named = rule.clone();
+        named
+            .selector
+            .conditions
+            .all_of
+            .push(Condition::Preset(PresetId::Adwaita));
+        assert!(excluded(&named, None));
+        assert!(!excluded(&named, Some(PresetId::Adwaita)));
+        let mut unless = rule;
+        unless
+            .selector
+            .conditions
+            .none_of
+            .push(Condition::Preset(PresetId::Adwaita));
+        assert!(!excluded(&unless, None));
+        assert!(excluded(&unless, Some(PresetId::Adwaita)));
+        let layer = Layer::from_toml(
+            "[[rules]]\nwhen = { conditions = [\"preset:adwaita\"] }\ntarget = \"tokens\"\n\
+             set = { motion.timings.probe = \"linear\" }",
+        )
+        .unwrap();
+        let problems = |preset: Option<PresetId>| {
+            let decl = Declarations::default();
+            let cx = Context {
+                declarations: &decl,
+                preset,
+                kind: LayerKind::Application,
+                reader_accent_left_out: false,
+                below: &[],
+            };
+            super::layer(&layer, &cx)
+                .iter()
+                .map(Problem::to_string)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(problems(None), Vec::<String>::new());
+        assert_eq!(
+            problems(Some(PresetId::Adwaita)),
+            ["rules[0].set.motion.timings.probe: `probe` is not declared in `timings`"]
+        );
     }
 
     /// A widget value's key is listed by the widget's `keys` entry for the

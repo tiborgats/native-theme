@@ -15,6 +15,7 @@ use crate::next::error::LayerError;
 use crate::next::inputs::{Accent, Contrast, InputName, InputValue};
 use crate::next::key::Key;
 use crate::next::layer::{Layer, LayerId};
+use crate::next::presets::PresetId;
 use crate::next::selector::{Condition, InputKind, Rule, RuleBody, Scheme, Selector, WidgetRef};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::Fraction;
@@ -89,6 +90,37 @@ fn stated_opacity(slot: &PartSlot) -> Option<f32> {
         Value::Stated(Fraction(n)) => Some(*n),
         _ => None,
     }
+}
+
+/// A rule whose `Preset` condition names another preset than the current
+/// one is not applied, and one naming the current preset is; a
+/// `not_conditions` entry naming the current preset excludes its rule
+/// (S7.1, S12): `adwaita`'s rules under no bundled preset and under
+/// `adwaita`.
+#[test]
+fn a_rule_naming_another_preset_is_not_applied() {
+    let opacities = |preset: Option<PresetId>, rule: Rule| {
+        let mut application = body(0.2);
+        application.rules.push(rule);
+        let mut stack = stack(Layer::default(), None, vec![application]);
+        stack.preset = preset;
+        let theme = stack.resolve(&mut WindowState::default(), &window()).theme;
+        let mut slot = PartSlot::default();
+        theme
+            .part_steps(TypedPart::Button(ButtonPart::Body))
+            .iter()
+            .map(|step| {
+                slot.apply(step.patch.clone()).unwrap();
+                stated_opacity(&slot).unwrap()
+            })
+            .collect::<Vec<_>>()
+    };
+    let named = || body_rule(Condition::Preset(PresetId::Adwaita), 0.4);
+    assert_eq!(opacities(None, named()), [0.2]);
+    assert_eq!(opacities(Some(PresetId::Adwaita), named()), [0.2, 0.4]);
+    let mut unless = named();
+    unless.selector.conditions.none_of = std::mem::take(&mut unless.selector.conditions.all_of);
+    assert_eq!(opacities(Some(PresetId::Adwaita), unless), [0.2]);
 }
 
 /// S8's order: every layer's bases, in order (preset, reader, the
