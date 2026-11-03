@@ -442,7 +442,8 @@ pub enum ProblemKind {
     /// A map entry's patch that can create its entry with a field left
     /// unset that may not be `Absent` (S6.1, S12, ADD-A122).
     EntryCreatedUnset {
-        /// The field left unset.
+        /// The field left unset; `paint` for a paint map's entry, the
+        /// paint itself, an `Append` creates (S6.1, ADD-A131).
         field: String,
     },
     /// A field laying the element out or sizing its content reading the

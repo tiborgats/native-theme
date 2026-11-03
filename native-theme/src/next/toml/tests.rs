@@ -294,6 +294,29 @@ fn spelling_auto() {
     );
 }
 
+/// No block or paint is ever `Auto` (S2.2, S6.1, S12): `"auto"` on a
+/// `Value` block or a paint is refused as the reader reads it, in the
+/// bases and in a rule's `set`, so the merge never meets it.
+#[test]
+fn auto_on_a_block_or_paint_refused() {
+    assert_eq!(
+        problems("[widgets.button.body]\nstroke = \"auto\"\nfill = \"auto\""),
+        [
+            "widgets.button.body.stroke: expected a table",
+            "widgets.button.body.fill: expected a colour (S2.1)"
+        ]
+    );
+    assert_eq!(
+        problems(
+            "[[rules]]\ntarget = \"button.body\"\nset = { stroke = \"auto\", fill = \"auto\" }"
+        ),
+        [
+            "rules[0].set.stroke: expected a table",
+            "rules[0].set.fill: expected a colour (S2.1)"
+        ]
+    );
+}
+
 #[test]
 fn spelling_absent() {
     assert_eq!(body_of("shadow = \"absent\"").shadow, Some(Value::Absent));

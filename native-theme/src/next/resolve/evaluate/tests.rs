@@ -1740,6 +1740,12 @@ fn value_map_empty_patch_is_no_change() {
     let mut value = Value::Stated(axes(&[("GRAD", 1.0)]));
     crate::next::blocks::apply_value_map(&mut value, Value::Stated(Vec::new())).unwrap();
     assert_eq!(value, Value::Stated(axes(&[("GRAD", 1.0)])));
+    // A stated map over `Absent` changes nothing, as a `Fields` patch there
+    // does (S6.1, ADD-A126).
+    let mut value = Value::Absent;
+    crate::next::blocks::apply_value_map(&mut value, Value::Stated(axes(&[("GRAD", 1.0)])))
+        .unwrap();
+    assert_eq!(value, Value::Absent);
     let mut slot = Some(Value::Stated(axes(&[("GRAD", 1.0)])));
     crate::next::blocks::merge_slot_value_map(&mut slot, Some(Value::Stated(Vec::new()))).unwrap();
     assert_eq!(slot, Some(Value::Stated(axes(&[("GRAD", 1.0)]))));

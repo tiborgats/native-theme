@@ -287,6 +287,18 @@ fn fields_over_absent_never_refused() {
     assert_eq!(over(unglyphed, glyph, &Declarations::default()), NONE);
     assert_eq!(bare(&format!("{unglyphed}\n{glyph}")), NONE);
 
+    // An appended layer's expression over an absent paint is not evaluated
+    // (S12): it appends to nothing.
+    let layer = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
+                 set = { fill = { append = [\"= alpha(part.interaction.state_layer.color, 0.5)\"] } }";
+    let unfilled = "[widgets.button.body]\ninteraction = \"absent\"\nfill = \"absent\"";
+    assert_eq!(over(unfilled, layer, &Declarations::default()), NONE);
+    let filled = "[widgets.button.body]\ninteraction = \"absent\"\nfill = \"#000000\"";
+    assert_eq!(
+        over(filled, layer, &Declarations::default()),
+        ["rules[0].set.fill.append[0]: `part.interaction.state_layer.color` can be `absent` here"]
+    );
+
     let reading = "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\n\
                    set = { focus.width_px = \"= add(part.touch_target, 1px)\" }";
     let absent = "[widgets.button.body]\nfocus = \"absent\"\ntouch_target_px = \"absent\"";
