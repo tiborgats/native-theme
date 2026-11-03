@@ -420,14 +420,25 @@ fn gate_fixture_part_absent_by_its_own_facts() {
 /// `gate_fixture_present` (S6.3, S17, ADD-A126): a whole part's
 /// `value = "present"`, after the fact that makes it absent, is compared
 /// with any style the query answers. A preset drawing the part again by
-/// `absent = false` where the facts do passes, its field compared there;
-/// its twin patching the part's field alone there leaves it absent and
-/// fails at the part's key alone, under the flat button.
+/// `absent = false` where the facts do passes, its field compared there,
+/// as its twin drawing it there with another text fails at that field
+/// alone; its twin patching the part's field alone there leaves it absent
+/// and fails at the part's key alone, under the flat button.
 #[test]
 fn gate_fixture_present() {
     let report = fixture_report("present");
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.fields_not_drawn > 0, "{report:?}");
+    let text = fixture_report_with("present", "text.toml");
+    assert!(!text.failures.is_empty(), "{text:?}");
+    assert!(
+        text.failures
+            .iter()
+            .all(|failure| failure.contains("`button.subtitle.text` at")
+                && failure.contains("[\"flat\"]")),
+        "{:?}",
+        text.failures
+    );
     let fields = fixture_report_with("present", "fields.toml");
     assert!(!fields.failures.is_empty(), "{fields:?}");
     assert!(
