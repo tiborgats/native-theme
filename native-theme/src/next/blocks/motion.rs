@@ -366,9 +366,10 @@ pub enum PropertyGroup {
 #[parts(block, check)]
 #[non_exhaustive]
 pub struct Transition {
-    /// The property groups it animates. In a list of transitions it merges by
-    /// group, a transition listing several groups split per group first
-    /// (S6.1).
+    /// The property groups it animates; empty in a
+    /// `FocusIndicator.transition`, which times the whole indicator (S2.10).
+    /// In a list it merges by group, `from` set and Breeze test (S6.1), a
+    /// transition listing several groups split per group first.
     pub properties: Vec<PropertyGroup>,
     /// How the change is drawn.
     #[parts(block = "set")]

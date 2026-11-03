@@ -1059,6 +1059,28 @@ fn transitions_merge_keyed_by_breeze_test() {
         ))
     );
 
+    // A test's conditions are a set: two in the other order are one key.
+    let both = vec![Condition::WindowInactive, Condition::Maximized];
+    let reversed = vec![Condition::Maximized, Condition::WindowInactive];
+    Transition::merge_keyed(&mut list, vec![breeze(hover(), both, 50.0)]);
+    assert_eq!(list.len(), 5);
+    Transition::merge_keyed(&mut list, vec![breeze(hover(), reversed.clone(), 40.0)]);
+    assert_eq!(list.len(), 5);
+    assert_eq!(list.last(), Some(&breeze(hover(), reversed.clone(), 40.0)));
+
+    // A test whose `none` differs is another key.
+    let other_none = engine(
+        TransitionEngine::Breeze(BreezeTest {
+            any: hover(),
+            none: vec![StateFlag::Pressed],
+            conditions: reversed,
+        }),
+        30.0,
+    );
+    Transition::merge_keyed(&mut list, vec![other_none.clone()]);
+    assert_eq!(list.len(), 6);
+    assert_eq!(list.last(), Some(&other_none));
+
     // A stated zero is keyed with no test, so it replaces the `GtkCss`
     // transition of its group and `from` set.
     let zero = Transition {
@@ -1070,7 +1092,7 @@ fn transitions_merge_keyed_by_breeze_test() {
         ..transition(vec![PropertyGroup::Fill], 0.0)
     };
     Transition::merge_keyed(&mut list, vec![zero.clone()]);
-    assert_eq!(list.len(), 4);
+    assert_eq!(list.len(), 6);
     assert!(!list.contains(&engine(TransitionEngine::GtkCss, 120.0)));
     assert_eq!(list.last(), Some(&zero));
 }

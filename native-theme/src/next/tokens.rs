@@ -6,8 +6,9 @@
 //! `scroll_view` widget (S6.1). So are
 //! four of `Tokens`' fields, which the slice reads nowhere and its facts do
 //! not state (the M1a design, decision 9), their types already here: `kde`
-//! and `material` enter at M1b, `theme_change` with the unit S4.3 places it
-//! in, `pointer` with the first unit that reads it.
+//! and `material` enter at M1b, `theme_change` with M3's tokens unit (S4's
+//! remaining groups and conditions), `pointer` with the first unit that
+//! reads it.
 //!
 //! The marks of what may be absent are S6.3's: the core's marks of these
 //! blocks' fields, and the catalogue's token table for the tokens no block

@@ -70,7 +70,8 @@ pub enum FocusVisibleWhen {
     Never,
 }
 
-/// What a focus indicator draws.
+/// What a focus indicator draws: drawn while the element has
+/// `FocusVisible`, and while its transition out runs (S2.10).
 #[derive(Clone, Debug, PartialEq, Eq, Hash, ThemeParts)]
 #[parts(toml)]
 pub enum FocusKind {
