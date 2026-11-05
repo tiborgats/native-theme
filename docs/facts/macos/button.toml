@@ -45079,3 +45079,101 @@ key = "button.icon.icon.animation"
 when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
 pending = "U323"
 rows = ["MAC-P3-9†"]
+
+# NSComboButton's menu indicator under `menu` (U315: no reading of its glyph, box or margins; its motion U181)
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.size"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.transform"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U181"
+rows = ["MAC-N29†", "MAC-X11"]

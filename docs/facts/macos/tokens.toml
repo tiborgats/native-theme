@@ -39856,32 +39856,75 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/10/0/0/inlineContent/0/text"
 quote = "Caption 1"
 
-# The slots AppKit has no text style of its own for: which style fills each is ledger queue #153 (3)'s decision (U325)
 
+# The display slots: AppKit's text styles hold no display size, Large Title the largest (26 pt), so the three take
+# the large title's slot, its owner (S4.4; ledger queue #155 (1))
 [[fact]]
 key = "token.text.roles.display_large"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U325"
+value = "= token.text.roles.large_title"
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/1/0/0/inlineContent/0/text"
+quote = "Large Title"
 
 [[fact]]
 key = "token.text.roles.display_medium"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U325"
+value = "= token.text.roles.large_title"
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/1/0/0/inlineContent/0/text"
+quote = "Large Title"
 
 [[fact]]
 key = "token.text.roles.display_small"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U325"
+value = "= token.text.roles.large_title"
 rows = ["MAC-X18"]
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/1/0/0/inlineContent/0/text"
+quote = "Large Title"
+
+# The label slot: the HIG's Label dynamic font variant, labelFont(ofSize:), the keyed style `label` (ledger queue #155 (1))
 [[fact]]
 key = "token.text.roles.label"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U325"
-rows = ["MAC-X18"]
+value = "= token.text.keyed.label"
+rows = ["MAC-TS02", "MAC-X18"]
 
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/48/inlineContent/0/inlineContent/0/text"
+quote = "When necessary, use dynamic system font variants to match the text in standard controls."
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/49/rows/2/0/0/inlineContent/0/text"
+quote = "Label"
+
+# monospace (userFixedPitchFont, MAC-I07) and numeric (monospacedDigitSystemFont): new keyed styles awaiting a probe read (U325)
 [[fact]]
 key = "token.text.roles.monospace"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -40141,3 +40184,275 @@ key = "token.icons.sizes.keyed.sidebar.symbolic_colors"
 when = { conditions = ["preset:macos-tahoe"] }
 pending = "U102"
 rows = ["MAC-IC01"]
+
+# The fixed icon contexts' other fields (U102: the symbol configurations AppKit gives each place; their size is pending above)
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.small.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.scale"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.scale"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.scale"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.panel.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.weight"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.scale"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = []
