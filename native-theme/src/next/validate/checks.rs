@@ -2713,9 +2713,19 @@ pub(super) fn states(bases: &Bases, layer: &Layer, listed: &str) -> bool {
 /// base, and the facts gate checks the declared variants both ways against
 /// the state model (S17). Only a preset's declarations reach this check:
 /// an application layer and a palette declare no variants in the model.
-pub(super) fn unused(decl: &Declarations, layer: &Layer, preset: Option<PresetId>) -> Vec<Problem> {
+/// The synthetic route's layers `synthetic` state keyed names in their
+/// bases as the preset's do (S12, S17, ADD-A133).
+pub(super) fn unused(
+    decl: &Declarations,
+    layer: &Layer,
+    preset: Option<PresetId>,
+    synthetic: &[Layer],
+) -> Vec<Problem> {
     let mut uses = Uses::default();
     uses.bases(&layer.bases);
+    for layer in synthetic {
+        uses.bases(&layer.bases);
+    }
     for rule in layer.rules.iter().filter(|rule| !excluded(rule, preset)) {
         let widget = match &rule.body {
             RuleBody::Colors(roles) => {

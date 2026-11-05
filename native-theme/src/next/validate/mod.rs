@@ -127,15 +127,16 @@ fn add(problems: &mut Vec<Problem>, found: Vec<(bool, Problem)>) {
 /// nothing uses. Its listed paths `pending` are left out of its
 /// completeness check, as the layers above it state them
 /// ([`listed_unstated`]; S17, ADD-A131); `synthetic`: the synthetic
-/// route's preset, whose pending default sizes are waived (S10's *A
-/// pending default*, ADD-A131); `reused` keeps what its checks over
-/// combinations found for the checks of the layers above it.
+/// route's layers over the preset, whose pending default sizes are waived
+/// (S10's *A pending default*, ADD-A131) and whose bases state keyed
+/// names as the preset's do (ADD-A133); `reused` keeps what its checks
+/// over combinations found for the checks of the layers above it.
 pub(crate) fn check_preset(
     declarations: &Declarations,
     layer: &Layer,
     preset: Option<PresetId>,
     pending: &[crate::next::toml::layer::Listed],
-    synthetic: bool,
+    synthetic: Option<&[Layer]>,
     reused: &Reused,
 ) -> Result<(), LayerError> {
     let exempt: Vec<String> = pending
@@ -150,8 +151,13 @@ pub(crate) fn check_preset(
         below: &[],
     };
     let mut problems: Vec<Problem> = checks::layer_exempt(layer, &cx, &exempt);
-    problems.extend(checks::declarations(declarations, synthetic));
-    problems.extend(checks::unused(declarations, layer, preset));
+    problems.extend(checks::declarations(declarations, synthetic.is_some()));
+    problems.extend(checks::unused(
+        declarations,
+        layer,
+        preset,
+        synthetic.unwrap_or_default(),
+    ));
     let layers = [Stacked {
         layer,
         kind: LayerKind::Preset,

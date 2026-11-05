@@ -46,7 +46,7 @@ fn validates(id: Option<PresetId>, text: &str) -> Result<(), String> {
     if file.pending.is_empty() {
         preset_stack(id, text, Scheme::Light).map_err(|e| e.to_string())?;
     } else {
-        let layers = synthetic_layers(&file.pending)?;
+        let layers = synthetic_layers(&file.pending, &file.layer)?;
         synthetic_stack(id, text, Scheme::Light, layers).map_err(|e| {
             let listed: Vec<&str> = file
                 .pending
@@ -112,7 +112,7 @@ fn adwaita_refused_plain_and_loaded_synthetic() {
         .collect();
     assert_eq!(missing.len(), file.pending.len(), "{problems:?}");
     assert_eq!(missing.len(), problems.len(), "{problems:?}");
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     let theme =
         super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers).unwrap();
     assert_eq!(theme.preset(), PresetId::Adwaita);
@@ -149,7 +149,7 @@ fn synthetic_route_takes_every_layer_at_once() {
             .replacen("\nwidth_px = 2\n", "\n", 1)
     );
     let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     assert_eq!(layers.len(), 2);
     let stack = synthetic_stack(None, &text, Scheme::Light, layers.clone()).unwrap();
     let theme = stack
@@ -233,7 +233,7 @@ fn synthetic_route_waives_a_pending_default_size() {
         ["declare.widget.button.default_size: no default size where sizes are taken"]
     );
     let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     assert!(layers.is_empty());
     let stack = synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
     let theme = stack
@@ -571,7 +571,7 @@ fn a_block_whose_every_leaf_is_listed() {
     };
     let every = listing(&sides);
     let file = read_preset(&every).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     synthetic_stack(None, &every, Scheme::Light, layers).unwrap();
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         preset_stack(None, &every, Scheme::Light)
@@ -584,7 +584,7 @@ fn a_block_whose_every_leaf_is_listed() {
     );
     let three = listing(&sides[..3]);
     let file = read_preset(&three).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         synthetic_stack(None, &three, Scheme::Light, layers)
     else {
@@ -610,7 +610,7 @@ fn a_part_whose_every_field_is_listed() {
         base.replacen(table, "\n", 1)
     );
     let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
     let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
         preset_stack(None, &text, Scheme::Light)
@@ -621,6 +621,119 @@ fn a_part_whose_every_field_is_listed() {
         problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
         ["widgets.button.subtitle.text: missing"]
     );
+}
+
+/// Every field of the keyed icon context `check` listed, a field of its
+/// entry stated in the preset's bases where `stated` names one (S17,
+/// ADD-A133): the base preset with `check` declared.
+fn listed_entry(stated: Option<&str>) -> String {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let fields = [
+        "size_px",
+        "fill",
+        "rendering_mode",
+        "weight",
+        "scale",
+        "axes",
+        "state_effect",
+        "symbol_variants",
+        "symbolic_colors",
+        "animation",
+    ];
+    let listed: String = fields
+        .iter()
+        .filter(|field| stated.is_none_or(|stated| !stated.starts_with(*field)))
+        .enumerate()
+        .map(|(n, field)| {
+            format!(
+                "\"tokens.icons.sizes.keyed.check.{field}\" = \"U{}\"\n",
+                n + 1
+            )
+        })
+        .collect();
+    let entry = stated.map_or_else(String::new, |stated| {
+        format!("[tokens.icons.sizes.keyed.check]\n{stated}\n")
+    });
+    let base = if stated.is_some() {
+        base.replacen("keyed = {}\n[tokens.focus]", "[tokens.focus]", 1)
+    } else {
+        base.to_owned()
+    };
+    format!(
+        "[pending]\n{listed}{}{entry}",
+        base.replacen(
+            "text_styles = [\"body\"]\n",
+            "text_styles = [\"body\"]\nicon_contexts = [\"check\"]\n",
+            1
+        )
+    )
+}
+
+/// A map entry whose every field is listed, which no base of the preset
+/// states (S12, S17, S19.1, ADD-A133): its listed paths share one
+/// synthetic layer, which creates the entry with every field stated and
+/// states its keyed name, so the synthetic route loads it, the name used;
+/// the plain route refuses each listed path.
+#[test]
+fn a_listed_entry_shares_one_synthetic_layer() {
+    let text = listed_entry(None);
+    let file = read_preset(&text).unwrap();
+    assert_eq!(file.pending.len(), 10);
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    assert_eq!(layers.len(), 1);
+    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &text, Scheme::Light)
+    else {
+        panic!("the listed fields are missing through the plain route");
+    };
+    let problems: Vec<String> = problems.iter().map(ToString::to_string).collect();
+    for (path, _) in &file.pending {
+        let listed = crate::next::toml::read::listed_path(path);
+        assert!(
+            problems.contains(&format!("{listed}: missing")),
+            "{listed}: {problems:?}"
+        );
+    }
+}
+
+/// An entry a base of the preset creates keeps one synthetic layer per
+/// listed path (S17, ADD-A133): the base states its `size`, the layers
+/// state the other fields one each.
+#[test]
+fn an_entry_a_base_creates_keeps_a_layer_per_path() {
+    let text = listed_entry(Some("size_px = 16"));
+    let file = read_preset(&text).unwrap();
+    assert_eq!(file.pending.len(), 9);
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    assert_eq!(layers.len(), 9);
+    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+}
+
+/// A refused stack holding a shared layer still names each listed path
+/// whose synthetic value it holds (S17, ADD-A131, ADD-A133).
+#[test]
+fn a_refusal_names_each_listed_path_of_a_shared_layer() {
+    let rule = "\n[[rules]]\ntarget = \"tokens\"\nset = { caret.blink_on_ms = \"= token.behavior.touch.delay\" }\n";
+    let text = format!(
+        "{}{rule}",
+        listed_entry(None)
+            .replacen("\ndelay_ms = \"absent\"\n", "\n", 1)
+            .replacen(
+                "[pending]\n",
+                "[pending]\n\"tokens.behavior.touch.delay_ms\" = \"U11\"\n",
+                1
+            )
+    );
+    let refused = validates(None, &text).unwrap_err();
+    assert!(refused.contains("may not be absent"), "{refused}");
+    for path in [
+        "tokens.behavior.touch.delay_ms",
+        "tokens.icons.sizes.keyed.check.size_px",
+        "tokens.icons.sizes.keyed.check.animation",
+    ] {
+        assert!(refused.contains(path), "{path}: {refused}");
+    }
 }
 
 /// Through the plain route a listed path is the missing field it is (S16,
@@ -732,14 +845,14 @@ fn presets_build_on_a_small_stack() {
         let complete = include_str!("../../../tests/fixtures/facts_gate/base.toml");
         for scheme in [Scheme::Light, Scheme::Dark] {
             for &id in PresetId::all() {
-                let pending = read_preset(id.source()).unwrap().pending;
-                let theme = if pending.is_empty() {
+                let file = read_preset(id.source()).unwrap();
+                let theme = if file.pending.is_empty() {
                     super::Theme::from_preset(id, scheme)
                 } else {
                     super::Theme::from_preset_synthetic(
                         id,
                         scheme,
-                        synthetic_layers(&pending).unwrap(),
+                        synthetic_layers(&file.pending, &file.layer).unwrap(),
                     )
                 };
                 query(
@@ -878,7 +991,11 @@ fn a_listed_presence_is_stated_by_an_application_layer() {
         Styled::Style(_)
     ));
     let file = read_preset(&listed_presence()).unwrap();
-    assert!(synthetic_layers(&file.pending).unwrap().is_empty());
+    assert!(
+        synthetic_layers(&file.pending, &file.layer)
+            .unwrap()
+            .is_empty()
+    );
     let synthetic = synthetic_stack(None, &listed_presence(), Scheme::Light, Vec::new()).unwrap();
     let theme = synthetic
         .resolve(
@@ -911,7 +1028,7 @@ fn a_synthetic_theme_keeps_its_route_until_set_preset() {
             .replacen("[declare]\n", "[declare]\nflavors = [\"a\", \"b\"]\n", 1)
     );
     let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     assert_eq!(layers.len(), 1);
     let mut stack = synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
     stack
@@ -978,7 +1095,7 @@ fn a_listed_input_is_folded_into_the_preset() {
         )
     );
     let file = read_preset(&text).unwrap();
-    let layers = synthetic_layers(&file.pending).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
     assert_eq!(layers.len(), 1);
     assert!(!layers[0].bases.inputs.entries.is_empty());
     let mut stack = synthetic_stack(None, &text, Scheme::Dark, layers).unwrap();

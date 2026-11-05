@@ -1290,7 +1290,7 @@ fn present_with_nothing_beneath_is_missing() {
         &file.layer,
         None,
         &[],
-        false,
+        None,
         &Reused::default(),
     ));
     assert!(
@@ -1311,7 +1311,7 @@ fn preset(body: &str) -> Vec<String> {
         &file.layer,
         None,
         &[],
-        false,
+        None,
         &Reused::default(),
     ))
     .into_iter()
@@ -1328,7 +1328,7 @@ fn synthetic_preset(body: &str) -> Vec<String> {
         &file.layer,
         None,
         &[],
-        true,
+        Some(&[]),
         &Reused::default(),
     ))
     .into_iter()
@@ -1860,7 +1860,7 @@ fn refusal_unused_variants_models_and_maps() {
         &layer,
         None,
         &[],
-        false,
+        None,
         &Reused::default(),
     ))
     .into_iter()
@@ -1952,7 +1952,7 @@ fn refusal_missing() {
         &file.layer,
         None,
         &[],
-        false,
+        None,
         &Reused::default(),
     ));
     assert!(
@@ -3231,7 +3231,7 @@ fn layer_error_every_variant_triggers() {
             &file.layer,
             None,
             &[],
-            false,
+            None,
             &Reused::default(),
         ))
     };

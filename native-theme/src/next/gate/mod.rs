@@ -136,7 +136,7 @@ impl Preset {
                 file.pending,
             )
         } else {
-            let layers = synthetic_layers(&file.pending)?;
+            let layers = synthetic_layers(&file.pending, &file.layer)?;
             Stack::synthetic(
                 id,
                 file.declarations,
@@ -577,29 +577,118 @@ fn map_value(ty: &str) -> Option<&str> {
     None
 }
 
-/// One layer per listed path of a preset's `[pending]` table, stating it
-/// in its bases with a synthetic value (S17's synthetic route, ADD-A128):
-/// the layers [`Preset`] and S19.1's build test load such a preset with.
-/// A listed path the model holds no field at, or of a type with no
-/// synthetic value yet, is refused, naming it. A listed default size and a
-/// listed presence have none: no layer states a declaration, and the
-/// synthetic route waives the checks that read it, and it draws the part
-/// (S17, ADD-A131).
-pub fn synthetic_layers(pending: &[(String, Vec<String>)]) -> Result<Vec<Layer>, String> {
-    pending
-        .iter()
-        .filter(|(path, _)| {
-            !is_listed_default(path) && super::toml::read::listed_part(path).is_none()
-        })
-        .map(|(path, ids)| {
-            let ids = ids.join(", ");
-            let (keys, value) =
-                synthetic_value(path).map_err(|why| format!("`{path}` ({ids}): {why}"))?;
-            let item = nested(&keys, value);
-            let text = ::toml::to_string(&item).map_err(|error| error.to_string())?;
-            Layer::from_toml(&text).map_err(|error| format!("`{path}` ({ids}): {error}"))
+/// A listed path as its `[pending]` table spells it, with its register ids.
+type Listed = (String, Vec<String>);
+
+/// The synthetic layers of a preset's `[pending]` table over its own layer
+/// `preset` (S17's synthetic route, ADD-A128): one layer per listed path,
+/// stating it in its bases with a synthetic value, but the listed paths
+/// below one entry of a map of bare blocks (a keyed text style, a keyed
+/// icon context) that no base of the preset states, which share one layer
+/// creating the entry with every listed field stated and stating its keyed
+/// name (ADD-A133); the layers [`Preset`] and S19.1's build test load such
+/// a preset with. A listed path the model holds no field at, or of a type
+/// with no synthetic value yet, is refused, naming it. A listed default
+/// size and a listed presence have none: no layer states a declaration,
+/// and the synthetic route waives the checks that read it, and it draws
+/// the part (S17, ADD-A131).
+pub fn synthetic_layers(pending: &[Listed], preset: &Layer) -> Result<Vec<Layer>, String> {
+    let mut groups: Vec<(Option<String>, Vec<&Listed>)> = Vec::new();
+    for listed in pending.iter().filter(|(path, _)| {
+        !is_listed_default(path) && super::toml::read::listed_part(path).is_none()
+    }) {
+        let entry = unstated_entry(&listed.0, preset);
+        let shared = entry.as_ref().and_then(|entry| {
+            groups
+                .iter_mut()
+                .find(|(held, _)| held.as_ref() == Some(entry))
+        });
+        match shared {
+            Some((_, members)) => members.push(listed),
+            None => groups.push((entry, vec![listed])),
+        }
+    }
+    groups
+        .into_iter()
+        .map(|(_, members)| {
+            let named = || {
+                members
+                    .iter()
+                    .map(|(path, ids)| format!("`{path}` ({})", ids.join(", ")))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            let mut table = Table::new();
+            for (path, ids) in &members {
+                let (keys, value) = synthetic_value(path)
+                    .map_err(|why| format!("`{path}` ({}): {why}", ids.join(", ")))?;
+                if !insert_at(&mut table, &keys, value) {
+                    return Err(format!("{}: two values at one place", named()));
+                }
+            }
+            let text = ::toml::to_string(&table).map_err(|error| error.to_string())?;
+            Layer::from_toml(&text).map_err(|error| format!("{}: {error}", named()))
         })
         .collect()
+}
+
+/// The entry of a map of bare blocks (S6.1: a keyed text style, a keyed
+/// icon context, a surface set's roles) the listed path `path` lies below,
+/// as S11 spells its key, where no base of the preset's layer `preset`
+/// states it (ADD-A133); `None` for any other path.
+fn unstated_entry(path: &str, preset: &Layer) -> Option<String> {
+    let segments = super::toml::read::key_segments(path)?;
+    let mut entry = String::new();
+    for segment in segments.iter().take(segments.len().saturating_sub(1)) {
+        if !entry.is_empty() {
+            entry.push('.');
+        }
+        entry.push_str(&super::toml::read::toml_key(segment));
+        let Some((info, levels)) = super::toml::read::listed_field(&entry) else {
+            continue;
+        };
+        let registry::FieldType::Block {
+            ty,
+            form: registry::BlockForm::Struct,
+            ..
+        } = info.ty
+        else {
+            continue;
+        };
+        if levels == 0 || registry::key_levels(ty) != levels {
+            continue;
+        }
+        let mut held = ty;
+        for _ in 0..levels {
+            held = map_value(held)?;
+        }
+        let bare = !held.starts_with("Value<") && !held.starts_with("Vec<");
+        return (bare && !super::validate::states(preset, &entry)).then_some(entry);
+    }
+    None
+}
+
+/// Inserts `value` into `table` at the dotted place `keys`, opening the
+/// tables on the way; `false` where a value already lies there or above.
+fn insert_at(table: &mut Table, keys: &[String], value: Item) -> bool {
+    let Some((last, above)) = keys.split_last() else {
+        return false;
+    };
+    let mut node = table;
+    for key in above {
+        let next = node
+            .entry(key.clone())
+            .or_insert_with(|| Item::Table(Table::new()));
+        let Item::Table(next) = next else {
+            return false;
+        };
+        node = next;
+    }
+    if node.contains_key(last) {
+        return false;
+    }
+    node.insert(last.clone(), value);
+    true
 }
 
 /// Whether the listed path `path` names a pending default size's
@@ -3069,7 +3158,7 @@ mod tests {
                 continue;
             };
             let pending = [(spelled.clone(), vec!["U1".to_owned()])];
-            let layers = match synthetic_layers(&pending) {
+            let layers = match synthetic_layers(&pending, &Layer::default()) {
                 Ok(layers) => layers,
                 Err(why) => {
                     failures.push(why);
@@ -3102,9 +3191,11 @@ mod tests {
             }
         }
         assert_eq!(failures, Vec::<String>::new());
-        let refused =
-            synthetic_layers(&[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])])
-                .unwrap_err();
+        let refused = synthetic_layers(
+            &[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])],
+            &Layer::default(),
+        )
+        .unwrap_err();
         assert!(refused.contains("holds no field"), "{refused}");
     }
 
@@ -3195,7 +3286,11 @@ mod tests {
     #[test]
     fn synthetic_layers_spell_their_values() {
         let layer = |path: &str| {
-            let mut layers = synthetic_layers(&[(path.to_owned(), vec!["U1".to_owned()])]).unwrap();
+            let mut layers = synthetic_layers(
+                &[(path.to_owned(), vec!["U1".to_owned()])],
+                &Layer::default(),
+            )
+            .unwrap();
             layers.pop().unwrap()
         };
         let repeat = layer("tokens.behavior.key_repeat");

@@ -465,8 +465,7 @@ impl Stack {
         pending: Vec<Listed>,
     ) -> Result<Stack, LayerError> {
         let reused = validate::Reused::default();
-        let mut problems =
-            preset_problems(&declarations, &layer, preset, &pending, false, &reused)?;
+        let mut problems = preset_problems(&declarations, &layer, preset, &pending, None, &reused)?;
         let stack = Stack {
             preset,
             declarations,
@@ -509,7 +508,14 @@ impl Stack {
     ) -> Result<Stack, LayerError> {
         let inputs = fold_inputs(&pending, &mut layer, &mut layers);
         let reused = validate::Reused::default();
-        let mut problems = preset_problems(&declarations, &layer, preset, &pending, true, &reused)?;
+        let mut problems = preset_problems(
+            &declarations,
+            &layer,
+            preset,
+            &pending,
+            Some(&layers),
+            &reused,
+        )?;
         let layers: Vec<(LayerId, Arc<Layer>)> = layers
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
@@ -655,7 +661,7 @@ impl Stack {
             &layer,
             preset,
             &pending,
-            false,
+            None,
             &validate::Reused::default(),
         )?;
         self.change_beside(problems, |stack| {
@@ -1202,7 +1208,8 @@ fn group_missing(group: &[InputName], stated: &[(&InputName, &InputValue)]) -> V
 pub(crate) type Listed = crate::next::toml::layer::Listed;
 
 /// The problems of a preset's declarations and layer (S10, S12), its
-/// listed paths `pending` left to the layers above it (S17), what its
+/// listed paths `pending` left to the layers above it (S17), the synthetic
+/// route's layers `synthetic` (S17, ADD-A133), what its
 /// checks over combinations found kept in `reused` for the layers' checks
 /// above it; a problem other than a list of S12's is the error.
 fn preset_problems(
@@ -1210,7 +1217,7 @@ fn preset_problems(
     layer: &Layer,
     preset: Option<PresetId>,
     pending: &[Listed],
-    synthetic: bool,
+    synthetic: Option<&[Layer]>,
     reused: &validate::Reused,
 ) -> Result<Vec<Problem>, LayerError> {
     let mut problems = Vec::new();
