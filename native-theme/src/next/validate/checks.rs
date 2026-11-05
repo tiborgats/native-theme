@@ -567,7 +567,9 @@ impl<'a> Checker<'a> {
                 .find(|info| info.kind == WidgetKind::Button);
             for part in info.map_or(&[][..], |info| info.parts) {
                 if !parts.iter().any(|(stated, _)| stated.name() == part.name) {
-                    self.problem(&join(at, part.name), ProblemKind::Missing);
+                    for at in unlisted_part(&join(at, part.name), part, &self.exempt) {
+                        self.problem(&at, ProblemKind::Missing);
+                    }
                 }
             }
         }
@@ -1861,10 +1863,102 @@ impl Visit for Checker<'_> {
                 .collect(),
         };
         for field in missing {
-            let at = path.join(field);
-            if !self.exempt.contains(&listed_path(&at)) {
+            for at in unlisted(&path.join(field), &self.exempt) {
                 self.problem(&at, ProblemKind::Missing);
             }
+        }
+    }
+}
+
+/// The paths a preset's completeness check reports missing where its bases
+/// leave the field `at` unstated, beside its listed paths `exempt` (each as
+/// [`listed_path`] gives it), which the layers over it state (S2.2, S12,
+/// S17, ADD-A131): none where `at` is listed; `at` itself where no listed
+/// path lies below it; else, a block being stated where each of its fields
+/// is, each field of its struct block (a map's entry's included) that is
+/// so missing, and none for any other value a listed path lies below (a
+/// map named whole, a list, an enum block's variant), the layers stating
+/// what they list there.
+pub(super) fn unlisted(at: &str, exempt: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    let field = crate::next::toml::read::listed_field(at);
+    unlisted_below(at, field, exempt, &mut out);
+    out
+}
+
+/// The paths a preset's completeness check reports missing where its bases
+/// state nothing of the part `part` at `at`, beside its listed paths
+/// `exempt` (S6.3, S12, S17, ADD-A131): the part itself where no listed
+/// path lies below it, its presence listed or not; else, a part no patch
+/// makes absent being drawn with its fields, each field [`unlisted`] gives.
+fn unlisted_part(at: &str, part: &PartInfo, exempt: &[String]) -> Vec<String> {
+    let below = exempt.iter().any(|path| {
+        path.strip_prefix(at)
+            .is_some_and(|rest| rest.starts_with('.'))
+    });
+    if !below {
+        return vec![at.to_owned()];
+    }
+    part.fields
+        .iter()
+        .flat_map(|field| unlisted(&join(at, field.path), exempt))
+        .collect()
+}
+
+/// [`unlisted`] at `at`, the field `field` names `levels` levels of its
+/// map's keys below it (`None`: a field the registry does not find).
+fn unlisted_below(
+    at: &str,
+    field: Option<(&'static FieldInfo, usize)>,
+    exempt: &[String],
+    out: &mut Vec<String>,
+) {
+    let listed = listed_path(at);
+    if exempt.contains(&listed) {
+        return;
+    }
+    let below = exempt.iter().any(|path| {
+        path.strip_prefix(listed.as_str())
+            .is_some_and(|rest| rest.starts_with('.'))
+    });
+    if !below {
+        out.push(at.to_owned());
+        return;
+    }
+    if let Some((
+        FieldInfo {
+            ty:
+                registry::FieldType::Block {
+                    ty,
+                    form: registry::BlockForm::Struct,
+                    fields,
+                    ..
+                },
+            ..
+        },
+        levels,
+    )) = field
+        && registry::key_levels(ty) == levels
+        && !entry_type(ty).starts_with("Vec<")
+    {
+        for field in *fields {
+            unlisted_below(&join(at, field.path), Some((field, 0)), exempt, out);
+        }
+    }
+}
+
+/// The type a map's entry holds, as the model writes it (`TextStyle)>` of
+/// `Vec<(Key,TextStyle)>`, the closing brackets kept), or the type itself
+/// where it is no map.
+fn entry_type(ty: &str) -> &str {
+    let mut rest = ty;
+    loop {
+        if let Some(inner) = rest.strip_prefix("SurfaceMap<") {
+            rest = inner;
+        } else if let Some(inner) = rest.strip_prefix("Vec<(") {
+            rest = inner.split_once(',').map_or("", |(_, value)| value);
+        } else {
+            return rest;
         }
     }
 }

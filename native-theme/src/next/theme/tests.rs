@@ -549,6 +549,80 @@ fn pending_exemption_is_the_listed_leaves() {
     assert_eq!(problems, ["tokens.icons.sizes.keyed.check.weight: missing"]);
 }
 
+/// A block whose every leaf is listed (S12, S17, ADD-A131): the preset's
+/// bases leave the focus indicator's `offset` out, each of its sides
+/// listed; the listed leaves' synthetic values complete the block, so the
+/// synthetic route loads it and the plain route refuses each listed leaf,
+/// never the block. A side left unlisted is the missing field at its own
+/// path, the listed sides being the layers'.
+#[test]
+fn a_block_whose_every_leaf_is_listed() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let line = "\noffset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }\n";
+    assert!(base.contains(line));
+    let sides = ["top", "right", "bottom", "left"];
+    let listing = |listed: &[&str]| {
+        let entries: String = listed
+            .iter()
+            .enumerate()
+            .map(|(n, side)| format!("\"tokens.focus.offset.{side}_px\" = \"U{}\"\n", n + 1))
+            .collect();
+        format!("[pending]\n{entries}{}", base.replacen(line, "\n", 1))
+    };
+    let every = listing(&sides);
+    let file = read_preset(&every).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    synthetic_stack(None, &every, Scheme::Light, layers).unwrap();
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &every, Scheme::Light)
+    else {
+        panic!("the listed sides are missing through the plain route");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        sides.map(|side| format!("tokens.focus.offset.{side}: missing"))
+    );
+    let three = listing(&sides[..3]);
+    let file = read_preset(&three).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        synthetic_stack(None, &three, Scheme::Light, layers)
+    else {
+        panic!("the unlisted side is missing");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        ["tokens.focus.offset.left: missing"]
+    );
+}
+
+/// A part whose every field is listed, its table left out of the preset's
+/// bases (S6.3, S12, S17, ADD-A131): the listed fields' synthetic values
+/// state the part, which no presence hides, so the synthetic route loads it
+/// and the plain route refuses the listed field, never the part.
+#[test]
+fn a_part_whose_every_field_is_listed() {
+    let base = include_str!("../../../tests/fixtures/facts_gate/base.toml");
+    let table = "\n[widgets.button.subtitle]\ntext = \"= token.text.roles.body\"\n";
+    assert!(base.contains(table));
+    let text = format!(
+        "[pending]\n\"widgets.button.subtitle.text\" = \"U1\"\n{}",
+        base.replacen(table, "\n", 1)
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending).unwrap();
+    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &text, Scheme::Light)
+    else {
+        panic!("the listed field is missing through the plain route");
+    };
+    assert_eq!(
+        problems.iter().map(ToString::to_string).collect::<Vec<_>>(),
+        ["widgets.button.subtitle.text: missing"]
+    );
+}
+
 /// Through the plain route a listed path is the missing field it is (S16,
 /// S17, ADD-A128): `ThemeError::Preset(LayerError::Invalid)`, its problem
 /// S12's own.

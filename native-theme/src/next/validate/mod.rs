@@ -160,8 +160,15 @@ pub(crate) fn check_preset(
     // too (S6.3, S17).
     let found = combinations(&layers, cx, reused)
         .into_iter()
-        .filter(|(_, problem)| {
-            !(problem.kind == ProblemKind::Missing && exempt.contains(&problem.path))
+        .flat_map(|(own, problem)| {
+            if problem.kind == ProblemKind::Missing {
+                checks::unlisted(&problem.path, &exempt)
+                    .into_iter()
+                    .map(|at| (own, Problem::new(&at, ProblemKind::Missing)))
+                    .collect()
+            } else {
+                vec![(own, problem)]
+            }
         })
         .collect();
     add(&mut problems, found);
