@@ -44602,3 +44602,480 @@ key = "button.body.stroke"
 when = { conditions = ["preset:macos-tahoe"], variants = ["route", "@bordered"] }
 pending = "U323"
 rows = ["MAC-P3-9†"]
+
+# --- macos-tahoe: facts lane t16c (task 16's fields with no fact; the register rows U324-U333). NSButton and
+# NSButtonCell declare no maximum width, touch target, state layer or ripple, label padding beside the image (the cell
+# lays the title out in its title rect, the measured padding and gap reaching it), hit extension, paste control, back
+# button or subtitle, no setting that hides a button's image, and no menu a plain button opens.
+
+[[fact]]
+key = "button.body.max_width"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:172-188"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:172-188"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.body.interaction"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:172-188"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.label.padding"
+when = { conditions = ["preset:macos-tahoe"] }
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:81-128"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:172-188"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { conditions = ["preset:macos-tahoe"] }
+value = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.display_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.back_display_mode"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.back_title_fallback"
+when = { conditions = ["preset:macos-tahoe"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+# NSButton declares no tool tip shown on a click, the help bezel's included (MAC-N10: a bezel style, NSButtonCell.h:29-79)
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { conditions = ["preset:macos-tahoe"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.shows_icon"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.menu_trigger"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:20-181"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:183-188"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+# NSComboButton's unified style: whether its menu opens on a click or a held press (U333)
+[[fact]]
+key = "button.values.menu_trigger"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U333"
+rows = ["MAC-N29†"]
+
+# where the indicator lies: drawn only under `menu` (the rule above makes it absent elsewhere), U315 there
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["menu"] }
+pending = "U333"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
+pending = "U315"
+rows = ["MAC-N29†"]
+
+# a toolbar item's icon and label (NSToolbar's display mode, MAC-TL02; U333)
+[[fact]]
+key = "button.values.label_position"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U333"
+rows = ["MAC-TL02"]
+
+[[fact]]
+key = "button.values.focus_visible_when"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U331"
+rows = ["MAC-X13"]
+
+# the button's group opacity, transform and colour bindings (U332)
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U332"
+rows = []
+
+[[fact]]
+key = "button.body.transform"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U332"
+rows = ["MAC-X11"]
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U332"
+rows = []
+
+# the symbol's content transitions: no engine measured (S17, U181)
+[[fact]]
+key = "button.icon.transitions"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U181"
+rows = ["MAC-IC05†", "MAC-X32†"]
+
+# the symbol configuration AppKit gives a button's image (U324)
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = ["MAC-X19"]
+
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = ["MAC-IC05†"]
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.animation"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
+pending = "U324"
+rows = ["MAC-IC05†"]
+
+# the output-route button (AVRoutePickerView, not an NSButton): its body, label and icon keys above (U323)
+
+[[fact]]
+key = "button.body.max_width"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.body.touch_target"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.body.interaction"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.label.padding"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.body.transform"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.transitions"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.animation"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
