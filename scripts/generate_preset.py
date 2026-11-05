@@ -112,10 +112,12 @@ preset's bases apply before its rules, its rules in stated order, the later winn
   later `scheme:` fact, covers it in the other) takes that slot's `scheme:` condition into its `conditions`
   (narrowed), so it holds exactly where it applied.
 - A widget's or a token's key with no fact at rest whose rules cover an axis, one fact under each scheme alone or (a
-  widget's) under each of its sizes alone, gets a base too (covering_bases()): the reader needs a value for every field.
-  Those rules replace the base in every combination where every element holds one of them: always for the schemes, and
-  for the sizes where the widget states `default_size` (S10: "the size of an element that states none"). Its value is
-  the light scheme's fact's, or the default size's, the round trip checking that it never shows (its minimal
+  widget's field) under each of its sizes alone or under a variant alone and its complement alone, gets a base too
+  (covering_bases()): the reader needs a value for every field. Those rules replace the base in every combination
+  where every element holds one of them: always for the schemes and for a variant and its complement, and for the
+  sizes where the widget states `default_size` (S10: "the size of an element that states none") and each variant whose
+  entry takes no size has a stated fact under it alone, its elements holding no size. Its value is the light scheme's
+  fact's, the default size's, or the complement's, the round trip checking that it never shows (its minimal
   combinations take the size an element holds, S10, ADD-A131: of the sizes it takes, its variant entry's or the
   widget's less those its context entry leaves out, the default in force, the context entry's, the variant entry's
   or the widget's, else, the default pending or refused by the `when`, the first the `when` allows, a variant whose
@@ -671,7 +673,7 @@ class Draft:
     staged: int
     dropped: list = field(default_factory=list)   # (widget, [variant]): variants only units not enabled name
     pending: list = field(default_factory=list)   # (the listed path as S11 spells it, register id or ids, the first pending fact)
-    gaps: list = field(default_factory=list)  # (widget, key): a field per size alone of a widget with no `default_size`
+    gaps: list = field(default_factory=list)  # (widget, key, why): a field no stated fact gives where an element is drawn
     definitions: list = field(default_factory=list)  # (section, header, dotted, value, the defining section)
     read_tables: list = field(default_factory=list)  # (section, scheme or None, header): a `read` fact's base table
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
@@ -959,18 +961,28 @@ def redrawn_pending(facts, bases) -> list:
 
 
 def covering_bases(facts, models, tree) -> tuple:
-    """The bases of keys whose facts are all rules that together cover an axis (S11, S8): a widget's or a token's key
-    with no fact at rest, one fact under each scheme alone (`{ conditions = ["scheme:<s>"] }`), or for a widget one
-    under each of its sizes alone (`{ sizes = ["<size>"] }`). The reader needs a base for every field (S11: a field
-    left out is missing). Where every element holds one of the axis' values (a scheme always; a size where the widget
-    states `default_size`, S10), the axis' rules replace the base in every combination, so the base is one of those
-    facts' values: the light scheme's, or the default size's, S11 stating a value shared across schemes once outside
-    the colour roles; the round trip checks that it never shows. The sizes are every size an element takes, the
-    widget's and its `sizes_by_variant` entries' (S10, ADD-A131). Where the widget's default is pending, no element
-    stating no size is drawn, and the base is the first size's. Where the widget states sizes and no `default_size`,
-    or a variant's entry takes no size, an element holds none (S10), and no fact gives its value: no base, the field
-    left unstated (S12's missing field when read) and reported as a facts gap. (the bases, the gaps as (widget,
-    key))."""
+    """The bases of keys whose facts are all rules that together cover every element (S11, S8): a widget's or a
+    token's key with no fact at rest, one fact under each scheme alone (`{ conditions = ["scheme:<s>"] }`), or for a
+    widget's field one under each of its sizes alone (`{ sizes = ["<size>"] }`), or one under a variant alone and one
+    under its complement alone (`{ variants = ["<v>"] }`, `{ not_variants = ["<v>"] }`). The reader needs a base for
+    every field (S11: a field left out is missing). Where every element holds one of the axis' values (a scheme
+    always; a variant or its complement always; a size where the widget states `default_size`, S10), the axis' rules
+    replace the base in every combination, so the base is one of those facts' values: the light scheme's, the default
+    size's, or the complement's (the value of an element without the variant), S11 stating a value shared across
+    schemes once outside the colour roles; the round trip checks that it never shows. The sizes are every size an
+    element takes, the widget's and its `sizes_by_variant` entries' (S10, ADD-A131). Where the widget's default is
+    pending, no element stating no size is drawn, and the base is the first size's. A variant whose entry takes no
+    size draws its elements with none (S10: "an unsized element resolves with no size"), which no size's rule
+    reaches: its fact alone (`{ variants = ["<v>"] }`) covers them, as the complement's covers the elements without
+    it. A pending fact states nothing (S17 *A pending measurement*), so it covers no element: where it is the only
+    fact of some elements, a base would show there, a value no fact gives (S10 rejects another size's value as
+    invented), and the field stays listed instead (S17 *A pending fact with nothing beneath it*). Where the widget
+    states sizes and no `default_size`, or a variant's entry takes no size and no stated fact under that variant alone
+    covers its elements, an element holds a value no stated fact gives: no base, the field left unstated (S12's missing
+    field when read), and reported as a facts gap but where a pending fact under that variant alone is to give it,
+    which lists the field (pending_table()). A part's presence (a fact of the part itself) takes no base from a variant
+    and its complement: it needs none, a part no patch makes absent being drawn (S6.3). (the bases, the gaps as
+    (widget, key, why))."""
     by_key = {}
     for f in facts:
         if f.kind in ("widget", "token"):
@@ -996,17 +1008,38 @@ def covering_bases(facts, models, tree) -> tuple:
                        and isinstance(e.get("sizes"), list)]
             taken = list(dict.fromkeys(sizes + [z for e in entries for z in e["sizes"] if isinstance(z, str)]))
             per_size = {z: alone({"sizes": [z]}) for z in taken}
-            unsized = any(not e["sizes"] for e in entries)
-            if sizes and all(per_size.values()):
+            unsized = [e.get("variant") for e in entries if not e["sizes"]]
+            uncovered = [v for v in unsized if not (isinstance(v, str) and alone({"variants": [v]}))]
+            complement = None
+            for f in rules if rules[0].dotted else []:
+                variants = f.rule_when.get("variants")
+                if set(f.rule_when) == {"variants"} and isinstance(variants, list) and len(variants) == 1:
+                    complement = alone({"not_variants": variants})
+                    if complement:
+                        break
+            if complement:
+                chosen = complement
+            elif sizes and all(per_size.values()):
                 default = model.get("default_size")
-                if isinstance(default, str) and default in per_size and not unsized:
+                if isinstance(default, str) and default in per_size and not uncovered:
                     chosen = per_size[default]
-                elif isinstance(default, dict) and not unsized:
+                elif isinstance(default, dict) and not uncovered:
                     # a pending default: no element states no size and is drawn (S10's *A pending default*), so
-                    # every drawn element holds one of the sizes and the base never shows
+                    # every drawn element holds one of the sizes, or an unsized variant its fact covers, and the
+                    # base never shows
                     chosen = per_size[sizes[0]]
+                elif isinstance(default, (str, dict)):
+                    unmeasured = [v for v in uncovered if not any(
+                        f.status == PENDING and check_facts.canonical_when(f.when)
+                        == check_facts.canonical_when({"variants": [v]}) for f in fs)]
+                    if unmeasured:
+                        gaps.append((rules[0].widget, rules[0].key,
+                                     f"its variant {', '.join(map(str, unmeasured))} takes no size and no fact under "
+                                     f"it alone gives the value of its elements"))
                 else:
-                    gaps.append((rules[0].widget, rules[0].key))
+                    gaps.append((rules[0].widget, rules[0].key,
+                                 f"`{rules[0].widget}` states sizes and no `default_size`: no fact gives the value of "
+                                 f"an element with no size"))
         if chosen is None:
             continue
         path = (chosen.section,) + chosen.header + tuple(chosen.dotted)
@@ -1910,9 +1943,8 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
     for f in draft.read_rules:
         out.append(f"# left for hand-writing: {f.key} ({f.where}), a `read` fact whose `when` is no base: its rule, "
                    f"which no hand-written part holds")
-    for widget, key in draft.gaps:
-        out.append(f"# facts gap: {key}: `{widget}` states sizes and no `default_size`: no fact gives the value of an "
-                   f"element with no size")
+    for widget, key, why in draft.gaps:
+        out.append(f"# facts gap: {key}: {why}")
     out.append(f"# round trip: {trip.compared} combinations compared, {len(trip.mismatches)} mismatches "
                f"({trip.pending} where a pending fact applies and {trip.left_out} where a left-out one does, skipped; "
                f"{trip.impossible} facts whose `when` no element holds: two sizes, a flag its exclusive group drops, "
@@ -2810,9 +2842,45 @@ def self_test() -> int:
     unsized = {("button", None): {"sizes": ["small", "regular"]}}
     by_size = [rule_fact("button.body.min_width", {"sizes": [z]}, v) for z, v in (("small", 20), ("regular", 30))]
     covering, gaps = covering_bases(by_size, unsized, {})
-    if covering or gaps != [("button", "button.body.min_width")]:
+    if covering or [g[:2] for g in gaps] != [("button", "button.body.min_width")]:
         failures.append(f"covering_bases without a default size: {[(b[3], b[4]) for b in covering]} written, {gaps} "
                         f"reported, expected nothing written and button.body.min_width's gap")
+    # macOS's route button: a variant whose entry takes no size draws its elements with none, so the sizes' rules
+    # cover them only beside a stated fact under that variant alone; a pending one covers nothing (the field listed,
+    # no gap), and none at all is a gap
+    route = {("button", None): {"sizes": ["small", "regular"], "default_size": "regular",
+                                "sizes_by_variant": [{"variant": "route", "sizes": []}]}}
+    pending_route = rule_fact("button.body.min_width", {"variants": ["route"]}, None)
+    pending_route.status = PENDING
+    for extra, want_base, want_gap in (([rule_fact("button.body.min_width", {"variants": ["route"]}, 12)], 30, False),
+                                       ([pending_route], None, False), ([], None, True)):
+        covering, gaps = covering_bases(by_size + extra, route, {})
+        got = [b[4] for b in covering]
+        if got != ([want_base] if want_base else []) or bool(gaps) != want_gap:
+            failures.append(f"covering_bases with an unsized variant ({len(extra)} route fact(s), "
+                            f"{[f.status for f in extra]}): {got} written, {gaps} reported, expected "
+                            f"{want_base} and {'a gap' if want_gap else 'no gap'}")
+    # Windows' repeat delay: a variant's fact and its complement's cover every element, the complement's value the
+    # base; with the variant's pending, nothing is written; a part's presence takes no base from them
+    def pair(key, dotted, value):
+        out = [rule_fact(key, {"variants": ["@repeat"]}, 500), rule_fact(key, {"not_variants": ["@repeat"]}, value)]
+        for f in out:
+            f.dotted = dotted
+        return out
+
+    covering, gaps = covering_bases(pair("button.values.repeat_delay", ("repeat_delay_ms",), "absent"), {}, {})
+    if [b[4] for b in covering] != ["absent"] or gaps:
+        failures.append(f"covering_bases over a variant and its complement: {[b[4] for b in covering]} written, "
+                        f"{gaps} reported, expected the complement's absent")
+    half = pair("button.values.repeat_delay", ("repeat_delay_ms",), "absent")
+    half[0].status = PENDING
+    covering, gaps = covering_bases(half, {}, {})
+    if covering or gaps:
+        failures.append(f"covering_bases over a pending variant's fact and its complement: {covering} written, {gaps} "
+                        f"reported, expected nothing")
+    covering, gaps = covering_bases(pair("button.menu_indicator", (), True), {}, {})
+    if covering or gaps:
+        failures.append(f"covering_bases over a presence's variant and complement: {covering} written, expected none")
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")
@@ -2913,7 +2981,7 @@ def self_test() -> int:
                          "docs/facts/gnome/button.toml": sized_facts})
             sized_draft, sized_text, sized_trip, sized_units = generate(fixture_context(root), "adwaita")
             want = [("button", "button.body.opacity")] if shows else []
-            if sized_trip.mismatches or sized_draft.gaps != want:
+            if sized_trip.mismatches or [g[:2] for g in sized_draft.gaps] != want:
                 failures.append(f"a key per size, default size {not shows}: {sized_draft.gaps} reported, round trip "
                                 f"{sized_trip}")
             lines = share_lines(sized_draft, sized_units, sized_trip)
