@@ -40456,3 +40456,95 @@ key = "token.icons.sizes.panel.animation"
 when = { conditions = ["preset:macos-tahoe"] }
 pending = "U102"
 rows = []
+
+# The keyed icon contexts' fill, state effect and animation (U102, as their other fields)
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.fill"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.state_effect"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.animation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
