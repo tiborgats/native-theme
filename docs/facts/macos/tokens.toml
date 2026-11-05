@@ -39756,3 +39756,388 @@ key = "token.behavior.double_click_distance"
 when = { conditions = ["preset:macos-tahoe"] }
 pending = "U321"
 rows = ["MAC-P4-6†"]
+
+# --- macos-tahoe: facts lane t16c (task 16's 79 fields with no fact; the register rows U324-U333)
+# Mnemonics: AppKit underlines no mnemonic, so none shows, a disabled element's included (the headers' own words)
+[[fact]]
+key = "token.behavior.mnemonics"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "never"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:338"
+quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+when = { conditions = ["preset:macos-tahoe"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:185"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:177"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:338"
+quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+# The text-role slots AppKit fills: the emphasized variants of the body and caption text styles (the HIG's
+# symbolic traits; its macOS table gives each style's emphasized weight), the probe's `preferredFontForTextStyle_emphasized`
+# keyed styles; `caption` is `caption_1` (NSFontTextStyleCaption1), so `caption_emphasized` is its emphasized variant
+[[fact]]
+key = "token.text.roles.body_emphasized"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.body_emphasized"
+rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/64/inlineContent/0/text"
+quote = "You can display emphasized variants of system text styles using symbolic traits."
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/69/text"
+quote = "macOS built-in text styles"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/0/4/0/inlineContent/0/text"
+quote = "Emphasized weight"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/6/0/0/inlineContent/0/text"
+quote = "Body"
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= token.text.keyed.caption_1_emphasized"
+rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/64/inlineContent/0/text"
+quote = "You can display emphasized variants of system text styles using symbolic traits."
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/69/text"
+quote = "macOS built-in text styles"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/0/4/0/inlineContent/0/text"
+quote = "Emphasized weight"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/70/rows/10/0/0/inlineContent/0/text"
+quote = "Caption 1"
+
+# The slots AppKit has no text style of its own for: which style fills each is ledger queue #153 (3)'s decision (U325)
+
+[[fact]]
+key = "token.text.roles.display_large"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.roles.display_medium"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.roles.display_small"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.roles.label"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.roles.monospace"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18", "MAC-I07"]
+
+[[fact]]
+key = "token.text.roles.numeric"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U325"
+rows = ["MAC-X18"]
+
+# The icon set and themes (U326), the elevation ramp and size classes (U327)
+
+[[fact]]
+key = "token.icons.set"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U326"
+rows = []
+
+[[fact]]
+key = "token.icons.theme"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U326"
+rows = []
+
+[[fact]]
+key = "token.icons.theme_fallback"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U326"
+rows = []
+
+[[fact]]
+key = "token.elevation"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U327"
+rows = ["MAC-X01"]
+
+[[fact]]
+key = "token.size_classes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U327"
+rows = []
+
+# The caret's other fields (U328)
+
+[[fact]]
+key = "token.caret.blink_timeout"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U328"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.caret.secondary"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U328"
+rows = []
+
+[[fact]]
+key = "token.caret.shown_in_read_only"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U328"
+rows = []
+
+[[fact]]
+key = "token.caret.solid_while_typing"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U328"
+rows = []
+
+# Pointer timings and distances (U329), touch (U330), focus visibility (U331)
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.drag_time"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.drag_min_delay"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.hover_time"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.long_press"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.spring_loading"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.double_click_height"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.single_click_activates"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U329"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.slop"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U330"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U330"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U330"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U330"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.delay"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U330"
+rows = []
+
+[[fact]]
+key = "token.behavior.focus_visible_when"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U331"
+rows = ["MAC-X13"]
+
+# The keyed icon contexts' symbol variants and maps (U102: the symbol configurations AppKit gives each place)
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.axes"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.symbol_variants"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.symbolic_colors"
+when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]

@@ -12861,3 +12861,67 @@ key = "role.global.drop_highlight"
 when = { conditions = ["preset:macos-tahoe"] }
 pending = "U322"
 rows = ["MAC-X21"]
+
+# --- macos-tahoe: facts lane t16c (task 16's fields with no fact)
+# AppKit has one accent colour, controlAccentColor, for fills and for text and icons alike: no standalone accent
+# of its own (the catalogue's `accent_standalone`: elsewhere `= role.global.accent`)
+[[fact]]
+key = "role.global.accent_standalone"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:278-279"
+quote = "NSColor *controlAccentColor"
+
+# NSColor declares no accent ramp (shades of the accent) and no modal scrim colour (the catalogue's `scrim`:
+# may_be_absent on macos-*, a sheet's dimming being `dialog.scrim @ variant @sheet`, MAC-D03)
+[[fact]]
+key = "role.global.accent_ramp"
+when = { conditions = ["preset:macos-tahoe"] }
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
+[[fact]]
+key = "role.global.scrim"
+when = { conditions = ["preset:macos-tahoe"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-401"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:403-452"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
