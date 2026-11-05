@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 53d37531bd5a0737a0d469694aead2f67d33c54e11414de31dc34c408b3586bb
+# generated lines: sha256 e22e82f65be9ac3cb3607296ca39d043b170d95905ba18025f5320dedf576a0f
 
 [preset]
 id = "macos-tahoe"
@@ -196,6 +196,68 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.label.text.font.size" = "U323"
 # docs/facts/macos/button.toml:44564
 "widgets.button.label.text.line_height" = "U323"
+# docs/facts/macos/button.toml:44884
+"widgets.button.values.menu_indicator_anchor" = ["U333", "U315"]
+# docs/facts/macos/button.toml:44897
+"widgets.button.values.label_position" = "U333"
+# docs/facts/macos/button.toml:44903
+"widgets.button.values.focus_visible_when" = "U331"
+# docs/facts/macos/button.toml:44910
+"widgets.button.body.opacity" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44916
+"widgets.button.body.transform" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44922
+"widgets.button.body.bindings" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44929
+"widgets.button.icon.transitions" = ["U181", "U323"]
+# docs/facts/macos/button.toml:44937
+"widgets.button.icon.icon.rendering_mode" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44943
+"widgets.button.icon.icon.weight" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44949
+"widgets.button.icon.icon.scale" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44955
+"widgets.button.icon.icon.axes" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44961
+"widgets.button.icon.icon.state_effect" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44967
+"widgets.button.icon.icon.symbol_variants" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44973
+"widgets.button.icon.icon.symbolic_colors" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44979
+"widgets.button.icon.icon.animation" = ["U324", "U323"]
+# docs/facts/macos/button.toml:45085
+"widgets.button.menu_indicator.glyph.source" = "U315"
+# docs/facts/macos/button.toml:45091
+"widgets.button.menu_indicator.glyph.size_px" = "U315"
+# docs/facts/macos/button.toml:45097
+"widgets.button.menu_indicator.glyph.fill" = "U315"
+# docs/facts/macos/button.toml:45103
+"widgets.button.menu_indicator.glyph.stroke" = "U315"
+# docs/facts/macos/button.toml:45109
+"widgets.button.menu_indicator.glyph.axes" = "U315"
+# docs/facts/macos/button.toml:45115
+"widgets.button.menu_indicator.glyph.draw_extent" = "U315"
+# docs/facts/macos/button.toml:45121
+"widgets.button.menu_indicator.glyph.draw_start" = "U315"
+# docs/facts/macos/button.toml:45127
+"widgets.button.menu_indicator.glyph.mirroring" = "U315"
+# docs/facts/macos/button.toml:45133
+"widgets.button.menu_indicator.min_width_px" = "U315"
+# docs/facts/macos/button.toml:45139
+"widgets.button.menu_indicator.min_height_px" = "U315"
+# docs/facts/macos/button.toml:45145
+"widgets.button.menu_indicator.margin.top_px" = "U315"
+# docs/facts/macos/button.toml:45151
+"widgets.button.menu_indicator.margin.right_px" = "U315"
+# docs/facts/macos/button.toml:45157
+"widgets.button.menu_indicator.margin.bottom_px" = "U315"
+# docs/facts/macos/button.toml:45163
+"widgets.button.menu_indicator.margin.left_px" = "U315"
+# docs/facts/macos/button.toml:45169
+"widgets.button.menu_indicator.transform" = "U315"
+# docs/facts/macos/button.toml:45175
+"widgets.button.menu_indicator.transitions" = "U181"
 # docs/facts/macos/roles.toml:12859
 "colors.light.global.drop_highlight" = "U322"
 # docs/facts/macos/roles.toml:12859
@@ -670,6 +732,180 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "tokens.behavior.hide_pointer_while_typing" = "U320"
 # docs/facts/macos/tokens.toml:39754
 "tokens.behavior.double_click_distance_px" = "U321"
+# docs/facts/macos/tokens.toml:39928
+"tokens.text.roles.monospace" = "U325"
+# docs/facts/macos/tokens.toml:39934
+"tokens.text.roles.numeric" = "U325"
+# docs/facts/macos/tokens.toml:39942
+"tokens.icons.set" = "U326"
+# docs/facts/macos/tokens.toml:39948
+"tokens.icons.theme" = "U326"
+# docs/facts/macos/tokens.toml:39954
+"tokens.icons.theme_fallback" = "U326"
+# docs/facts/macos/tokens.toml:39960
+"tokens.elevation" = "U327"
+# docs/facts/macos/tokens.toml:39966
+"tokens.size_classes" = "U327"
+# docs/facts/macos/tokens.toml:39974
+"tokens.caret.blink_timeout_ms" = "U328"
+# docs/facts/macos/tokens.toml:39980
+"tokens.caret.secondary" = "U328"
+# docs/facts/macos/tokens.toml:39986
+"tokens.caret.shown_in_read_only" = "U328"
+# docs/facts/macos/tokens.toml:39992
+"tokens.caret.solid_while_typing" = "U328"
+# docs/facts/macos/tokens.toml:40000
+"tokens.behavior.drag_threshold_px" = "U329"
+# docs/facts/macos/tokens.toml:40006
+"tokens.behavior.drag_time_ms" = "U329"
+# docs/facts/macos/tokens.toml:40012
+"tokens.behavior.drag_min_delay_ms" = "U329"
+# docs/facts/macos/tokens.toml:40018
+"tokens.behavior.hover_time_ms" = "U329"
+# docs/facts/macos/tokens.toml:40024
+"tokens.behavior.long_press_ms" = "U329"
+# docs/facts/macos/tokens.toml:40030
+"tokens.behavior.spring_loading_ms" = "U329"
+# docs/facts/macos/tokens.toml:40036
+"tokens.behavior.hide_pointer_delay_ms" = "U329"
+# docs/facts/macos/tokens.toml:40042
+"tokens.behavior.hide_pointer_fade_ms" = "U329"
+# docs/facts/macos/tokens.toml:40048
+"tokens.behavior.double_click_height_px" = "U329"
+# docs/facts/macos/tokens.toml:40054
+"tokens.behavior.single_click_activates" = "U329"
+# docs/facts/macos/tokens.toml:40060
+"tokens.behavior.touch.slop_px" = "U330"
+# docs/facts/macos/tokens.toml:40066
+"tokens.behavior.touch.paging_slop_px" = "U330"
+# docs/facts/macos/tokens.toml:40072
+"tokens.behavior.touch.double_tap_time_ms" = "U330"
+# docs/facts/macos/tokens.toml:40078
+"tokens.behavior.touch.double_tap_slop_px" = "U330"
+# docs/facts/macos/tokens.toml:40084
+"tokens.behavior.touch.delay_ms" = "U330"
+# docs/facts/macos/tokens.toml:40090
+"tokens.behavior.focus_visible_when" = "U331"
+# docs/facts/macos/tokens.toml:40098
+"tokens.icons.sizes.keyed.button.axes" = "U102"
+# docs/facts/macos/tokens.toml:40104
+"tokens.icons.sizes.keyed.button.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40110
+"tokens.icons.sizes.keyed.button.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40116
+"tokens.icons.sizes.keyed.list_row.axes" = "U102"
+# docs/facts/macos/tokens.toml:40122
+"tokens.icons.sizes.keyed.list_row.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40128
+"tokens.icons.sizes.keyed.list_row.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40134
+"tokens.icons.sizes.keyed.tab.axes" = "U102"
+# docs/facts/macos/tokens.toml:40140
+"tokens.icons.sizes.keyed.tab.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40146
+"tokens.icons.sizes.keyed.tab.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40152
+"tokens.icons.sizes.keyed.status_item.axes" = "U102"
+# docs/facts/macos/tokens.toml:40158
+"tokens.icons.sizes.keyed.status_item.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40164
+"tokens.icons.sizes.keyed.status_item.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40170
+"tokens.icons.sizes.keyed.sidebar.axes" = "U102"
+# docs/facts/macos/tokens.toml:40176
+"tokens.icons.sizes.keyed.sidebar.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40182
+"tokens.icons.sizes.keyed.sidebar.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40190
+"tokens.icons.sizes.toolbar.fill" = "U102"
+# docs/facts/macos/tokens.toml:40196
+"tokens.icons.sizes.toolbar.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:40202
+"tokens.icons.sizes.toolbar.weight" = "U102"
+# docs/facts/macos/tokens.toml:40208
+"tokens.icons.sizes.toolbar.scale" = "U102"
+# docs/facts/macos/tokens.toml:40214
+"tokens.icons.sizes.toolbar.axes" = "U102"
+# docs/facts/macos/tokens.toml:40220
+"tokens.icons.sizes.toolbar.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40226
+"tokens.icons.sizes.toolbar.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40232
+"tokens.icons.sizes.toolbar.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40238
+"tokens.icons.sizes.toolbar.animation" = "U102"
+# docs/facts/macos/tokens.toml:40244
+"tokens.icons.sizes.small.fill" = "U102"
+# docs/facts/macos/tokens.toml:40250
+"tokens.icons.sizes.small.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:40256
+"tokens.icons.sizes.small.weight" = "U102"
+# docs/facts/macos/tokens.toml:40262
+"tokens.icons.sizes.small.scale" = "U102"
+# docs/facts/macos/tokens.toml:40268
+"tokens.icons.sizes.small.axes" = "U102"
+# docs/facts/macos/tokens.toml:40274
+"tokens.icons.sizes.small.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40280
+"tokens.icons.sizes.small.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40286
+"tokens.icons.sizes.small.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40292
+"tokens.icons.sizes.small.animation" = "U102"
+# docs/facts/macos/tokens.toml:40298
+"tokens.icons.sizes.large.fill" = "U102"
+# docs/facts/macos/tokens.toml:40304
+"tokens.icons.sizes.large.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:40310
+"tokens.icons.sizes.large.weight" = "U102"
+# docs/facts/macos/tokens.toml:40316
+"tokens.icons.sizes.large.scale" = "U102"
+# docs/facts/macos/tokens.toml:40322
+"tokens.icons.sizes.large.axes" = "U102"
+# docs/facts/macos/tokens.toml:40328
+"tokens.icons.sizes.large.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40334
+"tokens.icons.sizes.large.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40340
+"tokens.icons.sizes.large.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40346
+"tokens.icons.sizes.large.animation" = "U102"
+# docs/facts/macos/tokens.toml:40352
+"tokens.icons.sizes.dialog.fill" = "U102"
+# docs/facts/macos/tokens.toml:40358
+"tokens.icons.sizes.dialog.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:40364
+"tokens.icons.sizes.dialog.weight" = "U102"
+# docs/facts/macos/tokens.toml:40370
+"tokens.icons.sizes.dialog.scale" = "U102"
+# docs/facts/macos/tokens.toml:40376
+"tokens.icons.sizes.dialog.axes" = "U102"
+# docs/facts/macos/tokens.toml:40382
+"tokens.icons.sizes.dialog.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40388
+"tokens.icons.sizes.dialog.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40394
+"tokens.icons.sizes.dialog.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40400
+"tokens.icons.sizes.dialog.animation" = "U102"
+# docs/facts/macos/tokens.toml:40406
+"tokens.icons.sizes.panel.fill" = "U102"
+# docs/facts/macos/tokens.toml:40412
+"tokens.icons.sizes.panel.rendering_mode" = "U102"
+# docs/facts/macos/tokens.toml:40418
+"tokens.icons.sizes.panel.weight" = "U102"
+# docs/facts/macos/tokens.toml:40424
+"tokens.icons.sizes.panel.scale" = "U102"
+# docs/facts/macos/tokens.toml:40430
+"tokens.icons.sizes.panel.axes" = "U102"
+# docs/facts/macos/tokens.toml:40436
+"tokens.icons.sizes.panel.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40442
+"tokens.icons.sizes.panel.symbol_variants" = "U102"
+# docs/facts/macos/tokens.toml:40448
+"tokens.icons.sizes.panel.symbolic_colors" = "U102"
+# docs/facts/macos/tokens.toml:40454
+"tokens.icons.sizes.panel.animation" = "U102"
 
 [inputs.selected_content_background]
 # docs/facts/macos/roles.toml:896
@@ -1062,6 +1298,12 @@ status.destructive.standalone = "absent"
 status.destructive.background = "absent"
 # docs/facts/macos/roles.toml:4010
 status.destructive.background_solid = "absent"
+# docs/facts/macos/roles.toml:12868
+accent_standalone = "= role.global.accent"
+# docs/facts/macos/roles.toml:12881
+accent_ramp = {}
+# docs/facts/macos/roles.toml:12905
+scrim = "absent"
 
 [colors.light.keyed]
 # hand-written: begin bases colors.light.keyed
@@ -1462,6 +1704,12 @@ status.destructive.standalone = "absent"
 status.destructive.background = "absent"
 # docs/facts/macos/roles.toml:4010
 status.destructive.background_solid = "absent"
+# docs/facts/macos/roles.toml:12868
+accent_standalone = "= role.global.accent"
+# docs/facts/macos/roles.toml:12881
+accent_ramp = {}
+# docs/facts/macos/roles.toml:12905
+scrim = "absent"
 
 [colors.dark.keyed]
 # hand-written: begin bases colors.dark.keyed
@@ -2994,6 +3242,18 @@ keyed.caption_2_loose.wrap = "absent"
 keyed.caption_2_loose.max_lines = "absent"
 # docs/facts/macos/tokens.toml:39510
 keyed.caption_2_loose.scaling_role = "none"
+# docs/facts/macos/tokens.toml:39807
+roles.body_emphasized = "= token.text.keyed.body_emphasized"
+# docs/facts/macos/tokens.toml:39833
+roles.caption_emphasized = "= token.text.keyed.caption_1_emphasized"
+# docs/facts/macos/tokens.toml:39862
+roles.display_large = "= token.text.roles.large_title"
+# docs/facts/macos/tokens.toml:39878
+roles.display_medium = "= token.text.roles.large_title"
+# docs/facts/macos/tokens.toml:39894
+roles.display_small = "= token.text.roles.large_title"
+# docs/facts/macos/tokens.toml:39911
+roles.label = "= token.text.keyed.label"
 # S9.4
 font_dpi = 72
 
@@ -3004,6 +3264,10 @@ double_click_time_ms = 500
 key_repeat.delay_ms = 500
 # docs/facts/macos/tokens.toml:1101
 key_repeat.interval_ms = 83.333
+# docs/facts/macos/tokens.toml:39762
+mnemonics = "never"
+# docs/facts/macos/tokens.toml:39783
+mnemonic_when_disabled = false
 
 [tokens.params]
 # docs/facts/macos/tokens.toml:1114
@@ -3054,6 +3318,8 @@ text.font.axes = { opsz = "follows_size" }
 text.font.features = {}
 # docs/facts/macos/button.toml:43796
 text.scaling_role = "none"
+# docs/facts/macos/button.toml:44701
+padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
 # docs/facts/macos/button.toml:7689
 text.fill = "#000000d8"
 
@@ -3066,6 +3332,22 @@ repeat_delay_ms = "= token.params.pointer_repeat.delay"
 repeat_interval_ms = "= token.params.pointer_repeat.interval"
 # docs/facts/macos/button.toml:44176
 icon_placement = "leading"
+# docs/facts/macos/button.toml:44731
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+# docs/facts/macos/button.toml:44749
+display_mode = "absent"
+# docs/facts/macos/button.toml:44767
+back_display_mode = "absent"
+# docs/facts/macos/button.toml:44785
+back_title_fallback = false
+# docs/facts/macos/button.toml:44804
+help_tooltip_on_click = false
+# docs/facts/macos/button.toml:44822
+subtitle_gap_px = "absent"
+# docs/facts/macos/button.toml:44840
+shows_icon = "absent"
+# docs/facts/macos/button.toml:44858
+menu_trigger = "absent"
 
 [widgets.button.body]
 # docs/facts/macos/button.toml:13360
@@ -3100,6 +3382,12 @@ focus.corners.curve = "circular"
 focus.dash = "solid"
 # docs/facts/macos/button.toml:21000
 focus.shadow = "absent"
+# docs/facts/macos/button.toml:44611
+max_width_px = "auto"
+# docs/facts/macos/button.toml:44641
+touch_target_px = "absent"
+# docs/facts/macos/button.toml:44671
+interaction = "absent"
 # docs/facts/macos/button.toml:3418
 fill = "#00000013"
 # docs/facts/macos/button.toml:13590
