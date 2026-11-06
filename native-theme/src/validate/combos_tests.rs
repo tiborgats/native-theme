@@ -946,7 +946,7 @@ fn combination_per_flavour_declarations() {
 /// an inactive input role to the preset (S9.1, S9.2, S14, S12). No preset
 /// is bundled yet, so the check runs here directly over a stack whose
 /// preset states the roles (M1b's `kde-breeze` and palettes exercise it
-/// through `Theme::apply_palette`).
+/// through `Theme::apply_palette`); the scheme's tint takes every key in.
 #[test]
 fn combination_mapping_palette() {
     use super::combos::mapping_palette;
@@ -1009,6 +1009,75 @@ fn combination_mapping_palette() {
     let port =
         format!("{partial}\n[inputs.\"kde_scheme.window.background_normal\"]\nlight = \"#000000\"");
     assert_eq!(problems(&port, &preset), NONE);
+    // Wherever the preset's scheme tints, every key of the set depends on
+    // the accent: the background too (S9.1); not where it is `none`.
+    let tinting = toml(&format!("{roles}\n[tokens.kde]\ntint_factor = 0.5"));
+    assert_eq!(
+        problems(&whole, &tinting),
+        ["colors.light.surfaces.window.background: \
+             `colors.light.surfaces.window.background` left to the preset's value under \
+             the palette"]
+    );
+    let untinted = toml(&format!("{roles}\n[tokens.kde]\ntint_factor = \"none\""));
+    assert_eq!(problems(&whole, &untinted), NONE);
+    let stated =
+        format!("{partial}\ndecoration_hover = \"#100004\"\nbackground = \"#100005\"\n{input}");
+    assert_eq!(problems(&stated, &tinting), NONE);
+}
+
+/// `kde_effects` and `kde_selection_inactive` read `token.kde` themselves,
+/// and the checks treat those tokens as their operands (S2.2, S12): under a
+/// preset whose `token.kde` is absent each call is refused for each token
+/// it reads, under one stating them it is accepted.
+#[test]
+fn combination_kde_functions_read_token_kde_as_operands() {
+    let accent = |expr: &str| format!("[colors.light.global]\naccent = \"= {expr}\"");
+    let effects =
+        "kde_effects(role.window.foreground, role.window.background, inactive, foreground)";
+    let selection = "kde_selection_inactive(role.window.foreground, role.window.background, \
+                     role.window.background, background)";
+    let decl = declare("surface_sets = [\"window\"]");
+    let absent = "[tokens]\nkde = \"absent\"";
+    let refused = |token: &str| {
+        format!("colors.light.global.accent: `token.kde.{token}` can be `absent` here")
+    };
+    let fields = [
+        "intensity",
+        "intensity_amount",
+        "color",
+        "color_amount",
+        "color_color",
+        "contrast",
+        "contrast_amount",
+    ];
+    let mut expected: Vec<String> = fields
+        .iter()
+        .map(|field| refused(&format!("inactive.{field}")))
+        .collect();
+    expected.push(refused("inactive_enabled"));
+    let mut found = over(absent, &accent(effects), &decl);
+    found.sort();
+    expected.sort();
+    assert_eq!(found, expected);
+    assert_eq!(
+        over(absent, &accent(selection), &decl),
+        [refused("inactive_change_selection_color")]
+    );
+    let group = |name: &str| {
+        format!(
+            "{name} = {{ intensity = \"none\", intensity_amount = 0, color = \"none\", \
+             color_amount = 0, color_color = \"#000000\", contrast = \"none\", contrast_amount = 0 }}"
+        )
+    };
+    let stated = format!(
+        "[tokens.kde]\n{}\n{}\ninactive_enabled = true\ninactive_change_selection_color = true\n\
+         tint_factor = \"none\"\ntitlebar_is_accent_colored = false",
+        group("disabled"),
+        group("inactive")
+    );
+    for expr in [effects, selection] {
+        assert_eq!(over(&stated, &accent(expr), &decl), NONE, "{expr}");
+    }
 }
 
 /// `part.corners.<c>` names a field the part lists (S12): a part with no

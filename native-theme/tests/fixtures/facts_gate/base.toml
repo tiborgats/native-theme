@@ -106,6 +106,8 @@ destructive = { fill = "absent", foreground = "absent", standalone = "absent", b
 elevation = {}
 size_classes = {}
 params = {}
+kde = "absent"
+material = "absent"
 [tokens.motion]
 durations = {}
 timings = {}

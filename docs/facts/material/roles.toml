@@ -2429,7 +2429,51 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SearchBar.kt:2054-2055"
 quote = "@Composable get() = ScrimTokens.ContainerColor.value.copy(alpha = ScrimTokens.ContainerOpacity)"
 
-# the scheme tokens m3_role reads (S4.8): material-color-utilities' default spec version and its contrast levels
+# S4.8's KDE scheme tokens (`token.kde`) are `kde-breeze`'s alone: Material's scheme is Compose's ColorScheme, its
+# colours, and material-color-utilities' DynamicScheme, the seed, variant, dark flag, contrast level, platform, spec
+# version and palettes it derives them from; neither states colour effects, a tint factor or a title-bar option
+# (Material's disabled look is each component's opacity tokens, token.params.opacity)
+
+[[fact]]
+key = "token.kde"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ColorScheme.kt:150-873"
+quote = "public class ColorScheme("
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/DynamicScheme.kt:31-419"
+quote = "open class DynamicScheme("
+absent = []
+
+# the scheme tokens m3_role reads (S4.8): Android's default scheme style, material-color-utilities' default spec
+# version and its contrast levels. The style: the system's theming default is TONAL_SPOT on every device whose
+# resources do not override it (the wildcard entry of `theming_defaults`), MCU's `Variant.TONAL_SPOT`
+
+[[fact]]
+key = "token.material.variant"
+value = "tonal_spot"
+rows = ["MAT-X17"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:2731-2736"
+quote = "<!-- The default list of possible CMF Names|Style|ColorSource. This array can be overridden device-specific resources. A wildcard (fallback) must be supplied."
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:2737-2739"
+quote = "<string-array name=\"theming_defaults\"> <item>*|TONAL_SPOT|home_wallpaper</item> </string-array>"
+
+[[fact.cite]]
+kind = "published"
+source = "material-color-utilities@bd811e4c java/dynamiccolor/Variant.java:18-30"
+quote = "/** Themes for Dynamic Color. */ public enum Variant { MONOCHROME, NEUTRAL, TONAL_SPOT,"
 
 [[fact]]
 key = "token.material.spec_version"

@@ -41,7 +41,7 @@ use crate::key::Key;
 use crate::query::{Element, Scope, ScopeEntry, instance_entries, own_entries};
 use crate::roles::SurfaceSet;
 use crate::selector::{PartRef, Selector};
-use crate::tokens::TextScaling;
+use crate::tokens::{KdeColorEffect, KdeContrastEffect, KdeIntensityEffect, TextScaling};
 use crate::toml::read::{MapKey, Named};
 use crate::units::{Axes, Deg, FontSize, Fraction, Length, Ms, Px, Scalar, Sides};
 use crate::validate::{TypeTarget, type_env};
@@ -659,7 +659,8 @@ fn convert(size: FontSize, dpi: Option<f32>) -> Option<Px> {
     }
 }
 
-/// The references an expression reads, `active(…)`'s whole.
+/// The references an expression reads, `active(…)`'s whole, and the
+/// tokens its calls read themselves (S2.2).
 pub(crate) fn references(expr: &Expr, out: &mut Vec<Ref>) {
     match expr {
         Expr::Lit(_) => {}
@@ -668,7 +669,14 @@ pub(crate) fn references(expr: &Expr, out: &mut Vec<Ref>) {
                 out.push(reference.clone());
             }
         }
-        Expr::Call(_, args) => args.iter().for_each(|arg| references(arg, out)),
+        Expr::Call(func, args) => {
+            args.iter().for_each(|arg| references(arg, out));
+            for token in func.token_operands(args) {
+                if !out.contains(token) {
+                    out.push(token.clone());
+                }
+            }
+        }
     }
 }
 
@@ -1857,6 +1865,21 @@ impl<'t> Cx<'t> {
         if value_of::<Paint>(fold).is_some() || fold.found.get::<PaintPatch>().is_some() {
             return self.paint(folds).map(Val::Paint);
         }
+        // A plain enum a platform function reads itself (`token.kde`'s
+        // effects, S2.2): its variant's name.
+        macro_rules! named {
+            ($($ty:ty),*) => {
+                $(
+                    if fold.found.get::<$ty>().is_some() {
+                        return self
+                            .plain::<$ty>(folds)
+                            .and_then(|variant| Key::from_static(variant.name()))
+                            .map(|name| Val::Name(Name::Variant(name)));
+                    }
+                )*
+            };
+        }
+        named!(KdeIntensityEffect, KdeColorEffect, KdeContrastEffect);
         None
     }
 

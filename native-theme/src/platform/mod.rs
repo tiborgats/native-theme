@@ -25,7 +25,41 @@ pub mod sf_tracking;
 use kde_shade::KdeShadeRole;
 use sf_tracking::TrackingDesign;
 
+use crate::tokens::{KdeGroup, KdeRoleKind};
 use crate::toml::read::Named;
+
+/// `kde_effects`' `group` as expressions spell it (S2.2, S4.8).
+impl Named for KdeGroup {
+    fn name(&self) -> &'static str {
+        match self {
+            KdeGroup::Active => "active",
+            KdeGroup::Disabled => "disabled",
+            KdeGroup::Inactive => "inactive",
+        }
+    }
+
+    fn from_name(name: &str) -> Option<KdeGroup> {
+        KdeGroup::ALL.into_iter().find(|group| group.name() == name)
+    }
+}
+
+/// `kde_effects`' and `kde_selection_inactive`'s `role_kind` as expressions
+/// spell it (S2.2, S4.8).
+impl Named for KdeRoleKind {
+    fn name(&self) -> &'static str {
+        match self {
+            KdeRoleKind::Foreground => "foreground",
+            KdeRoleKind::Decoration => "decoration",
+            KdeRoleKind::Background => "background",
+        }
+    }
+
+    fn from_name(name: &str) -> Option<KdeRoleKind> {
+        KdeRoleKind::ALL
+            .into_iter()
+            .find(|kind| kind.name() == name)
+    }
+}
 
 impl KdeShadeRole {
     /// Every role, in declaration order.
@@ -94,7 +128,22 @@ impl Named for TrackingDesign {
 #[cfg(test)]
 mod tests {
     use super::{KdeShadeRole, TrackingDesign};
+    use crate::tokens::{KdeGroup, KdeRoleKind};
     use crate::toml::read::Named;
+
+    /// `NAMES`, which types `kde_effects`' `group` and both KDE functions'
+    /// `role_kind`, and the names evaluation reads agree, variant by variant.
+    #[test]
+    fn kde_group_and_role_kind_names_agree() {
+        for (group, name) in KdeGroup::ALL.into_iter().zip(KdeGroup::NAMES) {
+            assert_eq!(group.name(), name);
+            assert_eq!(KdeGroup::from_name(name), Some(group));
+        }
+        for (kind, name) in KdeRoleKind::ALL.into_iter().zip(KdeRoleKind::NAMES) {
+            assert_eq!(kind.name(), name);
+            assert_eq!(KdeRoleKind::from_name(name), Some(kind));
+        }
+    }
 
     /// `NAMES`, which types `kde_shade`'s `role`, and the names evaluation
     /// reads agree, role by role, each read back as itself.

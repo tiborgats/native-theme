@@ -1232,7 +1232,7 @@ fn declarations_read_s10s_keys() {
 #[test]
 fn declarations_refuse_what_s10_does_not_spell() {
     let error = read_preset(&format!(
-        "{PRESET_HEAD}[declare]\nflavours = []\ndrag_cursors = []\nspec_versions = []\n\
+        "{PRESET_HEAD}[declare]\nflavours = []\ndrag_cursors = []\n\
          conditions = [\"graphic_effects_level\"]\n\
          params = {{ layout = {{ unit = \"em\", keys = [] }} }}\n[declare.widget.button]\n\
          sizes = [\"huge\"]\ndata = {{ knob = [\"width\"], body = [\"heat\"] }}\n\
@@ -1252,7 +1252,6 @@ fn declarations_refuse_what_s10_does_not_spell() {
         [
             "declare.flavours: unknown key",
             "declare.drag_cursors: unknown key",
-            "declare.spec_versions: unknown key",
             "declare.conditions[0]: expected a keyed name, `@<key>`",
             "declare.params.layout.unit: unknown name \"em\"",
             "declare.widget.button.sizes[0]: unknown name \"huge\"",

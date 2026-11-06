@@ -347,7 +347,7 @@ const fn row(
 
 /// The keyed names' declarations by the slot holding them (S10). One table
 /// for the checks, for what a preset uses and for a key field's type.
-const DECLARATIONS: [Declaration; 23] = [
+const DECLARATIONS: [Declaration; 24] = [
     row("ColorRoles", "keyed", Decl::ColorRoles, false, true),
     row("GlobalRoles", "accent_ramp", Decl::AccentRamp, false, true),
     row("TextTokens", "keyed", Decl::TextStyles, false, true),
@@ -393,6 +393,13 @@ const DECLARATIONS: [Declaration; 23] = [
         false,
     ),
     row("Material", "identity", Decl::Materials, false, false),
+    row(
+        "MaterialScheme",
+        "spec_version",
+        Decl::SpecVersions,
+        false,
+        false,
+    ),
     row("Shadow", "elevation", Decl::Elevation, false, false),
     row("GlobalRole", "accent_ramp", Decl::AccentRamp, false, false),
     row("BlendMode", "keyed", Decl::BlendModes, true, false),

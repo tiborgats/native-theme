@@ -35,11 +35,14 @@ mod parse;
 mod ty;
 
 use std::fmt;
+use std::sync::LazyLock;
 
 use super::color::Color;
 use super::key::Key;
 use super::roles::SurfaceSet;
+use super::tokens::KdeGroup;
 use super::units::{Deg, Ms, Px};
+use crate::key;
 
 pub(crate) use eval::{Env, Val, bounded};
 pub use parse::{ParseError, ParseErrorKind};
@@ -469,6 +472,85 @@ impl Func {
     pub fn from_name(name: &str) -> Option<Func> {
         Func::ALL.into_iter().find(|func| func.name() == name)
     }
+
+    /// The tokens a call of the function with the arguments `args` reads
+    /// itself, listed as its operands (S2.2): `kde_effects`' group's
+    /// ([`kde_group_tokens`]; both groups' where its `group` is no
+    /// literal), `kde_selection_inactive`'s
+    /// `token.kde.inactive_change_selection_color`; none for any other.
+    pub(crate) fn token_operands(self, args: &[Expr]) -> &'static [Ref] {
+        let groups = KDE_EFFECT_FIELDS.len().saturating_mul(2).saturating_add(1);
+        match self {
+            Func::KdeEffects => match args.get(2) {
+                Some(Expr::Lit(Literal::Name(Name::Variant(name)))) => {
+                    <KdeGroup as crate::toml::read::Named>::from_name(name.as_str())
+                        .map_or(&[], kde_group_tokens)
+                }
+                _ => kde_tokens(0, groups),
+            },
+            Func::KdeSelectionInactive => kde_selection_tokens(),
+            _ => &[],
+        }
+    }
+}
+
+/// `KdeEffects`' fields as `token.kde.<group>.<field>` names them, in the
+/// order [`kde_group_tokens`] lists them.
+pub(crate) const KDE_EFFECT_FIELDS: [&str; 7] = [
+    "intensity",
+    "intensity_amount",
+    "color",
+    "color_amount",
+    "color_color",
+    "contrast",
+    "contrast_amount",
+];
+
+/// The tokens the KDE functions read themselves (S2.2, S4.8): the inactive
+/// group's effects in [`KDE_EFFECT_FIELDS`]' order and
+/// `token.kde.inactive_enabled`, the disabled group's effects, then
+/// `token.kde.inactive_change_selection_color`.
+static KDE_TOKENS: LazyLock<Vec<Ref>> = LazyLock::new(|| {
+    let token = |path: Vec<Key>| Ref::Token([vec![key!("kde")], path].concat());
+    let effects = |group: Key| {
+        KDE_EFFECT_FIELDS
+            .into_iter()
+            .filter_map(Key::from_static)
+            .map(move |field| token(vec![group.clone(), field]))
+    };
+    let mut out: Vec<Ref> = effects(key!("inactive")).collect();
+    out.push(token(vec![key!("inactive_enabled")]));
+    out.extend(effects(key!("disabled")));
+    out.push(token(vec![key!("inactive_change_selection_color")]));
+    out
+});
+
+/// [`KDE_TOKENS`]' entries `from..to`.
+fn kde_tokens(from: usize, to: usize) -> &'static [Ref] {
+    KDE_TOKENS.get(from..to).unwrap_or_default()
+}
+
+/// The token `kde_selection_inactive` reads itself (S2.2, S4.8):
+/// `token.kde.inactive_change_selection_color`.
+pub(crate) fn kde_selection_tokens() -> &'static [Ref] {
+    let at = KDE_EFFECT_FIELDS.len().saturating_mul(2).saturating_add(1);
+    kde_tokens(at, at.saturating_add(1))
+}
+
+/// The tokens `kde_effects` reads itself for `group` (S2.2, S4.8): the
+/// group's effects, `token.kde.<group>.<field>` in [`KDE_EFFECT_FIELDS`]'
+/// order, and for the inactive group `token.kde.inactive_enabled` after
+/// them; none for the active group, which has no effects.
+pub(crate) fn kde_group_tokens(group: KdeGroup) -> &'static [Ref] {
+    let effects = KDE_EFFECT_FIELDS.len();
+    match group {
+        KdeGroup::Active => &[],
+        KdeGroup::Inactive => kde_tokens(0, effects.saturating_add(1)),
+        KdeGroup::Disabled => kde_tokens(
+            effects.saturating_add(1),
+            effects.saturating_mul(2).saturating_add(1),
+        ),
+    }
 }
 
 impl fmt::Display for Func {
@@ -583,8 +665,59 @@ impl fmt::Display for Expr {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    /// The KDE functions' tokens name `KdeEffects`' fields in its order,
+    /// each group's whole, and the two switches (S2.2, S4.8).
+    #[test]
+    fn kde_tokens_name_the_kde_fields() {
+        use crate::blocks::Table;
+        let fields: Vec<&str> = crate::tokens::KdeEffects::FIELDS
+            .iter()
+            .map(|field| field.path)
+            .collect();
+        assert_eq!(fields, KDE_EFFECT_FIELDS);
+        let named = |tokens: &[Ref]| -> Vec<String> { tokens.iter().map(Ref::to_string).collect() };
+        let group = |group: &str, then: &[&str]| -> Vec<String> {
+            KDE_EFFECT_FIELDS
+                .iter()
+                .map(|field| format!("token.kde.{group}.{field}"))
+                .chain(then.iter().map(|name| format!("token.kde.{name}")))
+                .collect()
+        };
+        assert_eq!(
+            named(kde_group_tokens(KdeGroup::Inactive)),
+            group("inactive", &["inactive_enabled"])
+        );
+        assert_eq!(
+            named(kde_group_tokens(KdeGroup::Disabled)),
+            group("disabled", &[])
+        );
+        assert!(kde_group_tokens(KdeGroup::Active).is_empty());
+        let call = |text: &str| match Expr::parse(text).unwrap() {
+            Expr::Call(func, args) => named(func.token_operands(&args)),
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(
+            call("kde_effects(#000000, #ffffff, disabled, foreground)"),
+            group("disabled", &[])
+        );
+        assert_eq!(
+            call("kde_effects(#000000, #ffffff, token.group, foreground)"),
+            [
+                group("inactive", &["inactive_enabled"]),
+                group("disabled", &[])
+            ]
+            .concat()
+        );
+        assert_eq!(
+            call("kde_selection_inactive(#000000, #ffffff, #000000, background)"),
+            ["token.kde.inactive_change_selection_color"]
+        );
+        assert!(call("kcu_mix(#000000, #ffffff, 0.5)").is_empty());
+    }
 
     #[test]
     fn names_round_trip() {

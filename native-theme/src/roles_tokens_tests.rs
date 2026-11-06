@@ -77,8 +77,8 @@ fn token_paths(prefix: &str, fields: &'static [FieldInfo], out: &mut Vec<String>
 }
 
 /// Every token path S4 states, down to S2's blocks; `Behavior.scroll` is
-/// staged with the `scroll_view` unit (S6.1), and `theme_change`, `pointer`,
-/// `kde` and `material` with theirs (the M1a design, decision 9).
+/// staged with the `scroll_view` unit (S6.1), and `theme_change` and
+/// `pointer` with theirs (the M1a design, decision 9).
 fn token_spec_paths() -> Vec<String> {
     let mut out: Vec<String> = [
         "motion.durations",
@@ -177,6 +177,31 @@ fn token_spec_paths() -> Vec<String> {
             "size_classes.horizontal",
             "size_classes.vertical",
             "params",
+        ]
+        .map(str::to_owned),
+    );
+    for group in ["disabled", "inactive"] {
+        for field in [
+            "intensity",
+            "intensity_amount",
+            "color",
+            "color_amount",
+            "color_color",
+            "contrast",
+            "contrast_amount",
+        ] {
+            out.push(format!("kde.{group}.{field}"));
+        }
+    }
+    out.extend(
+        [
+            "kde.inactive_enabled",
+            "kde.inactive_change_selection_color",
+            "kde.tint_factor",
+            "kde.titlebar_is_accent_colored",
+            "material.variant",
+            "material.spec_version",
+            "material.contrast_level",
         ]
         .map(str::to_owned),
     );
@@ -295,9 +320,7 @@ fn every_s3_role_path_resolves_in_the_registry() {
     );
 }
 
-/// Holds the KDE and Material fields S4.8 and S9 state as their types;
-/// `Tokens.kde` and `Tokens.material` are staged to M1b (the M1a design,
-/// decision 9).
+/// Holds the KDE and Material fields S4.8 and S9 state as their types.
 fn kde_and_material_types(kde: KdeTokens, effects: KdeEffects, bases: InputBases) {
     let _: KdeEffects = kde.disabled;
     let _: KdeEffects = kde.inactive;
@@ -1156,8 +1179,9 @@ fn token_maps_of_blocks_patch_each_entry() {
 /// field, `Caret.secondary`, `shown_in_read_only` and `solid_while_typing`,
 /// every `Value` field of `Behavior` and `TouchBehavior`,
 /// `IconTokens.theme_fallback` (S6.3), and the catalogue's table (*Colour roles
-/// and tokens*): `icons.theme` and the icon-size contexts. `PointerTokens`,
-/// `kde` and `material` are staged (the M1a design, decision 9).
+/// and tokens*): `icons.theme`, the icon-size contexts, and `kde` and
+/// `material`, each one preset's (S4.8). `PointerTokens` is staged (the M1a
+/// design, decision 9).
 const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "text.rendering.engine",
     "text.rendering.antialiasing",
@@ -1197,6 +1221,8 @@ const EXPECTED_ABSENT_TOKENS: &[&str] = &[
     "behavior.touch.delay",
     "behavior.mnemonic_when_disabled",
     "behavior.focus_visible_when",
+    "kde",
+    "material",
 ];
 
 #[test]
