@@ -64,13 +64,17 @@ pub(crate) struct Context<'a> {
     pub(crate) reader_accent_left_out: bool,
 }
 
-/// Every structural problem the layers `added`, each of the kind
-/// `cx.kind`, have against `cx` (S12), as each one's check over the layers
-/// below it finds them, in their order: its structural checks, then the
-/// checks over combinations, with what they find below it. The checks over
-/// combinations run once, over `cx.below` and all of `added`, each problem
-/// the layer's stating the place it names: layers stating disjoint paths,
-/// the synthetic route's (S17, ADD-A131), validated at once. They take
+/// Every problem the layers `added`, each of the kind `cx.kind`, have
+/// against `cx` (S12), the layers added at once and validated with those
+/// below them: in their order, each one's structural checks, then what the
+/// checks over combinations find at the places it and the layers below it
+/// state. Those checks run once, over `cx.below` and all of `added`, each
+/// problem going to the layer stating the place it names. With one layer
+/// added, that is its check over the layers below it; with several, it is
+/// each one's check over the layers below it only where no layer's value
+/// reads another's or is masked by it, as on the synthetic route, whose
+/// layers `Stack::synthetic` refuses unless they state constant values at
+/// disjoint places ([`synthetic_shape`]; S17, ADD-A131). The checks take
 /// from `reused` what the check of the layers below found that the layers
 /// leave as it was.
 pub(crate) fn check(added: &[&Layer], cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
@@ -205,6 +209,128 @@ pub(crate) fn check_preset(
     } else {
         Err(LayerError::Invalid(problems))
     }
+}
+
+/// Every problem keeping the synthetic route's layers `layers`, over the
+/// preset `preset` and its declarations, from the one pass [`check`] makes
+/// over them (S17, ADD-A131): a value one states as an expression
+/// ([`ProblemKind::SyntheticExpression`]), and a place one states where an
+/// earlier one states it, or a place above or below it, a list taken whole
+/// ([`ProblemKind::SyntheticOverlap`]). Without either, no layer's value
+/// reads another's or is masked by it, so the pass finds what each one's
+/// check over the layers below it finds.
+pub(crate) fn synthetic_shape(
+    layers: &[Layer],
+    declarations: &Declarations,
+    preset: Option<PresetId>,
+) -> Vec<Problem> {
+    let stacked: Vec<Stacked<'_>> = layers
+        .iter()
+        .map(|layer| Stacked {
+            layer,
+            kind: LayerKind::Application,
+        })
+        .collect();
+    let cx = Context {
+        declarations,
+        preset,
+        kind: LayerKind::Application,
+        reader_accent_left_out: false,
+        below: &[],
+    };
+    let stack = stack::Stack::new(&stacked, cx);
+    let mut problems = Vec::new();
+    // Each place stated: its layer, what it states values of (`None`: an
+    // input), the place with every list's items taken as the list, and
+    // where the layer states it.
+    let mut stated: Vec<(usize, Option<stack::Target>, String, String)> = Vec::new();
+    for source in &stack.sources {
+        for op in &source.ops {
+            match &op.kind {
+                stack::OpKind::Fields { .. } => continue,
+                stack::OpKind::Set(stack::Val::Expr(_)) => {
+                    problems.push(Problem::new(&op.at, ProblemKind::SyntheticExpression));
+                }
+                _ => {}
+            }
+            let place = whole_lists(&op.path);
+            stated.push((source.layer, Some(source.target), place, op.at.clone()));
+        }
+    }
+    for (index, layer) in layers.iter().enumerate() {
+        for bases in applying_bases(layer, preset) {
+            let inputs = &bases.inputs;
+            for (name, value) in &inputs.entries {
+                let per_scheme = Scheme::ALL.into_iter().map(|scheme| {
+                    let at = format!("inputs.{name}.{}", scheme.name());
+                    (at, value.per_scheme.get(scheme))
+                });
+                let per_contrast = value.per_contrast.iter().flat_map(|(contrast, schemes)| {
+                    Scheme::ALL.into_iter().map(move |scheme| {
+                        let at = format!(
+                            "inputs.{name}.contrast.{}.{}",
+                            contrast.name(),
+                            scheme.name()
+                        );
+                        (at, schemes.get(scheme))
+                    })
+                });
+                for (at, value) in per_scheme.chain(per_contrast) {
+                    let Some(value) = value else {
+                        continue;
+                    };
+                    if matches!(value, super::value::Value::Expr(_)) {
+                        problems.push(Problem::new(&at, ProblemKind::SyntheticExpression));
+                    }
+                    stated.push((index, None, at.clone(), at));
+                }
+            }
+            for scheme in Scheme::ALL {
+                let lists = [
+                    ("kde_groups", inputs.kde_groups.get(scheme).is_some()),
+                    (
+                        "kde_inactive_groups",
+                        inputs.kde_inactive_groups.get(scheme).is_some(),
+                    ),
+                    (
+                        "kde_unset_keys",
+                        inputs.kde_unset_keys.get(scheme).is_some(),
+                    ),
+                ];
+                for (list, _) in lists.into_iter().filter(|(_, held)| *held) {
+                    let at = format!("inputs.{list}.{}", scheme.name());
+                    stated.push((index, None, at.clone(), at));
+                }
+            }
+        }
+    }
+    for (layer, target, place, at) in &stated {
+        let shared = stated.iter().any(|(earlier, held_target, held, _)| {
+            earlier < layer
+                && held_target == target
+                && (held == place || stack::is_above(held, place) || stack::is_above(place, held))
+        });
+        let problem = Problem::new(at, ProblemKind::SyntheticOverlap);
+        if shared && !problems.contains(&problem) {
+            problems.push(problem);
+        }
+    }
+    problems
+}
+
+/// `path` with every list's item taken as the list: each `[…]` left out.
+fn whole_lists(path: &str) -> String {
+    let mut out = String::new();
+    let mut depth = 0_usize;
+    for c in path.chars() {
+        match c {
+            '[' => depth = depth.saturating_add(1),
+            ']' => depth = depth.saturating_sub(1),
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+    out
 }
 
 /// Whether `layer`'s bases state the listed path `listed` (as

@@ -1823,3 +1823,67 @@ fn combination_field_absent_by_another_step_than_its_block() {
 fn combination_absent_block_has_no_conditional_field() {
     assert_eq!(bare("[widgets.button.icon]\nglyph = \"absent\""), NONE);
 }
+
+/// Layers one check adds at once, the synthetic route's (S17, ADD-A131):
+/// the checks over combinations run once over all of them, each problem
+/// going to the layer stating the place it names, and each layer's list
+/// holding its own and those of the layers below it, as each one's check
+/// over the layers below it finds them. Two layers, constant values at
+/// disjoint places, each refused where the preset draws what it makes
+/// absent: the first an edge's `dash`, the second an icon's `fill`.
+#[test]
+fn layers_added_at_once_each_problem_its_layer() {
+    let preset = toml(
+        "[widgets.button.body.stroke.top]\nwidth_px = 1\npaint = \"#000000\"\ndash = \
+         \"solid\"\nsnap = \"none\"\n[widgets.button.icon.icon]\nsize_px = 16\nfill = \
+         \"#000000\"\nrendering_mode = \"template\"",
+    );
+    let dash = toml("[widgets.button.body.stroke.top]\ndash = \"absent\"");
+    let fill = toml("[widgets.button.icon.icon]\nfill = \"absent\"");
+    let decl = Declarations::default();
+    let stacked = |layer, kind| Stacked { layer, kind };
+    let layers = [
+        stacked(&preset, LayerKind::Preset),
+        stacked(&dash, LayerKind::Application),
+        stacked(&fill, LayerKind::Application),
+    ];
+    let cx = |below| Context {
+        declarations: &decl,
+        preset: None,
+        kind: LayerKind::Application,
+        reader_accent_left_out: false,
+        below,
+    };
+    let strings = |result: Result<(), LayerError>| match result {
+        Ok(()) => Vec::new(),
+        Err(LayerError::Invalid(problems)) => {
+            problems.iter().map(Problem::to_string).collect::<Vec<_>>()
+        }
+        Err(other) => panic!("{other}"),
+    };
+    let found: Vec<(usize, String)> =
+        super::combinations(&layers, cx(&layers[..1]), &Reused::default())
+            .into_iter()
+            .map(|(layer, problem)| (layer, problem.to_string()))
+            .collect();
+    let dash_absent = "widgets.button.body.stroke.top.dash: may not be absent";
+    let fill_absent = "widgets.button.icon.icon.fill: may not be absent";
+    assert_eq!(
+        found,
+        [(1, dash_absent.to_owned()), (2, fill_absent.to_owned())]
+    );
+    let once = strings(check(
+        &[&dash, &fill],
+        &cx(&layers[..1]),
+        &Reused::default(),
+    ));
+    assert_eq!(once, [dash_absent, fill_absent]);
+    assert_eq!(
+        strings(check(&[&dash], &cx(&layers[..1]), &Reused::default())),
+        [dash_absent]
+    );
+    assert_eq!(
+        strings(check(&[&fill], &cx(&layers[..2]), &Reused::default())),
+        [dash_absent, fill_absent]
+    );
+}

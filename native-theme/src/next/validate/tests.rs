@@ -3914,6 +3914,8 @@ kinds! {
     ElementSizeInLayout { .. },
     LeftToPreset { .. },
     Unused { .. },
+    SyntheticExpression,
+    SyntheticOverlap,
 }
 
 /// Every `LayerError` and `ProblemKind` variant, each triggered by a
@@ -4429,6 +4431,27 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (V::LeftToPreset, left),
+        (
+            V::SyntheticExpression,
+            super::synthetic_shape(
+                &[toml(
+                    "[tokens.behavior.touch]\ndelay_ms = \"= token.behavior.touch.delay\"",
+                )],
+                &none,
+                None,
+            ),
+        ),
+        (
+            V::SyntheticOverlap,
+            super::synthetic_shape(
+                &[
+                    toml("[tokens.behavior.touch]\ndelay_ms = 1"),
+                    toml("[tokens.behavior]\ntouch.delay_ms = 2"),
+                ],
+                &none,
+                None,
+            ),
+        ),
         (
             V::Unused,
             preset_problems("[declare]\nflavors = [\"widgets\", \"kirigami\"]"),

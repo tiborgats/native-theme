@@ -540,6 +540,13 @@ pub enum ProblemKind {
         /// The name as declared.
         name: String,
     },
+    /// A value one of the synthetic route's layers states as an
+    /// expression, where they state constant values (S17, ADD-A131).
+    SyntheticExpression,
+    /// A place one of the synthetic route's layers states at, above or
+    /// below a place an earlier one states, where they state disjoint places
+    /// (S17, ADD-A131).
+    SyntheticOverlap,
 }
 
 impl fmt::Display for ProblemKind {
@@ -751,6 +758,12 @@ impl fmt::Display for ProblemKind {
             ProblemKind::LeftToPreset { role } => {
                 write!(f, "`{role}` left to the preset's value under the palette")
             }
+            ProblemKind::SyntheticExpression => {
+                f.write_str("an expression in a synthetic layer, which states constant values")
+            }
+            ProblemKind::SyntheticOverlap => f.write_str(
+                "a place an earlier synthetic layer states too, or one above or below it",
+            ),
         }
     }
 }

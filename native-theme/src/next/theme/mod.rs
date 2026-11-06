@@ -37,7 +37,10 @@ impl Theme {
     /// is validated with the layers, added at once as application layers,
     /// so a listed path they leave unstated is the missing-field problem it
     /// is through [`Theme::from_preset`]; a listed input's per-scheme value
-    /// is folded into the preset's own input base (ADD-A132). The theme is
+    /// is folded into the preset's own input base (ADD-A132). Past the fold
+    /// the layers state constant values at disjoint places: one stating an
+    /// expression, or a place another states, is refused
+    /// (`ProblemKind::SyntheticExpression`, `SyntheticOverlap`). The theme is
     /// a synthetic one while its preset is current: every mutation keeps
     /// the route's waivers (a listed default size waived, a listed presence
     /// drawn), and [`Theme::set_preset`] ends it.

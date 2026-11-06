@@ -496,11 +496,15 @@ impl Stack {
     /// The synthetic route's stack (S16's `Theme::from_preset_synthetic`,
     /// S17, ADD-A131): the preset's declarations and layer, with `layers`
     /// over it as application layers stating its listed paths `pending`,
-    /// all validated at once, so a listed path none of them states is S12's
-    /// missing field. Before validation, the per-scheme value the last of
-    /// the layers stating one gives at each listed input's scheme is folded
-    /// into the preset's own input base there and marked synthetic, never
-    /// staying in its layer (ADD-A132). A listed default size is waived and
+    /// added at once and validated with the preset, so a listed path none of
+    /// them states is S12's missing field. Before validation, the per-scheme
+    /// value the last of the layers stating one gives at each listed input's
+    /// scheme is folded into the preset's own input base there and marked
+    /// synthetic, never staying in its layer (ADD-A132). The layers left
+    /// state constant values at disjoint places, which the one pass that
+    /// validates them takes for granted: refused, naming each, where one
+    /// states an expression or a place another states
+    /// ([`validate::synthetic_shape`]). A listed default size is waived and
     /// a listed presence drawn while the preset is current.
     pub(crate) fn synthetic(
         preset: Option<PresetId>,
@@ -520,6 +524,15 @@ impl Stack {
             Some(&layers),
             &reused,
         )?;
+        let shape = validate::synthetic_shape(&layers, &declarations, preset);
+        if !shape.is_empty() {
+            for problem in shape {
+                if !problems.contains(&problem) {
+                    problems.push(problem);
+                }
+            }
+            return Err(LayerError::Invalid(problems));
+        }
         let layers: Vec<(LayerId, Arc<Layer>)> = layers
             .into_iter()
             .map(|layer| (LayerId::next(), Arc::new(layer)))
@@ -924,7 +937,8 @@ impl Stack {
             .reader_state()
             .map(validate::reader_state)
             .unwrap_or_default();
-        // The synthetic route's layers state disjoint paths: checked at once.
+        // The synthetic route's layers, constant values at disjoint places
+        // (`Stack::synthetic`), are checked at once.
         let synthetic = self.synthetic_places();
         let mut index = 1_usize;
         while let Some(layer) = stacked.get(index) {

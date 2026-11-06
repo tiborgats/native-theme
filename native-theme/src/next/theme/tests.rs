@@ -395,6 +395,37 @@ fn synthetic_layer(text: &str) -> Layer {
     Layer::from_toml(text).unwrap()
 }
 
+/// The synthetic route checks its layers in one pass, which finds what each
+/// one's check over the layers below it finds only where they state
+/// constant values at disjoint places (S17, ADD-A131): a layer stating the
+/// listed delay as an expression reading itself, which S12 refuses as a
+/// cycle, is refused though a later layer states the delay as a constant
+/// and the pass would never meet the expression, and two layers stating one
+/// place with constants are refused.
+#[test]
+fn synthetic_route_refuses_expressions_and_shared_places() {
+    let delay =
+        |value: &str| synthetic_layer(&format!("[tokens.behavior.touch]\ndelay_ms = {value}"));
+    let refused = |layers: Vec<Layer>| -> Vec<String> {
+        match synthetic_stack(None, &listed_preset(), Scheme::Light, layers) {
+            Ok(_) => Vec::new(),
+            Err(ThemeError::Preset(LayerError::Invalid(problems))) => {
+                problems.iter().map(ToString::to_string).collect()
+            }
+            Err(other) => panic!("{other}"),
+        }
+    };
+    let cycle = || delay("\"= token.behavior.touch.delay\"");
+    let expression = "tokens.behavior.touch.delay_ms: an expression in a synthetic layer, which \
+                      states constant values";
+    let shared = "tokens.behavior.touch.delay_ms: a place an earlier synthetic layer states \
+                  too, or one above or below it";
+    assert_eq!(refused(vec![cycle()]), [expression]);
+    assert_eq!(refused(vec![cycle(), delay("1")]), [expression, shared]);
+    assert_eq!(refused(vec![delay("1"), delay("2")]), [shared]);
+    assert_eq!(refused(vec![delay("1")]), Vec::<String>::new());
+}
+
 /// The reader reads `[pending]` with its register ids (S11), one as the
 /// string or a list of two or more distinct ones, and leaves a listed path
 /// out of a block built whole; it reads an input's at a scheme
