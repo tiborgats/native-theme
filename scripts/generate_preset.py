@@ -8,7 +8,7 @@ Reads the facts as scripts/check_facts.py loads them (`docs/facts/<platform>/*.t
 scripts/check_facts_trace.py reads them (`scripts/widget_units.toml`, its `[prefixes]` and `[staged]` too). Writes the
 preset's TOML (S11): `[preset]`, `[declare]`, the bases and `[[rules]]`, with an empty block for each part written by
 hand (below); `--write` writes it over the bundled preset, carrying that preset's hand-written blocks into it, and the
-Rust reader validates it there.
+Rust reader validates it there; where the round trip finds a mismatch, `--write` writes nothing.
 
 Run from the repository root:
 
@@ -205,7 +205,7 @@ import re
 import sys
 import tempfile
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import check_facts
@@ -865,18 +865,18 @@ def alive(f: Fact, facts) -> tuple:
     return tuple(s for s in slots_of(f.when) if not any(covers(g.when, f.when, s) for g in later))
 
 
-def ruled_beneath(f: Fact, facts, scheme, model=None) -> bool:
+def ruled_beneath(f: Fact, facts, scheme, models=()) -> bool:
     """Whether earlier rules of the fact's key hold wherever the fact holds under the scheme, so the preset's own
     layer states the key beneath it there (S17: a listed path has "no fact or base beneath" it "in some combination"):
     one rule covering the fact's `when` (covers()), or, for a widget's fact naming no size, one rule per size at
-    each size its elements take (sized_beneath()), as a key stated per size alone is beneath every fact of a sized
-    element."""
+    each size its elements take under each state model of `models` (sized_beneath()), as a key stated per size alone
+    is beneath every fact of a sized element."""
     same = [g for g in facts if g.ckey == f.ckey]
     at = next((i for i, g in enumerate(same) if g is f), len(same))
     earlier = [g for g in same[:at] if g.status == "rule"]
     if any(covers(g.rule_when or {}, f.when, scheme) for g in earlier):
         return True
-    return sized_beneath(f, earlier, scheme, model)
+    return bool(models) and all(sized_beneath(f, earlier, scheme, model) for model in models)
 
 
 def sized_beneath(f: Fact, earlier: list, scheme: str, model) -> bool:
@@ -955,8 +955,8 @@ def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
                 raise InputError(f"{f.key} ({f.item.data['pending']}): a component's pending presence, "
                                  f"`components.<key>.<part>`, has no [pending] key the reader takes until components "
                                  f"are typed (S11, S17; ledger #150)")
-            model = (models or {}).get((f.widget, None))
-            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s, model))
+            held = models_holding(models or {}, f.widget, f.when)
+            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s, held))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
             paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
@@ -1023,9 +1023,10 @@ def covering_bases(facts, models, tree) -> tuple:
     states sizes and no `default_size`, or a variant's entry takes no size and no stated fact under that variant alone
     covers its elements, an element holds a value no stated fact gives: no base, the field left unstated (S12's missing
     field when read), and reported as a facts gap but where a pending fact under that variant alone is to give it,
-    which lists the field (pending_table()). A part's presence (a fact of the part itself) takes no base from a variant
-    and its complement: it needs none, a part no patch makes absent being drawn (S6.3). (the bases, the gaps as
-    (widget, key, why))."""
+    which lists the field (pending_table()). The base is at rest under every flavour, so the sizes are read from each
+    state model of the widget, its own and each flavour's (S10): a base where every one gives the same, else a gap. A
+    part's presence (a fact of the part itself) takes no base from a variant and its complement: it needs none, a part
+    no patch makes absent being drawn (S6.3). (the bases, the gaps as (widget, key, why))."""
     by_key = {}
     for f in facts:
         if f.kind in ("widget", "token"):
@@ -1045,14 +1046,6 @@ def covering_bases(facts, models, tree) -> tuple:
         if all(per_scheme):
             chosen = per_scheme[0]
         elif rules and rules[0].kind == "widget":
-            model = models.get((rules[0].widget, None)) or {}
-            sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
-            entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
-                       and isinstance(e.get("sizes"), list)]
-            taken = list(dict.fromkeys(sizes + [z for e in entries for z in e["sizes"] if isinstance(z, str)]))
-            per_size = {z: alone({"sizes": [z]}) for z in taken}
-            unsized = [e.get("variant") for e in entries if not e["sizes"]]
-            uncovered = [v for v in unsized if not (isinstance(v, str) and alone({"variants": [v]}))]
             complement = None
             for f in rules if rules[0].dotted else []:
                 variants = f.rule_when.get("variants")
@@ -1060,29 +1053,56 @@ def covering_bases(facts, models, tree) -> tuple:
                     complement = alone({"not_variants": variants})
                     if complement:
                         break
-            if complement:
-                chosen = complement
-            elif sizes and all(per_size.values()):
+
+            def sized(model):
+                """(the base the sizes' rules give the elements `model` reduces by, why it gives none)."""
+                sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
+                entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict)
+                           and isinstance(e.get("sizes"), list)]
+                taken = list(dict.fromkeys(sizes + [z for e in entries for z in e["sizes"] if isinstance(z, str)]))
+                per_size = {z: alone({"sizes": [z]}) for z in taken}
+                unsized = [e.get("variant") for e in entries if not e["sizes"]]
+                uncovered = [v for v in unsized if not (isinstance(v, str) and alone({"variants": [v]}))]
+                if not (sizes and all(per_size.values())):
+                    return None, None
                 default = model.get("default_size")
-                if isinstance(default, str) and default in per_size and not uncovered:
-                    chosen = per_size[default]
-                elif isinstance(default, dict) and not uncovered:
+                if isinstance(default, str) and default not in per_size:
+                    # S12 refuses a default size the widget does not take, so this never shows
+                    return None, (f"its `default_size` {default!r} is none of the sizes its elements take, which "
+                                  f"S12 refuses")
+                if isinstance(default, str) and not uncovered:
+                    return per_size[default], None
+                if isinstance(default, dict) and not uncovered:
                     # a pending default: no element states no size and is drawn (S10's *A pending default*), so
                     # every drawn element holds one of the sizes, or an unsized variant its fact covers, and the
                     # base never shows
-                    chosen = per_size[sizes[0]]
-                elif isinstance(default, (str, dict)):
+                    return per_size[sizes[0]], None
+                if isinstance(default, (str, dict)):
                     unmeasured = [v for v in uncovered if not any(
                         f.status == PENDING and check_facts.canonical_when(f.when)
                         == check_facts.canonical_when({"variants": [v]}) for f in fs)]
                     if unmeasured:
-                        gaps.append((rules[0].widget, rules[0].key,
-                                     f"its variant {', '.join(map(str, unmeasured))} takes no size and no fact under "
-                                     f"it alone gives the value of its elements"))
-                else:
+                        return None, (f"its variant {', '.join(map(str, unmeasured))} takes no size and no fact "
+                                      f"under it alone gives the value of its elements")
+                    return None, None
+                return None, (f"`{rules[0].widget}` states sizes and no `default_size`: no fact gives the value of "
+                              f"an element with no size")
+
+            if complement:
+                chosen = complement
+            else:
+                # the base is at rest under every flavour, so each flavour's state model, the widget's own
+                # included, takes it (S10): one base where every model gives the same
+                held = [(flavor, model) for (widget, flavor), model in models.items() if widget == rules[0].widget]
+                found = [(flavor, *sized(model)) for flavor, model in held or [(None, {})]]
+                why = [f"under the flavour {flavor}: {w}" if flavor else w for flavor, _, w in found if w]
+                given = {id(base) for _, base, _ in found}
+                gaps += [(rules[0].widget, rules[0].key, w) for w in why]
+                if not why and len(given) > 1:
                     gaps.append((rules[0].widget, rules[0].key,
-                                 f"`{rules[0].widget}` states sizes and no `default_size`: no fact gives the value of "
-                                 f"an element with no size"))
+                                 "its flavours' state models give its base different values"))
+                elif not why:
+                    chosen = found[0][1]
         if chosen is None:
             continue
         path = (chosen.section,) + chosen.header + tuple(chosen.dotted)
@@ -1897,6 +1917,18 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
     return trip
+
+
+def models_holding(models: dict, widget, when: dict) -> list:
+    """The state models the elements a fact's `when` holds for are reduced by: its flavour's where it names one
+    (model_of()), else the widget's own and each flavour's `not_conditions` does not refuse (S10)."""
+    conds = when.get("conditions", []) if isinstance(when.get("conditions"), list) else []
+    if any(isinstance(c, str) and c.startswith("flavor:") for c in conds):
+        model = model_of(models, widget, when)
+        return [model] if model is not None else []
+    nots = when.get("not_conditions", []) if isinstance(when.get("not_conditions"), list) else []
+    refused = {c[7:] for c in nots if isinstance(c, str) and c.startswith("flavor:")}
+    return [model for (held, flavor), model in models.items() if held == widget and flavor not in refused]
 
 
 def model_of(models: dict, widget, when: dict):
@@ -2908,6 +2940,32 @@ def self_test() -> int:
     if covering or [g[:2] for g in gaps] != [("button", "button.body.min_width")]:
         failures.append(f"covering_bases without a default size: {[(b[3], b[4]) for b in covering]} written, {gaps} "
                         f"reported, expected nothing written and button.body.min_width's gap")
+    # a default size the widget does not take (S12 refuses it): no base, and the gap reported, never nothing
+    stray = {("button", None): {"sizes": ["small", "regular"], "default_size": "large"}}
+    covering, gaps = covering_bases(by_size, stray, {})
+    if covering or [g[:2] for g in gaps] != [("button", "button.body.min_width")]:
+        failures.append(f"covering_bases with a stray default size: {[(b[3], b[4]) for b in covering]} written, "
+                        f"{gaps} reported, expected nothing written and button.body.min_width's gap")
+    # a flavour's state model (material-3's expressive sizes): the base is at rest under every flavour, so a
+    # flavour whose default size differs leaves no base and a gap, one agreeing keeps it
+    for compact, want_base, want_gap in (("regular", 30, False), ("small", None, True)):
+        flavoured = {("button", None): {"sizes": ["small", "regular"], "default_size": "regular"},
+                     ("button", "compact"): {"sizes": ["small", "regular"], "default_size": compact}}
+        covering, gaps = covering_bases(by_size, flavoured, {})
+        got = [b[4] for b in covering]
+        if got != ([want_base] if want_base else []) or bool(gaps) != want_gap:
+            failures.append(f"covering_bases under a flavour defaulting to {compact}: {got} written, {gaps} reported, "
+                            f"expected {want_base} and {'a gap' if want_gap else 'no gap'}")
+    # a pending fact naming no size is beneath the sizes' rules where every flavour's elements take a size they
+    # state: a flavour taking another size, or one the fact names, decides it
+    pending_width = rule_fact("button.body.min_width", {}, None)
+    pending_width.status = PENDING
+    wide = {("button", None): {"sizes": ["small", "regular"]}, ("button", "wide"): {"sizes": ["small", "large"]}}
+    beneath = [ruled_beneath(f, by_size + [f], "light", models_holding(wide, "button", f.when)) for f in (
+        pending_width, replace(pending_width, when={"not_conditions": ["flavor:wide"]}),
+        replace(pending_width, when={"conditions": ["flavor:wide"]}))]
+    if beneath != [False, True, False]:
+        failures.append(f"ruled_beneath over each flavour's state model: {beneath}, expected [False, True, False]")
     # macOS's route button: a variant whose entry takes no size draws its elements with none, so the sizes' rules
     # cover them only beside a stated fact under that variant alone; a pending one covers nothing (the field listed,
     # no gap), and none at all is a gap
@@ -3073,6 +3131,29 @@ def self_test() -> int:
         if (pending_trip.mismatches or '"declare.widget.button.default_size" = "U9"' not in pending_text
                 or "default_size" in declared):
             failures.append(f"a pending default size: {pending_trip}, [declare.widget.button] {declared!r}")
+        # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here), and the
+        # preset where it finds none
+        root = Path(tmp) / "mismatch"
+        write(root, SELF_TEST_FILES)
+        written = root / PRESETS / "adwaita.toml"
+        written.parent.mkdir(parents=True)
+        honest = round_trip
+
+        def mismatched(draft, text):
+            return Trip(compared=honest(draft, text).compared, mismatches=["forced"])
+
+        globals()["round_trip"] = mismatched
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                code = run(fixture_context(root), "adwaita", "--write", None)
+        finally:
+            globals()["round_trip"] = honest
+        if code != 1 or written.exists():
+            failures.append(f"--write over a mismatched round trip: exit {code}, written {written.exists()}")
+        with contextlib.redirect_stderr(io.StringIO()):
+            code = run(fixture_context(root), "adwaita", "--write", None)
+        if code != 0 or not written.exists():
+            failures.append(f"--write over an exact round trip: exit {code}, written {written.exists()}")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
@@ -3109,6 +3190,17 @@ def main(argv) -> int:
             return 2
     try:
         ctx = check_facts.Context(Path("."))
+    except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
+    return run(ctx, preset, mode, out)
+
+
+def run(ctx, preset: str, mode, out) -> int:
+    """main() over the facts `ctx` reads: the preset generated and, by `mode`, printed, written to `out`, written
+    over the bundled preset (`--write`; nothing where the round trip finds a mismatch) or compared with it
+    (`--check`); its exit code."""
+    try:
         draft, text, trip, units = generate(ctx, preset)
         if mode in ("--write", "--check"):
             path = ctx.root / PRESETS / f"{preset}.toml"
@@ -3121,7 +3213,7 @@ def main(argv) -> int:
         sys.stdout.write(text)
     elif mode == "out":
         out.write_text(text, encoding="utf-8")
-    elif mode == "--write":
+    elif mode == "--write" and not trip.mismatches:
         path.write_text(text, encoding="utf-8")
     elif text != committed:
         print(f"{PRESETS / preset}.toml is not what --write writes from the facts: run "
@@ -3131,6 +3223,8 @@ def main(argv) -> int:
         print(line, file=sys.stderr)
     for m in trip.mismatches:
         print(f"round trip: {m}", file=sys.stderr)
+    if mode == "--write" and trip.mismatches:
+        print(f"{PRESETS / preset}.toml not written: the round trip finds a mismatch", file=sys.stderr)
     return 1 if trip.mismatches else 0
 
 
