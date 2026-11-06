@@ -1,4 +1,4 @@
-# The image folder of run 42282133669 the facts cite (spec S17 *`evidence`*). The OS and runner image are the run's
+# The image folders of run 42282133669 the facts cite (spec S17 *`evidence`*). The OS and runner image are the run's
 # own records (reads/probe.toml `[os]` and `[probe]`); this run ran no button pass, so it holds no environment.txt: the
 # same runner image version built the probe with Xcode 26.6 (17F113) against the macOS 26.5 SDK (25F70) in run
 # 41651803413 (its run.toml).
@@ -8,3 +8,9 @@ preset = "macos-tahoe"
 source = "xcode@26.6"
 os = "macOS 26.6.2, runner image macos26 20261026.0455.2"
 toolkit = "AppKit of macOS 26.6.2; the probe built with the image's selected Xcode (26.6 (17F113) on this runner image version in run 41651803413)"
+
+[images.os-probe-macos-15]
+preset = "macos-monterey"
+source = "xcode@16.4"
+os = "macOS 15.8.2, runner image macos15 20261104.0514.1"
+toolkit = "AppKit of macOS 15.8.2; the probe built with the image's selected Xcode (16.4 (16F6) on this runner image version in runs 42215651196 and 42272240639)"
