@@ -87,7 +87,7 @@ quote = "d->interpolatorType = QMetaType::QColor; d->defaultToInterpolatorType =
 [[fact]]
 key = "token.motion.durations.animations"
 value = "= floor(mul(100ms, token.motion.speed_factor))"
-rows = ["K3.31", "K1.30"]
+rows = ["K3.31", "K1.30", "K1.55"]
 
 [[fact.cite]]
 kind = "published"
@@ -103,6 +103,16 @@ quote = "case SH_Widget_Animation_Duration: return StyleConfigData::animationsEn
 kind = "published"
 source = "breeze@6.8.2 kstyle/breeze.kcfg:53-55"
 quote = "<entry name=\"AnimationsDuration\" type=\"Int\"> <default>100</default> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4925-4930"
+quote = "_animations->widgetStateEngine().updateState(styleObject, AnimationPressed, checkBoxState != CheckOff);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/animations/breezeanimations.cpp:55-73"
+quote = "const int animationsDuration(StyleConfigData::animationsDuration());"
 
 # Breeze quantises its linear progress into AnimationSteps steps, floor(value * steps) / steps: CSS steps(10,
 # jump-end)
@@ -888,6 +898,653 @@ source = "breeze@6.8.2 kstyle/breezestyle.cpp:6614-6781"
 quote = "bool Style::drawFocusFrame(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
 absent = []
 
+# token.elevation (S2.5, R8): Breeze's two shadow tables, each entry one breezerc [Common] ShadowSize step: the
+# decoration's window shadows (`window_*`, K3.1) and the style's popup shadows (`popup_*`, menus, tooltips, docks
+# and floating toolbars, K3.2). Each step is two box shadows and a composite offset: a layer's offset is the
+# composite offset plus its own (the texture's padding moves the box by the composite offset, the renderer each
+# shadow by its own); its box is the surface shrunk by Shadow_Overlap on every side (the padding's overlap term),
+# so the spread is minus the overlap; its blur the renderer's radius, CSS's blur radius (standard deviation half
+# of it); its colour breezerc's ShadowColor (role.global.shadow_reference) with the alpha set (QColor::setAlphaF,
+# with_alpha) to the layer's opacity times ShadowStrength / 255, breezerc's default 255 (token.params.shadow is no
+# group of the slice yet: the strength stated as its default). ShadowNone draws no shadow: the empty entry.
+
+[[fact]]
+key = "token.elevation.window_none"
+value = []
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:811-868"
+quote = "std::shared_ptr<KDecoration3::DecorationShadow> Decoration::createShadowObject(const float strengthScale)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:814-817"
+quote = "if (params.isNone()) { // If shadows are disabled, return nothing return nullptr; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:82-83"
+quote = "// None CompositeShadowParams(),"
+
+[[fact]]
+key = "token.elevation.window_small"
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 1.0)))", inset = false }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 1.0)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:85"
+quote = "CompositeShadowParams(QPoint(0, 4), ShadowParams(QPoint(0, 0), 16, 1), ShadowParams(QPoint(0, -2), 8, 0.4)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_medium"
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 1.0)))", inset = false }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 1.0)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:87"
+quote = "CompositeShadowParams(QPoint(0, 8), ShadowParams(QPoint(0, 0), 32, 0.9), ShadowParams(QPoint(0, -4), 16, 0.3)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_large"
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 1.0)))", inset = false }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 1.0)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:89"
+quote = "CompositeShadowParams(QPoint(0, 12), ShadowParams(QPoint(0, 0), 48, 0.8), ShadowParams(QPoint(0, -6), 24, 0.2)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_very_large"
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 1.0)))", inset = false }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 1.0)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:91"
+quote = "CompositeShadowParams(QPoint(0, 16), ShadowParams(QPoint(0, 0), 64, 0.7), ShadowParams(QPoint(0, -8), 32, 0.1)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+# an inactive window's decoration shadow is drawn at half strength (createShadowObject(0.5), K1.18)
+
+[[fact]]
+key = "token.elevation.window_small"
+when = { conditions = ["window_inactive"] }
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 0.5)))", inset = false }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 0.5)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:85"
+quote = "CompositeShadowParams(QPoint(0, 4), ShadowParams(QPoint(0, 0), 16, 1), ShadowParams(QPoint(0, -2), 8, 0.4)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_medium"
+when = { conditions = ["window_inactive"] }
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 0.5)))", inset = false }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 0.5)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:87"
+quote = "CompositeShadowParams(QPoint(0, 8), ShadowParams(QPoint(0, 0), 32, 0.9), ShadowParams(QPoint(0, -4), 16, 0.3)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_large"
+when = { conditions = ["window_inactive"] }
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 0.5)))", inset = false }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 0.5)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:89"
+quote = "CompositeShadowParams(QPoint(0, 12), ShadowParams(QPoint(0, 0), 48, 0.8), ShadowParams(QPoint(0, -6), 24, 0.2)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.window_very_large"
+when = { conditions = ["window_inactive"] }
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 0.5)))", inset = false }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 0.5)))", inset = false }]
+rows = ["K3.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:91"
+quote = "CompositeShadowParams(QPoint(0, 16), ShadowParams(QPoint(0, 0), 64, 0.7), ShadowParams(QPoint(0, -8), 32, 0.1)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:832-834"
+quote = "const qreal strength = m_internalSettings->shadowStrength() / 255.0 * strengthScale; shadowRenderer.addShadow(params.shadow1.offset, params.shadow1.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow1.opacity * strength)); shadowRenderer.addShadow(params.shadow2.offset, params.shadow2.radius, withOpacity(m_internalSettings->shadowColor(), params.shadow2.opacity * strength));"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:819-823"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:804-805"
+quote = "g_sShadow = createShadowObject(1.0); g_sShadowInactive = createShadowObject(0.5);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezedecoration.cpp:847-851"
+quote = "const QMarginsF padding = QMarginsF(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breeze.h:38"
+quote = "static constexpr int Shadow_Overlap = 3;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.popup_none"
+value = []
+rows = ["K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:180-242"
+quote = "TileSet ShadowHelper::shadowTiles(QWidget *widget)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:184-185"
+quote = "if (params.isNone()) { return TileSet();"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:34-35"
+quote = "// None CompositeShadowParams(),"
+
+[[fact]]
+key = "token.elevation.popup_small"
+value = [{ x_px = 0, y_px = "= add(3px, 0px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.26, div(255, 255)))", inset = false }, { x_px = 0, y_px = "= add(3px, -2px)", blur_px = 6, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.16, div(255, 255)))", inset = false }]
+rows = ["K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:37"
+quote = "CompositeShadowParams(QPoint(0, 3), ShadowParams(QPoint(0, 0), 12, 0.26), ShadowParams(QPoint(0, -2), 6, 0.16)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:199-212"
+quote = "const QColor color = StyleConfigData::shadowColor(); const qreal strength = static_cast<qreal>(StyleConfigData::shadowStrength()) / 255.0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:193-197"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:224-228"
+quote = "const QMargins margins = QMargins(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:172"
+quote = "static constexpr int Shadow_Overlap = 2;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.popup_medium"
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.24, div(255, 255)))", inset = false }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.14, div(255, 255)))", inset = false }]
+rows = ["K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:39"
+quote = "CompositeShadowParams(QPoint(0, 4), ShadowParams(QPoint(0, 0), 16, 0.24), ShadowParams(QPoint(0, -2), 8, 0.14)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:199-212"
+quote = "const QColor color = StyleConfigData::shadowColor(); const qreal strength = static_cast<qreal>(StyleConfigData::shadowStrength()) / 255.0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:193-197"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:224-228"
+quote = "const QMargins margins = QMargins(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:172"
+quote = "static constexpr int Shadow_Overlap = 2;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.popup_large"
+value = [{ x_px = 0, y_px = "= add(5px, 0px)", blur_px = 20, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.22, div(255, 255)))", inset = false }, { x_px = 0, y_px = "= add(5px, -3px)", blur_px = 10, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.12, div(255, 255)))", inset = false }]
+rows = ["K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:41"
+quote = "CompositeShadowParams(QPoint(0, 5), ShadowParams(QPoint(0, 0), 20, 0.22), ShadowParams(QPoint(0, -3), 10, 0.12)),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:199-212"
+quote = "const QColor color = StyleConfigData::shadowColor(); const qreal strength = static_cast<qreal>(StyleConfigData::shadowStrength()) / 255.0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:193-197"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:224-228"
+quote = "const QMargins margins = QMargins(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:172"
+quote = "static constexpr int Shadow_Overlap = 2;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+[[fact]]
+key = "token.elevation.popup_very_large"
+value = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.2, div(255, 255)))", inset = false }, { x_px = 0, y_px = "= add(6px, -3px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.1, div(255, 255)))", inset = false }]
+rows = ["K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:43"
+quote = "CompositeShadowParams(QPoint(0, 6), ShadowParams(QPoint(0, 0), 24, 0.2), ShadowParams(QPoint(0, -3), 12, 0.1))};"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:199-212"
+quote = "const QColor color = StyleConfigData::shadowColor(); const qreal strength = static_cast<qreal>(StyleConfigData::shadowStrength()) / 255.0;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:193-197"
+quote = "auto withOpacity = [](const QColor &color, qreal opacity) -> QColor { QColor c(color); c.setAlphaF(opacity); return c; };"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezeshadowhelper.cpp:224-228"
+quote = "const QMargins margins = QMargins(boxRect.left() - outerRect.left() - Metrics::Shadow_Overlap - params.offset.x(), boxRect.top() - outerRect.top() - Metrics::Shadow_Overlap - params.offset.y(),"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemetrics.h:172"
+quote = "static constexpr int Shadow_Overlap = 2;"
+conversion = ["negate"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
+quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+# Kirigami's and qqc2-desktop-style's surfaces draw their shadow with Kirigami's ShadowedRectangle, whose falloff is
+# a smoothstep over a rounded rectangle's distance field (shadowedrectangle.frag:36-45), not S2.5's (CSS) Gaussian
+# blur: no ShadowLayer states it, pending U403 (qqc2 Menu, Popup, ToolTip, Dialog; Kirigami's card and passive
+# notification)
+
+[[fact]]
+key = "token.elevation.qqc2_menu"
+pending = "U403"
+rows = ["Q3.21"]
+
+[[fact]]
+key = "token.elevation.qqc2_popup"
+pending = "U403"
+rows = ["Q3.21"]
+
+[[fact]]
+key = "token.elevation.qqc2_tooltip"
+pending = "U403"
+rows = ["Q3.21"]
+
+[[fact]]
+key = "token.elevation.qqc2_dialog"
+pending = "U403"
+rows = ["Q3.21"]
+
+[[fact]]
+key = "token.elevation.kirigami_card"
+pending = "U403"
+rows = ["Q3.21"]
+
+[[fact]]
+key = "token.elevation.kirigami_passive_notification"
+pending = "U403"
+rows = ["Q3.21"]
+
+# token.size_classes (R16): Qt Widgets states no window size class (no platform theme hint names one). Kirigami's
+# wideScreen is a width threshold, gridUnit * 60 on AbstractApplicationWindow but the page stack's column width and
+# the drawers' on ApplicationWindow (ApplicationWindow.qml:112), and no catalogue entry names its classes: pending
+# U402 under flavor:kirigami
+
+[[fact]]
+key = "token.size_classes"
+value = {}
+rows = ["Q1.7"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.h:51-105"
+quote = "enum ThemeHint {"
+absent = []
+
+[[fact]]
+key = "token.size_classes"
+when = { conditions = ["flavor:kirigami"] }
+pending = "U402"
+rows = ["Q1.7"]
+
 # Breeze shows the frame only after a keyboard focus change, with no timeout (FocusVisibleWhen::Keyboard)
 
 [[fact]]
@@ -1049,6 +1706,18 @@ quote = "void QLineEdit::keyPressEvent(QKeyEvent *event) { Q_D(QLineEdit); d->co
 kind = "published"
 source = "qtbase@6.12.0 src/widgets/widgets/qwidgetlinecontrol.cpp:1500-1507"
 quote = "if (m_blinkEnabled && !m_readOnly) { const auto flashTime = QGuiApplication::styleHints()->cursorFlashTime() * 1ms; if (flashTime >= 2ms) m_blinkTimer.start(flashTime / 2, this); } m_blinkStatus = 1;"
+
+# Qt draws one caret for mixed-direction text: QTextLayout::drawCursor draws no second, split caret
+[[fact]]
+key = "token.caret.secondary"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/qtextlayout.cpp:1298-1400"
+quote = "void QTextLayout::drawCursor(QPainter *p, const QPointF &pos, int cursorPosition, int width) const"
+absent = []
 
 # S4.2 behaviour: the KDE platform theme's hints from kdeglobals [KDE] (their defaults while unset), Qt's
 # own defaults for the hints it does not set, KWin's keyboard repeat (kcminputrc).
@@ -1237,6 +1906,218 @@ quote = "const auto config = kwinApp()->inputConfig()->group(QStringLiteral(\"Ke
 kind = "published"
 source = "kwin@6.8.2 src/keyboard_repeat.cpp:35-37"
 quote = "if (waylandServer()->seat()->keyboard()->keyRepeatRate() != 0) { m_timer->setInterval(1000 / waylandServer()->seat()->keyboard()->keyRepeatRate()); }"
+
+# KLineEdit, the KDE line edit, auto-hides the pointer (KCursor): a key press hides it at once, and a focused
+# field hides it again after hideCursorDelay without a pointer event (the catalogue's hide_pointer_delay,
+# KLineEdit's); qqc2-desktop-style's TextField hides nothing
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+value = true
+rows = ["K3.65†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kcompletion@6.31.0 src/klineedit.cpp:101"
+quote = "KCursor::setAutoHideCursor(q, true, true);"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kcursor.cpp:131-134"
+quote = "case QEvent::KeyPress: case QEvent::ShortcutOverride: hideCursor(); break;"
+
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+when = { conditions = ["flavor:kirigami"] }
+value = false
+rows = ["K3.65†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/TextField.qml:16-145"
+quote = "T.TextField {"
+absent = ["BlankCursor", "setAutoHideCursor"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+value = "5000ms"
+rows = ["K3.65†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kcursor.cpp:174"
+quote = "hideCursorDelay = 5000; // 5s default value"
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kcursor.cpp:145-148"
+quote = "if (m_widget->hasFocus()) { m_autoHideTimer.setSingleShot(true); m_autoHideTimer.start(KCursorPrivate::self()->hideCursorDelay); }"
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+when = { conditions = ["flavor:kirigami"] }
+value = "absent"
+rows = ["K3.65†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/TextField.qml:16-145"
+quote = "T.TextField {"
+absent = ["BlankCursor", "setAutoHideCursor"]
+
+# KCursor swaps in the blank cursor at once, no fade (S17's zero stated by omission)
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kcursor.cpp:61-79"
+quote = "void KCursorPrivateAutoHideEventFilter::hideCursor()"
+absent = ["QPropertyAnimation", "QVariantAnimation", "setOpacity"]
+
+[[fact.cite]]
+kind = "published"
+source = "kwidgetsaddons@6.31.0 src/kcursor.cpp:78"
+quote = "w->setCursor(QCursor(Qt::BlankCursor));"
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+when = { conditions = ["flavor:kirigami"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/TextField.qml:16-145"
+quote = "T.TextField {"
+absent = ["BlankCursor", "setAutoHideCursor"]
+
+# KDE states no one spring-loading delay: each widget its own (the tab bar's 500 ms, K1.133†; the URL
+# navigator's crumb 300 ms; the Places panel's and QTreeView's off by default), the catalogue's
+# drag_hover_delay; Qt's platform theme names no such hint
+[[fact]]
+key = "token.behavior.spring_loading"
+value = "absent"
+rows = ["K-P4-11†"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.h:51-105"
+quote = "enum ThemeHint {"
+absent = []
+
+# breezerc [Style] MnemonicsMode, MN_AUTO: the underlines show while Alt is held, from the key press on (no
+# timer: S17's zero stated by omission); Kirigami's MnemonicAttached shows them on Alt's press likewise
+[[fact]]
+key = "token.behavior.mnemonics"
+value = { on_alt = { delay_ms = 0 } }
+rows = ["K3.44"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:82-89"
+quote = "<entry name=\"MnemonicsMode\" type=\"Enum\"> <choices> <choice name=\"MN_NEVER\" /> <choice name=\"MN_AUTO\" /> <choice name=\"MN_ALWAYS\" /> </choices> <default>MN_AUTO</default> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemnemonics.cpp:34-38"
+quote = "case StyleConfigData::MN_AUTO: qApp->removeEventFilter(this); qApp->installEventFilter(this); setEnabled(false); break;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemnemonics.cpp:43-67"
+quote = "bool Mnemonics::eventFilter(QObject *, QEvent *event)"
+absent = ["QTimer", "startTimer"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/mnemonicattached.cpp:118-142"
+quote = "bool eventFilter(QObject *watched, QEvent *event) override"
+absent = ["QTimer", "startTimer"]
+
+# Breeze's text flags follow the mnemonics' state alone, never the widget's enabled state
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+value = true
+rows = ["K3.44"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1603-1607"
+quote = "if (!_mnemonics->enabled() && (flags & Qt::TextShowMnemonic) && !(flags & Qt::TextHideMnemonic)) { flags &= ~Qt::TextShowMnemonic; flags |= Qt::TextHideMnemonic; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezemnemonics.h:39-42"
+quote = "int textFlags() const { return _enabled ? Qt::TextShowMnemonic : Qt::TextHideMnemonic; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5392"
+quote = "const int textFlags(_mnemonics->textFlags() | Qt::AlignCenter);"
+
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+when = { conditions = ["flavor:kirigami"] }
+value = false
+rows = ["K3.44"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:30"
+quote = "Kirigami.MnemonicData.enabled: enabled && visible"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/mnemonicattached.cpp:185-189"
+quote = "void MnemonicAttached::onAltPressed() { if (m_active || !m_enabled || m_richTextLabel.isEmpty()) { return; }"
+
+# Qt states no paging threshold apart from the flick start distance (touch.slop)
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qplatformtheme.h:51-105"
+quote = "enum ThemeHint {"
+absent = []
+
+# Qt has no touch double-tap interval of its own: a tap counts as a click, by the double-click interval
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+value = "= token.behavior.double_click_time"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/handlers/qquicktaphandler.cpp:49-52"
+quote = "For multi-tap gestures (double-tap, triple-tap etc.), the distance moved must not exceed QStyleHints::mouseDoubleClickDistance() with mouse and QStyleHints::touchDoubleTapDistance() with touch, and the time between taps must not exceed QStyleHints::mouseDoubleClickInterval()."
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/handlers/qquicktaphandler.cpp:62"
+quote = "m_multiTapInterval = qApp->styleHints()->mouseDoubleClickInterval();"
+
+# a press in a scrolling container shows at once: a QAbstractScrollArea passes it straight to the viewport
+# (S17's zero stated by omission), and Qt Quick's Flickable's pressDelay is 0
+[[fact]]
+key = "token.behavior.touch.delay"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/widgets/qabstractscrollarea.cpp:1040-1082"
+quote = "bool QAbstractScrollArea::viewportEvent(QEvent *e)"
+absent = ["QTimer", "startTimer", "pressDelay"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickflickable.cpp:255"
+quote = ", delayedPressEvent(nullptr), pressDelay(0), fixupDuration(400)"
 
 # S4.4 text: Plasma's default fonts (kdeglobals [General] font, fixed, menuFont, toolBarFont,
 # smallestReadableFont unset: KFontSettingsData's table), the QFont defaults for what the strings leave, the derived
@@ -7085,6 +7966,24 @@ kind = "published"
 source = "qtbase@6.12.0 src/gui/text/unix/qfontconfigdatabase.cpp:840-844"
 quote = "if (script == QFontDatabasePrivate::Script_Emoji) { FcPatternAddBool(pattern, FC_COLOR, true); value.u.s = (const FcChar8 *)\"emoji\"; FcPatternAddWeak(pattern, FC_FAMILY, value, FcTrue); }"
 
+# Qt's family fallbacks are fontconfig's sorted match (FcFontSort) for the family and the script's language, so
+# they follow the installed fonts and the distribution's configuration: pending U404 (no committed fc-match run)
+
+[[fact]]
+key = "token.text.fallbacks.families"
+pending = "U404"
+rows = ["K-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_language"
+pending = "U404"
+rows = ["K-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_family"
+pending = "U404"
+rows = []
+
 # the fonts KCM's defaults: antialiasing on, RGB sub-pixel order, slight hinting
 
 [[fact]]
@@ -7117,6 +8016,18 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/fonts/fontsaasettings.cpp:32-45"
 quote = "bool defaultAntiAliasing() { return true; } KXftConfig::SubPixel::Type defaultSubPixel() { return KXftConfig::SubPixel::Rgb; } KXftConfig::Hint::Style defaultHinting() { return KXftConfig::Hint::Slight; }"
 
+# Qt Widgets draws text through QPainter alone: no render type to choose (Qt Quick's, below)
+[[fact]]
+key = "token.text.rendering.engine"
+value = "absent"
+rows = ["Q3.32"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/painting/qpainter.h:52-59"
+quote = "enum RenderHint {"
+absent = ["NativeTextRendering", "QtTextRendering"]
+
 [[fact]]
 key = "token.text.rendering.engine"
 when = { conditions = ["flavor:kirigami", "unit_scale"] }
@@ -7138,6 +8049,51 @@ rows = ["Q3.32"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:58-62"
 quote = "if (qApp->devicePixelRatio() == 1.0) { QQuickWindow::setTextRenderType(QQuickWindow::NativeTextRendering); } else { QQuickWindow::setTextRenderType(QQuickWindow::QtTextRendering); }"
+
+# FreeType's default LCD filter: Qt's own default, and fontconfig's default configuration's (the fonts KCM
+# writes no filter)
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+value = "lcddefault"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/freetype/qfontengine_ft.cpp:938"
+quote = "lcdFilterType = (int)((quintptr) FT_LCD_FILTER_DEFAULT);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/unix/qfontconfigdatabase.cpp:1145-1147"
+quote = "int lcdFilter; if (FcPatternGetInteger(match, FC_LCD_FILTER, 0, &lcdFilter) == FcResultMatch) engine->lcdFilterType = lcdFilter;"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 conf.d/meson.build:51-54"
+quote = "conf_links = [ '10-scale-bitmap-fonts.conf', '10-yes-antialias.conf', '11-lcdfilter-default.conf',"
+
+[[fact.cite]]
+kind = "published"
+source = "fontconfig@2.18.3 conf.d/11-lcdfilter-default.conf:13-15"
+quote = "<edit mode=\"append\" name=\"lcdfilter\"> <const>lcddefault</const> </edit>"
+
+# Qt's font smoothing gamma is the platform plugin's style hint (QPlatformIntegration's default 1.7); the
+# Wayland plugin Plasma runs is outside the cache: pending U405
+[[fact]]
+key = "token.text.rendering.gamma"
+pending = "U405"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.contrast"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/text/unix/qfontconfigdatabase.cpp:1034-1196"
+quote = "void QFontconfigDatabase::setupFontEngine(QFontEngineFT *engine, const QFontDef &fontDef) const"
+absent = ["contrast", "Contrast"]
 
 # S4.5 icons: the KDE platform theme names Breeze and Qt's hicolor fallback; the sizes are the Breeze icon
 # theme's per KIconLoader group (KIconTheme reads `<Group>Default` from its index), and Kirigami's named sizes. A
@@ -7280,6 +8236,109 @@ kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
+# each context's other leaves (S2.9, S4.5): KIconLoader recolours a symbolic SVG's ColorScheme-Text paths with the
+# application palette's active WindowText (fill) and keeps every other path's colour (from_icon); the icon theme
+# states no weight, scale or animation for a group, and at rest (DefaultState) KIconLoader applies no effect
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+value = "from_icon"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.size"
 value = "22px"
@@ -7366,6 +8425,105 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.rendering_mode"
+value = "from_icon"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.weight"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.scale"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.state_effect"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.main_toolbar.animation"
+value = "absent"
+rows = ["K3.63", "K1.158"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
 
 [[fact]]
 key = "token.icons.sizes.small.size"
@@ -7455,6 +8613,105 @@ source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
+key = "token.icons.sizes.small.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.small.rendering_mode"
+value = "from_icon"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.small.weight"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.scale"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.state_effect"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.small.animation"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
 key = "token.icons.sizes.large.size"
 value = "48px"
 rows = ["K3.63"]
@@ -7540,6 +8797,105 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.large.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.large.rendering_mode"
+value = "from_icon"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.large.weight"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.scale"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.state_effect"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.large.animation"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
 
 [[fact]]
 key = "token.icons.sizes.panel.size"
@@ -7629,6 +8985,105 @@ source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
+key = "token.icons.sizes.panel.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.panel.rendering_mode"
+value = "from_icon"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.panel.weight"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.panel.scale"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.panel.state_effect"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.panel.animation"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
 key = "token.icons.sizes.dialog.size"
 value = "32px"
 rows = ["K3.63"]
@@ -7714,6 +9169,105 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.dialog.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.dialog.rendering_mode"
+value = "from_icon"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.dialog.weight"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.scale"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.state_effect"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.animation"
+value = "absent"
+rows = ["K3.63"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:1-19"
+quote = "DisplayDepth=32"
+absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.small.size"
@@ -7803,6 +9357,116 @@ source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
+key = "token.icons.sizes.keyed.small.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
 key = "token.icons.sizes.keyed.small_medium.size"
 value = "22px"
 rows = ["Q1.1"]
@@ -7888,6 +9552,116 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.small_medium.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.medium.size"
@@ -7977,6 +9751,116 @@ source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
+key = "token.icons.sizes.keyed.medium.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.medium.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
 key = "token.icons.sizes.keyed.large.size"
 value = "48px"
 rows = ["Q1.1"]
@@ -8062,6 +9946,116 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.large.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
 
 [[fact]]
 key = "token.icons.sizes.keyed.huge.size"
@@ -8151,6 +10145,116 @@ source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
 
 [[fact]]
+key = "token.icons.sizes.keyed.huge.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.huge.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
 key = "token.icons.sizes.keyed.enormous.size"
 value = "128px"
 rows = ["Q1.1"]
@@ -8236,6 +10340,323 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
 quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.enormous.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+# Kirigami's sizeForLabels: roundedIconSize of the default font's height (QFontMetrics::height, ascent plus
+# descent) stepped down to 16, 22, 32 or 48 (units.cpp:297-327); Noto Sans 10's height at the preset's
+# DPI needs the font's metrics, which no pinned source holds: pending U400
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.size"
+pending = "U400"
+rows = ["Q1.1"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.axes"
+value = {}
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.symbol_variants"
+value = []
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.symbolic_colors"
+value = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:89-101"
+quote = "d->highlightedText = palette.highlightedText().color(); d->accent = palette.accent().color(); if (!d->lastColorScheme || !d->lastPalette || palette != d->lastPalette) { d->lastPalette = palette; d->lastColorScheme = KColorScheme(QPalette::Active, KColorScheme::Window); } d->positiveText = d->lastColorScheme->foreground(KColorScheme::PositiveText).color().name(); d->neutralText = d->lastColorScheme->foreground(KColorScheme::NeutralText).color().name(); d->negativeText = d->lastColorScheme->foreground(KColorScheme::NegativeText).color().name(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name()) .arg(state == KIconLoader::SelectedState ? d->highlight.name() : d->background.name()) .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->highlight.name()) .arg(state == KIconLoader::SelectedState ? d->highlight.name() : d->highlightedText.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:671"
+quote = "palette.setBrush(state, QPalette::Window, schemeWindow.background());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:676-677"
+quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background()); palette.setBrush(state, QPalette::HighlightedText, schemeSelection.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:681"
+quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.fill"
+value = "= active(role.window.foreground)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:16-23"
+quote = "return QStringLiteral(\".ColorScheme-Text { color:%1; }\\ .ColorScheme-Background{ color:%2; }\\ .ColorScheme-Highlight{ color:%3; }\\ .ColorScheme-HighlightedText{ color:%4; }\\ .ColorScheme-PositiveText{ color:%5; }\\ .ColorScheme-NeutralText{ color:%6; }\\ .ColorScheme-NegativeText{ color:%7; }\\ .ColorScheme-Accent{ color:%8; }\\"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:86-88"
+quote = "d->text = palette.windowText().color(); d->background = palette.window().color(); d->highlight = palette.highlight().color();"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconcolors.cpp:122-128"
+quote = "return STYLESHEET_TEMPLATE() .arg(state == KIconLoader::SelectedState ? d->highlightedText.name() : d->text.name())"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1121"
+quote = "auto usedColors = colors ? *colors : d->mCustomColors ? d->mColors : KIconColors(qApp->palette());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:252-257"
+quote = "if (customColor != Qt::transparent) { KIconColors colors; colors.setText(customColor); return KDE::icon(name, colors); } else { return KDE::icon(name);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/gui/kernel/qpalette.h:141"
+quote = "ColorGroup currentGroup{Active};"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:670"
+quote = "palette.setBrush(state, QPalette::WindowText, schemeWindow.foreground());"
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.rendering_mode"
+value = "from_icon"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:719-720"
+quote = "if (q->theme() && q->theme()->followsColorScheme() && (path.endsWith(QLatin1String(\"svg\")) || path.endsWith(QLatin1String(\"svgz\")))) { buffer.setData(processSvg(path, state, colors));"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:690-705"
+quote = "if (!foundStyleSheet // && reader.tokenType() == QXmlStreamReader::StartElement // && reader.qualifiedName() == QLatin1String(\"style\") // && reader.attributes().value(QLatin1String(\"id\")) == QLatin1String(\"current-color-scheme\")) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze-icons@6.31.0 icons/commonthemeinfo.theme.in:6"
+quote = "FollowsColorScheme=true"
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.weight"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.scale"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.state_effect"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kiconloader.cpp:1173-1182"
+quote = "// apply effects. When changing the logic here also adapt makeCacheKey"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/primitives/shaders/icon.frag:41-46"
+quote = "// Highlight effect"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.for_labels.animation"
+value = "absent"
+rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:291-356"
+quote = "IconSizes::IconSizes(Units *units)"
+absent = []
+
+# neither Qt's icon loader nor KIconThemes looks up a direction variant; KStandardAction gives Back the
+# Forward icon and Forward the Back icon under right-to-left (its Prior / Next swaps name no IconRole)
+[[fact]]
+key = "token.icons.mirroring"
+value = { nav_back = { swap_with = "nav_forward" }, nav_forward = { swap_with = "nav_back" } }
+rows = ["K-P4-12†", "K-FM03†"]
+
+[[fact.cite]]
+kind = "published"
+source = "kconfigwidgets@6.31.0 src/kstandardaction.cpp:156-168"
+quote = "case Back: sLabel = i18nc(\"go back\", \"&Back\"); if (QGuiApplication::isRightToLeft()) { iconName = QStringLiteral(\"go-next\"); } break; case Forward: sLabel = i18nc(\"go forward\", \"&Forward\"); if (QGuiApplication::isRightToLeft()) { iconName = QStringLiteral(\"go-previous\"); } break;"
 
 # S4.6 keyed scalars: Kirigami's Units (flavour `kirigami`'s sizes; Plasma's integration leaves them at
 # Kirigami's defaults), and the icon effects (K3.60: KIconLoader's for Qt Widgets; Q3.18: Kirigami's icon shader).
