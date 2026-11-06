@@ -550,8 +550,8 @@ fi
 # this set. The clippy leg below that names it is the only lint of the
 # Linux-only ones (kde, freedesktop); the cross-target `--all-features` clippy
 # runs also lint the tests that are not Linux-only (the rasterizer's, for
-# one). The readers and the watchers are unlinked until the 0.8.0 plan's M1b,
-# so until then `portal` and `watch` add only their optional dependencies.
+# one). The 0.8.0 plan's M1b links the readers and the watchers back one by
+# one: `portal` and `watch` bring the GNOME reader and its watcher.
 # The strict panic lints name the set for the library.
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 

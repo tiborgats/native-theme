@@ -5713,6 +5713,7 @@ dependencies = [
  "objc2-core-text",
  "objc2-foundation 0.3.2",
  "png 0.18.1",
+ "pollster 1.0.1",
  "proptest",
  "resvg 0.48.1",
  "serde",

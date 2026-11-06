@@ -6,7 +6,7 @@
 use super::{preset_stack, synthetic_stack};
 use crate::blocks::text::ResolvedFont;
 use crate::declare::DefaultSize;
-use crate::error::{LayerError, ProblemKind, ThemeError};
+use crate::error::{LayerError, ProblemKind, ReaderStatus, ThemeError};
 use crate::gate::synthetic_layers;
 use crate::layer::Layer;
 use crate::presets::PresetId;
@@ -1305,5 +1305,81 @@ fn a_declared_input_missing_at_a_slot() {
     assert_eq!(
         named(stack.remove_reader_stand_in()),
         ["inputs.accent.dark: missing"]
+    );
+}
+
+/// `adwaita` on the synthetic route, its listed paths stated (S17).
+fn synthetic_adwaita() -> super::Theme {
+    let file = read_preset(PresetId::Adwaita.source()).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers).unwrap()
+}
+
+/// The reader status without a system reader: `NoReader`, `StandIn` while
+/// a stand-in is set; reloading reads nothing (S16).
+#[test]
+fn the_reader_status_without_a_system_reader() {
+    let mut theme = synthetic_adwaita();
+    assert_eq!(theme.reader_status(), ReaderStatus::NoReader);
+    assert_eq!(theme.reload_reader(), ReaderStatus::NoReader);
+    theme
+        .set_reader_stand_in(
+            crate::resolve::ReaderState::new(Scheme::Dark, 1.0),
+            Layer::default(),
+        )
+        .unwrap();
+    assert_eq!(theme.reader_status(), ReaderStatus::StandIn);
+    assert_eq!(theme.reload_reader(), ReaderStatus::StandIn);
+    theme.remove_reader_stand_in().unwrap();
+    assert_eq!(theme.reader_status(), ReaderStatus::NoReader);
+}
+
+/// A GNOME reading over `adwaita` (S9.3, S9.5): it validates as the reader
+/// layer, its state is the system's, the scheme in force its scheme, and
+/// the resolved theme shows its accent and its icon theme.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[test]
+fn a_gnome_reading_over_adwaita() {
+    use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
+
+    let mut theme = synthetic_adwaita();
+    let reading = crate::gnome::build_reading(
+        Some(ColorScheme::PreferDark),
+        Some(ashpd::desktop::Color::new(0.25, 0.5, 0.75)),
+        PortalContrast::High,
+        Some(ReducedMotion::ReducedMotion),
+        Some("wayland".to_string()),
+        |_: &str, key: &str| match key {
+            "icon-theme" => Some("Papirus".to_string()),
+            "text-scaling-factor" => Some("1.25".to_string()),
+            "enable-animations" => Some("false".to_string()),
+            "overlay-scrolling" => Some("true".to_string()),
+            _ => None,
+        },
+        PresetId::Adwaita,
+    );
+    let status = theme.take(reading, PresetId::Adwaita).unwrap();
+    assert_eq!(status, ReaderStatus::Read);
+    assert_eq!(theme.scheme(), Scheme::Dark);
+    let system = theme.system().unwrap();
+    assert_eq!(system.contrast, Some(crate::inputs::Contrast::High));
+    assert!(system.reduced_motion && system.animations_off && system.overlay_scrollbars);
+    assert_eq!(system.text_scaling_factor, 1.25);
+    let resolved = theme
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = resolved.root_scope(&root());
+    let tokens = resolved.tokens(&scope).unwrap();
+    assert_eq!(tokens.icons.theme.as_deref(), Some("Papirus"));
+    let accent = resolved.role(
+        &scope,
+        crate::blocks::part_style::RoleRef::Global(crate::roles::GlobalRole::Accent),
+    );
+    assert_eq!(
+        accent.map(crate::color::Color::to_srgb8_clamped),
+        Some([0x40, 0x80, 0xbf, 0xff])
     );
 }

@@ -20,13 +20,11 @@ const WATCHED: &[(&str, &str)] = &[
     ("org.freedesktop.appearance", "reduced-motion"),
     ("org.gnome.desktop.interface", "color-scheme"),
     ("org.gnome.desktop.interface", "enable-animations"),
-    ("org.gnome.desktop.interface", "font-name"),
-    ("org.gnome.desktop.interface", "monospace-font-name"),
     ("org.gnome.desktop.interface", "text-scaling-factor"),
     ("org.gnome.desktop.interface", "overlay-scrolling"),
     ("org.gnome.desktop.interface", "icon-theme"),
-    ("org.gnome.desktop.wm.preferences", "titlebar-font"),
     ("org.gnome.desktop.a11y.interface", "high-contrast"),
+    ("org.gnome.desktop.a11y.interface", "reduced-motion"),
 ];
 
 /// Whether the watcher fires on the `SettingChanged` of `namespace` `key`.
@@ -188,8 +186,8 @@ mod tests {
         let watched = [
             (
                 "org.gnome.desktop.interface",
-                "font-name",
-                Value::from("Cantarell 11"),
+                "icon-theme",
+                Value::from("Papirus"),
             ),
             (
                 "org.gnome.desktop.a11y.interface",

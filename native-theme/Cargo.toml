@@ -23,15 +23,15 @@ targets = [
 ]
 
 [features]
-# Each OS-specific dependency is compiled only on its own target. The platform
-# readers and the theme watcher are unlinked until the 0.8.0 plan's M1b ports
-# them: until then the reader features enable what each comment says.
+# Each OS-specific dependency is compiled only on its own target. The 0.8.0
+# plan's M1b ports the platform readers and their watchers one by one: until
+# each is back its feature enables what its comment says.
 
 # The KDE icon theme, read from the kdeglobals files as KConfig cascades them
 # (Linux); the KDE Plasma reader from M1b.
 kde = ["dep:configparser"]
-# Nothing until M1b, which brings back the GNOME and Budgie reader: the XDG
-# Desktop Portal settings and gsettings (Linux).
+# The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings
+# (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
 # The running Windows version, for `pipeline::diagnose_platform_support`; the
 # Windows reader from M1b.
@@ -46,8 +46,8 @@ linux-portal = ["portal"]
 linux = ["linux-kde", "linux-portal"]
 # Every platform feature.
 native = ["linux", "macos", "windows"]
-# Nothing until M1b, which brings back `watch::on_theme_change`: OS
-# theme-change notifications, on the platforms whose reader feature is on.
+# `watch::on_theme_change`: OS theme-change notifications, on the platforms
+# whose reader is back (GNOME, with `portal`).
 watch = ["dep:notify", "zbus?/blocking-api"]
 # The bundled Material Symbols icon set.
 material-icons = []
@@ -76,6 +76,7 @@ system-icons = [
 arc-swap = "1.9.2"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 native-theme-derive = { version = "0.8.0", path = "../native-theme-derive" }
+pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 toml = { workspace = true, features = ["preserve_order"] }
