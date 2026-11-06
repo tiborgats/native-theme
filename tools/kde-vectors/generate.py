@@ -2,15 +2,29 @@
 """The vector tables of the KDE platform functions (specification S2.2 *Checked against their references*), by the
 `compiled_source` route: the pinned upstream sources compiled unchanged into a harness that calls them.
 
-Writes `native-theme/tests/vectors/kirigami_lerp.tsv` and `native-theme/tests/vectors/kde_shade.tsv`:
+Writes these tables under `native-theme/tests/vectors/`:
 
-- `kirigami_lerp(a, b, balance)`: Kirigami's `ColorUtils::linearInterpolation`
+- `kirigami_lerp.tsv`, `kirigami_lerp(a, b, balance)`: Kirigami's `ColorUtils::linearInterpolation`
   (`kirigami@6.31.0 src/platform/colorutils.cpp:61-80`) over Qt's `QColor` (`qtbase@6.12.0
   src/gui/painting/qcolor.cpp`);
-- `kde_shade(c, role, contrast)`: `KColorScheme::shade(color, role, contrast)` with no chroma adjustment
-  (`kcolorscheme@6.31.0 src/kcolorscheme.cpp:566-616`), the contrast step scaled as `KColorScheme::contrastF` scales
-  it (`:526`), over KColorUtils' `shade` and `darken` and KHCY (`kguiaddons@6.31.0 src/colors/kcolorutils.cpp`,
-  `src/colors/kcolorspaces.cpp`) and Qt's `QColor`.
+- `kde_shade.tsv`, `kde_shade(c, role, contrast)`: `KColorScheme::shade(color, role, contrast)` with no chroma
+  adjustment (`kcolorscheme@6.31.0 src/kcolorscheme.cpp:566-616`), the contrast step scaled as `KColorScheme::contrastF`
+  scales it (`:526`), over KColorUtils' `shade` and `darken` and KHCY (`kguiaddons@6.31.0 src/colors/kcolorutils.cpp`,
+  `src/colors/kcolorspaces.cpp`) and Qt's `QColor`;
+- `kcu_mix.tsv`, `kcu_tint.tsv`, `kcu_shade.tsv`, `kcu_overlay.tsv`: `KColorUtils::mix`, `tint`, `shade` and
+  `overlayColors` (`kguiaddons@6.31.0 src/colors/kcolorutils.cpp`); `overlayColors` paints with the system's Qt
+  6.12.0 `QPainter` (its raster engine is not compiled from the pin);
+- `kirigami_tint.tsv`: Kirigami's `ColorUtils::tintWithAlpha` (`colorutils.cpp:230-245`);
+- `kde_effects.tsv`: KColorScheme's `StateEffects` (`kcolorscheme.cpp:22-97`) over an in-memory config holding the
+  effect tokens, applied as `KColorSchemePrivate::initFromConfig` applies them to a foreground, decoration or
+  background role (`:380-391`);
+- `kde_selection_inactive.tsv`: the Selection set's Inactive start, `KColorScheme(QPalette::Inactive, Selection,
+  config)` (`:304-321`, `:374-378`) over an in-memory config with the inactive effects disabled.
+
+The functions' inputs: the Breeze 6.8.2 colour schemes' colours (`breeze@6.8.2 colors/BreezeLight.colors`,
+`BreezeDark.colors`, read from the source cache) at the arguments the facts pass (`docs/facts/kde/`), the branches'
+boundaries, then seeded random inputs. The model's colours are f32 channels and its numbers f32: each enters Qt as
+`QColor::fromRgbF` takes the channels and as the f32 widened to the function's double.
 
 Each file is read from the source cache (`scripts/update_sources.sh`) as the commit `docs/facts/sources.toml` pins
 holds it, through git's objects (`tools/pinned.py`), and compiled as it is; `stubs/` stands in for the headers the
@@ -218,6 +232,436 @@ def write_table(path: Path, header, columns, rows):
     path.write_text("".join(line + "\n" for line in lines), encoding="utf-8")
 
 
+
+# ---- KColorUtils, Kirigami's tint and KColorScheme's effects: colours as the model holds them (f32 channels).
+
+BREEZE = "breeze@6.8.2"
+BREEZE_SCHEMES = [("light", "colors/BreezeLight.colors"), ("dark", "colors/BreezeDark.colors")]
+SETS = ["Window", "View", "Button", "Selection", "Tooltip", "Complementary", "Header"]
+FOREGROUND_KEYS = ["ForegroundNormal", "ForegroundInactive", "ForegroundActive", "ForegroundLink",
+                   "ForegroundVisited", "ForegroundNegative", "ForegroundNeutral", "ForegroundPositive"]
+DECORATION_KEYS = ["DecorationFocus", "DecorationHover"]
+BACKGROUND_KEYS = ["BackgroundNormal", "BackgroundAlternate"]
+KEY_KINDS = [(k, "foreground") for k in FOREGROUND_KEYS] + [(k, "decoration") for k in DECORATION_KEYS] + \
+            [(k, "background") for k in BACKGROUND_KEYS]
+# KColorScheme's calculated backgrounds tint the background toward these at KColorUtils::tint's default 0.3
+# (kcolorscheme.cpp:394-405), as the facts' `kcu_tint(<background>, <role>, 0.3)` do.
+TINTED_KEYS = ["ForegroundActive", "ForegroundLink", "ForegroundVisited", "ForegroundNegative", "ForegroundNeutral",
+               "ForegroundPositive"]
+GROUPS = ["active", "disabled", "inactive"]
+ROLE_KINDS = ["foreground", "decoration", "background"]
+INTENSITY = ["none", "shade", "darken", "lighten"]
+COLOR = ["none", "desaturate", "fade", "tint"]
+CONTRAST = ["none", "fade", "tint"]
+RANDOM_ROWS = 20
+SIXTEEN_BIT = 0.1   # the share of random colours drawn with 16-bit channels (a function's own result as an input)
+ONE = f32(1.0)
+
+
+def c8(r, g, b, a=255):
+    """A colour of 8-bit channels as the model holds it."""
+    return tuple(f32(x / 255) for x in (r, g, b, a))
+
+
+def c16(rgba16):
+    return tuple(f32(x / 65535) for x in rgba16)
+
+
+def colour_cell(c):
+    """`#rrggbb[aa]` where every channel is an 8-bit value, else `srgb(r, g, b, a)` of the f32s."""
+    bytes_ = [round(x * 255) for x in c]
+    if all(0 <= v <= 255 and f32(v / 255) == x for v, x in zip(bytes_, c)):
+        return hex_color(tuple(bytes_))
+    return "srgb(" + ", ".join(f32_text(x) for x in c) + ")"
+
+
+def colour_args(c):
+    return " ".join(f32_text(x) for x in c)
+
+
+def number_cell(x):
+    return f32_text(x)
+
+
+def bool_cell(x):
+    return "true" if x else "false"
+
+
+def result_cell(result):
+    return srgb(result[1:])
+
+
+def result_colour(result):
+    """A result as the model holds it, for a later call's input."""
+    return tuple(f32(x) for x in result[1:])
+
+
+def read_scheme(cache: Path, path: str):
+    """{group: {key: value}} of a Breeze scheme file, `[Colors:Header][Inactive]` as `Colors:Header][Inactive`."""
+    groups = {}
+    current = None
+    for line in pinned.pinned(cache, BREEZE, path).decode("utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            current = groups.setdefault(line[1:-1], {})
+        elif current is not None and "=" in line:
+            key, value = line.split("=", 1)
+            current[key] = value
+    return groups
+
+
+def scheme_colour(groups, group, key):
+    return c8(*(int(x) for x in groups[group][key].split(",")))
+
+
+def scheme_effects(groups, group):
+    """A `[ColorEffects:<group>]`'s tokens as KColorScheme reads Breeze's: (intensity, amount, color, amount,
+    colour, contrast, amount)."""
+    g = groups[f"ColorEffects:{group}"]
+    return (INTENSITY[int(g["IntensityEffect"])], f32(float(g["IntensityAmount"])),
+            COLOR[int(g["ColorEffect"])], f32(float(g["ColorAmount"])),
+            c8(*(int(x) for x in g["Color"].split(","))),
+            CONTRAST[int(g["ContrastEffect"])], f32(float(g["ContrastAmount"])))
+
+
+def random_colour(rng, translucent=0.3):
+    if rng.random() < SIXTEEN_BIT:
+        rgb = [rng.randrange(65536) for _ in range(3)]
+        a = 65535 if rng.random() >= translucent else rng.randrange(65536)
+        return c16((*rgb, a))
+    rgb = [rng.randrange(256) for _ in range(3)]
+    a = 255 if rng.random() >= translucent else rng.randrange(256)
+    return c8(*rgb, a)
+
+
+def random_colour8(rng):
+    return c8(*(rng.randrange(256) for _ in range(3)))
+
+
+def run_spec(exe: Path, calls):
+    """Each call's (spec, r, g, b, a); a call whose result is Qt's invalid colour gives spec 0."""
+    return run(exe, calls)
+
+
+def pick(rng, reference, fused, fixed, wanted_random):
+    """The fixed rows (each a valid colour), the random ones on which the fused build differs (up to FUSED_ROWS),
+    and wanted_random others, none an invalid colour; and the count of differing ones."""
+    bad = [i for i in range(fixed) if reference[i][0] == 0]
+    if bad:
+        sys.exit(f"fixed inputs {bad} give Qt's invalid colour")
+    valid = [i for i in range(fixed, len(reference)) if reference[i][0] != 0]
+    differing = [i for i in valid if reference[i] != fused[i]]
+    rows = list(range(fixed)) + differing[:FUSED_ROWS]
+    taken = set(rows)
+    others = [i for i in valid if i not in taken]
+    rows += rng.sample(others, wanted_random)
+    return rows, len(differing)
+
+
+def header(function, sources, inputs, comment):
+    return ([f"# function: {function}", "# route: compiled_source"] + [f"# source: {s}" for s in sources] +
+            ["# generations: kde-breeze", "# generator: tools/kde-vectors", f"# inputs: {inputs}",
+             "# outputs: result:colour"] + [f"# {line}" for line in comment])
+
+
+def extended_note(reference, rows):
+    n = sum(1 for i in rows if reference[i][0] == 5)
+    return [f"{n} rows give an extended-RGB colour (half-precision channels)."] if n else []
+
+
+def two_colour_table(rng, reference, fused, op, fixed_inputs, random_inputs, name, sources, third, comment):
+    """A table of `f(a, b, x)`: two colours and a number."""
+    inputs = fixed_inputs + random_inputs
+    calls = [f"{op} {colour_args(a)} {colour_args(b)} {f32_text(x)}" for a, b, x in inputs]
+    ref, fus = run_spec(reference, calls), run_spec(fused, calls)
+    rows, differing = pick(rng, ref, fus, len(fixed_inputs), RANDOM_ROWS)
+    a_name, b_name, x_name = third
+    write_table(
+        VECTORS / f"{name}.tsv",
+        header(name, sources, f"{a_name}:colour {b_name}:colour {x_name}:number",
+               comment(differing, len(random_inputs)) + extended_note(ref, rows)),
+        [a_name, b_name, x_name, "result"],
+        [[colour_cell(inputs[i][0]), colour_cell(inputs[i][1]), number_cell(inputs[i][2]), result_cell(ref[i])]
+         for i in rows],
+    )
+    return len(rows)
+
+
+def random_comment(what, differing, total):
+    return [f"then seeded random inputs: up to {FUSED_ROWS} on which a build with fused multiply-adds gives another",
+            f"colour ({differing} of {total}), and {RANDOM_ROWS} more. {what}"]
+
+
+def kcu_tables(rng, reference, fused, schemes):
+    counts = {}
+    sources = ["kguiaddons@6.31.0", "qtbase@6.12.0"]
+    blue, text = c8(61, 174, 233), c8(35, 38, 41)
+
+    # kcu_mix: the frame colour (background, foreground, frame contrast) and its halves, the facts' 0.15 mixes.
+    fixed = []
+    firsts = []
+    for _, groups in schemes:
+        for s in SETS:
+            bg = scheme_colour(groups, f"Colors:{s}", "BackgroundNormal")
+            fg = scheme_colour(groups, f"Colors:{s}", "ForegroundNormal")
+            fixed += [(bg, fg, f32(0.2)), (fg, bg, f32(0.15)), (bg, bg, f32(0.2))]
+            firsts.append((bg, fg))
+    frames = run_spec(reference, [f"kmix {colour_args(bg)} {colour_args(fg)} {f32_text(f32(0.2))}"
+                                  for bg, fg in firsts])
+    fixed += [(bg, result_colour(frame), f32(0.5)) for (bg, _), frame in zip(firsts, frames)]
+    for t in [0.0, 1.0, -0.25, 1.25, 0.5, 1e-7, 0.99999994]:
+        fixed.append((blue, text, f32(t)))
+    fixed += [(c8(255, 0, 0, 0), c8(0, 0, 255), f32(0.25)), (c8(255, 0, 0, 128), c8(0, 0, 255, 64), f32(0.5)),
+              (c8(255, 0, 0, 0), c8(0, 0, 255, 0), f32(0.5)), (c8(61, 174, 233, 204), c8(255, 255, 255), f32(0.3)),
+              (c8(255, 255, 255, 1), c8(0, 0, 0, 2), f32(0.5))]
+    randoms = [(random_colour(rng), random_colour(rng), f32(rng.random())) for _ in range(RANDOM_INPUTS)]
+    counts["kcu_mix"] = two_colour_table(
+        rng, reference, fused, "kmix", fixed, randoms, "kcu_mix", sources, ("a", "b", "bias"),
+        lambda d, n: ["written by tools/kde-vectors/generate.py; do not edit. Breeze's sets: the frame colour",
+                      "(background, foreground, 0.2), its half toward the background, the 0.15 mixes; the bias's",
+                      "ends and beyond them; translucent and transparent inputs;"] + random_comment(
+                          "A bias is an f32, passed to KColorUtils as that double.", d, n))
+
+    # kcu_tint: KColorScheme's calculated backgrounds (0.3), the Selection set's inactive background (0.4), the
+    # inactive contrast tint (0.1).
+    fixed = []
+    for _, groups in schemes:
+        for s in SETS:
+            bg = scheme_colour(groups, f"Colors:{s}", "BackgroundNormal")
+            fixed += [(bg, scheme_colour(groups, f"Colors:{s}", k), f32(0.3)) for k in TINTED_KEYS]
+        sel_bg = scheme_colour(groups, "Colors:Selection", "BackgroundNormal")
+        for k in BACKGROUND_KEYS:
+            fixed.append((scheme_colour(groups, "Colors:Window", k), sel_bg, f32(0.4)))
+        fixed.append((scheme_colour(groups, "Colors:Window", "ForegroundNormal"),
+                      scheme_colour(groups, "Colors:Window", "BackgroundNormal"), f32(0.1)))
+    for t in [0.0, 1.0, -0.1, 1.1, 0.5, 0.9, 0.01, 0.99999994]:
+        fixed.append((c8(239, 240, 241), blue, f32(t)))
+    fixed += [(text, text, f32(0.3)), (c8(0, 0, 0), c8(255, 255, 255), f32(0.3)),
+              (c8(255, 255, 255), c8(0, 0, 0), f32(0.3)), (c8(128, 128, 128), c8(255, 0, 0), f32(0.6)),
+              (c8(239, 240, 241, 128), blue, f32(0.3)), (c8(239, 240, 241), c8(61, 174, 233, 64), f32(0.3))]
+    randoms = [(random_colour(rng), random_colour(rng), f32(rng.random())) for _ in range(RANDOM_INPUTS)]
+    counts["kcu_tint"] = two_colour_table(
+        rng, reference, fused, "ktint", fixed, randoms, "kcu_tint", sources, ("a", "b", "amount"),
+        lambda d, n: ["written by tools/kde-vectors/generate.py; do not edit. Breeze's sets: each background tinted",
+                      "toward its active, link, visited, negative, neutral and positive text at 0.3, Window's",
+                      "backgrounds toward Selection's at 0.4, the text toward the background at 0.1; the amount's",
+                      "ends and beyond them; equal, black and white, grey and translucent inputs;"] + random_comment(
+                          "An amount is an f32, passed to KColorUtils as that double.", d, n))
+
+    # kcu_shade: no fact calls it; its luma and chroma offsets over each clamp and each hue sextant.
+    colours = [c8(239, 240, 241), c8(32, 35, 38), blue, c8(128, 128, 128), c8(0, 0, 0), c8(255, 255, 255),
+               c8(218, 68, 83), c8(39, 174, 96), c8(246, 116, 0), c8(155, 89, 182)]
+    fixed = [(c, f32(ky), f32(kc)) for c in colours for ky in [-0.1, 0.1, 0.6, -1.5, 1.5] for kc in [0.0, 0.2, -0.3]]
+    fixed += [(c8(*rgb), f32(0.1), f32(0.0)) for rgb in
+              [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255), (0, 0, 255), (255, 0, 255), (255, 0, 1)]]
+    fixed += [(c8(61, 174, 233, 128), f32(0.1), f32(0.1)), (blue, f32(0.0), f32(2.0))]
+    randoms = [(random_colour(rng), f32(rng.uniform(-1, 1)), f32(rng.uniform(-1, 1))) for _ in range(RANDOM_INPUTS)]
+    calls = [f"kshade {colour_args(c)} {f32_text(ky)} {f32_text(kc)}" for c, ky, kc in fixed + randoms]
+    ref, fus = run_spec(reference, calls), run_spec(fused, calls)
+    rows, differing = pick(rng, ref, fus, len(fixed), RANDOM_ROWS)
+    inputs = fixed + randoms
+    write_table(
+        VECTORS / "kcu_shade.tsv",
+        header("kcu_shade", sources, "c:colour luma:number chroma:number",
+               ["written by tools/kde-vectors/generate.py; do not edit. Breeze's colours, grey, black, white and",
+                "saturated ones at luma and chroma offsets inside and beyond the clamps; each hue sextant; alpha;"] +
+               random_comment("The offsets are f32s, passed to KColorUtils as those doubles.", differing,
+                              len(randoms)) + extended_note(ref, rows)),
+        ["c", "luma", "chroma", "result"],
+        [[colour_cell(inputs[i][0]), number_cell(inputs[i][1]), number_cell(inputs[i][2]), result_cell(ref[i])]
+         for i in rows],
+    )
+    counts["kcu_shade"] = len(rows)
+
+    # kcu_overlay: no fact calls it; a paint at every alpha's branch over an opaque and a translucent base.
+    fixed = []
+    for base in [c8(239, 240, 241), c8(32, 35, 38)]:
+        fixed += [(base, c8(61, 174, 233, a)) for a in [0, 1, 2, 64, 128, 200, 254, 255]]
+        fixed += [(base, c8(0, 0, 0, 25)), (base, c8(255, 255, 255, 128))]
+    fixed += [(c8(61, 174, 233, 100), c8(0, 0, 0, 128)), (c8(61, 174, 233, 0), c8(255, 255, 255, 64)),
+              (c8(239, 240, 241), c16((40000, 20000, 1000, 30000))), (c8(239, 240, 241), c16((65535, 0, 0, 100)))]
+    randoms = [(random_colour(rng), random_colour(rng, translucent=0.8)) for _ in range(RANDOM_INPUTS)]
+    calls = [f"koverlay {colour_args(a)} {colour_args(b)}" for a, b in fixed + randoms]
+    ref, fus = run_spec(reference, calls), run_spec(fused, calls)
+    rows, differing = pick(rng, ref, fus, len(fixed), RANDOM_ROWS)
+    inputs = fixed + randoms
+    write_table(
+        VECTORS / "kcu_overlay.tsv",
+        header("kcu_overlay", sources, "under:colour over:colour",
+               ["written by tools/kde-vectors/generate.py; do not edit. A paint at alpha 0, 1, 2, 64, 128, 200,",
+                "254 and 255 over Breeze's light and dark window backgrounds, translucent and 16-bit inputs;"] +
+               random_comment("QPainter's raster engine is the system's Qt 6.12.0 library, not compiled from the "
+                              "pin.", differing, len(randoms)) + extended_note(ref, rows)),
+        ["under", "over", "result"],
+        [[colour_cell(inputs[i][0]), colour_cell(inputs[i][1]), result_cell(ref[i])] for i in rows],
+    )
+    counts["kcu_overlay"] = len(rows)
+    return counts
+
+
+def kirigami_tint_table(rng, reference, fused, schemes):
+    # RoundButton's border: Qt.tint(textColor, Qt.alpha(<frame colour>, 0.8)), the frame colour kirigami_lerp's.
+    pairs = []
+    for _, groups in schemes:
+        for s in ["Button", "Window", "View"]:
+            pairs.append((scheme_colour(groups, f"Colors:{s}", "BackgroundNormal"),
+                          scheme_colour(groups, f"Colors:{s}", "ForegroundNormal")))
+    as8 = lambda c: tuple(round(x * 255) for x in c)
+    frames = run(reference, [lerp_call(as8(bg), as8(fg), f32(0.2)) for bg, fg in pairs])
+    fixed = [(fg, (*(f32(x) for x in frame[:3]), f32(0.8)), ONE) for (_, fg), frame in zip(pairs, frames)]
+    text, blue = c8(35, 38, 41), c8(61, 174, 233)
+    for tint_alpha in [255, 204, 128, 1, 0]:
+        for alpha in [1.0, 0.0, 0.5, 0.99999994, 1e-7]:
+            fixed.append((text, c8(61, 174, 233, tint_alpha), f32(alpha)))
+    fixed += [(c8(35, 38, 41, 128), blue, f32(0.5)), (c8(35, 38, 41, 128), c8(61, 174, 233, 64), f32(1.0)),
+              (c8(35, 38, 41, 0), c8(61, 174, 233, 64), f32(1.0)), (text, c16((65535, 0, 0, 65534)), ONE),
+              (text, c16((65535, 0, 0, 1)), ONE)]
+    randoms = []
+    for _ in range(RANDOM_INPUTS):
+        alpha = ONE if rng.random() < 0.3 else f32(rng.random())
+        randoms.append((random_colour(rng), random_colour(rng, translucent=0.6), alpha))
+    return two_colour_table(
+        rng, reference, fused, "rtint", fixed, randoms, "kirigami_tint",
+        ["kirigami@6.31.0", "qtbase@6.12.0"], ("c", "tint", "alpha"),
+        lambda d, n: ["written by tools/kde-vectors/generate.py; do not edit. RoundButton's border over Breeze's",
+                      "Button, Window and View sets (the text tinted by the frame colour, kirigami_lerp's at 0.2,",
+                      "at alpha 0.8); the tint's alpha 1, 0.8, 0.5, 1/255 and 0 at alpha 1, 0, 0.5, just below 1",
+                      "and just above 0; translucent and 16-bit inputs;"] + random_comment(
+                          "An alpha is an f32, passed to Kirigami as that double.", d, n))
+
+
+def effects_call(row):
+    c, bg, group, kind, intensity, iamount, color, camount, ccolor, contrast, kamount, enabled = row
+    return (f"effects {colour_args(c)} {colour_args(bg)} {GROUPS.index(group)} {ROLE_KINDS.index(kind)} "
+            f"{INTENSITY.index(intensity)} {f32_text(iamount)} {COLOR.index(color)} {f32_text(camount)} "
+            f"{colour_args(ccolor)} {CONTRAST.index(contrast)} {f32_text(kamount)} {int(enabled)}")
+
+
+def kde_effects_table(rng, reference, fused, schemes):
+    fixed = []
+    for _, groups in schemes:
+        disabled = scheme_effects(groups, "Disabled")
+        inactive = scheme_effects(groups, "Inactive")
+        enabled = groups["ColorEffects:Inactive"].get("Enable", "false") == "true"
+        # The disabled group over every set but Selection (whose Disabled group starts from Window's colours).
+        for s in [s for s in SETS if s != "Selection"]:
+            bg = scheme_colour(groups, f"Colors:{s}", "BackgroundNormal")
+            for key, kind in KEY_KINDS:
+                fixed.append((scheme_colour(groups, f"Colors:{s}", key), bg, "disabled", kind, *disabled, False))
+        # The inactive group: Window's colours as the file sets it (disabled in Breeze), then enabled; Header's
+        # [Inactive] colours.
+        bg = scheme_colour(groups, "Colors:Window", "BackgroundNormal")
+        hbg = scheme_colour(groups, "Colors:Header][Inactive", "BackgroundNormal")
+        for key, kind in KEY_KINDS:
+            c = scheme_colour(groups, "Colors:Window", key)
+            fixed.append((c, bg, "inactive", kind, *inactive, enabled))
+            fixed.append((c, bg, "inactive", kind, *inactive, True))
+            fixed.append((scheme_colour(groups, "Colors:Header][Inactive", key), hbg, "inactive", kind, *inactive,
+                          True))
+    # Every combination of the three effects, KColorScheme's unset amounts and colours (kcolorscheme.cpp:41-48),
+    # the colour effects at a non-zero amount.
+    text, window = c8(35, 38, 41), c8(239, 240, 241)
+    for intensity in INTENSITY:
+        for color in COLOR:
+            for contrast in CONTRAST:
+                camount = {"desaturate": -0.9, "fade": 0.3, "tint": 0.3}.get(color, 0.0)
+                for kind, c in [("foreground", text), ("background", window)]:
+                    fixed.append((c, window, "disabled", kind, intensity, f32(0.1), color, f32(camount),
+                                  c8(56, 56, 56), contrast, f32(0.65), False))
+    for kind in ROLE_KINDS:
+        fixed.append((text, window, "active", kind, "darken", f32(0.1), "fade", f32(0.3), c8(56, 56, 56), "fade",
+                      f32(0.65), True))
+    # The amounts' edges.
+    for intensity, amount in [("shade", -0.5), ("shade", 1.5), ("darken", 1.0), ("lighten", 1.0), ("lighten", -0.5)]:
+        fixed.append((c8(61, 174, 233), window, "inactive", "background", intensity, f32(amount), "none",
+                      f32(0.0), c8(112, 111, 110), "none", f32(0.0), True))
+    for color, amount in [("desaturate", 1.0), ("desaturate", 2.0), ("fade", 0.0), ("fade", 1.0), ("tint", 1.0),
+                          ("tint", 0.0)]:
+        fixed.append((c8(61, 174, 233), window, "inactive", "background", "none", f32(0.0), color, f32(amount),
+                      c8(112, 111, 110), "none", f32(0.0), True))
+    for contrast, amount in [("fade", 1.0), ("tint", 1.0), ("fade", -0.5)]:
+        fixed.append((text, window, "disabled", "foreground", "none", f32(0.0), "none", f32(0.0), c8(56, 56, 56),
+                      contrast, f32(amount), False))
+    randoms = []
+    for _ in range(RANDOM_INPUTS):
+        randoms.append((random_colour(rng, translucent=0.1), random_colour(rng, translucent=0.1),
+                        rng.choice(["disabled", "disabled", "inactive", "inactive", "active"]),
+                        rng.choice(ROLE_KINDS), rng.choice(INTENSITY), f32(rng.uniform(-0.5, 1.2)),
+                        rng.choice(COLOR), f32(rng.uniform(-1, 1.2)), random_colour8(rng), rng.choice(CONTRAST),
+                        f32(rng.uniform(-0.2, 1.1)), rng.random() < 0.5))
+    inputs = fixed + randoms
+    calls = [effects_call(row) for row in inputs]
+    ref, fus = run_spec(reference, calls), run_spec(fused, calls)
+    rows, differing = pick(rng, ref, fus, len(fixed), RANDOM_ROWS)
+    write_table(
+        VECTORS / "kde_effects.tsv",
+        header("kde_effects", ["kcolorscheme@6.31.0", "kguiaddons@6.31.0", "qtbase@6.12.0"],
+               "c:colour background:colour group:enum<KdeGroup> role_kind:enum<KdeRoleKind> "
+               "intensity:enum<KdeIntensityEffect> intensity_amount:number color:enum<KdeColorEffect> "
+               "color_amount:number color_color:colour contrast:enum<KdeContrastEffect> contrast_amount:number "
+               "inactive_enabled:bool",
+               ["written by tools/kde-vectors/generate.py; do not edit. The operands after role_kind are the",
+                "row's group's token.kde.<group> fields (for group active, unread) and token.kde.inactive_enabled.",
+                "Breeze's disabled effects over every set's roles but Selection's; its inactive effects over",
+                "Window's roles as the file sets them (not enabled) and enabled, and over Header's [Inactive]",
+                "roles; every combination of the three effects at KColorScheme's unset amounts; group active;",
+                "the amounts' edges;"] + random_comment(
+                    "The amounts are f32s, read by KColorScheme as those doubles.", differing, len(randoms))
+               + extended_note(ref, rows)),
+        ["c", "background", "group", "role_kind", "intensity", "intensity_amount", "color", "color_amount",
+         "color_color", "contrast", "contrast_amount", "inactive_enabled", "result"],
+        [[colour_cell(r[0]), colour_cell(r[1]), r[2], r[3], r[4], number_cell(r[5]), r[6], number_cell(r[7]),
+          colour_cell(r[8]), r[9], number_cell(r[10]), bool_cell(r[11]), result_cell(ref[i])]
+         for i in rows for r in [inputs[i]]],
+    )
+    return len(rows)
+
+
+def kde_selection_inactive_table(rng, reference, fused, schemes):
+    fixed = []
+    for _, groups in schemes:
+        sel_bg = scheme_colour(groups, "Colors:Selection", "BackgroundNormal")
+        for key, kind in KEY_KINDS:
+            for change in [True, False]:
+                fixed.append((scheme_colour(groups, "Colors:Selection", key), scheme_colour(groups, "Colors:Window", key),
+                              sel_bg, kind, change))
+    fixed += [(c8(255, 255, 255), c8(239, 240, 241, 128), c8(61, 174, 233), "background", True),
+              (c8(255, 255, 255), c8(0, 0, 0), c8(255, 255, 255), "background", True)]
+    randoms = [(random_colour8(rng), random_colour8(rng), random_colour8(rng), rng.choice(ROLE_KINDS),
+                rng.random() < 0.7) for _ in range(RANDOM_INPUTS)]
+    inputs = fixed + randoms
+    calls = [f"selinactive {colour_args(s)} {colour_args(w)} {colour_args(b)} {ROLE_KINDS.index(k)} {int(ch)}"
+             for s, w, b, k, ch in inputs]
+    ref, fus = run_spec(reference, calls), run_spec(fused, calls)
+    rows, differing = pick(rng, ref, fus, len(fixed), RANDOM_ROWS)
+    write_table(
+        VECTORS / "kde_selection_inactive.tsv",
+        header("kde_selection_inactive", ["kcolorscheme@6.31.0", "kguiaddons@6.31.0", "qtbase@6.12.0"],
+               "selection:colour window:colour selection_background:colour role_kind:enum<KdeRoleKind> "
+               "inactive_change_selection_color:bool",
+               ["written by tools/kde-vectors/generate.py; do not edit. Breeze's Selection and Window roles, each",
+                "key at its kind, with the switch on and off; a translucent window colour;"] + random_comment(
+                    "The colours are 8-bit (KColorScheme reads them from a config).", differing, len(randoms))
+               + extended_note(ref, rows)),
+        ["selection", "window", "selection_background", "role_kind", "inactive_change_selection_color", "result"],
+        [[colour_cell(r[0]), colour_cell(r[1]), colour_cell(r[2]), r[3], bool_cell(r[4]), result_cell(ref[i])]
+         for i in rows for r in [inputs[i]]],
+    )
+    return len(rows)
+
+
+def new_tables(rng, reference, fused, source_cache):
+    schemes = [(name, read_scheme(source_cache, path)) for name, path in BREEZE_SCHEMES]
+    counts = kcu_tables(rng, reference, fused, schemes)
+    counts["kirigami_tint"] = kirigami_tint_table(rng, reference, fused, schemes)
+    counts["kde_effects"] = kde_effects_table(rng, reference, fused, schemes)
+    counts["kde_selection_inactive"] = kde_selection_inactive_table(rng, reference, fused, schemes)
+    for name, n in counts.items():
+        print(f"{name}.tsv: {n} rows")
+
+
 def main():
     if qt_version() != QT_VERSION:
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
@@ -289,6 +733,7 @@ def main():
              for i in rows],
         )
 
+        new_tables(rng, reference, fused, source_cache)
 
 if __name__ == "__main__":
     main()
