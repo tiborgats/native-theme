@@ -4,17 +4,12 @@
 
 Reads `scripts/widget_units.toml` (the units, below) and the catalogue
 (`docs/todo_v0.7.1_model-completeness-spec-widgets.md`) through scripts/spec_catalogue.py's API only, and writes, for
-the widgets of the enabled units, `native-theme/src/next/widgets/gen_<widget>.rs` (the `ThemeParts` derive's input
+the widgets of the enabled units, `native-theme/src/widgets/gen_<widget>.rs` (the `ThemeParts` derive's input
 `<Widget>Theme`, one `#[part(...)]` per part; the widget's values struct `<Widget>Values`; the entry's own enums) and
-`native-theme/src/next/widgets/gen_index.rs` (`WidgetKind`, `Variant`, `TypedPart`, `WidgetsPatch`,
+`native-theme/src/widgets/gen_index.rs` (`WidgetKind`, `Variant`, `TypedPart`, `WidgetsPatch`,
 `WidgetValuesPatch`, the shared value types the units use, the widgets' slots and the registry's list). Each file
 goes through `rustfmt` from stdin. The other files of the widgets module (`mod.rs`, `tests.rs`) are written by hand
 and never touched; a `gen_*.rs` the units do not produce is stale.
-
-The folder and the model's paths follow the switch (model_paths): while `native-theme/src/next/mod.rs` exists the
-model is `crate::next` and the files are written under `native-theme/src/next/widgets/`; once the switch has moved
-`next` into place (the M1a design's task 17), the model is `crate` and the folder `native-theme/src/widgets/`. The
-script reads one folder, never both.
 
 Run from the repository root:
 
@@ -89,7 +84,7 @@ import spec_catalogue
 
 ROOT = Path(".")
 UNITS = Path("scripts/widget_units.toml")
-NEXT_MOD = Path("native-theme/src/next/mod.rs")
+OUT_DIR = Path("native-theme/src/widgets")
 INDEX = "gen_index.rs"
 HAND_WRITTEN_FILES = ("mod.rs", "tests.rs")
 
@@ -100,7 +95,7 @@ SUFFIXES = {"Px": "_px", "Ms": "_ms", "Deg": "_deg"}
 AUTO_MARK = "(`Auto`"
 PLAIN = {"bool", "u32", "u16", "f32", "String"}
 FOCUS_VISIBLE_WHEN = ("focus_visible_when", "Value<FocusVisibleWhen>")
-# The model's own types a widget value may hold: the module that defines each (its path in the model, uses()
+# The model's own types a widget value may hold: the module that defines each (its path in the crate, uses()
 # prefixing it), and for a block how a patch sets it (S6.1: "fields" field by field, "set" whole) and whether its list
 # merges by its items' keys.
 MODEL_TYPES = {
@@ -123,14 +118,6 @@ HEADER = """\
 
 class InputError(Exception):
     pass
-
-
-def model_paths(root: Path) -> tuple:
-    """(the generated files' folder, the model's crate path): `next`'s while native-theme/src/next/mod.rs exists, the
-    crate root's after the switch."""
-    if (root / NEXT_MOD).is_file():
-        return Path("native-theme/src/next/widgets"), "crate::next"
-    return Path("native-theme/src/widgets"), "crate"
 
 
 # ------------------------------------------------------------------------------------------------- the units
@@ -580,12 +567,12 @@ def value_type(v: ValueDecl) -> tuple:
     return v.ty, marks, imports
 
 
-def uses(imports, model: str) -> list:
-    """The `use` lines of (module, name) pairs: a `super` module as it is, a model's module under `model`."""
+def uses(imports) -> list:
+    """The `use` lines of (module, name) pairs: a `super` module as it is, a model's module under `crate`."""
     by_module = {}
     for module, name in imports:
         if module != "super" and not module.startswith("super::"):
-            module = f"{model}::{module}"
+            module = f"crate::{module}"
         by_module.setdefault(module, set()).add(name)
     out = []
     for module in sorted(by_module):
@@ -594,7 +581,7 @@ def uses(imports, model: str) -> list:
     return out
 
 
-def widget_file(w: Widget, shared_names: set, model: str) -> str:
+def widget_file(w: Widget, shared_names: set) -> str:
     W = camel(w.name)
     imports = {("blocks::part_style", "PartStyle")}
     body = []
@@ -649,11 +636,11 @@ def widget_file(w: Widget, shared_names: set, model: str) -> str:
         head += "//\n" + "\n".join(x.replace("///", "//", 1) for x in wrap_doc(note, "")) + "\n"
     lines = [head] + [x.replace("///", "//!", 1) for x in wrap_doc(
         f"`{w.name}` (the catalogue): its parts, its widget values and its own types.", "")] + [
-             "", "use native_theme_derive::ThemeParts;", ""] + uses(imports, model) + [""] + body
+             "", "use native_theme_derive::ThemeParts;", ""] + uses(imports) + [""] + body
     return "\n".join(lines) + "\n"
 
 
-def index_file(widgets: list, shared: dict, model: str) -> str:
+def index_file(widgets: list, shared: dict) -> str:
     out = [HEADER] + [x.replace("///", "//!", 1) for x in wrap_doc(
         "The index over the enabled units' typed widgets (S1, S6.1): their kinds, typed variants and parts, their "
         "patches, their slots, their readers and the registry's list.", "")] + ["", "use native_theme_derive::ThemeParts;",
@@ -669,7 +656,7 @@ def index_file(widgets: list, shared: dict, model: str) -> str:
         imports.add((f"super::gen_{w.name}", f"{W}Theme"))
         exports.append((f"super::gen_{w.name}", sorted([f"{W}Part", f"{W}Patch", f"{W}Values", f"{W}ValuesPatch",
                                                          f"Resolved{W}Values"] + [e.name for e in w.enums])))
-    out += uses(imports, model)
+    out += uses(imports)
     for module, names in exports:
         out.append(f"pub use {module}::{{{', '.join(names)}}};")
     out.append("")
@@ -847,7 +834,6 @@ def generate(root: Path) -> dict:
     entries = {e.name: e for e in spec_catalogue.entries(text) if e.kind == "typed"}
     shared_table = spec_catalogue.shared_types(text)
     pairs = spec_catalogue.content_variants(text)
-    model = model_paths(root)[1]
     shared, widgets = {}, []
     for name in units.widgets():
         entry = entries.get(name)
@@ -856,27 +842,26 @@ def generate(root: Path) -> dict:
         widget = read_widget(entry, units, shared_table, shared)
         widget.content_variants = content_variants_of(widget, pairs)
         widgets.append(widget)
-    out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared), model), f"gen_{w.name}.rs") for w in widgets}
-    out[INDEX] = rustfmt(index_file(widgets, shared, model), INDEX)
+    out = {f"gen_{w.name}.rs": rustfmt(widget_file(w, set(shared)), f"gen_{w.name}.rs") for w in widgets}
+    out[INDEX] = rustfmt(index_file(widgets, shared), INDEX)
     return out
 
 
 def differences(root: Path, files: dict) -> list:
     out = []
-    out_dir = model_paths(root)[0]
-    folder = root / out_dir
+    folder = root / OUT_DIR
     for name, content in files.items():
         path = folder / name
         if not path.exists() or path.read_text(encoding="utf-8") != content:
-            out.append(f"{out_dir / name}: differs from what the catalogue states (run scripts/generate_widgets.py)")
+            out.append(f"{OUT_DIR / name}: differs from what the catalogue states (run scripts/generate_widgets.py)")
     for path in sorted(folder.glob("gen_*.rs")):
         if path.name not in files:
-            out.append(f"{out_dir / path.name}: stale, no enabled unit produces it")
+            out.append(f"{OUT_DIR / path.name}: stale, no enabled unit produces it")
     return out
 
 
 def write(root: Path, files: dict) -> None:
-    folder = root / model_paths(root)[0]
+    folder = root / OUT_DIR
     for path in folder.glob("gen_*.rs"):
         if path.name not in files:
             path.unlink()
@@ -988,7 +973,7 @@ def self_test() -> int:
                 failures.append(f"{label}: refused with {err}, want {needle!r}")
     expect("words", words("RightOrUp"), "Right or up.")
     expect("drop groups", drop_groups("a (b (c)) `(d)` , e"), "a `(d)`, e")
-    code = widget_file(w, set(shared), "crate::next")
+    code = widget_file(w, set(shared))
     for needle in ['#[part(root, fields(fill, stroke), absent(stroke))]', '#[part(element, fields(text))]',
                    '#[part(may_be_absent, parent = "label", fields(glyph))]', "pub gap: Value<Px>,",
                    '#[parts(block = "fields", keyed)]', "#[parts(auto)]\n    pub reach: Value<Px>,",
@@ -996,19 +981,15 @@ def self_test() -> int:
                    '#[parts(block = "set")]\n    pub focus_visible_when: Value<FocusVisibleWhen>,',
                    "use super::gen_index::Side;", "Deferred (scripts/widget_units.toml): `spot` to `placement`.",
                    "pub enum Turn {", "    /// Right or up.\n    RightOrUp,",
-                   "use crate::next::blocks::part_style::PartStyle;", "use crate::next::units::Px;"]:
+                   "use crate::blocks::part_style::PartStyle;", "use crate::units::Px;"]:
         if needle not in code:
             failures.append(f"widget file lacks {needle!r}:\n{code}")
-    index = index_file([w], shared, "crate::next")
+    index = index_file([w], shared)
     for needle in ["pub enum WidgetKind {\n    /// `knob`.\n    Knob,", "    /// `round`, a typed variant of `knob`.",
                    "    Knob(KnobPart),", "pub knob: Option<Box<KnobPatch>>,", "variants: &[Variant::Flat, Variant::Round],",
-                   "pub enum Side {", "use crate::next::blocks::{Apply, MergeConflict};"]:
+                   "pub enum Side {", "use crate::blocks::{Apply, MergeConflict};"]:
         if needle not in index:
             failures.append(f"index lacks {needle!r}:\n{index}")
-    # after the switch: the model is the crate root, and only the paths change
-    for label, before, after in [("widget file", code, widget_file(w, set(shared), "crate")),
-                                 ("index", index, index_file([w], shared, "crate"))]:
-        expect(f"{label} after the switch", after, before.replace("crate::next::", "crate::"))
 
     for label, text, needle in [
         ("deferral to an enabled unit", 'slice = ["knob"]\n[deferred.knob]\nspot = "placement"\n'
@@ -1068,28 +1049,18 @@ def self_test() -> int:
     refused("untyped value", SELF_TEST_UNITS, SELF_TEST_CATALOGUE.replace("`side: Value<Side>`", "`side` (a note)"),
             "states no type")
 
-    # the folder: next's while next/mod.rs exists, the crate root's after the switch, never both
-    for layout, out_dir, other in [("before the switch", "native-theme/src/next/widgets", "native-theme/src/widgets"),
-                                   ("after the switch", "native-theme/src/widgets", "native-theme/src/next/widgets")]:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            if layout == "before the switch":
-                (root / NEXT_MOD).parent.mkdir(parents=True)
-                (root / NEXT_MOD).write_text("", encoding="utf-8")
-            expect(f"model paths {layout}", model_paths(root),
-                   (Path(out_dir), "crate::next" if layout == "before the switch" else "crate"))
-            for folder, files in [(root / out_dir, [("gen_same.rs", "a\n"), ("gen_differs.rs", "b\n"),
-                                                    ("gen_stale.rs", "c\n"), ("mod.rs", "d\n")]),
-                                  (root / other, [("gen_other.rs", "f\n")])]:
-                folder.mkdir(parents=True, exist_ok=True)
-                for name, content in files:
-                    (folder / name).write_text(content, encoding="utf-8")
-            expect(f"differences {layout}", differences(root, {"gen_same.rs": "a\n", "gen_differs.rs": "B\n",
-                                                                 "gen_missing.rs": "e\n"}), [
-                f"{out_dir}/gen_differs.rs: differs from what the catalogue states (run scripts/generate_widgets.py)",
-                f"{out_dir}/gen_missing.rs: differs from what the catalogue states (run scripts/generate_widgets.py)",
-                f"{out_dir}/gen_stale.rs: stale, no enabled unit produces it",
-            ])
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp) / OUT_DIR
+        folder.mkdir(parents=True)
+        for name, content in [("gen_same.rs", "a\n"), ("gen_differs.rs", "b\n"), ("gen_stale.rs", "c\n"),
+                              ("mod.rs", "d\n")]:
+            (folder / name).write_text(content, encoding="utf-8")
+        expect("differences", differences(Path(tmp), {"gen_same.rs": "a\n", "gen_differs.rs": "B\n",
+                                                       "gen_missing.rs": "e\n"}), [
+            f"{OUT_DIR / 'gen_differs.rs'}: differs from what the catalogue states (run scripts/generate_widgets.py)",
+            f"{OUT_DIR / 'gen_missing.rs'}: differs from what the catalogue states (run scripts/generate_widgets.py)",
+            f"{OUT_DIR / 'gen_stale.rs'}: stale, no enabled unit produces it",
+        ])
 
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)

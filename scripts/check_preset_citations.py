@@ -12,10 +12,7 @@ defines, the value, and the presets it is stated on: S9.4's
 presets alone: on another key, another value or another preset it is a
 finding. A comment naming another section is no definition comment.
 
-The presets are the new model's bundled ones, `<preset folder>/*.toml`, one
-folder, never both: `native-theme/src/next/presets/` while
-`native-theme/src/next/mod.rs` exists, `native-theme/src/presets/` once the
-switch has moved `next` into place.
+The presets are the bundled ones, `native-theme/src/presets/*.toml`.
 
 Run from the repository root:
 
@@ -36,7 +33,7 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-NEXT_MOD = Path("native-theme/src/next/mod.rs")
+PRESETS = Path("native-theme/src/presets")
 # the values the specification defines (S11, S17): section -> (TOML path, value, the presets stating it)
 DEFINITIONS = {
     "S9.4": ("tokens.text.font_dpi", 72, lambda p: p.startswith(("macos-", "ios-"))),
@@ -50,13 +47,6 @@ VALUE = re.compile(r"([A-Za-z0-9_.]+)\s*=")
 class InputError(Exception):
     """A preset the rule cannot read."""
 
-
-def preset_dir(root: Path) -> Path:
-    """The new model's preset folder: native-theme/src/next/presets while next's mod.rs exists,
-    native-theme/src/presets once the switch has moved `next` into place. One folder, never both."""
-    if (root / NEXT_MOD).is_file():
-        return Path("native-theme/src/next/presets")
-    return Path("native-theme/src/presets")
 
 
 def definition_findings(name: str, text: str) -> list:
@@ -173,13 +163,6 @@ def self_test() -> int:
             failures.append("a folder without presets: accepted")
         except InputError:
             pass
-        root = Path(root)
-        if preset_dir(root) != Path("native-theme/src/presets"):
-            failures.append(f"the folder without next's mod.rs: got {preset_dir(root)}")
-        (root / NEXT_MOD).parent.mkdir(parents=True)
-        (root / NEXT_MOD).write_text("", encoding="utf-8")
-        if preset_dir(root) != Path("native-theme/src/next/presets"):
-            failures.append(f"the folder with next's mod.rs: got {preset_dir(root)}")
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
@@ -195,7 +178,7 @@ def main(argv: list[str]) -> int:
         return 2
     out = []
     try:
-        for name, text in load_presets(preset_dir(Path("."))).items():
+        for name, text in load_presets(PRESETS).items():
             out += definition_findings(name, text)
     except (OSError, InputError) as err:
         print(f"error: {err}", file=sys.stderr)

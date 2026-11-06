@@ -269,17 +269,14 @@ finding. The generation rule applies as to a fact.
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
 `scheme_file` or `accent`; its sources' entries are palette entries (`generations = []`, `palette = true`). Every
-bundled palette (bundled_palettes(): a file of preset_dir() whose `[preset] kind` is `"palette"`) has every
+bundled palette (bundled_palettes(): a file of PRESET_DIR whose `[preset] kind` is `"palette"`) has every
 `[palette.sources]` value a palette-fact key, every key of `[palette.sources]` and `[palette.picks]` the TOML path of a
 string it states holding a colour literal, and every such string in exactly one of the two (S11, S14). Today no
 bundled palette exists, so this rule checks nothing on the repository; the self-test runs it.
 
-existing_presets() is the one function that says which presets exist: the stems of the new model's presets,
-`<preset_dir()>/<id>.toml`, that are platform presets. preset_dir() is `native-theme/src/next/presets/` while
-`native-theme/src/next/mod.rs` exists and `native-theme/src/presets/` once the switch has moved `next` into place
-(model_dir(), the M1a design's task 17), one folder, never both: until the move today's presets in
-`native-theme/src/presets/` do not count (the M1a design's decision 8). The directory may be absent or empty: then no
-preset exists and the generation rule asks nothing of a fact without `preset:`.
+existing_presets() is the one function that says which presets exist: the stems of the bundled presets,
+`native-theme/src/presets/<id>.toml` (PRESET_DIR), that are platform presets. The directory may be absent or empty:
+then no preset exists and the generation rule asks nothing of a fact without `preset:`.
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
@@ -303,7 +300,8 @@ CORE = Path("docs/todo_v0.7.1_model-completeness-spec.md")
 CATALOGUE = Path("docs/todo_v0.7.1_model-completeness-spec-widgets.md")
 GAP_MAPS = [Path(f"docs/todo_v0.7.1_model-completeness-gap-map-{p}.md")
             for p in ("gnome", "ios", "kde", "macos", "material", "windows")]
-NEXT_MOD = Path("native-theme/src/next/mod.rs")
+MODEL_DIR = Path("native-theme/src")
+PRESET_DIR = MODEL_DIR / "presets"
 PLATFORMS = {
     "gnome": ("adwaita",),
     "kde": ("kde-breeze",),
@@ -587,29 +585,18 @@ def gap_map_rows(root: Path) -> set | None:
     return out if found else None
 
 
-def model_dir(root: Path) -> Path:
-    """The new model's source folder: native-theme/src/next while its mod.rs exists, native-theme/src once the switch
-    has moved `next` into place. One folder, never both."""
-    return Path("native-theme/src/next") if (root / NEXT_MOD).is_file() else Path("native-theme/src")
-
-
-def preset_dir(root: Path) -> Path:
-    """The new model's preset folder (model_dir()'s `presets`)."""
-    return model_dir(root) / "presets"
-
-
 def existing_presets(root: Path) -> set:
-    """The platform presets that exist: the stems of the new model's <preset_dir()>/<id>.toml."""
-    d = root / preset_dir(root)
+    """The platform presets that exist: the stems of PRESET_DIR's <id>.toml."""
+    d = root / PRESET_DIR
     if not d.is_dir():
         return set()
     return {p.stem for p in d.glob("*.toml") if p.stem in ALL_PRESETS}
 
 
 def bundled_palettes(root: Path) -> list:
-    """(path, text, data) of every file of preset_dir() whose [preset] kind is "palette" (S11, S14)."""
+    """(path, text, data) of every file of PRESET_DIR whose [preset] kind is "palette" (S11, S14)."""
     out = []
-    d = root / preset_dir(root)
+    d = root / PRESET_DIR
     if not d.is_dir():
         return out
     for p in sorted(d.glob("*.toml")):
@@ -4049,7 +4036,7 @@ source = "microsoft-ui-xaml@2.5.1"
 os = "26100.4946"
 toolkit = "WindowsAppSDK 2.5.1"
 ''',
-    "native-theme/src/next/presets/catppuccin-mocha.toml": '''
+    "native-theme/src/presets/catppuccin-mocha.toml": '''
 [preset]
 id = "catppuccin-mocha"
 kind = "palette"
@@ -4068,16 +4055,13 @@ foreground = "#cdd6f4"
 
 
 def write_fixture(root: Path, files: dict):
-    """The fixture tree, laid out as before the switch (`next/mod.rs` there)."""
     for rel, text in files.items():
         p = root / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
     (root / FACTS).mkdir(parents=True, exist_ok=True)
     (root / SOURCES).write_text(SELF_TEST_SOURCES, encoding="utf-8")
-    (root / NEXT_MOD).parent.mkdir(parents=True, exist_ok=True)
-    (root / NEXT_MOD).write_text("", encoding="utf-8")
-    pdir = root / preset_dir(root)
+    pdir = root / PRESET_DIR
     pdir.mkdir(parents=True, exist_ok=True)
     for p in ALL_PRESETS:
         (pdir / f"{p}.toml").write_text("", encoding="utf-8")
@@ -4458,12 +4442,12 @@ SELF_TEST_CASES = [
      "breeze@6.8.2", ["is not a palette entry"]),
     ("Catppuccin: a value not a colour", "docs/facts/palettes/catppuccin.toml", 'value = "#313244"',
      'value = "surface0"', ["is not a colour literal"]),
-    ("palette: a source naming no fact", "native-theme/src/next/presets/catppuccin-mocha.toml",
+    ("palette: a source naming no fact", "native-theme/src/presets/catppuccin-mocha.toml",
      '= "catppuccin.mocha.surface0"', '= "catppuccin.mocha.surface9"', ["is not a palette-fact key"]),
-    ("palette: a colour in both", "native-theme/src/next/presets/catppuccin-mocha.toml",
+    ("palette: a colour in both", "native-theme/src/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.background" = "the guide',
      ["is in both", "is in neither"]),
-    ("palette: a pick naming no colour", "native-theme/src/next/presets/catppuccin-mocha.toml",
+    ("palette: a pick naming no colour", "native-theme/src/presets/catppuccin-mocha.toml",
      '"colors.dark.surfaces.window.foreground" = "the guide', '"colors.dark.surfaces.window.fg" = "the guide',
      ["'colors.dark.surfaces.window.fg' is not a stated colour literal's path", "is in neither"]),
     # a pending measurement (S17, ADD-A122)
@@ -5120,25 +5104,15 @@ def self_test() -> int:
             failures.append(f"sizes_by_context keys: got {ctx.sizes_context}, {ctx.sizes_context_refused}")
         if ctx.presets != set(ALL_PRESETS):
             failures.append(f"existing presets: got {sorted(ctx.presets)}")
-        # only the new model's presets exist: today's directory and a stem that is no platform preset do not count
+        # only the platform presets exist: no directory, and a stem that is no platform preset, do not count
         root = base / "presets"
         if existing_presets(root):
             failures.append(f"existing presets, no directory: got {sorted(existing_presets(root))}")
-        for rel in (NEXT_MOD, "native-theme/src/presets/adwaita.toml", "native-theme/src/next/presets/macos-tahoe.toml",
-                    "native-theme/src/next/presets/nord.toml"):
+        for rel in ("native-theme/src/presets/adwaita.toml", "native-theme/src/presets/nord.toml"):
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_text("", encoding="utf-8")
-        if existing_presets(root) != {"macos-tahoe"}:
-            failures.append(f"existing presets, today's and the new model's: got {sorted(existing_presets(root))}")
-        # after the switch (no next/mod.rs) the new model's presets are native-theme/src/presets/, and next/ is not read
-        root = base / "presets-after-the-switch"
-        for rel in ("native-theme/src/presets/adwaita.toml", "native-theme/src/presets/nord.toml",
-                    "native-theme/src/next/presets/macos-tahoe.toml"):
-            (root / rel).parent.mkdir(parents=True, exist_ok=True)
-            (root / rel).write_text("", encoding="utf-8")
-        if (model_dir(root), existing_presets(root)) != (Path("native-theme/src"), {"adwaita"}):
-            failures.append(f"existing presets after the switch: got {model_dir(root)}, "
-                            f"{sorted(existing_presets(root))}")
+        if existing_presets(root) != {"adwaita"}:
+            failures.append(f"existing presets: got {sorted(existing_presets(root))}")
         types = {k: key_info(ctx, k)[4] for k in ("button.label.text.font.family", "token.text.fallbacks.families",
                                                    "button.mark.glyph.source", "token.icons.theme")}
         if types != {"button.label.text.font.family": "Value<String>", "token.text.fallbacks.families": "Vec<String>",

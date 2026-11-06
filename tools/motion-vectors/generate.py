@@ -22,8 +22,7 @@ Each copied source is read from the source cache as its pinned commit holds it, 
 build folder (the programs nothing: they print their rows).
 
 Requires gcc, `pkg-config` with GLib's headers, bubblewrap, and a JDK (javac, java). Prints the rows, which the tests in
-`native-theme/src/next/blocks/part_tests.rs` (`timing_*`) and `native-theme/src/next/ripple.rs` (`ripple_*`) hold
-(`native-theme/src/` once the switch has moved `next` into place).
+`native-theme/src/blocks/part_tests.rs` (`timing_*`) and `native-theme/src/ripple.rs` (`ripple_*`) hold.
 Run from the repository root:
 
     python3 -I tools/motion-vectors/generate.py [source cache]

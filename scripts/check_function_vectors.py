@@ -4,11 +4,9 @@
 Offline.
 
 Reads the vector tables `native-theme/tests/vectors/*.tsv`, the tests `native-theme/tests/platform_vectors.rs`, the
-Rust sources of the `platform` module (`native-theme/src/next/platform/`, `native-theme/src/platform/` after the
-switch) and of the `placement` module (`native-theme/src/next/placement/`, `src/placement/`), the facts and the new
-model's presets as scripts/check_facts.py reads them, `docs/facts/sources.toml` and the core's function table and
-enums (the specification, through check_facts.py). The modules are read in the one folder check_facts.model_dir()
-names: `next`'s while `native-theme/src/next/mod.rs` exists, the crate root's after the switch, never both.
+Rust sources of the `platform` module (`native-theme/src/platform/`) and of the `placement` module
+(`native-theme/src/placement/`), the facts and the bundled presets as scripts/check_facts.py reads them,
+`docs/facts/sources.toml` and the core's function table and enums (the specification, through check_facts.py).
 
 Run from the repository root:
 
@@ -91,13 +89,13 @@ What is checked
   scaling curves live in `platform` too and are covered by the same rule. Once the `placement` module exists, every
   `PlacementStrategy` variant has `place.<strategy>.tsv` and `vectors_place_<strategy>` (S13: each strategy
   implemented). Once `interpolate_color` is a `pub` function of the `transitions` module (TRANSITIONS: its folder or
-  file, in `native-theme/src/next/` and after the switch `src/`), every `ColorInterpolation` member has
+  file, in `native-theme/src/`), every `ColorInterpolation` member has
   `interpolate_color.<member>.tsv` and `vectors_interpolate_color_<member>` (S2.7: each member checked by a vector
   table, as a platform function is; ADD-A131). A table or test of anything else is a finding (the model's arithmetic
   has unit tests, S2.2), except a table of an S2.2 platform function or a `ColorInterpolation` member not implemented
   yet, which is reported (a clean-room implementer receives the table first, the plan's D10).
 - Calls: every platform function a fact (`docs/facts/<platform>/*.toml`, as check_facts.py loads them) or a preset
-  (`<check_facts.preset_dir()>/*.toml`) calls in an expression is implemented and has a table. A function only
+  (`native-theme/src/presets/*.toml`) calls in an expression is implemented and has a table. A function only
   facts call and that is not implemented yet is reported as called, not yet implemented; it is a finding once a
   preset calls it. A call of a name outside S2.2's table is check_facts.py's finding.
 - Generations (S2.2), on a table whose form holds (a form finding is fixed first): a row serves the generations its generator's pin serves (the generated routes: the `sources`
@@ -133,11 +131,11 @@ import check_facts
 
 VECTORS = Path("native-theme/tests/vectors")
 TESTS = Path("native-theme/tests/platform_vectors.rs")
-# the modules read, under check_facts.model_dir(): `platform` and `placement` as folders, `transitions` as a folder
-# or a file (S2.7's `transitions::interpolate_color`)
-PLATFORM = ("platform",)
-PLACEMENT = ("placement",)
-TRANSITIONS = ("transitions", "transitions.rs")
+# the modules read: `platform` and `placement` as folders, `transitions` as a folder or a file (S2.7's
+# `transitions::interpolate_color`)
+PLATFORM = (check_facts.MODEL_DIR / "platform",)
+PLACEMENT = (check_facts.MODEL_DIR / "placement",)
+TRANSITIONS = (check_facts.MODEL_DIR / "transitions", check_facts.MODEL_DIR / "transitions.rs")
 # S2.2's model's own arithmetic, no platform function (`with_alpha` ADD-A123's, `round` ADD-A122's, `round_pt`
 # ADD-A131's)
 ARITHMETIC = {"alpha", "with_alpha", "mix", "mul", "div", "add", "sub", "min", "max", "floor", "round", "round_pt",
@@ -616,11 +614,6 @@ def without_cfg_test(text: str) -> str:
     return out
 
 
-def module_paths(root: Path, names) -> tuple:
-    """A module's folder or file names under check_facts.model_dir(root), as paths from the root."""
-    return tuple(check_facts.model_dir(root) / n for n in names)
-
-
 def pub_functions(root: Path, dirs) -> dict:
     """{name: (file, line)} of every `pub` and `pub(crate)` fn in the .rs files of dirs (a folder's, or a module
     file's own)."""
@@ -750,7 +743,7 @@ def collect_calls(ctx, platform_functions: set) -> list:
             for fn, args in parse_calls(expr):
                 if fn in platform_functions:
                     out.append(Call(fn, args, it.file, it.ln("value"), set(gens), False))
-    pd = ctx.root / check_facts.preset_dir(ctx.root)
+    pd = ctx.root / check_facts.PRESET_DIR
     if pd.is_dir():
         for p in sorted(pd.glob("*.toml")):
             rel = p.relative_to(ctx.root).as_posix()
@@ -856,20 +849,19 @@ def check(ctx):
     by_stem = {t.stem: t for t in tabs}
     for t in tabs:
         findings += [(t.file, ln, w) for ln, w in t.findings]
-    pub = pub_functions(root, module_paths(root, PLATFORM))
+    pub = pub_functions(root, PLATFORM)
     tests = test_functions(root)
     required = {}   # table stem -> (why, file, line)
     for fn, (f, ln) in pub.items():
         required[fn] = (f"`pub` function `{fn}` of the platform module", f, ln)
     strategies = []
-    placement = module_paths(root, PLACEMENT)
-    if module_exists(root, placement):
+    if module_exists(root, PLACEMENT):
         strategies = ctx.enums.get("PlacementStrategy", [])
         for s in strategies:
             required[PLACE + s] = (f"placement strategy `{s}` (S13)", next(
-                (d.as_posix() for d in placement if (root / d).is_dir())), 1)
+                (d.as_posix() for d in PLACEMENT if (root / d).is_dir())), 1)
     members = ctx.enums.get("ColorInterpolation", [])
-    interpolate = pub_functions(root, module_paths(root, TRANSITIONS)).get(INTERPOLATE)
+    interpolate = pub_functions(root, TRANSITIONS).get(INTERPOLATE)
     if interpolate:
         for m in members:
             required[f"{INTERPOLATE}.{m}"] = (f"colour interpolation `{m}` (S2.7)", *interpolate)
@@ -1032,7 +1024,7 @@ from\tto\tt\tresult
 INTERP = "native-theme/tests/vectors/interpolate_color.premultiplied_srgb.tsv"
 INTERP_MEMBERS = ("premultiplied_srgb", "straight_srgb8", "oklab")
 INTERP_FILES = {
-    "native-theme/src/next/transitions.rs": "pub fn interpolate_color(from: Color, to: Color, t: f32, space: "
+    "native-theme/src/transitions.rs": "pub fn interpolate_color(from: Color, to: Color, t: f32, space: "
                                             "ColorInterpolation) -> Color {\n    from\n}\n",
     **{f"native-theme/tests/vectors/interpolate_color.{m}.tsv": INTERP_TABLE.replace("premultiplied_srgb", m)
        for m in INTERP_MEMBERS},
@@ -1040,8 +1032,8 @@ INTERP_FILES = {
 INTERP_TESTS = "".join(f"\n#[test]\nfn vectors_interpolate_color_{m}() {{}}\n" for m in INTERP_MEMBERS)
 
 SELF_TEST_FILES = {
-    "native-theme/src/next/platform/mod.rs": "//! The platform functions.\npub mod adw_standalone;\npub mod sf_tracking;\n",
-    "native-theme/src/next/platform/adw_standalone.rs": '''//! libadwaita's standalone accent.
+    "native-theme/src/platform/mod.rs": "//! The platform functions.\npub mod adw_standalone;\npub mod sf_tracking;\n",
+    "native-theme/src/platform/adw_standalone.rs": '''//! libadwaita's standalone accent.
 /// The standalone colour (`pub fn not_this()` in a doc comment is no function).
 pub fn adw_standalone(c: Color, scheme: Scheme) -> Color {
     to_oklab(c)
@@ -1056,8 +1048,8 @@ mod tests {
     pub fn helper_in_tests() {}
 }
 ''',
-    "native-theme/src/next/platform/sf_tracking.rs": "pub(crate) fn sf_tracking(size: f32, design: TrackingDesign) -> f32 {\n    0.0\n}\n",
-    "native-theme/src/next/placement/mod.rs": "pub fn place() {}\n",
+    "native-theme/src/platform/sf_tracking.rs": "pub(crate) fn sf_tracking(size: f32, design: TrackingDesign) -> f32 {\n    0.0\n}\n",
+    "native-theme/src/placement/mod.rs": "pub fn place() {}\n",
     "native-theme/tests/platform_vectors.rs": '''//! The vector tests.
 #[test]
 fn vectors_adw_standalone() {}
@@ -1097,12 +1089,12 @@ kind = "published"
 source = "libadwaita@1.10.0 src/x.scss:1"
 quote = "x"
 ''',
-    "native-theme/src/next/presets/adwaita.toml": '''
+    "native-theme/src/presets/adwaita.toml": '''
 [colors]
 accent = "= adw_standalone(input.accent, scheme)"
 fill = "= mul(token.x, 2)"
 ''',
-    "native-theme/src/next/presets/macos-tahoe.toml": '''
+    "native-theme/src/presets/macos-tahoe.toml": '''
 [tokens.text.keyed.body]
 letter_spacing_px = "= sf_tracking(font_size, sf_pro)"
 ''',
@@ -1121,13 +1113,7 @@ quote = "x"
 '''
 
 
-def write_fixture(root: Path, files: dict, presets=("adwaita", "macos-tahoe"), switched=False):
-    """The fixture tree, laid out as before the switch (`next/mod.rs` there, the files' `next` paths) or, `switched`,
-    after it (each `native-theme/src/next/` path one level up)."""
-    if switched:
-        files = {rel.replace("native-theme/src/next/", "native-theme/src/"): text for rel, text in files.items()}
-    else:
-        files = {**files, check_facts.NEXT_MOD.as_posix(): ""}
+def write_fixture(root: Path, files: dict, presets=("adwaita", "macos-tahoe")):
     for rel, text in files.items():
         if text is None:
             continue
@@ -1136,7 +1122,7 @@ def write_fixture(root: Path, files: dict, presets=("adwaita", "macos-tahoe"), s
         p.write_text(text, encoding="utf-8")
     (root / check_facts.SOURCES).parent.mkdir(parents=True, exist_ok=True)
     (root / check_facts.SOURCES).write_text(check_facts.SELF_TEST_SOURCES, encoding="utf-8")
-    pdir = root / check_facts.preset_dir(root)
+    pdir = root / check_facts.PRESET_DIR
     pdir.mkdir(parents=True, exist_ok=True)
     for p in presets:
         if not (pdir / f"{p}.toml").exists():
@@ -1151,10 +1137,10 @@ def fixture_context(root: Path):
 ADW = "native-theme/tests/vectors/adw_standalone.tsv"
 SF = "native-theme/tests/vectors/sf_tracking.tsv"
 PLC = "native-theme/tests/vectors/place.below.tsv"
-RS = "native-theme/src/next/platform/adw_standalone.rs"
+RS = "native-theme/src/platform/adw_standalone.rs"
 TS = "native-theme/tests/platform_vectors.rs"
-TAHOE = "native-theme/src/next/presets/macos-tahoe.toml"
-ADWP = "native-theme/src/next/presets/adwaita.toml"
+TAHOE = "native-theme/src/presets/macos-tahoe.toml"
+ADWP = "native-theme/src/presets/adwaita.toml"
 
 # (label, file, old, new, the findings wanted: substrings, one per finding); new None with old None deletes the file
 SELF_TEST_CASES = [
@@ -1248,10 +1234,10 @@ def self_test() -> int:
         base = Path(tmp)
         n = [0]
 
-        def run(files, presets=("adwaita", "macos-tahoe"), switched=False):
+        def run(files, presets=("adwaita", "macos-tahoe")):
             root = base / f"case{n[0]}"
             n[0] += 1
-            write_fixture(root, files, presets, switched)
+            write_fixture(root, files, presets)
             got, info, counts = check(fixture_context(root))
             return [f"{f}:{ln}: {w}" for f, ln, w in got], info, counts
 
@@ -1262,21 +1248,6 @@ def self_test() -> int:
             failures.append(f"good fixtures: m3_role not reported as called, not implemented: {info}")
         if counts != {"tables": 3, "functions": 2, "strategies": 1, "tests": 3, "calls": 4}:
             failures.append(f"good fixtures: counts {counts}")
-        # after the switch: the same modules and presets one level up give the same result
-        got_after, info_after, counts_after = run(SELF_TEST_FILES, switched=True)
-        if (got_after, counts_after) != (got, counts) or len(info_after) != len(info):
-            failures.append(f"after the switch: got {got_after}, {counts_after}, {info_after}")
-        # one folder, never both: before the switch a platform function under native-theme/src/platform/ is not read,
-        # after it one under native-theme/src/next/platform/ is not
-        stray = "pub fn kde_shade(a: f32) -> f32 {\n    a\n}\n"
-        for switched, where in ((False, "native-theme/src/platform/kde_shade.rs"),
-                                (True, "native-theme/src/next/platform/kde_shade.rs")):
-            root = base / f"stray{int(switched)}"
-            write_fixture(root, SELF_TEST_FILES, switched=switched)
-            (root / where).parent.mkdir(parents=True, exist_ok=True)
-            (root / where).write_text(stray, encoding="utf-8")
-            if sorted(pub_functions(root, module_paths(root, PLATFORM))) != ["adw_standalone", "sf_tracking"]:
-                failures.append(f"{where}: read (switched {switched})")
         for label, path, old, new, want in SELF_TEST_CASES:
             files = dict(SELF_TEST_FILES)
             if old is None:
@@ -1369,8 +1340,8 @@ def self_test() -> int:
             failures.append(f"parse_calls literal: got {parse_calls(' sf_tracking(font_size, sf_pro)')}")
         if parse_calls(" active(role.window.background)") != [] or parse_calls(" srgb(1, 0, 0)") != []:
             failures.append("parse_calls: active() and srgb() are no calls")
-        if sorted(pub_functions(root, module_paths(root, PLATFORM))) != ["adw_standalone", "sf_tracking"]:
-            failures.append(f"pub_functions: got {sorted(pub_functions(root, module_paths(root, PLATFORM)))}")
+        if sorted(pub_functions(root, PLATFORM)) != ["adw_standalone", "sf_tracking"]:
+            failures.append(f"pub_functions: got {sorted(pub_functions(root, PLATFORM))}")
         if sorted(test_functions(root)) != ["vectors_adw_standalone", "vectors_place_below", "vectors_sf_tracking"]:
             failures.append(f"test_functions: got {sorted(test_functions(root))}")
         ctx = fixture_context(root)

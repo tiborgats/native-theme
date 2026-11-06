@@ -13,12 +13,11 @@ Rust reader validates it there; where the round trip finds a mismatch, `--write`
 Run from the repository root:
 
     python3 scripts/generate_preset.py <preset-id> [--out FILE]   # the generated text to FILE (default stdout)
-    python3 scripts/generate_preset.py <preset-id> --write        # native-theme/src/next/presets/<id>.toml
+    python3 scripts/generate_preset.py <preset-id> --write        # native-theme/src/presets/<id>.toml
     python3 scripts/generate_preset.py <preset-id> --check        # whether --write would change that file
     python3 scripts/generate_preset.py --self-test
 
-The bundled presets are those of check_facts.preset_dir(): `native-theme/src/next/presets/` while
-`native-theme/src/next/mod.rs` exists, `native-theme/src/presets/` once the switch has moved `next` into place.
+The bundled presets are those of check_facts.PRESET_DIR, `native-theme/src/presets/`.
 
 On stderr: the transcription share (facts transcribed, shadowed, pending, left out by reason; per widget and per
 unit), the rule and base-value counts, the pending facts' register ids, the facts gaps (a field no fact gives where
@@ -29,7 +28,7 @@ cannot read, a hand-written part `--write` would lose (below) or a wrong command
 The model fields the preset leaves unstated (unstated_fields())
 ---------------------------------------------------------------
 The model is read from its Rust sources as text, no build needed (read_model(): every `pub struct` of
-check_facts.model_dir() but its tests, and each `widgets/gen_<widget>.rs` scripts/generate_widgets.py writes, its
+check_facts.MODEL_DIR but its tests, and each `widgets/gen_<widget>.rs` scripts/generate_widgets.py writes, its
 parts' `#[part(fields(…))]` and its values struct). Each field of the colour roles per scheme, the tokens and each
 typed widget's parts and values with no base value and no `[pending]` path in the preset as `--write` writes it (the
 bundled preset's hand-written blocks carried in) is listed by its TOML path, grouped by the preset's facts at, above or
@@ -2140,11 +2139,11 @@ def widget_parts(code: str) -> tuple:
 
 
 def read_model(root: Path) -> Model:
-    """The model as its Rust sources write it (check_facts.model_dir(), its tests left out): every `pub struct` with
+    """The model as its Rust sources write it (check_facts.MODEL_DIR, its tests left out): every `pub struct` with
     its `pub` fields and their types, and each generated widget (`widgets/gen_<widget>.rs`, scripts/
     generate_widgets.py's output) with its parts' fields and its values struct. Read as text, so no build is needed;
     a folder without them gives an empty model."""
-    folder = check_facts.model_dir(root)
+    folder = check_facts.MODEL_DIR
     model = Model({}, {}, set(), folder)
     for p in sorted((root / folder).rglob("*.rs")):
         if p.name.endswith("tests.rs") or "tests" in p.relative_to(root / folder).parts:
@@ -2873,8 +2872,7 @@ SELF_TEST_STATUS = [
 
 # a model's Rust sources (read_model()) and a preset stating every field of it (unstated_fields())
 MODEL_FILES = {
-    "native-theme/src/next/mod.rs": "",
-    "native-theme/src/next/roles.rs": """
+    "native-theme/src/roles.rs": """
 /// The colour roles (S3), with a `// comment` in a doc line.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
 #[parts(block)]
@@ -2890,18 +2888,18 @@ pub struct DisabledRoles { pub background: Value<Color> }
 /* a block comment: pub struct GlobalRoles { pub other: Value<Color> } */
 pub struct GlobalRoles { pub accent: Value<Color>, pub accent_ramp: Vec<(Key, Value<Color>)> }
 """,
-    "native-theme/src/next/tokens.rs": """
+    "native-theme/src/tokens.rs": """
 pub struct Tokens { pub focus: FocusIndicator, pub text: TextTokens }
 pub struct FocusIndicator { pub width: Value<Px>, pub offset: Sides<Value<Px>> }
 pub struct TextTokens { pub keyed: Vec<(Key, TextStyle)>, pub font_dpi: Value<f32> }
 pub struct TextStyle { pub size: Value<FontSize>, pub weight: Value<u16> }
 """,
-    "native-theme/src/next/units.rs": "pub struct Sides<T> { pub top: T, pub right: T, pub bottom: T, pub left: T }\n",
-    "native-theme/src/next/blocks/part_style.rs": """
+    "native-theme/src/units.rs": "pub struct Sides<T> { pub top: T, pub right: T, pub bottom: T, pub left: T }\n",
+    "native-theme/src/blocks/part_style.rs": """
 pub struct PartStyle { pub fill: Value<Paint>, pub padding: Sides<Value<Px>>, pub icon: Value<IconStyle> }
 pub struct IconStyle { pub size: Value<Px>, pub weight: Value<u16> }
 """,
-    "native-theme/src/next/widgets/gen_button.rs": """
+    "native-theme/src/widgets/gen_button.rs": """
 #[derive(ThemeParts)]
 #[parts(widget)]
 pub(crate) struct ButtonTheme {
@@ -2918,7 +2916,7 @@ pub(crate) struct ButtonTheme {
 }
 pub struct ButtonValues { pub gap: Value<Px> }
 """,
-    "native-theme/src/next/widgets/tests.rs": "pub struct Tokens { pub other: Value<Px> }\n",
+    "native-theme/src/widgets/tests.rs": "pub struct Tokens { pub other: Value<Px> }\n",
 }
 FIELDS_COLORS = """
 [colors.{s}.surfaces.window]
@@ -3454,8 +3452,8 @@ def self_test() -> int:
             got = unstated_fields(model, text) if text != FIELDS_PRESET else f"no line {line!r}"
             if got != want:
                 failures.append(f"unstated_fields without {line!r}: {got}, expected {want}")
-        if field_lines(Model({}, {}, set(), Path("next")), None, "") != [
-                "# unstated model fields: no model sources in next"]:
+        if field_lines(Model({}, {}, set(), Path("src")), None, "") != [
+                "# unstated model fields: no model sources in src"]:
             failures.append("field_lines without a model: not said")
     # each unstated path grouped by the facts there: none (the accent run's counting none), conditional ones, one at
     # rest that gives no base
@@ -3626,8 +3624,7 @@ def self_test() -> int:
         root = Path(tmp) / "mismatch"
         button = SELF_TEST_FILES["docs/facts/gnome/button.toml"]
         write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": button.replace('"16px"', '"18px"', 1)})
-        write(root, {check_facts.NEXT_MOD: ""})
-        written = root / "native-theme/src/next/presets/adwaita.toml"
+        written = root / "native-theme/src/presets/adwaita.toml"
         written.parent.mkdir(parents=True)
         with contextlib.redirect_stderr(io.StringIO()):
             code = run(fixture_context(root), "adwaita", "--write", None)
@@ -3656,17 +3653,6 @@ def self_test() -> int:
         if code != 0 or written.read_text(encoding="utf-8") == stale:
             failures.append(f"--write over an exact round trip: exit {code}, "
                             f"written {written.read_text(encoding='utf-8') != stale}")
-        # after the switch (no next/mod.rs) --write and --check take native-theme/src/presets/, never next/'s
-        switched = Path(tmp) / "switched"
-        write(switched, {**SELF_TEST_FILES, "native-theme/src/next/presets/adwaita.toml": stale})
-        (switched / "native-theme/src/presets").mkdir(parents=True)
-        with contextlib.redirect_stderr(io.StringIO()):
-            code = run(fixture_context(switched), "adwaita", "--write", None)
-            checked = run(fixture_context(switched), "adwaita", "--check", None)
-        moved = switched / "native-theme/src/presets/adwaita.toml"
-        if (code, checked) != (0, 0) or not moved.exists() or \
-                (switched / "native-theme/src/next/presets/adwaita.toml").read_text(encoding="utf-8") != stale:
-            failures.append(f"--write after the switch: exit {code}, --check {checked}, written {moved.exists()}")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
@@ -3716,7 +3702,7 @@ def run(ctx, preset: str, mode, out) -> int:
     unread = None
     try:
         draft, text, trip, units = generate(ctx, preset)
-        path = ctx.root / check_facts.preset_dir(ctx.root) / f"{preset}.toml"
+        path = ctx.root / check_facts.PRESET_DIR / f"{preset}.toml"
         committed = path.read_text(encoding="utf-8") if path.exists() else None
         if mode in ("--write", "--check"):
             text = carried(text, committed)
@@ -3739,7 +3725,7 @@ def run(ctx, preset: str, mode, out) -> int:
         if not trip.mismatches:
             path.write_text(text, encoding="utf-8")
     elif text != committed:
-        print(f"{check_facts.preset_dir(ctx.root) / preset}.toml is not what --write writes from the facts: run "
+        print(f"{check_facts.PRESET_DIR / preset}.toml is not what --write writes from the facts: run "
               f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
         return 1
     for line in share_lines(draft, units, trip):
@@ -3751,8 +3737,7 @@ def run(ctx, preset: str, mode, out) -> int:
     for m in trip.mismatches:
         print(f"round trip: {m}", file=sys.stderr)
     if mode == "--write" and trip.mismatches:
-        print(f"{check_facts.preset_dir(ctx.root) / preset}.toml not written: the round trip finds a mismatch",
-              file=sys.stderr)
+        print(f"{check_facts.PRESET_DIR / preset}.toml not written: the round trip finds a mismatch", file=sys.stderr)
     return 1 if trip.mismatches else 0
 
 
