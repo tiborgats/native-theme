@@ -15,6 +15,9 @@
 #   schemes/               the accent script's output for the two schemes
 #   run<N>/<scheme>/qml/   buttons.qml's PNGs, index.txt, its output
 #   run<N>/<scheme>/widgets/  widgets.py's PNGs, index.toml, its output
+#   fonts/                 KH-reads: fonts.py's fonts.toml at the platform's DPI and
+#                          at 96, fontconfig.txt, font-files.sha256, fc-list.tsv,
+#                          fc-match-sorted.tsv
 #   run.txt (each step's exit status, the CPU, the tools), packages.txt,
 #   sha256.txt
 set -u
@@ -77,6 +80,52 @@ for run in 1 2; do
     rm -rf "$home"
   done
 done
+
+# KH-reads (the 0.8.0 measurement plan): the fonts Qt resolves under the kde
+# platform theme and their metrics (fonts.py; once at the platform's DPI and
+# once with QT_FONT_DPI=96), the Noto Sans and Hack files with their SHA-256,
+# and fontconfig's sorted match (fc-match -s, what Qt's family fallbacks
+# follow) per family and per language, its first 20 fonts each.
+fonts="$out/fonts"
+mkdir -p "$fonts/default-dpi" "$fonts/dpi-96"
+home=$(mktemp -d)
+mkdir -p "$home/config" "$home/data" "$home/cache"
+cp "$out/schemes/BreezeLight.none/kdeglobals" "$home/config/kdeglobals"
+for dpi in default-dpi dpi-96; do
+  extra=()
+  [ "$dpi" = dpi-96 ] && extra=(QT_FONT_DPI=96)
+  timeout 60 env XDG_CONFIG_HOME="$home/config" XDG_DATA_HOME="$home/data" XDG_CACHE_HOME="$home/cache" \
+    QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=kde QT_FORCE_STDERR_LOGGING=1 "${extra[@]}" \
+    python3 tools/kde-host/fonts.py "$fonts/$dpi" >"$fonts/$dpi/stdout.txt" 2>"$fonts/$dpi/stderr.txt"
+  status=$?
+  note "fonts.py $dpi: exit $status"
+  [ $status -eq 0 ] || failed=1
+done
+rm -rf "$home"
+{
+  echo "fc-match: $(fc-match --version 2>&1 | head -n 1)"
+  for family in "Noto Sans" "Noto Sans:style=Bold" "Hack" "sans-serif" "serif" "monospace"; do
+    echo "file $family: $(fc-match -f '%{file}' "$family")"
+  done
+} >"$fonts/fontconfig.txt"
+for family in "Noto Sans" "Hack"; do
+  file=$(fc-match -f '%{file}' "$family")
+  [ -n "$file" ] && sha256sum "$file" >>"$fonts/font-files.sha256"
+done
+fc-list --format '%{family[0]}\t%{style[0]}\t%{file}\n' | sort >"$fonts/fc-list.tsv"
+{
+  printf 'pattern\trank\tfamily\tstyle\tfile\n'
+  for pattern in "Noto Sans" "Hack" "sans-serif" "serif" "monospace" "emoji"; do
+    fc-match -s -f '%{family[0]}\t%{style[0]}\t%{file}\n' "$pattern" | head -n 20 | awk -v p="$pattern" '{ printf "%s\t%d\t%s\n", p, NR, $0 }'
+  done
+  for lang in en ja ko zh-cn zh-tw zh-hk ar fa he hi bn ta th lo km my si hy ka am el ru; do
+    for family in "Noto Sans" "Hack"; do
+      pattern="$family:lang=$lang"
+      fc-match -s -f '%{family[0]}\t%{style[0]}\t%{file}\n' "$pattern" | head -n 20 | awk -v p="$pattern" '{ printf "%s\t%d\t%s\n", p, NR, $0 }'
+    done
+  done
+} >"$fonts/fc-match-sorted.tsv"
+note "fc-match: $(wc -l <"$fonts/fc-match-sorted.tsv") lines, fc-list: $(wc -l <"$fonts/fc-list.tsv") fonts"
 
 manifest "$out/run1" >"$out/run1.sha256"
 manifest "$out/run2" >"$out/run2.sha256"

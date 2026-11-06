@@ -82,6 +82,13 @@ QQC2.ApplicationWindow {
         console.info(`index: theme window background=${Kirigami.Theme.backgroundColor} text=${Kirigami.Theme.textColor} highlight=${Kirigami.Theme.highlightColor} focus=${Kirigami.Theme.focusColor} hover=${Kirigami.Theme.hoverColor}`);
         console.info(`index: theme button background=${normal.button.Kirigami.Theme.backgroundColor} text=${normal.button.Kirigami.Theme.textColor}`);
         console.info(`index: font ${normal.button.font.family} ${normal.button.font.pointSize}pt; largeSpacing=${Kirigami.Units.largeSpacing}; devicePixelRatio=${Screen.devicePixelRatio}`);
+        console.info(`index: icon sizes sizeForLabels=${Kirigami.Units.iconSizes.sizeForLabels} small=${Kirigami.Units.iconSizes.small} smallMedium=${Kirigami.Units.iconSizes.smallMedium} medium=${Kirigami.Units.iconSizes.medium}; label font height=${labelMetrics.height} ascent=${labelMetrics.ascent} descent=${labelMetrics.descent} family=${labelMetrics.font.family} pointSize=${labelMetrics.font.pointSize}`);
+    }
+
+    // The default font's metrics, which Kirigami's sizeForLabels rounds
+    // (KH-reads, U400).
+    FontMetrics {
+        id: labelMetrics
     }
 
     Row {
