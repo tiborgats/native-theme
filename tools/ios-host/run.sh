@@ -19,8 +19,8 @@
 # (measure<N>, twice, after the press pass: the app's measure mode,
 # tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
 # comma-separated list of passes, default roles,fonts,symbols). IOS_HOST_SET
-# (base, the default, or campaign) is the render pass's specimen set
-# (IosHost.swift, campaignSpecimens). IOS_HOST_DEVICE (iphone, the default, or
+# (base, the default, campaign, or popup: the campaign set's pop-up buttons) is
+# the render pass's specimen set (IosHost.swift, campaignSpecimens). IOS_HOST_DEVICE (iphone, the default, or
 # ipad) is the simulator every pass but focus runs on: the newest "iPhone <N>
 # Pro", or the last "iPad Pro" the runtime lists. IOS_HOST_SETTINGS (a
 # comma-separated list, default none) is set on that simulator after its boot,

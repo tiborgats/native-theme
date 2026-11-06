@@ -534,7 +534,8 @@ func focusableSpecimens(quick: Bool) -> [Specimen] {
 /// role); every style and the system type disabled while selected and while
 /// highlighted; the system type with an image, an image alone and a menu; a
 /// pop-up button (its menu changing the selection) under each of two
-/// selections, at its own width and at fixed widths of 200 and 60 points.
+/// selections, at its own width and at fixed widths of 200 and 60 points, in
+/// one cell per row (`set=popup` draws these pop-up buttons alone).
 @MainActor
 func campaignSpecimens() -> [Specimen] {
     let styles = configurationStyles()
@@ -944,7 +945,11 @@ final class HostViewController: UIViewController {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         out = documents.appendingPathComponent(runName, isDirectory: true)
         var pages: [Page] = []
-        var list = set == "campaign" ? campaignSpecimens() : specimens(quick: quickRun)
+        var list =
+            set == "campaign"
+            ? campaignSpecimens()
+            : set == "popup"
+                ? campaignSpecimens().filter { $0.variant.contains { $0.key == "pop_up" } } : specimens(quick: quickRun)
         if focus { list += focusableSpecimens(quick: quickRun) }
         for appearance in appearances {
             for specimen in list {
@@ -993,6 +998,12 @@ final class HostViewController: UIViewController {
                             let slots = grid(specimen.states, solveBackdrops) + grid(specimen.states, [patternBackdrops[0]])
                                 + grid([.normal], [patternBackdrops[1]])
                             pages += roomyPages(appearance, specimen, size, slots, columns: 2, rows: 3)
+                        } else if specimen.variant.contains(where: { $0.key == "pop_up" }) {
+                            // A pop-up button 200 points wide, or growing with a
+                            // longer selection, is wider than a third of the
+                            // screen: one cell per row, the screen's width.
+                            pages += roomyPages(
+                                appearance, specimen, size, grid(specimen.states, solveBackdrops), columns: 1, rows: 6)
                         } else {
                             pages.append(
                                 Page(
@@ -2092,7 +2103,9 @@ final class HostViewController: UIViewController {
         func value(_ key: String) -> String { quoted(environment[key] ?? "absent") }
         func plist(_ key: String) -> String { quoted((info[key] as? String) ?? "absent") }
         let styles = configurationStyles().map { quoted($0.name) }.joined(separator: ", ")
-        let names = (specimenSet == "campaign" ? campaignSpecimens() : specimens(quick: quick)).map {
+        let names = (specimenSet == "campaign" || specimenSet == "popup" ? campaignSpecimens() : specimens(quick: quick)).filter {
+            specimenSet != "popup" || $0.variant.contains { $0.key == "pop_up" }
+        }.map {
             quoted($0.name)
         }.joined(separator: ", ")
         return """

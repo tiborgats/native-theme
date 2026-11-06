@@ -38,7 +38,7 @@ on:
         required: false
         default: "roles,fonts,symbols"
       ios_host_set:
-        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base or campaign)"
+        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base, campaign or popup)"
         required: false
         default: "base"
       ios_host_device:
