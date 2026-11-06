@@ -1109,7 +1109,9 @@ python3 scripts/check_fact_citations.py --self-test
 
 ## import_platform_facts.py
 
-Imports today's `docs/platform-facts.md` rows (at `fc6109d1`) into
+Imports today's `docs/platform-facts.md` rows (as `fc6109d1` holds the
+document, read through `git show`, so the switch's generated document does
+not change them) into
 `docs/facts/imported/<platform>.toml`, the 0.8.0 plan's lane input: one
 `[[row]]` per row and platform cell of Chapter 2, and per row of Chapter 1's
 section of that platform, with the property, the line, the cell's text as
@@ -1126,7 +1128,7 @@ exits 1 when the files differ from a fresh run (until a lane removes its
 first entry); `--self-test` runs every rule on a fixture document, gap maps
 and traces. Not in `check_release.sh` (the plan's table of scripts).
 
-Requires Python 3.11.
+Requires Python 3.11 and a git checkout holding `fc6109d1`.
 
 ```sh
 python3 scripts/import_platform_facts.py
@@ -1137,8 +1139,10 @@ python3 scripts/import_platform_facts.py --self-test
 ## convert_inheritance_rules.py
 
 Converts the `[uniform]` and `[per_platform]` rules of
-`docs/inheritance-rules.toml` (at `fc6109d1`) into S19.2's staged file,
-`docs/facts/staged/inheritance-bases.toml`: per preset that exists today
+`docs/inheritance-rules.toml` into S19.2's staged file,
+`docs/facts/staged/inheritance-bases.toml`, the rules and today's presets
+read as `fc6109d1` holds them (through `git show`, so their removal at the
+switch does not change the file): per preset that exists today
 (`ios-26` has none; the community presets become palettes), each field
 today's preset leaves to a rule under a scheme, with the S2.2 reference the
 rule implies over the new model's paths (`= role.window.background`,
@@ -1154,7 +1158,7 @@ counts per preset. `--check` exits 1 when the file differs from a fresh run;
 `--self-test` runs every rule on fixture rules, catalogue and presets. Not
 in `check_release.sh`.
 
-Requires Python 3.11.
+Requires Python 3.11 and a git checkout holding `fc6109d1`.
 
 ```sh
 python3 scripts/convert_inheritance_rules.py
