@@ -812,9 +812,11 @@ jobs:
           } >> "$out/settings.txt" 2>&1
           tail -n 4 "$out/settings.txt"
       # The reads pass under a right-to-left language (MP-text's U318): the
-      # process given -AppleLanguages "(he)" in its arguments (the argument
-      # domain; no setting written), so its mirroring section draws the
-      # directional symbols as AppKit lays them out for Hebrew.
+      # process given -AppleLanguages "(he)" and the right-to-left direction
+      # defaults in its arguments (the argument domain; no setting written:
+      # run 42272240639 showed the language alone leaves an unlocalised
+      # process left to right), so its mirroring section draws the
+      # directional symbols as AppKit lays them out right to left.
       - name: Run the reads pass under a right-to-left language (macOS)
         if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-rtl,'))
         continue-on-error: true
@@ -822,8 +824,8 @@ jobs:
           set +e
           out=os-probe-out/reads-rtl
           mkdir -p "$out"
-          echo "no setting changed; the probe's arguments: -AppleLanguages (he)" > "$out/settings.txt"
-          cargo run -p native-theme-os-probe --release -- --out "$out" --reads -AppleLanguages "(he)"
+          echo "no setting changed; the probe's arguments: -AppleLanguages (he) -AppleTextDirection YES -NSForceRightToLeftWritingDirection YES" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads -AppleLanguages "(he)" -AppleTextDirection YES -NSForceRightToLeftWritingDirection YES
       # A pass with the image's own settings in which the probe's window is
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.

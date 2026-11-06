@@ -97,8 +97,9 @@ fn parse_args() -> Result<Options, String> {
 /// The options from `args`, the command line after the program's name, in
 /// any order, or the usage error. An argument starting with `-psn_`, the
 /// process serial number LaunchServices may pass an application `open`
-/// starts, is ignored, and so are `-AppleLanguages <value>` and
-/// `-AppleLocale <value>`, defaults AppKit reads from the arguments.
+/// starts, is ignored, and so are `-AppleLanguages`, `-AppleLocale`,
+/// `-AppleTextDirection` and `-NSForceRightToLeftWritingDirection`, each with
+/// its value: defaults AppKit reads from the arguments.
 fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Options, String> {
     let mut out = PathBuf::from("os-probe-out");
     let mut not_key = false;
@@ -117,7 +118,12 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             // An argument-domain default (NSUserDefaults.h's
             // NSArgumentDomain): AppKit reads it from the process's
             // arguments itself, so the probe takes the pair and ignores it.
-            Some("-AppleLanguages" | "-AppleLocale") => {
+            Some(
+                "-AppleLanguages"
+                | "-AppleLocale"
+                | "-AppleTextDirection"
+                | "-NSForceRightToLeftWritingDirection",
+            ) => {
                 if args.next().is_none() {
                     return Err(format!("{} needs a value\n{USAGE}", arg.to_string_lossy()));
                 }
