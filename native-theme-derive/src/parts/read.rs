@@ -11,7 +11,7 @@ use super::block::{BlockField, Shape, Wrap, generic_arg, map_pair, parse_field, 
 
 /// The module the expansions name the reader by.
 fn reader() -> TokenStream {
-    quote!(crate::next::toml::read)
+    quote!(crate::toml::read)
 }
 
 /// How a field's value is read from its key's item, and what its key is
@@ -82,7 +82,7 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
             read: {
                 let block = &block.ty;
                 quote! {
-                    #t::read_surfaces::<crate::next::blocks::BlockPatch<#block>>(item, &at, cx)
+                    #t::read_surfaces::<crate::blocks::BlockPatch<#block>>(item, &at, cx)
                 }
             },
             spellings: bare,
@@ -137,7 +137,7 @@ fn read_key(name: &str, slot: &TokenStream, reading: &Reading) -> TokenStream {
 /// `try_from`).
 pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) -> TokenStream {
     let t = reader();
-    let m = quote!(crate::next);
+    let m = quote!(crate);
     let o = quote!(::core::option::Option);
     let patch = format_ident!("{name}Patch");
     let idents: Vec<&Ident> = fields.iter().filter_map(|f| f.ident.as_ref()).collect();
@@ -338,7 +338,7 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
 /// `None` where it is missing (each missing leaf recorded).
 fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStream) -> TokenStream {
     let t = reader();
-    let b = quote!(crate::next::blocks);
+    let b = quote!(crate::blocks);
     let o = quote!(::core::option::Option);
     let at = quote!(&#t::join(at, &#t::missing_key(#name, #spellings)));
     let value = match &f.shape {
@@ -359,7 +359,7 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStrea
                 .collect();
             let names = compound.members.iter();
             quote! {{
-                let held = #ident.unwrap_or(crate::next::#name_ty {
+                let held = #ident.unwrap_or(crate::#name_ty {
                     #(#members: #o::None),*
                 });
                 #(let #members = #t::required(
@@ -371,7 +371,7 @@ fn build_field(f: &BlockField, ident: &Ident, name: &str, spellings: &TokenStrea
                     cx,
                 );)*
                 match (#(#members),*) {
-                    (#(#o::Some(#members)),*) => #o::Some(crate::next::#name_ty { #(#members),* }),
+                    (#(#o::Some(#members)),*) => #o::Some(crate::#name_ty { #(#members),* }),
                     _ => #o::None,
                 }
             }}
@@ -558,7 +558,7 @@ pub(super) fn enum_impl(name: &Ident, data: &syn::DataEnum) -> Result<TokenStrea
     let by_payload = if payloads.is_empty() {
         quote! {
             let _ = payload;
-            cx.problem(&#t::join(at, name), crate::next::ProblemKind::UnknownKey);
+            cx.problem(&#t::join(at, name), crate::ProblemKind::UnknownKey);
             #o::None
         }
     } else {
@@ -567,7 +567,7 @@ pub(super) fn enum_impl(name: &Ident, data: &syn::DataEnum) -> Result<TokenStrea
             match name {
                 #(#payloads)*
                 _ => {
-                    cx.problem(&at, crate::next::ProblemKind::UnknownKey);
+                    cx.problem(&at, crate::ProblemKind::UnknownKey);
                     #o::None
                 }
             }
@@ -633,7 +633,7 @@ fn struct_variant(owner: &Ident, ident: &Ident, snake: &str, fields: &[BlockFiel
             for (key, item) in table {
                 let at = at.as_str();
                 #(#keys)*
-                cx.problem(&#t::join(at, key), crate::next::ProblemKind::UnknownKey);
+                cx.problem(&#t::join(at, key), crate::ProblemKind::UnknownKey);
             }
             #(#builds)*
             #o::Some(#owner::#ident { #(#idents: #locals?),* })

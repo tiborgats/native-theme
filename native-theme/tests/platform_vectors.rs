@@ -6,18 +6,18 @@
 
 use std::collections::HashMap;
 
-use native_theme::next::platform::adw_standalone::adw_standalone;
-use native_theme::next::platform::kcu_mix::kcu_mix;
-use native_theme::next::platform::kcu_overlay::kcu_overlay;
-use native_theme::next::platform::kcu_shade::kcu_shade;
-use native_theme::next::platform::kcu_tint::kcu_tint;
-use native_theme::next::platform::kde_effects::{KdeGroupEffects, kde_effects};
-use native_theme::next::platform::kde_selection_inactive::kde_selection_inactive;
-use native_theme::next::platform::kde_shade::{KdeShadeRole, kde_shade};
-use native_theme::next::platform::kirigami_lerp::kirigami_lerp;
-use native_theme::next::platform::kirigami_tint::kirigami_tint;
-use native_theme::next::platform::sf_tracking::{TrackingDesign, sf_tracking};
-use native_theme::next::{
+use native_theme::platform::adw_standalone::adw_standalone;
+use native_theme::platform::kcu_mix::kcu_mix;
+use native_theme::platform::kcu_overlay::kcu_overlay;
+use native_theme::platform::kcu_shade::kcu_shade;
+use native_theme::platform::kcu_tint::kcu_tint;
+use native_theme::platform::kde_effects::{KdeGroupEffects, kde_effects};
+use native_theme::platform::kde_selection_inactive::kde_selection_inactive;
+use native_theme::platform::kde_shade::{KdeShadeRole, kde_shade};
+use native_theme::platform::kirigami_lerp::kirigami_lerp;
+use native_theme::platform::kirigami_tint::kirigami_tint;
+use native_theme::platform::sf_tracking::{TrackingDesign, sf_tracking};
+use native_theme::{
     Color, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind, Scheme,
 };
 

@@ -5,7 +5,7 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use native_theme::next::gate::{context_spelled, default_spelled, names_spelled};
+use native_theme::gate::{context_spelled, default_spelled, names_spelled};
 use toml::{Table, Value};
 
 /// The strings of a TOML list; none where it is not one.

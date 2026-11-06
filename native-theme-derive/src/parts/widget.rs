@@ -266,9 +266,9 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
          where the patch leaves it as it is."
     );
 
-    let r = quote!(crate::next::registry);
-    let b = quote!(crate::next::blocks);
-    let w = quote!(crate::next::widgets);
+    let r = quote!(crate::registry);
+    let b = quote!(crate::blocks);
+    let w = quote!(crate::widgets);
     let infos = parts.iter().map(|part| {
         let part_name = part.ident.to_string();
         let ty = &part.ty;
@@ -357,10 +357,10 @@ pub(crate) fn expand(input: &DeriveInput) -> Result<TokenStream> {
             }
         }
 
-        impl crate::next::toml::layer::WidgetPatch for #patch {
+        impl crate::toml::layer::WidgetPatch for #patch {
             type Values = #values_patch;
 
-            const KIND: crate::next::WidgetKind = crate::next::WidgetKind::#kind;
+            const KIND: crate::WidgetKind = crate::WidgetKind::#kind;
 
             fn part_slot(
                 &mut self,

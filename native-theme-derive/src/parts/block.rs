@@ -12,17 +12,17 @@ use super::attrs::{self, Added, BlockKind, FieldAttrs, TypeAttrs};
 
 /// The module the expansions name the model's types by.
 fn model() -> TokenStream {
-    quote!(crate::next)
+    quote!(crate)
 }
 
 /// The module the expansions name the blocks' traits and merge helpers by.
 fn blocks() -> TokenStream {
-    quote!(crate::next::blocks)
+    quote!(crate::blocks)
 }
 
 /// The module the expansions name the field-path registry's types by.
 fn registry() -> TokenStream {
-    quote!(crate::next::registry)
+    quote!(crate::registry)
 }
 
 /// `Option`, named so that no item at the derive site shadows it.
@@ -148,7 +148,7 @@ impl ValueMap {
     pub(super) fn ty(&self) -> TokenStream {
         let key = type_string(&self.key);
         let value = type_string(&self.value);
-        quote!(crate::next::expr::Ty::Map { key: #key, value: #value })
+        quote!(crate::expr::Ty::Map { key: #key, value: #value })
     }
 }
 
@@ -281,7 +281,7 @@ impl BlockField {
     /// Statements keeping absent in `set`, a `&mut` of the field's resolved
     /// value, what is absent in `held`, a `&` of the value beneath it (S2.7).
     pub(super) fn keep_absent(&self, set: &TokenStream, held: &TokenStream) -> TokenStream {
-        let ev = quote!(crate::next::resolve::evaluate);
+        let ev = quote!(crate::resolve::evaluate);
         match self.absence() {
             Absence::Outer => quote! {
                 if #held.is_none() {
@@ -613,7 +613,7 @@ impl BlockField {
                             ty: #r::FieldType::Leaf(#inner),
                             may_be_absent: #may_be_absent,
                             auto: #auto,
-                            value: <#inner_ty as crate::next::validate::walk::Walk>::ty,
+                            value: <#inner_ty as crate::validate::walk::Walk>::ty,
                         }
                     }
                 });
@@ -680,7 +680,7 @@ impl BlockField {
     /// entry of its map (S2.2): its value type's; a compound's members have
     /// theirs, the compound none.
     fn value_ty(&self) -> TokenStream {
-        let w = quote!(crate::next::validate::walk);
+        let w = quote!(crate::validate::walk);
         let r = registry();
         match &self.shape {
             Shape::Map(_) => match map_pair(&self.ty) {
@@ -694,7 +694,7 @@ impl BlockField {
             Shape::ValueMap(map) => {
                 let ty = map.ty();
                 quote! {{
-                    fn ty() -> ::core::option::Option<crate::next::expr::Ty> {
+                    fn ty() -> ::core::option::Option<crate::expr::Ty> {
                         ::core::option::Option::Some(#ty)
                     }
                     ty
@@ -1403,8 +1403,8 @@ fn expand_fields(
 /// after them, `None` where the field beneath resolves `Absent`, and
 /// within it what is absent beneath kept absent ([`BlockField::keep_absent`]).
 fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> TokenStream {
-    let c = quote!(crate::next::resolve::compose);
-    let ev = quote!(crate::next::resolve::evaluate);
+    let c = quote!(crate::resolve::compose);
+    let ev = quote!(crate::resolve::evaluate);
     let resolved = format_ident!("Resolved{name}Patch");
     let members = fields.iter().map(|f| {
         let ident = &f.ident;
@@ -1489,7 +1489,7 @@ fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> Tok
 /// `KeepAbsent` for a struct block's resolved type: each field, where the
 /// value beneath does not draw it, not drawn.
 fn keep_absent_impl(name: &Ident, fields: &[BlockField]) -> TokenStream {
-    let ev = quote!(crate::next::resolve::evaluate);
+    let ev = quote!(crate::resolve::evaluate);
     let resolved = format_ident!("Resolved{name}");
     let kept: Vec<TokenStream> = fields
         .iter()
@@ -1544,7 +1544,7 @@ fn expand_append(
         "[`{name}`]'s patch (S6.1): the value set whole, or `{list_name}` appended to over \
          the value below."
     );
-    let w = quote!(crate::next::validate::walk);
+    let w = quote!(crate::validate::walk);
     let check_patch = if type_attrs.check {
         quote!(w.check(#w::Node::#patch(self));)
     } else {
@@ -1562,7 +1562,7 @@ fn expand_append(
         "Appends to `{list_name}` over the value below; over `Absent`, nothing, the value \
          staying absent (S6.1). Composed lazily over a reference (S2.2)."
     );
-    let c = quote!(crate::next::resolve::compose);
+    let c = quote!(crate::resolve::compose);
     let locate = super::resolve::struct_locate(name, None, fields);
     let resolve = super::resolve::struct_resolve(name, fields, &[]);
     Ok(quote! {
@@ -1626,8 +1626,8 @@ fn expand_append(
                 }
             }
 
-            fn ty() -> ::core::option::Option<crate::next::expr::Ty> {
-                ::core::option::Option::Some(crate::next::expr::Ty::block(#name_string))
+            fn ty() -> ::core::option::Option<crate::expr::Ty> {
+                ::core::option::Option::Some(crate::expr::Ty::block(#name_string))
             }
         }
 

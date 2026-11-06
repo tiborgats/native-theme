@@ -42,7 +42,8 @@
 #                  clippy (-D warnings, all targets and features) and the
 #                  strict panic lints on
 #                  native-theme and native-theme-derive, their library tests,
-#                  next's integration tests, doctests and missing-docs gate,
+#                  the model's integration tests, native-theme's doctests and
+#                  docs (-D warnings, missing docs among them),
 #                  CI's MSRV job's checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
 #                  their citations, the specification's names, entries and
@@ -80,7 +81,8 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  clippy (-D warnings, all targets and features) and the
                  strict panic lints on
                  native-theme and native-theme-derive, their library tests,
-                 next's integration tests, doctests and missing-docs gate,
+                 the model's integration tests, native-theme's doctests and
+                 docs (-D warnings, missing docs among them),
                  CI's MSRV job's checks (each on its toolchain, -D warnings),
                  and the 0.8.0 plan's data checks (generate_widgets.py --check,
                  generate_preset.py <id> --check per bundled preset,
@@ -606,14 +608,13 @@ if [[ $QUICK_MODE ]]; then
         bash scripts/check_strict_panic.sh -p native-theme-derive --lib
     run_tests "test (native-theme-derive)" cargo test -p native-theme-derive
     run_tests "test (native-theme, library)" cargo test -p native-theme --lib
-    run_tests "test (native-theme, next's layers, vectors and facts gate)" \
-        cargo test -p native-theme --test next_layers --test platform_vectors --test facts_gate
-    run_tests "doctests (native-theme's next module, key! among them)" cargo test -p native-theme --doc src/next/
-    run_check "docs and missing docs (native-theme's next module)" \
-        env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
+    run_tests "test (native-theme, layers, vectors and facts gate)" \
+        cargo test -p native-theme --test layers --test platform_vectors --test facts_gate
+    run_tests "doctests (native-theme)" cargo test -p native-theme --doc
+    run_check "docs (native-theme)" env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
     run_check "the generated widgets match the catalogue" python3 scripts/generate_widgets.py --check
-    for preset in native-theme/src/next/presets/*.toml; do
+    for preset in native-theme/src/presets/*.toml; do
         preset=$(basename "$preset" .toml)
         run_check "the bundled preset $preset is generated from its facts" \
             python3 scripts/generate_preset.py "$preset" --check
@@ -1373,7 +1374,7 @@ fi
 run_check "data documents: fact citations self-test" \
     python3 scripts/check_fact_citations.py --self-test
 # The 0.8.0 model's typed widgets (specification S6.1): the declarations
-# generated under native-theme/src/next/widgets/ are what the catalogue and
+# generated under native-theme/src/widgets/ are what the catalogue and
 # scripts/widget_units.toml state, until the catalogue is archived.
 run_check "data documents: the generated widgets match the catalogue" \
     python3 scripts/generate_widgets.py --check
@@ -1382,7 +1383,7 @@ run_check "data documents: widget generator self-test" \
 # The bundled presets of the 0.8.0 model (specification S11, S17): each is what
 # generate_preset.py --write writes from its facts, its hand-written blocks
 # carried over.
-for preset in native-theme/src/next/presets/*.toml; do
+for preset in native-theme/src/presets/*.toml; do
     preset=$(basename "$preset" .toml)
     run_check "data documents: the bundled preset $preset is generated from its facts" \
         python3 scripts/generate_preset.py "$preset" --check
@@ -1440,18 +1441,6 @@ for crate in $WORKSPACE_CRATES; do
             env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps --document-private-items
     fi
 done
-# The 0.8.0 model is built in native-theme's `next` module, hidden from the
-# documentation until it replaces today's; neither `missing_docs` nor rustdoc's
-# link checks reach a `#[doc(hidden)]` module. The `nt_next_docs` cfg drops
-# that attribute, so this run holds `next` to the crate's own `missing_docs`
-# and fails on a broken intra-doc link in it. `-D warnings`, not
-# `-D missing-docs`: the crate root's `#![warn(missing_docs)]` overrides a lint
-# level given on the command line, so `-D missing-docs` alone only warns.
-# RUSTDOCFLAGS reach rustdoc alone, so the ordinary build is not rebuilt: only
-# native-theme is documented once more (a few seconds), as the two runs above
-# re-document each other.
-run_check "docs and missing docs (native-theme's next module)" \
-    env RUSTDOCFLAGS="--cfg nt_next_docs -D warnings" cargo doc -p native-theme --no-deps
 # docs.rs builds native-theme-iced with every feature, and a doc item behind a
 # feature gate can only break there. No other gate documents that configuration.
 run_check "docs (native-theme-iced, all features)" \

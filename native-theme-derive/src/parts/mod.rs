@@ -82,7 +82,7 @@ mod tests {
             "pub struct ProbePatch",
             "pub width : :: core :: option :: Option < Value < Px > >",
             "pub top : :: core :: option :: Option < EdgePatch >",
-            "pub stroke : :: core :: option :: Option < crate :: next :: blocks :: BlockPatch < Stroke > >",
+            "pub stroke : :: core :: option :: Option < crate :: blocks :: BlockPatch < Stroke > >",
             "pub fill : :: core :: option :: Option < PaintPatch >",
             "pub corner : :: core :: option :: Option < Radius >",
             "pub struct ResolvedProbe",
@@ -92,19 +92,19 @@ mod tests {
             "pub fill : :: core :: option :: Option < ResolvedPaint >",
             "pub corner : ResolvedRadius",
             "pub params : :: std :: vec :: Vec < (Key , :: core :: option :: Option < Scalar >) >",
-            "impl crate :: next :: blocks :: FieldsBlock for Probe",
-            "impl crate :: next :: blocks :: Merge for ProbePatch",
-            "impl crate :: next :: blocks :: Apply < ProbePatch > for Probe",
-            "crate :: next :: blocks :: replace_slot (& mut self . width , width)",
-            "crate :: next :: blocks :: merge_slot (& mut self . top , top)",
-            "crate :: next :: blocks :: merge_slot_by_key (& mut self . params , params)",
-            "impl crate :: next :: blocks :: sealed :: Sealed for Probe",
-            "path : \"stroke\" , ty : crate :: next :: registry :: FieldType :: Block { \
-             ty : \"Value<Stroke>\" , block : \"Stroke\" , form : < Stroke as crate :: next :: blocks :: Table > :: FORM , \
-             fields : < Stroke as crate :: next :: blocks :: Table > :: FIELDS , } , \
+            "impl crate :: blocks :: FieldsBlock for Probe",
+            "impl crate :: blocks :: Merge for ProbePatch",
+            "impl crate :: blocks :: Apply < ProbePatch > for Probe",
+            "crate :: blocks :: replace_slot (& mut self . width , width)",
+            "crate :: blocks :: merge_slot (& mut self . top , top)",
+            "crate :: blocks :: merge_slot_by_key (& mut self . params , params)",
+            "impl crate :: blocks :: sealed :: Sealed for Probe",
+            "path : \"stroke\" , ty : crate :: registry :: FieldType :: Block { \
+             ty : \"Value<Stroke>\" , block : \"Stroke\" , form : < Stroke as crate :: blocks :: Table > :: FORM , \
+             fields : < Stroke as crate :: blocks :: Table > :: FIELDS , } , \
              may_be_absent : true , auto : false",
-            "path : \"params\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Vec<(Key,Value<Scalar>)>\")",
-            "const FORM : crate :: next :: registry :: BlockForm = crate :: next :: registry :: BlockForm :: Struct",
+            "path : \"params\" , ty : crate :: registry :: FieldType :: Leaf (\"Vec<(Key,Value<Scalar>)>\")",
+            "const FORM : crate :: registry :: BlockForm = crate :: registry :: BlockForm :: Struct",
             "if let :: core :: option :: Option :: Some (value) = width",
             ":: core :: result :: Result :: Ok (())",
         ] {
@@ -160,13 +160,13 @@ mod tests {
         for expected in [
             "pub axes : :: core :: option :: Option < Value < Vec < (AxisTag , AxisValue) > > >",
             "pub axes : :: core :: option :: Option < :: std :: vec :: Vec < (AxisTag , AxisValue) > >",
-            "crate :: next :: blocks :: merge_slot_value_map (& mut self . axes , axes)",
-            "crate :: next :: blocks :: apply_value_map (& mut self . axes , value)",
+            "crate :: blocks :: merge_slot_value_map (& mut self . axes , axes)",
+            "crate :: blocks :: apply_value_map (& mut self . axes , value)",
             "cx . value_map :: < AxisTag , AxisValue > (& items)",
-            "crate :: next :: validate :: walk :: walk_value_map",
-            "crate :: next :: toml :: read :: read_value_map :: < AxisTag , AxisValue >",
-            "crate :: next :: expr :: Ty :: Map { key : \"AxisTag\" , value : \"AxisValue\" }",
-            "crate :: next :: resolve :: compose :: leaf (& self . axes , rest)",
+            "crate :: validate :: walk :: walk_value_map",
+            "crate :: toml :: read :: read_value_map :: < AxisTag , AxisValue >",
+            "crate :: expr :: Ty :: Map { key : \"AxisTag\" , value : \"AxisValue\" }",
+            "crate :: resolve :: compose :: leaf (& self . axes , rest)",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -187,7 +187,7 @@ mod tests {
         for expected in [
             "pub text : :: core :: option :: Option < :: std :: boxed :: Box < TextTokensPatch > >",
             "text . map (| patch | * patch)",
-            "crate :: next :: resolve :: compose :: Locate :: locate (& * * value , rest)",
+            "crate :: resolve :: compose :: Locate :: locate (& * * value , rest)",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -214,7 +214,7 @@ mod tests {
             }
         });
         assert!(
-            out.contains("pub max_width : :: core :: option :: Option < crate :: next :: Length >"),
+            out.contains("pub max_width : :: core :: option :: Option < crate :: Length >"),
             "{out}"
         );
         assert!(out.contains("may_be_absent : false , auto : true"), "{out}");
@@ -231,15 +231,11 @@ mod tests {
             }
         });
         assert!(
-            out.contains(
-                "pub line_height : :: core :: option :: Option < crate :: next :: Length >"
-            ),
+            out.contains("pub line_height : :: core :: option :: Option < crate :: Length >"),
             "{out}"
         );
         assert!(
-            out.contains(
-                "pub letter_spacing : :: core :: option :: Option < crate :: next :: Px >"
-            ),
+            out.contains("pub letter_spacing : :: core :: option :: Option < crate :: Px >"),
             "{out}"
         );
     }
@@ -280,14 +276,14 @@ mod tests {
         });
         for expected in [
             "pub symbolic_colors : :: core :: option :: Option < :: std :: vec :: Vec < (Key , PaintPatch) > >",
-            "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: next :: blocks :: BlockPatch < TextStyle >) > >",
+            "pub keyed : :: core :: option :: Option < :: std :: vec :: Vec < (Key , crate :: blocks :: BlockPatch < TextStyle >) > >",
             "pub timings : :: core :: option :: Option < Vec < (Key , Timing) > >",
             "pub symbolic_colors : :: std :: vec :: Vec < (Key , :: core :: option :: Option < ResolvedPaint >) >",
-            "crate :: next :: blocks :: merge_slot_entries (& mut self . symbolic_colors , symbolic_colors) \
+            "crate :: blocks :: merge_slot_entries (& mut self . symbolic_colors , symbolic_colors) \
              . map_err (| c | c . under (\"symbolic_colors\")) ?",
-            "crate :: next :: blocks :: apply_entries (& mut self . keyed , entries)",
-            "crate :: next :: blocks :: merge_slot_by_key (& mut self . timings , timings)",
-            "fields : < Paint as crate :: next :: blocks :: Table > :: FIELDS",
+            "crate :: blocks :: apply_entries (& mut self . keyed , entries)",
+            "crate :: blocks :: merge_slot_by_key (& mut self . timings , timings)",
+            "fields : < Paint as crate :: blocks :: Table > :: FIELDS",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -304,23 +300,23 @@ mod tests {
             }
         });
         for expected in [
-            "pub margin : :: core :: option :: Option < crate :: next :: Sides < :: core :: option :: Option < Value < Px > >> >",
-            "pub margin : crate :: next :: Sides < :: core :: option :: Option < Px > >",
-            "pub flip : crate :: next :: Axes < bool >",
-            "let held = self . margin . get_or_insert_with (|| crate :: next :: Sides { \
+            "pub margin : :: core :: option :: Option < crate :: Sides < :: core :: option :: Option < Value < Px > >> >",
+            "pub margin : crate :: Sides < :: core :: option :: Option < Px > >",
+            "pub flip : crate :: Axes < bool >",
+            "let held = self . margin . get_or_insert_with (|| crate :: Sides { \
              top : :: core :: option :: Option :: None , right : :: core :: option :: Option :: None , \
              bottom : :: core :: option :: Option :: None , left : :: core :: option :: Option :: None })",
-            "crate :: next :: blocks :: replace_slot (& mut held . left , later . left)",
+            "crate :: blocks :: replace_slot (& mut held . left , later . left)",
             "if let :: core :: option :: Option :: Some (value) = later . vertical { self . flip . vertical = value ; }",
-            "path : \"margin\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Sides<Value<Px>>\" , \
-             block : \"Sides\" , form : crate :: next :: registry :: BlockForm :: Struct , fields : & [crate :: next :: registry :: FieldInfo { \
-             path : \"top\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
+            "path : \"margin\" , ty : crate :: registry :: FieldType :: Block { ty : \"Sides<Value<Px>>\" , \
+             block : \"Sides\" , form : crate :: registry :: BlockForm :: Struct , fields : & [crate :: registry :: FieldInfo { \
+             path : \"top\" , ty : crate :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
              may_be_absent : true , auto : false , \
-             value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty , }",
-            "path : \"left\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
+             value : < Value < Px > as crate :: validate :: walk :: Walk > :: ty , }",
+            "path : \"left\" , ty : crate :: registry :: FieldType :: Leaf (\"Value<Px>\") , \
              may_be_absent : true , auto : false , \
-             value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty , }] , } , \
-             may_be_absent : false , auto : false , value : crate :: next :: registry :: no_type , }",
+             value : < Value < Px > as crate :: validate :: walk :: Walk > :: ty , }] , } , \
+             may_be_absent : false , auto : false , value : crate :: registry :: no_type , }",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -336,8 +332,8 @@ mod tests {
             }
         });
         for expected in [
-            "crate :: next :: blocks :: merge_slot_keyed (& mut self . bindings , bindings)",
-            "crate :: next :: blocks :: KeyedItem :: merge_keyed (& mut self . bindings , items)",
+            "crate :: blocks :: merge_slot_keyed (& mut self . bindings , bindings)",
+            "crate :: blocks :: KeyedItem :: merge_keyed (& mut self . bindings , items)",
             "pub bindings : :: std :: vec :: Vec < ResolvedBinding >",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -358,9 +354,9 @@ mod tests {
         });
         for expected in [
             "CubicBezier (f32 , f32 , f32 , f32)",
-            "path : \"cubic_bezier\" , ty : crate :: next :: registry :: FieldType :: Leaf (\"(f32,f32,f32,f32)\")",
+            "path : \"cubic_bezier\" , ty : crate :: registry :: FieldType :: Leaf (\"(f32,f32,f32,f32)\")",
             "start : :: core :: option :: Option < ResolvedFadeLength >",
-            "path : \"fade.start\" , ty : crate :: next :: registry :: FieldType :: Block { ty : \"Option<FadeLength>\"",
+            "path : \"fade.start\" , ty : crate :: registry :: FieldType :: Block { ty : \"Option<FadeLength>\"",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -404,12 +400,12 @@ mod tests {
             }
         });
         for expected in [
-            "pub surfaces : :: core :: option :: Option < crate :: next :: SurfaceMap < crate :: next :: blocks :: BlockPatch < SurfaceRoles >> >",
-            "pub surfaces : crate :: next :: SurfaceMap < ResolvedSurfaceRoles >",
-            "crate :: next :: blocks :: merge_slot_surfaces (& mut self . surfaces , surfaces) \
+            "pub surfaces : :: core :: option :: Option < crate :: SurfaceMap < crate :: blocks :: BlockPatch < SurfaceRoles >> >",
+            "pub surfaces : crate :: SurfaceMap < ResolvedSurfaceRoles >",
+            "crate :: blocks :: merge_slot_surfaces (& mut self . surfaces , surfaces) \
              . map_err (| c | c . under (\"surfaces\")) ?",
-            "crate :: next :: blocks :: apply_surfaces (& mut self . surfaces , sets)",
-            "fields : < SurfaceRoles as crate :: next :: blocks :: Table > :: FIELDS",
+            "crate :: blocks :: apply_surfaces (& mut self . surfaces , sets)",
+            "fields : < SurfaceRoles as crate :: blocks :: Table > :: FIELDS",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -425,10 +421,10 @@ mod tests {
             }
         });
         for expected in [
-            "crate :: next :: blocks :: merge_slot_by_key_nested (& mut self . params , params)",
-            "crate :: next :: blocks :: merge_by_key_nested (& mut self . params , entries)",
+            "crate :: blocks :: merge_slot_by_key_nested (& mut self . params , params)",
+            "crate :: blocks :: merge_by_key_nested (& mut self . params , entries)",
             "pub params : :: std :: vec :: Vec < (Key , :: std :: vec :: Vec < (Key , :: core :: option :: Option < Scalar >) >) >",
-            "crate :: next :: blocks :: merge_slot_by_key (& mut self . per_language , per_language)",
+            "crate :: blocks :: merge_slot_by_key (& mut self . per_language , per_language)",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -445,7 +441,7 @@ mod tests {
         });
         for expected in [
             "pub elevation : :: std :: vec :: Vec < (Key , :: std :: vec :: Vec < ResolvedShadowLayer >) >",
-            "fields : < ShadowLayer as crate :: next :: blocks :: Table > :: FIELDS",
+            "fields : < ShadowLayer as crate :: blocks :: Table > :: FIELDS",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -465,22 +461,22 @@ mod tests {
             }
         });
         for expected in [
-            "const LEN : usize = < IconStyle as crate :: next :: blocks :: Table > :: FIELDS . len () ;",
-            "const MARKED : [crate :: next :: registry :: FieldInfo ; LEN] = crate :: next :: registry :: \
-             absent_in (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+            "const LEN : usize = < IconStyle as crate :: blocks :: Table > :: FIELDS . len () ;",
+            "const MARKED : [crate :: registry :: FieldInfo ; LEN] = crate :: registry :: \
+             absent_in (< IconStyle as crate :: blocks :: Table > :: FIELDS , crate :: \
              registry :: InnerMark :: AllBut (& [\"size\"])) ;",
-            "absent_in (< StatusColors as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+            "absent_in (< StatusColors as crate :: blocks :: Table > :: FIELDS , crate :: \
              registry :: InnerMark :: AllBut (& [])) ;",
-            "absent_in (< TextStyle as crate :: next :: blocks :: Table > :: FIELDS , crate :: next :: \
+            "absent_in (< TextStyle as crate :: blocks :: Table > :: FIELDS , crate :: \
              registry :: InnerMark :: Only (& [\"fill\" , \"wrap\"])) ;",
-            "const _ : () = :: core :: assert ! (crate :: next :: registry :: names_values \
-             (< IconStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"size\"]) , \
+            "const _ : () = :: core :: assert ! (crate :: registry :: names_values \
+             (< IconStyle as crate :: blocks :: Table > :: FIELDS , & [\"size\"]) , \
              \"required or only names a field of `IconStyle` that is not a `Value`\") ;",
-            "names_values (< TextStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"wrap\"])",
+            "names_values (< TextStyle as crate :: blocks :: Table > :: FIELDS , & [\"fill\" , \"wrap\"])",
             "may_be_absent : true , auto : false",
-            "crate :: next :: blocks :: apply_entries_in (& mut self . keyed , entries , :: core :: option \
-             :: Option :: Some (crate :: next :: registry :: InnerMark :: Only (& [\"fill\" , \"wrap\"])))",
-            "crate :: next :: blocks :: apply_entries_in (& mut held ,",
+            "crate :: blocks :: apply_entries_in (& mut self . keyed , entries , :: core :: option \
+             :: Option :: Some (crate :: registry :: InnerMark :: Only (& [\"fill\" , \"wrap\"])))",
+            "crate :: blocks :: apply_entries_in (& mut held ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -497,10 +493,10 @@ mod tests {
         });
         for expected in [
             "pub patch : ResolvedPartStylePatch",
-            "ty : crate :: next :: registry :: FieldType :: Patch { ty : \"PartStylePatch\" , \
-             block : \"PartStyle\" , fields : { fn fields () -> & 'static [crate :: next :: registry :: FieldInfo] { \
-             < PartStyle as crate :: next :: blocks :: Table > :: FIELDS } fields } , }",
-            "crate :: next :: blocks :: replace_slot (& mut self . patch , patch)",
+            "ty : crate :: registry :: FieldType :: Patch { ty : \"PartStylePatch\" , \
+             block : \"PartStyle\" , fields : { fn fields () -> & 'static [crate :: registry :: FieldInfo] { \
+             < PartStyle as crate :: blocks :: Table > :: FIELDS } fields } , }",
+            "crate :: blocks :: replace_slot (& mut self . patch , patch)",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -524,12 +520,12 @@ mod tests {
         });
         let squeezed: String = out.split_whitespace().collect();
         for expected in [
-            "implcrate::next::resolve::evaluate::KeepAbsentforResolvedProbe",
+            "implcrate::resolve::evaluate::KeepAbsentforResolvedProbe",
             "let(set,held)=(&mutself.width,&beneath.width);ifheld.is_none()",
             "let(set,held)=(&mutself.stroke,&beneath.stroke);match(set.as_mut(),held.as_ref())",
-            "let(set,held)=(&mutself.edge,&beneath.edge);crate::next::resolve::evaluate::KeepAbsent::keep_absent(set,held);",
+            "let(set,held)=(&mutself.edge,&beneath.edge);crate::resolve::evaluate::KeepAbsent::keep_absent(set,held);",
             "ifheld.top.is_none(){set.top=::core::option::Option::None;}",
-            "fnresolve_patch<'t:'f,'f>(patch:&'fProbePatch,fold:crate::next::resolve::compose::Fold<'f>,beneath:&[crate::next::resolve::compose::Fold<'f>]",
+            "fnresolve_patch<'t:'f,'f>(patch:&'fProbePatch,fold:crate::resolve::compose::Fold<'f>,beneath:&[crate::resolve::compose::Fold<'f>]",
         ] {
             assert!(squeezed.contains(expected), "{expected}\n{out}");
         }
@@ -553,7 +549,7 @@ mod tests {
         for expected in [
             "pub struct ResolvedProbePatch",
             "pub struct ResolvedProbePatch { # [doc = r\" The fill.\"] pub fill : :: core :: option :: Option < :: core :: option :: Option < ResolvedPaint > >",
-            "pub min_width : :: core :: option :: Option < :: core :: option :: Option < crate :: next :: Length > >",
+            "pub min_width : :: core :: option :: Option < :: core :: option :: Option < crate :: Length > >",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -619,27 +615,27 @@ mod tests {
             }
         });
         for expected in [
-            "impl crate :: next :: blocks :: Create for Probe",
-            "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < crate :: next :: \
+            "impl crate :: blocks :: Create for Probe",
+            "fn create_in (patch : ProbePatch , inner : :: core :: option :: Option < crate :: \
              registry :: InnerMark > ,)",
-            "width : crate :: next :: blocks :: created_value (width , false , inner , \"width\") ?",
-            "inset : crate :: next :: blocks :: created_value (inset , true , inner , \"inset\") ?",
-            "top : crate :: next :: blocks :: created_value (held . top , true , inner , \"margin.top\" ,) ?",
-            "vertical : held . vertical . ok_or_else (|| { crate :: next :: blocks :: MergeConflict :: new \
-             (crate :: next :: blocks :: Below :: Missing) . under (\"flip.vertical\") }) ?",
-            "case : case . ok_or_else (|| crate :: next :: blocks :: MergeConflict :: new \
-             (crate :: next :: blocks :: Below :: Missing) . under (\"case\")) ?",
-            "edge : < Edge as crate :: next :: blocks :: Create > :: create_in (edge . unwrap_or_default () , \
+            "width : crate :: blocks :: created_value (width , false , inner , \"width\") ?",
+            "inset : crate :: blocks :: created_value (inset , true , inner , \"inset\") ?",
+            "top : crate :: blocks :: created_value (held . top , true , inner , \"margin.top\" ,) ?",
+            "vertical : held . vertical . ok_or_else (|| { crate :: blocks :: MergeConflict :: new \
+             (crate :: blocks :: Below :: Missing) . under (\"flip.vertical\") }) ?",
+            "case : case . ok_or_else (|| crate :: blocks :: MergeConflict :: new \
+             (crate :: blocks :: Below :: Missing) . under (\"case\")) ?",
+            "edge : < Edge as crate :: blocks :: Create > :: create_in (edge . unwrap_or_default () , \
              :: core :: option :: Option :: None)",
-            "status : < StatusColors as crate :: next :: blocks :: Create > :: create_in (status . unwrap_or_default () , \
-             :: core :: option :: Option :: Some (crate :: next :: registry :: InnerMark :: AllBut \
+            "status : < StatusColors as crate :: blocks :: Create > :: create_in (status . unwrap_or_default () , \
+             :: core :: option :: Option :: Some (crate :: registry :: InnerMark :: AllBut \
              (& [\"fill\"])))",
-            "< crate :: next :: Value < Stroke > as crate :: next :: blocks :: Entry < crate :: next :: blocks :: \
+            "< crate :: Value < Stroke > as crate :: blocks :: Entry < crate :: blocks :: \
              BlockPatch < Stroke > >> :: create (patch)",
-            ":: core :: option :: Option :: None => crate :: next :: blocks :: created_value (:: core :: option :: \
+            ":: core :: option :: Option :: None => crate :: blocks :: created_value (:: core :: option :: \
              Option :: None , false , inner , \"stroke\") ?",
             ":: core :: option :: Option :: Some (PaintPatch :: Set (value)) => value , :: core :: option :: \
-             Option :: Some (PaintPatch :: Append (_)) | :: core :: option :: Option :: None => crate :: next :: \
+             Option :: Some (PaintPatch :: Append (_)) | :: core :: option :: Option :: None => crate :: \
              blocks :: created_value (:: core :: option :: Option :: None , true , inner , \"fill\") ?",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -662,19 +658,19 @@ mod tests {
         });
         for expected in [
             "pub enum MenuButtonPart { # [doc = r\" The bezel.\"] Body , # [doc = r\" The arrow.\"] MenuIndicator , }",
-            "pub struct MenuButtonPatch { # [doc = r\" The bezel.\"] pub body : :: core :: option :: Option < crate :: next :: widgets :: PartPatch > ,",
+            "pub struct MenuButtonPatch { # [doc = r\" The bezel.\"] pub body : :: core :: option :: Option < crate :: widgets :: PartPatch > ,",
             "pub values : :: core :: option :: Option < MenuButtonValuesPatch > ,",
             "pub (crate) fn into_parts (self ,)",
             "[(MenuButtonPart :: Body , body) , (MenuButtonPart :: MenuIndicator , menu_indicator)]",
-            "impl crate :: next :: widgets :: WidgetTable for MenuButtonTheme",
+            "impl crate :: widgets :: WidgetTable for MenuButtonTheme",
             "name : \"body\" , root : true , element : false , parent : :: core :: option :: Option :: None , may_be_absent : false",
             "name : \"menu_indicator\" , root : false , element : true , parent : :: core :: option :: Option :: Some (\"body\") , may_be_absent : true",
-            "const _ : () = :: core :: assert ! (crate :: next :: registry :: names_fields \
-             (< PartStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"]) , \
+            "const _ : () = :: core :: assert ! (crate :: registry :: names_fields \
+             (< PartStyle as crate :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"]) , \
              \"`menu_button.body` lists a field its style does not have\") ;",
-            "const FIELDS : [crate :: next :: registry :: FieldInfo ; 2usize] = crate :: next :: registry :: select \
-             (< PartStyle as crate :: next :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"] , & [\"shadow\"] ,) ;",
-            "const VALUES : & 'static [crate :: next :: registry :: FieldInfo] = < MenuButtonValues as crate :: next :: blocks :: Table > :: FIELDS ;",
+            "const FIELDS : [crate :: registry :: FieldInfo ; 2usize] = crate :: registry :: select \
+             (< PartStyle as crate :: blocks :: Table > :: FIELDS , & [\"fill\" , \"shadow\"] , & [\"shadow\"] ,) ;",
+            "const VALUES : & 'static [crate :: registry :: FieldInfo] = < MenuButtonValues as crate :: blocks :: Table > :: FIELDS ;",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -691,13 +687,13 @@ mod tests {
         });
         for expected in [
             "pub enum PaintPatch",
-            "Set (crate :: next :: Value < Paint >)",
+            "Set (crate :: Value < Paint >)",
             "Append (Vec < PaintLayer >)",
             "pub layers : :: std :: vec :: Vec < ResolvedPaintLayer >",
-            "impl crate :: next :: blocks :: Apply < PaintPatch > for crate :: next :: Value < Paint >",
-            "impl crate :: next :: blocks :: Entry < PaintPatch > for crate :: next :: Value < Paint >",
-            "PaintPatch :: Append (_) => :: core :: result :: Result :: Err (crate :: next :: blocks :: \
-             MergeConflict :: new (crate :: next :: blocks :: Below :: Missing) ,) ,",
+            "impl crate :: blocks :: Apply < PaintPatch > for crate :: Value < Paint >",
+            "impl crate :: blocks :: Entry < PaintPatch > for crate :: Value < Paint >",
+            "PaintPatch :: Append (_) => :: core :: result :: Result :: Err (crate :: blocks :: \
+             MergeConflict :: new (crate :: blocks :: Below :: Missing) ,) ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -763,22 +759,22 @@ mod tests {
             }
         });
         for expected in [
-            "impl crate :: next :: toml :: read :: Fields for ProbePatch",
-            "crate :: next :: toml :: read :: spelled (\"width\" , key , < Value < Px > as \
-             crate :: next :: toml :: read :: FromToml > :: SPELLINGS)",
-            "crate :: next :: toml :: read :: put (& mut self . width , read_value , < Value < Px > \
-             as crate :: next :: toml :: read :: FromToml > :: combine , table , key , \"width\" , cx)",
-            "crate :: next :: toml :: read :: read_map :: < Key , Value < Scalar > > (item , & at , cx)",
-            "crate :: next :: toml :: read :: read_nested_map :: < Key , Key , Value < Scalar > > \
+            "impl crate :: toml :: read :: Fields for ProbePatch",
+            "crate :: toml :: read :: spelled (\"width\" , key , < Value < Px > as \
+             crate :: toml :: read :: FromToml > :: SPELLINGS)",
+            "crate :: toml :: read :: put (& mut self . width , read_value , < Value < Px > \
+             as crate :: toml :: read :: FromToml > :: combine , table , key , \"width\" , cx)",
+            "crate :: toml :: read :: read_map :: < Key , Value < Scalar > > (item , & at , cx)",
+            "crate :: toml :: read :: read_nested_map :: < Key , Key , Value < Scalar > > \
              (item , & at , cx)",
-            "crate :: next :: toml :: read :: read_surfaces :: < crate :: next :: blocks :: \
+            "crate :: toml :: read :: read_surfaces :: < crate :: blocks :: \
              BlockPatch < SurfaceRoles >> (item , & at , cx)",
-            "impl crate :: next :: toml :: read :: FromToml for ProbePatch",
-            "impl crate :: next :: toml :: read :: FromToml for Probe",
-            "impl crate :: next :: toml :: read :: Build for Probe",
-            "let field_limit = crate :: next :: toml :: read :: optional (field_limit , options_none",
-            "let field_width = crate :: next :: toml :: read :: required (field_width",
-            "crate :: next :: toml :: read :: build_value :: < Stroke > (patch",
+            "impl crate :: toml :: read :: FromToml for ProbePatch",
+            "impl crate :: toml :: read :: FromToml for Probe",
+            "impl crate :: toml :: read :: Build for Probe",
+            "let field_limit = crate :: toml :: read :: optional (field_limit , options_none",
+            "let field_width = crate :: toml :: read :: required (field_width",
+            "crate :: toml :: read :: build_value :: < Stroke > (patch",
             "impl :: core :: convert :: TryFrom < ProbePatch > for Probe",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -798,14 +794,14 @@ mod tests {
             }
         });
         for expected in [
-            "impl crate :: next :: validate :: walk :: Walk for Probe",
-            "impl crate :: next :: validate :: walk :: Walk for ProbePatch",
-            "w . field (\"Probe\" , \"margin\" , crate :: next :: validate :: walk :: Marks { \
+            "impl crate :: validate :: walk :: Walk for Probe",
+            "impl crate :: validate :: walk :: Walk for ProbePatch",
+            "w . field (\"Probe\" , \"margin\" , crate :: validate :: walk :: Marks { \
              may_be_absent : true , auto : false , signed : true }",
-            "crate :: next :: validate :: walk :: walk_map (& self . params , w) ;",
+            "crate :: validate :: walk :: walk_map (& self . params , w) ;",
             "if let :: core :: option :: Option :: Some (map) = & self . params { \
-             crate :: next :: validate :: walk :: walk_map (map , w) ; }",
-            "w . place (crate :: next :: registry :: InnerMark :: AllBut (& [\"fill\"]) ,",
+             crate :: validate :: walk :: walk_map (map , w) ; }",
+            "w . place (crate :: registry :: InnerMark :: AllBut (& [\"fill\"]) ,",
             "w . patch (& [\"margin\" , \"params\" , \"status\"] ,",
             "if self . margin . is_some () { set . push (\"margin\") ; }",
         ] {
@@ -827,17 +823,17 @@ mod tests {
             }
         });
         for expected in [
-            "w . check (crate :: next :: validate :: walk :: Node :: Probe (self)) ;",
+            "w . check (crate :: validate :: walk :: Node :: Probe (self)) ;",
             "Probe :: Keyed (member0) => { w . variant (\"Probe\" , \"keyed\" , true ,",
             "Probe :: Px (member0) => { w . variant (\"Probe\" , \"px\" , true ,",
             "Probe :: Full { maximum } => { w . variant (\"Probe\" , \"full\" , false , | w | { \
              w . field (\"Probe\" , \"maximum\" ,",
-            "crate :: next :: validate :: walk :: Walk :: suffix (maximum)",
+            "crate :: validate :: walk :: Walk :: suffix (maximum)",
             "w . variant (\"Probe\" , \"pair\" , false , | w | { w . index (0usize ,",
             "fn suffix (& self) -> & 'static str { match self { Probe :: Px (member0) => \
-             crate :: next :: validate :: walk :: Walk :: suffix (member0) , Probe :: Full { .. } \
+             crate :: validate :: walk :: Walk :: suffix (member0) , Probe :: Full { .. } \
              => \"\" , Probe :: Pair (..) => \"\" , Probe :: Round => \"\" , Probe :: Keyed \
-             (member0) => crate :: next :: validate :: walk :: Walk :: suffix (member0) ,",
+             (member0) => crate :: validate :: walk :: Walk :: suffix (member0) ,",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
         }
@@ -846,8 +842,8 @@ mod tests {
             pub struct Probe { pub width: Value<Px> }
         });
         for expected in [
-            "w . check (crate :: next :: validate :: walk :: Node :: Probe (self)) ;",
-            "w . check (crate :: next :: validate :: walk :: Node :: ProbePatch (self)) ;",
+            "w . check (crate :: validate :: walk :: Node :: Probe (self)) ;",
+            "w . check (crate :: validate :: walk :: Node :: ProbePatch (self)) ;",
         ] {
             assert!(block.contains(expected), "{expected}\n{block}");
         }
@@ -875,12 +871,12 @@ mod tests {
             }
         });
         for expected in [
-            "fn ty () -> :: core :: option :: Option < crate :: next :: expr :: Ty > { :: core :: \
-             option :: Option :: Some (crate :: next :: expr :: Ty :: block (\"Probe\")) }",
-            "path : \"durations\" , ty : crate :: next :: registry :: FieldType :: Leaf \
+            "fn ty () -> :: core :: option :: Option < crate :: expr :: Ty > { :: core :: \
+             option :: Option :: Some (crate :: expr :: Ty :: block (\"Probe\")) }",
+            "path : \"durations\" , ty : crate :: registry :: FieldType :: Leaf \
              (\"Vec<(Key,Value<Ms>)>\") , may_be_absent : false , auto : false , value : < Value < Ms \
-             > as crate :: next :: validate :: walk :: Walk > :: ty , }",
-            "value : < Value < Px > as crate :: next :: validate :: walk :: Walk > :: ty",
+             > as crate :: validate :: walk :: Walk > :: ty , }",
+            "value : < Value < Px > as crate :: validate :: walk :: Walk > :: ty",
         ] {
             assert!(block.contains(expected), "{expected}\n{block}");
         }
@@ -890,7 +886,7 @@ mod tests {
         });
         assert!(
             named.contains(
-                "crate :: next :: expr :: Ty :: Enum (& crate :: next :: expr :: EnumTy { name : \
+                "crate :: expr :: Ty :: Enum (& crate :: expr :: EnumTy { name : \
                  \"Side\" , variants : & [\"top\" , \"bottom_end\"] , })"
             ),
             "{named}"
@@ -906,11 +902,11 @@ mod tests {
             }
         });
         assert!(
-            out.contains("impl crate :: next :: toml :: read :: Fields for ProbePatch"),
+            out.contains("impl crate :: toml :: read :: Fields for ProbePatch"),
             "{out}"
         );
         assert!(
-            out.contains("impl crate :: next :: toml :: read :: Build for Probe"),
+            out.contains("impl crate :: toml :: read :: Build for Probe"),
             "{out}"
         );
         assert!(!out.contains("FromToml for ProbePatch"), "{out}");
@@ -931,15 +927,15 @@ mod tests {
             }
         });
         for expected in [
-            "impl crate :: next :: toml :: read :: FromToml for Probe",
+            "impl crate :: toml :: read :: FromToml for Probe",
             "\"ring\" => :: core :: option :: Option :: Some (Probe :: Ring)",
             "\"follow_part\" => :: core :: option :: Option :: Some (Probe :: FollowPart)",
             "if let :: core :: option :: Option :: Some (key) = name . strip_prefix ('@')",
             "\"dashed\" =>",
-            "crate :: next :: toml :: read :: optional (field_limit , true",
-            "crate :: next :: toml :: read :: members :: < 2usize > (payload , \"an array of 2 values\"",
-            "\"layers\" => < Vec < Layer > as crate :: next :: toml :: read :: FromToml > :: read \
-             (payload , crate :: next :: toml :: read :: Spelling :: Item , & at , cx) . map \
+            "crate :: toml :: read :: optional (field_limit , true",
+            "crate :: toml :: read :: members :: < 2usize > (payload , \"an array of 2 values\"",
+            "\"layers\" => < Vec < Layer > as crate :: toml :: read :: FromToml > :: read \
+             (payload , crate :: toml :: read :: Spelling :: Item , & at , cx) . map \
              (Probe :: Layers)",
         ] {
             assert!(out.contains(expected), "{expected}\n{out}");
@@ -950,7 +946,7 @@ mod tests {
             pub enum Side { Top, BottomEnd }
         });
         assert!(
-            names.contains("impl crate :: next :: toml :: read :: Named for Side"),
+            names.contains("impl crate :: toml :: read :: Named for Side"),
             "{names}"
         );
         assert!(

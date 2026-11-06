@@ -151,7 +151,7 @@ Licensed under any of
 
 at your option.
 
-One file is not: `src/next/ripple.rs` ports the Android Open Source Project's
+One file is not: `src/ripple.rs` ports the Android Open Source Project's
 `RippleShader.java`, `RippleAnimationSession.java` and Compose's ripple and
 colour code and stays under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with

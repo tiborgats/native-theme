@@ -7,12 +7,12 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use native_theme::next::gate::{
+use native_theme::gate::{
     Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
     Tolerance, Unread, When, content_variants, is_listed_default, listed_key, parse_key,
     parse_value, parse_when, parts, set_whole, widgets,
 };
-use native_theme::next::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
+use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
 use super::facts::{self, Fact, Stated};
@@ -69,7 +69,7 @@ pub fn root_inputs() -> RootInputs {
     RootInputs::new(
         size(1024.0, 768.0),
         size(1920.0, 1080.0),
-        native_theme::next::Direction::Ltr,
+        native_theme::Direction::Ltr,
     )
 }
 
@@ -2132,7 +2132,7 @@ struct Applying<'k, 'f> {
 fn applying_in<'k, 'f>(
     keys: &'k [KeyFacts<'f>],
     widget: &str,
-    session: &native_theme::next::gate::Session<'_>,
+    session: &native_theme::gate::Session<'_>,
     report: &mut Report,
     describe: &dyn Fn() -> String,
 ) -> Applying<'k, 'f> {

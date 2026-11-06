@@ -19,8 +19,8 @@ mod units;
 
 use std::path::{Path, PathBuf};
 
-use native_theme::next::PresetId;
-use native_theme::next::gate::{Combination, Preset};
+use native_theme::PresetId;
+use native_theme::gate::{Combination, Preset};
 
 /// The platform directory each preset's facts are in (S17 *Generations*).
 const DIRECTORIES: [(&str, &str); 8] = [
@@ -459,7 +459,7 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
     let keys = run::prepare(&platform, preset.id(), repo, &mut report);
     let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
     let resolved = preset
-        .resolve(&conditions, &native_theme::next::Layer::default())
+        .resolve(&conditions, &native_theme::Layer::default())
         .unwrap();
     let layer = run::stand_in(preset, &keys, &resolved).unwrap();
     layer
@@ -1331,10 +1331,9 @@ fn gate_accent_group_completed_for_a_pass_alone() {
     let (_, presets) = fixture("derivation_accent_group", "preset.toml");
     let preset = &presets[0].1;
     let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
-    let stand_in = native_theme::next::Layer::from_toml(
-        "[inputs.accent]\nlight = \"#ff0000\"\ndark = \"#ff0000\"",
-    )
-    .unwrap();
+    let stand_in =
+        native_theme::Layer::from_toml("[inputs.accent]\nlight = \"#ff0000\"\ndark = \"#ff0000\"")
+            .unwrap();
     let refused = preset
         .resolve(&conditions, &stand_in)
         .err()
@@ -1640,9 +1639,9 @@ fn gate_fixture_pending_presence() {
 fn gate_definitions_compared() {
     let (_, presets) = fixture("passes", "preset.toml");
     let (_, preset) = &presets[0];
-    let conditions = native_theme::next::gate::Conditions::new("light").unwrap();
+    let conditions = native_theme::gate::Conditions::new("light").unwrap();
     let resolved = preset
-        .resolve(&conditions, &native_theme::next::Layer::default())
+        .resolve(&conditions, &native_theme::Layer::default())
         .unwrap();
     let root = run::root_inputs();
     let failures = |id: &str| {
@@ -1689,7 +1688,7 @@ fn gate_fixture_apple_font_dpi() {
 /// (Apple's, WinUI's, Qt Quick's) the comparison fails, naming the key.
 #[test]
 fn gate_measured_colour_drawn_per_renderer() {
-    use native_theme::next::gate::Drawing;
+    use native_theme::gate::Drawing;
     for (platform, flavor, drawing) in [
         ("gnome", None, Drawing::Premultiplied),
         ("kde", None, Drawing::Premultiplied),

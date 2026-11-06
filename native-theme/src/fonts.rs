@@ -12,7 +12,7 @@
 //! one it has no face of — on Linux and the other fontconfig platforms,
 //! fontconfig's best match, which `system_face` then finds by name.
 
-use crate::next::FontStyle;
+use crate::FontStyle;
 
 /// What [`select_face`] knows about one candidate face.
 #[derive(Clone, Copy, Debug)]

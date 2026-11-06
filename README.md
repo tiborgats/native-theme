@@ -115,7 +115,7 @@ Licensed under any of
 
 at your option.
 
-One file is not: `native-theme/src/next/ripple.rs` ports code of the Android
+One file is not: `native-theme/src/ripple.rs` ports code of the Android
 Open Source Project and stays under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
 its copyright notices, whichever licence you pick for the rest; the

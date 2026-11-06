@@ -4,7 +4,7 @@
 //!
 //! [`ThemeParts`](derive@ThemeParts) generates the 0.8.0 model's blocks' and
 //! typed widgets' patches, resolved types, merges and field tables; its
-//! expansions name `crate::next::*` paths (the blocks' traits and merge
+//! expansions name `crate::` paths (the blocks' traits and merge
 //! helpers, the field-path registry) that exist only inside `native-theme`,
 //! so it compiles nowhere else, and `native-theme` does not re-export it.
 

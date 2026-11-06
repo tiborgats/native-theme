@@ -1,5 +1,5 @@
 // The walk of a block, its patch and an enum read from TOML: every field
-// handed to S12's checks with its path and marks (`next::validate::walk`).
+// handed to S12's checks with its path and marks (`validate::walk`).
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -9,7 +9,7 @@ use super::block::{BlockField, Shape, inner_mark, parse_field, snake_case};
 
 /// The module the walk's types live in.
 fn walk() -> TokenStream {
-    quote!(crate::next::validate::walk)
+    quote!(crate::validate::walk)
 }
 
 /// How an expression stated on a `Value` of the walked type may be formed.
@@ -92,7 +92,7 @@ fn suffix(f: &BlockField, value: &TokenStream) -> TokenStream {
 
 /// The module the expression types live in.
 fn expr_ty() -> TokenStream {
-    quote!(crate::next::expr)
+    quote!(crate::expr)
 }
 
 /// The type of a block named `name` (S2.2), as a reference to it has.

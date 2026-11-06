@@ -1,4 +1,4 @@
-native-theme's src/next/ripple.rs ports code of the Android Open Source
+native-theme's src/ripple.rs ports code of the Android Open Source
 Project, which the Apache License, Version 2.0 (LICENSE-APACHE) covers:
 
 - frameworks/base at android-17.0.0_r1:

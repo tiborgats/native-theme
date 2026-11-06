@@ -7,9 +7,9 @@ use std::borrow::Cow;
 mod bundled;
 mod model;
 
+use crate::Color;
 #[allow(unused_imports)]
 use crate::detect::{system_icon_set, system_icon_theme};
-use crate::next::Color;
 #[allow(unused_imports)]
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use model::{IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name};
@@ -209,7 +209,7 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 /// let _icon = FreedesktopLoader::new("edit-copy")
 ///     .theme("Adwaita")
 ///     .size(48)
-///     .color(native_theme::next::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 })
+///     .color(native_theme::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 })
 ///     .load();
 /// # }
 /// ```
@@ -958,7 +958,7 @@ pub fn colorize_monochrome_svg(svg: &[u8], color: Color) -> Vec<u8> {
 ///
 /// ```
 /// use native_theme::icons::fill_current_color;
-/// use native_theme::next::Color;
+/// use native_theme::Color;
 ///
 /// let text = Color::parse("#222226").ok_or("not a colour")?;
 /// let symbolic = br#"<svg><path fill="currentColor"/></svg>"#;
@@ -2583,7 +2583,7 @@ mod installed_theme_tests {
 )]
 mod colorize_tests {
     use super::{colorize_monochrome_svg, fill_current_color, sets_color, srgb8};
-    use crate::next::Color;
+    use crate::Color;
     use std::borrow::Cow;
 
     const BLUE: Color = srgb8(51, 102, 204, 255);

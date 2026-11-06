@@ -13,12 +13,12 @@ use super::block::{
 
 /// The module the expansions name the steps and their places by.
 fn compose() -> TokenStream {
-    quote!(crate::next::resolve::compose)
+    quote!(crate::resolve::compose)
 }
 
 /// The module the expansions name the evaluation context by.
 fn evaluate() -> TokenStream {
-    quote!(crate::next::resolve::evaluate)
+    quote!(crate::resolve::evaluate)
 }
 
 fn name_of(field: &BlockField) -> String {
@@ -428,7 +428,7 @@ pub(super) fn struct_resolve(name: &Ident, fields: &[BlockField], added: &[&Iden
         impl #ev::ResolveWhole for #name {
             fn resolve_whole<'t: 'f, 'f>(
                 &'f self,
-                pos: crate::next::resolve::Pos,
+                pos: crate::resolve::Pos,
                 cx: &mut #ev::Cx<'t>,
             ) -> ::core::option::Option<#resolved> {
                 let fold = #c::Fold { pos, target: cx.target(), found: #c::Found::Node(self) };
@@ -458,7 +458,7 @@ pub(super) fn enum_resolve(name: &Ident, arms: &[TokenStream]) -> TokenStream {
         impl #ev::ResolveWhole for #name {
             fn resolve_whole<'t: 'f, 'f>(
                 &'f self,
-                pos: crate::next::resolve::Pos,
+                pos: crate::resolve::Pos,
                 cx: &mut #ev::Cx<'t>,
             ) -> ::core::option::Option<#resolved> {
                 let _ = (pos, &cx);

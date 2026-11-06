@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use native_theme::next::gate::{Tolerance, is_derivation};
+use native_theme::gate::{Tolerance, is_derivation};
 use toml::{Table, Value};
 
 /// What a fact states: a value, or a pending measurement's register id.
