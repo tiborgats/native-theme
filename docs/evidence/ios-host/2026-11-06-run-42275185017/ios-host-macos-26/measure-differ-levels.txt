@@ -1,0 +1,25 @@
+./index.toml:4815: pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 210 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 231 }
+./index.toml:4857: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 521 } | pixels = { count = 63720, chroma_over_2 = 21025, distinct_colors = 697 }
+./index.toml:5375: pixels = { count = 63720, chroma_over_2 = 19747, distinct_colors = 264 } | pixels = { count = 63720, chroma_over_2 = 19747, distinct_colors = 265 }
+./index.toml:5389: pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 210 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 211 }
+./index.toml:5403: pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 210 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 211 }
+./index.toml:5417: pixels = { count = 63720, chroma_over_2 = 5, distinct_colors = 357 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 198 }
+./index.toml:5431: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 511 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 501 }
+./index.toml:5445: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 511 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 501 }
+./index.toml:5459: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 573 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 664 }
+./index.toml: differs (5670 and 5670 lines)
+./pages/dark/button_titles/default-grid.png: 124945 pixels differ, by at most 255 levels
+./pages/dark/text_rendering/default-grid.png: 487 pixels differ, by at most 255 levels
+./pages/light/button_titles/default-grid.png: 72547 pixels differ, by at most 255 levels
+./pages/light/text_rendering/default-grid.png: 487 pixels differ, by at most 255 levels
+./screen/dark/button_titles/default/black/glass.png: 10 pixels differ, by at most 2 levels
+./screen/dark/button_titles/default/black/prominent_glass.png: 263 pixels differ, by at most 4 levels
+./screen/dark/button_titles/default/system/glass.png: 10 pixels differ, by at most 2 levels
+./screen/dark/button_titles/default/system/prominent_glass.png: 263 pixels differ, by at most 4 levels
+./screen/dark/button_titles/default/white/filled.png: 1204 pixels differ, by at most 1 levels
+./screen/dark/button_titles/default/white/glass.png: 60401 pixels differ, by at most 222 levels
+./screen/dark/button_titles/default/white/prominent_glass.png: 60422 pixels differ, by at most 94 levels
+./screen/light/button_titles/default/black/glass.png: 21034 pixels differ, by at most 221 levels
+./screen/light/button_titles/default/black/prominent_glass.png: 21035 pixels differ, by at most 115 levels
+./screen/light/button_titles/default/system/glass.png: 275 pixels differ, by at most 1 levels
+./screen/light/button_titles/default/system/prominent_glass.png: 275 pixels differ, by at most 1 levels

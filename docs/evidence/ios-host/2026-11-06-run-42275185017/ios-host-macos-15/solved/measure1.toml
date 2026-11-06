@@ -1,0 +1,412 @@
+# The layers solved from the captures over black and over white (tools/ios-host/solve.swift).
+run = "measure1"
+model = "B = a F, W = a F + (1 - a) 255 per channel, 8-bit sRGB encoded; a = 1 - (W - B) / 255, F = B / a"
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "filled"
+black = "screen/dark/button_titles/default/black/filled.png"
+white = "screen/dark/button_titles/default/white/filled.png"
+layer = "dark/button_titles/default/filled.png"
+pixels = 67968
+opaque = 22737
+transparent = 45013
+partial = 218
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 20544 }, { rgba = "#ffffffff", pixels = 1303 }, { rgba = "#4ca5ffff", pixels = 47 }, { rgba = "#70b7ffff", pixels = 44 }, { rgba = "#3d9effff", pixels = 42 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "filled_long_subtitle"
+black = "screen/dark/button_titles/default/black/filled_long_subtitle.png"
+white = "screen/dark/button_titles/default/white/filled_long_subtitle.png"
+layer = "dark/button_titles/default/filled_long_subtitle.png"
+pixels = 67968
+opaque = 51072
+transparent = 16896
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 45387 }, { rgba = "#ffffffff", pixels = 2801 }, { rgba = "#bcddffff", pixels = 136 }, { rgba = "#9accffff", pixels = 101 }, { rgba = "#ebf5ffff", pixels = 54 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "filled_long_title"
+black = "screen/dark/button_titles/default/black/filled_long_title.png"
+white = "screen/dark/button_titles/default/white/filled_long_title.png"
+layer = "dark/button_titles/default/filled_long_title.png"
+pixels = 67968
+opaque = 47948
+transparent = 19952
+partial = 68
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 42142 }, { rgba = "#ffffffff", pixels = 3306 }, { rgba = "#badcffff", pixels = 118 }, { rgba = "#a1d0ffff", pixels = 102 }, { rgba = "#f7fbffff", pixels = 68 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "filled_overlong_word"
+black = "screen/dark/button_titles/default/black/filled_overlong_word.png"
+white = "screen/dark/button_titles/default/white/filled_overlong_word.png"
+layer = "dark/button_titles/default/filled_overlong_word.png"
+pixels = 67968
+opaque = 56832
+transparent = 11136
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 48730 }, { rgba = "#ffffffff", pixels = 4554 }, { rgba = "#deefffff", pixels = 169 }, { rgba = "#7cbdffff", pixels = 164 }, { rgba = "#f7fbffff", pixels = 135 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "filled_subtitle"
+black = "screen/dark/button_titles/default/black/filled_subtitle.png"
+white = "screen/dark/button_titles/default/white/filled_subtitle.png"
+layer = "dark/button_titles/default/filled_subtitle.png"
+pixels = 67968
+opaque = 33988
+transparent = 33763
+partial = 217
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 30186 }, { rgba = "#ffffffff", pixels = 2051 }, { rgba = "#bcddffff", pixels = 85 }, { rgba = "#3d9effff", pixels = 55 }, { rgba = "#4ca5ffff", pixels = 48 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "gray"
+black = "screen/dark/button_titles/default/black/gray.png"
+white = "screen/dark/button_titles/default/white/gray.png"
+layer = "dark/button_titles/default/gray.png"
+pixels = 67968
+opaque = 1303
+transparent = 45013
+partial = 21652
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#77778151", pixels = 20550 }, { rgba = "#0a84ffff", pixels = 1303 }, { rgba = "#3c7dc580", pixels = 47 }, { rgba = "#2b80d899", pixels = 44 }, { rgba = "#467eb975", pixels = 42 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "plain"
+black = "screen/dark/button_titles/default/black/plain.png"
+white = "screen/dark/button_titles/default/white/plain.png"
+layer = "dark/button_titles/default/plain.png"
+pixels = 67968
+opaque = 1303
+transparent = 65775
+partial = 890
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 1303 }, { rgba = "#0b85ff45", pixels = 47 }, { rgba = "#0a84ff6a", pixels = 44 }, { rgba = "#0a82ff35", pixels = 42 }, { rgba = "#1080ff10", pixels = 28 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "system"
+black = "screen/dark/button_titles/default/black/system.png"
+white = "screen/dark/button_titles/default/white/system.png"
+layer = "dark/button_titles/default/system.png"
+pixels = 67968
+opaque = 6963
+transparent = 60147
+partial = 858
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0a84ffff", pixels = 6963 }, { rgba = "#0080ff02", pixels = 42 }, { rgba = "#0984fff2", pixels = 39 }, { rgba = "#0a84fff4", pixels = 33 }, { rgba = "#0a84ffb2", pixels = 28 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "button_titles"
+size = "default"
+state = "tinted"
+black = "screen/dark/button_titles/default/black/tinted.png"
+white = "screen/dark/button_titles/default/white/tinted.png"
+layer = "dark/button_titles/default/tinted.png"
+pixels = 67968
+opaque = 1303
+transparent = 45013
+partial = 21652
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#0884ff40", pixels = 20550 }, { rgba = "#0a84ffff", pixels = 1303 }, { rgba = "#0984ff74", pixels = 49 }, { rgba = "#0984ff8f", pixels = 44 }, { rgba = "#0a85ff68", pixels = 42 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "text_rendering"
+size = "default"
+state = "body"
+black = "screen/dark/text_rendering/default/black/body.png"
+white = "screen/dark/text_rendering/default/white/body.png"
+layer = "dark/text_rendering/default/body.png"
+pixels = 63720
+opaque = 1217
+transparent = 61542
+partial = 961
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 1217 }, { rgba = "#fffffff7", pixels = 62 }, { rgba = "#ffffffb7", pixels = 40 }, { rgba = "#ffffff5d", pixels = 34 }, { rgba = "#ffffff9d", pixels = 33 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "text_rendering"
+size = "default"
+state = "caption1"
+black = "screen/dark/text_rendering/default/black/caption1.png"
+white = "screen/dark/text_rendering/default/white/caption1.png"
+layer = "dark/text_rendering/default/caption1.png"
+pixels = 63720
+opaque = 530
+transparent = 62522
+partial = 668
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 530 }, { rgba = "#fffffff9", pixels = 46 }, { rgba = "#ffffff26", pixels = 43 }, { rgba = "#ffffff14", pixels = 39 }, { rgba = "#ffffffe7", pixels = 24 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "text_rendering"
+size = "default"
+state = "large_title"
+black = "screen/dark/text_rendering/default/black/large_title.png"
+white = "screen/dark/text_rendering/default/white/large_title.png"
+layer = "dark/text_rendering/default/large_title.png"
+pixels = 63720
+opaque = 5774
+transparent = 56096
+partial = 1850
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 5774 }, { rgba = "#ffffff5f", pixels = 122 }, { rgba = "#ffffffec", pixels = 76 }, { rgba = "#ffffff4b", pixels = 75 }, { rgba = "#ffffffbd", pixels = 61 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "filled"
+black = "screen/light/button_titles/default/black/filled.png"
+white = "screen/light/button_titles/default/white/filled.png"
+layer = "light/button_titles/default/filled.png"
+pixels = 67968
+opaque = 22737
+transparent = 45013
+partial = 218
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 20544 }, { rgba = "#ffffffff", pixels = 1303 }, { rgba = "#459effff", pixels = 47 }, { rgba = "#6ab1ffff", pixels = 44 }, { rgba = "#3596ffff", pixels = 42 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "filled_long_subtitle"
+black = "screen/light/button_titles/default/black/filled_long_subtitle.png"
+white = "screen/light/button_titles/default/white/filled_long_subtitle.png"
+layer = "light/button_titles/default/filled_long_subtitle.png"
+pixels = 67968
+opaque = 51072
+transparent = 16896
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 45387 }, { rgba = "#ffffffff", pixels = 2801 }, { rgba = "#b9daffff", pixels = 136 }, { rgba = "#96c8ffff", pixels = 101 }, { rgba = "#eaf4ffff", pixels = 54 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "filled_long_title"
+black = "screen/light/button_titles/default/black/filled_long_title.png"
+white = "screen/light/button_titles/default/white/filled_long_title.png"
+layer = "light/button_titles/default/filled_long_title.png"
+pixels = 67968
+opaque = 47948
+transparent = 19952
+partial = 68
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 42142 }, { rgba = "#ffffffff", pixels = 3306 }, { rgba = "#b7d9ffff", pixels = 118 }, { rgba = "#9dccffff", pixels = 102 }, { rgba = "#f7fbffff", pixels = 68 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "filled_overlong_word"
+black = "screen/light/button_titles/default/black/filled_overlong_word.png"
+white = "screen/light/button_titles/default/white/filled_overlong_word.png"
+layer = "light/button_titles/default/filled_overlong_word.png"
+pixels = 67968
+opaque = 56832
+transparent = 11136
+partial = 0
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 48730 }, { rgba = "#ffffffff", pixels = 4554 }, { rgba = "#ddedffff", pixels = 169 }, { rgba = "#77b8ffff", pixels = 164 }, { rgba = "#f7fbffff", pixels = 135 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "filled_subtitle"
+black = "screen/light/button_titles/default/black/filled_subtitle.png"
+white = "screen/light/button_titles/default/white/filled_subtitle.png"
+layer = "light/button_titles/default/filled_subtitle.png"
+pixels = 67968
+opaque = 33988
+transparent = 33763
+partial = 217
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 30186 }, { rgba = "#ffffffff", pixels = 2051 }, { rgba = "#b9daffff", pixels = 85 }, { rgba = "#3596ffff", pixels = 55 }, { rgba = "#459effff", pixels = 48 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "gray"
+black = "screen/light/button_titles/default/black/gray.png"
+white = "screen/light/button_titles/default/white/gray.png"
+layer = "light/button_titles/default/gray.png"
+pixels = 67968
+opaque = 1303
+transparent = 45013
+partial = 21652
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#77777d29", pixels = 20550 }, { rgba = "#007affff", pixels = 1303 }, { rgba = "#2479d863", pixels = 47 }, { rgba = "#167ae782", pixels = 44 }, { rgba = "#2d78cf55", pixels = 42 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "plain"
+black = "screen/light/button_titles/default/black/plain.png"
+white = "screen/light/button_titles/default/white/plain.png"
+layer = "light/button_titles/default/plain.png"
+pixels = 67968
+opaque = 1303
+transparent = 65775
+partial = 890
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 1303 }, { rgba = "#007aff45", pixels = 47 }, { rgba = "#007bff6a", pixels = 44 }, { rgba = "#0078ff35", pixels = 42 }, { rgba = "#0080ff10", pixels = 28 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "system"
+black = "screen/light/button_titles/default/black/system.png"
+white = "screen/light/button_titles/default/white/system.png"
+layer = "light/button_titles/default/system.png"
+pixels = 67968
+opaque = 6963
+transparent = 60147
+partial = 858
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007affff", pixels = 6963 }, { rgba = "#0080ff02", pixels = 42 }, { rgba = "#007afff2", pixels = 39 }, { rgba = "#007afff4", pixels = 33 }, { rgba = "#007affb2", pixels = 28 }]
+
+[[layer]]
+appearance = "light"
+specimen = "button_titles"
+size = "default"
+state = "tinted"
+black = "screen/light/button_titles/default/black/tinted.png"
+white = "screen/light/button_titles/default/white/tinted.png"
+layer = "light/button_titles/default/tinted.png"
+pixels = 67968
+opaque = 1303
+transparent = 45013
+partial = 21652
+inconsistent = 0
+alpha_spread_levels = 1
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#007aff2e", pixels = 20550 }, { rgba = "#007affff", pixels = 1303 }, { rgba = "#007aff67", pixels = 47 }, { rgba = "#007bff85", pixels = 44 }, { rgba = "#007bfe59", pixels = 42 }]
+
+[[layer]]
+appearance = "light"
+specimen = "text_rendering"
+size = "default"
+state = "body"
+black = "screen/light/text_rendering/default/black/body.png"
+white = "screen/light/text_rendering/default/white/body.png"
+layer = "light/text_rendering/default/body.png"
+pixels = 63720
+opaque = 1217
+transparent = 61542
+partial = 961
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#000000ff", pixels = 1217 }, { rgba = "#000000f7", pixels = 62 }, { rgba = "#000000b7", pixels = 40 }, { rgba = "#0000005d", pixels = 34 }, { rgba = "#0000009d", pixels = 33 }]
+
+[[layer]]
+appearance = "light"
+specimen = "text_rendering"
+size = "default"
+state = "caption1"
+black = "screen/light/text_rendering/default/black/caption1.png"
+white = "screen/light/text_rendering/default/white/caption1.png"
+layer = "light/text_rendering/default/caption1.png"
+pixels = 63720
+opaque = 530
+transparent = 62522
+partial = 668
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#000000ff", pixels = 530 }, { rgba = "#000000f9", pixels = 46 }, { rgba = "#00000026", pixels = 43 }, { rgba = "#00000014", pixels = 39 }, { rgba = "#000000e7", pixels = 24 }]
+
+[[layer]]
+appearance = "light"
+specimen = "text_rendering"
+size = "default"
+state = "large_title"
+black = "screen/light/text_rendering/default/black/large_title.png"
+white = "screen/light/text_rendering/default/white/large_title.png"
+layer = "light/text_rendering/default/large_title.png"
+pixels = 63720
+opaque = 5774
+transparent = 56096
+partial = 1850
+inconsistent = 0
+alpha_spread_levels = 0
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#000000ff", pixels = 5774 }, { rgba = "#0000005f", pixels = 122 }, { rgba = "#000000ec", pixels = 76 }, { rgba = "#0000004b", pixels = 75 }, { rgba = "#000000bd", pixels = 61 }]
+

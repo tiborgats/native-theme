@@ -1,0 +1,4 @@
+./pages/dark/button_titles/default-grid.png: 383 pixels differ, by at most 255 levels
+./pages/dark/text_rendering/default-grid.png: 6834 pixels differ, by at most 255 levels
+./pages/light/button_titles/default-grid.png: 6835 pixels differ, by at most 255 levels
+./pages/light/text_rendering/default-grid.png: 383 pixels differ, by at most 255 levels

@@ -1,0 +1,1092 @@
+# The layers solved from the captures over black and over white (tools/ios-host/solve.swift).
+run = "press1"
+model = "B = a F, W = a F + (1 - a) 255 per channel, 8-bit sRGB encoded; a = 1 - (W - B) / 255, F = B / a"
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "large"
+state = "pressed"
+black = "screen/dark/clear_glass/large/black/pressed.png"
+white = "screen/dark/clear_glass/large/white/pressed.png"
+layer = "dark/clear_glass/large/pressed.png"
+pixels = 1198800
+opaque = 1376
+transparent = 1148318
+partial = 49106
+inconsistent = 287
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6d", pixels = 1332 }, { rgba = "#ffffff6c", pixels = 1331 }, { rgba = "#ffffff6b", pixels = 1274 }, { rgba = "#ffffff6e", pixels = 1263 }, { rgba = "#ffffffff", pixels = 1242 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/dark/clear_glass/large/black/pressed_selected.png"
+white = "screen/dark/clear_glass/large/white/pressed_selected.png"
+layer = "dark/clear_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 1381
+transparent = 1148318
+partial = 49101
+inconsistent = 274
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6d", pixels = 1317 }, { rgba = "#ffffff6c", pixels = 1311 }, { rgba = "#ffffff6b", pixels = 1300 }, { rgba = "#ffffff6a", pixels = 1279 }, { rgba = "#ffffffff", pixels = 1228 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "medium"
+state = "pressed"
+black = "screen/dark/clear_glass/medium/black/pressed.png"
+white = "screen/dark/clear_glass/medium/white/pressed.png"
+layer = "dark/clear_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 1453
+transparent = 1167887
+partial = 29460
+inconsistent = 274
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 1319 }, { rgba = "#ffffff6c", pixels = 668 }, { rgba = "#ffffff6b", pixels = 611 }, { rgba = "#ffffff6d", pixels = 610 }, { rgba = "#ffffff6e", pixels = 603 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/dark/clear_glass/medium/black/pressed_selected.png"
+white = "screen/dark/clear_glass/medium/white/pressed_selected.png"
+layer = "dark/clear_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 1452
+transparent = 1167887
+partial = 29461
+inconsistent = 275
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 1322 }, { rgba = "#ffffff6c", pixels = 656 }, { rgba = "#ffffff6e", pixels = 633 }, { rgba = "#ffffff6b", pixels = 612 }, { rgba = "#ffffff6d", pixels = 612 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "mini"
+state = "pressed"
+black = "screen/dark/clear_glass/mini/black/pressed.png"
+white = "screen/dark/clear_glass/mini/white/pressed.png"
+layer = "dark/clear_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 1092
+transparent = 1175238
+partial = 22470
+inconsistent = 221
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 992 }, { rgba = "#ffffff6b", pixels = 482 }, { rgba = "#ffffff6c", pixels = 461 }, { rgba = "#ffffff6d", pixels = 437 }, { rgba = "#ffffff70", pixels = 412 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/dark/clear_glass/mini/black/pressed_selected.png"
+white = "screen/dark/clear_glass/mini/white/pressed_selected.png"
+layer = "dark/clear_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 1104
+transparent = 1175238
+partial = 22458
+inconsistent = 213
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 988 }, { rgba = "#ffffff6c", pixels = 487 }, { rgba = "#ffffff6b", pixels = 460 }, { rgba = "#ffffff6d", pixels = 418 }, { rgba = "#ffffff70", pixels = 414 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "small"
+state = "pressed"
+black = "screen/dark/clear_glass/small/black/pressed.png"
+white = "screen/dark/clear_glass/small/white/pressed.png"
+layer = "dark/clear_glass/small/pressed.png"
+pixels = 1198800
+opaque = 1092
+transparent = 1175238
+partial = 22470
+inconsistent = 221
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 992 }, { rgba = "#ffffff6b", pixels = 481 }, { rgba = "#ffffff6c", pixels = 462 }, { rgba = "#ffffff6d", pixels = 437 }, { rgba = "#ffffff70", pixels = 412 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "clear_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/dark/clear_glass/small/black/pressed_selected.png"
+white = "screen/dark/clear_glass/small/white/pressed_selected.png"
+layer = "dark/clear_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 1104
+transparent = 1175238
+partial = 22458
+inconsistent = 213
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffffff", pixels = 988 }, { rgba = "#ffffff6c", pixels = 488 }, { rgba = "#ffffff6b", pixels = 459 }, { rgba = "#ffffff6d", pixels = 418 }, { rgba = "#ffffff70", pixels = 414 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "large"
+state = "pressed"
+black = "screen/dark/glass/large/black/pressed.png"
+white = "screen/dark/glass/large/white/pressed.png"
+layer = "dark/glass/large/pressed.png"
+pixels = 1198800
+opaque = 1376
+transparent = 1015934
+partial = 181490
+inconsistent = 287
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10163 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/dark/glass/large/black/pressed_selected.png"
+white = "screen/dark/glass/large/white/pressed_selected.png"
+layer = "dark/glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 49087
+transparent = 1015934
+partial = 133779
+inconsistent = 48217
+alpha_spread_levels = 27
+alpha_spread_over_2_pixels = 517
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10163 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "medium"
+state = "pressed"
+black = "screen/dark/glass/medium/black/pressed.png"
+white = "screen/dark/glass/medium/white/pressed.png"
+layer = "dark/glass/medium/pressed.png"
+pixels = 1198800
+opaque = 1453
+transparent = 1048495
+partial = 148852
+inconsistent = 274
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/dark/glass/medium/black/pressed_selected.png"
+white = "screen/dark/glass/medium/white/pressed_selected.png"
+layer = "dark/glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 29973
+transparent = 1048495
+partial = 120332
+inconsistent = 28879
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 417
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "mini"
+state = "pressed"
+black = "screen/dark/glass/mini/black/pressed.png"
+white = "screen/dark/glass/mini/white/pressed.png"
+layer = "dark/glass/mini/pressed.png"
+pixels = 1198800
+opaque = 1092
+transparent = 1061150
+partial = 136558
+inconsistent = 221
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 41964 }, { rgba = "#00000002", pixels = 20092 }, { rgba = "#00000003", pixels = 13818 }, { rgba = "#00000004", pixels = 10626 }, { rgba = "#00000005", pixels = 8363 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/dark/glass/mini/black/pressed_selected.png"
+white = "screen/dark/glass/mini/white/pressed_selected.png"
+layer = "dark/glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 22638
+transparent = 1061150
+partial = 115012
+inconsistent = 21825
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 305
+common = [{ rgba = "#00000001", pixels = 41964 }, { rgba = "#00000002", pixels = 20092 }, { rgba = "#00000003", pixels = 13818 }, { rgba = "#00000004", pixels = 10626 }, { rgba = "#00000005", pixels = 8363 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "small"
+state = "pressed"
+black = "screen/dark/glass/small/black/pressed.png"
+white = "screen/dark/glass/small/white/pressed.png"
+layer = "dark/glass/small/pressed.png"
+pixels = 1198800
+opaque = 1092
+transparent = 1061202
+partial = 136506
+inconsistent = 221
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/dark/glass/small/black/pressed_selected.png"
+white = "screen/dark/glass/small/white/pressed_selected.png"
+layer = "dark/glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 22638
+transparent = 1061202
+partial = 114960
+inconsistent = 21825
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 305
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "large"
+state = "pressed"
+black = "screen/dark/prominent_clear_glass/large/black/pressed.png"
+white = "screen/dark/prominent_clear_glass/large/white/pressed.png"
+layer = "dark/prominent_clear_glass/large/pressed.png"
+pixels = 1198800
+opaque = 1404
+transparent = 1148317
+partial = 49079
+inconsistent = 295
+alpha_spread_levels = 7
+alpha_spread_over_2_pixels = 1010
+common = [{ rgba = "#ffffffff", pixels = 1263 }, { rgba = "#e9e9eb98", pixels = 1189 }, { rgba = "#e9e9eb96", pixels = 1181 }, { rgba = "#e9e9eb97", pixels = 1174 }, { rgba = "#e9e9ea95", pixels = 1054 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/dark/prominent_clear_glass/large/black/pressed_selected.png"
+white = "screen/dark/prominent_clear_glass/large/white/pressed_selected.png"
+layer = "dark/prominent_clear_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 1406
+transparent = 1148317
+partial = 49077
+inconsistent = 281
+alpha_spread_levels = 7
+alpha_spread_over_2_pixels = 970
+common = [{ rgba = "#ffffffff", pixels = 1247 }, { rgba = "#e9e9eb96", pixels = 1198 }, { rgba = "#e9e9eb98", pixels = 1178 }, { rgba = "#e9e9eb97", pixels = 1172 }, { rgba = "#e9e9ea95", pixels = 1020 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "medium"
+state = "pressed"
+black = "screen/dark/prominent_clear_glass/medium/black/pressed.png"
+white = "screen/dark/prominent_clear_glass/medium/white/pressed.png"
+layer = "dark/prominent_clear_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 1532
+transparent = 1167887
+partial = 29381
+inconsistent = 284
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 910
+common = [{ rgba = "#ffffffff", pixels = 1393 }, { rgba = "#e9e9eb96", pixels = 559 }, { rgba = "#e9e9eb97", pixels = 533 }, { rgba = "#e9e9eb98", pixels = 530 }, { rgba = "#e9e9ea95", pixels = 503 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/dark/prominent_clear_glass/medium/black/pressed_selected.png"
+white = "screen/dark/prominent_clear_glass/medium/white/pressed_selected.png"
+layer = "dark/prominent_clear_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 1532
+transparent = 1167887
+partial = 29381
+inconsistent = 289
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 889
+common = [{ rgba = "#ffffffff", pixels = 1400 }, { rgba = "#e9e9eb96", pixels = 566 }, { rgba = "#e9e9eb97", pixels = 555 }, { rgba = "#e9e9eb98", pixels = 537 }, { rgba = "#e9e9ea95", pixels = 522 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "mini"
+state = "pressed"
+black = "screen/dark/prominent_clear_glass/mini/black/pressed.png"
+white = "screen/dark/prominent_clear_glass/mini/white/pressed.png"
+layer = "dark/prominent_clear_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 1133
+transparent = 1175234
+partial = 22433
+inconsistent = 226
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 792
+common = [{ rgba = "#ffffffff", pixels = 1031 }, { rgba = "#e9e9eb98", pixels = 394 }, { rgba = "#e9e9eb96", pixels = 390 }, { rgba = "#e9e9ea95", pixels = 376 }, { rgba = "#e9e9eb97", pixels = 371 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/dark/prominent_clear_glass/mini/black/pressed_selected.png"
+white = "screen/dark/prominent_clear_glass/mini/white/pressed_selected.png"
+layer = "dark/prominent_clear_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 1147
+transparent = 1175234
+partial = 22419
+inconsistent = 220
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 796
+common = [{ rgba = "#ffffffff", pixels = 1030 }, { rgba = "#e9e9eb98", pixels = 409 }, { rgba = "#e9e9eb97", pixels = 365 }, { rgba = "#e9e9ea95", pixels = 355 }, { rgba = "#e9e9eb96", pixels = 348 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "small"
+state = "pressed"
+black = "screen/dark/prominent_clear_glass/small/black/pressed.png"
+white = "screen/dark/prominent_clear_glass/small/white/pressed.png"
+layer = "dark/prominent_clear_glass/small/pressed.png"
+pixels = 1198800
+opaque = 1133
+transparent = 1175234
+partial = 22433
+inconsistent = 226
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 792
+common = [{ rgba = "#ffffffff", pixels = 1031 }, { rgba = "#e9e9eb98", pixels = 394 }, { rgba = "#e9e9eb96", pixels = 390 }, { rgba = "#e9e9ea95", pixels = 376 }, { rgba = "#e9e9eb97", pixels = 371 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_clear_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/dark/prominent_clear_glass/small/black/pressed_selected.png"
+white = "screen/dark/prominent_clear_glass/small/white/pressed_selected.png"
+layer = "dark/prominent_clear_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 1147
+transparent = 1175234
+partial = 22419
+inconsistent = 220
+alpha_spread_levels = 8
+alpha_spread_over_2_pixels = 798
+common = [{ rgba = "#ffffffff", pixels = 1030 }, { rgba = "#e9e9eb98", pixels = 409 }, { rgba = "#e9e9eb97", pixels = 365 }, { rgba = "#e9e9ea95", pixels = 355 }, { rgba = "#e9e9eb96", pixels = 348 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "large"
+state = "pressed"
+black = "screen/dark/prominent_glass/large/black/pressed.png"
+white = "screen/dark/prominent_glass/large/white/pressed.png"
+layer = "dark/prominent_glass/large/pressed.png"
+pixels = 1198800
+opaque = 45696
+transparent = 1015934
+partial = 137170
+inconsistent = 14417
+alpha_spread_levels = 84
+alpha_spread_over_2_pixels = 2574
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10160 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/dark/prominent_glass/large/black/pressed_selected.png"
+white = "screen/dark/prominent_glass/large/white/pressed_selected.png"
+layer = "dark/prominent_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 45642
+transparent = 1015934
+partial = 137224
+inconsistent = 14371
+alpha_spread_levels = 84
+alpha_spread_over_2_pixels = 2588
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10160 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "medium"
+state = "pressed"
+black = "screen/dark/prominent_glass/medium/black/pressed.png"
+white = "screen/dark/prominent_glass/medium/white/pressed.png"
+layer = "dark/prominent_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 27414
+transparent = 1048495
+partial = 122891
+inconsistent = 8891
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2036
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/dark/prominent_glass/medium/black/pressed_selected.png"
+white = "screen/dark/prominent_glass/medium/white/pressed_selected.png"
+layer = "dark/prominent_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 27392
+transparent = 1048495
+partial = 122913
+inconsistent = 8771
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2030
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "mini"
+state = "pressed"
+black = "screen/dark/prominent_glass/mini/black/pressed.png"
+white = "screen/dark/prominent_glass/mini/white/pressed.png"
+layer = "dark/prominent_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 20421
+transparent = 1061202
+partial = 117177
+inconsistent = 6699
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2021
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/dark/prominent_glass/mini/black/pressed_selected.png"
+white = "screen/dark/prominent_glass/mini/white/pressed_selected.png"
+layer = "dark/prominent_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 20442
+transparent = 1061202
+partial = 117156
+inconsistent = 6706
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2022
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "small"
+state = "pressed"
+black = "screen/dark/prominent_glass/small/black/pressed.png"
+white = "screen/dark/prominent_glass/small/white/pressed.png"
+layer = "dark/prominent_glass/small/pressed.png"
+pixels = 1198800
+opaque = 20421
+transparent = 1061150
+partial = 117229
+inconsistent = 6702
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2022
+common = [{ rgba = "#00000001", pixels = 41964 }, { rgba = "#00000002", pixels = 20092 }, { rgba = "#00000003", pixels = 13818 }, { rgba = "#00000004", pixels = 10626 }, { rgba = "#00000005", pixels = 8361 }]
+
+[[layer]]
+appearance = "dark"
+specimen = "prominent_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/dark/prominent_glass/small/black/pressed_selected.png"
+white = "screen/dark/prominent_glass/small/white/pressed_selected.png"
+layer = "dark/prominent_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 20442
+transparent = 1061202
+partial = 117156
+inconsistent = 6706
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2022
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "large"
+state = "pressed"
+black = "screen/light/clear_glass/large/black/pressed.png"
+white = "screen/light/clear_glass/large/white/pressed.png"
+layer = "light/clear_glass/large/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1148312
+partial = 50488
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6d", pixels = 1291 }, { rgba = "#ffffff6c", pixels = 1283 }, { rgba = "#ffffff6e", pixels = 1251 }, { rgba = "#ffffff6b", pixels = 1224 }, { rgba = "#ffffff6a", pixels = 1206 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/light/clear_glass/large/black/pressed_selected.png"
+white = "screen/light/clear_glass/large/white/pressed_selected.png"
+layer = "light/clear_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1148312
+partial = 50488
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6d", pixels = 1283 }, { rgba = "#ffffff6c", pixels = 1270 }, { rgba = "#ffffff6a", pixels = 1255 }, { rgba = "#ffffff6b", pixels = 1248 }, { rgba = "#ffffff6e", pixels = 1206 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "medium"
+state = "pressed"
+black = "screen/light/clear_glass/medium/black/pressed.png"
+white = "screen/light/clear_glass/medium/white/pressed.png"
+layer = "light/clear_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1167883
+partial = 30917
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6c", pixels = 628 }, { rgba = "#ffffff6b", pixels = 581 }, { rgba = "#ffffff6d", pixels = 576 }, { rgba = "#ffffff72", pixels = 573 }, { rgba = "#ffffff6e", pixels = 558 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/light/clear_glass/medium/black/pressed_selected.png"
+white = "screen/light/clear_glass/medium/white/pressed_selected.png"
+layer = "light/clear_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1167883
+partial = 30917
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6c", pixels = 629 }, { rgba = "#ffffff6e", pixels = 587 }, { rgba = "#ffffff6b", pixels = 579 }, { rgba = "#ffffff6d", pixels = 579 }, { rgba = "#ffffff72", pixels = 572 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "mini"
+state = "pressed"
+black = "screen/light/clear_glass/mini/black/pressed.png"
+white = "screen/light/clear_glass/mini/white/pressed.png"
+layer = "light/clear_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6b", pixels = 457 }, { rgba = "#ffffff6c", pixels = 449 }, { rgba = "#ffffff6d", pixels = 423 }, { rgba = "#ffffff70", pixels = 398 }, { rgba = "#ffffff71", pixels = 397 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/light/clear_glass/mini/black/pressed_selected.png"
+white = "screen/light/clear_glass/mini/white/pressed_selected.png"
+layer = "light/clear_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6c", pixels = 470 }, { rgba = "#ffffff6b", pixels = 436 }, { rgba = "#ffffff6d", pixels = 401 }, { rgba = "#ffffff70", pixels = 400 }, { rgba = "#ffffff6e", pixels = 386 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "small"
+state = "pressed"
+black = "screen/light/clear_glass/small/black/pressed.png"
+white = "screen/light/clear_glass/small/white/pressed.png"
+layer = "light/clear_glass/small/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6b", pixels = 457 }, { rgba = "#ffffff6c", pixels = 449 }, { rgba = "#ffffff6d", pixels = 423 }, { rgba = "#ffffff70", pixels = 398 }, { rgba = "#ffffff71", pixels = 397 }]
+
+[[layer]]
+appearance = "light"
+specimen = "clear_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/light/clear_glass/small/black/pressed_selected.png"
+white = "screen/light/clear_glass/small/white/pressed_selected.png"
+layer = "light/clear_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#ffffff6c", pixels = 470 }, { rgba = "#ffffff6b", pixels = 436 }, { rgba = "#ffffff6d", pixels = 401 }, { rgba = "#ffffff70", pixels = 400 }, { rgba = "#ffffff6e", pixels = 386 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "large"
+state = "pressed"
+black = "screen/light/glass/large/black/pressed.png"
+white = "screen/light/glass/large/white/pressed.png"
+layer = "light/glass/large/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1015934
+partial = 182866
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10163 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/light/glass/large/black/pressed_selected.png"
+white = "screen/light/glass/large/white/pressed_selected.png"
+layer = "light/glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 49061
+transparent = 1015934
+partial = 133805
+inconsistent = 49542
+alpha_spread_levels = 27
+alpha_spread_over_2_pixels = 521
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10163 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "medium"
+state = "pressed"
+black = "screen/light/glass/medium/black/pressed.png"
+white = "screen/light/glass/medium/white/pressed.png"
+layer = "light/glass/medium/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1048495
+partial = 150305
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/light/glass/medium/black/pressed_selected.png"
+white = "screen/light/glass/medium/white/pressed_selected.png"
+layer = "light/glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 29955
+transparent = 1048495
+partial = 120350
+inconsistent = 30330
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 419
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "mini"
+state = "pressed"
+black = "screen/light/glass/mini/black/pressed.png"
+white = "screen/light/glass/mini/white/pressed.png"
+layer = "light/glass/mini/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1061202
+partial = 137598
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/light/glass/mini/black/pressed_selected.png"
+white = "screen/light/glass/mini/white/pressed_selected.png"
+layer = "light/glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 22548
+transparent = 1061202
+partial = 115050
+inconsistent = 22889
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 314
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "small"
+state = "pressed"
+black = "screen/light/glass/small/black/pressed.png"
+white = "screen/light/glass/small/white/pressed.png"
+layer = "light/glass/small/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1061202
+partial = 137598
+inconsistent = 0
+alpha_spread_levels = 2
+alpha_spread_over_2_pixels = 0
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "light"
+specimen = "glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/light/glass/small/black/pressed_selected.png"
+white = "screen/light/glass/small/white/pressed_selected.png"
+layer = "light/glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 22548
+transparent = 1061202
+partial = 115050
+inconsistent = 22889
+alpha_spread_levels = 29
+alpha_spread_over_2_pixels = 314
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8339 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "large"
+state = "pressed"
+black = "screen/light/prominent_clear_glass/large/black/pressed.png"
+white = "screen/light/prominent_clear_glass/large/white/pressed.png"
+layer = "light/prominent_clear_glass/large/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1148312
+partial = 50488
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 12
+common = [{ rgba = "#f8f8fa71", pixels = 1059 }, { rgba = "#f8f8fb74", pixels = 987 }, { rgba = "#f8f8fb73", pixels = 961 }, { rgba = "#f8f8fb75", pixels = 959 }, { rgba = "#f8f8fb72", pixels = 918 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/light/prominent_clear_glass/large/black/pressed_selected.png"
+white = "screen/light/prominent_clear_glass/large/white/pressed_selected.png"
+layer = "light/prominent_clear_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1148312
+partial = 50488
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 10
+common = [{ rgba = "#f8f8fa71", pixels = 1040 }, { rgba = "#f8f8fb73", pixels = 977 }, { rgba = "#f8f8fb74", pixels = 976 }, { rgba = "#f8f8fb75", pixels = 935 }, { rgba = "#f8f8fb72", pixels = 918 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "medium"
+state = "pressed"
+black = "screen/light/prominent_clear_glass/medium/black/pressed.png"
+white = "screen/light/prominent_clear_glass/medium/white/pressed.png"
+layer = "light/prominent_clear_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1167883
+partial = 30917
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 3
+common = [{ rgba = "#f8f8fa71", pixels = 469 }, { rgba = "#f8f8fb73", pixels = 468 }, { rgba = "#f8f8fb72", pixels = 462 }, { rgba = "#f8f8fb74", pixels = 456 }, { rgba = "#f8f8fb75", pixels = 425 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/light/prominent_clear_glass/medium/black/pressed_selected.png"
+white = "screen/light/prominent_clear_glass/medium/white/pressed_selected.png"
+layer = "light/prominent_clear_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1167883
+partial = 30917
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 8
+common = [{ rgba = "#f8f8fb73", pixels = 462 }, { rgba = "#f8f8fb74", pixels = 460 }, { rgba = "#f8f8fb72", pixels = 447 }, { rgba = "#f9f9fb79", pixels = 439 }, { rgba = "#f8f8fb75", pixels = 431 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "mini"
+state = "pressed"
+black = "screen/light/prominent_clear_glass/mini/black/pressed.png"
+white = "screen/light/prominent_clear_glass/mini/white/pressed.png"
+layer = "light/prominent_clear_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 5
+common = [{ rgba = "#f8f8fb72", pixels = 365 }, { rgba = "#f8f8fb73", pixels = 329 }, { rgba = "#f8f8fa71", pixels = 313 }, { rgba = "#f8f8fb74", pixels = 295 }, { rgba = "#f9f9fb77", pixels = 295 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/light/prominent_clear_glass/mini/black/pressed_selected.png"
+white = "screen/light/prominent_clear_glass/mini/white/pressed_selected.png"
+layer = "light/prominent_clear_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 3
+common = [{ rgba = "#f8f8fb73", pixels = 337 }, { rgba = "#f8f8fb72", pixels = 335 }, { rgba = "#f9f9fb77", pixels = 303 }, { rgba = "#f8f8fa71", pixels = 299 }, { rgba = "#f8f8fb74", pixels = 298 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "small"
+state = "pressed"
+black = "screen/light/prominent_clear_glass/small/black/pressed.png"
+white = "screen/light/prominent_clear_glass/small/white/pressed.png"
+layer = "light/prominent_clear_glass/small/pressed.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 5
+common = [{ rgba = "#f8f8fb72", pixels = 365 }, { rgba = "#f8f8fb73", pixels = 329 }, { rgba = "#f8f8fa71", pixels = 313 }, { rgba = "#f8f8fb74", pixels = 295 }, { rgba = "#f9f9fb77", pixels = 295 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_clear_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/light/prominent_clear_glass/small/black/pressed_selected.png"
+white = "screen/light/prominent_clear_glass/small/white/pressed_selected.png"
+layer = "light/prominent_clear_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 0
+transparent = 1175230
+partial = 23570
+inconsistent = 0
+alpha_spread_levels = 3
+alpha_spread_over_2_pixels = 3
+common = [{ rgba = "#f8f8fb73", pixels = 337 }, { rgba = "#f8f8fb72", pixels = 335 }, { rgba = "#f9f9fb77", pixels = 303 }, { rgba = "#f8f8fa71", pixels = 299 }, { rgba = "#f8f8fb74", pixels = 298 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "large"
+state = "pressed"
+black = "screen/light/prominent_glass/large/black/pressed.png"
+white = "screen/light/prominent_glass/large/white/pressed.png"
+layer = "light/prominent_glass/large/pressed.png"
+pixels = 1198800
+opaque = 39029
+transparent = 1015934
+partial = 143837
+inconsistent = 13397
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2708
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10160 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "large"
+state = "pressed_selected"
+black = "screen/light/prominent_glass/large/black/pressed_selected.png"
+white = "screen/light/prominent_glass/large/white/pressed_selected.png"
+layer = "light/prominent_glass/large/pressed_selected.png"
+pixels = 1198800
+opaque = 38813
+transparent = 1015934
+partial = 144053
+inconsistent = 13215
+alpha_spread_levels = 87
+alpha_spread_over_2_pixels = 2711
+common = [{ rgba = "#00000001", pixels = 46533 }, { rgba = "#00000002", pixels = 22429 }, { rgba = "#00000003", pixels = 16055 }, { rgba = "#00000004", pixels = 12567 }, { rgba = "#00000005", pixels = 10160 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "medium"
+state = "pressed"
+black = "screen/light/prominent_glass/medium/black/pressed.png"
+white = "screen/light/prominent_glass/medium/white/pressed.png"
+layer = "light/prominent_glass/medium/pressed.png"
+pixels = 1198800
+opaque = 23472
+transparent = 1048495
+partial = 126833
+inconsistent = 8699
+alpha_spread_levels = 90
+alpha_spread_over_2_pixels = 2152
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "medium"
+state = "pressed_selected"
+black = "screen/light/prominent_glass/medium/black/pressed_selected.png"
+white = "screen/light/prominent_glass/medium/white/pressed_selected.png"
+layer = "light/prominent_glass/medium/pressed_selected.png"
+pixels = 1198800
+opaque = 23454
+transparent = 1048495
+partial = 126851
+inconsistent = 8666
+alpha_spread_levels = 90
+alpha_spread_over_2_pixels = 2162
+common = [{ rgba = "#00000001", pixels = 43028 }, { rgba = "#00000002", pixels = 20815 }, { rgba = "#00000003", pixels = 14591 }, { rgba = "#00000004", pixels = 11086 }, { rgba = "#00000005", pixels = 9000 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "mini"
+state = "pressed"
+black = "screen/light/prominent_glass/mini/black/pressed.png"
+white = "screen/light/prominent_glass/mini/white/pressed.png"
+layer = "light/prominent_glass/mini/pressed.png"
+pixels = 1198800
+opaque = 17508
+transparent = 1061202
+partial = 120090
+inconsistent = 6438
+alpha_spread_levels = 93
+alpha_spread_over_2_pixels = 2112
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "mini"
+state = "pressed_selected"
+black = "screen/light/prominent_glass/mini/black/pressed_selected.png"
+white = "screen/light/prominent_glass/mini/white/pressed_selected.png"
+layer = "light/prominent_glass/mini/pressed_selected.png"
+pixels = 1198800
+opaque = 17464
+transparent = 1061202
+partial = 120134
+inconsistent = 6484
+alpha_spread_levels = 93
+alpha_spread_over_2_pixels = 2115
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "small"
+state = "pressed"
+black = "screen/light/prominent_glass/small/black/pressed.png"
+white = "screen/light/prominent_glass/small/white/pressed.png"
+layer = "light/prominent_glass/small/pressed.png"
+pixels = 1198800
+opaque = 17508
+transparent = 1061202
+partial = 120090
+inconsistent = 6438
+alpha_spread_levels = 93
+alpha_spread_over_2_pixels = 2112
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
+[[layer]]
+appearance = "light"
+specimen = "prominent_glass"
+size = "small"
+state = "pressed_selected"
+black = "screen/light/prominent_glass/small/black/pressed_selected.png"
+white = "screen/light/prominent_glass/small/white/pressed_selected.png"
+layer = "light/prominent_glass/small/pressed_selected.png"
+pixels = 1198800
+opaque = 17464
+transparent = 1061202
+partial = 120134
+inconsistent = 6484
+alpha_spread_levels = 93
+alpha_spread_over_2_pixels = 2115
+common = [{ rgba = "#00000001", pixels = 41940 }, { rgba = "#00000002", pixels = 20126 }, { rgba = "#00000003", pixels = 13760 }, { rgba = "#00000004", pixels = 10648 }, { rgba = "#00000005", pixels = 8337 }]
+
