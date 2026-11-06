@@ -19,7 +19,9 @@ name: OS probe
 #     gh workflow run os-probe.yml --ref v0.8.0-tools -f jobs=probe -f images='["macos-26"]'
 #
 # `-f passes=symbols` runs the probe job's symbols pass alone (the input lists
-# the pass names).
+# the pass names). Each pass of each image is a job of its own, uploading the
+# artifact os-probe-<image>-<pass> (os-probe-out as that pass left it, with the
+# environment records every macOS job writes).
 
 on:
   workflow_dispatch:
@@ -29,7 +31,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, probe-not-key, app-bundle); empty runs every pass. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, probe-not-key, app-bundle); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -44,9 +46,49 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  probe:
-    name: OS probe (${{ matrix.os }})
+  # The probe job's matrix: one job per image and pass, so the passes run side
+  # by side and a run lasts as long as its slowest pass. `passes` names them
+  # (every pass where it is empty); a Windows image runs the `probe` pass alone,
+  # as every other pass is macOS's. Each job uploads its own artifact,
+  # os-probe-<image>-<pass>.
+  probe-plan:
+    name: OS probe's passes
     if: inputs.jobs == '' || contains(format(',{0},', inputs.jobs), ',probe,')
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: plan
+        env:
+          IMAGES: ${{ inputs.images }}
+          PASSES: ${{ inputs.passes }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          every = ["probe", "button", "symbols", "sdk-headers", "button-focus", "focus-transition",
+                   "button-contrast", "button-accent", "button-not-key", "button-inactive",
+                   "button-key-not-main", "button-main-not-key", "button-inactive-contrast",
+                   "probe-rt-off", "probe-contrast", "probe-tinting-off", "probe-rt-tinting-off",
+                   "probe-accent", "probe-contrast-accent", "button-focus-accent", "reads",
+                   "reads-accent", "reads-rtl", "probe-not-key", "app-bundle"]
+          asked = [p for p in os.environ["PASSES"].split(",") if p] or every
+          unknown = [p for p in asked if p not in every]
+          if unknown:
+              raise SystemExit(f"unknown passes: {unknown}; the passes are {every}")
+          include = [{"os": image, "pass": p}
+                     for image in json.loads(os.environ["IMAGES"])
+                     for p in asked
+                     if not image.startswith("windows") or p == "probe"]
+          if not include:
+              raise SystemExit("no image runs any of the passes asked for")
+          print(json.dumps(include, indent=1))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("matrix=" + json.dumps({"include": include}) + "\n")
+          PY
+
+  probe:
+    name: OS probe (${{ matrix.os }}, ${{ matrix.pass }})
+    needs: probe-plan
     runs-on: ${{ matrix.os }}
     # xcode-27 is the macOS 27 preview image: its failure does not fail the run.
     continue-on-error: ${{ matrix.os == 'xcode-27' }}
@@ -55,8 +97,7 @@ jobs:
       # The default set is the 0.8.0 release set's (D3): macos-14, xcode-27
       # (macOS 27, outside the release set, D12), windows-2022 and windows-2025
       # (Windows Server) left it; each can still be named in `images`.
-      matrix:
-        os: ${{ fromJSON(inputs.images) }}
+      matrix: ${{ fromJSON(needs.probe-plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
@@ -87,7 +128,7 @@ jobs:
             done
           done
       - name: Run the probe
-        if: (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe,'))
+        if: matrix.pass == 'probe'
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
       # The button pass (spike M of the 0.8.0 plan, extended for the macOS
       # facts lane), with the image's own settings, into button-pass/: the
@@ -102,7 +143,7 @@ jobs:
       # selected Xcode and its SDK, the SDK the probe was built against
       # (vtool), the Rust toolchain and the display adapter.
       - name: Run the button pass (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button'
         continue-on-error: true
         run: |
           set +e
@@ -134,7 +175,7 @@ jobs:
       # matched against a reference grid of rendered configurations
       # elsewhere, into symbols/; probe.toml's [macos.symbols] method says how.
       - name: Run the symbols pass (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',symbols,'))
+        if: runner.os == 'macOS' && matrix.pass == 'symbols'
         continue-on-error: true
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out/symbols --symbols
       # The SDK headers the Apple facts quote, from the selected Xcode
@@ -150,7 +191,7 @@ jobs:
       # every copied file's SHA-256 (paths relative to sdk-headers/, so
       # `shasum -a 256 -c` checks them).
       - name: Copy the SDK headers (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',sdk-headers,'))
+        if: runner.os == 'macOS' && matrix.pass == 'sdk-headers'
         continue-on-error: true
         run: |
           set +e
@@ -254,7 +295,7 @@ jobs:
       # active (--inactive). Each folder's settings.txt records the image's
       # value, the write's exit status, the value read back and the restore.
       - name: Run the button pass focusing each button (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-focus,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-focus'
         continue-on-error: true
         run: |
           set +e
@@ -290,7 +331,7 @@ jobs:
       # times in <stem>-frames.csv (ffprobe). settings.txt records each
       # write, read-back and restore, ffmpeg.txt the tool and each cut.
       - name: Record the focus ring's transition (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',focus-transition,'))
+        if: runner.os == 'macOS' && matrix.pass == 'focus-transition'
         continue-on-error: true
         run: |
           set +e
@@ -353,7 +394,7 @@ jobs:
           } > "$log" 2>&1
           cat "$log"
       - name: Run the button pass with Increase Contrast on (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-contrast,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-contrast'
         continue-on-error: true
         run: |
           set +e
@@ -380,7 +421,7 @@ jobs:
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"
       - name: Run the button pass with a red accent (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-accent,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-accent'
         continue-on-error: true
         run: |
           set +e
@@ -406,7 +447,7 @@ jobs:
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"
       - name: Run the button pass with a second window key (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-not-key,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-not-key'
         continue-on-error: true
         run: |
           set +e
@@ -415,7 +456,7 @@ jobs:
           echo "no setting changed: the image's" > "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --not-key
       - name: Run the button pass with another application active (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-inactive,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-inactive'
         continue-on-error: true
         run: |
           set +e
@@ -430,7 +471,7 @@ jobs:
       # settings; and the inactive pass with Increase Contrast on, restored
       # after.
       - name: Run the button pass key but not main (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-key-not-main,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-key-not-main'
         continue-on-error: true
         run: |
           set +e
@@ -439,7 +480,7 @@ jobs:
           echo "no setting changed: the image's" > "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --key-not-main
       - name: Run the button pass main but not key (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-main-not-key,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-main-not-key'
         continue-on-error: true
         run: |
           set +e
@@ -448,7 +489,7 @@ jobs:
           echo "no setting changed: the image's" > "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --main-not-key
       - name: Run the button pass with another application active and Increase Contrast on (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-inactive-contrast,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-inactive-contrast'
         continue-on-error: true
         run: |
           set +e
@@ -483,7 +524,7 @@ jobs:
       # settings.txt records the image's value, the write's exit status and
       # the value read back, and its probe.toml whether the setting took.
       - name: Run the probe with Reduce Transparency off (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-rt-off,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-rt-off'
         continue-on-error: true
         run: |
           set +e
@@ -498,7 +539,7 @@ jobs:
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
       - name: Run the probe with Increase Contrast on (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-contrast,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-contrast'
         continue-on-error: true
         run: |
           set +e
@@ -528,7 +569,7 @@ jobs:
       # restore, the image's tinting value, the write's exit status and the
       # value read back.
       - name: Run the probe with wallpaper tinting off (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-tinting-off,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-tinting-off'
         continue-on-error: true
         run: |
           set +e
@@ -563,7 +604,7 @@ jobs:
       # Reduce Transparency are restored, so the passes below keep the image's
       # settings; settings.txt records each restore, write and read-back.
       - name: Run the probe with Reduce Transparency and wallpaper tinting off (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-rt-tinting-off,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-rt-tinting-off'
         continue-on-error: true
         run: |
           set +e
@@ -607,7 +648,7 @@ jobs:
       # After the probe the image's accent is restored, so the passes below
       # keep it; settings.txt records each write, restore and read-back.
       - name: Run the probe with a red accent (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-accent,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-accent'
         continue-on-error: true
         run: |
           set +e
@@ -651,7 +692,7 @@ jobs:
       # second selection colour, as the main pass's red accent gives the
       # image's settings. settings.txt records each write and read-back.
       - name: Run the probe with Increase Contrast on and a red accent (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-contrast-accent,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-contrast-accent'
         continue-on-error: true
         run: |
           set +e
@@ -695,7 +736,7 @@ jobs:
       # buttons' focus ring follows the accent. Keyboard navigation on, as in
       # the focus pass; both restored after.
       - name: Run the button pass focusing each button with a red accent (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-focus-accent,'))
+        if: runner.os == 'macOS' && matrix.pass == 'button-focus-accent'
         continue-on-error: true
         run: |
           set +e
@@ -746,7 +787,7 @@ jobs:
       # once with the
       # image's settings, once under the red accent.
       - name: Run the reads pass (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads,'))
+        if: runner.os == 'macOS' && matrix.pass == 'reads'
         continue-on-error: true
         run: |
           set +e
@@ -772,7 +813,7 @@ jobs:
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"
       - name: Run the reads pass with a red accent (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-accent,'))
+        if: runner.os == 'macOS' && matrix.pass == 'reads-accent'
         continue-on-error: true
         run: |
           set +e
@@ -818,7 +859,7 @@ jobs:
       # process left to right), so its mirroring section draws the
       # directional symbols as AppKit lays them out right to left.
       - name: Run the reads pass under a right-to-left language (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-rtl,'))
+        if: runner.os == 'macOS' && matrix.pass == 'reads-rtl'
         continue-on-error: true
         run: |
           set +e
@@ -830,7 +871,7 @@ jobs:
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.
       - name: Run the probe with its window not key (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-not-key,'))
+        if: runner.os == 'macOS' && matrix.pass == 'probe-not-key'
         continue-on-error: true
         run: |
           set +e
@@ -865,7 +906,7 @@ jobs:
       # status and whether a probe.toml was written; the app's own output is
       # in stdout.txt and stderr.txt.
       - name: Run the probe as an app bundle (macOS)
-        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',app-bundle,'))
+        if: runner.os == 'macOS' && matrix.pass == 'app-bundle'
         continue-on-error: true
         run: |
           set +e
@@ -915,7 +956,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: os-probe-${{ matrix.os }}
+          name: os-probe-${{ matrix.os }}-${{ matrix.pass }}
           path: os-probe-out
 
   # The GNOME container (D2, spike G): tools/linux-containers/gnome/Containerfile
