@@ -1,0 +1,15 @@
+# The folders of run 42307873328's android-host job the facts cite (spec S17 *`evidence`*): measure/ (MeasureTest's
+# and RippleTest's output, run 1) and system-fonts/ (the device's /system/etc/fonts.xml). The builds are the run's own
+# records: the job's index.toml (the system image, emulator, SDK packages and Compose versions).
+
+[images.measure]
+preset = "material-3"
+source = "androidx@e4d933c9"
+os = "Android 17 QPR1 (API 37.1), system image system-images;android-37.1;google_apis_ps16k;x86_64 revision 9, google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:userdebug/dev-keys, emulator 37.2.13"
+toolkit = "Compose Material 3 1.5.0-beta02, Compose UI 1.13.0-beta02 (BOM 2026.10.01)"
+
+[images.system-fonts]
+preset = "material-3"
+source = "androidx@e4d933c9"
+os = "Android 17 QPR1 (API 37.1), system image system-images;android-37.1;google_apis_ps16k;x86_64 revision 9, google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:userdebug/dev-keys, emulator 37.2.13"
+toolkit = "the platform's font configuration of that build"

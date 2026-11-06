@@ -1,0 +1,30 @@
+# MeasureTest.focusVisibility: a filled button (light scheme); each step's touch mode, focused
+# semantics, the interactions emitted since the previous step, and the specimen's PNG.
+
+[[step]]
+name = "0-initial"
+png = "focus-0-initial.png"
+in_touch_mode = true
+focused = false
+interactions = []
+
+[[step]]
+name = "1-tap"
+png = "focus-1-tap.png"
+in_touch_mode = true
+focused = false
+interactions = ["Press", "Release"]
+
+[[step]]
+name = "2-tab"
+png = "focus-2-tab.png"
+in_touch_mode = false
+focused = true
+interactions = ["Focus"]
+
+[[step]]
+name = "3-tap-again"
+png = "focus-3-tap-again.png"
+in_touch_mode = true
+focused = false
+interactions = ["Press", "Unfocus", "Release"]

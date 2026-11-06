@@ -1,0 +1,41 @@
+# MeasureTest.popupMenuColors: obtainStyledAttributes(style, [attr]) as ContextMenuUi.android.kt
+# calls it; a value not resolved is recorded as has_value = false (Compose then uses its own default).
+
+[activity]
+class = "androidx.activity.ComponentActivity"
+theme_resource = "android:style/Theme.Material.Light.NoActionBar"
+application_theme_resource = "0"
+target_sdk = 37
+
+[[context]]
+name = "activity"
+ui_mode_night = false
+theme_color_background = "#fffafafa"
+widget_popup_menu_color_background_has_value = true
+widget_popup_menu_color_background = "#fffafafa"
+text_appearance_popup_menu_large_text_color_primary_has_value = true
+text_color_primary_enabled = "#de000000"
+text_color_primary_disabled = "#42000000"
+text_color_primary_default = "#de000000"
+
+[[context]]
+name = "activity_night"
+ui_mode_night = true
+theme_color_background = "#ffeeedf6"
+widget_popup_menu_color_background_has_value = true
+widget_popup_menu_color_background = "#ffeeedf6"
+text_appearance_popup_menu_large_text_color_primary_has_value = true
+text_color_primary_enabled = "#ff30323b"
+text_color_primary_disabled = "#ff30323b"
+text_color_primary_default = "#ff30323b"
+
+[[context]]
+name = "application"
+ui_mode_night = false
+theme_color_background = "#ffeeedf6"
+widget_popup_menu_color_background_has_value = true
+widget_popup_menu_color_background = "#ffeeedf6"
+text_appearance_popup_menu_large_text_color_primary_has_value = true
+text_color_primary_enabled = "#ff30323b"
+text_color_primary_disabled = "#ff30323b"
+text_color_primary_default = "#ff30323b"

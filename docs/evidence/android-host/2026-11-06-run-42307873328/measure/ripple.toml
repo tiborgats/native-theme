@@ -1,0 +1,105 @@
+
+[[ripple]]
+file = "ripple-r0-d1200.png"
+repetition = 0
+delay_asked_ms = 1200
+capture_start_ms = 1200
+capture_end_ms = 1267
+
+[[ripple]]
+file = "ripple-r0-d150.png"
+repetition = 0
+delay_asked_ms = 150
+capture_start_ms = 150
+capture_end_ms = 209
+
+[[ripple]]
+file = "ripple-r0-d300.png"
+repetition = 0
+delay_asked_ms = 300
+capture_start_ms = 304
+capture_end_ms = 379
+
+[[ripple]]
+file = "ripple-r0-d50.png"
+repetition = 0
+delay_asked_ms = 50
+capture_start_ms = 50
+capture_end_ms = 149
+
+[[ripple]]
+file = "ripple-r0-d600.png"
+repetition = 0
+delay_asked_ms = 600
+capture_start_ms = 600
+capture_end_ms = 660
+
+[[ripple]]
+file = "ripple-r1-d1200.png"
+repetition = 1
+delay_asked_ms = 1200
+capture_start_ms = 1202
+capture_end_ms = 1272
+
+[[ripple]]
+file = "ripple-r1-d150.png"
+repetition = 1
+delay_asked_ms = 150
+capture_start_ms = 150
+capture_end_ms = 216
+
+[[ripple]]
+file = "ripple-r1-d300.png"
+repetition = 1
+delay_asked_ms = 300
+capture_start_ms = 301
+capture_end_ms = 364
+
+[[ripple]]
+file = "ripple-r1-d50.png"
+repetition = 1
+delay_asked_ms = 50
+capture_start_ms = 50
+capture_end_ms = 129
+
+[[ripple]]
+file = "ripple-r1-d600.png"
+repetition = 1
+delay_asked_ms = 600
+capture_start_ms = 600
+capture_end_ms = 667
+
+[[ripple]]
+file = "ripple-r2-d1200.png"
+repetition = 2
+delay_asked_ms = 1200
+capture_start_ms = 1203
+capture_end_ms = 1289
+
+[[ripple]]
+file = "ripple-r2-d150.png"
+repetition = 2
+delay_asked_ms = 150
+capture_start_ms = 150
+capture_end_ms = 206
+
+[[ripple]]
+file = "ripple-r2-d300.png"
+repetition = 2
+delay_asked_ms = 300
+capture_start_ms = 300
+capture_end_ms = 429
+
+[[ripple]]
+file = "ripple-r2-d50.png"
+repetition = 2
+delay_asked_ms = 50
+capture_start_ms = 51
+capture_end_ms = 129
+
+[[ripple]]
+file = "ripple-r2-d600.png"
+repetition = 2
+delay_asked_ms = 600
+capture_start_ms = 601
+capture_end_ms = 664

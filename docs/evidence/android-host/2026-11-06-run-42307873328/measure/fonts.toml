@@ -1,0 +1,170 @@
+# MeasureTest.fallbackFonts: TextRunShaper.shapeTextRun with Typeface.DEFAULT, text size 40 px, the
+# sample's locale as the paint's textLocales; each run of consecutive glyphs drawn from one font.
+
+[[sample]]
+locale = "en-US"
+text = "Aa"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/Roboto-Regular.ttf index 0 weight 400 slant 0 locales [] axes [wdth=100.0]"]
+
+[[sample]]
+locale = "el-GR"
+text = "Ωω"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/Roboto-Regular.ttf index 0 weight 400 slant 0 locales [] axes [wdth=100.0]"]
+
+[[sample]]
+locale = "ru-RU"
+text = "Жж"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/Roboto-Regular.ttf index 0 weight 400 slant 0 locales [] axes [wdth=100.0]"]
+
+[[sample]]
+locale = "ar-SA"
+text = "عربي"
+rtl = true
+glyphs = 4
+fonts = ["/system/fonts/NotoNaskhArabic-Regular.ttf index 0 weight 400 slant 0 locales [und-Arab] axes []"]
+
+[[sample]]
+locale = "fa-IR"
+text = "فارسی"
+rtl = true
+glyphs = 5
+fonts = ["/system/fonts/NotoNaskhArabic-Regular.ttf index 0 weight 400 slant 0 locales [und-Arab] axes []"]
+
+[[sample]]
+locale = "he-IL"
+text = "עברית"
+rtl = true
+glyphs = 5
+fonts = ["/system/fonts/NotoSansHebrew-Regular.ttf index 0 weight 400 slant 0 locales [und-Hebr] axes []"]
+
+[[sample]]
+locale = "hi-IN"
+text = "हिन्दी"
+rtl = false
+glyphs = 5
+fonts = ["/system/fonts/NotoSansDevanagari-VF.ttf index 0 weight 400 slant 0 locales [und-Deva] axes []"]
+
+[[sample]]
+locale = "bn-IN"
+text = "বাংলা"
+rtl = false
+glyphs = 5
+fonts = ["/system/fonts/NotoSansBengali-VF.ttf index 0 weight 400 slant 0 locales [und-Beng] axes []"]
+
+[[sample]]
+locale = "ta-IN"
+text = "தமிழ்"
+rtl = false
+glyphs = 4
+fonts = ["/system/fonts/NotoSansTamil-VF.ttf index 0 weight 400 slant 0 locales [und-Taml] axes []"]
+
+[[sample]]
+locale = "th-TH"
+text = "ไทย"
+rtl = false
+glyphs = 3
+fonts = ["/system/fonts/NotoSansThai-Regular.ttf index 0 weight 400 slant 0 locales [und-Thai] axes []"]
+
+[[sample]]
+locale = "lo-LA"
+text = "ລາວ"
+rtl = false
+glyphs = 3
+fonts = ["/system/fonts/NotoSansLao-Regular.ttf index 0 weight 400 slant 0 locales [und-Laoo] axes []"]
+
+[[sample]]
+locale = "km-KH"
+text = "ខ្មែរ"
+rtl = false
+glyphs = 4
+fonts = ["/system/fonts/NotoSansKhmer-VF.ttf index 0 weight 400 slant 0 locales [und-Khmr] axes [wdth=100.0]"]
+
+[[sample]]
+locale = "my-MM"
+text = "မြန်မာ"
+rtl = false
+glyphs = 6
+fonts = ["/system/fonts/NotoSansMyanmar-Regular.otf index 0 weight 400 slant 0 locales [und-Mymr] axes []"]
+
+[[sample]]
+locale = "si-LK"
+text = "සිංහල"
+rtl = false
+glyphs = 4
+fonts = ["/system/fonts/NotoSansSinhala-VF.ttf index 0 weight 400 slant 0 locales [und-Sinh] axes []"]
+
+[[sample]]
+locale = "hy-AM"
+text = "Հայ"
+rtl = false
+glyphs = 3
+fonts = ["/system/fonts/NotoSansArmenian-VF.ttf index 0 weight 400 slant 0 locales [und-Armn] axes []"]
+
+[[sample]]
+locale = "ka-GE"
+text = "ქართ"
+rtl = false
+glyphs = 4
+fonts = ["/system/fonts/NotoSansGeorgian-VF.ttf index 0 weight 400 slant 0 locales [und-Geor,und-Geok] axes []"]
+
+[[sample]]
+locale = "am-ET"
+text = "አማርኛ"
+rtl = false
+glyphs = 4
+fonts = ["/system/fonts/NotoSansEthiopic-VF.ttf index 0 weight 400 slant 0 locales [und-Ethi] axes []"]
+
+[[sample]]
+locale = "ja-JP"
+text = "直あア"
+rtl = false
+glyphs = 3
+fonts = ["/system/fonts/NotoSansCJK-Regular.ttc index 0 weight 400 slant 0 locales [ja-Jpan-JP] axes []"]
+
+[[sample]]
+locale = "zh-CN"
+text = "直汉"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/NotoSansCJK-Regular.ttc index 2 weight 400 slant 0 locales [zh-Hans-CN] axes []"]
+
+[[sample]]
+locale = "zh-TW"
+text = "直漢"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/NotoSansCJK-Regular.ttc index 3 weight 400 slant 0 locales [zh-Hant-TW,zh-Bopo-TW] axes []"]
+
+[[sample]]
+locale = "zh-HK"
+text = "直漢"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/NotoSansCJK-Regular.ttc index 3 weight 400 slant 0 locales [zh-Hant-TW,zh-Bopo-TW] axes []"]
+
+[[sample]]
+locale = "ko-KR"
+text = "直한"
+rtl = false
+glyphs = 2
+fonts = ["/system/fonts/NotoSansCJK-Regular.ttc index 1 weight 400 slant 0 locales [ko-Kore-KR] axes []"]
+
+[[sample]]
+locale = "en-US"
+text = "😀"
+rtl = false
+glyphs = 1
+fonts = ["/system/fonts/NotoColorEmoji.ttf index 0 weight 400 slant 0 locales [und-Zsye] axes []"]
+
+[[sample]]
+locale = "en-US"
+text = "☃→✓"
+rtl = false
+glyphs = 3
+fonts = ["/system/fonts/NotoSansSymbols-Regular-Subsetted.ttf index 0 weight 400 slant 0 locales [] axes []"]
