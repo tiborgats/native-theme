@@ -7,10 +7,19 @@
 use std::collections::HashMap;
 
 use native_theme::next::platform::adw_standalone::adw_standalone;
+use native_theme::next::platform::kcu_mix::kcu_mix;
+use native_theme::next::platform::kcu_overlay::kcu_overlay;
+use native_theme::next::platform::kcu_shade::kcu_shade;
+use native_theme::next::platform::kcu_tint::kcu_tint;
+use native_theme::next::platform::kde_effects::{KdeGroupEffects, kde_effects};
+use native_theme::next::platform::kde_selection_inactive::kde_selection_inactive;
 use native_theme::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use native_theme::next::platform::kirigami_lerp::kirigami_lerp;
+use native_theme::next::platform::kirigami_tint::kirigami_tint;
 use native_theme::next::platform::sf_tracking::{TrackingDesign, sf_tracking};
-use native_theme::next::{Color, Scheme};
+use native_theme::next::{
+    Color, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind, Scheme,
+};
 
 /// A table's rows, each by its column names; the header lines skipped.
 fn rows(function: &str) -> Vec<HashMap<String, String>> {
@@ -84,6 +93,23 @@ fn number(cell: &str) -> f32 {
     cell.parse().expect(cell)
 }
 
+fn boolean(cell: &str) -> bool {
+    match cell {
+        "true" => true,
+        "false" => false,
+        other => panic!("no bool `{other}`"),
+    }
+}
+
+fn role_kind(cell: &str) -> KdeRoleKind {
+    match cell {
+        "foreground" => KdeRoleKind::Foreground,
+        "decoration" => KdeRoleKind::Decoration,
+        "background" => KdeRoleKind::Background,
+        other => panic!("no role kind `{other}`"),
+    }
+}
+
 /// `got` is `expected` on the 0-255 scale to 1e-3, every channel.
 fn assert_color(got: Color, expected: [f64; 4], row: &HashMap<String, String>) {
     let got = [got.r, got.g, got.b, got.a].map(f64::from);
@@ -120,6 +146,134 @@ fn vectors_kde_shade() {
             other => panic!("no role `{other}`"),
         };
         let got = kde_shade(channels(color(&row["c"])), role, number(&row["contrast"]));
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kcu_mix() {
+    for row in rows("kcu_mix") {
+        let got = kcu_mix(
+            channels(color(&row["a"])),
+            channels(color(&row["b"])),
+            number(&row["bias"]),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kcu_tint() {
+    for row in rows("kcu_tint") {
+        let got = kcu_tint(
+            channels(color(&row["a"])),
+            channels(color(&row["b"])),
+            number(&row["amount"]),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kcu_shade() {
+    for row in rows("kcu_shade") {
+        let got = kcu_shade(
+            channels(color(&row["c"])),
+            number(&row["luma"]),
+            number(&row["chroma"]),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kcu_overlay() {
+    for row in rows("kcu_overlay") {
+        let got = kcu_overlay(
+            channels(color(&row["under"])),
+            channels(color(&row["over"])),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kirigami_tint() {
+    for row in rows("kirigami_tint") {
+        let got = kirigami_tint(
+            channels(color(&row["c"])),
+            channels(color(&row["tint"])),
+            number(&row["alpha"]),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+/// A row's group effects, the operands `kde_effects` reads itself from
+/// `token.kde.<group>`.
+fn group_effects(row: &HashMap<String, String>) -> KdeGroupEffects {
+    let intensity = match row["intensity"].as_str() {
+        "none" => KdeIntensityEffect::None,
+        "shade" => KdeIntensityEffect::Shade,
+        "darken" => KdeIntensityEffect::Darken,
+        "lighten" => KdeIntensityEffect::Lighten,
+        other => panic!("no intensity effect `{other}`"),
+    };
+    let color_effect = match row["color"].as_str() {
+        "none" => KdeColorEffect::None,
+        "desaturate" => KdeColorEffect::Desaturate,
+        "fade" => KdeColorEffect::Fade,
+        "tint" => KdeColorEffect::Tint,
+        other => panic!("no colour effect `{other}`"),
+    };
+    let contrast = match row["contrast"].as_str() {
+        "none" => KdeContrastEffect::None,
+        "fade" => KdeContrastEffect::Fade,
+        "tint" => KdeContrastEffect::Tint,
+        other => panic!("no contrast effect `{other}`"),
+    };
+    KdeGroupEffects {
+        intensity,
+        intensity_amount: number(&row["intensity_amount"]),
+        color: color_effect,
+        color_amount: number(&row["color_amount"]),
+        color_color: channels(color(&row["color_color"])),
+        contrast,
+        contrast_amount: number(&row["contrast_amount"]),
+    }
+}
+
+#[test]
+fn vectors_kde_effects() {
+    for row in rows("kde_effects") {
+        let group = match row["group"].as_str() {
+            "active" => KdeGroup::Active,
+            "disabled" => KdeGroup::Disabled,
+            "inactive" => KdeGroup::Inactive,
+            other => panic!("no group `{other}`"),
+        };
+        let got = kde_effects(
+            channels(color(&row["c"])),
+            channels(color(&row["background"])),
+            group,
+            role_kind(&row["role_kind"]),
+            &group_effects(&row),
+            boolean(&row["inactive_enabled"]),
+        );
+        assert_color(from_channels(got), output(&row["result"]), &row);
+    }
+}
+
+#[test]
+fn vectors_kde_selection_inactive() {
+    for row in rows("kde_selection_inactive") {
+        let got = kde_selection_inactive(
+            channels(color(&row["selection"])),
+            channels(color(&row["window"])),
+            channels(color(&row["selection_background"])),
+            role_kind(&row["role_kind"]),
+            boolean(&row["inactive_change_selection_color"]),
+        );
         assert_color(from_channels(got), output(&row["result"]), &row);
     }
 }

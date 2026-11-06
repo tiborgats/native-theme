@@ -1621,6 +1621,18 @@ mod tests {
                 Ty::Length,
                 Func::ShadowExtent,
             ),
+            // They read `token.kde` themselves, staged to M1b's tokens (the
+            // M1a design, decision 9).
+            (
+                "kde_effects(surface.foreground, role.window.background, inactive, foreground)",
+                Ty::Color,
+                Func::KdeEffects,
+            ),
+            (
+                "kde_selection_inactive(surface.foreground, #000000, #ffffff, background)",
+                Ty::Color,
+                Func::KdeSelectionInactive,
+            ),
         ] {
             assert_eq!(refused(text, ty), TypeError::NotImplemented(func), "{text}");
         }
@@ -1634,10 +1646,10 @@ mod tests {
         );
         assert_eq!(
             refused(
-                "mix(kcu_overlay(surface.foreground, #000000), #ffffff, 0.5)",
+                "mix(ka_contrast_text(surface.foreground), #ffffff, 0.5)",
                 Ty::Color
             ),
-            TypeError::NotImplemented(Func::KcuOverlay)
+            TypeError::NotImplemented(Func::KaContrastText)
         );
         // The arguments are typed first.
         assert_eq!(
@@ -1669,6 +1681,219 @@ mod tests {
                 found: Ty::Length
             }
         );
+    }
+
+    #[test]
+    fn kcu_mix_is_implemented() {
+        assert_eq!(
+            typed(
+                "kcu_mix(role.window.background, surface.foreground, 0.2)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused(
+                "kcu_mix(role.window.background, surface.foreground, #000000)",
+                Ty::Color
+            ),
+            TypeError::Argument {
+                func: Func::KcuMix,
+                index: 2,
+                expected: Ty::Number,
+                found: Ty::Color
+            }
+        );
+    }
+
+    #[test]
+    fn kcu_tint_is_implemented() {
+        assert_eq!(
+            typed(
+                "kcu_tint(role.window.background, surface.foreground, 0.4)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused("kcu_tint(role.window.background, 0.4)", Ty::Color),
+            TypeError::Arity {
+                func: Func::KcuTint,
+                found: 2
+            }
+        );
+    }
+
+    #[test]
+    fn kcu_shade_is_implemented() {
+        assert_eq!(
+            typed("kcu_shade(role.window.background, 0.1, 0)", Ty::Color),
+            Ty::Color
+        );
+        assert_eq!(
+            refused(
+                "kcu_shade(role.window.background, surface.foreground, 0)",
+                Ty::Color
+            ),
+            TypeError::Argument {
+                func: Func::KcuShade,
+                index: 1,
+                expected: Ty::Number,
+                found: Ty::Color
+            }
+        );
+    }
+
+    #[test]
+    fn kcu_overlay_is_implemented() {
+        assert_eq!(
+            typed(
+                "kcu_overlay(role.window.background, alpha(surface.foreground, 0.5))",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused("kcu_overlay(role.window.background, 0.5)", Ty::Color),
+            TypeError::Argument {
+                func: Func::KcuOverlay,
+                index: 1,
+                expected: Ty::Color,
+                found: Ty::Number
+            }
+        );
+    }
+
+    #[test]
+    fn kirigami_tint_is_implemented() {
+        assert_eq!(
+            typed(
+                "kirigami_tint(surface.foreground, with_alpha(#000000, 0.8), 1)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused("kirigami_tint(surface.foreground, #000000)", Ty::Color),
+            TypeError::Arity {
+                func: Func::KirigamiTint,
+                found: 2
+            }
+        );
+    }
+
+    /// Every string a fact's `value` holds, walked into its tables and
+    /// arrays.
+    fn value_strings<'v>(item: &'v toml::Value, out: &mut Vec<&'v str>) {
+        match item {
+            toml::Value::String(text) => out.push(text),
+            toml::Value::Array(items) => items.iter().for_each(|item| value_strings(item, out)),
+            toml::Value::Table(table) => table.values().for_each(|item| value_strings(item, out)),
+            _ => {}
+        }
+    }
+
+    /// Whether `text` calls `name`.
+    fn calls(text: &str, name: &str) -> bool {
+        text.match_indices(name).any(|(at, _)| {
+            let before = text.get(..at).and_then(|head| head.chars().next_back());
+            let after = text
+                .get(at.saturating_add(name.len())..)
+                .and_then(|tail| tail.chars().next());
+            !before.is_some_and(|c| c.is_ascii_alphanumeric() || c == '_') && after == Some('(')
+        })
+    }
+
+    /// The KDE facts' calls of the seven KDE colour functions
+    /// (`docs/facts/kde`) type over the model's references, as a
+    /// `kde-breeze` preset states them: each call of the five implemented
+    /// ones to a colour; each of `kde_effects` and `kde_selection_inactive`,
+    /// which read `token.kde` themselves (staged to M1b's tokens, the M1a
+    /// design's decision 9), through its arguments to the function not
+    /// implemented yet. The params group `color` is the preset's to declare:
+    /// declared here with the keys the calls read, its unit a number's.
+    #[test]
+    fn kde_facts_calls_type() {
+        const IMPLEMENTED: [&str; 5] = [
+            "kcu_mix",
+            "kcu_tint",
+            "kcu_shade",
+            "kcu_overlay",
+            "kirigami_tint",
+        ];
+        const READ_TOKEN_KDE: [&str; 2] = ["kde_effects", "kde_selection_inactive"];
+        let decl = crate::next::declare::Declarations {
+            params: vec![(
+                key!("color"),
+                crate::next::declare::ParamGroup {
+                    unit: crate::next::declare::ScalarUnit::Number,
+                    keys: vec![key!("contrast"), key!("frame_contrast")],
+                },
+            )],
+            ..Default::default()
+        };
+        let env = crate::next::validate::type_env(&decl, crate::next::validate::TypeTarget::Roles);
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts/kde");
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|e| e == "toml"))
+            .collect();
+        files.sort();
+        let mut seen: Vec<&str> = Vec::new();
+        for file in &files {
+            let text = std::fs::read_to_string(file).unwrap();
+            let facts: toml::Table = toml::from_str(&text).unwrap();
+            let Some(toml::Value::Array(facts)) = facts.get("fact") else {
+                continue;
+            };
+            let mut values = Vec::new();
+            for fact in facts {
+                if let Some(value) = fact.get("value") {
+                    value_strings(value, &mut values);
+                }
+            }
+            for value in values {
+                let Some(text) = value.strip_prefix('=') else {
+                    continue;
+                };
+                let called: Vec<&str> = IMPLEMENTED
+                    .into_iter()
+                    .chain(READ_TOKEN_KDE)
+                    .filter(|name| calls(text, name))
+                    .collect();
+                if called.is_empty() {
+                    continue;
+                }
+                let at = format!("{}: {text}", file.display());
+                let expr = Expr::parse(text.trim()).unwrap_or_else(|e| panic!("{at}: {e}"));
+                let checked = expr.check(&FieldType::new(Ty::Color, Bound::Unbounded), &env);
+                if called.iter().any(|name| READ_TOKEN_KDE.contains(name)) {
+                    assert!(
+                        matches!(
+                            checked,
+                            Err(TypeError::NotImplemented(
+                                Func::KdeEffects | Func::KdeSelectionInactive
+                            ))
+                        ),
+                        "{at}: {checked:?}"
+                    );
+                } else {
+                    assert_eq!(
+                        checked.map(|typed| typed.ty().clone()),
+                        Ok(Ty::Color),
+                        "{at}"
+                    );
+                }
+                seen.extend(called);
+            }
+        }
+        for name in ["kcu_mix", "kcu_tint", "kirigami_tint"]
+            .into_iter()
+            .chain(READ_TOKEN_KDE)
+        {
+            assert!(seen.contains(&name), "no KDE fact calls {name}");
+        }
     }
 
     #[test]
