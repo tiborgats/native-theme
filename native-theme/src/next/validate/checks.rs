@@ -1651,7 +1651,9 @@ impl<'a> Checker<'a> {
     /// keyed list; and its Breeze test's own ([`Checker::breeze_test`]),
     /// wherever an engine is stated. A focus indicator's transition is a
     /// field a rule patches field by field, so the checks over combinations
-    /// read its merged value. A `FocusMove` kind is refused on its own.
+    /// read its merged value; a delay written as an expression they read
+    /// where it resolves, a delay being refused by its value. A `FocusMove`
+    /// kind is refused on its own.
     fn engine(&mut self, engine: &TransitionEngine, whole: Option<&Transition>, path: &Path) {
         let toml = self.toml;
         let field = |key: &str, suffix: &str| path.join(&spelled_key(key, suffix, toml));
@@ -1698,7 +1700,8 @@ impl<'a> Checker<'a> {
                 },
             ),
         ];
-        if transition.delay != Value::Stated(Ms(0.0)) {
+        // A delay written as an expression is read where it resolves.
+        if matches!(transition.delay, Value::Stated(Ms(delay)) if delay != 0.0) {
             reads.push((field("delay", "_ms"), Read::Delay));
         }
         reads.push((field("kind", ""), Read::Kind(kind_name(&transition.kind))));

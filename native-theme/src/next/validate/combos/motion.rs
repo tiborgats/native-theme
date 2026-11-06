@@ -225,6 +225,16 @@ impl Stack<'_> {
             .collect()
     }
 
+    /// Whether a found delay is one other than zero under `world` (S2.7,
+    /// S12): its references followed, a stated number other than zero; a
+    /// value the check cannot read refuses nothing.
+    fn delayed(&self, world: &World, found: Found<'_>) -> bool {
+        self.follow(world, found)
+            .0
+            .iter()
+            .any(|end| matches!(end.got, Got::Stated(Fact::Number(n)) if n != 0.0))
+    }
+
     /// The Breeze test of a found engine, as its source states it.
     fn breeze_test(&self, engine: &Found<'_>) -> Option<&BreezeTest> {
         let (number, _) = engine.id?;
@@ -267,8 +277,11 @@ impl Checks<'_, '_> {
     /// spring, but under `WinUiAnimatedIcon`; an `Instant` step's duration
     /// not a stated zero, and another kind's a stated zero; and a
     /// transition's stated timing, followed through references, that its
-    /// engine does not compute. A value nothing states (a listed path's) or
-    /// a reference reaching none refuses nothing.
+    /// engine does not compute; a list's item's delay written as an
+    /// expression that resolves to another than zero where its engine takes
+    /// none, and the focus indicator's transition's engine checks
+    /// ([`Checks::focus_engine`]). A value nothing states (a listed path's)
+    /// or a reference reaching none refuses nothing.
     pub(super) fn motions(&mut self) {
         let stack = self.stack;
         for motion in motions(stack) {
@@ -293,6 +306,20 @@ impl Checks<'_, '_> {
         let timings = at("timing");
         let engines: Vec<&'static str> = at("engine").iter().filter_map(variant).collect();
         let kinds: Vec<&'static str> = at("kind").iter().filter_map(variant).collect();
+        // A list's item's delay written as an expression, where it
+        // resolves (a literal is the structural check's, S12).
+        if motion.item.is_some() && !motion.step {
+            for found in at("delay") {
+                if matches!(found.got, Got::Expr(_)) && stack.delayed(world, found) {
+                    for engine in &engines {
+                        if let Some(takes) = takes(engine, Read::Delay) {
+                            let kind = ProblemKind::EngineMismatch { engine, takes };
+                            self.problem(found.layer, found.at, kind);
+                        }
+                    }
+                }
+            }
+        }
         if kinds.is_empty() || (!motion.step && engines.is_empty()) {
             return;
         }
@@ -392,7 +419,7 @@ impl Checks<'_, '_> {
         reads.extend(
             at("delay")
                 .into_iter()
-                .filter(|found| !matches!(found.got, Got::Stated(Fact::Number(n)) if n == 0.0))
+                .filter(|found| stack.delayed(world, *found))
                 .map(|found| (found, Read::Delay)),
         );
         reads.extend(

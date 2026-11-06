@@ -1076,6 +1076,40 @@ fn focus_transition_engine_checks_read_merged() {
     );
 }
 
+/// A delay is read by its value (S2.7, S12): one written as a reference
+/// is refused where it resolves to another than zero, a literal where it
+/// is stated, a list's item's and a focus indicator's transition's alike.
+#[test]
+fn delay_read_by_its_resolved_value() {
+    let quick = declare("durations = [\"quick\"]");
+    let delay = "\"= token.motion.durations.quick\"";
+    let breeze = "engine = { breeze = { any = [\"focus_visible\"], none = [], conditions = [] } }";
+    let item = |token: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = {token}\n[widgets.button.body]\n\
+             transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
+             100, delay_ms = {delay}, timing = \"linear\", {breeze} }}]"
+        ))
+    };
+    assert_eq!(found(&item("0"), &quick), NONE);
+    assert_eq!(
+        found(&item("50"), &quick),
+        ["widgets.button.body.transitions[0].delay_ms: the `breeze` engine takes no delay"]
+    );
+    let focus = |token: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = {token}\n[widgets.button.body.focus]\n\
+             transition = {{ properties = [], kind = \"interpolate\", duration_ms = 100, \
+             delay_ms = {delay}, timing = \"linear\", {breeze}, from = \"none\" }}"
+        ))
+    };
+    assert_eq!(found(&focus("0"), &quick), NONE);
+    assert_eq!(
+        found(&focus("50"), &quick),
+        ["widgets.button.body.focus.transition.delay_ms: the `breeze` engine takes no delay"]
+    );
+}
+
 /// A `FocusMove` transition is refused: no engine runs one yet, as an
 /// engine runs per element part and the move crosses two (S2.7, S2.10,
 /// S12; ADD-A126).
