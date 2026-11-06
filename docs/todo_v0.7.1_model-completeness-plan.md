@@ -2,11 +2,14 @@
 
 **Status:** approved 2026-10-29 with the maintainer's decisions D1, D4, D5, D7, D9, D10, D11 and D12 (each marked
 below); draft 12. Eleven independent reviews; draft 11 consolidated
-their fixes into one text, and draft 12 applies the eleventh review's.
+their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-06) applies the maintainer's
+scope decision D13 (0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases) and D14,
+settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
-connectors and the three showcases moved to the model; released as 0.8.0 (R21, S21).
+connectors and the three showcases moved to the model (R21, S21). Released in steps (D13): 0.8.0 when the model holds
+everything 0.7.0's model holds (*0.8.0's scope*), then the catalogue's other units in the follow-up releases.
 
 **Inputs:** the gap map ([`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)),
 the rationale ([`…-rationale.md`](todo_v0.7.1_model-completeness-rationale.md), "R…") and the specification (core
@@ -22,8 +25,8 @@ creates it.
 
 **Branches:** `v0.8.0-rc1` for the work, cut from `main` after `v0.7.1-rc1` is merged, or from `v0.7.1-rc1` (D5);
 `v0.8.0-tools` for the tooling (*Where the work happens*). Each gets a draft pull request after its first commit, so
-every push runs CI (`ci.yml` runs on pull requests, not on branch pushes). Nothing is released before every milestone
-is closed (R21; 0.7.x patches, D11).
+every push runs CI (`ci.yml` runs on pull requests, not on branch pushes). 0.8.0 is not released before M0–M6 are
+closed (R21, D13; 0.7.x patches, D11); each follow-up release has its own branch and gate (*After 0.8.0*).
 
 ## Global constraints
 
@@ -108,12 +111,19 @@ entries unlinked at M2.1.
 ### One rule for every model field
 
 A widget's part, a component, a token group, a colour-role group or a declared input enters the model in the commit
-where every preset that exists then states it from verified facts, or declares its absence as the facts state; a
-preset added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts
-gate run over the whole model at every commit. Generated declarations are staged by the generator's list of enabled
-units (`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit.
-The facts gate skips facts whose key the model does not hold yet (the lanes run ahead); M4 requires every unit
-enabled and no such fact left.
+where every preset that exists then states it from verified facts, or declares its absence as the facts state; a preset
+added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts gate run
+over the whole model at every commit. Generated declarations are staged by the generator's list of enabled units
+(`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit. The
+facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's unit and
+the unit of every widget its `when`'s positive lists name), reading the units from `scripts/widget_units.toml` as
+`check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled units* is one whose units are all
+enabled. From M4 the gate fails on a skipped fact of the enabled units and on a fact whose key lies in no unit, and
+reports the other skipped facts by unit; so that it can tell a later unit's fact from a stray one, `widget_units.toml`
+lists every unit with an enabled flag (*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
+release requires its own units enabled; after the last one no fact is skipped. A unit enters whole, its catalogue
+entries whole, less the values S6.1 lets it defer to a later unit (the `Placement` values, to the placement unit); a
+rule under a context of a widget a later unit holds waits for that unit, as `check_facts_trace.py` states.
 
 Rejected: declaring unwritten widgets `available = false` (the presets would state that the platform does not draw
 them, which is false); a lenient validation mode (it hides the gaps the gate exists to find); placeholder preset values
@@ -140,6 +150,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
 - `ci.yml` follows with matrix entries, steps and `--exclude` arguments (the MSRV `--workspace` check), each marked
   `# PLAN_EXCLUDED: <name>`; a `check_release.sh` step checks that the marks and the list name the same set, in both
   directions. M5's gate: the list empty and no mark left.
+- A unit not yet enabled adds no step: its fields are not in the model, the gate skips its facts, and the contract
+  tables hold no entry for it, so no step fails for it. The list stays empty from M5 through every follow-up release.
 
 ### What carries over
 
@@ -147,7 +159,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
   row and its trace line name the model path; the rows reference their evidence where it lies. It is lane input that
   neither the gate nor the citation check reads: the lanes turn each row into a verified fact like any other, or record
   it as not a model value, so nothing unverified reaches the gate. The `windows-11-arm` evidence stays usable; the
-  Windows Server images' values are dropped where they differ. The folder is empty at M4.
+  Windows Server images' values are dropped where they differ. The folder is empty at M4: a row whose key lies in a
+  later unit becomes a fact the gate skips until that unit is enabled.
 - **Today's evidence.** The five runs under `docs/evidence/os-probe/` (about 6,400 files, of which today's rows cite a
   few hundred) are listed by run folder in `check_fact_citations.py` as legacy evidence: their files count as cited
   until M4, when every legacy file no fact cites is deleted (git history keeps it) and the list is emptied. Rejected:
@@ -162,7 +175,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
   `check_release.sh` step fails on a `platform-facts.md:N` citation without `@` outside those exceptions. The probe's
   strings that cite the document become fact keys in the next spike that changes the probe.
 - **Today's inheritance rules** are converted by S19.2's script at M1a into a staged input file that each unit's preset
-  step uses and the gate checks; it is removed at M4.
+  step uses and the gate checks; it is removed at M4: its entries are today's fields, whose new homes all lie in
+  0.8.0's units (*0.8.0's scope*), so no later unit needs it.
 
 ## Where the work happens
 
@@ -190,7 +204,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
 
 ## Decisions
 
-### For the maintainer, at approval
+### For the maintainer (at approval; D13 later)
 
 - **D1 — the source cache and the release sets.**
   - **Location (decided 2026-10-29):** `/run/media/tibi/work/cargo-build/native-theme-sources/`, a folder beside the
@@ -200,7 +214,10 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     folder inside the project (several GB in `/home`'s snapshots); the session scratchpad (lost at reboot). M0 seeds it
     from this session's scratchpad checkouts whose commit equals the pin.
   - **The release set** per platform: the newest stable at M0 (R1.5), coherent, frozen until 0.8.0 unless the ledger
-    records a re-pin. KDE: the Plasma release, KDE Frameworks, Qt, Kirigami and kirigami-addons one dated Arch Linux
+    records a re-pin; under D13, frozen until the catalogue's last unit is released, so every unit's facts describe
+    one release set (a re-pin, recorded in the ledger as before, re-checks every enabled unit's facts at the new pin;
+    each release's drift run, M4, shows how far the runners have moved).
+    KDE: the Plasma release, KDE Frameworks, Qt, Kirigami and kirigami-addons one dated Arch Linux
     Archive snapshot carries (the container D2 measures in; today Plasma 6.8.2). GNOME: libadwaita, GTK and the
     gsettings schemas (today 1.10.0 and 4.24.1). Material: material-web's token set (the primary reference, R1.6), a
     Compose release, the Android emulator's system image (API level and revision) and material-color-utilities by
@@ -277,7 +294,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
 - **D11 — 0.7.x releases during the work** (approved by the maintainer, 2026-10-29): no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
-  are triaged into this plan or carried to after 0.8.0, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
+  are triaged into this plan or carried past its releases, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
   An emergency (an upstream release breaking 0.7.0, as gpui-kit 0.6.4 broke 0.5.8) is fixed on its own `v0.7.N-rc1`
   from `main` (`v0.7.2-rc1` for the next), released by the maintainer, and `main` is then merged into `v0.8.0-rc1` with its CHANGELOG entry kept
   below `[0.8.0] - Unreleased`. Rejected: planned 0.7.x releases beside the work (two lines of releases for months).
@@ -297,11 +314,34 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     facts may describe a beta; S16's `PresetOlder` example and the 26 facts already gathered change.
   - **(c) both**, a fact per release: the per-release overlay R1.5 rejected.
 
+- **D13 — 0.8.0's scope** (decided by the maintainer, 2026-11-06: (B)). 0.8.0 ships when the new model covers what
+  0.7.0 covers: every widget, colour role, token and value 0.7.0's model holds is in the new model, on every preset
+  0.7.0 ships for, with the connectors running on it. The rest of the catalogue follows in later releases, the
+  follow-up releases ("0.8.x" in the decision; D14 numbers them). "Cover everything visible" stays the goal; only its
+  release timing changes. Within each unit a release enables, the rigor stays as it is: verified facts, the facts
+  gate, one rule for every field.
+  - **(A)** the whole catalogue in 0.8.0, as R21 had it. Against: users wait for the widgets 0.7.0 never had.
+  - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing 0.7.0 has; they get the new model
+    about 2–3 weeks earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each
+    with its own gate run; D14 (*Settled by logic*).
+  - **(C)** releases by capability (rules, then shadows, …), R21's rejected stages: each would break the connectors
+    again and show mixed looks.
+  - Consequences: R21's release decision is amended (rationale, R25.13's list); the specification's release
+    statements are restated through *Spec changes* (an S22 line) before M4 builds on them: S21.1 (one release, every
+    preset complete) and S17's "0.8.0 is released with none skipped" and "with no pending fact" (S17's *While 0.8.0
+    is built* then covers the follow-up releases, each released with no skipped or pending fact of the enabled units,
+    *One rule for every model field*); the scope is *0.8.0's scope* below; the release set stays frozen until the
+    last unit (D1); M3 splits into M3a (before M4) and M3b (*After 0.8.0*); M4, M5 and M6 apply to 0.8.0's units; the
+    v0.7.1 documents and the scripts the later units use stay until the last follow-up release. `ios-26` stays in
+    0.8.0 (S21.1 makes it a release condition, and its slice facts are written): every preset that exists states every
+    field the model holds.
+
 ### Scheduled
 
 - **D6 — the checkpoint after M1b.** The maintainer approves the scale-up from:
-  - the slice's measured cost per widget and platform (facts written, hours, harness rounds, tokens), extrapolated to
-    the whole catalogue, and the budget caps per milestone;
+  - the slice's measured cost per widget and platform (facts written, hours, harness rounds, tokens), extrapolated
+    first to 0.8.0's units (D13: 0.8.0's date and budget), then to the later units (the follow-up releases), and the
+    budget caps per milestone;
   - the evidence's size, extrapolated, and where it lives above a threshold (in the repository; a separate evidence
     repository pinned by commit, recommended above about 500 MB; Git LFS, rejected for its quota and bandwidth costs);
   - the facts gate's run time, the build's time and the docs.rs build, with a budget;
@@ -349,13 +389,154 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   handles badly); `native-theme`'s package excludes `tests/` (the gate and the vector tables), and the packaging step
   fails above crates.io's 10 MB limit.
 
+- **D14 — the follow-up releases' version numbers** (settled by logic, 2026-11-06: (a); D13's "0.8.x" is the
+  decision's wording for the follow-up releases, whose numbers follow SemVer). A follow-up release that enables a
+  typed widget adds members to the generated enums `WidgetKind`, `Variant` and `TypedPart`, which are exhaustive (R21,
+  S21.2). Cargo's SemVer rules count a new member of an exhaustive public enum as breaking, and Cargo resolves a
+  requirement `0.8.0` to any 0.8.N, so an 0.8.N that adds one breaks every build that matches the enum in full: an
+  application's, or an older connector release's built against the newer native-theme. Keyed components
+  (`WidgetRef::Component(Key)`) and the placement unit (S13's types are in since M1a) may add none; the semver checks
+  `check_release.sh` runs tell, per release.
+  - **(a)** the version follows `cargo semver-checks` against the previous release: a breaking release is the next
+    minor (0.9.0, …), any other the next patch (0.8.N). For: R21's exhaustive enums and Cargo's rules both kept; D13's
+    two reasons do not depend on the number. Against: the typed-widget releases are not 0.8.x as D13 names them.
+  - **(b)** every follow-up an 0.8.N, the generated enums `#[non_exhaustive]`: a change of R21 and S21.2 (class 3).
+    For: the names D13 uses. Against: a connector's build no longer breaks on a new widget (its contract test still
+    fails on the widget's unmapped fields, S21.3), and every application matches with a wildcard arm.
+  - **(c)** breaking 0.8.N releases: rejected, Cargo would pull them into the builds they break.
+  - **Decided (a):** R21 makes the generated enums exhaustive so that a connector's build breaks on a widget it does
+    not map yet, which (b) gives up for a name; D13's two reasons hold under any number.
+
+## 0.8.0's scope (D13)
+
+### What 0.7.0's model holds, and where it goes
+
+Read at `2796b26e`, the switch's parent, where today's model still exists: its `model/`, `presets/`, `presets.rs` and
+`resolve/` equal `v0.7.0`'s (`git diff v0.7.0 2796b26e` shows none), and `lib.rs` differs only by `pub mod next`.
+Paths below are under `native-theme/src/` at `2796b26e`; `w:` is `model/widgets/mod.rs`. Each widget's fields map
+as its catalogue entry's *Today's fields* says; the defaults and the text scale as the catalogue's *today's fields*
+table (under *Colour roles and text ramp*) says.
+
+| 0.7.0 group | At | New home | Unit |
+|---|---|---|---|
+| `ThemeDefaults`: the colours, `disabled_text_color`, the status colours, `shadow_color`, `link_color`, the selections | `model/defaults.rs:37-97` | S3's roles (`role.window.*`, `role.view.*` from `surface_color`, `role.global.*`, `role.selection.*`, `<set>.link`) | slice |
+| `ThemeDefaults.font`, `mono_font`, `line_height`; `TextScale` (`ThemeMode.text_scale`) and `TextScaleEntry` | `model/defaults.rs:41-48`; `model/font.rs:298`, `:372`; `model/mod.rs:115` | S4.4's slots (`body`, `monospace`, `caption`, `headline`, `title1`, `display_small`) and each style's `line_height` | slice |
+| `ThemeDefaults.focus_ring_*`, `disabled_opacity` | `model/defaults.rs:112-122` | `token.focus`; `token.params.opacity.disabled` | slice |
+| `IconSizes`; `ThemeDefaults.icon_theme`, `Theme.icon_set`, `Theme.icon_theme` | `model/icon_sizes.rs:13`; `model/defaults.rs:145`; `model/mod.rs:299`, `:317` | `token.icons.sizes.*`, `token.icons.set`, `token.icons.theme` (S4.5) | slice |
+| `DefaultsBorderSpec` (`ThemeDefaults.border`) | `model/border.rs:25`; `model/defaults.rs:102` | `<set>.border`; each part's own stroke, corners, shadow, padding (R20) | slice and each widget's unit |
+| `ColorMode`, `Theme.light`, `Theme.dark` | `model/mod.rs:19`, `:274-278` | the `Scheme` condition (S7.1) | M1a's core |
+| `AccessibilityPreferences` | `lib.rs:417` | conditions (S7.1) and `ReaderState.text_scaling_factor` (S9) | M1a's core, M1b |
+| `Theme.name` | `model/mod.rs:270` | `Theme::preset().display_name()` (S16) | M1a's core |
+| `WindowTheme` | `w:17` | `window` | window and chrome |
+| `DialogTheme` (`DialogButtonOrder`, `DialogEntranceStyle`), `PopoverTheme`, `TooltipTheme`, `MenuTheme` | `w:817`, `w:659`, `w:304`, `w:259` | `dialog` (`action_layout.row_order`, `presentations`), `popover`, `tooltip`, `menu` | overlays |
+| `ButtonTheme` | `w:43` | `button` | slice (M1a) |
+| `LinkTheme`, `SegmentedControlTheme`, `SwitchTheme`, `CheckboxTheme` | `w:1058`, `w:946`, `w:710`, `w:183` | `link`, `segmented_control`, `switch`, `checkbox`; the checkbox's `radio_indicator_width`, `radio_dot_diameter` and shared colours → `radio` | buttons and toggles |
+| `InputTheme`, `TextAreaTheme`, `ComboBoxTheme`, `SliderTheme` | `w:114`, `w:166`, `w:893`, `w:366` | `input`, `text_area`, `combo_box`, `slider` | fields |
+| `SpinnerTheme`, `ProgressBarTheme`, `ScrollbarTheme` | `w:869`, `w:415`, `w:332` | `spinner`, `progress_bar`, `scrollbar`; `overlay_mode` → `cond overlay_scrollbars` (the catalogue's conditions; read by the readers unit) | indicators; tokens and conditions; readers |
+| `ListTheme`, `TabTheme` (`TabIndicatorSide`), `SidebarTheme`, `ToolbarTheme`, `StatusBarTheme`, `SplitterTheme`, `SeparatorTheme`, `CardTheme`, `ExpanderTheme` (`ArrowSide`), `LayoutTheme` (`Theme.layout`) | `w:603`, `w:443`, `w:518`, `w:547`, `w:583`, `w:676`, `w:694`, `w:987`, `w:1003`, `w:1096`; `model/mod.rs:282` | `list`, `tab` (`indicator_edge`), `sidebar` (its rows `list @ variant sidebar`), `toolbar` (its font and icon size on `button @ context toolbar.bar`), `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout` | containers |
+| `FontSpec`, `WidgetBorderSpec` (inside each widget) | `model/font.rs:154`; `model/border.rs:89` | each part's `text`, `stroke`, `corners`, `padding`, `shadow` | each widget's unit |
+| `AnimatedIcon` and its loaders | `model/animated.rs` | goes (S2.7, S19.3): a busy indicator is the `spinner` widget | indicators |
+
+No 0.7.0 field maps into a typed widget the model lacks today or into a keyed component: their entries' *Today's
+fields* are none, or name stand-ins that stay with the entries above (`badge`'s status colours, `form`'s `list.*`);
+`component.title_widget`'s "`text_scale` (partial)" is where `kde-breeze`'s level fonts come from, and their home
+is the slice's slots.
+
+### The units 0.8.0 enables (M3a), in M3's order
+
+1. **tokens and conditions**: S4.3, the rest of S4.6 (`layout`, `shadow`, `motion`, `icon_effect`, `caret`, `shape`,
+   `display`), S4.7, the rest of S4.8, the catalogue's *conditions*. Needed for `cond overlay_scrollbars` (0.7.0's
+   `overlay_mode`), and because 0.8.0's entries refer to its groups (`window`'s frame to `token.params.display`,
+   `input`'s caret to `token.params.caret`, `list` to `token.params.layout`). Rejected: S4.3 and S4.7 left to a later
+   unit, which saves their facts but releases M2.1's interim theme-change rule and moves `ProblemKind::ZeroDuration`,
+   an exhaustive enum's member, into a follow-up release.
+2. **readers**: the catalogue's *readers* for the desktop platforms (the iOS and Android lines stay R18's). Needed:
+   0.7.0 reads KDE's `smallestReadableFont`, `menuFont` and `toolBarFont` (`kde/fonts.rs:149-204`, K3.46), the icon
+   theme's `*Default` sizes (`kde/mod.rs:104`, K3.63) and the overlay-scrollbar settings (`gnome/mod.rs:554-556`,
+   `macos.rs:245-250`; GN-1.85, MAC-S01). A read whose target lies in a later unit waits for that unit's readers step.
+3. **window and chrome**: `window`.
+4. **overlays**: `dialog`, `popover`, `tooltip`, `menu`.
+5. **buttons and toggles**: `button` (enabled by the slice), `link`, `segmented_control`, `switch`, `checkbox`,
+   `radio`, `radio_group` (no 0.7.0 field, though 0.7.0's showcases draw a radio group, `basic.radios`; it joins with
+   its unit).
+6. **fields**: `input`, `text_area`, `combo_box`, `slider`.
+7. **indicators**: `spinner`, `progress_bar`, `scrollbar`.
+8. **containers**: `scroll_view` (no 0.7.0 field, though 0.7.0's showcases scroll their pages, `basic.page`; the
+   slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
+   `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`.
+
+30 of the catalogue's 86 typed widgets. Their 15 `Placement` values are deferred to the placement unit (S6.1, as the
+slice defers the button's; the M1a design's decision 1): `window.values.{caption_button_menu_placement,
+window_menu_placement, title_menu_placement, keyboard_avoidance}`, `dialog.values.{placement, keyboard_avoidance}`,
+`popover.values.placement`, `tooltip.values.placement`, `menu.values.{placement, submenu_placement}`,
+`button.values.{menu_placement, scaffold_placement}`, `combo_box.values.popup_placement`,
+`slider.values.thumb_tooltip_placement`, `layout.values.levitated_placement`. Rejected: the placement unit in 0.8.0;
+0.7.0 places nothing, and S13's strategies each need a vector table from their reference (the GTK and Qt containers,
+Compose's code, the WinUI host) or measured AppKit and UIKit frames.
+
+**After 0.8.0 (M3b):** placement (ending those deferrals); the 56 typed widgets the model lacks today, in alphabetical
+batches of about ten; the 28 keyed components.
+
+### Widgets 0.7.0 styles through stand-ins
+
+Some widgets 0.7.0's connectors and showcases style have no field of their own in 0.7.0's model: the connector
+borrows other widgets' or the defaults' fields. The catalogue gives most of them an entry of a later unit (M3b). From
+the 0.7.0 contract tables and connector code at `2796b26e`:
+
+| Widget | 0.7.0's stand-in | Its catalogue entry |
+|---|---|---|
+| a menu bar | iced: `styles::aw::menu`, `iced_aw`'s `menu_bar::Style`, its bar from `menu.background_color` and `menu.border` (`connectors/native-theme-iced/src/styles/aw.rs:137-162`; contract `contract.rs:1610`); the showcases' `chrome.menu_bar` from `window.background_color` and `layout.container_margin_px`, its titles from `menu.*` (`docs/showcase-elements.toml@v0.7.0`) | `menu_bar` (M3b) |
+| a number input | the showcases' `basic.number_input.field` from `input.*`; gpui's `NumberInput` frame refined by the connector (`geometry.rs:322-324`) | `stepper` (M3b), its text `input @ context stepper` |
+| a code editor | gpui: the code `Editor`'s line height from `defaults.line_height`, its fill from `input.background_color`, its font from `defaults.mono_font` (`geometry.rs:394-408`) | `code_editor` (M3b) |
+| a group box | gpui: `group_box`, `group_box_foreground` from the background, secondary and foreground colours (`connectors/native-theme-gpui/src/colors.rs:530-532`), `group_box_content` from `card.*` (`geometry.rs:767-774`) | `group_box` (M3b) |
+| a loading placeholder | gpui: `skeleton` from `button.background_color` (`colors.rs:582`, contract `contract.rs:627-631`) | `redaction` (M3b) |
+| a chart | gpui: `chart_1`–`chart_5` from the accent (`colors.rs:491-513`), `chart_bullish`, `chart_bearish` from the success and danger colours (`:353-354`), `chart_grid` from `list.grid_color` (`:446`) | `chart` (M3b) |
+| a drag image's border | gpui: `drag_border` from the primary colour (`colors.rs:585`) | `drag_image` (M3b) |
+| a description list | gpui: `description_list_label` and its foreground from the background, border and muted colours (`colors.rs:535-536`) | none: a gpui-component widget no platform list names; it stays a stand-in |
+
+Not stand-ins, their homes being 0.8.0's: gpui's `accordion`, `accordion_title` and `accordion_hover` (`expander`,
+`geometry.rs:785-821`), `table_*` (`list`), `overlay` (`dialog`'s `scrim`), `drop_target` (the `drop_target` state
+of 0.8.0's widgets), `title_bar` (`window`); iced's `selection_list`, `pane_grid` and `aw::spinner` (`list`,
+`splitter`, `spinner`). egui has none: every `Style` field it writes comes from a leaf of 0.8.0's units
+(`connectors/native-theme-egui/mapping.toml@2796b26e`), and egui's own widgets that read those fields (its
+`DragValue`'s text style, `src/mapping.md:745`) read them by egui's design.
+
+**Decided by the orchestrator** (2026-11-06), by D13's own reasons (nothing 0.7.0 has is lost; ship sooner): until
+its unit is enabled, a connector keeps its 0.7.0 stand-in mapping for such a widget, from the model's enabled roles
+and widgets as 0.7.0 does, recorded in its contract table as a stand-in entry (the widget, the fields it reads, the
+unit that replaces it), which S21.3's contract test and M5 accept; the widget's unit replaces it with the widget's own
+mapping in its connector task. Rejected: adding those widgets to M3a, which costs their whole units against D13's
+timing. The spec follows through the ledger's queue (S21.3's stand-in entry).
+
+### 0.7.0's public features the new model keeps
+
+| 0.7.0 feature (at `2796b26e`) | In the new model | Planned in |
+|---|---|---|
+| the seven platform presets (`presets.rs:58-64`) | the presets from facts; `ios-26` added | M1a (`adwaita`, `macos-tahoe`), **M1b** (the other six), each unit |
+| the ten community presets of seven projects (`presets.rs:66-75`) | palettes from the projects' published colours (S14) | **M2.4** |
+| `Theme::preset`, `merge`, `resolve`, `resolve_with`, `list_presets`, `list_presets_for_platform` (`model/mod.rs:578`, `:340`, `:487`, `:515`, `:718`, `:741`); `SystemTheme::pick`, `with_overlay` (`lib.rs:735`, `:890`) | `Theme::from_preset`, `add_layer`, `pick`, `resolve` and the query; `PresetId::all`, `PresetId::for_system` | M1a; **M2.5** (S16 complete) |
+| the readers: `SystemTheme::from_system`, `from_system_async`, `from_system_with_preset` (`lib.rs:959-1017`); features `kde`, `portal`, `macos`, `windows` and their aliases | `Theme::system()`, `from_system(Some(generation))` | **M1b** (the slice's scope), the readers unit, each unit's readers step |
+| `detect`'s scheme and motion functions (`detect.rs:211-948`), `AccessibilityPreferences` | conditions and `ReaderState` | **M1b** |
+| `watch::on_theme_change` (`watch/mod.rs:435`), feature `watch` | the same, ported to S9.5 | **M1b** |
+| `icons`: `load_icon`, `load_custom_icon(_in)`, the five loaders, `colorize_monochrome_svg`, `fill_current_color`, `IconSetChoice`, `default_icon_choice`, the freedesktop theme lists (`icons.rs:112-1480`, less `load_icon_indicator`); `IconSet`, `IconRole`, `IconData`, `IconProvider`; features `system-icons`, `material-icons`, `lucide-icons` | kept in place, repointed (the inventory) | M1a's switch |
+| `SystemTheme::icon`, `icon_theme_for` (`lib.rs:796`, `:750`) | `ResolvedTheme::icon` and the resolved `token.icons` | **M2.5** |
+| `fonts` (`system_face`, `select_face`, `substitute_family(_cached)`; feature `system-fonts`), `rasterize::rasterize_svg` (feature `svg-rasterize`) | kept | M1a's switch |
+| `detect::{LinuxDesktop, detect_linux_desktop, invalidate_caches}`, `pipeline::{diagnose_platform_support, DiagnosticEntry, VersionMatch}` | kept (the inventory's F1) | M1a's switch |
+| `native-theme-build` | follows the new API | M1a's switch |
+| the four connectors, the three showcases | moved to the model | **M2.1**, each unit's connector task, M5 |
+
+Not kept, by R21 and S16 (S19.3): `Theme::from_toml`, `from_file`, `to_toml`, `lint_toml` (custom looks are
+application layers, `Layer::from_toml`, M1a); `load_icon_indicator`, `SystemTheme::icon_indicator` and
+`AnimatedIcon` (the `spinner` widget, the indicators unit); `ResolutionContext` (its fields' places in the model);
+`platform_preset_name` (`PresetId::for_system`).
+
 ## The order
 
 ```text
-M0 setup ──► M1a slice core ──► M1b slice complete ──► D6 ──► M2 core ──► M3 units ──► M4 gate complete ──► M5 showcases ──► M6
-  │              ▲   │                ▲                                     │ each unit closed ──► its connector task
-  │              │   └─► L facts lanes, verifiers (published from M1a; measured as T delivers) ──► M1b, M3
-  └─► spikes (M, G, K first; then I, W, A) ──► T tooling on v0.8.0-tools ──► L
+M0 setup ──► M1a slice core ──► M1b slice complete ──► D6 ──► M2 core ──► M3a 0.8.0's units ──► M4 gate ──► M5 showcases ──► M6 0.8.0
+  │              ▲   │                ▲                                     │ each unit closed ──► its connector task         │
+  │              │   └─► L facts lanes, verifiers (published from M1a; measured as T delivers) ──► M1b, M3a, M3b              ▼
+  └─► spikes (M, G, K first; then I, W, A) ──► T tooling on v0.8.0-tools ──► L                                               M3b later units ──► follow-up releases
       M's button pass, G's vector generator ──► M1a;  K's script, the KDE and Material vector generators ──► M1b
 ```
 
@@ -458,7 +639,8 @@ placement unit, spec ADD-A120); S7; S8 without
   S21.2's shape from the start (exhaustive enums, `#[non_exhaustive]` structs), so the connectors are written against
   it; S16's `Theme`, `from_preset`, `set_reader_stand_in`, `set_accent` and the query; S17's gate with its normal and
   perturbed runs and the declarations check. `PresetId` holds the presets written so far. The platform functions live
-  in the directory module `next/platform/` (`platform/` after the switch); S13's strategies come in `placement/` at M3.
+  in the directory module `next/platform/` (`platform/` after the switch); S13's strategies come in `placement/`
+  with M3b's placement unit.
 - **Facts tooling:** `scripts/check_function_vectors.py`; `scripts/check_facts_trace.py` (`--enabled` checks the
   enabled units on the presets that exist, `--unit` one unit, no option all); `scripts/generate_platform_facts.py`
   with `--check`, in the gates from the switch; `scripts/import_platform_facts.py` (*What carries over*).
@@ -498,7 +680,8 @@ placement unit, spec ADD-A120); S7; S8 without
    not a preset's value, which M3's tokens unit ends. Then the connectors, gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;
    its spinner and animated-icon code removed (`AnimatedIcon` is gone; busy indicators return with the indicators
    unit's connector task, drawn from the `spinner` widget); everything the model holds then mapped from the query, or
-   listed as what the toolkit cannot draw; its contract test (S21.3). The showcases are unlinked from their crates
+   listed as what the toolkit cannot draw; a widget 0.7.0 styles through a stand-in kept as a stand-in entry, from
+   the enabled roles and widgets (*Widgets 0.7.0 styles through stand-ins*); its contract test (S21.3). The showcases are unlinked from their crates
    (the `[[example]]` entries removed with `autoexamples = false`, the `native-theme-showcase-support` dev-dependency
    removed, gpui's `mod showcase;` removed; files kept, back at M5), so `--all-targets` and the tests no longer build
    them. `check_connector_parity.py` is rewritten to apply its naming and sibling rules over the new resolved types'
@@ -533,7 +716,25 @@ its vector table, generated by the reference where one runs: the GTK and Qt cont
 for microsoft-ui-xaml's strategies; measured by the probe and the iOS host for AppKit and UIKit, anchor, size and window
 in, frame out); readers (the catalogue's section); window and chrome; overlays; buttons and toggles; fields;
 indicators; containers; the typed widgets the model lacks today, in alphabetical batches of about ten entries; the
-keyed components. Per unit:
+keyed components.
+
+D13 splits them. M3a's units keep this order; placement moves after them, the first of M3b, so 0.8.0's `Placement`
+values stay deferred until its commit; M3b's other units keep this order:
+
+- **M3a, before M4:** 0.8.0's units (*0.8.0's scope*): tokens and conditions, readers, window and chrome, overlays,
+  buttons and toggles, fields, indicators, containers.
+- **M3b, after M6:** placement, the typed-widget batches, the keyed components, in the follow-up releases (*After
+  0.8.0*). The lanes may write their facts ahead, within the usage caps; the gate skips them until their unit.
+- **Every unit listed** (a code and script task at M3a's start, before its first unit's commit): today
+  `scripts/widget_units.toml` lists only the enabled units, so a key in no listed unit is a later unit's or a stray,
+  and `tests/facts_gate/units.rs` answers only held or not held. The file then lists every unit of M3's order with
+  its entries, prefixes and an `enabled` flag; `generate_widgets.py`, `check_facts_trace.py`, `units.rs` and
+  `check_ledger.py` read it, and a unit's commit flips its flag. Done early because it is one format change, after
+  which each M3a commit changes one line and the lanes' facts written ahead are classified from the start; M4's
+  failures on them wait until M4, since spec batches can still move an entry between units until then. Gate:
+  `generate_widgets.py --check` and `--self-test`, `check_facts_trace.py --self-test`, `cargo test -p native-theme`.
+
+A ledger destination `M3 unit <name>` names the unit in whichever part it runs. Per unit:
 
 1. **Facts** (the lanes, usually done ahead): every key, declaration and state-model combination of the unit on every
    preset (S17), with the traces' rows carried.
@@ -550,45 +751,85 @@ A unit with an open entry in the unmeasured register waits for the maintainer's 
 on to the next unit meanwhile.
 - **Gate per unit:** `cargo test -p native-theme` (the gate over the whole model), `check_facts.py`,
   `check_fact_citations.py`, `check_function_vectors.py`, `check_facts_trace.py --unit <unit>` (each live trace row of
-  the unit's targets is in a fact's `rows` or carries a verdict), `generate_widgets.py --check` and the pull request's
-  CI green; for a unit citing Apple's SDK headers, `os-probe.yml`'s header-citation job green.
+  the unit's targets is in a fact's `rows` or carries a verdict; for placement `--enabled`, since the deferred values
+  its commit ends lie in other units' entries, which `--unit placement` does not check), `generate_widgets.py --check`
+  and the pull request's CI green; for a unit citing Apple's SDK headers, `os-probe.yml`'s header-citation job green.
 
-## M4 — The facts gate, complete
+## M4 — The facts gate, complete for 0.8.0's units
 
-- Every unit enabled; `docs/facts/imported/` emptied (each row converted, or recorded as not a model value with its
-  reason); S19.2's staged file removed; uncited legacy evidence deleted and the legacy list emptied; the accent run over
-  every pinned scheme and accent; the palette run over every bundled palette.
-- **The drift run:** every harness runs once more on the then-current runner images, and every measured fact is
-  compared with that run; the ledger records the comparison per fact, with the run's URL. A drifted fact is measured
-  and verified again (citing the new run's committed evidence), or goes to the unmeasured register.
-- **Gate:** `cargo test -p native-theme --test facts_gate` green on the eight presets, with no fact lacking a resolved
-  key, no state-model combination lacking a fact and every declaration agreeing with its facts; `check_facts_trace.py`
-  and `check_function_vectors.py` over every fact green; `check_ledger.py --final` green (`imported/` empty, the staged
-  file gone, the legacy list empty, every measured fact with a drift comparison, the unmeasured register with no open
-  entry, no S17 pending fact). The full run calls `check_ledger.py --final` from then on.
+- Every unit of M3a enabled; `docs/facts/imported/` emptied (each row converted, or recorded as not a model value with
+  its reason); S19.2's staged file removed; uncited legacy evidence deleted and the legacy list emptied (with
+  `imported/` empty no lane still converts a legacy row, and git history keeps the files);
+  the accent run over every pinned scheme and accent; the palette run over every bundled palette.
+- **The enabled units' checks** (a tooling task before the gate): the facts gate fails on a skipped fact of the
+  enabled units and on a fact whose key lies in no unit, and reports the others by unit (*One rule for every model
+  field*); `check_ledger.py --final` takes the units from `scripts/widget_units.toml` by the same rule and asks its
+  per-fact conditions of the enabled units' facts only (no pending fact or declaration, every measured fact with a
+  drift comparison, no open unmeasured-register entry whose key or pending facts lie in the enabled units), fails a
+  register entry whose key lies in no unit, and reports the others by unit.
+- **The drift run:** every harness runs once more on the then-current runner images, and every measured fact of the
+  enabled units is compared with that run; the ledger records the comparison per fact, with the run's URL. A drifted
+  fact is measured and verified again (citing the new run's committed evidence), or goes to the unmeasured register.
+- **Gate:** `cargo test -p native-theme --test facts_gate` green on the eight presets, with no fact of the enabled
+  units lacking a resolved key, no state-model combination of an enabled unit lacking a fact and every declaration
+  agreeing with its facts; `check_facts_trace.py --enabled` and `check_function_vectors.py` green;
+  `check_ledger.py --final` green (`imported/` empty, the staged file gone, the legacy list empty, and over the
+  enabled units: every measured fact with a drift comparison, no open register entry, no S17 pending fact). The full
+  run calls `check_ledger.py --final` from then on.
 
 ## M5 — Showcases (after M4)
 
-`tools/showcase-support` ported first, then the three showcases rebuilt on the query, their element lists and parity
-gates following (S18), their busy indicators drawn from the `spinner` widget (S19.3); the unlinked showcase entries,
+`tools/showcase-support` ported first, then the three showcases rebuilt on the query, showing everything 0.8.0's
+units hold (S18: the element lists and parity gates follow the connectors), what 0.7.0's showcases show among it;
+their busy indicators drawn from the `spinner` widget (S19.3); the widgets 0.7.0 shows through stand-ins (the menu
+bar, the number input) shown as their connectors' stand-in entries draw them; the unlinked showcase entries,
 dev-dependencies and modules linked again.
-- **Gate:** each connector's contract test with no `pending` entry; the showcase parity gates; the screenshots
-  regenerated and compared side by side with the platforms under the same theme; `PLAN_EXCLUDED` empty and no
-  `# PLAN_EXCLUDED` mark left in `ci.yml`.
+- **Gate:** each connector's contract test with no `pending` entry (stand-in entries accepted); every element of
+  `docs/showcase-elements.toml` at `v0.7.0` has its counterpart in the new element lists, or the ledger records why
+  it goes (S19.3's animated icons); the showcase parity gates; the screenshots regenerated and compared side by side
+  with the platforms under the same theme; `PLAN_EXCLUDED` empty and no `# PLAN_EXCLUDED` mark left in `ci.yml`.
 
 ## M6 — Release 0.8.0
 
-- The CHANGELOG's 0.8.0 entry completed and dated; the READMEs, ROADMAP, `docs/todo.md`'s closed entries,
+- The CHANGELOG's 0.8.0 entry completed and dated; the READMEs, ROADMAP (the follow-up releases and their units,
+  D13), `docs/todo.md`'s closed entries,
   `docs/COMPATIBILITY.toml` (`update_compatibility.sh`), `docs/new-os-version-guide.md` (facts per generation, the
   harnesses), the docs.rs build, `generate_assets_release.sh` and the provenance stamps, the full `check_release.sh`.
-- The v0.7.1 documents, `tools/gap-map/`, this plan, the ledger and the two superseded connector plans archived to
-  `docs/archive/`; the scripts as the table below says; `check_facts.py` takes its keys from the registry from then on;
-  the memory updated; `sweep-target.sh` run.
+- The two superseded connector plans (`docs/todo_gpui-full-theme.md`, `docs/todo_iced-full-theme-geometry.md`) archived
+  to `docs/archive/`, which the later units do not need, their triage rows removed with them (`check_ledger.py` reads
+  their items only while the files exist); the memory updated; `sweep-target.sh` run. The later units need the v0.7.1
+  documents, this plan, the ledger and the scripts, so their archiving moves to the last follow-up release (*After
+  0.8.0*).
 - **Needs the maintainer:** the merge, the tag, the release and the publish.
+
+## After 0.8.0 — M3b and the follow-up releases
+
+- **The units:** M3b's, in M3's order: placement (its commit ends 0.8.0's deferred `Placement` values), the typed
+  widgets the model lacks today in alphabetical batches, the keyed components. Each runs M3's per-unit pipeline and
+  its per-unit gate, its connector task included, unchanged.
+- **A follow-up release** holds the units chosen when its branch is cut, listed in the ledger, each closed by M3's
+  per-unit gate. Its branch is `v<version>-rc1` (D14 numbers it), cut from `main` after the previous release
+  is merged; `v0.8.0-tools` goes on as the tooling branch, its draft pull request retargeted. An emergency fix
+  between releases is a patch release from `main`, merged into the follow-up branch, as D11 says for 0.7.x.
+- **What a follow-up release requires**, the gates 0.8.0 passed, for its new units and over every enabled unit:
+  - M4's gate over the enabled units' facts, with a drift run over every measured one (the runners move between
+    releases), no open unmeasured-register entry and no pending fact among them;
+  - M5's gate for its units: the contract tests with no `pending` entry, a widget its units hold no longer a
+    stand-in entry; its units' widgets in the showcases, with their element lists, parity gates and screenshots;
+    `PLAN_EXCLUDED` empty;
+  - M6's steps: its CHANGELOG entry, the READMEs, ROADMAP, `docs/todo.md`, `docs/COMPATIBILITY.toml`, the docs.rs
+    build, the assets and stamps, the full `check_release.sh` (its semver checks deciding the number by D14), the
+    memory, `sweep-target.sh`; the maintainer's merge, tag, release and publish.
+- **The last follow-up release** (the one that enables the catalogue's last unit) also runs the gates the plan first set
+  for M4: `check_facts_trace.py` with no option (every trace line) and the facts gate with no fact skipped; then the
+  v0.7.1 documents, `tools/gap-map/`, this plan and the ledger are archived to `docs/archive/`, the scripts go as the
+  table below says, and `check_facts.py` takes its keys from the registry from then on.
 
 ## The new scripts
 
-| Script | Made in | In `check_release.sh` | At M6 |
+"At the end" is the last follow-up release (D13), where M6 had it.
+
+| Script | Made in | In `check_release.sh` | At the end |
 |---|---|---|---|
 | `spec_catalogue.py`; the three spec checkers | M0 | no (run by hand, S18) | deleted |
 | `check_sources.py` | M0 | yes | deleted |
@@ -657,7 +898,8 @@ dev-dependencies and modules linked again.
   them does not change what passes.
 - **Values that cannot be measured** go to the unmeasured register in the ledger: the key and combination, the
   attempts and their evidence, and the options (another setup such as real hardware or another image, a catalogue
-  correction, a release blocker). Each is the maintainer's decision, since R21 allows no partial release.
+  correction, a release blocker). Each is the maintainer's decision, since R21 releases no unit with a gap (D13): an
+  open entry blocks the release that enables its unit.
 - **Evidence** is committed (GitHub's artifacts expire), images losslessly compressed; where it lives above a size
   threshold is decided at D6.
 
@@ -704,8 +946,11 @@ tasks; the generator's drift check makes the code follow.
 - [ ] M1a slice core
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
+- [x] D13 0.8.0's scope, (B) (2026-11-06)
+- [x] D14 the follow-up releases' version numbers, (a) by logic (2026-11-06)
 - [ ] M2 model core
-- [ ] M3 units (per unit in the ledger)
-- [ ] M4 facts gate complete
+- [ ] M3a 0.8.0's units (per unit in the ledger)
+- [ ] M4 facts gate complete for 0.8.0's units
 - [ ] M5 showcases
 - [ ] M6 release 0.8.0
+- [ ] M3b later units and the follow-up releases (per release in the ledger)

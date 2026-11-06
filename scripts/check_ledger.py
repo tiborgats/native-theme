@@ -60,8 +60,10 @@ opening words); a labelled row names the item with that label.
 Findings: an item without a row, or with several (a row naming several items
 counts for none); a row naming no item (closed or moved: remove or update the
 row) or several (lengthen its opening words); an unknown Source; an Item of
-neither form; a Destination not in DESTINATIONS; a row going `after 0.8.0`,
-`not this plan's work` or `settled by the model` without a Reason.
+neither form; a Destination not in DESTINATIONS; a row going `after the plan's
+releases`, `not this plan's work` or `settled by the model` without a Reason.
+(`after the plan's releases`, formerly `after 0.8.0`: past 0.8.0 and every
+follow-up release of the plan's D13, so never one of them.)
 
 The Unmeasured register (every run)
 -----------------------------------
@@ -140,7 +142,7 @@ UNITS = [
 ]
 LANES = ["gnome", "kde", "macos", "ios", "windows", "material", "palettes"]
 SPIKES = ["M", "G", "K", "I", "W", "A"]
-NEEDS_REASON = {"settled by the model", "after 0.8.0", "not this plan's work"}
+NEEDS_REASON = {"settled by the model", "after the plan's releases", "not this plan's work"}
 DESTINATIONS = {
     "M0", "M1a", "M1b", "D6", "M4", "M5", "M6",
     *(f"M2.{n}" for n in range(1, 8)),
@@ -628,7 +630,7 @@ Prose with | a bar.
 | docs/todo.md | ### Alpha | “Research the thing and write” | M1a | |
 | docs/todo.md | ### Alpha | “Research the thing and” | M1b | |
 | docs/todo.md | ### Alpha | “Research the thing and fix” | M2.8 | |
-| docs/todo.md | ### Alpha | “Indented item kept under” | after 0.8.0 | |
+| docs/todo.md | ### Alpha | “Indented item kept under” | after the plan's releases | |
 | docs/todo.md | ### Alpha | “Deeper heading keeps the” | M3 unit readers | |
 | docs/todo.md | ### Alpha | “Deeper heading keeps the alpha” | M3 unit seats | |
 | docs/todo.md | ### Alpha | “Research the thing and wri” | spike M | |
@@ -686,7 +688,7 @@ After the table.
     want = [
         ("L", 19, "names 2 items of docs/todo.md (lines 5, 6): lengthen its opening words"),
         ("L", 20, "unknown destination 'M2.8'"),
-        ("L", 21, "destination 'after 0.8.0' without a reason"),
+        ("L", 21, "destination \"after the plan's releases\" without a reason"),
         ("L", 23, "unknown destination 'M3 unit seats'"),
         ("L", 24, "names no open item under '### Alpha' of docs/todo.md (closed or moved: remove or update the row)"),
         ("L", 25, "names no open item under '### Research' of docs/todo.md "

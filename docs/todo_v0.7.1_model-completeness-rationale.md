@@ -1326,13 +1326,22 @@ caller's build, and a default would hide it.
 **Decision:** the second, before 1.0 the simpler and the one that keeps the gate meaningful; `Theme::from_toml` and
 `Theme::from_file` go.
 
-- *Release in stages.* Against: the rules touch every widget at once, each stage would break the connectors again, and
-  a release with some capabilities filled shows mixed looks.
+- *Release in stages by capability.* Against: the rules touch every widget at once, each stage would break the
+  connectors again, and a release with some capabilities filled shows mixed looks.
 - *One release.* Against: a long branch.
+- *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
+  2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
+  units following in later releases. For: users lose nothing 0.7.0 has and get the new model weeks earlier; each
+  release's units are whole, every capability filled on them but placement, which 0.8.0's widgets defer to the
+  placement unit (their menus, popovers and dialogs open where the toolkit puts them, as in 0.7.0), so no widget
+  shows a mixed look. Against: several releases, each with its gate run; a later widget that adds members to an
+  exhaustive enum is a breaking release (the plan's D14); widgets 0.7.0 styles through other widgets' fields keep
+  those stand-ins until their units.
 
-**Decision:** one release. v0.7.1 is this milestone's documents; the implementation runs on its own branch
-(`v0.8.0-rc1`), staged by the specification's plan, and nothing is released until every platform preset, `ios-26`
-included, is complete and passes the facts gate (R4).
+**Decision:** the third (D13; until then, one release). v0.7.1 is this milestone's documents; the implementation runs
+on its own branch (`v0.8.0-rc1`), staged by the specification's plan, and 0.8.0 is not released until every platform
+preset, `ios-26` included, is complete for the units holding today's model and passes the facts gate (R4); each later
+release enables only units complete on every preset and passing the gate.
 
 ### R22 — The documents that follow the model
 
@@ -1573,6 +1582,13 @@ Amended in place by the specification's batch ADD-A128 (2026-10-31), decided fro
 - R5.4: libadwaita's standalone colours are the colour GTK computes for its stylesheet, unclamped, one function for
   every role; a colour outside the gamut is clamped where it is drawn, premultiplied first, the connector's hand-over
   following GTK's.
+
+Amended by the maintainer's decision D13 of the 0.8.0 plan (2026-11-06):
+
+- R21: 0.8.0 is released when the new model holds everything today's model holds, on every platform preset, with the
+  connectors on it; the catalogue's other units follow in later releases, each whole (less the values a unit defers
+  to a later one, 0.8.0's placement) and passing the gate. "Everything
+  visible" stays the goal; only when each part is released changes.
 
 **R25.14 — Orientation.** Vertical widgets restate their geometry under a `vertical` variant; an axis-relative
 convention would halve those rules but adds a second way to state geometry, so it is not adopted.
