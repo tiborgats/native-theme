@@ -48,6 +48,8 @@ presets! {
     MacosMonterey => "macos-monterey", "macos-monterey.toml";
     /// Google's Material 3.
     Material3 => "material-3", "material-3.toml";
+    /// Apple's iOS 26.
+    Ios26 => "ios-26", "ios-26.toml";
 }
 
 impl PresetId {

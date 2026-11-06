@@ -246,6 +246,12 @@ fn material_3_refused_plain_and_loaded_synthetic() {
     refused_plain_and_loaded_synthetic(PresetId::Material3);
 }
 
+/// `ios-26` through both routes, as [`refused_plain_and_loaded_synthetic`].
+#[test]
+fn ios_26_refused_plain_and_loaded_synthetic() {
+    refused_plain_and_loaded_synthetic(PresetId::Ios26);
+}
+
 /// The build test's two routes, over the fixture preset with a listed
 /// path (a small preset, beside `adwaita`'s whole one): the build test takes the
 /// synthetic route for it, whose layers state the listed path, so it
