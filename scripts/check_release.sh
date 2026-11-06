@@ -1011,6 +1011,10 @@ run_check "strict-panic (native-theme-egui-widgets)" \
 # Windows code is held by the cross-target clippy runs above.
 run_check "strict-panic (native-theme-os-probe)" \
     bash scripts/check_strict_panic.sh -p native-theme-os-probe --bins
+# The preset check (tools/preset-check, never published) is a binary the facts
+# lanes run; it is held to the library rule.
+run_check "strict-panic (native-theme-preset-check)" \
+    bash scripts/check_strict_panic.sh -p native-theme-preset-check --bins
 # The test fixtures (tools/test-fixtures, never published) return each
 # failure as an error, so a test fails on its own `?`.
 run_check "strict-panic (native-theme-test-fixtures)" \

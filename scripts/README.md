@@ -329,6 +329,34 @@ marks and the list name the same set.
 ./scripts/check_release.sh
 ```
 
+## preset-check (tools/preset-check)
+
+A dev-only binary, never published, for the facts lanes, which run no cargo:
+it loads a preset as a bundled preset loads (through the synthetic route where
+its `[pending]` table lists paths), under each scheme, and prints every
+problem in the reader's and validation's own words, grouped by class
+(`== Missing: 12`, then one line per problem; one found under a single scheme
+names it). Exit 0 when the preset loads, 1 otherwise. A preset whose `id`
+names a bundled preset loads as that preset, so its `preset:` conditions hold;
+any other loads as a preset no `PresetId` names, and the report says so.
+`-` reads the preset from stdin. `--draft <id>` loads what
+`python3 scripts/generate_preset.py <id>` prints, run in the current directory:
+that draft leaves the hand-written parts' blocks empty, and the reader stops at
+the first of them (`preset.generation: missing`) before validation runs. For a
+bundled preset, `generate_preset.py <id> --write` in the worktree carries its
+hand-written parts into the file, which `preset-check <file>` then loads whole.
+
+Built once in the main checkout, then run by path from any worktree, with no
+cargo:
+
+```sh
+cargo build -p native-theme-preset-check     # in /home/tibi/Rust/native-theme
+cd <worktree>
+python3 scripts/generate_preset.py ios-26 --write
+/home/tibi/Rust/native-theme/target/debug/preset-check native-theme/src/presets/ios-26.toml
+/home/tibi/Rust/native-theme/target/debug/preset-check --draft ios-26
+```
+
 ## check_panic_patterns.py
 
 A regex tripwire for panic-prone code: scans the `.rs` files under the

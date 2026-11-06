@@ -93,6 +93,42 @@ fn refused(error: &LayerError) -> String {
     }
 }
 
+/// Why a preset does not load ([`load`]).
+#[derive(Debug)]
+pub enum Refusal {
+    /// The reader's or validation's refusal, each problem in its own words.
+    Layer(LayerError),
+    /// The synthetic route refuses a listed path of the `[pending]` table,
+    /// naming it ([`synthetic_layers`]).
+    Synthetic(String),
+}
+
+/// Loads the preset `text` states under `scheme` as [`Preset`] loads one
+/// and `Theme::from_preset_synthetic` a bundled one: through the synthetic
+/// route where its `[pending]` table lists paths (S17, ADD-A128), as the
+/// bundled preset its `id` names, if one does, so its `preset:` conditions
+/// hold; else as a preset no `PresetId` names. The `preset-check` tool's
+/// way in (`tools/preset-check`): the preset id it loads as, or every
+/// problem.
+pub fn load(text: &str, scheme: Scheme) -> Result<Option<PresetId>, Refusal> {
+    let file = read_preset(text).map_err(Refusal::Layer)?;
+    let id = PresetId::from_key(&file.id);
+    let stack = if file.pending.is_empty() {
+        Stack::new(id, file.declarations, file.layer, scheme, file.pending)
+    } else {
+        let layers = synthetic_layers(&file.pending, &file.layer).map_err(Refusal::Synthetic)?;
+        Stack::synthetic(
+            id,
+            file.declarations,
+            file.layer,
+            scheme,
+            file.pending,
+            layers,
+        )
+    };
+    stack.map(|_| id).map_err(Refusal::Layer)
+}
+
 /// A preset the gate checks: its stack, validated as `Theme` validates a
 /// bundled preset (S12); where its `[pending]` table lists paths, through
 /// the synthetic route, its synthetic layers' steps recorded wherever an
