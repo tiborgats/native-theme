@@ -1,7 +1,8 @@
 # v0.7.1 → 0.8.0 — M1a design: the new model built in `next`
 
 The engineering plan for [the plan](todo_v0.7.1_model-completeness-plan.md)'s M1a (drafted 2026-10-30, decisions by
-the orchestrator below). It decides no part of the model: the specification does. Archived with the plan at M6.
+the orchestrator below). It decides no part of the model: the specification does. Archived with the plan at the
+last follow-up release (the plan's D13).
 
 ## 1. Architecture of `next`
 

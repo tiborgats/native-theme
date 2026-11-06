@@ -3,7 +3,8 @@
 **Status:** approved 2026-10-29 with the maintainer's decisions D1, D4, D5, D7, D9, D10, D11 and D12 (each marked
 below); draft 12. Eleven independent reviews; draft 11 consolidated
 their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-06) applies the maintainer's
-scope decision D13: 0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases.
+scope decision D13 (0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases) and D14,
+settled by logic (the follow-up releases numbered by SemVer), with an independent check's fixes.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
@@ -110,18 +111,19 @@ entries unlinked at M2.1.
 ### One rule for every model field
 
 A widget's part, a component, a token group, a colour-role group or a declared input enters the model in the commit
-where every preset that exists then states it from verified facts, or declares its absence as the facts state; a
-preset added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts
-gate run over the whole model at every commit. Generated declarations are staged by the generator's list of enabled
-units (`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit.
-The facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's
-unit and the unit of every widget its `when`'s positive lists name), reading the units from
-`scripts/widget_units.toml` as `check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled
-units* is one whose units are all enabled. From M4 the gate fails on a skipped fact of the enabled units, and reports
-the other skipped facts by unit. M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up release
-requires its own units enabled; after the last one no fact is skipped. A unit enters whole, its catalogue entries
-whole, less the values S6.1 lets it defer to a later unit (the `Placement` values, to the placement unit); a rule
-under a context of a widget a later unit holds waits for that unit, as `check_facts_trace.py` states.
+where every preset that exists then states it from verified facts, or declares its absence as the facts state; a preset
+added later states every field the model then holds. So S12 stays strict, and S19.1's build test and the facts gate run
+over the whole model at every commit. Generated declarations are staged by the generator's list of enabled units
+(`scripts/generate_widgets.py`); hand-written ones (S3's roles, S4's tokens) are written in their unit's commit. The
+facts gate skips a fact while one of its units is not enabled (the lanes run ahead; S17 gives a fact its key's unit and
+the unit of every widget its `when`'s positive lists name), reading the units from `scripts/widget_units.toml` as
+`check_facts_trace.py` does (`tests/facts_gate/units.rs`). A fact *of the enabled units* is one whose units are all
+enabled. From M4 the gate fails on a skipped fact of the enabled units and on a fact whose key lies in no unit, and
+reports the other skipped facts by unit; so that it can tell a later unit's fact from a stray one, `widget_units.toml`
+lists every unit with an enabled flag (*M3*). M4 requires every unit of 0.8.0's scope enabled (D13); each follow-up
+release requires its own units enabled; after the last one no fact is skipped. A unit enters whole, its catalogue
+entries whole, less the values S6.1 lets it defer to a later unit (the `Placement` values, to the placement unit); a
+rule under a context of a widget a later unit holds waits for that unit, as `check_facts_trace.py` states.
 
 Rejected: declaring unwritten widgets `available = false` (the presets would state that the platform does not draw
 them, which is false); a lenient validation mode (it hides the gaps the gate exists to find); placeholder preset values
@@ -202,7 +204,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
 
 ## Decisions
 
-### For the maintainer (at approval; D13 and D14 later)
+### For the maintainer (at approval; D13 later)
 
 - **D1 — the source cache and the release sets.**
   - **Location (decided 2026-10-29):** `/run/media/tibi/work/cargo-build/native-theme-sources/`, a folder beside the
@@ -292,7 +294,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     code, though a CI tool may compile a pinned upstream source unchanged to call an internal function (it never ships
     in the crate).
 - **D11 — 0.7.x releases during the work** (approved by the maintainer, 2026-10-29): no planned 0.7.x release; `docs/todo.md`'s `[v0.7.x]` items
-  are triaged into this plan or carried to after 0.8.0, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
+  are triaged into this plan or carried past its releases, and ROADMAP's *Also in the 0.7.x releases* is updated at M0.
   An emergency (an upstream release breaking 0.7.0, as gpui-kit 0.6.4 broke 0.5.8) is fixed on its own `v0.7.N-rc1`
   from `main` (`v0.7.2-rc1` for the next), released by the maintainer, and `main` is then merged into `v0.8.0-rc1` with its CHANGELOG entry kept
   below `[0.8.0] - Unreleased`. Rejected: planned 0.7.x releases beside the work (two lines of releases for months).
@@ -321,7 +323,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   - **(A)** the whole catalogue in 0.8.0, as R21 had it. Against: users wait for the widgets 0.7.0 never had.
   - **(B)** 0.8.0 at 0.7.0's coverage, then the other units. For: users lose nothing 0.7.0 has; they get the new model
     about 2–3 weeks earlier (the maintainer's estimate: about 3–4 weeks against 5–7). Against: several releases, each
-    with its own gate run; D14 below.
+    with its own gate run; D14 (*Settled by logic*).
   - **(C)** releases by capability (rules, then shadows, …), R21's rejected stages: each would break the connectors
     again and show mixed looks.
   - Consequences: R21's release decision is amended (rationale, R25.13's list); the specification's release
@@ -333,23 +335,6 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     v0.7.1 documents and the scripts the later units use stay until the last follow-up release. `ios-26` stays in
     0.8.0 (S21.1 makes it a release condition, and its slice facts are written): every preset that exists states every
     field the model holds.
-
-- **D14 — the follow-up releases' version numbers** (decided by logic, 2026-11-06: (a); D13's "0.8.x" is the decision's wording for the follow-up releases, whose numbers follow SemVer). A follow-up release that enables a
-  typed widget adds members to the generated enums `WidgetKind`, `Variant` and `TypedPart`, which are exhaustive (R21,
-  S21.2). Cargo's SemVer rules count a new member of an exhaustive public enum as breaking, and Cargo resolves a
-  requirement `0.8.0` to any 0.8.N, so an 0.8.N that adds one breaks every build that matches the enum in full: an
-  application's, or an older connector release's built against the newer native-theme. Keyed components
-  (`WidgetRef::Component(Key)`) and the placement unit (S13's types are in since M1a) may add none; the semver checks
-  `check_release.sh` runs tell, per release.
-  - **(a)** the version follows `cargo semver-checks` against the previous release: a breaking release is the next
-    minor (0.9.0, …), any other the next patch (0.8.N). For: R21's exhaustive enums and Cargo's rules both kept; D13's
-    two reasons do not depend on the number. Against: the typed-widget releases are not 0.8.x as D13 names them.
-  - **(b)** every follow-up an 0.8.N, the generated enums `#[non_exhaustive]`: a change of R21 and S21.2 (class 3).
-    For: the names D13 uses. Against: a connector's build no longer breaks on a new widget (its contract test still
-    fails on the widget's unmapped fields, S21.3), and every application matches with a wildcard arm.
-  - **(c)** breaking 0.8.N releases: rejected, Cargo would pull them into the builds they break.
-  - **Decided (a):** R21 makes the generated enums exhaustive so that a connector's build breaks on a widget it does not map yet, which (b) gives up for a name; D13's two reasons hold under any number.
-  - Recommended: (a). Nothing before M6 depends on it; until it is decided the plan says "follow-up release".
 
 ### Scheduled
 
@@ -404,6 +389,24 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   handles badly); `native-theme`'s package excludes `tests/` (the gate and the vector tables), and the packaging step
   fails above crates.io's 10 MB limit.
 
+- **D14 — the follow-up releases' version numbers** (settled by logic, 2026-11-06: (a); D13's "0.8.x" is the
+  decision's wording for the follow-up releases, whose numbers follow SemVer). A follow-up release that enables a
+  typed widget adds members to the generated enums `WidgetKind`, `Variant` and `TypedPart`, which are exhaustive (R21,
+  S21.2). Cargo's SemVer rules count a new member of an exhaustive public enum as breaking, and Cargo resolves a
+  requirement `0.8.0` to any 0.8.N, so an 0.8.N that adds one breaks every build that matches the enum in full: an
+  application's, or an older connector release's built against the newer native-theme. Keyed components
+  (`WidgetRef::Component(Key)`) and the placement unit (S13's types are in since M1a) may add none; the semver checks
+  `check_release.sh` runs tell, per release.
+  - **(a)** the version follows `cargo semver-checks` against the previous release: a breaking release is the next
+    minor (0.9.0, …), any other the next patch (0.8.N). For: R21's exhaustive enums and Cargo's rules both kept; D13's
+    two reasons do not depend on the number. Against: the typed-widget releases are not 0.8.x as D13 names them.
+  - **(b)** every follow-up an 0.8.N, the generated enums `#[non_exhaustive]`: a change of R21 and S21.2 (class 3).
+    For: the names D13 uses. Against: a connector's build no longer breaks on a new widget (its contract test still
+    fails on the widget's unmapped fields, S21.3), and every application matches with a wildcard arm.
+  - **(c)** breaking 0.8.N releases: rejected, Cargo would pull them into the builds they break.
+  - **Decided (a):** R21 makes the generated enums exhaustive so that a connector's build breaks on a widget it does
+    not map yet, which (b) gives up for a name; D13's two reasons hold under any number.
+
 ## 0.8.0's scope (D13)
 
 ### What 0.7.0's model holds, and where it goes
@@ -416,7 +419,7 @@ table (under *Colour roles and text ramp*) says.
 
 | 0.7.0 group | At | New home | Unit |
 |---|---|---|---|
-| `ThemeDefaults`: the colours, `disabled_text_color`, the status colours, `shadow_color`, `link_color`, the selections | `model/defaults.rs:37-97` | S3's roles (`role.window.*`, `role.global.*`, `role.selection.*`, `<set>.link`) | slice |
+| `ThemeDefaults`: the colours, `disabled_text_color`, the status colours, `shadow_color`, `link_color`, the selections | `model/defaults.rs:37-97` | S3's roles (`role.window.*`, `role.view.*` from `surface_color`, `role.global.*`, `role.selection.*`, `<set>.link`) | slice |
 | `ThemeDefaults.font`, `mono_font`, `line_height`; `TextScale` (`ThemeMode.text_scale`) and `TextScaleEntry` | `model/defaults.rs:41-48`; `model/font.rs:298`, `:372`; `model/mod.rs:115` | S4.4's slots (`body`, `monospace`, `caption`, `headline`, `title1`, `display_small`) and each style's `line_height` | slice |
 | `ThemeDefaults.focus_ring_*`, `disabled_opacity` | `model/defaults.rs:112-122` | `token.focus`; `token.params.opacity.disabled` | slice |
 | `IconSizes`; `ThemeDefaults.icon_theme`, `Theme.icon_set`, `Theme.icon_theme` | `model/icon_sizes.rs:13`; `model/defaults.rs:145`; `model/mod.rs:299`, `:317` | `token.icons.sizes.*`, `token.icons.set`, `token.icons.theme` (S4.5) | slice |
@@ -454,10 +457,12 @@ is the slice's slots.
 3. **window and chrome**: `window`.
 4. **overlays**: `dialog`, `popover`, `tooltip`, `menu`.
 5. **buttons and toggles**: `button` (enabled by the slice), `link`, `segmented_control`, `switch`, `checkbox`,
-   `radio`, `radio_group` (no 0.7.0 field; it joins with its unit).
+   `radio`, `radio_group` (no 0.7.0 field, though 0.7.0's showcases draw a radio group, `basic.radios`; it joins with
+   its unit).
 6. **fields**: `input`, `text_area`, `combo_box`, `slider`.
 7. **indicators**: `spinner`, `progress_bar`, `scrollbar`.
-8. **containers**: `scroll_view` (no 0.7.0 field; the slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
+8. **containers**: `scroll_view` (no 0.7.0 field, though 0.7.0's showcases scroll their pages, `basic.page`; the
+   slice's staged `token.behavior.scroll` ends here), `list`, `tab`,
    `sidebar`, `toolbar`, `status_bar`, `splitter`, `separator`, `card`, `expander`, `layout`.
 
 30 of the catalogue's 86 typed widgets. Their 15 `Placement` values are deferred to the placement unit (S6.1, as the
@@ -471,6 +476,36 @@ Compose's code, the WinUI host) or measured AppKit and UIKit frames.
 
 **After 0.8.0 (M3b):** placement (ending those deferrals); the 56 typed widgets the model lacks today, in alphabetical
 batches of about ten; the 28 keyed components.
+
+### Widgets 0.7.0 styles through stand-ins
+
+Some widgets 0.7.0's connectors and showcases style have no field of their own in 0.7.0's model: the connector
+borrows other widgets' or the defaults' fields. The catalogue gives most of them an entry of a later unit (M3b). From
+the 0.7.0 contract tables and connector code at `2796b26e`:
+
+| Widget | 0.7.0's stand-in | Its catalogue entry |
+|---|---|---|
+| a menu bar | iced: `styles::aw::menu`, `iced_aw`'s `menu_bar::Style`, its bar from `menu.background_color` and `menu.border` (`connectors/native-theme-iced/src/styles/aw.rs:137-162`; contract `contract.rs:1610`); the showcases' `chrome.menu_bar` from `window.background_color` and `layout.container_margin_px`, its titles from `menu.*` (`docs/showcase-elements.toml@v0.7.0`) | `menu_bar` (M3b) |
+| a number input | the showcases' `basic.number_input.field` from `input.*` | `stepper` (M3b), its text `input @ context stepper` |
+| a group box | gpui: `group_box`, `group_box_foreground` from the background, secondary and foreground colours (`connectors/native-theme-gpui/src/colors.rs:530-532`), `group_box_content` from `card.*` (`geometry.rs:767-774`) | `group_box` (M3b) |
+| a loading placeholder | gpui: `skeleton` from `button.background_color` (`colors.rs:582`, contract `contract.rs:627-631`) | `redaction` (M3b) |
+| a chart | gpui: `chart_1`–`chart_5` from the accent (`colors.rs:491-513`), `chart_bullish`, `chart_bearish` from the success and danger colours (`:353-354`), `chart_grid` from `list.grid_color` (`:446`) | `chart` (M3b) |
+| a drag image's border | gpui: `drag_border` from the primary colour (`colors.rs:585`) | `drag_image` (M3b) |
+| a description list | gpui: `description_list_label` and its foreground from the background, border and muted colours (`colors.rs:535-536`) | none: a gpui-component widget no platform list names; it stays a stand-in |
+
+Not stand-ins, their homes being 0.8.0's: gpui's `accordion`, `accordion_title` and `accordion_hover` (`expander`,
+`geometry.rs:785-821`), `table_*` (`list`), `overlay` (`dialog`'s `scrim`), `drop_target` (the `drop_target` state
+of 0.8.0's widgets), `title_bar` (`window`); iced's `selection_list`, `pane_grid` and `aw::spinner` (`list`,
+`splitter`, `spinner`). egui has none: every `Style` field it writes comes from a leaf of 0.8.0's units
+(`connectors/native-theme-egui/mapping.toml@2796b26e`), and egui's own widgets that read those fields (its
+`DragValue`'s text style, `src/mapping.md:745`) read them by egui's design.
+
+**Decided by the orchestrator** (2026-11-06), by D13's own reasons (nothing 0.7.0 has is lost; ship sooner): until
+its unit is enabled, a connector keeps its 0.7.0 stand-in mapping for such a widget, from the model's enabled roles
+and widgets as 0.7.0 does, recorded in its contract table as a stand-in entry (the widget, the fields it reads, the
+unit that replaces it), which S21.3's contract test and M5 accept; the widget's unit replaces it with the widget's own
+mapping in its connector task. Rejected: adding those widgets to M3a, which costs their whole units against D13's
+timing. The spec follows through the ledger's queue (S21.3's stand-in entry).
 
 ### 0.7.0's public features the new model keeps
 
@@ -644,7 +679,8 @@ placement unit, spec ADD-A120); S7; S8 without
    not a preset's value, which M3's tokens unit ends. Then the connectors, gpui first, then iced, egui and egui-widgets: each one's old mapping deleted;
    its spinner and animated-icon code removed (`AnimatedIcon` is gone; busy indicators return with the indicators
    unit's connector task, drawn from the `spinner` widget); everything the model holds then mapped from the query, or
-   listed as what the toolkit cannot draw; its contract test (S21.3). The showcases are unlinked from their crates
+   listed as what the toolkit cannot draw; a widget 0.7.0 styles through a stand-in kept as a stand-in entry, from
+   the enabled roles and widgets (*Widgets 0.7.0 styles through stand-ins*); its contract test (S21.3). The showcases are unlinked from their crates
    (the `[[example]]` entries removed with `autoexamples = false`, the `native-theme-showcase-support` dev-dependency
    removed, gpui's `mod showcase;` removed; files kept, back at M5), so `--all-targets` and the tests no longer build
    them. `check_connector_parity.py` is rewritten to apply its naming and sibling rules over the new resolved types'
@@ -681,12 +717,21 @@ in, frame out); readers (the catalogue's section); window and chrome; overlays; 
 indicators; containers; the typed widgets the model lacks today, in alphabetical batches of about ten entries; the
 keyed components.
 
-D13 splits them, each keeping its place in this order:
+D13 splits them. M3a's units keep this order; placement moves after them, the first of M3b, so 0.8.0's `Placement`
+values stay deferred until its commit; M3b's other units keep this order:
 
 - **M3a, before M4:** 0.8.0's units (*0.8.0's scope*): tokens and conditions, readers, window and chrome, overlays,
   buttons and toggles, fields, indicators, containers.
 - **M3b, after M6:** placement, the typed-widget batches, the keyed components, in the follow-up releases (*After
   0.8.0*). The lanes may write their facts ahead, within the usage caps; the gate skips them until their unit.
+- **Every unit listed** (a code and script task at M3a's start, before its first unit's commit): today
+  `scripts/widget_units.toml` lists only the enabled units, so a key in no listed unit is a later unit's or a stray,
+  and `tests/facts_gate/units.rs` answers only held or not held. The file then lists every unit of M3's order with
+  its entries, prefixes and an `enabled` flag; `generate_widgets.py`, `check_facts_trace.py`, `units.rs` and
+  `check_ledger.py` read it, and a unit's commit flips its flag. Done early because it is one format change, after
+  which each M3a commit changes one line and the lanes' facts written ahead are classified from the start; M4's
+  failures on them wait until M4, since spec batches can still move an entry between units until then. Gate:
+  `generate_widgets.py --check` and `--self-test`, `check_facts_trace.py --self-test`, `cargo test -p native-theme`.
 
 A ledger destination `M3 unit <name>` names the unit in whichever part it runs. Per unit:
 
@@ -705,8 +750,9 @@ A unit with an open entry in the unmeasured register waits for the maintainer's 
 on to the next unit meanwhile.
 - **Gate per unit:** `cargo test -p native-theme` (the gate over the whole model), `check_facts.py`,
   `check_fact_citations.py`, `check_function_vectors.py`, `check_facts_trace.py --unit <unit>` (each live trace row of
-  the unit's targets is in a fact's `rows` or carries a verdict), `generate_widgets.py --check` and the pull request's
-  CI green; for a unit citing Apple's SDK headers, `os-probe.yml`'s header-citation job green.
+  the unit's targets is in a fact's `rows` or carries a verdict; for placement `--enabled`, since the deferred values
+  its commit ends lie in other units' entries, which `--unit placement` does not check), `generate_widgets.py --check`
+  and the pull request's CI green; for a unit citing Apple's SDK headers, `os-probe.yml`'s header-citation job green.
 
 ## M4 — The facts gate, complete for 0.8.0's units
 
@@ -715,10 +761,11 @@ on to the next unit meanwhile.
   `imported/` empty no lane still converts a legacy row, and git history keeps the files);
   the accent run over every pinned scheme and accent; the palette run over every bundled palette.
 - **The enabled units' checks** (a tooling task before the gate): the facts gate fails on a skipped fact of the
-  enabled units and reports the others by unit (*One rule for every model field*); `check_ledger.py --final` takes
-  the units from `scripts/widget_units.toml` by the same rule and asks its per-fact conditions of the enabled units'
-  facts only (no pending fact or declaration, every measured fact with a drift comparison, no open
-  unmeasured-register entry whose key or pending facts lie in the enabled units), reporting the others by unit.
+  enabled units and on a fact whose key lies in no unit, and reports the others by unit (*One rule for every model
+  field*); `check_ledger.py --final` takes the units from `scripts/widget_units.toml` by the same rule and asks its
+  per-fact conditions of the enabled units' facts only (no pending fact or declaration, every measured fact with a
+  drift comparison, no open unmeasured-register entry whose key or pending facts lie in the enabled units), fails a
+  register entry whose key lies in no unit, and reports the others by unit.
 - **The drift run:** every harness runs once more on the then-current runner images, and every measured fact of the
   enabled units is compared with that run; the ledger records the comparison per fact, with the run's URL. A drifted
   fact is measured and verified again (citing the new run's committed evidence), or goes to the unmeasured register.
@@ -731,15 +778,15 @@ on to the next unit meanwhile.
 
 ## M5 — Showcases (after M4)
 
-`tools/showcase-support` ported first, then the three showcases rebuilt on the query, showing what 0.7.0's showcases
-show (D13: the elements of `docs/showcase-elements.toml` at `v0.7.0`), drawn from 0.8.0's units; their element lists
-and parity gates following (S18), their busy indicators drawn from the `spinner` widget (S19.3); the unlinked showcase
-entries, dev-dependencies and modules linked again. What 0.8.0's units hold beyond 0.7.0's showcases (`scroll_view`,
-`radio_group`, the new parts and variants) joins the showcases in the first follow-up release, beside its own units.
-- **Gate:** each connector's contract test with no `pending` entry; every element of `docs/showcase-elements.toml`
-  at `v0.7.0` has its counterpart in the new element lists, or the ledger records why it goes (S19.3's animated
-  icons); the showcase parity gates; the screenshots regenerated and compared side by side with the platforms under
-  the same theme; `PLAN_EXCLUDED` empty and no `# PLAN_EXCLUDED` mark left in `ci.yml`.
+`tools/showcase-support` ported first, then the three showcases rebuilt on the query, showing everything 0.8.0's
+units hold (S18: the element lists and parity gates follow the connectors), what 0.7.0's showcases show among it;
+their busy indicators drawn from the `spinner` widget (S19.3); the widgets 0.7.0 shows through stand-ins (the menu
+bar, the number input) shown as their connectors' stand-in entries draw them; the unlinked showcase entries,
+dev-dependencies and modules linked again.
+- **Gate:** each connector's contract test with no `pending` entry (stand-in entries accepted); every element of
+  `docs/showcase-elements.toml` at `v0.7.0` has its counterpart in the new element lists, or the ledger records why
+  it goes (S19.3's animated icons); the showcase parity gates; the screenshots regenerated and compared side by side
+  with the platforms under the same theme; `PLAN_EXCLUDED` empty and no `# PLAN_EXCLUDED` mark left in `ci.yml`.
 
 ## M6 — Release 0.8.0
 
@@ -747,8 +794,11 @@ entries, dev-dependencies and modules linked again. What 0.8.0's units hold beyo
   D13), `docs/todo.md`'s closed entries,
   `docs/COMPATIBILITY.toml` (`update_compatibility.sh`), `docs/new-os-version-guide.md` (facts per generation, the
   harnesses), the docs.rs build, `generate_assets_release.sh` and the provenance stamps, the full `check_release.sh`.
-- The memory updated; `sweep-target.sh` run. Nothing is archived: the later units need the v0.7.1 documents, this
-  plan, the ledger and the scripts, so their archiving moves to the last follow-up release (*After 0.8.0*).
+- The two superseded connector plans (`docs/todo_gpui-full-theme.md`, `docs/todo_iced-full-theme-geometry.md`) archived
+  to `docs/archive/`, which the later units do not need, their triage rows removed with them (`check_ledger.py` reads
+  their items only while the files exist); the memory updated; `sweep-target.sh` run. The later units need the v0.7.1
+  documents, this plan, the ledger and the scripts, so their archiving moves to the last follow-up release (*After
+  0.8.0*).
 - **Needs the maintainer:** the merge, the tag, the release and the publish.
 
 ## After 0.8.0 — M3b and the follow-up releases
@@ -763,17 +813,16 @@ entries, dev-dependencies and modules linked again. What 0.8.0's units hold beyo
 - **What a follow-up release requires**, the gates 0.8.0 passed, for its new units and over every enabled unit:
   - M4's gate over the enabled units' facts, with a drift run over every measured one (the runners move between
     releases), no open unmeasured-register entry and no pending fact among them;
-  - M5's gate for its units: the contract tests with no `pending` entry; its units' widgets, and in the first
-    follow-up release what 0.8.0's units hold beyond 0.7.0's showcases, in the showcases, with their element lists,
-    parity gates and screenshots; `PLAN_EXCLUDED` empty;
+  - M5's gate for its units: the contract tests with no `pending` entry, a widget its units hold no longer a
+    stand-in entry; its units' widgets in the showcases, with their element lists, parity gates and screenshots;
+    `PLAN_EXCLUDED` empty;
   - M6's steps: its CHANGELOG entry, the READMEs, ROADMAP, `docs/todo.md`, `docs/COMPATIBILITY.toml`, the docs.rs
     build, the assets and stamps, the full `check_release.sh` (its semver checks deciding the number by D14), the
     memory, `sweep-target.sh`; the maintainer's merge, tag, release and publish.
-- **The last follow-up release** (the one that enables the catalogue's last unit) also runs the gates the plan first
-  set for M4: `check_facts_trace.py` with no option (every trace line) and the facts gate with no fact skipped; then
-  the v0.7.1 documents, `tools/gap-map/`, this plan, the ledger and the two superseded connector plans are archived to
-  `docs/archive/`, the scripts go as the table below says, and `check_facts.py` takes its keys from the registry from
-  then on.
+- **The last follow-up release** (the one that enables the catalogue's last unit) also runs the gates the plan first set
+  for M4: `check_facts_trace.py` with no option (every trace line) and the facts gate with no fact skipped; then the
+  v0.7.1 documents, `tools/gap-map/`, this plan and the ledger are archived to `docs/archive/`, the scripts go as the
+  table below says, and `check_facts.py` takes its keys from the registry from then on.
 
 ## The new scripts
 
@@ -897,7 +946,7 @@ tasks; the generator's drift check makes the code follow.
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
 - [x] D13 0.8.0's scope, (B) (2026-11-06)
-- [ ] D14 the follow-up releases' version numbers
+- [x] D14 the follow-up releases' version numbers, (a) by logic (2026-11-06)
 - [ ] M2 model core
 - [ ] M3a 0.8.0's units (per unit in the ledger)
 - [ ] M4 facts gate complete for 0.8.0's units
