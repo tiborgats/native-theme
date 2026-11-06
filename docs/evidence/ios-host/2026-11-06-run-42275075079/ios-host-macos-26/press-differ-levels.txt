@@ -1,0 +1,26 @@
+./draw/light/prominent_glass/small/black/pressed_selected.png: 257 pixels differ, by at most 5 levels
+./index.toml:5188: page = "pages/44.png" | page = "pages/45.png"
+./index.toml:5191: press_number = 44 | press_number = 45
+./index.toml:5354: page = "pages/45.png" | page = "pages/46.png"
+./index.toml:5357: press_number = 45 | press_number = 46
+./index.toml:5385: page = "pages/46.png" | page = "pages/47.png"
+./index.toml:5388: press_number = 46 | press_number = 47
+./index.toml:5416: page = "pages/47.png" | page = "pages/48.png"
+./index.toml:5419: press_number = 47 | press_number = 48
+./index.toml:5582: page = "pages/48.png" | page = "pages/49.png"
+./index.toml:5585: press_number = 48 | press_number = 49
+./index.toml:5613: page = "pages/49.png" | page = "pages/50.png"
+./index.toml:5616: press_number = 49 | press_number = 50
+./index.toml:5644: page = "pages/50.png" | page = "pages/51.png"
+./index.toml:5647: press_number = 50 | press_number = 51
+./index.toml:5675: page = "pages/50.png" | page = "pages/51.png"
+./index.toml:5692: page = "pages/51.png" | page = "pages/52.png"
+./index.toml:5695: press_number = 51 | press_number = 52
+./index.toml:5858: page = "pages/52.png" | page = "pages/53.png"
+./index.toml:5861: press_number = 52 | press_number = 53
+./index.toml:5889: page = "pages/53.png" | page = "pages/54.png"
+./index.toml: differs (22807 and 22807 lines)
+./screen/dark/clear_glass/small/white/pressed.png: 132 pixels differ, by at most 10 levels
+./screen/dark/prominent_glass/small/system/pressed_selected.png: 435 pixels differ, by at most 5 levels
+./screen/light/clear_glass/small/black/pressed.png: 142 pixels differ, by at most 4 levels
+./screen/light/glass/mini/white/pressed_selected.png: 479 pixels differ, by at most 4 levels
