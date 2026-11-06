@@ -1,0 +1,6 @@
+image's AppleKeyboardUIMode: absent
+write AppleKeyboardUIMode 2: exit 0
+read back: 2
+restore AppleKeyboardUIMode to the image's (absent): exit 0
+read back: 2026-11-06 19:47:32.910 defaults[1878:9174] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleKeyboardUIMode) does not exist
