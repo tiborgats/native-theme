@@ -543,6 +543,47 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:647-740"
 quote = "void Helper::renderButtonFrame(QPainter *painter,"
 
+# the fill under the stroke (S2.4's `fill_clip`): Breeze sets the brush and the pen on one painter and draws one
+# rounded rect, frameRect, the body box inset by half the pen width (breezehelper.cpp:670-671, :1747-1757, :736-739),
+# so its fill reaches the pen's centre line: half of the `inside` stroke, neither `box` (all of it) nor `inner_edge`
+# (none of it); the difference shows where the pen is translucent (a flat button's hover fade, :714-725). FillClip
+# has no member for it: register U680. Kirigami's controls Breeze draws (qqc2-desktop-style's StyleItem) likewise.
+[[fact]]
+key = "button.body.stroke.fill_clip"
+when = { not_conditions = ["flavor:kirigami"] }
+pending = "U680"
+rows = ["K1.20"]
+
+[[fact]]
+key = "button.body.stroke.fill_clip"
+when = { conditions = ["flavor:kirigami"], not_variants = ["circular"] }
+pending = "U680"
+rows = ["K1.20"]
+
+# RoundButton's background is a QML Rectangle (RoundButton.qml:76-95): Qt Quick's rectangle node fills only its
+# inner vertices, whose corners are the radii less the border width, the border drawn between them and the outer
+# ones, so the fill stops at the border's inner edge
+[[fact]]
+key = "button.body.stroke.fill_clip"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+value = "inner_edge"
+rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/scenegraph/qsgbasicinternalrectanglenode.cpp:333-336"
+quote = "const float innerRadiusTL = qMax(radiusTL - penWidth * 1.0f, 0.01); const float innerRadiusTR = qMax(radiusTR - penWidth * 1.0f, 0.01);"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/scenegraph/qsgbasicinternalrectanglenode.cpp:412"
+quote = "const int fillIndexCount = innerVertexCount;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quick/items/qquickrectangle.cpp:369"
+quote = "The border is rendered within the rectangle's boundaries."
+
 # the keyboard focus frame (QFocusFrame) of push and tool buttons: Breeze's token ring (its inner corners
 # Frame_FrameRadius, its width the margin), its inner edge 1 px inside the widget's rect; the body box is that rect
 # inset by the margin above (PenWidth::Shadow), so the offset from the body box to the ring's inner edge (S2.10) is
@@ -13298,6 +13339,33 @@ quote = "QColor ColorUtils::linearInterpolation(const QColor &one, const QColor 
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:313"
 quote = "setFrameContrast(KColorScheme::frameContrast());"
+
+# RoundButton's gloss over the border too (Q2.6, RoundButton.qml:97-106): gradientRect, a child filling the whole
+# background rectangle at its radius, draws the fill's gradient over the 1px border in every non-flat state; the
+# same QML Gradient the fill's pending fact names, so the same register row: U421
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
+pending = "U421"
+rows = ["Q2.6", "Q2.5"]
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
+pending = "U421"
+rows = ["Q2.6", "Q2.5"]
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
+pending = "U421"
+rows = ["Q2.6", "Q2.5"]
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
+pending = "U421"
+rows = ["Q2.6", "Q2.5"]
 
 [[fact]]
 key = "button.body.stroke.top.width"

@@ -22079,9 +22079,11 @@ rows = ["MAC-X11", "MAC-X21"]
 # shape (the state model). The focus ring lies partly inside the frame and the focus analysis reads uneven sides
 # (os-probe-macos-15/focus.toml), so every focus key is pending (U140).
 
+# The light scheme's mini radius, stated with no scheme or size as the preset's base for `top_left` (M1b): the facts below
+# restate every other scheme and size, so it still applies at the light scheme's mini size alone
 [[fact]]
 key = "button.body.corners.top_left"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], sizes = ["mini"] }
+when = { conditions = ["preset:macos-monterey"] }
 value = "3px"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -24179,9 +24181,11 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/tiebreak-corners.toml#not_key.styles_b.darkAqua.normal.small-toolbar.radius"
 tolerance = 0.5
 
+# The light scheme's mini radius, stated with no scheme or size as the preset's base for `top_right` (M1b): the facts below
+# restate every other scheme and size, so it still applies at the light scheme's mini size alone
 [[fact]]
 key = "button.body.corners.top_right"
-when = { conditions = ["preset:macos-monterey", "scheme:light"], sizes = ["mini"] }
+when = { conditions = ["preset:macos-monterey"] }
 value = "3px"
 rows = ["MAC-B08", "MAC-X17", "MAC-B01"]
 
@@ -47518,13 +47522,19 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "@interface NSButtonCell(NSDeprecated)"
 absent = []
 
-# NSComboButton (`menu`) is an NSControl, not an NSButton (NSComboButton.h:23): its declaration's range is not on
-# hand to cite the absence of an image of its own (U334)
+# NSComboButton (`menu`) is an NSControl, not an NSButton (NSComboButton.h:23): its image is the application's
+# (`image`, default nil, :56-57), and it declares no image of its own (U334, settled by the SDK headers, M1b)
 [[fact]]
 key = "button.icon.glyph"
 when = { conditions = ["preset:macos-tahoe"], variants = ["menu"] }
-pending = "U334"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:22-68"
+quote = "@interface NSComboButton : NSControl"
+absent = []
 
 # the gap outside `menu`, where no indicator is drawn (the `button.menu_indicator` rule above): the `menu` value as
 # the base, which never shows (ledger queue #155 (3), as `menu_indicator_anchor`); U315 under `menu`
@@ -47533,3 +47543,2652 @@ key = "button.values.menu_indicator_gap"
 when = { conditions = ["preset:macos-tahoe"], not_variants = ["menu"] }
 pending = "U333"
 rows = []
+
+# --- macos-monterey: facts lane m1b (the fields generate_preset.py listed with no fact; the register rows U611-U616 and,
+# where a row names both presets, U102 and U181; the headers cited at xcode@16.4, the macOS 15.5 SDK)
+
+# The image beside the title: AppKit's standard image-and-title push button puts the image on the leading side, left
+# of the title left to right and right of it right to left (NSButton.h, Xcode 16.4; as macos-tahoe's)
+[[fact]]
+key = "button.values.icon_placement"
+when = { conditions = ["preset:macos-monterey"] }
+value = "leading"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:26"
+quote = "In left-to-right localizations, the image is displayed to the left of the title. In right-to-left localizations, it is displayed to the right."
+
+# the symbol's size AppKit gives a button's image per control size (U102: the pass reads the image it set)
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-B09"]
+
+# the help bezel's question mark (U614, as macos-tahoe's U314: AppKit names no image for it)
+[[fact]]
+key = "button.icon.glyph"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"] }
+pending = "U614"
+rows = ["MAC-N10"]
+
+# A button draws no menu indicator but NSComboButton (`menu`): NSButton and NSButtonCell declare none (the catalogue's
+# rule `@ !variants {menu}`); under `menu` its indicator and gap are pending (U615, as macos-tahoe's U315)
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = ["menu indicator"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = ["menu indicator"]
+
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+# NSButton and NSButtonCell (Xcode 16.4) declare no maximum width, touch target, state layer or ripple, label padding
+# beside the image, hit extension, back button or subtitle, no setting that hides a button's image, and no menu a plain
+# button opens (as macos-tahoe's)
+[[fact]]
+key = "button.body.max_width"
+when = { conditions = ["preset:macos-monterey"] }
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.body.interaction"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.label.padding"
+when = { conditions = ["preset:macos-monterey"] }
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { conditions = ["preset:macos-monterey"] }
+value = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.display_mode"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.back_display_mode"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.back_title_fallback"
+when = { conditions = ["preset:macos-monterey"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { conditions = ["preset:macos-monterey"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.subtitle_gap"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.shows_icon"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.values.menu_trigger"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+# NSComboButton's unified style opens its menu on a click and hold where the button has an action, on a click where it
+# has none (NSComboButton.h:18): which the `menu` variant states is U616's (as macos-tahoe's U333); the indicator's
+# anchor under `menu` is U615's, outside `menu` the `menu` value (ledger queue #155 (3)), so U616's too; the toolbar's
+# display mode (NSToolbar.h's NSToolbarDisplayModeDefault, its look unstated) U616's
+[[fact]]
+key = "button.values.menu_trigger"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U616"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["menu"] }
+pending = "U616"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.values.label_position"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U616"
+rows = ["MAC-TL02"]
+
+# the button's focus visibility (U611), its group opacity, transform and colour bindings (U612, as macos-tahoe's U332),
+# the symbol's content transitions (no engine measured, S17, U181) and the symbol configuration AppKit gives a button's
+# image (U613, as macos-tahoe's U324: NSButton declares no symbol configuration, so the drawn configuration is a
+# measurement)
+[[fact]]
+key = "button.values.focus_visible_when"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U611"
+rows = ["MAC-X13"]
+
+[[fact]]
+key = "button.body.opacity"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U612"
+rows = []
+
+[[fact]]
+key = "button.body.transform"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U612"
+rows = ["MAC-X11"]
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U612"
+rows = []
+
+[[fact]]
+key = "button.icon.transitions"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U181"
+rows = ["MAC-IC05†", "MAC-X32†"]
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = ["MAC-X19"]
+
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = ["MAC-IC05†"]
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U613"
+rows = ["MAC-IC05†"]
+
+# NSComboButton's menu indicator under `menu` (U615: no reading of its glyph, box or margins; its motion U181)
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.size"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.fill"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.transform"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U615"
+rows = ["MAC-N29†"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+pending = "U181"
+rows = ["MAC-N29†", "MAC-X11"]
+
+# A button draws no glyph of AppKit's own but the help bezel's question mark (U614): NSButton and NSButtonCell name no
+# image of their own, a button's image being the application's (`image`, the part's `icon`; MAC-N10), and NSComboButton
+# (`menu`), an NSControl, declares none beside the application's `image` (as macos-tahoe's, U334 settled by the headers)
+[[fact]]
+key = "button.icon.glyph"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["help", "menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:19-176"
+quote = "@interface NSButton : NSControl <NSUserInterfaceValidations, NSAccessibilityButton, NSUserInterfaceCompression>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:178-183"
+quote = "@interface NSButton (NSButtonDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:78-125"
+quote = "@interface NSButtonCell : NSActionCell"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:169-185"
+quote = "@interface NSButtonCell(NSDeprecated)"
+absent = []
+
+[[fact]]
+key = "button.icon.glyph"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:22-68"
+quote = "@interface NSComboButton : NSControl"
+absent = []
+
+# the gap outside `menu`, where no indicator is drawn: the `menu` value as the base, which never shows (ledger queue
+# #155 (3)), pending as U616's anchor
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { conditions = ["preset:macos-monterey"], not_variants = ["menu"] }
+pending = "U616"
+rows = []
+
+# The margins: the body's box is the alignment rect (the padding and min_height facts above are read on it,
+# geometry.toml), and the frame is the margin box (S2.11), so each side's margin is the frame's alignment inset on that
+# side (`alignmentRectInsets_tlbr`: top, left, bottom, right). On macOS 15 the push bezel and those drawn like it
+# (`toggle`, `destructive`, `icon_only`, `with_icon`, the default button) are inset by control size (mini 1, 2, 2, 2;
+# small 4, 6, 7, 6; regular 5, 7, 7, 7; large 6 on every side), as are `@flexible_push`, `help` and NSComboButton
+# (`menu`), the others alike at every size; run 41006842699's six macos-15 passes read the same insets, so they hold
+# under every condition. The circular bezel's frame is square (ADD-A125, MAC-B08), its circle the alignment rect, 3 in
+# from each side. Inside a toolbar no item's insets were read (U134).
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-default.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_off.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_on.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-destructive.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-icon_only.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-with_icon.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-default.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_off.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_on.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-destructive.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-icon_only.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-with_icon.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "5px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-default.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_off.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-destructive.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-icon_only.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-with_icon.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_off.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_on.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-destructive.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-icon_only.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-with_icon.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-flexible_push.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-flexible_push.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-flexible_push.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["large"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-flexible_push.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@small_square"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-small_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-small_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-small_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-small_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@shadowless_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-shadowless_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-shadowless_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-shadowless_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-shadowless_square.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar_action"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar_action.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar_action.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar_action.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar_action.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["@badge"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-badge.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-badge.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-badge.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-badge.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["circular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-circular.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-circular.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-circular.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-circular.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-help.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["small"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-help.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["regular"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-help.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["large"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-help.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["tool"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-toolbar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-toolbar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-toolbar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-toolbar.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["flat"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-flat.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["mini"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["small"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["regular"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.alignmentRectInsets_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-monterey"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U134"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-default.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_off.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_on.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-destructive.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-icon_only.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-with_icon.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-default.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_off.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_on.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-destructive.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-icon_only.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-with_icon.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "7px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-default.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_off.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-destructive.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-icon_only.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-with_icon.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_off.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_on.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-destructive.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-icon_only.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-with_icon.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-flexible_push.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-flexible_push.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-flexible_push.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["large"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-flexible_push.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@small_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-small_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-small_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-small_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-small_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@shadowless_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-shadowless_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-shadowless_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-shadowless_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-shadowless_square.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar_action"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar_action.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar_action.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar_action.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar_action.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["@badge"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-badge.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-badge.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-badge.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-badge.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["circular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-circular.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-circular.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-circular.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-circular.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-help.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["small"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-help.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["regular"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-help.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["large"] }
+value = "5px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-help.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["tool"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-toolbar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-toolbar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-toolbar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-toolbar.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["flat"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-flat.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-flat.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-flat.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-flat.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.alignmentRectInsets_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-monterey"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U134"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-default.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_off.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_on.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-destructive.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-icon_only.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-with_icon.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "7px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-default.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_off.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_on.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-destructive.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-icon_only.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-with_icon.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "7px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-default.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_off.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-destructive.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-icon_only.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-with_icon.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_off.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_on.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-destructive.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-icon_only.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-with_icon.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-flexible_push.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["small"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-flexible_push.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["regular"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-flexible_push.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["large"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-flexible_push.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@small_square"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-small_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-small_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-small_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-small_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@shadowless_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-shadowless_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-shadowless_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-shadowless_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-shadowless_square.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar_action"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar_action.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar_action.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar_action.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar_action.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["@badge"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-badge.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-badge.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-badge.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-badge.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["circular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-circular.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-circular.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-circular.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-circular.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-help.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["small"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-help.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["regular"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-help.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["large"] }
+value = "8px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-help.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["tool"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-toolbar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-toolbar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-toolbar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-toolbar.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["flat"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-flat.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-flat.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-flat.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-flat.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["regular"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.alignmentRectInsets_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-monterey"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U134"
+rows = ["MAC-X16"]
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-default.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_off.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-toggle_on.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-destructive.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-icon_only.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-with_icon.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-default.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_off.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-toggle_on.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-destructive.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-icon_only.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-with_icon.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "7px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-default.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_off.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-toggle_on.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-destructive.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-icon_only.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-with_icon.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-default.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_off.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-toggle_on.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-destructive.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-icon_only.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-with_icon.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-flexible_push.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-flexible_push.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-flexible_push.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@flexible_push"], sizes = ["large"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-flexible_push.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@small_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-small_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-small_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-small_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-small_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@shadowless_square"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-shadowless_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-shadowless_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-shadowless_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-shadowless_square.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@accessory_bar_action"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-accessory_bar_action.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-accessory_bar_action.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-accessory_bar_action.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-accessory_bar_action.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["@badge"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-badge.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-badge.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-badge.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-badge.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["circular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.mini-circular.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.small-circular.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.regular-circular.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_a.buttons.large-circular.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["mini"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-help.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["small"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-help.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-help.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["help"], sizes = ["large"] }
+value = "4px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-help.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["tool"] }
+value = "1px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-toolbar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-toolbar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-toolbar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-toolbar.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["flat"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.mini-flat.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.small-flat.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.regular-flat.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_b.buttons.large-flat.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["mini"] }
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.mini-combo_unified.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["small"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.small-combo_unified.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["regular"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.regular-combo_unified.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], variants = ["menu"], sizes = ["large"] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.styles_c.buttons.large-combo_unified.alignmentRectInsets_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-monterey"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+pending = "U134"
+rows = ["MAC-X16"]

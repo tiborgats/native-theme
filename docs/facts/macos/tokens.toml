@@ -1861,17 +1861,29 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U158"
 rows = ["MAC-X11"]
 
-# The speed factor (`token.motion.speed_factor`, S4.1, R9) and the timings (`token.motion.timings`, S2.7, MAC-X11):
-# no pinned source in the cache states either (the SDK headers are not in it: os-probe.yml's macOS job reads them);
-# the probe reads NSAnimationContext's duration alone (`[macos.tokens.NSAnimationContext]`), no factor, setting or
-# curve; and no pass says whether Reduce Motion (`accessibilityDisplayShouldReduceMotion`, on in the runner image)
-# zeroes or scales AppKit's animations. The timings stand as the whole map (S17), their keys (AppKit's media-timing
-# curves by family, the catalogue's *token.motion.timings*) not read yet: pending (U300, U301).
+# The speed factor (`token.motion.speed_factor`, S4.1, R9): Core Animation's rate, `speed`, 1 by default, scales an
+# animation's local time, and AppKit has no speed setting (NSAnimationContext declares a duration and a timing
+# function, no rate): the catalogue's constant, 1 (U300, settled by the SDK headers, M1b). Whether Reduce Motion
+# (`accessibilityDisplayShouldReduceMotion`, on in the runner image) zeroes or scales AppKit's animations is no pass's
+# reading yet, so no rule under `reduced_motion` is stated. The timings stand as the whole map (S17): CAMediaTimingFunction.h
+# names Core Animation's curves (`linear`, `easeIn`, `easeOut`, `easeInEaseOut`, `default`) but states no control
+# point of the named ones, so they are pending (U301).
 [[fact]]
 key = "token.motion.speed_factor"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U300"
+value = 1
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CAMediaTiming.h:48-52"
+quote = "The rate of the layer. Used to scale parent time to local time, e.g. * if rate is 2, local time progresses twice as fast as parent time. * Defaults to 1. */ @property float speed;"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAnimationContext.h:19-39"
+quote = "@interface NSAnimationContext : NSObject"
+absent = ["speed"]
 
 [[fact]]
 key = "token.motion.timings"
@@ -3798,17 +3810,29 @@ when = { conditions = ["preset:macos-monterey"] }
 pending = "U158"
 rows = ["MAC-X11"]
 
-# The speed factor (`token.motion.speed_factor`, S4.1, R9) and the timings (`token.motion.timings`, S2.7, MAC-X11):
-# no pinned source in the cache states either (the SDK headers are not in it: os-probe.yml's macOS job reads them);
-# the probe reads NSAnimationContext's duration alone (`[macos.tokens.NSAnimationContext]`), no factor, setting or
-# curve; and no pass says whether Reduce Motion (`accessibilityDisplayShouldReduceMotion`, on in the runner image)
-# zeroes or scales AppKit's animations. The timings stand as the whole map (S17), their keys (AppKit's media-timing
-# curves by family, the catalogue's *token.motion.timings*) not read yet: pending (U300, U301).
+# The speed factor (`token.motion.speed_factor`, S4.1, R9): Core Animation's rate, `speed`, 1 by default, scales an
+# animation's local time, and AppKit has no speed setting (NSAnimationContext declares a duration and a timing
+# function, no rate): the catalogue's constant, 1 (U300, settled by the SDK headers, M1b). Whether Reduce Motion
+# (`accessibilityDisplayShouldReduceMotion`, on in the runner image) zeroes or scales AppKit's animations is no pass's
+# reading yet, so no rule under `reduced_motion` is stated. The timings stand as the whole map (S17): CAMediaTimingFunction.h
+# names Core Animation's curves (`linear`, `easeIn`, `easeOut`, `easeInEaseOut`, `default`) but states no control
+# point of the named ones, so they are pending (U301).
 [[fact]]
 key = "token.motion.speed_factor"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U300"
+value = 1
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/QuartzCore.framework/Headers/CAMediaTiming.h:48-52"
+quote = "The rate of the layer. Used to scale parent time to local time, e.g. * if rate is 2, local time progresses twice as fast as parent time. * Defaults to 1. */ @property float speed;"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAnimationContext.h:19-39"
+quote = "@interface NSAnimationContext : NSObject"
+absent = ["speed"]
 
 [[fact]]
 key = "token.motion.timings"
@@ -39780,10 +39804,12 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:338"
 quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
 
+# `mnemonic_when_disabled` is absent where `mnemonics` is `never` (S4.2, *Mnemonics on disabled elements*;
+# ledger queue #164 (1)): AppKit uses no mnemonics (the headers' words, the `mnemonics` fact's citations)
 [[fact]]
 key = "token.behavior.mnemonic_when_disabled"
 when = { conditions = ["preset:macos-tahoe"] }
-value = false
+value = "absent"
 rows = []
 
 [[fact.cite]]
@@ -39937,37 +39963,85 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U325"
 rows = ["MAC-X18"]
 
-# The icon set and themes (U326), the elevation ramp and size classes (U327)
+# The icon set and themes (U326, settled by the SDK headers, M1b): AppKit's system symbols are the SF Symbols
+# catalogue's (`imageWithSystemSymbolName:`), and NSImage names no icon theme and no theme its lookup falls back to (a
+# named image is the application's or one of AppKit's NSImageName constants, no themed lookup): `theme` absent, as the
+# catalogue lets it be on macos-* (*token.icons.theme*), and `theme_fallback` absent (S4.5)
 
 [[fact]]
 key = "token.icons.set"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U326"
+value = "sf_symbols"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:80"
+quote = "@param name A name from the system’s SF Symbols catalog"
 
 [[fact]]
 key = "token.icons.theme"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U326"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:66-246"
+quote = "@interface NSImage : NSObject"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:279-322"
+quote = "@interface NSImage (Deprecated)"
+absent = []
 
 [[fact]]
 key = "token.icons.theme_fallback"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U326"
+value = "absent"
 rows = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:66-246"
+quote = "@interface NSImage : NSObject"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:279-322"
+quote = "@interface NSImage (Deprecated)"
+absent = []
+
+# The elevation ramp and the size classes (U327, settled by the SDK headers, M1b): AppKit has no elevation levels, a
+# shadow being NSShadow's offset, blur and colour set per drawing (the catalogue: macos-* states its shadows per part,
+# MAC-X01), and no size classes (no AppKit header names one; UIKit's trait collection holds them,
+# `horizontalSizeClass`, `verticalSizeClass`): both empty
 [[fact]]
 key = "token.elevation"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U327"
+value = {}
 rows = ["MAC-X01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSShadow.h:20-32"
+quote = "@interface NSShadow : NSObject <NSCopying, NSSecureCoding>"
+absent = []
 
 [[fact]]
 key = "token.size_classes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U327"
+value = {}
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSView.h:81-383"
+quote = "@interface NSView : NSResponder <NSAnimatablePropertyContainer, NSUserInterfaceItemIdentification, NSDraggingDestination, NSAppearanceCustomization, NSAccessibilityElement, NSAccessibility>"
+absent = ["horizontalSizeClass", "verticalSizeClass", "UIUserInterfaceSizeClass"]
 
 # The caret's other fields (U328)
 
@@ -40021,11 +40095,18 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U329"
 rows = ["MAC-X12"]
 
+# AppKit's press-and-hold, NSPressGestureRecognizer: its minimum press defaults to the double-click interval
+# (U329's `long_press`, settled by the SDK headers, M1b)
 [[fact]]
 key = "token.behavior.long_press"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U329"
+value = "= token.behavior.double_click_time"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSPressGestureRecognizer.h:23-24"
+quote = "/* Time in seconds the mouse button must be held down for the gesture to be recognized */ @property NSTimeInterval minimumPressDuration; // Defaults to the user double-click interval"
 
 [[fact]]
 key = "token.behavior.spring_loading"
@@ -40546,5 +40627,1053 @@ rows = ["MAC-IC01"]
 [[fact]]
 key = "token.icons.sizes.keyed.sidebar.animation"
 when = { conditions = ["preset:macos-tahoe"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+# --- macos-monterey: facts lane m1b (the fields generate_preset.py listed with no fact; the pending ones the register rows
+# U600-U616 and, where a row names both presets, U102 and U181; the headers cited at xcode@16.4, the macOS 15.5 SDK)
+
+# AppKit's press-and-hold, NSPressGestureRecognizer: its minimum press defaults to the double-click interval
+# (U329's `long_press`, settled by the SDK headers, M1b)
+[[fact]]
+key = "token.behavior.long_press"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.behavior.double_click_time"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSPressGestureRecognizer.h:23-24"
+quote = "/* Time in seconds the mouse button must be held down for the gesture to be recognized */ @property NSTimeInterval minimumPressDuration; // Defaults to the user double-click interval"
+
+# The icon set and themes (U326, settled by the SDK headers, M1b): AppKit's system symbols are the SF Symbols
+# catalogue's (`imageWithSystemSymbolName:`), and NSImage names no icon theme and no theme its lookup falls back to (a
+# named image is the application's or one of AppKit's NSImageName constants, no themed lookup): `theme` absent, as the
+# catalogue lets it be on macos-* (*token.icons.theme*), and `theme_fallback` absent (S4.5)
+
+[[fact]]
+key = "token.icons.set"
+when = { conditions = ["preset:macos-monterey"] }
+value = "sf_symbols"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:80"
+quote = "@param name A name from the system’s SF Symbols catalog"
+
+[[fact]]
+key = "token.icons.theme"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:66-244"
+quote = "@interface NSImage : NSObject"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:277-320"
+quote = "@interface NSImage (Deprecated)"
+absent = []
+
+[[fact]]
+key = "token.icons.theme_fallback"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:66-244"
+quote = "@interface NSImage : NSObject"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSImage.h:277-320"
+quote = "@interface NSImage (Deprecated)"
+absent = []
+
+# The elevation ramp and the size classes (U327, settled by the SDK headers, M1b): AppKit has no elevation levels, a
+# shadow being NSShadow's offset, blur and colour set per drawing (the catalogue: macos-* states its shadows per part,
+# MAC-X01), and no size classes (no AppKit header names one; UIKit's trait collection holds them,
+# `horizontalSizeClass`, `verticalSizeClass`): both empty
+[[fact]]
+key = "token.elevation"
+when = { conditions = ["preset:macos-monterey"] }
+value = {}
+rows = ["MAC-X01"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSShadow.h:20-32"
+quote = "@interface NSShadow : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.size_classes"
+when = { conditions = ["preset:macos-monterey"] }
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSView.h:81-380"
+quote = "@interface NSView : NSResponder <NSAnimatablePropertyContainer, NSUserInterfaceItemIdentification, NSDraggingDestination, NSAppearanceCustomization, NSAccessibilityElement, NSAccessibility>"
+absent = ["horizontalSizeClass", "verticalSizeClass", "UIUserInterfaceSizeClass"]
+
+# The text-role slots AppKit fills (as macos-tahoe's; M1b): the emphasized variants of the body and caption text styles,
+# the bold symbolic trait (AppKit's emphasized trait: NSFontDescriptorTraitEmphasized is NSFontDescriptorTraitBold, the
+# name unavailable on macOS), the probe's `preferredFontForTextStyle_emphasized` keyed styles; `caption` is `caption_1`
+# (NSFontTextStyleCaption1), so `caption_emphasized` is its emphasized variant
+[[fact]]
+key = "token.text.roles.body_emphasized"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.body_emphasized"
+rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:32"
+quote = "NSFontDescriptorTraitEmphasized API_UNAVAILABLE(macos) = NSFontDescriptorTraitBold,"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:196"
+quote = "NSFontTextStyle const NSFontTextStyleBody"
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.caption_1_emphasized"
+rows = ["MAC-TS01", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:32"
+quote = "NSFontDescriptorTraitEmphasized API_UNAVAILABLE(macos) = NSFontDescriptorTraitBold,"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:199"
+quote = "NSFontTextStyle const NSFontTextStyleCaption1"
+
+# The display slots: AppKit's text styles hold no display size, Large Title the largest (26 pt, the keyed style's
+# measured size), so the three take the large title's slot, its owner (S4.4; ledger queue #155 (1))
+[[fact]]
+key = "token.text.roles.display_large"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.roles.large_title"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact]]
+key = "token.text.roles.display_medium"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.roles.large_title"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+[[fact]]
+key = "token.text.roles.display_small"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.roles.large_title"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFontDescriptor.h:190"
+quote = "NSFontTextStyle const NSFontTextStyleLargeTitle"
+
+# The label slot: labelFontOfSize:, the keyed style `label` (ledger queue #155 (1))
+[[fact]]
+key = "token.text.roles.label"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= token.text.keyed.label"
+rows = ["MAC-TS02", "MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSFont.h:49"
+quote = "+ (NSFont *)labelFontOfSize:(CGFloat)fontSize; // Label font"
+
+# The keyed icon contexts AppKit sizes symbols for (MAC-IC01, MAC-IC02), as macos-tahoe's: no macOS 15 pass reads a
+# symbol configuration AppKit gives a place (U102, which names both presets)
+[[fact]]
+key = "token.icons.sizes.keyed.button.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.size"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC02"]
+
+# The caret's blink (MAC-X11, MAC-X12, MAC-X14; U605, as macos-tahoe's U316): the blink user defaults are unset on the
+# runner, NSTextInsertionIndicator.h (Xcode 16.4) declares no period or blink style, and no pass times the caret
+[[fact]]
+key = "token.caret.blink_on"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U605"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.caret.blink_off"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U605"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.caret.blink_style"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U605"
+rows = ["MAC-X11", "MAC-X14"]
+
+# Text rendering (MAC-X18; U603, as macos-tahoe's U317): NSFont.h's NSFontDefaultRenderingMode "Determines the actual
+# mode based on the user preference settings", naming no setting; no run reads a font-smoothing default
+[[fact]]
+key = "token.text.rendering.engine"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.hinting"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.gamma"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+[[fact]]
+key = "token.text.rendering.contrast"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U603"
+rows = ["MAC-X18"]
+
+# Icon mirroring (MAC-X34†, MAC-P4-7†; U604, as macos-tahoe's U318): no source or pass states it per icon role
+[[fact]]
+key = "token.icons.mirroring"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U604"
+rows = ["MAC-X34†", "MAC-P4-7†"]
+
+# Font fallbacks (MAC-FM01†, MAC-FM02†; U602, as macos-tahoe's U319): no source or pass gives Core Text's cascade
+[[fact]]
+key = "token.text.fallbacks.families"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U602"
+rows = ["MAC-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U602"
+rows = ["MAC-FM01†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_language"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U602"
+rows = ["MAC-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_family"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U602"
+rows = ["MAC-FM02†"]
+
+# Pointer behaviour (MAC-P3-12†, U607; MAC-P4-6†, U608; as macos-tahoe's U320, U321): NSCursor.h declares
+# setHiddenUntilMouseMoves: for an application to call, not whether AppKit hides the pointer while typing; no AppKit
+# header declares a double-click distance, and no pass types with the cursor captured or clicks at stepped distances
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U607"
+rows = ["MAC-P3-12†"]
+
+[[fact]]
+key = "token.behavior.double_click_distance"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U608"
+rows = ["MAC-P4-6†"]
+
+# Mnemonics: AppKit underlines no mnemonic, so none shows, a disabled element's included (the headers' own words, Xcode
+# 16.4; as macos-tahoe's)
+[[fact]]
+key = "token.behavior.mnemonics"
+when = { conditions = ["preset:macos-monterey"] }
+value = "never"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:180"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:174"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:336"
+quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+# `mnemonic_when_disabled` is absent where `mnemonics` is `never` (S4.2, *Mnemonics on disabled elements*;
+# ledger queue #164 (1)): AppKit uses no mnemonics (the headers' words, the `mnemonics` fact's citations)
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:180"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButtonCell.h:174"
+quote = "Mnemonics, which are underlined characters in the button title that can be used as a keyboard shortcut, are not used on macOS."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:336"
+quote = "In 10.8 and higher, all the *Mnemonic* methods are deprecated. On MacOS they have typically not been used."
+
+# monospace (userFixedPitchFont, MAC-I07) and numeric (monospacedDigitSystemFont): new keyed styles awaiting a probe
+# read of their line metrics (U601, as macos-tahoe's U325; ledger queue #155 (1))
+[[fact]]
+key = "token.text.roles.monospace"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U601"
+rows = ["MAC-X18", "MAC-I07"]
+
+[[fact]]
+key = "token.text.roles.numeric"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U601"
+rows = ["MAC-X18"]
+
+# The caret's other fields (U606, as macos-tahoe's U328): NSTextInsertionIndicator.h's automatic mode "stops and starts
+# blinking during typing and dictation", but no header says AppKit's text views draw their caret with it; no pass
+# records a caret over time, types, shows mixed-direction text or a read-only text view
+[[fact]]
+key = "token.caret.blink_timeout"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U606"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.caret.secondary"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U606"
+rows = []
+
+[[fact]]
+key = "token.caret.shown_in_read_only"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U606"
+rows = []
+
+[[fact]]
+key = "token.caret.solid_while_typing"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U606"
+rows = []
+
+# Pointer timings and distances (U609, as macos-tahoe's U329 less `long_press`, stated above): no AppKit header (Xcode
+# 16.4) states a drag threshold or time, a tool tip delay, a spring-loading delay, a pointer hiding delay or fade,
+# a double click's height or a single-click activation, and no pass measures them
+[[fact]]
+key = "token.behavior.drag_threshold"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.drag_time"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+[[fact]]
+key = "token.behavior.drag_min_delay"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+[[fact]]
+key = "token.behavior.hover_time"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.spring_loading"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = ["MAC-X12"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+[[fact]]
+key = "token.behavior.double_click_height"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+[[fact]]
+key = "token.behavior.single_click_activates"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U609"
+rows = []
+
+# Touch (U610, as macos-tahoe's U330): AppKit's touches are a trackpad's and the Touch Bar's (NSTouch.h's indirect and
+# direct types); whether this block is absent on macOS or measured on them is the register row's decision
+[[fact]]
+key = "token.behavior.touch.slop"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U610"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U610"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U610"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U610"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.delay"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U610"
+rows = []
+
+# When focus becomes visible (MAC-X13; U611, as macos-tahoe's U331, decided by ledger queue #155 (2)): no header states
+# the value, and no committed analysis reads `canBecomeKeyView` with keyboard navigation off and on
+[[fact]]
+key = "token.behavior.focus_visible_when"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U611"
+rows = ["MAC-X13"]
+
+# The keyed icon contexts' symbol variants and maps, and the fixed contexts' other fields (U102: the symbol
+# configurations AppKit gives each place; their size is pending above)
+[[fact]]
+key = "token.icons.sizes.keyed.button.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.small.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.dialog.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC04†"]
+
+[[fact]]
+key = "token.icons.sizes.panel.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.rendering_mode"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.weight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.scale"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.axes"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbol_variants"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbolic_colors"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.button.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.list_row.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.tab.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.status_item.animation"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.fill"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.state_effect"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U102"
+rows = ["MAC-IC01"]
+
+[[fact]]
+key = "token.icons.sizes.keyed.sidebar.animation"
+when = { conditions = ["preset:macos-monterey"] }
 pending = "U102"
 rows = ["MAC-IC01"]

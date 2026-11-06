@@ -16,7 +16,7 @@
 
 [[fact]]
 key = "role.@text_fill_primary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff"
 rows = []
 
@@ -32,7 +32,7 @@ quote = "<Color x:Key=\"TextFillColorPrimary\">#FFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_fill_primary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#000000e4"
 rows = []
 
@@ -59,7 +59,7 @@ quote = "<SolidColorBrush x:Key=\"TextFillColorPrimaryBrush\" Color=\"{ThemeReso
 
 [[fact]]
 key = "role.@text_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffffc5"
 rows = []
 
@@ -75,7 +75,7 @@ quote = "<Color x:Key=\"TextFillColorSecondary\">#C5FFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000009e"
 rows = []
 
@@ -102,7 +102,7 @@ quote = "<SolidColorBrush x:Key=\"TextFillColorSecondaryBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@text_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff87"
 rows = ["W3-13"]
 
@@ -118,7 +118,7 @@ quote = "<Color x:Key=\"TextFillColorTertiary\">#87FFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000072"
 rows = ["W3-13"]
 
@@ -145,7 +145,7 @@ quote = "<SolidColorBrush x:Key=\"TextFillColorTertiaryBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@text_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff5d"
 rows = []
 
@@ -161,7 +161,7 @@ quote = "<Color x:Key=\"TextFillColorDisabled\">#5DFFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000005c"
 rows = []
 
@@ -188,7 +188,7 @@ quote = "<SolidColorBrush x:Key=\"TextFillColorDisabledBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@text_fill_inverse"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#000000e4"
 rows = ["W3-46†"]
 
@@ -204,7 +204,7 @@ quote = "<Color x:Key=\"TextFillColorInverse\">#E4000000</Color>"
 
 [[fact]]
 key = "role.@text_fill_inverse"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-46†"]
 
@@ -231,7 +231,7 @@ quote = "<SolidColorBrush x:Key=\"TextFillColorInverseBrush\" Color=\"{ThemeReso
 
 [[fact]]
 key = "role.@accent_text_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff5d"
 rows = ["W3-12"]
 
@@ -247,7 +247,7 @@ quote = "<Color x:Key=\"AccentTextFillColorDisabled\">#5DFFFFFF</Color>"
 
 [[fact]]
 key = "role.@accent_text_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000005c"
 rows = ["W3-12"]
 
@@ -274,7 +274,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorDisabledBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@text_on_accent_fill_selected_text"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff"
 rows = ["W3-14"]
 
@@ -290,7 +290,7 @@ quote = "<Color x:Key=\"TextOnAccentFillColorSelectedText\">#FFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_on_accent_fill_selected_text"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-14"]
 
@@ -317,7 +317,7 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color
 
 [[fact]]
 key = "role.@text_on_accent_fill_primary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#000000"
 rows = []
 
@@ -333,7 +333,7 @@ quote = "<Color x:Key=\"TextOnAccentFillColorPrimary\">#000000</Color>"
 
 [[fact]]
 key = "role.@text_on_accent_fill_primary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = []
 
@@ -360,7 +360,7 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorPrimaryBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@text_on_accent_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000080"
 rows = ["W3-14"]
 
@@ -376,7 +376,7 @@ quote = "<Color x:Key=\"TextOnAccentFillColorSecondary\">#80000000</Color>"
 
 [[fact]]
 key = "role.@text_on_accent_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffb3"
 rows = ["W3-14"]
 
@@ -403,7 +403,7 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSecondaryBrush\" Color=\"
 
 [[fact]]
 key = "role.@text_on_accent_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff87"
 rows = ["W3-14"]
 
@@ -419,7 +419,7 @@ quote = "<Color x:Key=\"TextOnAccentFillColorDisabled\">#87FFFFFF</Color>"
 
 [[fact]]
 key = "role.@text_on_accent_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-14"]
 
@@ -446,7 +446,7 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorDisabledBrush\" Color=\"{
 
 [[fact]]
 key = "role.@control_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0f"
 rows = ["W3-16"]
 
@@ -462,7 +462,7 @@ quote = "<Color x:Key=\"ControlFillColorDefault\">#0FFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffb3"
 rows = ["W3-16"]
 
@@ -489,7 +489,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorDefaultBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@control_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff15"
 rows = ["W3-16"]
 
@@ -505,7 +505,7 @@ quote = "<Color x:Key=\"ControlFillColorSecondary\">#15FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f9f9f980"
 rows = ["W3-16"]
 
@@ -532,7 +532,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorSecondaryBrush\" Color=\"{Them
 
 [[fact]]
 key = "role.@control_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff08"
 rows = ["W3-16"]
 
@@ -548,7 +548,7 @@ quote = "<Color x:Key=\"ControlFillColorTertiary\">#08FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f9f9f94d"
 rows = ["W3-16"]
 
@@ -575,7 +575,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorTertiaryBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@control_fill_quarternary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0f"
 rows = ["W3-16"]
 
@@ -591,7 +591,7 @@ quote = "<Color x:Key=\"ControlFillColorQuarternary\">#0FFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_quarternary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f3f3f3c2"
 rows = ["W3-16"]
 
@@ -618,7 +618,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorQuarternaryBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0b"
 rows = ["W3-16"]
 
@@ -634,7 +634,7 @@ quote = "<Color x:Key=\"ControlFillColorDisabled\">#0BFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f9f9f94d"
 rows = ["W3-16"]
 
@@ -661,7 +661,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorDisabledBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@control_fill_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -677,7 +677,7 @@ quote = "<Color x:Key=\"ControlFillColorTransparent\">#00FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_fill_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -704,7 +704,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorTransparentBrush\" Color=\"Tra
 
 [[fact]]
 key = "role.@control_fill_input_active"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1e1e1eb3"
 rows = ["W3-16"]
 
@@ -720,7 +720,7 @@ quote = "<Color x:Key=\"ControlFillColorInputActive\">#B31E1E1E</Color>"
 
 [[fact]]
 key = "role.@control_fill_input_active"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-16"]
 
@@ -747,7 +747,7 @@ quote = "<SolidColorBrush x:Key=\"ControlFillColorInputActiveBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_strong_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff8b"
 rows = ["W3-16"]
 
@@ -763,7 +763,7 @@ quote = "<Color x:Key=\"ControlStrongFillColorDefault\">#8BFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_strong_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000072"
 rows = ["W3-16"]
 
@@ -790,7 +790,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrongFillColorDefaultBrush\" Color=\"{
 
 [[fact]]
 key = "role.@control_strong_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff3f"
 rows = ["W3-16"]
 
@@ -806,7 +806,7 @@ quote = "<Color x:Key=\"ControlStrongFillColorDisabled\">#3FFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_strong_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000051"
 rows = ["W3-16"]
 
@@ -833,7 +833,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrongFillColorDisabledBrush\" Color=\"
 
 [[fact]]
 key = "role.@control_solid_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#454545"
 rows = ["W3-16"]
 
@@ -849,7 +849,7 @@ quote = "<Color x:Key=\"ControlSolidFillColorDefault\">#454545</Color>"
 
 [[fact]]
 key = "role.@control_solid_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-16"]
 
@@ -876,7 +876,7 @@ quote = "<SolidColorBrush x:Key=\"ControlSolidFillColorDefaultBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@subtle_fill_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -892,7 +892,7 @@ quote = "<Color x:Key=\"SubtleFillColorTransparent\">#00FFFFFF</Color>"
 
 [[fact]]
 key = "role.@subtle_fill_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -919,7 +919,7 @@ quote = "<SolidColorBrush x:Key=\"SubtleFillColorTransparentBrush\" Color=\"Tran
 
 [[fact]]
 key = "role.@subtle_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0f"
 rows = ["W3-16"]
 
@@ -935,7 +935,7 @@ quote = "<Color x:Key=\"SubtleFillColorSecondary\">#0FFFFFFF</Color>"
 
 [[fact]]
 key = "role.@subtle_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000009"
 rows = ["W3-16"]
 
@@ -962,7 +962,7 @@ quote = "<SolidColorBrush x:Key=\"SubtleFillColorSecondaryBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@subtle_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0a"
 rows = ["W3-16"]
 
@@ -978,7 +978,7 @@ quote = "<Color x:Key=\"SubtleFillColorTertiary\">#0AFFFFFF</Color>"
 
 [[fact]]
 key = "role.@subtle_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000006"
 rows = ["W3-16"]
 
@@ -1005,7 +1005,7 @@ quote = "<SolidColorBrush x:Key=\"SubtleFillColorTertiaryBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@subtle_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1021,7 +1021,7 @@ quote = "<Color x:Key=\"SubtleFillColorDisabled\">#00FFFFFF</Color>"
 
 [[fact]]
 key = "role.@subtle_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1048,7 +1048,7 @@ quote = "<SolidColorBrush x:Key=\"SubtleFillColorDisabledBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@control_alt_fill_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1064,7 +1064,7 @@ quote = "<Color x:Key=\"ControlAltFillColorTransparent\">#00FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_alt_fill_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1091,7 +1091,7 @@ quote = "<SolidColorBrush x:Key=\"ControlAltFillColorTransparentBrush\" Color=\"
 
 [[fact]]
 key = "role.@control_alt_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000019"
 rows = ["W3-16"]
 
@@ -1107,7 +1107,7 @@ quote = "<Color x:Key=\"ControlAltFillColorSecondary\">#19000000</Color>"
 
 [[fact]]
 key = "role.@control_alt_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000006"
 rows = ["W3-16"]
 
@@ -1134,7 +1134,7 @@ quote = "<SolidColorBrush x:Key=\"ControlAltFillColorSecondaryBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@control_alt_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0b"
 rows = ["W3-16"]
 
@@ -1150,7 +1150,7 @@ quote = "<Color x:Key=\"ControlAltFillColorTertiary\">#0BFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_alt_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-16"]
 
@@ -1177,7 +1177,7 @@ quote = "<SolidColorBrush x:Key=\"ControlAltFillColorTertiaryBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_alt_fill_quarternary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff12"
 rows = ["W3-16"]
 
@@ -1193,7 +1193,7 @@ quote = "<Color x:Key=\"ControlAltFillColorQuarternary\">#12FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_alt_fill_quarternary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000018"
 rows = ["W3-16"]
 
@@ -1220,7 +1220,7 @@ quote = "<SolidColorBrush x:Key=\"ControlAltFillColorQuarternaryBrush\" Color=\"
 
 [[fact]]
 key = "role.@control_alt_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1236,7 +1236,7 @@ quote = "<Color x:Key=\"ControlAltFillColorDisabled\">#00FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_alt_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1263,7 +1263,7 @@ quote = "<SolidColorBrush x:Key=\"ControlAltFillColorDisabledBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_on_image_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1c1c1cb3"
 rows = ["W3-16"]
 
@@ -1279,7 +1279,7 @@ quote = "<Color x:Key=\"ControlOnImageFillColorDefault\">#B31C1C1C</Color>"
 
 [[fact]]
 key = "role.@control_on_image_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffc9"
 rows = ["W3-16"]
 
@@ -1306,7 +1306,7 @@ quote = "<SolidColorBrush x:Key=\"ControlOnImageFillColorDefaultBrush\" Color=\"
 
 [[fact]]
 key = "role.@control_on_image_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1a1a1a"
 rows = ["W3-16"]
 
@@ -1322,7 +1322,7 @@ quote = "<Color x:Key=\"ControlOnImageFillColorSecondary\">#1A1A1A</Color>"
 
 [[fact]]
 key = "role.@control_on_image_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f3f3f3"
 rows = ["W3-16"]
 
@@ -1349,7 +1349,7 @@ quote = "<SolidColorBrush x:Key=\"ControlOnImageFillColorSecondaryBrush\" Color=
 
 [[fact]]
 key = "role.@control_on_image_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#131313"
 rows = ["W3-16"]
 
@@ -1365,7 +1365,7 @@ quote = "<Color x:Key=\"ControlOnImageFillColorTertiary\">#131313</Color>"
 
 [[fact]]
 key = "role.@control_on_image_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ebebeb"
 rows = ["W3-16"]
 
@@ -1392,7 +1392,7 @@ quote = "<SolidColorBrush x:Key=\"ControlOnImageFillColorTertiaryBrush\" Color=\
 
 [[fact]]
 key = "role.@control_on_image_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1e1e1e"
 rows = ["W3-16"]
 
@@ -1408,7 +1408,7 @@ quote = "<Color x:Key=\"ControlOnImageFillColorDisabled\">#1E1E1E</Color>"
 
 [[fact]]
 key = "role.@control_on_image_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = ["W3-16"]
 
@@ -1435,7 +1435,7 @@ quote = "<SolidColorBrush x:Key=\"ControlOnImageFillColorDisabledBrush\" Color=\
 
 [[fact]]
 key = "role.@accent_fill_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff28"
 rows = ["W3-12"]
 
@@ -1451,7 +1451,7 @@ quote = "<Color x:Key=\"AccentFillColorDisabled\">#28FFFFFF</Color>"
 
 [[fact]]
 key = "role.@accent_fill_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000037"
 rows = ["W3-12"]
 
@@ -1478,7 +1478,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorDisabledBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@control_stroke_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff12"
 rows = ["W3-15"]
 
@@ -1494,7 +1494,7 @@ quote = "<Color x:Key=\"ControlStrokeColorDefault\">#12FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_stroke_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -1521,7 +1521,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorDefaultBrush\" Color=\"{Them
 
 [[fact]]
 key = "role.@control_stroke_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff18"
 rows = ["W3-15"]
 
@@ -1537,7 +1537,7 @@ quote = "<Color x:Key=\"ControlStrokeColorSecondary\">#18FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_stroke_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000029"
 rows = ["W3-15"]
 
@@ -1564,7 +1564,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorSecondaryBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_stroke_on_accent_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff14"
 rows = ["W3-15"]
 
@@ -1580,7 +1580,7 @@ quote = "<Color x:Key=\"ControlStrokeColorOnAccentDefault\">#14FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_stroke_on_accent_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff14"
 rows = ["W3-15"]
 
@@ -1607,7 +1607,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorOnAccentDefaultBrush\" Color
 
 [[fact]]
 key = "role.@control_stroke_on_accent_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000023"
 rows = ["W3-15"]
 
@@ -1623,7 +1623,7 @@ quote = "<Color x:Key=\"ControlStrokeColorOnAccentSecondary\">#23000000</Color>"
 
 [[fact]]
 key = "role.@control_stroke_on_accent_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000066"
 rows = ["W3-15"]
 
@@ -1650,7 +1650,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorOnAccentSecondaryBrush\" Col
 
 [[fact]]
 key = "role.@control_stroke_on_accent_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000037"
 rows = ["W3-15"]
 
@@ -1666,7 +1666,7 @@ quote = "<Color x:Key=\"ControlStrokeColorOnAccentTertiary\">#37000000</Color>"
 
 [[fact]]
 key = "role.@control_stroke_on_accent_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000037"
 rows = ["W3-15"]
 
@@ -1693,7 +1693,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorOnAccentTertiaryBrush\" Colo
 
 [[fact]]
 key = "role.@control_stroke_on_accent_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000033"
 rows = ["W3-15"]
 
@@ -1709,7 +1709,7 @@ quote = "<Color x:Key=\"ControlStrokeColorOnAccentDisabled\">#33000000</Color>"
 
 [[fact]]
 key = "role.@control_stroke_on_accent_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -1736,7 +1736,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorOnAccentDisabledBrush\" Colo
 
 [[fact]]
 key = "role.@control_stroke_for_strong_fill_when_on_image"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#0000006b"
 rows = ["W3-15"]
 
@@ -1752,7 +1752,7 @@ quote = "<Color x:Key=\"ControlStrokeColorForStrongFillWhenOnImage\">#6B000000</
 
 [[fact]]
 key = "role.@control_stroke_for_strong_fill_when_on_image"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff59"
 rows = ["W3-15"]
 
@@ -1779,7 +1779,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrokeColorForStrongFillWhenOnImageBrus
 
 [[fact]]
 key = "role.@card_stroke_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000019"
 rows = ["W3-15"]
 
@@ -1795,7 +1795,7 @@ quote = "<Color x:Key=\"CardStrokeColorDefault\">#19000000</Color>"
 
 [[fact]]
 key = "role.@card_stroke_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -1822,7 +1822,7 @@ quote = "<SolidColorBrush x:Key=\"CardStrokeColorDefaultBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@card_stroke_default_solid"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1c1c1c"
 rows = ["W3-15"]
 
@@ -1838,7 +1838,7 @@ quote = "<Color x:Key=\"CardStrokeColorDefaultSolid\">#1C1C1C</Color>"
 
 [[fact]]
 key = "role.@card_stroke_default_solid"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ebebeb"
 rows = ["W3-15"]
 
@@ -1865,7 +1865,7 @@ quote = "<SolidColorBrush x:Key=\"CardStrokeColorDefaultSolidBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@control_strong_stroke_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff8b"
 rows = ["W3-15"]
 
@@ -1881,7 +1881,7 @@ quote = "<Color x:Key=\"ControlStrongStrokeColorDefault\">#8BFFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_strong_stroke_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000072"
 rows = ["W3-15"]
 
@@ -1908,7 +1908,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrongStrokeColorDefaultBrush\" Color=\
 
 [[fact]]
 key = "role.@control_strong_stroke_disabled"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff28"
 rows = ["W3-15"]
 
@@ -1924,7 +1924,7 @@ quote = "<Color x:Key=\"ControlStrongStrokeColorDisabled\">#28FFFFFF</Color>"
 
 [[fact]]
 key = "role.@control_strong_stroke_disabled"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000037"
 rows = ["W3-15"]
 
@@ -1951,7 +1951,7 @@ quote = "<SolidColorBrush x:Key=\"ControlStrongStrokeColorDisabledBrush\" Color=
 
 [[fact]]
 key = "role.@surface_stroke_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#75757566"
 rows = ["W3-15"]
 
@@ -1967,7 +1967,7 @@ quote = "<Color x:Key=\"SurfaceStrokeColorDefault\">#66757575</Color>"
 
 [[fact]]
 key = "role.@surface_stroke_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#75757566"
 rows = ["W3-15"]
 
@@ -1994,7 +1994,7 @@ quote = "<SolidColorBrush x:Key=\"SurfaceStrokeColorDefaultBrush\" Color=\"{Them
 
 [[fact]]
 key = "role.@surface_stroke_flyout"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#00000033"
 rows = ["W3-15"]
 
@@ -2010,7 +2010,7 @@ quote = "<Color x:Key=\"SurfaceStrokeColorFlyout\">#33000000</Color>"
 
 [[fact]]
 key = "role.@surface_stroke_flyout"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -2037,7 +2037,7 @@ quote = "<SolidColorBrush x:Key=\"SurfaceStrokeColorFlyoutBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@surface_stroke_inverse"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -2053,7 +2053,7 @@ quote = "<Color x:Key=\"SurfaceStrokeColorInverse\">#0F000000</Color>"
 
 [[fact]]
 key = "role.@surface_stroke_inverse"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff15"
 rows = ["W3-15"]
 
@@ -2080,7 +2080,7 @@ quote = "<SolidColorBrush x:Key=\"SurfaceStrokeColorInverseBrush\" Color=\"{Them
 
 [[fact]]
 key = "role.@divider_stroke_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff15"
 rows = ["W3-15"]
 
@@ -2096,7 +2096,7 @@ quote = "<Color x:Key=\"DividerStrokeColorDefault\">#15FFFFFF</Color>"
 
 [[fact]]
 key = "role.@divider_stroke_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000f"
 rows = ["W3-15"]
 
@@ -2123,7 +2123,7 @@ quote = "<SolidColorBrush x:Key=\"DividerStrokeColorDefaultBrush\" Color=\"{Them
 
 [[fact]]
 key = "role.@focus_stroke_outer"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff"
 rows = ["W3-15"]
 
@@ -2139,7 +2139,7 @@ quote = "<Color x:Key=\"FocusStrokeColorOuter\">#FFFFFF</Color>"
 
 [[fact]]
 key = "role.@focus_stroke_outer"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#000000e4"
 rows = ["W3-15"]
 
@@ -2166,7 +2166,7 @@ quote = "<SolidColorBrush x:Key=\"FocusStrokeColorOuterBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@focus_stroke_inner"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#000000b3"
 rows = ["W3-15"]
 
@@ -2182,7 +2182,7 @@ quote = "<Color x:Key=\"FocusStrokeColorInner\">#B3000000</Color>"
 
 [[fact]]
 key = "role.@focus_stroke_inner"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffb3"
 rows = ["W3-15"]
 
@@ -2209,7 +2209,7 @@ quote = "<SolidColorBrush x:Key=\"FocusStrokeColorInnerBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@card_background_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0d"
 rows = ["W3-16"]
 
@@ -2225,7 +2225,7 @@ quote = "<Color x:Key=\"CardBackgroundFillColorDefault\">#0DFFFFFF</Color>"
 
 [[fact]]
 key = "role.@card_background_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffb3"
 rows = ["W3-16"]
 
@@ -2252,7 +2252,7 @@ quote = "<SolidColorBrush x:Key=\"CardBackgroundFillColorDefaultBrush\" Color=\"
 
 [[fact]]
 key = "role.@card_background_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff08"
 rows = ["W3-16"]
 
@@ -2268,7 +2268,7 @@ quote = "<Color x:Key=\"CardBackgroundFillColorSecondary\">#08FFFFFF</Color>"
 
 [[fact]]
 key = "role.@card_background_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f6f6f680"
 rows = ["W3-16"]
 
@@ -2295,7 +2295,7 @@ quote = "<SolidColorBrush x:Key=\"CardBackgroundFillColorSecondaryBrush\" Color=
 
 [[fact]]
 key = "role.@card_background_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff12"
 rows = ["W3-16"]
 
@@ -2311,7 +2311,7 @@ quote = "<Color x:Key=\"CardBackgroundFillColorTertiary\">#12FFFFFF</Color>"
 
 [[fact]]
 key = "role.@card_background_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-16"]
 
@@ -2338,7 +2338,7 @@ quote = "<SolidColorBrush x:Key=\"CardBackgroundFillColorTertiaryBrush\" Color=\
 
 [[fact]]
 key = "role.@smoke_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#0000004d"
 rows = []
 
@@ -2354,7 +2354,7 @@ quote = "<Color x:Key=\"SmokeFillColorDefault\">#4D000000</Color>"
 
 [[fact]]
 key = "role.@smoke_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000004d"
 rows = []
 
@@ -2381,7 +2381,7 @@ quote = "<SolidColorBrush x:Key=\"SmokeFillColorDefaultBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@layer_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#3a3a3a4c"
 rows = ["W3-09"]
 
@@ -2397,7 +2397,7 @@ quote = "<Color x:Key=\"LayerFillColorDefault\">#4C3A3A3A</Color>"
 
 [[fact]]
 key = "role.@layer_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff80"
 rows = ["W3-09"]
 
@@ -2424,7 +2424,7 @@ quote = "<SolidColorBrush x:Key=\"LayerFillColorDefaultBrush\" Color=\"{ThemeRes
 
 [[fact]]
 key = "role.@layer_fill_alt"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0d"
 rows = ["W3-09"]
 
@@ -2440,7 +2440,7 @@ quote = "<Color x:Key=\"LayerFillColorAlt\">#0DFFFFFF</Color>"
 
 [[fact]]
 key = "role.@layer_fill_alt"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-09"]
 
@@ -2467,7 +2467,7 @@ quote = "<SolidColorBrush x:Key=\"LayerFillColorAltBrush\" Color=\"{ThemeResourc
 
 [[fact]]
 key = "role.@layer_on_acrylic_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff09"
 rows = ["W3-09"]
 
@@ -2483,7 +2483,7 @@ quote = "<Color x:Key=\"LayerOnAcrylicFillColorDefault\">#09FFFFFF</Color>"
 
 [[fact]]
 key = "role.@layer_on_acrylic_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff40"
 rows = ["W3-09"]
 
@@ -2510,7 +2510,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnAcrylicFillColorDefaultBrush\" Color=\"
 
 [[fact]]
 key = "role.@layer_on_accent_acrylic_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff09"
 rows = ["W3-09"]
 
@@ -2526,7 +2526,7 @@ quote = "<Color x:Key=\"LayerOnAccentAcrylicFillColorDefault\">#09FFFFFF</Color>
 
 [[fact]]
 key = "role.@layer_on_accent_acrylic_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff40"
 rows = ["W3-09"]
 
@@ -2553,7 +2553,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnAccentAcrylicFillColorDefaultBrush\" Co
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#3a3a3a73"
 rows = ["W3-09"]
 
@@ -2569,7 +2569,7 @@ quote = "<Color x:Key=\"LayerOnMicaBaseAltFillColorDefault\">#733A3A3A</Color>"
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffffb3"
 rows = ["W3-09"]
 
@@ -2596,7 +2596,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnMicaBaseAltFillColorDefaultBrush\" Colo
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff0f"
 rows = ["W3-09"]
 
@@ -2612,7 +2612,7 @@ quote = "<Color x:Key=\"LayerOnMicaBaseAltFillColorSecondary\">#0FFFFFFF</Color>
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0000000a"
 rows = ["W3-09"]
 
@@ -2639,7 +2639,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnMicaBaseAltFillColorSecondaryBrush\" Co
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#2c2c2c"
 rows = ["W3-09"]
 
@@ -2655,7 +2655,7 @@ quote = "<Color x:Key=\"LayerOnMicaBaseAltFillColorTertiary\">#2C2C2C</Color>"
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f9f9f9"
 rows = ["W3-09"]
 
@@ -2682,7 +2682,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnMicaBaseAltFillColorTertiaryBrush\" Col
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = ["W3-09"]
 
@@ -2698,7 +2698,7 @@ quote = "<Color x:Key=\"LayerOnMicaBaseAltFillColorTransparent\">#00FFFFFF</Colo
 
 [[fact]]
 key = "role.@layer_on_mica_base_alt_fill_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000000"
 rows = ["W3-09"]
 
@@ -2725,7 +2725,7 @@ quote = "<SolidColorBrush x:Key=\"LayerOnMicaBaseAltFillColorTransparentBrush\" 
 
 [[fact]]
 key = "role.@solid_background_fill_base"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#202020"
 rows = ["W3-16"]
 
@@ -2741,7 +2741,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorBase\">#202020</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_base"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f3f3f3"
 rows = ["W3-16"]
 
@@ -2768,7 +2768,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorBaseBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@solid_background_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#1c1c1c"
 rows = ["W3-16"]
 
@@ -2784,7 +2784,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorSecondary\">#1C1C1C</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#eeeeee"
 rows = ["W3-16"]
 
@@ -2811,7 +2811,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorSecondaryBrush\" Color
 
 [[fact]]
 key = "role.@solid_background_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#282828"
 rows = ["W3-16"]
 
@@ -2827,7 +2827,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorTertiary\">#282828</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f9f9f9"
 rows = ["W3-16"]
 
@@ -2854,7 +2854,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorTertiaryBrush\" Color=
 
 [[fact]]
 key = "role.@solid_background_fill_quarternary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#2c2c2c"
 rows = ["W3-16"]
 
@@ -2870,7 +2870,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorQuarternary\">#2C2C2C</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_quarternary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-16"]
 
@@ -2897,7 +2897,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorQuarternaryBrush\" Col
 
 [[fact]]
 key = "role.@solid_background_fill_quinary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#333333"
 rows = ["W3-16"]
 
@@ -2913,7 +2913,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorQuinary\">#333333</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_quinary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#fdfdfd"
 rows = ["W3-16"]
 
@@ -2940,7 +2940,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorQuinaryBrush\" Color=\
 
 [[fact]]
 key = "role.@solid_background_fill_senary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#373737"
 rows = ["W3-16"]
 
@@ -2956,7 +2956,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorSenary\">#373737</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_senary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff"
 rows = ["W3-16"]
 
@@ -2983,7 +2983,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorSenaryBrush\" Color=\"
 
 [[fact]]
 key = "role.@solid_background_fill_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#20202000"
 rows = ["W3-16"]
 
@@ -2994,7 +2994,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorTransparent\">#00202020</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f3f3f300"
 rows = ["W3-16"]
 
@@ -3016,7 +3016,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorTransparent\">#FF0000</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_base_alt"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#0a0a0a"
 rows = ["W3-16"]
 
@@ -3032,7 +3032,7 @@ quote = "<Color x:Key=\"SolidBackgroundFillColorBaseAlt\">#0A0A0A</Color>"
 
 [[fact]]
 key = "role.@solid_background_fill_base_alt"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#dadada"
 rows = ["W3-16"]
 
@@ -3059,7 +3059,7 @@ quote = "<SolidColorBrush x:Key=\"SolidBackgroundFillColorBaseAltBrush\" Color=\
 
 [[fact]]
 key = "role.@system_fill_success"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#6ccb5f"
 rows = []
 
@@ -3075,7 +3075,7 @@ quote = "<Color x:Key=\"SystemFillColorSuccess\">#6CCB5F</Color>"
 
 [[fact]]
 key = "role.@system_fill_success"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#0f7b0f"
 rows = []
 
@@ -3102,7 +3102,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorSuccessBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@system_fill_caution"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#fce100"
 rows = []
 
@@ -3118,7 +3118,7 @@ quote = "<Color x:Key=\"SystemFillColorCaution\">#FCE100</Color>"
 
 [[fact]]
 key = "role.@system_fill_caution"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#9d5d00"
 rows = []
 
@@ -3145,7 +3145,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCautionBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@system_fill_critical"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ff99a4"
 rows = []
 
@@ -3161,7 +3161,7 @@ quote = "<Color x:Key=\"SystemFillColorCritical\">#FF99A4</Color>"
 
 [[fact]]
 key = "role.@system_fill_critical"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#c42b1c"
 rows = []
 
@@ -3188,7 +3188,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCriticalBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@system_fill_neutral"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff8b"
 rows = []
 
@@ -3204,7 +3204,7 @@ quote = "<Color x:Key=\"SystemFillColorNeutral\">#8BFFFFFF</Color>"
 
 [[fact]]
 key = "role.@system_fill_neutral"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000072"
 rows = []
 
@@ -3231,7 +3231,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorNeutralBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@system_fill_solid_neutral"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#9d9d9d"
 rows = ["W3-18"]
 
@@ -3247,7 +3247,7 @@ quote = "<Color x:Key=\"SystemFillColorSolidNeutral\">#9D9D9D</Color>"
 
 [[fact]]
 key = "role.@system_fill_solid_neutral"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#8a8a8a"
 rows = ["W3-18"]
 
@@ -3274,7 +3274,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorSolidNeutralBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@system_fill_attention_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff08"
 rows = []
 
@@ -3290,7 +3290,7 @@ quote = "<Color x:Key=\"SystemFillColorAttentionBackground\">#08FFFFFF</Color>"
 
 [[fact]]
 key = "role.@system_fill_attention_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f6f6f680"
 rows = []
 
@@ -3317,7 +3317,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorAttentionBackgroundBrush\" Colo
 
 [[fact]]
 key = "role.@system_fill_success_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#393d1b"
 rows = []
 
@@ -3333,7 +3333,7 @@ quote = "<Color x:Key=\"SystemFillColorSuccessBackground\">#393D1B</Color>"
 
 [[fact]]
 key = "role.@system_fill_success_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#dff6dd"
 rows = []
 
@@ -3360,7 +3360,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorSuccessBackgroundBrush\" Color=
 
 [[fact]]
 key = "role.@system_fill_caution_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#433519"
 rows = []
 
@@ -3376,7 +3376,7 @@ quote = "<Color x:Key=\"SystemFillColorCautionBackground\">#433519</Color>"
 
 [[fact]]
 key = "role.@system_fill_caution_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#fff4ce"
 rows = []
 
@@ -3403,7 +3403,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCautionBackgroundBrush\" Color=
 
 [[fact]]
 key = "role.@system_fill_critical_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#442726"
 rows = []
 
@@ -3419,7 +3419,7 @@ quote = "<Color x:Key=\"SystemFillColorCriticalBackground\">#442726</Color>"
 
 [[fact]]
 key = "role.@system_fill_critical_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#fde7e9"
 rows = []
 
@@ -3446,7 +3446,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorCriticalBackgroundBrush\" Color
 
 [[fact]]
 key = "role.@system_fill_neutral_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff08"
 rows = []
 
@@ -3462,7 +3462,7 @@ quote = "<Color x:Key=\"SystemFillColorNeutralBackground\">#08FFFFFF</Color>"
 
 [[fact]]
 key = "role.@system_fill_neutral_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#00000006"
 rows = []
 
@@ -3489,7 +3489,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorNeutralBackgroundBrush\" Color=
 
 [[fact]]
 key = "role.@system_fill_solid_attention_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#2e2e2e"
 rows = []
 
@@ -3505,7 +3505,7 @@ quote = "<Color x:Key=\"SystemFillColorSolidAttentionBackground\">#2E2E2E</Color
 
 [[fact]]
 key = "role.@system_fill_solid_attention_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f7f7f7"
 rows = []
 
@@ -3532,7 +3532,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorSolidAttentionBackgroundBrush\"
 
 [[fact]]
 key = "role.@system_fill_solid_neutral_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#2e2e2e"
 rows = []
 
@@ -3548,7 +3548,7 @@ quote = "<Color x:Key=\"SystemFillColorSolidNeutralBackground\">#2E2E2E</Color>"
 
 [[fact]]
 key = "role.@system_fill_solid_neutral_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#f3f3f3"
 rows = []
 
@@ -3575,7 +3575,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorSolidNeutralBackgroundBrush\" C
 
 [[fact]]
 key = "role.@accent_text_fill_primary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent_ramp.light3"
 rows = ["W3-12"]
 
@@ -3586,7 +3586,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorPrimaryBrush\" Color=\"{The
 
 [[fact]]
 key = "role.@accent_text_fill_primary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent_ramp.dark2"
 rows = ["W3-12"]
 
@@ -3608,7 +3608,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorPrimaryBrush\" Color=\"{The
 
 [[fact]]
 key = "role.@accent_text_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent_ramp.light3"
 rows = ["W3-12"]
 
@@ -3619,7 +3619,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorSecondaryBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@accent_text_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent_ramp.dark3"
 rows = ["W3-12"]
 
@@ -3641,7 +3641,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorSecondaryBrush\" Color=\"{T
 
 [[fact]]
 key = "role.@accent_text_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent_ramp.light2"
 rows = ["W3-12"]
 
@@ -3652,7 +3652,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorTertiaryBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@accent_text_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent_ramp.dark1"
 rows = ["W3-12"]
 
@@ -3674,7 +3674,7 @@ quote = "<SolidColorBrush x:Key=\"AccentTextFillColorTertiaryBrush\" Color=\"{Th
 
 [[fact]]
 key = "role.@accent_fill_selected_text_background"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent"
 rows = ["W3-12"]
 
@@ -3685,7 +3685,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorSelectedTextBackgroundBrush\" C
 
 [[fact]]
 key = "role.@accent_fill_selected_text_background"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent"
 rows = ["W3-12"]
 
@@ -3707,7 +3707,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorSelectedTextBackgroundBrush\" C
 
 [[fact]]
 key = "role.@accent_fill_default"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent_ramp.light2"
 rows = ["W3-12"]
 
@@ -3718,7 +3718,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorDefaultBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@accent_fill_default"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent_ramp.dark1"
 rows = ["W3-12"]
 
@@ -3740,7 +3740,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorDefaultBrush\" Color=\"{ThemeRe
 
 [[fact]]
 key = "role.@accent_fill_secondary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= alpha(role.global.accent_ramp.light2, 0.9)"
 rows = ["W3-12"]
 
@@ -3751,7 +3751,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorSecondaryBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@accent_fill_secondary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= alpha(role.global.accent_ramp.dark1, 0.9)"
 rows = ["W3-12"]
 
@@ -3773,7 +3773,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorSecondaryBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@accent_fill_tertiary"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= alpha(role.global.accent_ramp.light2, 0.8)"
 rows = ["W3-12"]
 
@@ -3784,7 +3784,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorTertiaryBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@accent_fill_tertiary"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= alpha(role.global.accent_ramp.dark1, 0.8)"
 rows = ["W3-12"]
 
@@ -3806,7 +3806,7 @@ quote = "<SolidColorBrush x:Key=\"AccentFillColorTertiaryBrush\" Color=\"{ThemeR
 
 [[fact]]
 key = "role.@system_fill_attention"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "= role.global.accent_ramp.light2"
 rows = []
 
@@ -3817,7 +3817,7 @@ quote = "<SolidColorBrush x:Key=\"SystemFillColorAttentionBrush\" Color=\"{Theme
 
 [[fact]]
 key = "role.@system_fill_attention"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "= role.global.accent"
 rows = []
 
@@ -4240,7 +4240,7 @@ quote = "<SolidColorBrush x:Key=\"SystemControlHyperlinkTextBrush\" Color=\"{The
 
 [[fact]]
 key = "role.@system_control_transparent"
-when = { conditions = ["scheme:dark"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:dark"] }
 value = "#ffffff00"
 rows = []
 
@@ -4251,7 +4251,7 @@ quote = "<SolidColorBrush x:Key=\"SystemControlTransparentBrush\" Color=\"Transp
 
 [[fact]]
 key = "role.@system_control_transparent"
-when = { conditions = ["scheme:light"], not_conditions = ["contrast_high"] }
+when = { conditions = ["scheme:light"] }
 value = "#ffffff00"
 rows = []
 
@@ -6018,6 +6018,690 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:301"
 quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color=\"{StaticResource TextOnAccentFillColorSelectedText}\" />"
+
+# The Selection set's other roles: WinUI's selected text has its highlight and its text alone (TextBox's
+# SelectionHighlightColor, TextOnAccentFillColorSelectedText), no alternate, status, link, decoration, shade, border
+# or status-background colour, and no disabled selection colour: the theme dictionaries name none, as for the Window
+# set's absences above (M1b round 2, the mop-up lane).
+[[fact]]
+key = "role.selection.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_alternate"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.foreground_inactive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.foreground_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.link_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.decoration_focus"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.decoration_hover"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.shade"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.shade_darker"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.border"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_active"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_link"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_visited"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_negative"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_neutral"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
+
+[[fact]]
+key = "role.selection.disabled.background_positive"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:4-207"
+quote = "<ResourceDictionary x:Key=\"Default\">"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:208-414"
+quote = "<ResourceDictionary x:Key=\"Light\">"
+absent = []
 
 
 # ---------------------------------------------------------------------------------------------------------------

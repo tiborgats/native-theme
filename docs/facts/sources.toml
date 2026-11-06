@@ -986,6 +986,7 @@ note = "Documentation has no tags: the head of `docs`, which syncs the private w
 [[source]]
 id = "winapps-winrt-api@554b7e3a"
 kind = "git"
+project = "winapps-winrt-api"
 site = "learn.microsoft.com"
 repository = "https://github.com/MicrosoftDocs/winapps-winrt-api.git"
 tag = "commit"

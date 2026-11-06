@@ -5197,27 +5197,185 @@ key = "token.behavior.touch.double_tap_slop"
 pending = "U474"
 rows = ["P4-11†"]
 
-# U475: spring loading (UISpringLoadedInteraction): its hover time and look, never captured
+# U475: spring loading (UISpringLoadedInteraction): its hover time, never captured; the headers state no delay
 [[fact]]
 key = "token.behavior.spring_loading"
 pending = "U475"
 rows = ["P3-11†"]
 
-# U476: mnemonics and the focus ring's visibility (iPad keyboard focus): the sources are UIKit's headers, not in the source cache
+# Mnemonics (U476, settled by the SDK header pass): UIKit has none. No UIKit header names a mnemonic; the button's
+# whole definition (its class and every category) and the key command's, where a keyboard access key would belong,
+# at each pin; the names are AppKit's (NSButton's `setTitleWithMnemonic:`)
 [[fact]]
 key = "token.behavior.mnemonics"
-pending = "U476"
+value = "never"
 rows = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKeyCommand.h:18-115"
+quote = "@interface UIKeyCommand : UICommand"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKeyCommand.h:18-115"
+quote = "@interface UIKeyCommand : UICommand"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+# none shows, so none on a disabled element: `Absent` where `mnemonics` is `Never` (S4.2)
 [[fact]]
 key = "token.behavior.mnemonic_when_disabled"
-pending = "U476"
+value = "absent"
 rows = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKeyCommand.h:18-115"
+quote = "@interface UIKeyCommand : UICommand"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKeyCommand.h:18-115"
+quote = "@interface UIKeyCommand : UICommand"
+absent = ["setTitleWithMnemonic", "mnemonic"]
+
+# the focus effect is applied whenever the item is focused (UIView's focusEffect), the focus system's own focus
 [[fact]]
 key = "token.behavior.focus_visible_when"
-pending = "U476"
+value = "any_focus"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:166-167"
+quote = "/// Describes a visual effect to apply when this item is focused. If this property is nil no effect will be applied when this view becomes focused. @property (nonatomic, readwrite, nullable, copy) UIFocusEffect *focusEffect"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:170-171"
+quote = "/// Describes a visual effect to apply when this item is focused. If this property is nil no effect will be applied when this view becomes focused. @property (nonatomic, readwrite, nullable, copy) UIFocusEffect *focusEffect"
 
 # U477: the iPad focus halo (UIFocusHaloEffect): never drawn (the focus pass found no focusable button)
 [[fact]]
@@ -5491,6 +5649,14 @@ rows = []
 key = "token.icons.sizes.panel.animation"
 pending = "U479"
 rows = []
+
+# U650: the platform's further icon contexts (S4.5's keyed map): UIKit declares none by name (a symbol's size is its
+# configuration's text style or point size and scale), and no source in the cache nor the run ties a control (a tab
+# bar's item, a navigation bar's, a list cell's) to a configuration of its own
+[[fact]]
+key = "token.icons.sizes.keyed"
+pending = "U650"
+rows = ["D-19"]
 
 # U480: the elevation ramp and the size classes' thresholds: not stated by a cached source
 [[fact]]
