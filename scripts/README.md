@@ -1026,8 +1026,10 @@ equals it within its tolerance, leaf by leaf, and the run's `run.toml` maps
 the image to a preset its source serves; every evidence file is cited (an
 image by the analysis output that names it in `input_image`), except
 READMEs, `run.toml` and the legacy runs (`LEGACY_EVIDENCE`, which
-`check_ledger.py --final` reads). SDK-header citations are listed, not
-checked: `os-probe.yml`'s macOS job checks them at their Xcode. The
+`check_ledger.py --final` reads). An SDK-header citation is checked like a
+cached file against its Xcode's local header copy, `<cache>/xcode@<v>/<F>/`
+(the copy of the SDK its `xcode.txt` records for that framework); with no
+local copy it is listed (`# sdk:`), not checked. The
 docstring holds the closed lists (notations, units, conversions, evidence
 path forms, `run.toml`'s fields). Prints one line per finding and a summary,
 and exits 0, 1, or 2 when the cache is missing or an input cannot be read;
@@ -1275,7 +1277,10 @@ commit with its sparse folders and no tracked file changed; both modes report
 cache folders no entry names. Before anything else both modes check
 `sources.toml` with `check_sources.py`'s form rules and exit 2 on a problem,
 and every path the script writes or removes must resolve to a folder directly
-inside the cache. The SDK and distribution entries are not fetched.
+inside the cache. The SDK and distribution entries are not fetched; an SDK
+entry's folder, `<cache>/xcode@<v>/`, holds the headers `os-probe.yml`'s macOS
+job copied (put there by hand from its artifact), which `--verify` checks
+against the SHA-256 lines of its `xcode.txt` and does not report as stale.
 
 Requires git and Python 3.11; network access unless `--verify`.
 

@@ -22,9 +22,20 @@ The bundled presets are those of check_facts.preset_dir(): `native-theme/src/nex
 
 On stderr: the transcription share (facts transcribed, shadowed, pending, left out by reason; per widget and per
 unit), the rule and base-value counts, the pending facts' register ids, the facts gaps (a field no fact gives where
-the reader needs it), and the round trip's result. Exit 0, 1 when the round trip finds a mismatch (a generator bug)
-or `--check` finds the bundled preset differs, 2 on an input it cannot read, a hand-written part `--write` would lose
-(below) or a wrong command line.
+the reader needs it), the model fields the preset leaves unstated (below), and the round trip's result. Exit 0, 1 when
+the round trip finds a mismatch (a generator bug) or `--check` finds the bundled preset differs, 2 on an input it
+cannot read, a hand-written part `--write` would lose (below) or a wrong command line.
+
+The model fields the preset leaves unstated (unstated_fields())
+---------------------------------------------------------------
+The model is read from its Rust sources as text, no build needed (read_model(): every `pub struct` of
+check_facts.model_dir() but its tests, and each `widgets/gen_<widget>.rs` scripts/generate_widgets.py writes, its
+parts' `#[part(fields(…))]` and its values struct). Each field of the colour roles per scheme, the tokens and each
+typed widget's parts and values with no base value and no `[pending]` path in the preset as `--write` writes it (the
+bundled preset's hand-written blocks carried in) is listed by its TOML path, grouped by the preset's facts at, above or
+below it: no fact; facts, none at rest (rules alone state it, and the reader needs a base, S11); a fact at rest that
+gives no base (left out, by its reason, or pending and not listed). The rules, the inputs (S9) and the entries
+`[declare]`'s keyed namespaces declare are not checked: loading the preset in Rust stays the full check.
 
 The hand-written parts (`--write`)
 ----------------------------------
@@ -74,7 +85,8 @@ What is left out, and why (each counted by reason)
   among the parts written by hand.
 - accent run: a fact with `scheme_file` and `accent` (S17 *The accent run*), which the preset's own resolution never
   reaches.
-- two files: a key whose facts lie in two files, whose order S17 *Which fact applies* does not give.
+- two files: a key whose facts lie in two files, whose order S17 *Which fact applies* does not give; the accent
+  run's facts count in no key's files, as they apply in that run alone.
 - an S11 spelling a fact alone does not give (spell()): a `Scalar` entry stated with a unit outside a `token.params`
   group whose literals share one unit (param_units(): S11's "its number in the unit its declaration names", the
   group's one unit, S10, so `token.params.pointer_repeat.delay = "500ms"` is `params.pointer_repeat.delay = 500`, the
@@ -144,8 +156,8 @@ Targets and paths (S11): `role.<set>.<role>` is `surfaces.<set>.<role>` of `colo
 below it), `role.global.<…>` is `global.<…>`, `role.@<key>` is `keyed.<key>` (S3's `ColorRoles.keyed`, a map whose
 key is a `Key`, bare, S11); `token.<path>` is `<path>` of `tokens`; `<widget>.<part>.<field…>` is `<field…>` of
 target `<widget>.<part>`, `<widget>.values.<name>` of `<widget>.values`, `component.<key>.…` likewise; a whole part's
-`"absent"` is `absent = true` and its `{ drawn_as = … }` is `drawn_as = …` (S6.3, S11); `input.<name>` is
-`[inputs.<name>]`.
+`"absent"` is `absent = true`, its `"present"` `absent = false` and its `{ drawn_as = … }` is `drawn_as = …` (S6.3,
+S11, S17); `input.<name>` is `[inputs.<name>]`.
 
 Spelling (S11's table; spell()): a unit literal under a one-unit key is its number under the suffixed key
 (`min_height_px = 24`, `_ms`, `_deg`), and any other value of it, an expression, `"auto"`, `"absent"`, `"none"`,
@@ -185,19 +197,18 @@ units or defaults.
 
 The round trip (the exactness proof)
 ------------------------------------
-The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in
-its rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling
-(unspell(): the suffix into the value's unit, a map's entries likewise, `absent = true` into `"absent"`); a value
-at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases, then the rules in
-order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value; and (2) for
-every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs) and
-each scheme, that `when`'s minimal combination (its required names present and nothing else; ancestors as its
-contexts list them; a lone element where it names no position) resolves under the generated bases and rules to the
-value of the fact that applies there among all the key's facts, or to none where none holds (the
-last in file order, after the state model's exclusive reduction and its recency sets' stated order, S7.2, S10,
-S17); a combination where a pending or a left-out fact applies is skipped and counted, and a fact whose `when` no
-element can hold (two sizes, a required name refused, a state its group drops) is counted apart. Any difference is a
-mismatch.
+The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in its
+rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling (unspell():
+the suffix into the value's unit, a map's entries likewise, `absent = true` into `"absent"`, `absent = false` into
+`"present"`); a value at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases,
+then the rules in order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value;
+and (2) for every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs)
+and each scheme, that `when`'s minimal combination (its required names present and nothing else; ancestors as its
+contexts list them; a lone element where it names no position) resolves under the generated bases and rules to the value
+of the fact that applies there among all the key's facts, or to none where none holds (the last in file order, after the
+state model's exclusive reduction and its recency sets' stated order, S7.2, S10, S17); a combination where a pending or
+a left-out fact applies is skipped and counted, and a fact whose `when` no element can hold (two sizes, a required name
+refused, a state its group drops) is counted apart. Any difference is a mismatch.
 
     python3 scripts/generate_preset.py --self-test   # fixture facts against the expected draft, and each rule
 """
@@ -561,6 +572,8 @@ def place(f: Fact):
                 return
             if value == "absent":
                 rel, value = ["absent"], True
+            elif value == "present":
+                rel, value = ["absent"], False
             elif isinstance(value, dict) and set(value) == {"drawn_as"}:
                 rel, value = ["drawn_as"], value["drawn_as"]
             else:
@@ -681,6 +694,21 @@ class Draft:
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
 
 
+def accent_run(d) -> bool:
+    """Whether a fact is the accent run's (S17 *The accent run*: `scheme_file` and `accent`)."""
+    return "scheme_file" in d or "accent" in d
+
+
+def key_files(facts) -> dict:
+    """{key: the files its facts lie in}, the accent run's left out: they apply in the accent run alone (S17 *The
+    accent run*), so no order between files is needed for them in the preset's own resolution."""
+    files = {}
+    for f in facts:
+        if not accent_run(f.item.data):
+            files.setdefault(f.ckey, set()).add(f.item.file)
+    return files
+
+
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     """The preset's facts, classified, and its bases and rules (the docstring's rules)."""
     platform = platform_of(preset)
@@ -694,9 +722,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         when = without_unheld_negations(preset_when(it.data.get("when"), preset), units)
         facts.append(Fact(it, it.data["key"], check_facts.canonical_key(it.data["key"]), when, info[3], info[2],
                           info[4], info[1]))
-    files = {}
-    for f in facts:
-        files.setdefault(f.ckey, set()).add(f.item.file)
+    files = key_files(facts)
     groups = param_units(facts)
     for f in facts:
         value = f.item.data.get("value")
@@ -714,7 +740,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status = PENDING
         elif any(c.data.get("kind") == "read" for c in f.item.cites):
             f.status, f.reason = LEFT_OUT, READ
-        elif "scheme_file" in d or "accent" in d:
+        elif accent_run(d):
             f.status, f.reason = LEFT_OUT, ACCENT_RUN
         elif len(files[f.ckey]) > 1:
             f.status, f.reason = LEFT_OUT, TWO_FILES
@@ -848,12 +874,21 @@ def unsuffixed(path: tuple) -> tuple:
     return path
 
 
+def whole_part(section, dotted, value) -> bool:
+    """Whether a base states its part whole (S6.3): `absent = true` or `drawn_as`, not `absent = false`, which draws
+    the part with its own fields."""
+    if section not in ("widgets", "components"):
+        return False
+    return tuple(dotted) == ("drawn_as",) or (tuple(dotted) == ("absent",) and value is True)
+
+
 def based_paths(bases) -> list:
-    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent`, `drawn_as`) the part's,
-    which holds every field of it (S6.3)."""
+    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent = true`, `drawn_as`) the
+    part's, which holds every field of it (S6.3); a drawn part's (`absent = false`) its own, `<part>.absent`, which
+    no field's path lies above or below."""
     out = []
-    for section, scheme, header, dotted, _, _ in bases:
-        whole = section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))
+    for section, scheme, header, dotted, value, _ in bases:
+        whole = whole_part(section, dotted, value)
         out.append(unsuffixed((section,) + ((scheme,) if scheme else ()) + header + (() if whole else tuple(dotted))))
     return out
 
@@ -934,7 +969,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
     contrast condition and the input's base states no per-scheme value there; a pending contrast base is never
     listed, the per-scheme value standing beneath it (S11, S17, ADD-A132). A pending presence (a whole part's fact)
     is listed by its part's path, `widgets.<widget>.<part>`, where no presence is beneath it: a base of the part's
-    presence (`absent`, `drawn_as`), or an earlier rule of its key holding wherever it does; its fields' bases are
+    presence (`absent = true` or `false`, `drawn_as`), or an earlier rule of its key holding wherever it does; its fields' bases are
     none (S6.3, S17, ADD-A131). A component's (`components.<key>.<part>`) is refused (InputError) until components
     are typed, as the reader refuses that key."""
     block_of = block_of or set_whole_block
@@ -966,7 +1001,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
         for path in paths:
             key = unsuffixed(path)
             if presence:
-                beneath = key in based
+                beneath = key in based or key + ("absent",) in based
             else:
                 beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
             if beneath:
@@ -987,8 +1022,7 @@ def redrawn_pending(facts, bases) -> list:
     field (based_paths()), and no stated value, so loading refuses the field as S12's missing one "judged under each
     combination in which its part resolves drawn" where that fact draws it. S17 gives such a field no encoding (task
     15c's review, minor 10): reported, the draft stating nothing for it. [(key, register id, fact)]"""
-    wholes = {tuple(header) for section, _, header, dotted, _, _ in bases
-              if section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))}
+    wholes = {tuple(header) for section, _, header, dotted, value, _ in bases if whole_part(section, dotted, value)}
     present = {f.ckey for f in facts if f.kind == "widget" and f.status not in (PENDING, SHADOWED)
                and f.item.data.get("value") == "present"}
     out = []
@@ -1944,9 +1978,12 @@ def model_of(models: dict, widget, when: dict):
 
 
 def back_value(f: Fact, node):
-    """A read-back TOML value as the fact writes it (unspell; a whole part's `absent = true` and `drawn_as`)."""
+    """A read-back TOML value as the fact writes it (unspell; a whole part's `absent = true`, `absent = false` and
+    `drawn_as`)."""
     if f.kind == "widget" and len(f.ckey) == len(f.target.split(".")):
-        return "absent" if f.rel == ("absent",) and node is True else {f.rel[-1]: node}
+        if f.rel == ("absent",) and isinstance(node, bool):
+            return "absent" if node else "present"
+        return {f.rel[-1]: node}
     if f.param_unit and isinstance(node, (int, float)) and not isinstance(node, bool):
         return f"{node}{f.param_unit}"
     return unspell(f.rel[-1], node, f.typ)[1]
@@ -2026,6 +2063,258 @@ def share_lines(draft: Draft, units, trip: Trip) -> list:
                f"({trip.pending} where a pending fact applies and {trip.left_out} where a left-out one does, skipped; "
                f"{trip.impossible} facts whose `when` no element holds: two sizes, a flag its exclusive group drops, "
                f"a name required and refused)")
+    return out
+
+
+# ---------------------------------------------------------------------------------------- the model's fields
+
+MODEL_STRUCT = re.compile(r"pub struct (\w+)\s*(<[^{;(]*>)?\s*\{")
+PART_FIELD = re.compile(r"#\[part\(((?:[^()]|\([^()]*\))*)\)\]\s*(\w+)\s*:\s*PartStyle\b")
+PART_FIELDS = re.compile(r"\bfields\(([^()]*)\)")
+VALUES_FIELD = re.compile(r"\bvalues\s*:\s*(\w+)")
+GENERIC = re.compile(r"(\w+)<(.+)>")
+WRAPPERS = re.compile(r"(?:Value|Option|Box)<(.+)>")
+SURFACE_MAP = re.compile(r"SurfaceMap<(.+)>")
+EVERY_PRESET_SETS = ("window", "selection")   # S3: "`Window` and `Selection` every preset declares"
+NO_FACT = "NO FACT"
+ONLY_CONDITIONAL = "ONLY CONDITIONAL"
+BASE_EXISTS = "BASE EXISTS"
+FIELD_GROUPS = {
+    NO_FACT: "no fact or pending fact of the preset at, above or below the path",
+    ONLY_CONDITIONAL: "facts there, none at rest: rules alone state it, and the reader needs a base",
+    BASE_EXISTS: "a fact at rest there, which gives no base (left out, or pending and not listed)",
+}
+
+
+@dataclass
+class Model:
+    """The model's types as its Rust sources write them (read_model())."""
+    structs: dict             # struct name: (its generic parameters, {field: type})
+    widgets: dict             # typed widget: ({part: [its fields]}, its values struct's name)
+    ambiguous: set = field(default_factory=set)   # struct names written twice, with other fields
+    folder: Path = Path()
+
+
+def without_comments(code: str) -> str:
+    return re.sub(r"//[^\n]*", "", re.sub(r"/\*.*?\*/", "", code, flags=re.S))
+
+
+def without_attributes(code: str) -> str:
+    """`code` without its `#[…]` attributes (brackets balanced)."""
+    out, i = [], 0
+    while (j := code.find("#[", i)) >= 0:
+        out.append(code[i:j])
+        k, depth = j + 2, 1
+        while k < len(code) and depth:
+            depth += code[k] == "["
+            depth -= code[k] == "]"
+            k += 1
+        i = k
+    out.append(code[i:])
+    return "".join(out)
+
+
+def model_structs(code: str) -> dict:
+    """{name: (generic parameters, {pub field: type})} of the `pub struct`s of comment- and attribute-free Rust."""
+    out = {}
+    for m in MODEL_STRUCT.finditer(code):
+        i, depth = m.end(), 1
+        while i < len(code) and depth:
+            depth += code[i] == "{"
+            depth -= code[i] == "}"
+            i += 1
+        params = tuple(p.strip() for p in check_facts.split_top(m.group(2)[1:-1])) if m.group(2) else ()
+        out[m.group(1)] = (params, check_facts.fields_of(code[m.end():i - 1]))
+    return out
+
+
+def widget_parts(code: str) -> tuple:
+    """({part: [fields]}, the values struct's name) of a generated widget file's `<Widget>Theme` (comments stripped,
+    attributes kept): each `#[part(…)] <part>: PartStyle` with its `fields(…)`, and `values: <W>Values`."""
+    parts = {}
+    for m in PART_FIELD.finditer(code):
+        listed = PART_FIELDS.search(m.group(1))
+        parts[m.group(2)] = [x.strip() for x in listed.group(1).split(",") if x.strip()] if listed else []
+    values = VALUES_FIELD.search(code)
+    return parts, values.group(1) if values else None
+
+
+def read_model(root: Path) -> Model:
+    """The model as its Rust sources write it (check_facts.model_dir(), its tests left out): every `pub struct` with
+    its `pub` fields and their types, and each generated widget (`widgets/gen_<widget>.rs`, scripts/
+    generate_widgets.py's output) with its parts' fields and its values struct. Read as text, so no build is needed;
+    a folder without them gives an empty model."""
+    folder = check_facts.model_dir(root)
+    model = Model({}, {}, set(), folder)
+    for p in sorted((root / folder).rglob("*.rs")):
+        if p.name.endswith("tests.rs") or "tests" in p.relative_to(root / folder).parts:
+            continue
+        code = without_comments(p.read_text(encoding="utf-8"))
+        for name, struct in model_structs(without_attributes(code)).items():
+            if name in model.structs and model.structs[name] != struct:
+                model.ambiguous.add(name)
+            model.structs[name] = struct
+        if p.parent.name == "widgets" and p.name.startswith("gen_") and p.name != "gen_index.rs":
+            parts, values = widget_parts(code)
+            if parts:
+                model.widgets[p.stem[len("gen_"):]] = (parts, values)
+    return model
+
+
+def bare_type(typ: str) -> str:
+    t = typ.strip()
+    while (m := WRAPPERS.fullmatch(t)):
+        t = m.group(1).strip()
+    return t
+
+
+def struct_fields(model: Model, typ: str):
+    """{field: type} of the struct `typ` names under its wrappers (`Value`, `Option`, `Box`), its generic parameters
+    put in (`Sides<Value<Px>>`); None for any other type (a scalar, an enum, a list, a map)."""
+    t = bare_type(typ)
+    m = GENERIC.fullmatch(t)
+    name, args = (m.group(1), [a.strip() for a in check_facts.split_top(m.group(2))]) if m else (t, [])
+    if name not in model.structs:
+        return None
+    if name in model.ambiguous:
+        raise InputError(f"{model.folder}: the struct {name} is written twice with other fields")
+    params, fields = model.structs[name]
+    put = dict(zip(params, args))
+    return {f: put.get(ft, ft) for f, ft in fields.items()}
+
+
+def stated_at(table: dict, name: str):
+    """The value a TOML table states for a field, under its name or a unit suffix of it (S11)."""
+    for suffix in ("",) + tuple(UNIT_OF_SUFFIX):
+        if name + suffix in table:
+            return table[name + suffix]
+    return None
+
+
+def unstated_fields(model: Model, text: str) -> list:
+    """The model paths a preset's bases leave unstated, as TOML paths (`widgets.button.icon.icon.rendering_mode`,
+    `colors.light.global.scrim`, `tokens.elevation`): each struct field of the colour roles under each scheme (the
+    surface sets `[declare] surface_sets` lists, else those the bases state and `window` and `selection`, S3), of the
+    tokens and of each typed widget's parts (the fields its `#[part]` lists) and values, with no value at its path
+    and no `[pending]` path at or above it. A table there is walked below: a struct block's fields, a map's entries
+    whose values are structs (S11: a block stated per leaf, an entry stated whole); any other value states the field
+    whole. A part stated `absent = true` or `drawn_as` states its fields (S6.3). An unstated field is listed alone,
+    not its fields below. The rules are not read: the reader needs a base for every field (S11). Not checked: the
+    inputs (S9) and the entries `[declare]`'s keyed namespaces declare."""
+    data = tomllib.loads(text)
+    pending = {unsuffixed(tuple(k.split("."))) for k in data.get("pending", {})}
+    out = []
+
+    def walk(path, typ, node):
+        bare = unsuffixed(path)
+        if any(bare[:len(q)] == q for q in pending):
+            return
+        if node is None:
+            if not any(len(q) > len(bare) and q[:len(bare)] == bare for q in pending):
+                out.append(path)
+                return
+            node = {}
+        if not isinstance(node, dict):
+            return
+        entry = MAP_TYPE.fullmatch(bare_type(typ))
+        if entry:
+            if struct_fields(model, entry.group(2)) is not None:
+                for k, v in node.items():
+                    walk(path + (k,), entry.group(2), v)
+            return
+        for name, ftype in (struct_fields(model, typ) or {}).items():
+            walk(path + (name,), ftype, stated_at(node, name))
+
+    roles = struct_fields(model, "ColorRoles") or {}
+    declared = data.get("declare", {}).get("surface_sets") if isinstance(data.get("declare"), dict) else None
+    colors = data.get("colors", {}) if isinstance(data.get("colors"), dict) else {}
+    for scheme in SCHEMES if roles else ():
+        node = colors.get(scheme)
+        if not isinstance(node, dict):
+            out.append(("colors", scheme))
+            continue
+        surfaces = node.get("surfaces", {}) if isinstance(node.get("surfaces"), dict) else {}
+        sets = declared if isinstance(declared, list) else sorted(set(surfaces) | set(EVERY_PRESET_SETS))
+        for name, typ in roles.items():
+            inner = SURFACE_MAP.fullmatch(bare_type(typ))
+            if inner:
+                for s in sets:
+                    walk(("colors", scheme, name, s), inner.group(1), surfaces.get(s))
+            else:
+                walk(("colors", scheme, name), typ, node.get(name))
+    if "Tokens" in model.structs:
+        walk(("tokens",), "Tokens", data.get("tokens"))
+    style = struct_fields(model, "PartStyle") or {}
+    widgets = data.get("widgets", {}) if isinstance(data.get("widgets"), dict) else {}
+    for w, (parts, values) in model.widgets.items():
+        node = widgets.get(w, {}) if isinstance(widgets.get(w), dict) else {}
+        for part, fields in parts.items():
+            here = node.get(part)
+            if here is None:
+                walk(("widgets", w, part), "", None)
+                continue
+            if not isinstance(here, dict) or here.get("absent") is True or "drawn_as" in here:
+                continue
+            for name in fields:
+                walk(("widgets", w, part, name), style.get(name, ""), stated_at(here, name))
+        if values:
+            walk(("widgets", w, "values"), values, node.get("values"))
+    return out
+
+
+def fact_path(f: Fact) -> tuple:
+    """A fact's key as the TOML path its base would take, the scheme left out of a colour role's (place())."""
+    segs = f.ckey
+    if f.kind == "role":
+        rest = segs[1:]
+        if rest[0].startswith("@"):
+            return ("colors", "keyed", rest[0][1:]) + rest[1:]
+        return ("colors",) + (rest if rest[0] == "global" else ("surfaces",) + rest)
+    if f.kind == "token":
+        return ("tokens",) + segs[1:]
+    if f.kind == "input":
+        return ("inputs",) + segs[1:]
+    return ("components",) + segs[1:] if segs[0] == "component" else ("widgets",) + segs
+
+
+def field_groups(facts, paths) -> list:
+    """[(group, path, facts, pending, the at-rest facts' statuses)] of the unstated paths (unstated_fields()), by the
+    preset's facts at, above or below each (the accent run's left out: it applies in that run alone): NO_FACT where
+    none, ONLY_CONDITIONAL where none is at rest, else BASE_EXISTS."""
+    keyed = [(fact_path(f), f) for f in facts if not accent_run(f.item.data)]
+    out = []
+    for path in paths:
+        bare = unsuffixed(path)
+        bare = bare[:1] + bare[2:] if bare[0] == "colors" else bare
+        near = [f for p, f in keyed if p[:len(bare)] == bare or bare[:len(p)] == p]
+        pending = sum(1 for f in near if "pending" in f.item.data)
+        rest = [f for f in near if any(is_rest(f, s) for s in SCHEMES)]
+        statuses = {}
+        for f in rest:
+            what = f.status + (f": {f.reason}" if f.reason else "")
+            statuses[what] = statuses.get(what, 0) + 1
+        group = NO_FACT if not near else ONLY_CONDITIONAL if not rest else BASE_EXISTS
+        out.append((group, path, len(near) - pending, pending, statuses))
+    return out
+
+
+def field_lines(model: Model, draft: Draft, text: str) -> list:
+    """The report's lines of the model fields the preset leaves unstated, grouped (field_groups())."""
+    if "Tokens" not in model.structs:
+        return [f"# unstated model fields: no model sources in {model.folder}"]
+    groups = field_groups(draft.facts, unstated_fields(model, text))
+    counts = {g: sum(1 for x in groups if x[0] == g) for g in FIELD_GROUPS}
+    out = [f"# unstated model fields: {len(groups)} ("
+           + ", ".join(f"{g.lower()} {n}" for g, n in counts.items())
+           + f"): the fields of the model ({model.folder}) with no base value and no [pending] path in the preset "
+           f"as --write writes it"]
+    for g, why in FIELD_GROUPS.items():
+        if counts[g]:
+            out.append(f"# == {g}: {counts[g]} ({why})")
+            for _, path, facts, pending, statuses in (x for x in groups if x[0] == g):
+                at_rest = (" (at rest: " + ", ".join(f"{k} {n}" for k, n in statuses.items()) + ")") if statuses \
+                    else ""
+                out.append(f"#   {dotted_key(path)}  facts={facts} pending={pending}{at_rest}")
     return out
 
 
@@ -2582,6 +2871,120 @@ SELF_TEST_STATUS = [
 ]
 
 
+# a model's Rust sources (read_model()) and a preset stating every field of it (unstated_fields())
+MODEL_FILES = {
+    "native-theme/src/next/mod.rs": "",
+    "native-theme/src/next/roles.rs": """
+/// The colour roles (S3), with a `// comment` in a doc line.
+#[derive(Clone, Debug, PartialEq, ThemeParts)]
+#[parts(block)]
+pub struct ColorRoles {
+    /// The declared surface sets' roles.
+    #[parts(block = "fields")]
+    pub surfaces: SurfaceMap<SurfaceRoles>,
+    pub global: GlobalRoles, // the global roles
+    pub keyed: Vec<(Key, Value<Color>)>,
+}
+pub struct SurfaceRoles { pub background: Value<Color>, pub disabled: DisabledRoles }
+pub struct DisabledRoles { pub background: Value<Color> }
+/* a block comment: pub struct GlobalRoles { pub other: Value<Color> } */
+pub struct GlobalRoles { pub accent: Value<Color>, pub accent_ramp: Vec<(Key, Value<Color>)> }
+""",
+    "native-theme/src/next/tokens.rs": """
+pub struct Tokens { pub focus: FocusIndicator, pub text: TextTokens }
+pub struct FocusIndicator { pub width: Value<Px>, pub offset: Sides<Value<Px>> }
+pub struct TextTokens { pub keyed: Vec<(Key, TextStyle)>, pub font_dpi: Value<f32> }
+pub struct TextStyle { pub size: Value<FontSize>, pub weight: Value<u16> }
+""",
+    "native-theme/src/next/units.rs": "pub struct Sides<T> { pub top: T, pub right: T, pub bottom: T, pub left: T }\n",
+    "native-theme/src/next/blocks/part_style.rs": """
+pub struct PartStyle { pub fill: Value<Paint>, pub padding: Sides<Value<Px>>, pub icon: Value<IconStyle> }
+pub struct IconStyle { pub size: Value<Px>, pub weight: Value<u16> }
+""",
+    "native-theme/src/next/widgets/gen_button.rs": """
+#[derive(ThemeParts)]
+#[parts(widget)]
+pub(crate) struct ButtonTheme {
+    /// The bezel.
+    #[part(root, fields(fill, padding), absent(fill))]
+    body: PartStyle,
+    /// The image.
+    #[part(may_be_absent, fields(icon))]
+    icon: PartStyle,
+    /// The mark.
+    #[part(may_be_absent, fields(fill))]
+    mark: PartStyle,
+    values: ButtonValues,
+}
+pub struct ButtonValues { pub gap: Value<Px> }
+""",
+    "native-theme/src/next/widgets/tests.rs": "pub struct Tokens { pub other: Value<Px> }\n",
+}
+FIELDS_COLORS = """
+[colors.{s}.surfaces.window]
+background = "#ffffff"
+disabled.background = "#eeeeee"
+
+[colors.{s}.surfaces.view]
+background = "#fafafa"
+disabled = {{ background = "#dddddd" }}
+
+[colors.{s}.global]
+accent = "#3584e4"
+accent_ramp = {{}}
+
+[colors.{s}.keyed]
+overview = "#000000"
+"""
+FIELDS_PRESET = """
+[declare]
+surface_sets = ["window", "view"]
+
+[pending]
+"tokens.text.keyed.title.weight" = "U1"
+"widgets.button.icon.icon.size_px" = "U2"
+""" + FIELDS_COLORS.format(s="light") + FIELDS_COLORS.format(s="dark") + """
+[tokens.focus]
+width_px = 2
+offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
+
+[tokens.text]
+font_dpi = 72
+keyed.body = { size_pt = 11, weight = 400 }
+keyed.title.size_pt = 15
+
+[widgets.button.body]
+fill = "#ffffff"
+padding.top_px = 4
+padding.right_px = 4
+padding.bottom_px = 4
+padding.left_px = 4
+
+[widgets.button.icon]
+icon.weight = 400
+
+[widgets.button.mark]
+absent = true
+
+[widgets.button.values]
+gap_px = 6
+"""
+# a line of FIELDS_PRESET removed (each scheme's), and the paths unstated_fields() then gives
+FIELDS_CASES = [
+    ("width_px = 2", [("tokens", "focus", "width")]),
+    ("padding.left_px = 4", [("widgets", "button", "body", "padding", "left")]),
+    ("gap_px = 6", [("widgets", "button", "values", "gap")]),
+    ('"widgets.button.icon.icon.size_px" = "U2"', [("widgets", "button", "icon", "icon", "size")]),
+    ('"tokens.text.keyed.title.weight" = "U1"', [("tokens", "text", "keyed", "title", "weight")]),
+    ("absent = true", [("widgets", "button", "mark", "fill")]),
+    ("accent_ramp = {}", [("colors", "light", "global", "accent_ramp"), ("colors", "dark", "global", "accent_ramp")]),
+    ('surface_sets = ["window", "view"]', [("colors", "light", "surfaces", "selection"),
+                                          ("colors", "dark", "surfaces", "selection")]),
+    ('disabled.background = "#eeeeee"', [("colors", "light", "surfaces", "window", "disabled"),
+                                         ("colors", "dark", "surfaces", "window", "disabled")]),
+]
+
+
 def fixture_context(root: Path):
     return check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
                                sources_text=check_facts.SELF_TEST_SOURCES, rows=check_facts.SELF_TEST_ROWS)
@@ -2707,6 +3110,22 @@ def self_test() -> int:
     if (delay.header, delay.dotted, delay.value, back_value(delay, delay.value)) != (
             ("params",), ("pointer_repeat", "delay"), 500, "500ms"):
         failures.append(f"a keyed param's unit literal: {delay.header} {delay.dotted} {delay.value!r}")
+    # a key's files (S17 *Which fact applies*): an accent-run fact applies in the accent run alone (S17 *The accent
+    # run*), so its file is none of the key's; two files of the preset's own run are
+    def in_file(key, file, **run):
+        f = param("x", "y", "#ffffff")
+        f.key, f.ckey, f.item.file = key, tuple(key.split(".")), file
+        f.item.data.update(run)
+        return f
+
+    accent = {"scheme_file": "breeze@6.8.2 colors/BreezeLight.colors", "accent": "#e5a50a"}
+    got = key_files([in_file("role.window.background", "roles.toml"),
+                     in_file("role.window.background", "accent.toml", **accent),
+                     in_file("role.view.background", "roles.toml"), in_file("role.view.background", "other.toml")])
+    want = {("role", "window", "background"): {"roles.toml"},
+            ("role", "view", "background"): {"roles.toml", "other.toml"}}
+    if got != want:
+        failures.append(f"key_files: {got}, expected {want}")
     # a set-whole block's leaves: whole in one base, or in one rule; split between a base and a rule, both left out
     def leaf(name, rel):
         return Fact(None, f"token.behavior.key_repeat.{name}", ("token", "behavior", "key_repeat", name), {}, "token",
@@ -2855,6 +3274,16 @@ def self_test() -> int:
                ("widgets.button.label", "U15")]:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
                         f"the scheme input's dark, the double click under a narrower rule and the label's presence")
+    # a part's base `absent = false` (`"present"`, S6.3) is a presence beneath its pending presence, and states none
+    # of its fields: the pending rendering mode is listed, and no field is reported as drawn again over it
+    drawn = [b if b[5] is not mode else b[:4] + (False, mode) for b in bases]
+    got = [(path, uid) for path, uid, _ in pending_table(None, [mode, icon], drawn, repeat_block)]
+    if got != [("widgets.button.icon.icon.rendering_mode", "U9")]:
+        failures.append(f"pending_table under a drawn part's base: {got}, expected the icon's rendering mode alone")
+    present = any_fact("button.icon", "", "widget", {"states": ["checked"]}, widget="button", status="rule")
+    present.item.data = {"value": "present"}
+    if redrawn_pending([mode, present], drawn):
+        failures.append("redrawn_pending: a field reported under a drawn part's base")
     # macOS's icon-only padding: a pending fact under a variant whose elements take every size has one earlier rule
     # per size beneath it at each, so it lists nothing; one under a variant whose entry takes no size, or a model
     # whose variant sets give one of its elements such a variant, is listed
@@ -3007,6 +3436,51 @@ def self_test() -> int:
     for when, d, groups, recency, want in HOLDS_CASES:
         if holds(when, combo(d), groups, recency) != want:
             failures.append(f"holds({when}, {d}): not {want}")
+    # the model's fields a preset leaves unstated: none where it states each, the field where one line is gone; the
+    # sources' tests, comments and attributes are no model
+    with tempfile.TemporaryDirectory() as tmp:
+        write(Path(tmp), MODEL_FILES)
+        try:
+            model = read_model(Path(tmp))
+            got = (sorted(model.widgets["button"][0].items()), model.widgets["button"][1], model.structs["Sides"][0],
+                   unstated_fields(model, FIELDS_PRESET))
+        except (KeyError, InputError) as err:
+            got = repr(err)
+        want = ([("body", ["fill", "padding"]), ("icon", ["icon"]), ("mark", ["fill"])], "ButtonValues", ("T",), [])
+        if got != want:
+            failures.append(f"read_model and unstated_fields over the fixture model: {got}, expected {want}")
+        for line, want in FIELDS_CASES if got == want else []:
+            text = FIELDS_PRESET.replace(line + "\n", "")
+            got = unstated_fields(model, text) if text != FIELDS_PRESET else f"no line {line!r}"
+            if got != want:
+                failures.append(f"unstated_fields without {line!r}: {got}, expected {want}")
+        if field_lines(Model({}, {}, set(), Path("next")), None, "") != [
+                "# unstated model fields: no model sources in next"]:
+            failures.append("field_lines without a model: not said")
+    # each unstated path grouped by the facts there: none (the accent run's counting none), conditional ones, one at
+    # rest that gives no base
+    def near(key, kind, when=None, status="rule", reason="", **data):
+        f = Fact(_Item("") if "pending" in data else None, key, tuple(key.split(".")), when or {}, kind, None, None,
+                 None, status=status, reason=reason)
+        if f.item is None:
+            f.item = _Item("")
+            f.item.data = {"value": 1, **data}
+        else:
+            f.item.data = data
+        return f
+
+    facts = [near("token.focus.width", "token", {"states": ["hover"]}),
+             near("role.global.accent", "role", status=LEFT_OUT, reason=READ),
+             near("role.global.scrim", "role", status=LEFT_OUT, reason=ACCENT_RUN, scheme_file="kde x", accent="#000"),
+             near("token.text.keyed.title.weight", "token", status=PENDING, pending="U1")]
+    got = field_groups(facts, [("tokens", "focus", "width"), ("colors", "dark", "global", "accent"),
+                               ("colors", "light", "global", "scrim"), ("tokens", "text", "keyed")])
+    want = [(ONLY_CONDITIONAL, ("tokens", "focus", "width"), 1, 0, {}),
+            (BASE_EXISTS, ("colors", "dark", "global", "accent"), 1, 0, {f"{LEFT_OUT}: {READ}": 1}),
+            (NO_FACT, ("colors", "light", "global", "scrim"), 0, 0, {}),
+            (BASE_EXISTS, ("tokens", "text", "keyed"), 0, 1, {PENDING: 1})]
+    if got != want:
+        failures.append(f"field_groups: {got}, expected {want}")
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "fixture"
         write(root, SELF_TEST_FILES)
@@ -3133,6 +3607,20 @@ def self_test() -> int:
         if (pending_trip.mismatches or '"declare.widget.button.default_size" = "U9"' not in pending_text
                 or "default_size" in declared):
             failures.append(f"a pending default size: {pending_trip}, [declare.widget.button] {declared!r}")
+        # a part drawn again over its absence (S17: `value = "present"`, S6.3's `absent = false`): a rule of its own,
+        # read back as `present`
+        root = Path(tmp) / "present"
+        write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": SELF_TEST_FILES["docs/facts/gnome/button.toml"]
+                     + _fact("button.mark", '"present"', '{ variants = ["@pill"], states = ["hover"] }')})
+        present_draft, present_text, present_trip, _ = generate(fixture_context(root), "adwaita")
+        redrawn = [(f.status, f.reason) for f in present_draft.facts if f.item.data.get("value") == "present"]
+        rule = ('[[rules]]\nwhen = { variants = ["@pill"], states = ["hover"] }\ntarget = "button.mark"\n\n'
+                '[rules.set]\n'
+                f'# docs/facts/gnome/button.toml:{SELF_TEST_FILES["docs/facts/gnome/button.toml"].count(chr(10)) + 2}\n'
+                'absent = false\n')
+        if present_trip.mismatches or redrawn != [("rule", "")] or rule not in present_text:
+            failures.append(f"a `present` fact: {redrawn}, round trip {present_trip}, its rule written "
+                            f"{rule in present_text}")
         # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here) and says so,
         # over a committed preset the new text differs from; it writes the preset where it finds none
         root = Path(tmp) / "mismatch"
@@ -3225,12 +3713,21 @@ def run(ctx, preset: str, mode, out) -> int:
     """main() over the facts `ctx` reads: the preset generated and, by `mode`, printed, written to `out`, written
     over the bundled preset (`--write`; nothing where the round trip finds a mismatch) or compared with it
     (`--check`); its exit code."""
+    unread = None
     try:
         draft, text, trip, units = generate(ctx, preset)
+        path = ctx.root / check_facts.preset_dir(ctx.root) / f"{preset}.toml"
+        committed = path.read_text(encoding="utf-8") if path.exists() else None
         if mode in ("--write", "--check"):
-            path = ctx.root / check_facts.preset_dir(ctx.root) / f"{preset}.toml"
-            committed = path.read_text(encoding="utf-8") if path.exists() else None
             text = carried(text, committed)
+            written = text
+        else:
+            try:
+                written = carried(text, committed)
+            except InputError as err:
+                written, unread = text, err
+        model = read_model(ctx.root)
+        fields = field_lines(model, draft, written)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
@@ -3246,6 +3743,10 @@ def run(ctx, preset: str, mode, out) -> int:
               f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
         return 1
     for line in share_lines(draft, units, trip):
+        print(line, file=sys.stderr)
+    if unread is not None:
+        print(f"# the bundled preset's hand-written parts not read for the fields below: {unread}", file=sys.stderr)
+    for line in fields:
         print(line, file=sys.stderr)
     for m in trip.mismatches:
         print(f"round trip: {m}", file=sys.stderr)

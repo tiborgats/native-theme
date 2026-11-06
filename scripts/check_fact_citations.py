@@ -10,10 +10,11 @@ Run from the repository root:
     python3 scripts/check_fact_citations.py [--cache DIR]
     python3 scripts/check_fact_citations.py --self-test
 
-It prints one line per finding, `<file>:<line>: <what>`, a `# sdk:` line per citation of an SDK header, and a summary
-line with the counts (on stderr). Exit 0 when there is no finding, 1 when there are some, 2 when the source cache
-is missing, an input cannot be read or the command line is wrong. The full run of scripts/check_release.sh needs the
-cache; its `--commit` mode skips this check, by name, only when the cache folder is absent.
+It prints one line per finding, `<file>:<line>: <what>`, a `# sdk:` line per citation of an SDK header with no local
+copy (below), and a summary line with the counts (on stderr). Exit 0 when there is no finding, 1 when there are some, 2
+when the source cache is missing, an input cannot be read or the command line is wrong. The full run of
+scripts/check_release.sh needs the cache; its `--commit` mode skips this check, by name, only when the cache folder is
+absent.
 
 Checks, per `published` and `read` citation (of a fact, a palette fact or a state-model entry):
 
@@ -25,8 +26,15 @@ Checks, per `published` and `read` citation (of a fact, a palette fact or a stat
   longer identifier: letters, digits and `_`, and in `css` `-` too), so `NSRefreshControl` does not hold
   `RefreshControl`; `absent = []` (S17 *Absence*: the platform has no name for it) leaves the quote check of the
   cited definition only;
-- a citation of an `sdk` entry (`xcode@…`) is not checked here: it is listed (`# sdk:`), as `os-probe.yml`'s macOS job
-  checks it at that Xcode; a `distribution` entry is never cited (S17).
+- a citation of an `sdk` entry (`xcode@…`) is checked as a cached file is, quote and `absent`, against the entry's
+  local copy of that Xcode's headers: `<cache>/<id>/<F>/<file>` for a path `…/<F>.framework/Headers/<file>`, where the
+  copy's own record, `<cache>/<id>/xcode.txt` (`<F> headers: <the SDK path it was copied from>`, written by
+  os-probe.yml's macOS job), names that framework folder of that SDK, so a framework both SDKs hold (AVKit, QuartzCore:
+  copied from MacOSX.sdk) never stands for the other SDK's (sdk_file()). Where no copy holds it (no folder in the cache,
+  another SDK's framework, a path into no `Headers`), the citation is listed (`# sdk:`) and not checked, so a machine
+  without the copies still passes; a file missing from a copy that holds its framework is a finding. Nothing in CI
+  reads the SDK citations: the copies are put in the cache by hand from the job's artifact (scripts/update_sources.sh
+  --verify checks them against xcode.txt). A `distribution` entry is never cited (S17).
 
 Per fact, the quote check (S17 *The quote check*): for each generation the fact covers that its `published` or `read`
 citations serve (served_generations: its `preset:` generation, or each generation of its directory its citations'
@@ -1119,6 +1127,10 @@ def gtk_css_list_problems(item, durations: dict) -> list:
     return out
 
 
+# an SDK header copy's record in its xcode.txt: the framework's folder and the SDK folder it was copied from
+SDK_COPY_RX = re.compile(r"^(\w+) headers: (\S.*?)\s*$", re.M)
+
+
 class Run:
     def __init__(self, ctx, cache: Path, committed=None, check_heads=True):
         self.ctx = ctx
@@ -1128,9 +1140,10 @@ class Run:
         self._heads = {}
         self._evidence = {}   # path -> its parsed document or EvidenceError (evidence_doc)
         self._lines = {}      # cited file -> its lines, or None where it cannot be read
+        self._sdk = {}        # SDK entry id -> its copies (sdk_copies)
         self.findings = []
-        self.sdk = []
-        self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0}
+        self.sdk = []         # the SDK citations with no local copy, listed
+        self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0, "sdk": 0}
 
     def git_files(self):
         try:
@@ -1177,8 +1190,34 @@ class Run:
             return all(isinstance(g, str) and g.startswith(APPLE_PRESETS) for g in gens)
         return entry.get("kind") == "snapshot" and str(entry.get("site", "")).startswith(APPLE_SITES)
 
+    def sdk_copies(self, sid) -> list:
+        """[(the SDK folder a framework's copy came from, the copy's folder)] of an SDK entry's cache folder, as its
+        xcode.txt records them (`<F> headers: <path>`), each copy's folder present; none without the file."""
+        if sid not in self._sdk:
+            try:
+                text = (self.cache / sid / "xcode.txt").read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                text = ""
+            self._sdk[sid] = [(m.group(2).rstrip("/"), m.group(1)) for m in SDK_COPY_RX.finditer(text)
+                              if (self.cache / sid / m.group(1)).is_dir()]
+        return self._sdk[sid]
+
+    def sdk_file(self, sid, path):
+        """The local copy of the SDK header a citation's path names, `<cache>/<id>/<F>/<file>` for
+        `…/<F>.framework/Headers/<file>`, the copy whose recorded SDK folder the path's folder ends (so AVKit's
+        MacOSX.sdk copy never stands for iPhoneSimulator.sdk's AVKit); None where no copy holds it."""
+        head, sep, rest = path.partition(".framework/Headers/")
+        if not sep or not rest or ".." in rest.split("/"):
+            return None
+        folder = head + ".framework/Headers"
+        for recorded, copy in self.sdk_copies(sid):
+            if recorded == folder or recorded.endswith("/" + folder):
+                return self.cache / sid / copy / rest
+        return None
+
     def cited_text(self, item, cite):
-        """The text the citation's source names, or None (a finding added, or an SDK citation listed)."""
+        """The text the citation's source names, or None (a finding added, or an SDK citation with no local copy
+        listed)."""
         c = cite.data
         src = check_facts.parse_source(c.get("source"))
         if not src or src[0] not in self.ctx.sources:
@@ -1186,9 +1225,13 @@ class Run:
         sid, path, l1, l2, pointer = src
         entry = self.ctx.sources[sid]
         kind = entry.get("kind")
+        local = None
         if kind == "sdk":
-            self.sdk.append((item.file, cite.line, c["source"]))
-            return None
+            local = self.sdk_file(sid, path) if pointer is None else None
+            if local is None:
+                self.sdk.append((item.file, cite.line, c["source"]))
+                return None
+            self.counts["sdk"] += 1
         if kind == "distribution":
             self.add(item.file, cite.ln("source"), f"{sid} is a distribution snapshot, which no citation names")
             return None
@@ -1216,7 +1259,7 @@ class Run:
                 self.add(item.file, cite.ln("source"), f"{c['source']}: the pointer names no string")
                 return None
             return v, "text"
-        f = base / path
+        f = local or base / path
         if f not in self._lines:
             try:
                 self._lines[f] = f.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -1520,7 +1563,8 @@ class Run:
         vacuous = "no facts yet: " if not items else ""
         return (f"{vacuous}{facts} facts, {models} state-model entries, {palette} palette facts: {n['quotes']} quotes "
                 f"checked at their pins, {n['generations']} literal checks per generation, {n['measured']} measured "
-                f"citations, {len(self.sdk)} SDK citations left to os-probe.yml's macOS job; {n['evidence']} evidence "
+                f"citations, {n['sdk']} SDK citations checked at their Xcode's local headers, {len(self.sdk)} "
+                f"listed (no local copy); {n['evidence']} evidence "
                 f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings")
 
 
@@ -1694,6 +1738,16 @@ source = "microsoft-ui-xaml@2.5.1 controls/dev/CommonStyles/Button_themeresource
 quote = '<Setter Property="FocusVisualMargin" Value="-3" />'
 conversion = ["negate"]
 ''',
+    # xcode@26.6's local headers (xcode.txt's record names each copy's SDK): NSScrollView.h is checked, the
+    # xcode@16.4 citations have no copy and are listed
+    "cache/xcode@26.6/xcode.txt": "xcode-select -p: /Applications/Xcode_26.6.app/Contents/Developer\n" + "".join(
+        f"{f} headers: /Applications/Xcode_26.6.app/Contents/Developer/Platforms/{s}.platform/Developer/SDKs/{s}.sdk/"
+        f"System/Library/Frameworks/{f}.framework/Headers\n" for f, s in (
+            ("AppKit", "MacOSX"), ("AVKit", "MacOSX"), ("UIKit", "iPhoneSimulator"))) + f"{'0' * 64}  AppKit/x.h\n",
+    "cache/xcode@26.6/AppKit/NSScrollView.h": "\n" * 19
+                                              + "@interface NSScrollView : NSView <NSTextFinderBarContainer>\n"
+                                              + "\n" * 100,
+    "cache/xcode@26.6/AVKit/AVPlayerView.h": "@interface AVPlayerView : NSView\n",
     "cache/hig-typography@2026-10-29/page.json": '{"sections": [{"text": "Large Title 26 pt"}, '
                                                  '{"text": "The   Body 17 pt style."}, {"text": "weight 590"}]}',
     "cache/libadwaita@1.10.0/src/stylesheet/widgets/_buttons.scss": "\n" * 9 + "  &:hover {\n"
@@ -1819,6 +1873,19 @@ _PASSES = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/passes.toml
 # (label, file, old, new, wanted findings as substrings, one per finding); old None: the file is replaced by new (None:
 # removed); old a list of (old, new) pairs: each replaced
 SELF_TEST_CASES = [
+    # an SDK citation checked at its Xcode's local header copy: its quote and its absent names
+    ("SDK: a quote not in the local copy", "docs/facts/macos/state-models.toml",
+     'quote = "@interface NSScrollView : NSView <NSTextFinderBarContainer>"',
+     'quote = "@interface NSScrollView : NSControl"',
+     ["the quote is not in xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/"
+      "AppKit.framework/Headers/NSScrollView.h:20-120 at the pin"]),
+    ("SDK: an absent name in the local copy", "cache/xcode@26.6/AppKit/NSScrollView.h",
+     "<NSTextFinderBarContainer>\n", "<NSTextFinderBarContainer>\n@property NSRefreshControl *refreshControl;\n",
+     ["absent name 'refreshControl' occurs", "absent name 'NSRefreshControl' occurs"]),
+    ("SDK: a header missing from a copy", "docs/facts/macos/state-models.toml",
+     "AppKit.framework/Headers/NSScrollView.h:20-120", "AppKit.framework/Headers/NSScrollerView.h:20-120",
+     ["xcode@26.6: no file MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/"
+      "Headers/NSScrollerView.h at the pin"]),
     # a GtkCss list naming several curves follows the stylesheet's CSS list item by item (S2.7, S17; ADD-A131)
     ("GtkCss: the list in another order", "docs/facts/gnome/sheet.toml", _SHEET_TRS,
      _SHEET_TRS.replace("timings.ease_out", "timings.@").replace("timings.ease\"", "timings.ease_out\"").replace(
@@ -2337,8 +2404,20 @@ def self_test() -> int:
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
             if label == "good":
-                if len(run.sdk) != 3 or run.counts["legacy"] != 1 or run.counts["measured"] != 8:
+                if (len(run.sdk), run.counts["sdk"], run.counts["legacy"], run.counts["measured"]) != (2, 1, 1, 8):
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
+                # a framework both SDKs hold maps to the copy of the SDK its xcode.txt names, never the other's
+                sdks = "{p}.platform/Developer/SDKs/{p}.sdk/System/Library/Frameworks/{f}.framework/Headers/{h}"
+                for sid, path, want in (
+                        ("xcode@26.6", sdks.format(p="MacOSX", f="AVKit", h="AVPlayerView.h"), "AVKit/AVPlayerView.h"),
+                        ("xcode@26.6", sdks.format(p="iPhoneSimulator", f="AVKit", h="AVPlayerView.h"), None),
+                        ("xcode@26.6", sdks.format(p="iPhoneSimulator", f="UIKit", h="UIButton.h"), None),
+                        ("xcode@26.6", sdks.format(p="MacOSX", f="AppKit", h="../AVKit/AVPlayerView.h"), None),
+                        ("xcode@26.6", "MacOSX.platform/Developer/SDKs/MacOSX.sdk/fixture.h", None),
+                        ("xcode@16.4", sdks.format(p="MacOSX", f="AppKit", h="NSButton.h"), None)):
+                    got = run.sdk_file(sid, path)
+                    if got != (root / "cache" / sid / want if want else None):
+                        failures.append(f"sdk_file({sid!r}, {path!r}): {got}, want {want}")
         # the quote check does not depend on the presets that exist: none exist, a wrong literal still fails
         root = base / "case0"
         for f in (root / check_facts.preset_dir(root)).glob("*.toml"):
@@ -2416,7 +2495,7 @@ def main(argv) -> int:
     for f, ln, what in run.findings:
         print(f"{f}:{ln}: {what}")
     for f, ln, src in run.sdk:
-        print(f"# sdk: {f}:{ln}: {src} (os-probe.yml's macOS job checks it at that Xcode)")
+        print(f"# sdk: {f}:{ln}: {src} (no local copy of that header: not checked)")
     print(run.summary(items), file=sys.stderr)
     return 1 if run.findings else 0
 

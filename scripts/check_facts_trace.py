@@ -14,7 +14,12 @@ Run from the repository root:
     python3 scripts/check_facts_trace.py --enabled       # the enabled units (check_release.sh's step, from M1a)
     python3 scripts/check_facts_trace.py --unit <unit>   # one unit (M3's per-unit gate)
     python3 scripts/check_facts_trace.py                 # every trace line, whatever its target (M4's gate)
+    python3 scripts/check_facts_trace.py --enabled --preset kde-breeze   # as if kde-breeze's preset existed
     python3 scripts/check_facts_trace.py --self-test
+
+`--preset <id>` (repeatable, beside any of the first three) checks a preset of check_facts.PLATFORMS as if it
+existed: its platform's lines are findings as they would be once the preset is bundled, so a facts lane sees them
+before the preset task writes the file; the report marks the preset `(assumed)`. An unknown id is exit 2.
 
 It prints one line per finding, tab-separated (the platform, the row ID, the target, what is wrong), informational
 lines starting `# ` (per platform: its presets, how many of the checked trace lines and rows the facts already carry),
@@ -24,14 +29,14 @@ an unknown unit or a wrong command line.
 The rule
 --------
 A trace line (row, target, kind) is checked when its row is live (a row of the gap map's Appendix A that is not
-withdrawn; a line naming anything else is check_spec_trace.py's finding and is skipped here), its platform has a
-preset that exists (the facts gate checks the presets that exist; no preset, nothing is asked of that platform), and
-its target lies in a checked unit (with no option, every target). It passes when its kind is a verdict (S20:
-`out (R1.1)` … `readers (R18)`: the line carries a verdict), or when a fact or a state-model entry of the platform's
-facts directory lists its row in `rows` (S17: `rows` lists the gap-map rows the fact carries) and carries that line:
-each line of a row is counted separately (the ledger's queue #58), so a role fact naming a row carries the row's role
-line and not its `list.disclosure` or `keycap` lines. A fact (a pending fact too) carries a line when its `key` (a
-state-model entry: its `widget`) and one of the line's target paths (below; a `[declare.widget.<w>]` or
+withdrawn; a line naming anything else is check_spec_trace.py's finding and is skipped here), its platform has a preset
+that exists (the facts gate checks the presets that exist; no preset, nothing is asked of that platform; one `--preset`
+names counts as existing), and its target lies in a checked unit (with no option, every target). It passes when its kind
+is a verdict (S20: `out (R1.1)` … `readers (R18)`: the line carries a verdict), or when a fact or a state-model entry of
+the platform's facts directory lists its row in `rows` (S17: `rows` lists the gap-map rows the fact carries) and carries
+that line: each line of a row is counted separately (the ledger's queue #58), so a role fact naming a row carries the
+row's role line and not its `list.disclosure` or `keycap` lines. A fact (a pending fact too) carries a line when its
+`key` (a state-model entry: its `widget`) and one of the line's target paths (below; a `[declare.widget.<w>]` or
 `[declare.component.<k>]` head, a flavour's `[declare.flavor.<f>.widget.<w>]` too, names `<w>` or `component.<k>`:
 `[declare.flavor.expressive.widget.button] sizes_by_variant: @fab default_size regular`, ADD-A131) are related, one a
 leading part of the other segment by segment, a unit suffix ignored (`button.body.stroke.top.paint` carries
@@ -40,8 +45,8 @@ struct's field (`FocusIndicator.offset`, `PartStyle.cursor`, an UpperCamel head)
 through that struct to that field (key_types: `token.focus.width` and `button.body.focus.width` both carry
 `FocusIndicator.width`). A key's segments are read as check_facts.key_segments reads them, a quoted one whole
 (`token.text.fallbacks.per_family.".AppleSystemUIFont"` ends in one segment; S17, ADD-A123). A line whose target names
-no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The rows
-are compared as the gap maps write them, `†` included.
+no model path (a reader's `reader:…`, a `<widget>` placeholder) is carried by any fact or entry of its row. The rows are
+compared as the gap maps write them, `†` included.
 
 Where a target lies (target_paths): the target cell up to its first backtick (the code span; what follows is a note),
 cut at its selector (` @ `), split at commas outside braces into items; each item's leading dotted path, its brace
@@ -72,6 +77,8 @@ by the same rule (`native-theme/tests/facts_gate/units.rs`).
 
     python3 scripts/check_facts_trace.py --self-test   # each rule on fixture gap maps, traces, facts and units
 """
+import contextlib
+import io
 import re
 import sys
 import tempfile
@@ -363,12 +370,13 @@ def line_carried(ctx, line: Line, keys) -> bool:
     return False
 
 
-def check(ctx, units, enabled=()):
+def check(ctx, units, enabled=(), assumed=()):
     """(findings as (platform, row, target, what), {platform: Tally}, {platform: existing presets}).
-    `units` None checks every line; `enabled` are the other enabled units (a context widget may lie there)."""
+    `units` None checks every line; `enabled` are the other enabled units (a context widget may lie there);
+    `assumed` the presets checked as if they existed (`--preset`)."""
     lines = read_lines(ctx.root)
     carried = carried_rows(ctx)
-    existing = check_facts.existing_presets(ctx.root)
+    existing = check_facts.existing_presets(ctx.root) | set(assumed)
     widgets = set(ctx.entries)
     presets = {p: sorted(set(ps) & existing) for p, ps in check_facts.PLATFORMS.items()}
     findings, tallies = [], {p: Tally() for p in check_facts.PLATFORMS}
@@ -393,10 +401,11 @@ def check(ctx, units, enabled=()):
     return findings, tallies, presets
 
 
-def report(tallies, presets, scope):
+def report(tallies, presets, scope, assumed=()):
     out = []
     for p, t in tallies.items():
-        state = f"{', '.join(presets[p])} exist{'s' if len(presets[p]) == 1 else ''}" if presets[p] else \
+        named = [f"{x} (assumed)" if x in assumed else x for x in presets[p]]
+        state = f"{', '.join(named)} exist{'s' if len(presets[p]) == 1 else ''}" if presets[p] else \
             f"no preset exists ({', '.join(check_facts.PLATFORMS[p])}): not checked"
         out.append(f"{p} ({state}): {t.lines} {scope} trace lines over {len(t.rows)} rows; facts carry {t.carried} "
                    f"lines ({len(t.carried_rows)} rows), {t.verdicts} verdict lines, {t.open} lines "
@@ -553,7 +562,7 @@ def self_test() -> int:
         base = Path(tmp)
         n = [0]
 
-        def run(presets=(), units=SELF_TEST_UNITS, unit=None, extra=None, every=False, switched=False):
+        def run(presets=(), units=SELF_TEST_UNITS, unit=None, extra=None, every=False, switched=False, assumed=()):
             root = base / f"case{n[0]}"
             n[0] += 1
             write_fixture(root, presets, units, extra, switched)
@@ -561,7 +570,7 @@ def self_test() -> int:
             known = read_units(root)
             chosen = None if every else ([known[unit]] if unit else list(known.values()))
             others = [u for k, u in known.items() if unit and k != unit]
-            found, tallies, pre = check(ctx, chosen, others)
+            found, tallies, pre = check(ctx, chosen, others, assumed)
             return [(p, r, w) for p, r, _, w in found], tallies, pre
 
         def rows_of(found):
@@ -581,6 +590,15 @@ def self_test() -> int:
         want = [("gnome", "GN-1.3"), ("gnome", "GN-1.5"), ("gnome", "GN-1.9†")]
         if rows_of(found) != want or len(found) != 3:
             failures.append(f"adwaita, slice: got {found}, want rows {want}, one finding per line")
+        # --preset: a preset that does not exist checked as if it did, the report saying so
+        found, tallies, pre = run(assumed=("adwaita",))
+        line = report(tallies, pre, "slice", ("adwaita",))[0]
+        if rows_of(found) != want or len(found) != 3 or not line.startswith("gnome (adwaita (assumed) exists): 5 "):
+            failures.append(f"--preset adwaita: got {found}, {line!r}")
+        with contextlib.redirect_stderr(io.StringIO()):
+            if main(["check_facts_trace.py", "--preset", "no-such-preset"]) != 2 or main(
+                    ["check_facts_trace.py", "--preset"]) != 2 or main(["check_facts_trace.py", "--unit"]) != 2:
+                failures.append("--preset: an unknown preset or a wrong command line is not exit 2")
         # after the switch the presets are native-theme/src/presets/'s, and a preset left under next/ is not read
         found, _, _ = run(presets=("adwaita",), switched=True)
         if rows_of(found) != want or len(found) != 3:
@@ -715,8 +733,21 @@ def main(argv) -> int:
     args = argv[1:]
     if args == ["--self-test"]:
         return self_test()
+    assumed, rest = [], []
+    while args:
+        a = args.pop(0)
+        if a == "--preset" and args:
+            assumed.append(args.pop(0))
+        else:
+            rest.append(a)
+    args = rest
     if args not in ([], ["--enabled"]) and not (len(args) == 2 and args[0] == "--unit"):
         print(__doc__, file=sys.stderr)
+        return 2
+    unknown = [p for p in assumed if p not in check_facts.ALL_PRESETS]
+    if unknown:
+        print(f"error: unknown preset {', '.join(unknown)} (presets: {', '.join(check_facts.ALL_PRESETS)})",
+              file=sys.stderr)
         return 2
     try:
         known = read_units(Path("."))
@@ -732,7 +763,7 @@ def main(argv) -> int:
             print(f"error: unknown unit `{args[1]}` (units: {', '.join(known)})", file=sys.stderr)
             return 2
         ctx = check_facts.Context(Path("."))
-        findings, tallies, presets = check(ctx, units, others)
+        findings, tallies, presets = check(ctx, units, others, assumed)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
@@ -740,7 +771,7 @@ def main(argv) -> int:
         print(f"{platform}\t{row}\t{target}\t{what}")
     if units is not None:
         print(f"# units: {', '.join(u.name for u in units)}")
-    for line in report(tallies, presets, scope):
+    for line in report(tallies, presets, scope, assumed):
         print(f"# {line}")
     print(summary(findings, tallies, presets, scope), file=sys.stderr)
     return 1 if findings else 0
