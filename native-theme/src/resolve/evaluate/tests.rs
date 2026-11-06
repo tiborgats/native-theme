@@ -412,6 +412,107 @@ fn functions_evaluate_over_read_operands() {
     );
 }
 
+/// Synthetic KDE tokens (S4.8): each effect and amount a value no other
+/// group shares, the inactive effects on, the selection switch `change`.
+fn kde_tokens(change: bool) -> String {
+    format!(
+        r##"[tokens.kde]
+disabled = {{ intensity = "darken", intensity_amount = 0.3, color = "fade", color_amount = 0.1, color_color = "#204060", contrast = "tint", contrast_amount = 0.5 }}
+inactive = {{ intensity = "shade", intensity_amount = 0.2, color = "tint", color_amount = 0.4, color_color = "#605040", contrast = "fade", contrast_amount = 0.6 }}
+inactive_enabled = true
+inactive_change_selection_color = {change}
+tint_factor = "none"
+titlebar_is_accent_colored = false
+"##
+    )
+}
+
+/// `kde_effects` and `kde_selection_inactive` read `token.kde` themselves
+/// (S2.2, S4.8): each call is its function over the explicit operands and
+/// the tokens as the theme resolves them, a group's effects its own.
+#[test]
+fn kde_functions_read_their_tokens() {
+    use crate::platform::kde_effects::{KdeGroupEffects, kde_effects};
+    use crate::platform::kde_selection_inactive::kde_selection_inactive;
+    use crate::tokens::{
+        KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind,
+    };
+    let channels = |c: Color| [c.r, c.g, c.b, c.a];
+    let colour = |[r, g, b, a]: [f32; 4]| Some(Val::Color(Color { r, g, b, a }));
+    let (fg, bg) = (
+        channels(rgb(0x10, 0x20, 0x30)),
+        channels(rgb(0xf0, 0xf0, 0xf0)),
+    );
+    let button = channels(rgb(0xe0, 0xe0, 0xe0));
+    let kde = kde_tokens(true);
+    let theme = resolved(&[BASE, &kde], 1.0);
+    assert_eq!(
+        operand(&theme, "token.kde.inactive.intensity"),
+        Some(Val::Name(Name::Variant(Key::new("shade").unwrap())))
+    );
+    let inactive = KdeGroupEffects {
+        intensity: KdeIntensityEffect::Shade,
+        intensity_amount: 0.2,
+        color: KdeColorEffect::Tint,
+        color_amount: 0.4,
+        color_color: channels(rgb(0x60, 0x50, 0x40)),
+        contrast: KdeContrastEffect::Fade,
+        contrast_amount: 0.6,
+    };
+    let disabled = KdeGroupEffects {
+        intensity: KdeIntensityEffect::Darken,
+        intensity_amount: 0.3,
+        color: KdeColorEffect::Fade,
+        color_amount: 0.1,
+        color_color: channels(rgb(0x20, 0x40, 0x60)),
+        contrast: KdeContrastEffect::Tint,
+        contrast_amount: 0.5,
+    };
+    let effects = |group, kind, effects: &KdeGroupEffects| {
+        colour(kde_effects(fg, bg, group, kind, effects, true))
+    };
+    assert_eq!(
+        call(
+            &theme,
+            "kde_effects(role.window.foreground, role.window.background, inactive, foreground)",
+            Ty::Color
+        ),
+        effects(KdeGroup::Inactive, KdeRoleKind::Foreground, &inactive)
+    );
+    assert_eq!(
+        call(
+            &theme,
+            "kde_effects(role.window.foreground, role.window.background, disabled, background)",
+            Ty::Color
+        ),
+        effects(KdeGroup::Disabled, KdeRoleKind::Background, &disabled)
+    );
+    let selection = "kde_selection_inactive(role.window.foreground, role.button.background, \
+                     role.window.background, background)";
+    assert_eq!(
+        call(&theme, selection, Ty::Color),
+        colour(kde_selection_inactive(
+            fg,
+            button,
+            bg,
+            KdeRoleKind::Background,
+            true
+        ))
+    );
+    let unchanged = kde_tokens(false);
+    let theme = resolved(&[BASE, &unchanged], 1.0);
+    assert_eq!(
+        call(&theme, selection, Ty::Color),
+        colour(kde_selection_inactive(
+            fg,
+            button,
+            bg,
+            KdeRoleKind::Background,
+            false
+        ))
+    );
+}
+
 /// S3.3's two steps: `surface.x` finds the nearest `Role { Surface(x) }` or
 /// `Surface(S)` binding, the part's own innermost, a `Surface(S)` answer
 /// then `role.S.x` walked again from the element outward, so a nearer

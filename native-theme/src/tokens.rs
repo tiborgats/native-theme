@@ -883,6 +883,10 @@ pub enum KdeGroup {
 }
 
 impl KdeGroup {
+    /// Every group, in declaration order.
+    pub(crate) const ALL: [KdeGroup; 3] =
+        [KdeGroup::Active, KdeGroup::Disabled, KdeGroup::Inactive];
+
     /// Every group's name, in declaration order, its variant in snake_case.
     pub(crate) const NAMES: [&'static str; 3] = ["active", "disabled", "inactive"];
 }
@@ -899,6 +903,13 @@ pub enum KdeRoleKind {
 }
 
 impl KdeRoleKind {
+    /// Every kind, in declaration order.
+    pub(crate) const ALL: [KdeRoleKind; 3] = [
+        KdeRoleKind::Foreground,
+        KdeRoleKind::Decoration,
+        KdeRoleKind::Background,
+    ];
+
     /// Every kind's name, in declaration order, its variant in snake_case.
     pub(crate) const NAMES: [&'static str; 3] = ["foreground", "decoration", "background"];
 }

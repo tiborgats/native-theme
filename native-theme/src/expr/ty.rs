@@ -1621,18 +1621,6 @@ mod tests {
                 Ty::Length,
                 Func::ShadowExtent,
             ),
-            // They read `token.kde` themselves, staged to M1b's tokens (the
-            // M1a design, decision 9).
-            (
-                "kde_effects(surface.foreground, role.window.background, inactive, foreground)",
-                Ty::Color,
-                Func::KdeEffects,
-            ),
-            (
-                "kde_selection_inactive(surface.foreground, #000000, #ffffff, background)",
-                Ty::Color,
-                Func::KdeSelectionInactive,
-            ),
         ] {
             assert_eq!(refused(text, ty), TypeError::NotImplemented(func), "{text}");
         }
@@ -1782,6 +1770,50 @@ mod tests {
         );
     }
 
+    #[test]
+    fn kde_effects_is_implemented() {
+        assert_eq!(
+            typed(
+                "kde_effects(surface.foreground, role.window.background, inactive, foreground)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused(
+                "kde_effects(surface.foreground, role.window.background, #000000, foreground)",
+                Ty::Color
+            ),
+            TypeError::Argument {
+                func: Func::KdeEffects,
+                index: 2,
+                expected: Ty::Enum(&KDE_GROUP),
+                found: Ty::Color
+            }
+        );
+    }
+
+    #[test]
+    fn kde_selection_inactive_is_implemented() {
+        assert_eq!(
+            typed(
+                "kde_selection_inactive(surface.foreground, #000000, #ffffff, background)",
+                Ty::Color
+            ),
+            Ty::Color
+        );
+        assert_eq!(
+            refused(
+                "kde_selection_inactive(surface.foreground, #000000, background)",
+                Ty::Color
+            ),
+            TypeError::Arity {
+                func: Func::KdeSelectionInactive,
+                found: 3
+            }
+        );
+    }
+
     /// Every string a fact's `value` holds, walked into its tables and
     /// arrays.
     fn value_strings<'v>(item: &'v toml::Value, out: &mut Vec<&'v str>) {
@@ -1804,24 +1836,64 @@ mod tests {
         })
     }
 
+    /// The facts' calls' operands, each a synthetic value of the type its
+    /// type environment gives the reference: a colour, a number, a bool, an
+    /// enum's first variant; `Absent` for any other.
+    struct Synthetic<'t>(&'t dyn TypeEnv);
+
+    impl crate::expr::Env for Synthetic<'_> {
+        fn get(&self, reference: &Ref) -> crate::expr::Val {
+            use crate::expr::Val;
+            match self.0.reference(reference) {
+                Some(Ty::Color) => Val::Color(crate::color::Color {
+                    r: 0.25,
+                    g: 0.5,
+                    b: 0.75,
+                    a: 1.0,
+                }),
+                Some(Ty::Number) => Val::Number(0.5),
+                Some(Ty::Bool) => Val::Bool(true),
+                Some(Ty::Enum(names)) => names
+                    .variants
+                    .first()
+                    .and_then(|first| Key::new(first).ok())
+                    .map_or(Val::Absent, |first| Val::Name(Name::Variant(first))),
+                _ => Val::Absent,
+            }
+        }
+
+        fn font_size(&self, size: crate::units::FontSize) -> crate::units::Px {
+            match size {
+                crate::units::FontSize::Pt(n) | crate::units::FontSize::Px(n) => {
+                    crate::units::Px(n)
+                }
+            }
+        }
+
+        fn font_dpi(&self) -> Option<f32> {
+            None
+        }
+    }
+
     /// The KDE facts' calls of the seven KDE colour functions
     /// (`docs/facts/kde`) type over the model's references, as a
-    /// `kde-breeze` preset states them: each call of the five implemented
-    /// ones to a colour; each of `kde_effects` and `kde_selection_inactive`,
-    /// which read `token.kde` themselves (staged to M1b's tokens, the M1a
-    /// design's decision 9), through its arguments to the function not
-    /// implemented yet. The params group `color` is the preset's to declare:
-    /// declared here with the keys the calls read, its unit a number's.
+    /// `kde-breeze` preset states them, each to a colour, and evaluate to an
+    /// opaque or translucent colour of finite channels over synthetic
+    /// operands, `kde_effects` and `kde_selection_inactive` reading
+    /// `token.kde` themselves. The params group `color` is the preset's to
+    /// declare: declared here with the keys the calls read, its unit a
+    /// number's.
     #[test]
     fn kde_facts_calls_type() {
-        const IMPLEMENTED: [&str; 5] = [
+        const KDE_FUNCTIONS: [&str; 7] = [
             "kcu_mix",
             "kcu_tint",
             "kcu_shade",
             "kcu_overlay",
             "kirigami_tint",
+            "kde_effects",
+            "kde_selection_inactive",
         ];
-        const READ_TOKEN_KDE: [&str; 2] = ["kde_effects", "kde_selection_inactive"];
         let decl = crate::declare::Declarations {
             params: vec![(
                 key!("color"),
@@ -1857,9 +1929,8 @@ mod tests {
                 let Some(text) = value.strip_prefix('=') else {
                     continue;
                 };
-                let called: Vec<&str> = IMPLEMENTED
+                let called: Vec<&str> = KDE_FUNCTIONS
                     .into_iter()
-                    .chain(READ_TOKEN_KDE)
                     .filter(|name| calls(text, name))
                     .collect();
                 if called.is_empty() {
@@ -1867,31 +1938,26 @@ mod tests {
                 }
                 let at = format!("{}: {text}", file.display());
                 let expr = Expr::parse(text.trim()).unwrap_or_else(|e| panic!("{at}: {e}"));
-                let checked = expr.check(&FieldType::new(Ty::Color, Bound::Unbounded), &env);
-                if called.iter().any(|name| READ_TOKEN_KDE.contains(name)) {
-                    assert!(
-                        matches!(
-                            checked,
-                            Err(TypeError::NotImplemented(
-                                Func::KdeEffects | Func::KdeSelectionInactive
-                            ))
-                        ),
-                        "{at}: {checked:?}"
-                    );
-                } else {
-                    assert_eq!(
-                        checked.map(|typed| typed.ty().clone()),
-                        Ok(Ty::Color),
-                        "{at}"
-                    );
-                }
+                let typed = expr
+                    .check(&FieldType::new(Ty::Color, Bound::Unbounded), &env)
+                    .unwrap_or_else(|e| panic!("{at}: {e}"));
+                assert_eq!(typed.ty(), &Ty::Color, "{at}");
+                let value = typed.eval(&Synthetic(&env));
+                assert!(
+                    matches!(&value, crate::expr::Val::Color(c)
+                        if [c.r, c.g, c.b, c.a].iter().all(|x| x.is_finite())),
+                    "{at}: {value:?}"
+                );
                 seen.extend(called);
             }
         }
-        for name in ["kcu_mix", "kcu_tint", "kirigami_tint"]
-            .into_iter()
-            .chain(READ_TOKEN_KDE)
-        {
+        for name in [
+            "kcu_mix",
+            "kcu_tint",
+            "kirigami_tint",
+            "kde_effects",
+            "kde_selection_inactive",
+        ] {
             assert!(seen.contains(&name), "no KDE fact calls {name}");
         }
     }

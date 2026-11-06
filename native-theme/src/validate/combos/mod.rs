@@ -1615,7 +1615,8 @@ fn is_metric_name(name: &str) -> bool {
     )
 }
 
-/// Every reference in `expr`, and whether it is a call's operand.
+/// Every reference in `expr`, the tokens its calls read themselves among
+/// them (S2.2), and whether it is a call's operand.
 fn operands(expr: &Expr) -> Vec<(&Ref, bool)> {
     let mut out = Vec::new();
     let mut pending = vec![(expr, false)];
@@ -1623,7 +1624,10 @@ fn operands(expr: &Expr) -> Vec<(&Ref, bool)> {
         match expr {
             Expr::Lit(_) => {}
             Expr::Ref(reference) => out.push((reference, in_call)),
-            Expr::Call(_, args) => pending.extend(args.iter().map(|arg| (arg, true))),
+            Expr::Call(func, args) => {
+                pending.extend(args.iter().map(|arg| (arg, true)));
+                out.extend(func.token_operands(args).iter().map(|token| (token, true)));
+            }
         }
     }
     out

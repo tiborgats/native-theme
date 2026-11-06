@@ -3,12 +3,15 @@
 
 use super::arith;
 use super::ty::{Bound, Node, Ty, TypedExpr};
-use super::{Func, Name, Ref};
+use super::{Func, KDE_EFFECT_FIELDS, Name, Ref, kde_group_tokens, kde_selection_tokens};
 use crate::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::color::Color;
+use crate::platform::kde_effects::KdeGroupEffects;
 use crate::platform::kde_shade::KdeShadeRole;
 use crate::platform::sf_tracking::TrackingDesign;
 use crate::selector::Scheme;
+use crate::tokens::{KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect};
+use crate::toml::read::Named;
 use crate::units::{Deg, FontSize, Ms, Px};
 
 /// An evaluated value.
@@ -98,6 +101,13 @@ pub(super) enum Platform {
     KcuShade,
     /// `kcu_tint(a, b, amount)`.
     KcuTint,
+    /// `kde_effects(c, background, group, role_kind)`, which reads the
+    /// group's `token.kde` effects itself.
+    KdeEffects,
+    /// `kde_selection_inactive(selection, window, selection_background,
+    /// role_kind)`, which reads `token.kde.inactive_change_selection_color`
+    /// itself.
+    KdeSelectionInactive,
     /// `kde_shade(c, role, contrast)`.
     KdeShade,
     /// `kirigami_lerp(a, b, balance)`.
@@ -118,6 +128,8 @@ impl Platform {
             Func::KcuOverlay => Some(Platform::KcuOverlay),
             Func::KcuShade => Some(Platform::KcuShade),
             Func::KcuTint => Some(Platform::KcuTint),
+            Func::KdeEffects => Some(Platform::KdeEffects),
+            Func::KdeSelectionInactive => Some(Platform::KdeSelectionInactive),
             Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             Func::KirigamiTint => Some(Platform::KirigamiTint),
@@ -176,6 +188,39 @@ impl Platform {
                     number_arg(2),
                 ),
             )),
+            // A group or kind of no variant (validation refuses it) leaves the
+            // colour as it is, as `kde_shade` does an unknown role.
+            Platform::KdeEffects => match (named::<KdeGroup>(arg(2)), named(arg(3))) {
+                (Some(group), Some(role_kind)) => {
+                    let (effects, inactive_enabled) = kde_group_effects(group, env);
+                    Val::Color(from_channels(crate::platform::kde_effects::kde_effects(
+                        color_arg(0),
+                        color_arg(1),
+                        group,
+                        role_kind,
+                        &effects,
+                        inactive_enabled,
+                    )))
+                }
+                _ => Val::Color(from_channels(color_arg(0))),
+            },
+            Platform::KdeSelectionInactive => match named(arg(3)) {
+                Some(role_kind) => {
+                    let change = kde_selection_tokens()
+                        .first()
+                        .is_some_and(|token| env.get(token) == Val::Bool(true));
+                    Val::Color(from_channels(
+                        crate::platform::kde_selection_inactive::kde_selection_inactive(
+                            color_arg(0),
+                            color_arg(1),
+                            color_arg(2),
+                            role_kind,
+                            change,
+                        ),
+                    ))
+                }
+                None => Val::Color(from_channels(color_arg(0))),
+            },
             Platform::KdeShade => {
                 let (c, role, contrast) = (arg(0), arg(1), arg(2));
                 let role = match role {
@@ -227,6 +272,37 @@ impl Platform {
             }
         }
     }
+}
+
+/// The variant an enum operand names; `None` for another value.
+fn named<T: Named>(value: Option<Val>) -> Option<T> {
+    match value {
+        Some(Val::Name(Name::Variant(name))) => T::from_name(name.as_str()),
+        _ => None,
+    }
+}
+
+/// `group`'s effects and whether they apply, from the tokens
+/// `kde_effects` reads itself ([`kde_group_tokens`]): a token that reads as
+/// no value of its type reads as zero, its effect as none, its colour as
+/// transparent and the switch as off, so evaluation stays total (S2.2's
+/// *Totality*; validation refuses an absent one, S12). The active group
+/// reads none.
+fn kde_group_effects(group: KdeGroup, env: &dyn Env) -> (KdeGroupEffects, bool) {
+    let tokens = kde_group_tokens(group);
+    let token = |index: usize| tokens.get(index).map(|token| env.get(token));
+    let amount = |index: usize| token(index).as_ref().map_or(0.0, number);
+    let effects = KdeGroupEffects {
+        intensity: named(token(0)).unwrap_or(KdeIntensityEffect::None),
+        intensity_amount: amount(1),
+        color: named(token(2)).unwrap_or(KdeColorEffect::None),
+        color_amount: amount(3),
+        color_color: channels(token(4).as_ref().map_or_else(transparent, color)),
+        contrast: named(token(5)).unwrap_or(KdeContrastEffect::None),
+        contrast_amount: amount(6),
+    };
+    let enabled = token(KDE_EFFECT_FIELDS.len()) == Some(Val::Bool(true));
+    (effects, enabled)
 }
 
 impl TypedExpr {
