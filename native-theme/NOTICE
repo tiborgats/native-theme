@@ -1,12 +1,16 @@
-native-theme's src/ripple.rs ports code of the Android Open Source
-Project, which the Apache License, Version 2.0 (LICENSE-APACHE) covers:
+native-theme's src/ripple.rs and src/platform/android_non_linear.rs port
+code of the Android Open Source Project, which the Apache License, Version
+2.0 (LICENSE-APACHE) covers:
 
 - frameworks/base at android-17.0.0_r1:
   graphics/java/android/graphics/drawable/RippleShader.java and
-  RippleAnimationSession.java;
+  RippleAnimationSession.java (src/ripple.rs);
+  core/java/android/content/res/FontScaleConverterFactory.java and
+  FontScaleConverterImpl.java, and core/java/android/util/MathUtils.java
+  (src/platform/android_non_linear.rs);
 - androidx at e4d933c9: compose/material/material-ripple's
   Ripple.android.kt and RippleHostView.android.kt, and compose/ui/ui-graphics'
-  Color.kt.
+  Color.kt (src/ripple.rs).
 
 frameworks/base's NOTICE file states, for the Android-specific code:
 

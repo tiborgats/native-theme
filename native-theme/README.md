@@ -201,11 +201,11 @@ Licensed under any of
 
 at your option.
 
-Two files are not: `src/ripple.rs` ports the Android Open Source Project's
+Three files are not: `src/ripple.rs` ports the Android Open Source Project's
 `RippleShader.java`, `RippleAnimationSession.java` and Compose's ripple and
-colour code, and `src/platform/m3_role.rs` ports Google's
-material-color-utilities (its dynamic scheme, tonal palettes and HCT colour
-space); both stay under the
+colour code, `src/platform/android_non_linear.rs` its `FontScaleConverter`
+(Android's non-linear font scaling), and `src/platform/m3_role.rs` ports Google's material-color-utilities (its dynamic
+scheme, tonal palettes and HCT colour space); all three stay under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
 their copyright notices, whichever licence you pick for the rest. The crate's
 licence is therefore `(MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0`; the crate
