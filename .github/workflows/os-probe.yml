@@ -29,6 +29,14 @@ on:
         description: "The probe, winui-host and ios-host jobs' runner images, a JSON list (winui-host does nothing on macOS, ios-host nothing on Windows); the default is the 0.8.0 release set's"
         required: false
         default: '["macos-15", "macos-26", "windows-11-arm"]'
+      ios_host_passes:
+        description: "The ios-host job's passes (tools/ios-host/run.sh's IOS_HOST_PASSES: render, press, focus, measure), comma-separated"
+        required: false
+        default: "render,press,focus"
+      ios_host_measure:
+        description: "The ios-host job's measure passes (run.sh's IOS_HOST_MEASURE: roles, fonts, symbols), comma-separated"
+        required: false
+        default: "roles,fonts,symbols"
       kde_accent_pairs:
         description: "The kde-accent job's pairs file (scripts/measure_kde_accent.sh's pairs.tsv); the default is the KDE facts' accent run"
         required: false
@@ -908,7 +916,9 @@ jobs:
   # test built by the image's default Xcode, run in a simulator of the image's
   # newest iOS runtime (iOS 18 on macos-15, iOS 26 on macos-26): its render
   # pass and its press pass twice each, compared, the layers over black and
-  # white solved, the SDK's UIKit headers copied (tools/ios-host/run.sh). Its
+  # white solved, the SDK's UIKit headers copied (tools/ios-host/run.sh); the
+  # ios_host_passes input chooses the passes (measure: the measurement
+  # campaign's reads and scenes, ios_host_measure naming them). Its
   # matrix is the probe's images; an image
   # without a simulator (Windows) runs no step, since an `if:` cannot read the
   # matrix.
@@ -926,6 +936,9 @@ jobs:
         if: runner.os == 'macOS'
       - name: Build and run
         if: runner.os == 'macOS'
+        env:
+          IOS_HOST_PASSES: ${{ inputs.ios_host_passes }}
+          IOS_HOST_MEASURE: ${{ inputs.ios_host_measure }}
         run: bash tools/ios-host/run.sh ios-host-out
       - name: Upload the renders
         if: always() && runner.os == 'macOS'

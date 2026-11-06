@@ -42,6 +42,9 @@
 // system type, normal and focused, as the `run` mode draws them: whether
 // UIKit has a focus system there and focuses a button is recorded.
 //
+// `measure<N>` (run.sh, `simctl launch`): the measurement campaign's passes,
+// tools/ios-host/IosHost/Measure.swift.
+//
 // Each cell is drawn by the app (`drawHierarchy(in:afterScreenUpdates:)` into a
 // UIGraphicsImageRenderer of the screen's scale and the standard range) to
 // draw/, and cropped from the simulator's own screenshot of the page to
@@ -80,7 +83,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = HostViewController()
+        // `measure<N>` is tools/ios-host/IosHost/Measure.swift's mode.
+        let mode = CommandLine.arguments.dropFirst().first ?? "run"
+        window.rootViewController = mode.hasPrefix("measure") ? MeasureController() : HostViewController()
         window.makeKeyAndVisible()
         self.window = window
     }

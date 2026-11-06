@@ -13,13 +13,20 @@
 # script takes the simulator's screenshot (`simctl io screenshot`) when the app
 # writes sync/ready-<n>-<attempt> and hands it over as
 # sync/screen-<n>-<attempt>.png (tools/ios-host/IosHost/IosHost.swift).
-# IOS_HOST_QUICK=1 runs a few specimens at medium only. Writes into $1:
-#   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once)  the app's
-#                 draw/, screen/ and pages/ PNGs, index.toml;
+# IOS_HOST_QUICK=1 runs a few specimens at medium only. IOS_HOST_PASSES (a
+# comma-separated list, default render,press,focus) chooses the passes:
+# render (run<N>), press (press<N>), focus (focus1, on the iPad) and measure
+# (measure<N>, twice, after the press pass: the app's measure mode,
+# tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
+# comma-separated list of passes, default roles,fonts,symbols). Writes into $1:
+#   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once), measure<N>/
+#                 the app's draw/ (not measure), screen/ and pages/ PNGs,
+#                 index.toml;
 #                 sync/ (the handshake, outside the comparison): done (ok or
 #                 the app's failures), retakes (screenshots retaken)
-#   solved/run1/, solved/press1/  the solved layers; solved/run1.toml,
-#                 solved/press1.toml  their summaries
+#   solved/run1/, solved/press1/, solved/measure1/  the solved layers;
+#                 solved/run1.toml, solved/press1.toml, solved/measure1.toml
+#                 their summaries
 #   headers/      the UIKit (and AVRoutePickerView) headers and UIKit's Swift
 #                 interfaces of the iphoneos and iphonesimulator SDKs, with
 #                 README.txt: the Xcode, each SDK's path, version and build,
@@ -31,10 +38,16 @@
 #   press<N>-test.log and press<N>.xcresult, run.txt (each step's exit
 #   status), run<N>.sha256 and press<N>.sha256, differ.txt and
 #   press-differ.txt (the files that differ between the runs),
-#   differ-levels.txt and press-differ-levels.txt (by how much), sha256.txt
+#   differ-levels.txt and press-differ-levels.txt (by how much),
+#   measure-differ.txt and measure-differ-levels.txt (listed, failing
+#   nothing), sha256.txt
 set -u
 out=$1
 quick=${IOS_HOST_QUICK:-0}
+passes=${IOS_HOST_PASSES:-render,press,focus}
+measure=${IOS_HOST_MEASURE:-roles,fonts,symbols}
+# has <pass>: whether IOS_HOST_PASSES names it.
+has() { case ",$passes," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 log="$out/run.txt"
@@ -45,6 +58,8 @@ manifest() { (cd "$1" && find . -type f ! -path './sync/*' ! -path "${2:-./sync/
 bundle=io.github.tiborgats.native-theme.ios-host
 build="${RUNNER_TEMP:-/tmp}/ios-host-build"
 note "quick: $quick"
+note "passes: $passes"
+has measure && note "measure passes: $measure"
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 uikit="$sdk/System/Library/Frameworks/UIKit.framework/Headers"
@@ -231,7 +246,7 @@ keep() {
   if [ -s "$sync/retakes" ]; then sed "s/^/$label retake: /" "$sync/retakes" | tee -a "$log"; fi
   rm -rf "$out/$folder"
   cp -R "$container/Documents/$folder" "$out/$folder"
-  note "$label: $(find "$out/$folder/draw" -name '*.png' | wc -l | tr -d ' ') drawn, $(find "$out/$folder/screen" -name '*.png' | wc -l | tr -d ' ') cropped PNGs"
+  note "$label: $(find "$out/$folder/draw" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') drawn, $(find "$out/$folder/screen" -name '*.png' 2>/dev/null | wc -l | tr -d ' ') cropped PNGs"
   [ "$(cat "$sync/done" 2>/dev/null)" = "ok" ]
 }
 
@@ -239,6 +254,7 @@ failed=0
 quick_argument=()
 [ "$quick" = "1" ] && quick_argument=(quick)
 for run in 1 2; do
+  has render || break
   xcrun simctl launch --terminate-running-process --stdout="$out/run$run-stdout.log" \
     --stderr="$out/run$run-stderr.log" "$udid" "$bundle" "run$run" "colors=$colors" ${quick_argument[@]+"${quick_argument[@]}"}
   status=$?
@@ -250,6 +266,7 @@ for run in 1 2; do
 done
 
 for run in 1 2; do
+  has press || break
   TEST_RUNNER_IOS_HOST_RUN="press$run" TEST_RUNNER_IOS_HOST_QUICK="$quick" xcodebuild test-without-building \
     -xctestrun "$xctestrun" -destination "id=$udid" -resultBundlePath "$out/press$run.xcresult" \
     >"$out/press$run-test.log" 2>&1 &
@@ -261,6 +278,17 @@ for run in 1 2; do
   if [ $status -ne 0 ]; then failed=1; grep -E 'error|failed|Fail' "$out/press$run-test.log" | head -n 40; fi
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
   [ -n "$sync" ] && { keep "press $run" "press$run" || failed=1; }
+done
+for run in 1 2; do
+  has measure || break
+  xcrun simctl launch --terminate-running-process --stdout="$out/measure$run-stdout.log" \
+    --stderr="$out/measure$run-stderr.log" "$udid" "$bundle" "measure$run" "passes=$measure" "colors=$colors"
+  status=$?
+  note "simctl launch measure $run: exit $status"
+  if [ $status -ne 0 ]; then failed=1; continue; fi
+  serve "measure $run" "measure$run" || failed=1
+  xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
+  [ -n "$sync" ] && { keep "measure $run" "measure$run" || failed=1; }
 done
 xcrun simctl shutdown "$udid" >/dev/null 2>&1
 xcrun simctl delete "$udid"
@@ -278,7 +306,9 @@ EOF
 )
 status=$?
 note "choose the iPad: exit $status"
-if [ $status -ne 0 ] || [ -z "$ipad" ]; then
+if ! has focus; then
+  note "focus: not run"
+elif [ $status -ne 0 ] || [ -z "$ipad" ]; then
   failed=1
 else
   IFS=$'\t' read -r ipad_type ipad_name <<<"$ipad"
@@ -342,19 +372,33 @@ compare() {
 }
 adaptive=
 [ "${sdk_version%%.*}" -ge 26 ] && adaptive=--adaptive-glass
-if [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
+if ! has render; then
+  :
+elif [ -d "$out/run1" ] && [ -d "$out/run2" ]; then
   compare run1 run2 differ.txt differ-levels.txt $adaptive || failed=1
 else
   failed=1
 fi
-if [ -d "$out/press1" ] && [ -d "$out/press2" ]; then
+if ! has press; then
+  :
+elif [ -d "$out/press1" ] && [ -d "$out/press2" ]; then
   compare press1 press2 press-differ.txt press-differ-levels.txt --list-only './pages/*' || failed=1
+else
+  failed=1
+fi
+# The measure pass's differences are listed and fail nothing: its scenes
+# hold text views, presentations and lists whose drawing a run can settle
+# differently; the facts read a crop only where both runs agree.
+if ! has measure; then
+  :
+elif [ -d "$out/measure1" ] && [ -d "$out/measure2" ]; then
+  compare measure1 measure2 measure-differ.txt measure-differ-levels.txt --list-only || failed=1
 else
   failed=1
 fi
 
 mkdir -p "$out/solved"
-for folder in run1 press1; do
+for folder in run1 press1 measure1; do
   [ -d "$out/$folder" ] || continue
   xcrun swift tools/ios-host/solve.swift "$out/$folder" "$out/solved/$folder" "$out/solved/$folder.toml" 2>&1 | tee -a "$log"
   status=${PIPESTATUS[0]}
