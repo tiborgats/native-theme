@@ -525,10 +525,11 @@ quote = "arcSize.width = (corners[4].x - corners[1].x); arcSize.height = (corner
 
 # The HighVisibility visual's inner ring (ADD-A17): a 1 px border in FocusStrokeColorInner drawn just inside the
 # outer ring, its bounds the outer ring's deflated by the outer thickness (FocusRectManager.cpp:450-455): one inset
-# shadow layer cast by the ring's inner outline (S2.10, ADD-A122), spread 1, no blur, no offset.
+# shadow layer cast by the ring's inner outline (S2.10, ADD-A122), spread 1, no blur, no offset; a solid ring, sharp:
+# `gaussian` at zero blur is the shape itself (S2.5).
 [[fact]]
 key = "token.focus.shadow"
-value = { layers = [ { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true } ] }
+value = { layers = [ { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.@focus_stroke_inner", inset = true, falloff = "gaussian" } ] }
 rows = ["W3-19"]
 
 [[fact.cite]]

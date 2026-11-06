@@ -1175,6 +1175,8 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:29"
 quote = "background-color: $button_color;"
 
+# box-shadow layers: GTK blurs each by a Gaussian of deviation half the blur radius (its box-shadow shader), so every
+# layer's falloff is `gaussian` (S2.5); a zero blur, drawn as a plain border, is the shape itself
 [[fact]]
 key = "button.body.shadow"
 value = "absent"
@@ -1188,7 +1190,7 @@ quote = "gtk_css_shadow_value_new_none ());"
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.38"]
 
 [[fact.cite]]
@@ -1201,11 +1203,21 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 # `.card`'s three-layer shadow (0,1,0), and its high-contrast outline, over the plain button's none and inset ring
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.252"]
 
 [[fact.cite]]
@@ -1213,10 +1225,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:206-208"
 quote = "box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%);"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.252"]
 
 [[fact.cite]]
@@ -1228,6 +1250,16 @@ quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -1596,7 +1628,7 @@ quote = "$drop_target_color: var(--accent-bg-color);"
 [[fact]]
 key = "button.body.shadow"
 when = { states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.25"]
 
 [[fact.cite]]
@@ -1608,6 +1640,16 @@ quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_targe
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
 quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.min_width"
@@ -1758,7 +1800,7 @@ quote = "background-color: RGB(0 0 0 / 65%);"
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], variants = ["@osd"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= surface.foreground", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= surface.foreground", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.34"]
 
 [[fact.cite]]
@@ -1766,10 +1808,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:121-123"
 quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px currentColor; }"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@osd"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.34"]
 
 [[fact.cite]]
@@ -1781,6 +1833,16 @@ quote = "&:drop(active) { @extend %button_basic_drop_active; }"
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.bindings"
@@ -2661,7 +2723,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["flat"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -2674,10 +2736,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -2689,11 +2761,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -2705,11 +2787,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -2721,6 +2813,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -3310,7 +3412,7 @@ quote = "&.has-open-popup { background-image: image($view_selected_hover_color);
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["@card"], not_variants = ["menu"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.35"]
 
 [[fact.cite]]
@@ -3322,6 +3424,16 @@ quote = "&:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 1px
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:301"
 quote = "$drop_target_color: var(--accent-bg-color);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 # only GtkMenuButton has the `arrow` node: every other button draws no menu indicator (the whole part absent)
 [[fact]]
@@ -3871,7 +3983,7 @@ quote = "gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (menu_button->button), 
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.38", "GN-1.252"]
 
 [[fact.cite]]
@@ -3889,10 +4001,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.25", "GN-1.252"]
 
 [[fact.cite]]
@@ -3910,11 +4032,21 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_misc.scss:206-208"
 quote = "box-shadow: 0 0 0 1px RGB(0 0 6 / 3%), 0 1px 3px 1px RGB(0 0 6 / 7%), 0 2px 6px 2px RGB(0 0 6 / 3%);"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 # under the drop ring the inner button's colour is the accent; the outer card's outline keeps the card's foreground
 [[fact]]
 key = "button.body.shadow"
 when = { variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 rows = ["GN-1.25", "GN-1.252"]
 
 [[fact.cite]]
@@ -3936,6 +4068,16 @@ quote = "@media (prefers-contrast: more) { box-shadow: 0 0 0 1px $border_color, 
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -4345,7 +4487,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4363,10 +4505,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4383,11 +4535,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4404,11 +4566,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4425,6 +4597,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -4755,7 +4937,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4773,10 +4955,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4793,11 +4985,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4814,11 +5016,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -4835,6 +5047,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -5084,7 +5306,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -5102,10 +5324,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -5122,11 +5354,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -5143,11 +5385,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29", "GN-1.151"]
 
 [[fact.cite]]
@@ -5164,6 +5416,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -5413,7 +5675,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5431,10 +5693,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5451,11 +5723,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5472,11 +5754,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["icon_only"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5493,6 +5785,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -5823,7 +6125,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5841,10 +6143,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5861,11 +6173,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5882,11 +6204,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["with_icon"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -5903,6 +6235,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"
@@ -6152,7 +6494,7 @@ quote = "box-shadow: none;"
 [[fact]]
 key = "button.body.shadow"
 when = { context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["drop_target"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -6170,10 +6512,20 @@ kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:104-107"
 quote = "@at-root %button_basic_drop_active, &:drop(active) { color: $drop_target_color; box-shadow: inset 0 0 0 2px $drop_target_color;"
 
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
+
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["hover"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -6190,11 +6542,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["pressed"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -6211,11 +6573,21 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["contrast_high"], context = [{ scope = { nearest = ["toolbar", "window", "popover"] }, widget = "window", part = "title_bar" }], not_context = [{ scope = "any", widget = "layout", variants = ["@linked"] }], variants = ["@with_arrow"], not_variants = ["@raised", "primary", "destructive", "@opaque"], states = ["checked"] }
-value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+value = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 rows = ["GN-1.29"]
 
 [[fact.cite]]
@@ -6232,6 +6604,16 @@ quote = "@media (prefers-contrast: more) { &:hover, &.keyboard-activating, &:act
 kind = "published"
 source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:263"
 quote = "$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent);"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:62"
+quote = "_sigma = GSK_GLOBAL_SCALE * 0.5 * in_blur_radius;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gsk/gpu/shaders/gskgpuboxshadow.glsl:79"
+quote = "/* This approximates the error function, needed for the gaussian integral */"
 
 [[fact]]
 key = "button.body.fill"

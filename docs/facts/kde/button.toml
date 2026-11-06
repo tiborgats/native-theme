@@ -7505,10 +7505,11 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 # the Widgets micro-shadow: a PenWidth::Shadow wide outline of the shadowed rect moved down by half that pen,
 # drawn under the frame, so its outer edge lies PenWidth::Shadow below the body's box at the bottom and on it
 # elsewhere: the body's box moved down by the pen's width, no blur or spread (zeros by omission), black at the
-# shadow colour's default opacity; the states that drop it follow
+# shadow colour's default opacity; the states that drop it follow. A stroked outline, sharp: `gaussian` at zero blur is
+# the shape itself (S2.5)
 [[fact]]
 key = "button.body.shadow"
-value = { layers = [{ x_px = 0, y_px = 1.001, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.125)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 1.001, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.125)", inset = false, falloff = "gaussian" }] }
 rows = ["K3.4", "K1.23"]
 
 [[fact.cite]]
@@ -13735,12 +13736,13 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:94-95"
 quote = "border.width: controlRoot.flat && !(controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted) ? 0 : 1"
 
-# a rectangle behind the button, 1 px lower, black at 0.15
+# a rectangle behind the button, 1 px lower, black at 0.15: a plain Rectangle, not Kirigami's ShadowedRectangle, so
+# its edge is sharp, `gaussian` at zero blur (S2.5), not `kirigami_smoothstep`
 
 [[fact]]
 key = "button.body.shadow"
 when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
-value = { layers = [{ x_px = 0, y_px = 1, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.15)", inset = false }] }
+value = { layers = [{ x_px = 0, y_px = 1, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.15)", inset = false, falloff = "gaussian" }] }
 rows = ["Q2.7"]
 
 [[fact.cite]]
@@ -13751,6 +13753,11 @@ quote = "visible: !controlRoot.down && !controlRoot.checked && !controlRoot.flat
 kind = "published"
 source = "qtdeclarative@6.12.0 src/quick/items/qquickanchors_p_p.h:53"
 quote = ": leftMargin(0)"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:107-108"
+quote = "Rectangle { id: shadowRect"
 
 [[fact]]
 key = "button.body.shadow"
