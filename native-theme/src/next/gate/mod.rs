@@ -1814,7 +1814,9 @@ struct Read {
 
 /// Whether a value's evaluation read a synthetic layer's step at the place
 /// `path` of `target`, above it or below it: any step (`reaches`), or one
-/// deciding the place itself (`decides`).
+/// deciding the place itself (`decides`); a step at or below a place
+/// `except` names below `path` left out, a later fact of its own key
+/// stating it (S17 *Which fact applies*).
 #[derive(Clone, Copy, Debug, Default)]
 struct Reach {
     reaches: bool,
@@ -1822,8 +1824,15 @@ struct Reach {
 }
 
 impl Reach {
-    fn of(reached: &[Reached], target: Target, path: &[String]) -> Reach {
-        let meets = reached.iter().filter(|held| held.meets(target, path));
+    fn of(reached: &[Reached], target: Target, path: &[String], except: &[Vec<String>]) -> Reach {
+        let meets = reached.iter().filter(|held| {
+            held.meets(target, path)
+                && !except.iter().any(|below| {
+                    held.path
+                        .strip_prefix(path)
+                        .is_some_and(|rest| rest.starts_with(below))
+                })
+        });
         let (mut reaches, mut decides) = (false, false);
         for held in meets {
             reaches = true;
@@ -1839,7 +1848,7 @@ impl Reach {
     fn whole(reached: &[Reached]) -> Reach {
         Reach {
             reaches: !reached.is_empty(),
-            ..Reach::of(reached, Target::Roles, &[])
+            ..Reach::of(reached, Target::Roles, &[], &[])
         }
     }
 }
@@ -1887,12 +1896,14 @@ impl Resolved {
     /// A token's, a role's or an input's value read in the root scope:
     /// the theme's own, or `value`'s evaluated in its place, with the path
     /// of the key's place in it, and whether its evaluation read a
-    /// synthetic layer's step there (S17, ADD-A128).
+    /// synthetic layer's step there, but at the places below it `except`
+    /// names (S17, ADD-A128).
     fn global_tree(
         &self,
         key: &FactKey,
         value: Option<&FactValue>,
         root: &RootInputs,
+        except: &[Vec<String>],
     ) -> Result<(Option<Tree>, Vec<String>, Reach), Unread> {
         let scope = self.root(root);
         let applies: &dyn Fn(&Selector) -> bool = &|_| true;
@@ -1903,7 +1914,7 @@ impl Resolved {
                     theme.evaluate_in(&scope, None, applies, Target::Tokens, extra, |cx| {
                         let folds = cx.roots(Target::Tokens);
                         let tree = Tree::of(&Tokens::resolve(&folds, cx));
-                        (tree, Reach::of(cx.reached(), Target::Tokens, path))
+                        (tree, Reach::of(cx.reached(), Target::Tokens, path, except))
                     })
                 }
                 // A role naming a map (`role.global.accent_ramp`) is read in
@@ -1914,7 +1925,7 @@ impl Resolved {
                     theme.evaluate_in(&scope, None, applies, Target::Roles, extra, |cx| {
                         let folds = cx.roots(Target::Roles);
                         let tree = Tree::of(&ColorRoles::resolve(&folds, cx));
-                        (tree, Reach::of(cx.reached(), Target::Roles, path))
+                        (tree, Reach::of(cx.reached(), Target::Roles, path, except))
                     })
                 }
                 Place::Role(reference, _) => {
@@ -1998,16 +2009,19 @@ impl Resolved {
     /// Whether a token's, a role's or an input's value, or `value`
     /// evaluated in its place, reaches a synthetic value (S17, ADD-A128):
     /// its evaluation reads a step of a synthetic layer, through any
-    /// reference, call, binding, rule or base. Never without a `[pending]`
-    /// table.
+    /// reference, call, binding, rule or base, but at the places below the
+    /// key `except` names, each by its path below the key's, which a later
+    /// fact of their own keys states (S17 *Which fact applies*). Never
+    /// without a `[pending]` table.
     pub fn global_synthetic(
         &self,
         key: &FactKey,
         value: Option<&FactValue>,
         root: &RootInputs,
+        except: &[Vec<String>],
     ) -> Result<bool, Unread> {
         for value in [None, value] {
-            if self.global_tree(key, value, root)?.2.reaches {
+            if self.global_tree(key, value, root, except)?.2.reaches {
                 return Ok(true);
             }
         }
@@ -2026,7 +2040,7 @@ impl Resolved {
     /// value itself (S17, ADD-A128): the preset leaves its place, or a
     /// block it is a leaf of, unstated here, a listed path.
     pub fn global_listed(&self, key: &FactKey, root: &RootInputs) -> Result<bool, Unread> {
-        Ok(self.global_tree(key, None, root)?.2.decides)
+        Ok(self.global_tree(key, None, root, &[])?.2.decides)
     }
 
     /// A token's, a role's or an input's value, read in the root scope,
@@ -2038,8 +2052,8 @@ impl Resolved {
         root: &RootInputs,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let (actual, path, _) = self.global_tree(key, None, root)?;
-        let (expected, _, _) = self.global_tree(key, Some(value), root)?;
+        let (actual, path, _) = self.global_tree(key, None, root, &[])?;
+        let (expected, _, _) = self.global_tree(key, Some(value), root, &[])?;
         let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
         differs(actual.as_ref(), expected.as_ref(), &path, &tolerance)
     }
@@ -2057,8 +2071,8 @@ impl Resolved {
         tolerance: &Tolerance,
         except: &[Vec<String>],
     ) -> Result<Outcome, Unread> {
-        let (actual, path, _) = self.global_tree(key, None, root)?;
-        let (mut expected, _, _) = self.global_tree(key, Some(value), root)?;
+        let (actual, path, _) = self.global_tree(key, None, root, &[])?;
+        let (mut expected, _, _) = self.global_tree(key, Some(value), root, &[])?;
         if let (Some(expected), Some(actual)) = (expected.as_mut(), actual.as_ref()) {
             for below in except {
                 let at: Vec<String> = path.iter().chain(below).cloned().collect();
@@ -2080,8 +2094,8 @@ impl Resolved {
         root: &RootInputs,
         tolerance: &Tolerance,
     ) -> Result<Outcome, Unread> {
-        let (measured, path, _) = self.global_tree(key, Some(result), root)?;
-        let (derived, _, _) = self.global_tree(key, Some(value), root)?;
+        let (measured, path, _) = self.global_tree(key, Some(result), root, &[])?;
+        let (derived, _, _) = self.global_tree(key, Some(value), root, &[])?;
         let tolerance = in_scope(&self.theme, &self.root(root), tolerance);
         differs(measured.as_ref(), derived.as_ref(), &path, &tolerance)
     }
@@ -2711,8 +2725,15 @@ impl Session<'_> {
     /// its place, reaches a synthetic value (S17, ADD-A128): its
     /// evaluation reads a step of a synthetic layer, through any reference,
     /// call, binding, rule or base, or such a step decides whether its part
-    /// is drawn. Never without a `[pending]` table.
-    pub fn synthetic(&self, key: &FactKey, value: Option<&FactValue>) -> Result<bool, Unread> {
+    /// is drawn; but at the places below the key `except` names, each by
+    /// its path below the key's, which a later fact of their own keys
+    /// states (S17 *Which fact applies*). Never without a `[pending]` table.
+    pub fn synthetic(
+        &self,
+        key: &FactKey,
+        value: Option<&FactValue>,
+        except: &[Vec<String>],
+    ) -> Result<bool, Unread> {
         let (target, path) = match &key.place {
             Place::WholePart(part) => return Ok(self.shown_synthetic(*part)),
             Place::Part(part, path) => {
@@ -2729,7 +2750,7 @@ impl Session<'_> {
         let body = value.and_then(|value| rule_body(Some(value)).ok());
         for body in [None, body] {
             if let Some((read, _)) = self.field_tree(key, body)?
-                && Reach::of(&read.reached, target, path).reaches
+                && Reach::of(&read.reached, target, path, except).reaches
             {
                 return Ok(true);
             }
@@ -2754,7 +2775,7 @@ impl Session<'_> {
         };
         Ok(self
             .field_tree(key, None)?
-            .is_some_and(|(read, _)| Reach::of(&read.reached, target, path).decides))
+            .is_some_and(|(read, _)| Reach::of(&read.reached, target, path, &[]).decides))
     }
 
     /// Whether a step kept for the element states `part`'s presence:

@@ -2020,11 +2020,11 @@ fn check_globals(
             report,
             &combination,
         ) {
-            match resolved.global_synthetic(&key.key, Some(value), root) {
+            let except = stated_below(&globals, &facts, index, fact);
+            match resolved.global_synthetic(&key.key, Some(value), root, &except) {
                 Ok(true) => synthetic_skip(report, &place, &key.name, pass),
                 Ok(false) => {
                     let tolerance = tolerance.drawn_by(drawing);
-                    let except = stated_below(&globals, &facts, index, fact);
                     let outcome =
                         resolved.compare_global_except(&key.key, value, root, &tolerance, &except);
                     record(outcome, &key.name, &place, report, &combination, pass);
@@ -2352,18 +2352,20 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
             report,
             &describe,
         ) {
-            Verdict::Compare(value, tolerance) => match session.synthetic(&key.key, Some(value)) {
-                Ok(true) => synthetic_skip(report, &place, &key.name, pass),
-                Ok(false) => {
-                    let tolerance = tolerance.drawn_by(run.drawing);
-                    let except = stated_below(widget_keys, facts, index, fact);
-                    let outcome = session.compare_except(&key.key, value, &tolerance, &except);
-                    record(outcome, &key.name, &place, report, &describe, pass);
+            Verdict::Compare(value, tolerance) => {
+                let except = stated_below(widget_keys, facts, index, fact);
+                match session.synthetic(&key.key, Some(value), &except) {
+                    Ok(true) => synthetic_skip(report, &place, &key.name, pass),
+                    Ok(false) => {
+                        let tolerance = tolerance.drawn_by(run.drawing);
+                        let outcome = session.compare_except(&key.key, value, &tolerance, &except);
+                        record(outcome, &key.name, &place, report, &describe, pass);
+                    }
+                    Err(unread) => {
+                        record(Err(unread), &key.name, &place, report, &describe, pass);
+                    }
                 }
-                Err(unread) => {
-                    record(Err(unread), &key.name, &place, report, &describe, pass);
-                }
-            },
+            }
             Verdict::Drawn if pass == Pass::Normal => {
                 let outcome = session.compare(&key.key, None, &Tolerance::quote());
                 record(
@@ -2572,10 +2574,10 @@ fn derivations(
             }
         };
         let synthetic = match &widget {
-            None => resolved.global_synthetic(&key.key, Some(value), &root),
+            None => resolved.global_synthetic(&key.key, Some(value), &root, &[]),
             Some(_) => resolved
                 .session(&combination, &root, &metrics)
-                .and_then(|session| session.synthetic(&key.key, Some(value))),
+                .and_then(|session| session.synthetic(&key.key, Some(value), &[])),
         };
         if synthetic.unwrap_or(false) {
             synthetic_skip(report, &prepared.fact.place(), &key.name, Pass::Normal);

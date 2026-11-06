@@ -1,0 +1,28 @@
+# Synthetic token facts (S17): the focus offset stated whole by a table, and its left leaf pending after it
+# (S17 *Which fact applies*: the leaf's later fact applies to the leaf, the block's to the rest, which the
+# block's comparison checks though the leaf reaches the synthetic value).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.focus.offset"
+value = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.focus.offset.left"
+pending = "U8"
+rows = []

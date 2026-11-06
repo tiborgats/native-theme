@@ -253,6 +253,40 @@ fn gate_fixture_token_leaf_over_whole_block() {
     );
 }
 
+/// A block stated whole and its leaf pending after it, listed (S17 *Which
+/// fact applies*, the synthetic route), a token's and a part field's: the
+/// leaf's synthetic value is left out of the block's comparison with the
+/// leaf, so the block's other leaves are still compared; a preset stating
+/// a wrong top fails the block there, and nothing else.
+#[test]
+fn gate_fixture_block_beside_pending_leaf() {
+    let report = fixture_report("block_pending_leaf");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        [
+            "probe button.body.margin.left",
+            "probe token.focus.offset.left"
+        ]
+    );
+    for (file, key) in [
+        ("wrong_top.toml", "`token.focus.offset` at"),
+        ("wrong_margin.toml", "`button.body.margin` at"),
+    ] {
+        let wrong = fixture_report_with("block_pending_leaf", file);
+        assert!(
+            !failing(&wrong, &format!("Normal: {key}")).is_empty(),
+            "{file}: {:?}",
+            wrong.failures
+        );
+        assert!(
+            wrong.failures.iter().all(|failure| failure.contains(key)),
+            "{file}: {:?}",
+            wrong.failures
+        );
+    }
+}
+
 /// A text style's fact reading its own font size (S2.2: `font_size` in a
 /// text style is its font's size; the query evaluates it so): the fact's
 /// expression, evaluated in the key's place, gives the preset's line
