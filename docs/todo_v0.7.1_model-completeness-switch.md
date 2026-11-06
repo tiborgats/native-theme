@@ -340,7 +340,7 @@ until M1b, *Icon sets* (:196-209) kept with its path, the spinner recipe (:211-2
 :240-262: two presets, no reader yet, the reader features inert); root README.md :10-14, :69-76. Gate: `--commit`
 green, `generate_widgets.py --check`, `generate_preset.py <id> --check`, CI green (as 17c's).
 
-**17e — the documents** (no Rust code; comments only): `@fc6109d1` on every surviving `platform-facts.md:N` citation (166 on 165 lines in 33 files at
+**17e — the documents** (no Rust code; comments only): (added by 17c's review: the citations of the deleted `docs/inheritance-rules.toml`, at `docs/property-registry.toml:43`, `:84`, `docs/todo.md:217`, `:402` and `connectors/native-theme-iced/contract-leaves.toml:290`, `:328`, `:345`, `:388`, pinned as `inheritance-rules.toml@fc6109d1:N` like the `platform-facts.md` ones; `check_release.sh`'s comments naming the spinners, `reader_kde.rs` and the watchers) `@fc6109d1` on every surviving `platform-facts.md:N` citation (166 on 165 lines in 33 files at
 `965982d3`, counted outside the exceptions and the files 17c deletes whole, less those in code 17c removes from split
 files, such as color.rs:658 in today's `composite_over` tests): native-theme's files (kept ones too: fonts.rs 4,
 detect.rs 3, kde/metrics.rs 11), connectors,
