@@ -4,13 +4,15 @@
 // core/java/android/content/res/FontScaleConverterFactory.java and
 // FontScaleConverterImpl.java and core/java/android/util/MathUtils.java's
 // lerp, lerpInv, saturate and constrainedMap (frameworks/base at
-// android-17.0.0_r1), whose notices follow; it stays under that licence whatever
+// android-17.0.0_r1), and the threshold of androidx's compose/ui/ui-text
+// SpannableExtensions.android.kt (androidx at e4d933c9), whose notices follow; it stays under that licence whatever
 // licence the rest of the crate is used under (the 0.8.0 plan's D10). The
 // crate's LICENSE-APACHE holds the licence, its NOTICE the notice of
 // frameworks/base's NOTICE file.
 //
 // Copyright (C) 2009 The Android Open Source Project
 // Copyright (C) 2022 The Android Open Source Project
+// Copyright 2020 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +62,12 @@ const TABLES: [(f32, [f32; 9]); 8] = [
 /// The sp every table maps (`createInterpolatedTableBetween`'s
 /// `commonSpSizes`, each table's `fromSp`).
 const COMMON_SP: [f32; 9] = [8.0, 10.0, 12.0, 14.0, 18.0, 20.0, 24.0, 30.0, 100.0];
+
+/// The font scale above which Compose keeps a line height stated in sp in
+/// proportion to its font's change, rather than converting it as a value of
+/// its own (`compose/ui/ui-text` `SpannableExtensions.android.kt:224-250`'s
+/// `isNonLinearFontScalingActive`, a `Float` compared with a `Double`).
+pub(crate) const PROPORTIONAL_LINE_HEIGHT_ABOVE: f64 = 1.05;
 
 /// `size` in sp, at the font scale `font_scale`, in dp: the converter's
 /// `convertSpToDp`, or `size × font_scale` where the scale has no converter.

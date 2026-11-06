@@ -10,7 +10,8 @@ code of the Android Open Source Project, which the Apache License, Version
   (src/platform/android_non_linear.rs);
 - androidx at e4d933c9: compose/material/material-ripple's
   Ripple.android.kt and RippleHostView.android.kt, and compose/ui/ui-graphics'
-  Color.kt (src/ripple.rs).
+  Color.kt (src/ripple.rs); compose/ui/ui-text's
+  SpannableExtensions.android.kt (src/platform/android_non_linear.rs).
 
 frameworks/base's NOTICE file states, for the Android-specific code:
 
