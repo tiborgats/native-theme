@@ -50,6 +50,8 @@ presets! {
     Material3 => "material-3", "material-3.toml";
     /// Apple's iOS 26.
     Ios26 => "ios-26", "ios-26.toml";
+    /// Apple's iOS 13 to iOS 18, its facts read on iOS 18.
+    Ios13 => "ios-13", "ios-13.toml";
 }
 
 impl PresetId {

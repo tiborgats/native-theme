@@ -3873,7 +3873,8 @@ pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
         | PresetId::MacosTahoe
         | PresetId::MacosMonterey
         | PresetId::Material3
-        | PresetId::Ios26 => false,
+        | PresetId::Ios26
+        | PresetId::Ios13 => false,
     })
 }
 
