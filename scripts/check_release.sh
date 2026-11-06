@@ -545,13 +545,14 @@ fi
 # native-theme's Linux feature set: every feature with code on Linux
 # (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
 # native-theme has no default features, so on Linux the tests of its
-# feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
-# the watchers) are run only by the test legs below that name this set. The
-# clippy leg below that names it is the only lint of the Linux-only ones (kde,
-# gnome, freedesktop, the KDE and GNOME watchers); the cross-target
-# `--all-features` clippy runs also lint the tests that are not Linux-only
-# (the rasterizer's and the spinners', for two). The strict panic lints name
-# the set for the library.
+# feature-gated modules (kde's icon theme, freedesktop, rasterize, the bundled
+# icon sets, the font lookup) are run only by the test legs below that name
+# this set. The clippy leg below that names it is the only lint of the
+# Linux-only ones (kde, freedesktop); the cross-target `--all-features` clippy
+# runs also lint the tests that are not Linux-only (the rasterizer's, for
+# one). The readers and the watchers are unlinked until the 0.8.0 plan's M1b,
+# so until then `portal` and `watch` add only their optional dependencies.
+# The strict panic lints name the set for the library.
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 # CI's MSRV job (.github/workflows/ci.yml, `msrv`): a lint can fire at the
@@ -803,7 +804,8 @@ fi
 #
 # Both connectors enable `system-icons` by default, and its icon code imports
 # the platform crates, so the feature must build alone on each platform. The
-# platform readers and icon loaders compile only on their own target, so
+# platform modules (the OS version, the system UI font, the icon loaders;
+# the readers from M1b) compile only on their own target, so
 # native-theme with all features is checked there too, with warnings denied:
 # dead code or an unchecked result in them is invisible to a Linux build. A
 # cross-target `cargo check` needs the target's standard library (and, for
@@ -887,8 +889,9 @@ for crate in $WORKSPACE_CRATES; do
     else
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
-    # The Linux features too, so the reader, icon and watcher code and their
-    # tests are linted; the run above keeps the no-feature cfg branches.
+    # The Linux features too, so the KDE icon theme, icon, rasterizer and
+    # font code and their tests are linted; the run above keeps the
+    # no-feature cfg branches.
     if [ "$crate" = "native-theme" ]; then
         run_check "clippy ($crate, Linux features)" \
             cargo clippy -p "$crate" --all-targets --features "$NT_FEATURES" -- -D warnings
@@ -921,8 +924,9 @@ run_check "clippy (native-theme-gpui, no features)" \
 # Bin targets (if any in the future) should be added to this list.
 #
 # `native-theme` is run with the full Linux feature set ($NT_FEATURES) so
-# feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
-# watch) are checked; plain `--lib` misses them. ci.yml names the same features.
+# feature-gated modules (kde, system-icons with freedesktop, svg-rasterize,
+# system-fonts) are checked; plain `--lib` misses them. ci.yml names the same
+# features.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Strict panic lints (library code and the three showcases)"
 run_check "strict-panic (native-theme, Linux features)" \
@@ -1032,10 +1036,10 @@ for crate in $WORKSPACE_CRATES; do
     fi
 done
 # native-theme with its Linux features ($NT_FEATURES): the loop above runs it
-# with none, which compiles out the KDE and GNOME readers, the freedesktop
-# icon loader, the rasterizer, the spinners, the font lookup and the watchers,
-# and tests/reader_kde.rs. On a host with Breeze and Adwaita installed the
-# tests that need them run too; elsewhere they skip themselves.
+# with none, which compiles out the KDE icon theme's kdeglobals cascade, the
+# freedesktop icon loader, the bundled icon sets, the rasterizer and the font
+# lookup. On a host with Breeze and Adwaita installed the tests that need them
+# run too; elsewhere they skip themselves.
 run_tests "test (native-theme, Linux features)" \
     cargo test -p native-theme --features "$NT_FEATURES"
 # The freedesktop stem index against freedesktop-icons' unfiltered lookup over
