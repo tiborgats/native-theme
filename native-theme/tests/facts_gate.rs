@@ -1260,6 +1260,28 @@ fn gate_fixture_negative_list_unknown_name() {
     assert_eq!(report.failures, Vec::<String>::new());
 }
 
+/// A fact whose `when` names the preset checked (`preset:adwaita`, as the
+/// facts of a directory two presets share do, S17 *Generations*) is
+/// planned under its `when` with that condition decided, never as a
+/// condition vector naming the preset, which no stand-in sets.
+#[test]
+fn gate_fixture_preset_condition_decided() {
+    let report = fixture_report("preset_condition");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// A measured derivation's pass varies the accent alone on a preset whose
+/// accent inputs are two (S9.1): every other operand resolves from the
+/// preset (S17 *A measured derivation*), so the pass's stand-in states the
+/// preset's own `highlight` beside the varied accent, the accent inputs as
+/// one group (S9.2), and each pass resolves and agrees.
+#[test]
+fn gate_fixture_derivation_pass_states_the_accent_group() {
+    let report = fixture_report("derivation_accent_group");
+    assert_eq!(report.failures, Vec::<String>::new());
+}
+
 /// A token's fact is read in the root scope: a `when` stating a flag
 /// there is refused.
 #[test]

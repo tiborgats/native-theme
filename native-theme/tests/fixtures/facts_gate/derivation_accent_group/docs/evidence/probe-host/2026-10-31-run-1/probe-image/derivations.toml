@@ -1,0 +1,10 @@
+# Synthetic passes of a measured derivation (S17): the fill follows the accent.
+[[derivation.fill]]
+"input.accent" = "#ff0000"
+result = "#ff0000"
+conditions = ["scheme:light"]
+
+[[derivation.fill]]
+"input.accent" = "#00ff00"
+result = "#00ff00"
+conditions = ["scheme:light"]

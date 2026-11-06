@@ -229,6 +229,37 @@ impl Preset {
             .collect()
     }
 
+    /// A measured derivation's pass layer `layer` (S17 *A measured
+    /// derivation*) with the preset's accent inputs as one group (S9.2):
+    /// where it states any of them, each other one with the preset's own
+    /// value, every operand the pass does not vary resolving from the
+    /// preset; else as it is.
+    #[must_use]
+    pub fn with_accent_group(&self, mut layer: Layer) -> Layer {
+        let group = &self.stack.declarations().accent_inputs;
+        let entries = &mut layer.bases.inputs.entries;
+        if !entries.iter().any(|(name, _)| group.contains(name)) {
+            return layer;
+        }
+        for name in group {
+            if entries.iter().any(|(held, _)| held == name) {
+                continue;
+            }
+            let own = self
+                .stack
+                .preset_layer()
+                .bases
+                .inputs
+                .entries
+                .iter()
+                .find(|(held, _)| held == name);
+            if let Some((_, value)) = own {
+                entries.push((name.clone(), value.clone()));
+            }
+        }
+        layer
+    }
+
     /// The declarations of the widget `widget` in force under `flavor`, else
     /// under the default flavour (S10).
     pub fn declared(&self, widget: &str, flavor: Option<&str>) -> Result<Declared, Unread> {

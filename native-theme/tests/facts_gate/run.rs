@@ -362,6 +362,9 @@ fn units_enabled(units: &Units, fact: &Fact) -> bool {
 /// conditions decided, its value read for its key, its tolerance.
 pub struct Prepared<'f> {
     fact: &'f Fact,
+    /// Its `when` as written, its `preset:` conditions decided and left
+    /// out ([`facts::for_preset`]).
+    written: Option<Value>,
     when: When,
     value: Option<FactValue>,
     /// A set-whole block's leaf's value as the fact states it, composed
@@ -523,10 +526,10 @@ pub fn prepare<'f>(
         let Some(Ok(key)) = platform.key(&fact.key) else {
             continue;
         };
-        let Some((when, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
+        let Some((written, _)) = facts::for_preset(fact.when.as_ref(), preset) else {
             continue;
         };
-        let Ok(when) = read_when(when.as_ref()) else {
+        let Ok(when) = read_when(written.as_ref()) else {
             continue;
         };
         let block = set_whole(&fact.key);
@@ -567,6 +570,7 @@ pub fn prepare<'f>(
         }
         let prepared = Prepared {
             fact,
+            written,
             when,
             value,
             leaf,
@@ -1697,7 +1701,7 @@ fn check(
             .filter(|key| key.key.widget().as_deref() == Some(entry.widget.as_str()))
         {
             for prepared in &key.facts {
-                if let Some(when) = &prepared.fact.when {
+                if let Some(when) = &prepared.written {
                     mentioned.add_when(when);
                 }
             }
@@ -1745,7 +1749,7 @@ fn check(
     // Each fact's own `when`.
     for key in keys {
         for prepared in &key.facts {
-            let Some(when) = &prepared.fact.when else {
+            let Some(when) = &prepared.written else {
                 continue;
             };
             let widget = key.key.widget();
@@ -2419,11 +2423,28 @@ fn stated_below(
         .collect()
 }
 
+/// One measured derivation's pass under one condition vector (S17 *A
+/// measured derivation*): what its comparison reads, and the resolution
+/// it is compared in, by its index among the distinct ones.
+struct PassCheck<'k> {
+    key: &'k KeyFacts<'k>,
+    prepared: &'k Prepared<'k>,
+    value: &'k FactValue,
+    pass: &'k facts::DerivationPass,
+    result: &'k FactValue,
+    combination: Combination,
+    not_drawn: &'k [When],
+    vector: Vec<String>,
+    resolution: usize,
+}
+
 /// Every measured derivation's passes (S17 *A measured derivation*): for
 /// each pass, the preset resolved with the stand-in stating the varied
 /// inputs under the fact's `when` and the pass's conditions, the fact's
 /// expression evaluated in the key's place compared with the pass's result
-/// within the citation's tolerance.
+/// within the citation's tolerance. Each distinct pair of a condition
+/// vector and a stand-in is resolved once, the pairs in parallel, as many
+/// passes vary an input to the same values under the same conditions.
 fn derivations(
     platform: &str,
     preset: &Preset,
@@ -2437,6 +2458,8 @@ fn derivations(
     let metrics = StubMetrics;
     let schemes = preset.schemes();
     let drawing = drawing(platform, flavor);
+    let mut checks: Vec<PassCheck<'_>> = Vec::new();
+    let mut resolutions: Vec<(Vec<String>, String)> = Vec::new();
     for key in keys {
         for prepared in &key.facts {
             let Some(value) = &prepared.value else {
@@ -2446,9 +2469,7 @@ fn derivations(
                 let describe =
                     || format!("the pass {:?} of {}", pass.inputs, prepared.fact.place());
                 let empty = Value::Table(toml::Table::new());
-                let when = facts::for_preset(prepared.fact.when.as_ref(), preset.id())
-                    .and_then(|(when, _)| when)
-                    .unwrap_or(empty);
+                let when = prepared.written.clone().unwrap_or(empty);
                 let widget = key.key.widget();
                 let Some((vectors, combination)) =
                     own_combination(&when, widget.as_deref().unwrap_or_default(), &schemes)
@@ -2479,13 +2500,10 @@ fn derivations(
                         "[inputs.{input}]\nlight = {color}\ndark = {color}\n"
                     ));
                 }
-                let layer = match Layer::from_toml(&text) {
-                    Ok(layer) => layer,
-                    Err(error) => {
-                        report.fail(format!("{}: its inputs do not read: {error}", describe()));
-                        continue;
-                    }
-                };
+                if let Err(error) = Layer::from_toml(&text) {
+                    report.fail(format!("{}: its inputs do not read: {error}", describe()));
+                    continue;
+                }
                 let fixed = pass.conditions.iter().any(|c| c.starts_with("scheme:"));
                 for vector in vectors {
                     let vector: Vec<String> = if fixed {
@@ -2500,77 +2518,114 @@ fn derivations(
                             .chain(pass.conditions.iter().cloned())
                             .collect()
                     };
-                    let resolved = match conditions(&vector, flavor)
-                        .map_err(|unread| format!("{unread:?}"))
-                        .and_then(|conditions| preset.resolve(&conditions, &layer))
-                    {
-                        Ok(resolved) => resolved,
-                        Err(why) => {
-                            report.fail(format!(
-                                "{} does not resolve under {vector:?}: {why}",
-                                describe()
-                            ));
-                            continue;
+                    let pair = (vector.clone(), text.clone());
+                    let resolution = match resolutions.iter().position(|held| *held == pair) {
+                        Some(at) => at,
+                        None => {
+                            resolutions.push(pair);
+                            resolutions.len() - 1
                         }
                     };
-                    let synthetic = match &widget {
-                        None => resolved.global_synthetic(&key.key, Some(value), &root),
-                        Some(_) => resolved
-                            .session(&combination, &root, &metrics)
-                            .and_then(|session| session.synthetic(&key.key, Some(value))),
-                    };
-                    if synthetic.unwrap_or(false) {
-                        synthetic_skip(report, &prepared.fact.place(), &key.name, Pass::Normal);
-                        continue;
-                    }
-                    let outcome = match &widget {
-                        None => resolved.compare_global_pass(
-                            &key.key,
-                            value,
-                            result,
-                            &root,
-                            &pass.tolerance.drawn_by(drawing),
-                        ),
-                        Some(_) => match resolved.session(&combination, &root, &metrics) {
-                            Ok(session) => {
-                                let drawn = session.unavailable().map_or_else(
-                                    || {
-                                        (!not_drawn.iter().any(|when| session.root_holds(when)))
-                                            .then_some(())
-                                            .ok_or_else(|| "named by `not_drawn`".to_owned())
-                                    },
-                                    |why| Err(format!("not available ({why})")),
-                                );
-                                match drawn {
-                                    Ok(()) => session.compare_pass(
-                                        &key.key,
-                                        value,
-                                        result,
-                                        &pass.tolerance.drawn_by(drawing),
-                                    ),
-                                    Err(why) => Err(Unread::Refused(format!(
-                                        "the pass's combination {combination:?} is {why}"
-                                    ))),
-                                }
-                            }
-                            Err(Unread::NotHeld(_)) => {
-                                report.combinations_skipped += 1;
-                                continue;
-                            }
-                            Err(Unread::Refused(why)) => Err(Unread::Refused(why)),
-                        },
-                    };
-                    let under = format!("{vector:?}");
-                    record(
-                        outcome,
-                        &key.name,
-                        &describe(),
-                        report,
-                        &|| under.clone(),
-                        Pass::Measured,
-                    );
+                    checks.push(PassCheck {
+                        key,
+                        prepared,
+                        value,
+                        pass,
+                        result,
+                        combination: combination.clone(),
+                        not_drawn,
+                        vector,
+                        resolution,
+                    });
                 }
             }
         }
+    }
+    let resolved = parallel(&resolutions, |(vector, text)| {
+        let layer = preset.with_accent_group(Layer::from_toml(text).unwrap());
+        conditions(vector, flavor)
+            .map_err(|unread| format!("{unread:?}"))
+            .and_then(|conditions| preset.resolve(&conditions, &layer))
+    });
+    for check in checks {
+        let PassCheck {
+            key,
+            prepared,
+            value,
+            pass,
+            result,
+            combination,
+            not_drawn,
+            vector,
+            resolution,
+        } = check;
+        let describe = || format!("the pass {:?} of {}", pass.inputs, prepared.fact.place());
+        let widget = key.key.widget();
+        let resolved = match &resolved[resolution] {
+            Ok(resolved) => resolved,
+            Err(why) => {
+                report.fail(format!(
+                    "{} does not resolve under {vector:?}: {why}",
+                    describe()
+                ));
+                continue;
+            }
+        };
+        let synthetic = match &widget {
+            None => resolved.global_synthetic(&key.key, Some(value), &root),
+            Some(_) => resolved
+                .session(&combination, &root, &metrics)
+                .and_then(|session| session.synthetic(&key.key, Some(value))),
+        };
+        if synthetic.unwrap_or(false) {
+            synthetic_skip(report, &prepared.fact.place(), &key.name, Pass::Normal);
+            continue;
+        }
+        let outcome = match &widget {
+            None => resolved.compare_global_pass(
+                &key.key,
+                value,
+                result,
+                &root,
+                &pass.tolerance.drawn_by(drawing),
+            ),
+            Some(_) => match resolved.session(&combination, &root, &metrics) {
+                Ok(session) => {
+                    let drawn = session.unavailable().map_or_else(
+                        || {
+                            (!not_drawn.iter().any(|when| session.root_holds(when)))
+                                .then_some(())
+                                .ok_or_else(|| "named by `not_drawn`".to_owned())
+                        },
+                        |why| Err(format!("not available ({why})")),
+                    );
+                    match drawn {
+                        Ok(()) => session.compare_pass(
+                            &key.key,
+                            value,
+                            result,
+                            &pass.tolerance.drawn_by(drawing),
+                        ),
+                        Err(why) => Err(Unread::Refused(format!(
+                            "the pass's combination {combination:?} is {why}"
+                        ))),
+                    }
+                }
+                Err(Unread::NotHeld(_)) => {
+                    report.combinations_skipped += 1;
+                    continue;
+                }
+                Err(Unread::Refused(why)) => Err(Unread::Refused(why)),
+            },
+        };
+        let under = format!("{vector:?}");
+        record(
+            outcome,
+            &key.name,
+            &describe(),
+            report,
+            &|| under.clone(),
+            Pass::Measured,
+        );
     }
 }
