@@ -208,7 +208,11 @@ fn gen_inventory_submit(
 /// - `#[parts(own_resolved)]`: `Resolved<T>` is written by hand.
 /// - `#[parts(resolved_patch)]`: a struct block's patch resolved,
 ///   `Resolved<T>Patch`, each field `Option<resolved field>` (`None`: the
-///   patch leaves it), for a field holding the block's patch.
+///   patch leaves it, or the field beneath resolves `Absent`), for a field
+///   holding the block's patch: each field the patch sets resolved over the
+///   steps beneath it (a keyframe's over its part's style, S2.7), what is
+///   absent beneath kept absent at any depth (`KeepAbsent`, which the derive
+///   writes for every struct block's resolved type).
 /// - `#[parts(added(name = "<field>", ty = "<type>", doc = "<doc>"))]`: a
 ///   field of a struct block's `Resolved<T>` that no patch sets and the
 ///   resolution adds (S6.1: `ResolvedPartStyle.breeze_tests`), resolved at its
@@ -234,7 +238,8 @@ fn gen_inventory_submit(
 ///   holding the block's table so marked.
 /// - `#[parts(patch)]`: the field holds a struct block's patch, `<B>Patch`
 ///   (a keyframe's `PartStylePatch`): it resolves to `Resolved<B>Patch`
-///   (`B` marked `resolved_patch`), and its table entry reaches `B`'s table
+///   (`B` marked `resolved_patch`) through `Cx::patch`, which reads the
+///   holder's steps for the part it names, and its table entry reaches `B`'s table
 ///   through a function, as `B` can hold the field itself.
 ///
 /// # Part attributes (widget mode)

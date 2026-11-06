@@ -12,7 +12,7 @@ use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
-    BreezeTest, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
+    BreezeTest, Keyframe, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
     TransitionEngine, TransitionKind, same_flags, same_test,
 };
 use crate::next::blocks::paint::PaintPatch;
@@ -180,6 +180,9 @@ pub(super) struct Source {
     /// its engine's place (`focus.transition.engine`), which the stack's
     /// steps do not hold (S2.7).
     pub(super) tests: Vec<(String, BreezeTest)>,
+    /// The keyframes it states, each by its place (`icon.animation.
+    /// keyframes[0]`), and the part it names (S2.7).
+    pub(super) keyframes: Vec<(String, Option<PartRef>)>,
 }
 
 /// A value's steps, flattened, and what they name that the steps do not
@@ -188,6 +191,7 @@ struct Flat {
     ops: Vec<Op>,
     visuals: Vec<Visual>,
     tests: Vec<(String, BreezeTest)>,
+    keyframes: Vec<(String, Option<PartRef>)>,
 }
 
 /// A `WinUiAnimatedIcon` engine's `visual` a source states (S2.7): a
@@ -358,6 +362,8 @@ struct Flatten {
     visuals: Vec<Visual>,
     /// The Breeze tests its engines state, by the engine's place.
     tests: Vec<(String, BreezeTest)>,
+    /// The keyframes it states, by their places, and the parts they name.
+    keyframes: Vec<(String, Option<PartRef>)>,
     /// The `Keyed` transition kinds it states: each kind's place, its key
     /// and the key's place as a problem names it.
     kinds: Vec<(String, Key, String)>,
@@ -442,6 +448,16 @@ impl Flatten {
         }
     }
 
+    /// A loop's keyframes at `path`: each one's place and the part it
+    /// names.
+    fn keyframes(&mut self, path: &Path, keyframes: &[Keyframe]) {
+        let list = below(&self.place(path), "keyframes");
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            self.keyframes
+                .push((format!("{list}[{index}]"), keyframe.part.clone()));
+        }
+    }
+
     /// The steps, each `Touch` another step of the source sets below or at
     /// its place dropped: what remains is a field set to nothing; and the
     /// visuals and tests named.
@@ -463,6 +479,7 @@ impl Flatten {
             ops: kept,
             visuals: self.visuals,
             tests: self.tests,
+            keyframes: self.keyframes,
         }
     }
 }
@@ -494,6 +511,12 @@ impl Visit for Flatten {
                 self.appended.push(place.clone());
                 let entry = path.map_entry().is_some();
                 self.push(path, place, OpKind::Append { entry });
+            }
+            Node::Loop(looped) => self.keyframes(path, &looped.keyframes),
+            Node::LoopPatch(looped) => {
+                if let Some(keyframes) = &looped.keyframes {
+                    self.keyframes(path, keyframes);
+                }
             }
             Node::Transition(transition) => self.test(path, &transition.engine),
             Node::TransitionPatch(patch) => {
@@ -595,6 +618,7 @@ fn flatten<T: Walk + ?Sized>(
         appended: Vec::new(),
         visuals: Vec::new(),
         tests: Vec::new(),
+        keyframes: Vec::new(),
         kinds: Vec::new(),
     };
     {
@@ -728,6 +752,7 @@ impl<'a> Stack<'a> {
             ops,
             visuals,
             tests,
+            keyframes,
         }: Flat,
     ) {
         self.sources.push(Source {
@@ -742,6 +767,7 @@ impl<'a> Stack<'a> {
             items: Vec::new(),
             visuals,
             tests,
+            keyframes,
         });
     }
 
@@ -884,6 +910,7 @@ impl<'a> Stack<'a> {
             items: held,
             visuals: flat.visuals,
             tests: flat.tests,
+            keyframes: flat.keyframes,
         });
     }
 

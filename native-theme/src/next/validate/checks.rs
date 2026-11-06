@@ -1109,7 +1109,12 @@ impl<'a> Checker<'a> {
         }
         let in_text_style = path.fields().any(|(owner, _)| owner == "TextStyle");
         let on_font_size = path.last_field() == Some(("Font", "size"));
+        // `base` in a keyframe's patch is the part's value beneath it,
+        // wherever the keyframe stands (S2.7).
+        let in_bases = self.in_bases;
+        self.in_bases = in_bases && !path.within("Keyframe", "patch");
         self.expr_node(expr, &at, in_text_style, on_font_size);
+        self.in_bases = in_bases;
         let ty = match ty {
             Some(Ty::Key(set)) if set == KEY_OF_PLACE => self.key_type(path),
             Some(ty) => Some(ty),
@@ -1790,6 +1795,7 @@ impl Visit for Checker<'_> {
             Node::PaintPatch(patch) => {
                 if let PaintPatch::Append(_) = patch
                     && self.in_bases
+                    && !path.within("Keyframe", "patch")
                 {
                     self.problem(&path.join("append"), ProblemKind::AppendInBases);
                 }

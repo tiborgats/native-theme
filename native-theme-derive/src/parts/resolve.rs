@@ -235,7 +235,7 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
         let block = plain_ident(ty)
             .and_then(|ident| ident.to_string().strip_suffix("Patch").map(str::to_owned))
             .map(|name| format_ident!("{name}"));
-        return (quote!(cx.patch::<#block>(&items)), true);
+        return (quote!(cx.patch::<#block>(&items, folds)), true);
     }
     // A text style's font and line height are its frame's, resolved once
     // when the style is entered (`Cx::text_style`).

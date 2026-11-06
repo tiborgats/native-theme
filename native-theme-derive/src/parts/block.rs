@@ -187,6 +187,23 @@ pub(super) struct BlockField {
     pub(super) shape: Shape,
 }
 
+/// Where a field's resolved value can be absent (S6.3): what a keyframe's
+/// patch keeps absent over a part that does not draw it (S2.7).
+pub(super) enum Absence {
+    /// An `Option` that is `None` where absent, nothing absent within it.
+    Outer,
+    /// An `Option` of a struct block's resolved type, its fields' absences
+    /// within it.
+    OuterBlock,
+    /// A struct block's resolved type, its fields' absences within it.
+    Bare,
+    /// A compound value of `Option`s, each member `None` where absent.
+    Members,
+    /// Never absent: a plain value, a list, a map, an `Option` whose `None`
+    /// is a meaning of its own.
+    Never,
+}
+
 /// How a later patch's field merges over the earlier one's.
 enum MergeKind {
     Replace,
@@ -224,6 +241,74 @@ impl BlockField {
                 ..
             } => MergeKind::Nested,
             Shape::Block { .. } => MergeKind::Replace,
+        }
+    }
+
+    /// Where the field's resolved value can be absent.
+    pub(super) fn absence(&self) -> Absence {
+        if self.attrs.patch || generic_arg(&self.ty, "Option").is_some() {
+            return Absence::Never;
+        }
+        match &self.shape {
+            Shape::Block {
+                kind: BlockKind::Fields,
+                wrap: Wrap::Value,
+                ..
+            } => Absence::OuterBlock,
+            Shape::Block {
+                kind: BlockKind::Fields,
+                wrap: Wrap::Bare,
+                ..
+            } => Absence::Bare,
+            Shape::Compound(compound) if generic_arg(&compound.inner, "Value").is_some() => {
+                Absence::Members
+            }
+            Shape::Leaf | Shape::ValueMap(_) | Shape::Block { .. }
+                if generic_arg(&self.ty, "Value").is_some() =>
+            {
+                Absence::Outer
+            }
+            Shape::Leaf
+            | Shape::ValueMap(_)
+            | Shape::Block { .. }
+            | Shape::Compound(_)
+            | Shape::Map(_)
+            | Shape::NestedMap
+            | Shape::Surfaces(_) => Absence::Never,
+        }
+    }
+
+    /// Statements keeping absent in `set`, a `&mut` of the field's resolved
+    /// value, what is absent in `held`, a `&` of the value beneath it (S2.7).
+    pub(super) fn keep_absent(&self, set: &TokenStream, held: &TokenStream) -> TokenStream {
+        let ev = quote!(crate::next::resolve::evaluate);
+        match self.absence() {
+            Absence::Outer => quote! {
+                if #held.is_none() {
+                    *#set = ::core::option::Option::None;
+                }
+            },
+            Absence::OuterBlock => quote! {
+                match (#set.as_mut(), #held.as_ref()) {
+                    (::core::option::Option::Some(set), ::core::option::Option::Some(held)) => {
+                        #ev::KeepAbsent::keep_absent(set, held);
+                    }
+                    (_, ::core::option::Option::None) => *#set = ::core::option::Option::None,
+                    (::core::option::Option::None, ::core::option::Option::Some(_)) => {}
+                }
+            },
+            Absence::Bare => quote!(#ev::KeepAbsent::keep_absent(#set, #held);),
+            Absence::Members => {
+                let (_, members) = self.members();
+                quote! {
+                    #(
+                        if #held.#members.is_none() {
+                            #set.#members = ::core::option::Option::None;
+                        }
+                    )*
+                }
+            }
+            Absence::Never => TokenStream::new(),
         }
     }
 
@@ -1252,8 +1337,10 @@ fn expand_fields(
     let resolve = if type_attrs.own_resolved {
         TokenStream::new()
     } else {
+        let keep = keep_absent_impl(name, fields);
         let added: Vec<&Ident> = type_attrs.added.iter().map(|added| &added.name).collect();
-        super::resolve::struct_resolve(name, fields, &added)
+        let resolve = super::resolve::struct_resolve(name, fields, &added);
+        quote!(#resolve #keep)
     };
     quote! {
         #[doc = #doc]
@@ -1310,9 +1397,11 @@ fn expand_fields(
     }
 }
 
-/// `ResolvePatch` for a struct block whose patch is resolved alone (a
-/// keyframe's part style): each field the patch sets, resolved from that
-/// patch's step.
+/// `ResolvePatch` for a struct block whose patch resolves over the block
+/// beneath it (a keyframe's part style over its part's, S2.7): each field
+/// the patch sets resolved from the steps beneath it and the patch's step
+/// after them, `None` where the field beneath resolves `Absent`, and
+/// within it what is absent beneath kept absent ([`BlockField::keep_absent`]).
 fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> TokenStream {
     let c = quote!(crate::next::resolve::compose);
     let ev = quote!(crate::next::resolve::evaluate);
@@ -1322,17 +1411,60 @@ fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> Tok
         let key = ident.as_ref().map(Ident::to_string).unwrap_or_default();
         let found = super::resolve::patch_locate(f, &quote!(value), &quote!(&patch.#ident));
         let (call, required) = super::resolve::resolve_call(name, f);
-        let call = if required {
-            call
-        } else {
-            quote!(::core::option::Option::Some(#call))
+        let keep = f.keep_absent(&quote!(set), &quote!(held));
+        let merged = match (required, f.absence()) {
+            (true, _) => quote! {
+                match (held, set) {
+                    (::core::option::Option::Some(held), ::core::option::Option::Some(mut set)) => {
+                        {
+                            let (set, held) = (&mut set, &held);
+                            #keep
+                            let _ = (set, held);
+                        }
+                        ::core::option::Option::Some(set)
+                    }
+                    _ => ::core::option::Option::None,
+                }
+            },
+            (false, Absence::Outer | Absence::OuterBlock) => quote! {
+                if held.is_none() {
+                    ::core::option::Option::None
+                } else {
+                    let mut set = set;
+                    {
+                        let (set, held) = (&mut set, &held);
+                        #keep
+                        let _ = (set, held);
+                    }
+                    ::core::option::Option::Some(set)
+                }
+            },
+            (false, _) => quote! {{
+                let mut set = set;
+                {
+                    let (set, held) = (&mut set, &held);
+                    #keep
+                    let _ = (set, held);
+                }
+                ::core::option::Option::Some(set)
+            }},
         };
         quote! {
             #ident: match &patch.#ident {
                 ::core::option::Option::Some(value) => {
                     let rest: &[&str] = &[];
-                    let items = [#c::Fold { pos, target: cx.target(), found: #found }];
-                    cx.at(#key, |cx| #call)
+                    let beneath_items = #c::children(beneath, #key);
+                    let mut over = beneath_items.clone();
+                    over.push(#c::Fold { found: #found, ..fold });
+                    let held = {
+                        let items = beneath_items;
+                        cx.at(#key, |cx| #call)
+                    };
+                    let set = {
+                        let items = over;
+                        cx.at(#key, |cx| #call)
+                    };
+                    #merged
                 }
                 ::core::option::Option::None => ::core::option::Option::None,
             },
@@ -1344,10 +1476,42 @@ fn resolve_patch_impl(name: &Ident, patch: &Ident, fields: &[BlockField]) -> Tok
 
             fn resolve_patch<'t: 'f, 'f>(
                 patch: &'f #patch,
-                pos: crate::next::resolve::Pos,
+                fold: #c::Fold<'f>,
+                beneath: &[#c::Fold<'f>],
                 cx: &mut #ev::Cx<'t>,
             ) -> #resolved {
                 #resolved { #(#members)* }
+            }
+        }
+    }
+}
+
+/// `KeepAbsent` for a struct block's resolved type: each field, where the
+/// value beneath does not draw it, not drawn.
+fn keep_absent_impl(name: &Ident, fields: &[BlockField]) -> TokenStream {
+    let ev = quote!(crate::next::resolve::evaluate);
+    let resolved = format_ident!("Resolved{name}");
+    let kept: Vec<TokenStream> = fields
+        .iter()
+        .filter(|f| !matches!(f.absence(), Absence::Never))
+        .map(|f| {
+            let ident = &f.ident;
+            let keep = f.keep_absent(&quote!(set), &quote!(held));
+            quote! {{
+                let (set, held) = (&mut self.#ident, &beneath.#ident);
+                #keep
+            }}
+        })
+        .collect();
+    let body = if kept.is_empty() {
+        quote!(let _ = beneath;)
+    } else {
+        quote!(#(#kept)*)
+    };
+    quote! {
+        impl #ev::KeepAbsent for #resolved {
+            fn keep_absent(&mut self, beneath: &Self) {
+                #body
             }
         }
     }

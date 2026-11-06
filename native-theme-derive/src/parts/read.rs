@@ -25,6 +25,9 @@ struct Reading {
     combine: TokenStream,
     /// The value is a `FromToml` type, finished after its table is read.
     finished: Option<TokenStream>,
+    /// The value is a keyframe's patch, read and finished as one wherever
+    /// the keyframe stands (`read::in_patch`).
+    in_patch: bool,
 }
 
 /// The reading of a value of type `ty` (a patch's field, a variant's field),
@@ -45,6 +48,7 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
                 spellings: bare,
                 combine: quote!(#t::no_combine),
                 finished: None,
+                in_patch: false,
             }
         }
         Shape::Map(map) => {
@@ -61,6 +65,7 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
                 spellings: bare,
                 combine: quote!(#t::no_combine),
                 finished: None,
+                in_patch: false,
             }
         }
         Shape::ValueMap(map) => {
@@ -70,6 +75,7 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
                 spellings: bare,
                 combine: quote!(#t::no_combine),
                 finished: None,
+                in_patch: false,
             }
         }
         Shape::Surfaces(block) => Reading {
@@ -82,12 +88,14 @@ fn reading(shape: &Shape, ty: &TokenStream, value_ty: &Type) -> Reading {
             spellings: bare,
             combine: quote!(#t::no_combine),
             finished: None,
+            in_patch: false,
         },
         Shape::Leaf | Shape::Block { .. } | Shape::Compound(_) => Reading {
             read: quote!(<#ty as #t::FromToml>::read(item, spelling, &at, cx)),
             spellings: quote!(<#ty as #t::FromToml>::SPELLINGS),
             combine: quote!(<#ty as #t::FromToml>::combine),
             finished: Some(ty.clone()),
+            in_patch: false,
         },
     }
 }
@@ -140,7 +148,13 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
         .iter()
         .map(|f| {
             let inner = f.patch_inner();
-            reading(&f.shape, &inner, &f.ty)
+            let mut reading = reading(&f.shape, &inner, &f.ty);
+            if f.attrs.patch {
+                let read = &reading.read;
+                reading.read = quote!(#t::in_patch(cx, |cx| #read));
+                reading.in_patch = true;
+            }
+            reading
         })
         .collect();
     let entries = idents
@@ -166,11 +180,16 @@ pub(super) fn struct_impls(name: &Ident, fields: &[BlockField], own_toml: bool) 
             .zip(&readings)
             .filter_map(|((ident, name), reading)| {
                 reading.finished.as_ref().map(|ty| {
+                    let finish =
+                        quote!(<#ty as #t::FromToml>::finish(value, &#t::join(at, #name), cx));
+                    let finish = if reading.in_patch {
+                        quote!(#t::in_patch(cx, |cx| #finish))
+                    } else {
+                        finish
+                    };
                     quote! {
                         if let #o::Some(value) = self.#ident.take() {
-                            self.#ident = #o::Some(
-                                <#ty as #t::FromToml>::finish(value, &#t::join(at, #name), cx),
-                            );
+                            self.#ident = #o::Some(#finish);
                         }
                     }
                 })

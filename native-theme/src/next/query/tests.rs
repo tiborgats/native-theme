@@ -4,8 +4,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 
 use super::{DataNeeds, Element, FontMetrics, RootInputs, Scope, Sibling, Styled, Unavailable};
+use crate::next::blocks::motion::ResolvedKeyframe;
 use crate::next::blocks::outline::ResolvedRadius;
-use crate::next::blocks::part_style::{ResolvedPartStyle, RoleRef};
+use crate::next::blocks::part_style::{ResolvedPartStyle, ResolvedPartStylePatch, RoleRef};
 use crate::next::blocks::text::ResolvedFont;
 use crate::next::color::Color;
 use crate::next::declare::DataName;
@@ -19,7 +20,7 @@ use crate::next::selector::{
     StateFlags, VariantRef, WidgetOrPart,
 };
 use crate::next::toml::layer::read_preset;
-use crate::next::units::{Length, Px, Sides, Size};
+use crate::next::units::{Deg, Fraction, Length, Px, Sides, Size};
 use crate::next::widgets::{ButtonPart, ButtonValues, TypedPart, Variant};
 
 /// Synthetic measurement: each metric the font's size.
@@ -1178,4 +1179,156 @@ fn breeze_tests_in_rank_order() {
     assert_eq!(drawn(&theme, &element).0.breeze_tests, with_flat);
     let element = Element::new(LABEL, &scope, &Metrics);
     assert_eq!(drawn(&theme, &element).0.breeze_tests, []);
+}
+
+/// The button whose icon part draws a loop of `keyframes` (synthetic: a
+/// period and an icon size of no platform's), over the fixture's body, its
+/// stroke stated with its outset absent, and `layers`.
+fn looping(keyframes: &str, layers: &[&str]) -> ResolvedTheme {
+    let icon = format!(
+        "[widgets.button.body]\nstroke = {{ replace = {{ width_px = 1, paint = \"#000000\", \
+         dash = \"solid\", snap = \"to_device_pixel\", position = \"inside\", outset_px = \
+         \"absent\", fill_clip = \"box\" }} }}\n[widgets.button.icon]\nabsent = false\n\
+         transitions = []\nglyph = \"absent\"\n[widgets.button.icon.icon]\nsize_px = 16\n\
+         fill = \"absent\"\nrendering_mode = \"original\"\nweight = \"absent\"\nscale = \
+         \"absent\"\naxes = {{}}\nstate_effect = \"absent\"\nsymbol_variants = []\n\
+         symbolic_colors = {{}}\n[widgets.button.icon.icon.animation]\nperiod_ms = 1000\ntiming = \
+         \"linear\"\nkeyframes = [{keyframes}]"
+    );
+    let mut stacked = vec![icon.as_str()];
+    stacked.extend(layers);
+    fixture(&stacked)
+}
+
+/// The keyframes of the icon part's loop, as the query answers them.
+fn keyframes(theme: &ResolvedTheme) -> Vec<ResolvedKeyframe> {
+    let scope = root(theme, Direction::Ltr);
+    match theme.style(&Element::new(ICON, &scope, &Metrics)) {
+        Styled::Style((style, _)) => style
+            .icon
+            .and_then(|icon| icon.animation)
+            .map(|animation| animation.keyframes)
+            .unwrap_or_default(),
+        Styled::NotDrawn | Styled::DrawnAs { .. } | Styled::NotAvailable(_) => Vec::new(),
+    }
+}
+
+/// The one keyframe's patch on the body.
+fn on_body(patch: &str) -> Option<ResolvedPartStylePatch> {
+    let theme = looping(
+        &format!("{{ at = 0, part = \"body\", timing = \"absent\", patch = {{ {patch} }} }}"),
+        &[],
+    );
+    keyframes(&theme)
+        .into_iter()
+        .next()
+        .map(|keyframe| keyframe.patch)
+}
+
+/// S2.7: a keyframe's `Fields` patch of a block resolves over the part's
+/// resolved block, its `Some` that block with the keyframe's fields
+/// applied, at any depth.
+#[test]
+fn keyframe_fields_resolve_over_the_resolved_block() {
+    let patch = on_body("transform.rotate_deg = 90, stroke.top.width_px = 3").unwrap_or_default();
+    let transform = patch.transform.flatten();
+    assert_eq!(transform.as_ref().and_then(|t| t.rotate), Some(Deg(90.0)));
+    assert_eq!(transform.as_ref().and_then(|t| t.scale_x), Some(1.0));
+    assert_eq!(
+        transform.as_ref().and_then(|t| t.translate_x),
+        Some(Px(5.0))
+    );
+    let stroke = patch.stroke.flatten();
+    assert_eq!(stroke.as_ref().and_then(|s| s.top.width), Some(Px(3.0)));
+    assert_eq!(stroke.as_ref().and_then(|s| s.right.width), Some(Px(1.0)));
+    assert_eq!(patch.opacity, None, "a field the keyframe does not set");
+}
+
+/// S2.7: `base` in a keyframe is the field's own resolved value on the part
+/// before the keyframe applies.
+#[test]
+fn keyframe_base_is_the_parts_resolved_value() {
+    let patch = on_body("min_width_px = \"= add(base, 2px)\", opacity = \"= mul(base, 0.5)\"")
+        .unwrap_or_default();
+    assert_eq!(patch.min_width, Some(Some(Length::Px(42.0))));
+    assert_eq!(patch.opacity, Some(Some(Fraction(0.5))));
+}
+
+/// S2.7: a keyframe's `Append` appends over the part's resolved paint.
+#[test]
+fn keyframe_append_over_the_parts_paint() {
+    let patch = on_body("fill = { append = [\"#ff0000\"] }").unwrap_or_default();
+    let layers = patch.fill.flatten().map(|fill| fill.layers.len());
+    assert_eq!(layers, Some(2), "the body's own layer, then the keyframe's");
+}
+
+/// S2.7: any keyframe patch of a field that resolves `Absent` on the part,
+/// at any depth, is `None`, the field staying absent: a `Set`, a `Fields`
+/// patch and an `Append` alike, and a field within a block the keyframe
+/// sets.
+#[test]
+fn keyframe_over_an_absent_field_is_none() {
+    let patch = on_body(
+        "focus = \"= token.focus\", interaction.state_layer.alpha = 0.5, stroke.outset_px = 2, stroke.top.width_px = 3",
+    )
+    .unwrap_or_default();
+    assert_eq!(patch.focus, None, "a Set over an absent focus indicator");
+    assert_eq!(patch.interaction, None, "a Fields patch over absent");
+    let stroke = patch.stroke.flatten();
+    assert_eq!(
+        stroke.as_ref().map(|s| s.outset),
+        Some(None),
+        "absent within the stroke"
+    );
+    assert_eq!(stroke.as_ref().and_then(|s| s.top.width), Some(Px(3.0)));
+    let theme = looping(
+        "{ at = 0, part = \"body\", timing = \"absent\", patch = { fill = { append = [\"#ff0000\"] } } }",
+        &["[widgets.button.body]\nfill = \"absent\""],
+    );
+    let patch = keyframes(&theme)
+        .into_iter()
+        .next()
+        .map(|keyframe| keyframe.patch);
+    assert_eq!(
+        patch.map(|patch| patch.fill),
+        Some(None),
+        "an Append over absent"
+    );
+}
+
+/// S2.7: a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to
+/// a patch with every field `None`, its `at` and `timing` kept.
+#[test]
+fn keyframe_on_a_part_not_drawn_sets_nothing() {
+    let frames = "{ at = 0, part = \"subtitle\", timing = \"absent\", patch = { opacity = 0.5 } }, \
+                  { at = 0.5, part = \"menu_indicator\", timing = \"linear\", patch = { opacity = 0.5 } }, \
+                  { at = 0.75, part = \"body\", timing = \"absent\", patch = { opacity = 0.5 } }";
+    let drawn_as = "[widgets.button.menu_indicator]\nabsent = false\n\
+                    [[rules]]\ntarget = \"button.menu_indicator\"\nset = { drawn_as = { widget = \
+                    \"button\", variants = [] } }";
+    let found = keyframes(&looping(frames, &[drawn_as]));
+    let at: Vec<Fraction> = found.iter().map(|keyframe| keyframe.at).collect();
+    assert_eq!(at, [Fraction(0.0), Fraction(0.5), Fraction(0.75)]);
+    let patches: Vec<&ResolvedPartStylePatch> =
+        found.iter().map(|keyframe| &keyframe.patch).collect();
+    assert_eq!(
+        patches.first(),
+        Some(&&ResolvedPartStylePatch::default()),
+        "not drawn"
+    );
+    assert_eq!(
+        patches.get(1),
+        Some(&&ResolvedPartStylePatch::default()),
+        "drawn as another"
+    );
+    assert_eq!(
+        found.get(1).map(|keyframe| keyframe.timing.is_some()),
+        Some(true),
+        "its timing kept"
+    );
+    assert_eq!(
+        patches.get(2).and_then(|patch| patch.opacity),
+        Some(Some(Fraction(0.5))),
+        "a drawn part's"
+    );
 }

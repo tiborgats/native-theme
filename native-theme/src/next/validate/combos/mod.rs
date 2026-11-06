@@ -39,9 +39,9 @@ use crate::next::presets::PresetId;
 use crate::next::registry::{self, BlockForm, FieldInfo, FieldType, PartInfo};
 use crate::next::roles::SurfaceSet;
 use crate::next::selector::{
-    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, Scheme,
-    Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef, WidgetOrPart,
-    WidgetRef,
+    Condition, ContextMatch, ContextScope, ControlSize, Density, Direction, Parity, PartRef,
+    Scheme, Selector, SetMatch, SiblingMatch, SiblingScope, SizeClass, StateFlag, VariantRef,
+    WidgetOrPart, WidgetRef,
 };
 use crate::next::widgets::{Shown, TypedPart, WidgetKind};
 
@@ -838,14 +838,22 @@ impl<'a> Stack<'a> {
                     .collect()
             }
             Ref::Token(path) => vec![field(Target::Tokens, joined(path))],
-            Ref::Base => vec![Place::Field(
-                cx.target,
-                cx.path.to_owned(),
-                Bound {
-                    before: Some(cx.pos),
-                    bases_only: false,
-                },
-            )],
+            // In a keyframe's patch, the field's value on the part it
+            // resolves over (S2.7).
+            Ref::Base => match self.keyframe_at(cx.target, cx.pos, cx.path) {
+                Some((Some(part), field)) => {
+                    vec![Place::Field(Target::Part(part), field, Bound::ALL)]
+                }
+                Some((None, _)) => Vec::new(),
+                None => vec![Place::Field(
+                    cx.target,
+                    cx.path.to_owned(),
+                    Bound {
+                        before: Some(cx.pos),
+                        bases_only: false,
+                    },
+                )],
+            },
             Ref::FontSize | Ref::LineHeight => {
                 let field_name = if *reference == Ref::FontSize {
                     "font.size"
@@ -954,6 +962,56 @@ impl<'a> Stack<'a> {
             }
             role.map(Answer::Role).or(set.map(Answer::Set))
         })
+    }
+
+    /// The keyframe whose patch holds `path`, a place the source of `target`
+    /// at `pos` states (S2.7): the part its patch resolves over (`None`: no
+    /// typed widget's part, whose fields are all `None`) and the place below
+    /// its patch.
+    fn keyframe_at(
+        &self,
+        target: Target,
+        pos: Pos,
+        path: &str,
+    ) -> Option<(Option<TypedPart>, String)> {
+        self.sources
+            .iter()
+            .filter(|source| source.target == target && source.pos == pos)
+            .flat_map(|source| &source.keyframes)
+            .find_map(|(place, part)| {
+                let patch = below(place, "patch");
+                if !is_above(&patch, path) {
+                    return None;
+                }
+                let part = match part {
+                    Some(PartRef::Typed(part)) => Some(*part),
+                    Some(PartRef::Component { .. }) => None,
+                    None => match target {
+                        Target::Part(part) => Some(part),
+                        Target::Roles(_) | Target::Tokens | Target::Values(_) => None,
+                    },
+                };
+                Some((part, tail(&patch, path).to_owned()))
+            })
+    }
+
+    /// Whether a keyframe's field at `field` of `part` is evaluated under
+    /// `world` (S2.7, S12): the part is drawn as itself and the field's value
+    /// on it, its references followed, resolves to something other than
+    /// `Absent`.
+    fn keyframe_drawn(&self, world: &World, part: Option<TypedPart>, field: &str) -> bool {
+        let Some(part) = part else {
+            return false;
+        };
+        if !matches!(self.shown(world, part).0, Shown::Drawn) {
+            return false;
+        }
+        let ends: Vec<Found<'_>> = self
+            .value_at(world, Target::Part(part), field, Bound::ALL, 0)
+            .into_iter()
+            .flat_map(|found| self.follow(world, found).0)
+            .collect();
+        !ends.is_empty() && !ends.iter().any(|end| matches!(end.got, Got::Absent))
     }
 
     /// What a part is drawn as under `world`: its last stated presence
@@ -2215,6 +2273,12 @@ impl Checks<'_, '_> {
                 if let Target::Part(part) = source.target {
                     seeds.push(Seed::Shown(part));
                 }
+                if let Some((Some(part), field)) =
+                    stack.keyframe_at(source.target, source.pos, &op.path)
+                {
+                    seeds.push(Seed::Shown(part));
+                    seeds.push(Seed::Field(Target::Part(part), field, false));
+                }
                 let outer = stack.ask_begin();
                 let worlds = stack.worlds(seeds);
                 let asked = stack.ask_end(outer);
@@ -2358,6 +2422,13 @@ impl Checks<'_, '_> {
         expr: &Expr,
     ) {
         let stack = self.stack;
+        // A keyframe's field over a part that does not draw it is not
+        // evaluated (S2.7, S12).
+        if let Some((part, field)) = stack.keyframe_at(source.target, source.pos, &op.path)
+            && !stack.keyframe_drawn(world, part, &field)
+        {
+            return;
+        }
         let cx = cx_of(source, op);
         let plain = matches!(expr, Expr::Ref(_));
         let in_token_style = matches!(source.target, Target::Tokens) && op.text_style.is_some();

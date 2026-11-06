@@ -507,6 +507,38 @@ mod tests {
     }
 
     #[test]
+    fn keep_absent_follows_each_fields_absence() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block, resolved_patch)]
+            pub struct Probe {
+                #[parts(may_be_absent)]
+                pub width: Value<Px>,
+                #[parts(block = "fields", may_be_absent)]
+                pub stroke: Value<Stroke>,
+                #[parts(block = "fields")]
+                pub edge: Edge,
+                pub padding: Sides<Value<Px>>,
+                pub shown: Option<Value<bool>>,
+                pub keys: Vec<Key>,
+            }
+        });
+        let squeezed: String = out.split_whitespace().collect();
+        for expected in [
+            "implcrate::next::resolve::evaluate::KeepAbsentforResolvedProbe",
+            "let(set,held)=(&mutself.width,&beneath.width);ifheld.is_none()",
+            "let(set,held)=(&mutself.stroke,&beneath.stroke);match(set.as_mut(),held.as_ref())",
+            "let(set,held)=(&mutself.edge,&beneath.edge);crate::next::resolve::evaluate::KeepAbsent::keep_absent(set,held);",
+            "ifheld.top.is_none(){set.top=::core::option::Option::None;}",
+            "fnresolve_patch<'t:'f,'f>(patch:&'fProbePatch,fold:crate::next::resolve::compose::Fold<'f>,beneath:&[crate::next::resolve::compose::Fold<'f>]",
+        ] {
+            assert!(squeezed.contains(expected), "{expected}\n{out}");
+        }
+        for unkept in ["&beneath.shown", "&beneath.keys"] {
+            assert!(!squeezed.contains(unkept), "{unkept}\n{out}");
+        }
+    }
+
+    #[test]
     fn resolved_patch_resolves_each_field_as_an_option() {
         let out = expand(syn::parse_quote! {
             #[parts(block, resolved_patch)]

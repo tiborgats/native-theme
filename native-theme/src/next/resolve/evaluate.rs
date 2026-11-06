@@ -62,19 +62,43 @@ pub(crate) trait ResolveWhole: Block {
     fn resolve_whole<'t: 'f, 'f>(&'f self, pos: Pos, cx: &mut Cx<'t>) -> Option<Self::Resolved>;
 }
 
-/// A struct block's patch resolved alone (a keyframe's part style, S2.7):
-/// each field it sets resolved, the others `None`.
+/// A struct block's patch resolved over the block beneath it (a keyframe's
+/// part style over its part's, S2.7): each field it sets resolved, the
+/// others `None`.
 pub(crate) trait ResolvePatch: FieldsBlock {
     /// The patch resolved.
-    type ResolvedPatch;
+    type ResolvedPatch: Default;
 
-    /// `patch`, stated by a step at `pos`, resolved.
+    /// `patch`, its step `fold`, resolved over the steps `beneath`: each
+    /// field it sets from the steps beneath the field and its own after
+    /// them, `None` where the field beneath resolves `Absent`, and what is
+    /// absent within the field beneath kept absent ([`KeepAbsent`]).
     fn resolve_patch<'t: 'f, 'f>(
         patch: &'f Self::Patch,
-        pos: Pos,
+        fold: Fold<'f>,
+        beneath: &[Fold<'f>],
         cx: &mut Cx<'t>,
     ) -> Self::ResolvedPatch;
 }
+
+/// A struct block's resolved value a keyframe's patch resolved over the
+/// part's (S2.7), which the `ThemeParts` derive writes: a keyframe animates
+/// what is drawn and never draws what is not.
+pub(crate) trait KeepAbsent {
+    /// Every field, at any depth, that `beneath`, the part's own value, does
+    /// not draw left not drawn.
+    fn keep_absent(&mut self, beneath: &Self);
+}
+
+/// Where a keyframe's step lies among a place's steps (S2.7): after every
+/// step of the theme, so it applies over the part's resolved style, and
+/// before the step a fact states in the facts gate, after every other
+/// (S17).
+const KEYFRAME: Pos = Pos {
+    rule: true,
+    layer: usize::MAX,
+    index: 0,
+};
 
 /// A value a `Value` holds that is no block: a number, a colour, a name, a
 /// text (S2.2's operand types).
@@ -2747,33 +2771,72 @@ impl<'t> Cx<'t> {
         })
     }
 
-    /// A field holding a block's patch, resolved alone (a keyframe's).
-    pub(crate) fn patch<'f, B>(&mut self, items: &[Fold<'f>]) -> Option<B::ResolvedPatch>
+    /// A keyframe's patch (S2.7), `owner` its keyframe's steps: resolved
+    /// over the style of the part its `part` names (`None`: the part the loop
+    /// is on, the one whose place is evaluated), in that part's scope
+    /// ([`ResolvePatch`]); every field `None` where that part is not drawn
+    /// or is drawn as another (S6.3), or is no typed widget's part, its `at`
+    /// and `timing` the keyframe's own.
+    pub(crate) fn patch<'f, B>(
+        &mut self,
+        items: &[Fold<'f>],
+        owner: &[Fold<'f>],
+    ) -> Option<B::ResolvedPatch>
     where
         't: 'f,
         B: ResolvePatch,
         B::Patch: Any,
     {
-        let (patch, pos) = items
+        let (patch, fold) = items
             .iter()
             .rev()
-            .find_map(|fold| fold.found.get::<B::Patch>().map(|patch| (patch, fold.pos)))?;
-        self.touch(pos);
-        Some(B::resolve_patch(patch, pos, self))
+            .find_map(|fold| fold.found.get::<B::Patch>().map(|patch| (patch, *fold)))?;
+        self.touch(fold.pos);
+        let named = self
+            .plain::<Option<PartRef>>(&compose::children(owner, "part"))
+            .flatten();
+        let part = match named {
+            Some(PartRef::Typed(part)) => Some(part),
+            Some(PartRef::Component { .. }) => None,
+            None => match self
+                .origin
+                .as_ref()
+                .map_or(self.target, |(target, ..)| *target)
+            {
+                Target::Part(part) => Some(part),
+                Target::Roles | Target::Tokens | Target::Values(_) => None,
+            },
+        };
+        let Some(part) = part.filter(|part| self.drawn(*part)) else {
+            return Some(B::ResolvedPatch::default());
+        };
+        let fold = Fold {
+            pos: KEYFRAME,
+            ..fold
+        };
+        let resolved = self.follow(Target::Part(part), Vec::new(), false, |cx, beneath| {
+            Some(B::resolve_patch(patch, fold, beneath, cx))
+        });
+        Some(resolved.unwrap_or_default())
+    }
+
+    /// Whether `part` is drawn as itself: no kept step's presence, or the
+    /// last one's `Present` (S6.3).
+    fn drawn(&self, part: TypedPart) -> bool {
+        self.theme
+            .part_steps(part)
+            .iter()
+            .rev()
+            .filter(|step| self.kept(step.selector.as_ref()))
+            .find_map(|step| step.patch.presence.as_ref())
+            .is_none_or(|presence| *presence == PartPresence::Present)
     }
 
     /// The element's part's style (S8 step 3): `None` where its last patch
     /// that states a presence makes it `Absent` or drawn as another widget
     /// (S6.3); its own bindings evaluated first, in the scope outside it.
     pub(crate) fn part(&mut self, part: TypedPart) -> Option<<PartStyle as Block>::Resolved> {
-        let presence = self
-            .theme
-            .part_steps(part)
-            .iter()
-            .rev()
-            .filter(|step| self.kept(step.selector.as_ref()))
-            .find_map(|step| step.patch.presence.as_ref());
-        if presence.is_some_and(|presence| *presence != PartPresence::Present) {
+        if !self.drawn(part) {
             return None;
         }
         let folds = self.roots(Target::Part(part));

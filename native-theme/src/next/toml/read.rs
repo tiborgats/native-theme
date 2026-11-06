@@ -353,6 +353,19 @@ pub(crate) fn toml_key(key: &str) -> String {
 }
 
 /// `at.key`, or `key` at the root; a key that is no bare TOML key is quoted.
+/// `read` in a keyframe's patch (S2.7, S11): a patch wherever the keyframe
+/// stands, so neither the bases' refusal of `append` nor a preset's whole
+/// blocks hold there, a table at a struct block a `Fields` patch and
+/// `{ replace = { … } }` its `Set`.
+pub(crate) fn in_patch<R>(cx: &mut Reader, read: impl FnOnce(&mut Reader) -> R) -> R {
+    let held = (cx.whole, cx.bases);
+    cx.whole = false;
+    cx.bases = false;
+    let out = read(cx);
+    (cx.whole, cx.bases) = held;
+    out
+}
+
 pub(crate) fn join(at: &str, key: &str) -> String {
     let key = toml_key(key);
     if at.is_empty() {

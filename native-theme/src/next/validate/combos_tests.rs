@@ -1887,3 +1887,64 @@ fn layers_added_at_once_each_problem_its_layer() {
         [dash_absent, fill_absent]
     );
 }
+
+/// A keyframe's patch is checked over its part (S2.7, S12; ADD-A125): its
+/// `base` is the part's value beneath it, wherever the keyframe stands, and
+/// a field whose value on the part resolves `Absent`, or every field where
+/// the part is not drawn or drawn as another, is not evaluated.
+#[test]
+fn keyframe_checked_over_its_part() {
+    let stated = |part: &str, presence: &str, patch: &str| {
+        format!(
+            "[widgets.button.body]\nmin_width_px = \"auto\"\nmin_height_px = 20\n\
+             touch_target_px = \"absent\"\nmargin = {{ top_px = \"absent\", right_px = 0, \
+             bottom_px = 0, left_px = 0 }}\n[widgets.button.menu_indicator]\n{presence}\
+             min_height_px = 4\n[widgets.button.icon.icon.animation]\nperiod_ms = 100\n\
+             timing = \"linear\"\nkeyframes = [{{ at = 0, part = \"{part}\", timing = \"absent\", \
+             patch = {{ {patch} }} }}]"
+        )
+    };
+    let looped = |part: &str, patch: &str| stated(part, "", patch);
+    let at = "widgets.button.icon.icon.animation.keyframes[0].patch";
+    assert_eq!(
+        bare(&looped("body", "min_width_px = \"= add(base, 2px)\"")),
+        [format!("{at}.min_width_px: `base` can be `auto` here")]
+    );
+    assert_eq!(
+        bare(&looped("body", "margin.top_px = \"= add(base, 1px)\"")),
+        NONE,
+        "the part's margin's top is absent"
+    );
+    let touch = "min_height_px = \"= add(widget.body.touch_target, 1px)\"";
+    let refused = [format!(
+        "{at}.min_height_px: `widget.body.touch_target` can be `absent` here"
+    )];
+    assert_eq!(bare(&looped("body", touch)), refused);
+    assert_eq!(bare(&looped("menu_indicator", touch)), refused);
+    let hidden = stated("menu_indicator", "absent = true\n", touch);
+    assert_eq!(bare(&hidden), NONE, "the part is not drawn");
+    let decl = declare("[declare.widget.button]\nvariants = [\"@inner\"]");
+    let drawn_as = format!(
+        "{}\n[[rules]]\nwhen = {{ not_variants = [\"@inner\"] }}\ntarget = \
+         \"button.menu_indicator\"\nset = {{ drawn_as = {{ widget = \"button\", variants = \
+         [\"@inner\"] }} }}",
+        looped("menu_indicator", touch)
+    );
+    assert_eq!(
+        alone(&drawn_as, &decl),
+        refused,
+        "drawn as another without the variant, as itself only with it"
+    );
+    let as_label = format!(
+        "{}\n[[rules]]\ntarget = \"button.menu_indicator\"\nset = {{ drawn_as = {{ widget = \
+         \"button\", part = \"label\", variants = [] }} }}",
+        looped("menu_indicator", touch)
+    );
+    assert_eq!(bare(&as_label), NONE, "drawn as another part");
+    let appended = looped("body", "fill = { append = [\"#ff0000\"] }");
+    assert_eq!(
+        bare(&appended),
+        NONE,
+        "`append` in a keyframe's patch in the bases"
+    );
+}
