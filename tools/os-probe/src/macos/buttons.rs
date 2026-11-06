@@ -679,7 +679,11 @@ fn style_sheet_with(
                         setup: style.setup(),
                         control,
                         button,
-                        clickable: false,
+                        // The style sheets' NSComboButtons, which have no
+                        // highlight:, are pressed by a posted click.
+                        clickable: extra == Extra::None
+                            && control_size == NSControlSize::Regular
+                            && matches!(style, Style::ComboSplit | Style::ComboUnified),
                         focus: control_size == NSControlSize::Regular,
                     });
                 }
@@ -710,7 +714,7 @@ fn style_sheet_with(
         content,
         backdrop,
         cases,
-        pointer_states: false,
+        pointer_states: extra == Extra::None,
         notes,
     })
 }
@@ -1017,11 +1021,11 @@ fn states_table() -> Table {
         ),
         (
             "hovered",
-            "push sheet, key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)",
+            "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)",
         ),
         (
             "clicked",
-            "push sheet, key mode, over the window's background: per plain and default button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up",
+            "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up",
         ),
         (
             "focused",
@@ -2094,6 +2098,28 @@ fn raw<T: TryInto<i64> + Copy + std::fmt::Display>(v: T) -> Value {
 
 /// A button's setup and geometry; its frame in the window frame's points
 /// from the top left, as the captures lay it out.
+/// The subviews of `view`, four deep: `[depth, class, frame in the window
+/// frame's points from its top left]`; an NSComboButton's title and menu
+/// indicator are drawn by views of its own.
+fn subviews_value(view: &NSView, frame: NSSize) -> Value {
+    fn collect(view: &NSView, frame: NSSize, depth: i64, rows: &mut Vec<Value>) {
+        if depth > 4 {
+            return;
+        }
+        for sub in view.subviews().iter() {
+            rows.push(out::array(vec![
+                Value::Integer(depth),
+                out::text(sub.class().name().to_string_lossy()),
+                rect(from_top_left(&sub, frame)),
+            ]));
+            collect(&sub, frame, depth.saturating_add(1), rows);
+        }
+    }
+    let mut rows = Vec::new();
+    collect(view, frame, 1, &mut rows);
+    out::array(rows)
+}
+
 fn case_table(case: &Case, frame: NSSize) -> Table {
     let c = &case.control;
     let mut t = Table::new();
@@ -2122,6 +2148,7 @@ fn case_table(case: &Case, frame: NSSize) -> Table {
         "in_window_frame_from_top_left_xywh",
         rect(from_top_left(c, frame)),
     );
+    out::put(&mut t, "subviews", subviews_value(c, frame));
     match c.font() {
         Some(font) => out::put_table(&mut t, "font", font_table(&font)),
         None => out::put(&mut t, "font", out::unavailable("nil")),
