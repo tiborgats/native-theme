@@ -20,6 +20,8 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Reads.cs calls DirectWrite through its COM vtables. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <HostWindowsAppSDKVersion>2.5.1</HostWindowsAppSDKVersion>
   </PropertyGroup>
 

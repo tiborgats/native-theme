@@ -16,6 +16,10 @@
 //   popup-<pass>.png   each popup's child (RenderTargetBitmap)
 //   screen-<pass>.png  the primary display (GDI), the popups on screen, and
 //                      screen-<pass>-window.png, the window's part of it
+// Then the measurement passes of Reads.cs (WP-reads, WH-defaults and the
+// gesture recognizer's defaults), with their own tables in frames.toml and
+// text-<pass>.png, screen-dialog.png and screen-app_bar-<pass>.png; with
+// --text-scale-only, the text pass alone (run.ps1's text-scale run).
 // XAML coordinates are in effective pixels relative to the window's content;
 // HWND rectangles and the screen captures are in physical pixels.
 using System.Diagnostics;
@@ -58,6 +62,7 @@ public partial class App : Application
     private bool pageBackground;
     private bool started;
     private bool finished;
+    private bool textScaleOnly;
 
     public App()
     {
@@ -80,6 +85,7 @@ public partial class App : Application
                 outDir = argv[i + 1];
             }
         }
+        textScaleOnly = argv.Contains("--text-scale-only");
         Directory.CreateDirectory(outDir);
         result = toml.Add("[result]");
 
@@ -114,11 +120,11 @@ public partial class App : Application
         }
 
         watchdog = DispatcherQueue.GetForCurrentThread().CreateTimer();
-        watchdog.Interval = TimeSpan.FromSeconds(150);
+        watchdog.Interval = TimeSpan.FromSeconds(200);
         watchdog.IsRepeating = false;
         watchdog.Tick += (_, _) =>
         {
-            errors.Add("watchdog: the passes did not finish within 150 s");
+            errors.Add("watchdog: the passes did not finish within 200 s");
             Finish(2);
         };
         watchdog.Start();
@@ -134,6 +140,15 @@ public partial class App : Application
         {
             await Task.Delay(SettleMilliseconds);
             RecordHost();
+            if (textScaleOnly)
+            {
+                // run.ps1's text-scale run: the text pass alone, under the
+                // TextScaleFactor it set.
+                RecordSystem();
+                await TextPass("text_scale");
+                Finish(errors.Count == 0 ? 0 : 1);
+                return;
+            }
             RecordDesktop();
             RecordWindow();
             Toml.Section anchorSection = toml.Add("[anchor]");
@@ -151,6 +166,7 @@ public partial class App : Application
             await FlyoutPass("menu_flyout_constrained", true);
             await ToolTipPass("tooltip_programmatic", false);
             await ToolTipPass("tooltip_hover", true);
+            await ReadPasses();
         }
         catch (Exception e)
         {
@@ -226,6 +242,8 @@ public partial class App : Application
         section.Str("button_focus_visual_secondary_thickness", anchor.FocusVisualSecondaryThickness.ToString());
         section.Str("button_focus_visual_margin", anchor.FocusVisualMargin.ToString());
         RecordControl(section, "button", anchor);
+        RecordFocusVisual(section, "button", anchor);
+        RecordLabel(section, "button", anchor);
 
         if (Resources.TryGetValue("AccentButtonStyle", out object? style) && style is Style accentStyle)
         {
@@ -239,6 +257,8 @@ public partial class App : Application
             root!.Children.Add(accent);
             await Task.Delay(SettleMilliseconds);
             RecordControl(section, "accent_button", accent);
+            RecordFocusVisual(section, "accent_button", accent);
+            RecordLabel(section, "accent_button", accent);
             root.Children.Remove(accent);
             await Task.Delay(SettleMilliseconds);
         }

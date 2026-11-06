@@ -1,10 +1,12 @@
 # Builds the WinUI host (WinUiHost.csproj, Release, for the runner's
-# architecture) with the .NET SDK on PATH, runs it twice, and checks that the
-# two runs wrote the same frames.toml and the same PNGs (SHA-256; desktop.toml,
+# architecture) with the .NET SDK on PATH, runs it twice and once more with
+# the text scaled to 150 %, and checks that the two runs wrote the same
+# frames.toml and the same PNGs (SHA-256; desktop.toml,
 # the other processes' windows, is not compared). Writes into
 # -Out:
 #   build.txt        dotnet build's output
 #   run<N>/          the host's frames.toml, PNGs, stdout.txt, stderr.txt
+#   text-scale/      the host's text pass alone at TextScaleFactor 150
 #   run.txt          each step's exit status, the tools' versions, the comparison
 #   processes-*.txt  the session's processes before and after the out-of-box
 #                    experience's processes are stopped
@@ -72,6 +74,34 @@ foreach ($n in 1, 2) {
         $failed = $true
     }
     if (-not (Test-Path (Join-Path $dir 'frames.toml'))) { Note "run${n}: no frames.toml"; $failed = $true }
+}
+
+# The text-scale run (WP-reads, U508): the host's text pass alone, with the
+# Text size setting (HKCU\Software\Microsoft\Accessibility TextScaleFactor,
+# which UISettings.TextScaleFactor reports) at 150 %; the value is restored
+# afterwards.
+$accessibility = 'HKCU:\Software\Microsoft\Accessibility'
+$before = (Get-ItemProperty -Path $accessibility -Name TextScaleFactor -ErrorAction SilentlyContinue).TextScaleFactor
+Note "TextScaleFactor before: $(if ($null -eq $before) { 'absent' } else { $before })"
+New-Item -Path $accessibility -Force | Out-Null
+Set-ItemProperty -Path $accessibility -Name TextScaleFactor -Value 150 -Type DWord
+$dir = Join-Path $Out 'text-scale'
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$process = Start-Process -FilePath $exe.FullName -ArgumentList @('--out', "`"$dir`"", '--text-scale-only') -PassThru `
+    -RedirectStandardOutput (Join-Path $dir 'stdout.txt') -RedirectStandardError (Join-Path $dir 'stderr.txt')
+$null = $process.Handle
+if ($process.WaitForExit(120000)) {
+    Note "text-scale run: exit $($process.ExitCode)"
+    if ($process.ExitCode -ne 0) { $failed = $true }
+} else {
+    $process.Kill()
+    Note 'text-scale run: timed out after 120 s'
+    $failed = $true
+}
+if ($null -eq $before) {
+    Remove-ItemProperty -Path $accessibility -Name TextScaleFactor -ErrorAction SilentlyContinue
+} else {
+    Set-ItemProperty -Path $accessibility -Name TextScaleFactor -Value $before -Type DWord
 }
 
 Get-ChildItem -Path $Out -Recurse -File |
