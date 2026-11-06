@@ -77,7 +77,7 @@ part, their callers being the reader's).
 
 ## `PLAN_EXCLUDED`
 
-The expected list before the switch is the plan's (*What cannot build meanwhile*). Current list: empty.
+The expected list before the switch is the plan's (*What cannot build meanwhile*), corrected by the switch's audit (`todo_v0.7.1_model-completeness-switch.md` §2 and its Q1: only the steps that fail at the switch). Current list: empty.
 
 | Step | Until | Since | Reason |
 |---|---|---|---|

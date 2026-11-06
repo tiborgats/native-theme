@@ -152,3 +152,7 @@ generated code against `../native-theme`.
 - **F14.** `proptest` goes unless a new-model test uses it.
 - **F15.** `next/presets/` carries its own README, moved into place.
 - **F16.** `kde/colors.rs`'s mapping is restored at M1b calling `platform/`'s functions, not the deleted ports.
+
+## The switch's audit (2026-11-06)
+
+[`todo_v0.7.1_model-completeness-switch.md`](todo_v0.7.1_model-completeness-switch.md) checks this inventory against the tree at `5be7b7fe`. It adds 22 missing items (§1.1) and corrects 11 stale fates (§1.2); its Q3 revises F10 (`IconSet` and `IconRole` in `native_theme::icons`). Where it and this file disagree, it holds.
