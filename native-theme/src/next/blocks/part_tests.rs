@@ -592,6 +592,8 @@ fn no_other_field_may_be_absent_or_auto() {
         "TextStyle.mnemonic_decoration",
         "TextStyle.word_spacing",
         "Transition.duration",
+        "Transition.timing",
+        "PresentationStep.timing",
         "PartStyle.interaction",
         "RippleStyle.effect",
         "RippleStyle.max_radius",

@@ -230,6 +230,32 @@ pub enum ProblemKind {
         /// The visual as written.
         visual: String,
     },
+    /// A transition's or presentation step's `timing` that can be `Absent`
+    /// where its `duration` is not a stated zero, but a transition's under
+    /// `WinUiAnimatedIcon`, under some combination (S2.7, S12).
+    TimingAbsent,
+    /// A stated zero duration's `timing` that can be stated, under some
+    /// combination: a zero runs no curve, so its timing is `Absent` (S2.7,
+    /// S12).
+    TimingOnZero,
+    /// A transition's or presentation step's `duration` that can be
+    /// `Absent` where its timing, followed through references, is no
+    /// spring, but a transition's under `WinUiAnimatedIcon`, under some
+    /// combination (S2.7, S6.3, S12).
+    DurationAbsent,
+    /// A `PresentationKind::Instant` step whose `duration` can be other
+    /// than a stated zero, under some combination (S2.7, S12).
+    InstantNotZero,
+    /// A presentation step of another kind than `Instant` that can state a
+    /// zero `duration`, under some combination: an instant step is
+    /// `Instant`, its one spelling (S2.7, S12).
+    ZeroNotInstant,
+    /// A transition's stated timing, followed through references, that its
+    /// engine's code does not compute, under some combination (S2.7, S12).
+    TimingNotComputed {
+        /// The engine, as S11 spells it.
+        engine: &'static str,
+    },
     /// A recency set with fewer than two flags (S10, S12).
     RecencyTooSmall,
     /// A recency set ordering two flags oppositely to another of the
@@ -507,6 +533,24 @@ impl fmt::Display for ProblemKind {
                     f,
                     "`{visual}` can name no visual `token.icons.animated_visuals` holds"
                 )
+            }
+            ProblemKind::TimingAbsent => {
+                f.write_str("a timing absent where the duration is not a stated zero")
+            }
+            ProblemKind::TimingOnZero => {
+                f.write_str("a timing stated where the duration is a stated zero")
+            }
+            ProblemKind::DurationAbsent => {
+                f.write_str("a duration absent where the timing is no spring")
+            }
+            ProblemKind::InstantNotZero => {
+                f.write_str("an `instant` step whose duration is not a stated zero")
+            }
+            ProblemKind::ZeroNotInstant => {
+                f.write_str("a stated zero duration on a step that is not `instant`")
+            }
+            ProblemKind::TimingNotComputed { engine } => {
+                write!(f, "a timing the `{engine}` engine does not compute")
             }
             ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),
             ProblemKind::RecencyOrder { set } => {

@@ -3406,7 +3406,7 @@ mod tests {
     /// it is not checked against the widget's `keys` (S2.7, S10, S12).
     #[test]
     fn a_visual_is_no_widget_values_key() {
-        use crate::next::blocks::motion::{Timing, Transition, TransitionEngine, TransitionKind};
+        use crate::next::blocks::motion::{Transition, TransitionEngine, TransitionKind};
         use crate::next::selector::StateFlag;
         let decl = Declarations {
             widgets: vec![(WidgetKind::Button, WidgetDecl::default())],
@@ -3433,7 +3433,7 @@ mod tests {
                     },
                     duration: Value::Absent,
                     delay: Value::Stated(crate::next::units::Ms(0.0)),
-                    timing: Value::Stated(Timing::Linear),
+                    timing: Value::Absent,
                     engine: TransitionEngine::WinUiAnimatedIcon {
                         visual: key!("accept"),
                     },

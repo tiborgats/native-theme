@@ -17,6 +17,7 @@
 #[cfg(test)]
 mod bench;
 mod inputs;
+mod motion;
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -478,6 +479,7 @@ pub(super) fn check(stack: &Stack<'_>, reused: Option<&Reused>) -> Vec<(usize, P
     out.concentric();
     out.entries();
     out.visuals();
+    out.motions();
     out.input_cycles();
     out.problems
 }

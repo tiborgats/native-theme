@@ -138,13 +138,20 @@ fn fill(layers: Vec<PaintLayer>) -> PartStylePatch {
 }
 
 fn transition(properties: Vec<PropertyGroup>, timing: Timing) -> Transition {
+    // An engine that computes the timing (S2.7, S12): libadwaita's
+    // animation a spring, GTK's CSS transitions any other.
+    let engine = if matches!(timing, Timing::Spring { .. }) {
+        TransitionEngine::AdwAnimation { replays: false }
+    } else {
+        TransitionEngine::GtkCss
+    };
     Transition {
         properties,
         kind: TransitionKind::Interpolate,
         duration: Value::Stated(Ms(100.0)),
         delay: Value::Stated(Ms(0.0)),
         timing: Value::Stated(timing),
-        engine: TransitionEngine::GtkCss,
+        engine,
         from: None,
     }
 }
@@ -451,7 +458,7 @@ fn refusal_win_ui_animated_icon_unknown_visual() {
     let engine = "engine = { win_ui_animated_icon = { visual = \"accept\" } }";
     let transition = format!(
         "transitions = [{{ properties = [\"icon\"], kind = {{ keyed = {{ key = \"normal_off\", \
-         params = {{}} }} }}, duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", {engine} }}]"
+         params = {{}} }} }}, duration_ms = \"absent\", delay_ms = 0, timing = \"absent\", {engine} }}]"
     );
     let visual = "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\n\
                   markers = { NormalOnToNormalOff_Start = 0.0 }\n";
@@ -508,6 +515,293 @@ fn refusal_win_ui_animated_icon_unknown_visual() {
     assert_eq!(refused(&hovered, &base).len(), 1);
     let replaced = toml(&format!("[widgets.button.body]\n{win_ui}"));
     assert_eq!(refused(&replaced, &base), NONE);
+}
+
+/// A transition list's one item on `button.body`, its `duration_ms`,
+/// `timing` and `engine` as written.
+fn timed(duration: &str, timing: &str, engine: &str) -> Layer {
+    toml(&format!(
+        "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = {duration}, delay_ms = 0, timing = {timing}, \
+         engine = {engine} }}]"
+    ))
+}
+
+/// A focus indicator's transition on `button.body` stated `focus` in the
+/// bases, and a rule under `hover` patching it by `rule`.
+fn focus_timed(duration: &str, timing: &str, rule: &str) -> Layer {
+    toml(&format!(
+        "[widgets.button.body.focus]\ntransition = {{ properties = [], kind = \
+         \"interpolate\", duration_ms = {duration}, delay_ms = 0, timing = {timing}, engine = \
+         \"gtk_css\", from = \"none\" }}\n[[rules]]\nwhen = {{ states = [\"hover\"] }}\n\
+         target = \"button.body\"\nset = {{ {rule} }}"
+    ))
+}
+
+/// A widget's `appear` presentation of one step, its `kind`,
+/// `duration_ms` and `timing` as written.
+fn presented(kind: &str, duration: &str, timing: &str) -> Layer {
+    toml(&format!(
+        "[widgets.button.values]\npresentations = [{{ event = \"appear\", steps = [{{ kind = \
+         {kind}, duration_ms = {duration}, delay_ms = 0, timing = {timing}, stagger_ms = 0 }}] \
+         }}]"
+    ))
+}
+
+/// A transition's or a presentation step's timing is `Absent` exactly
+/// where its duration is a stated zero, the literal zero in the field
+/// (S2.7, S6.3, S12; ADD-A125): a reference resolving to zero is none, and
+/// a rule's patch of the duration is read merged with the base's timing.
+#[test]
+fn refusal_timing_absent() {
+    let refusal = "a timing absent where the duration is not a stated zero";
+    assert_eq!(
+        bare(&timed("100", "\"absent\"", "\"gtk_css\"")),
+        [format!(
+            "widgets.button.body.transitions[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(bare(&timed("0", "\"absent\"", "\"gtk_css\"")), NONE);
+    let quick = declare("durations = [\"quick\"]");
+    let referenced = toml(&format!(
+        "[tokens.motion]\ndurations.quick_ms = 0\n{}",
+        "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = \"= token.motion.durations.quick\", delay_ms = 0, \
+         timing = \"absent\", engine = \"gtk_css\" }]"
+    ));
+    assert_eq!(
+        found(&referenced, &quick),
+        [format!(
+            "widgets.button.body.transitions[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&focus_timed(
+            "0",
+            "\"absent\"",
+            "focus.transition.duration_ms = 100"
+        )),
+        [format!(
+            "widgets.button.body.focus.transition.timing: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&focus_timed(
+            "0",
+            "\"absent\"",
+            "focus.transition.delay_ms = 10"
+        )),
+        NONE
+    );
+    assert_eq!(
+        bare(&presented("\"fade\"", "100", "\"absent\"")),
+        [format!(
+            "widgets.button.values.presentations[0].steps[0].timing: {refusal}"
+        )]
+    );
+}
+
+/// A stated zero duration runs no curve: its timing is `Absent` (S2.7,
+/// S12; ADD-A125), a step's alike; a reference resolving to zero keeps its
+/// timing. A rule's zero is read merged with the base's timing.
+#[test]
+fn refusal_timing_on_zero() {
+    let refusal = "a timing stated where the duration is a stated zero";
+    assert_eq!(
+        bare(&timed("0", "\"linear\"", "\"gtk_css\"")),
+        [format!(
+            "widgets.button.body.transitions[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(bare(&timed("100", "\"linear\"", "\"gtk_css\"")), NONE);
+    let quick = declare("durations = [\"quick\"]");
+    let referenced = toml(&format!(
+        "[tokens.motion]\ndurations.quick_ms = 0\n{}",
+        "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = \"= token.motion.durations.quick\", delay_ms = 0, \
+         timing = \"linear\", engine = \"gtk_css\" }]"
+    ));
+    assert_eq!(found(&referenced, &quick), NONE);
+    assert_eq!(
+        bare(&focus_timed(
+            "100",
+            "\"linear\"",
+            "focus.transition.duration_ms = 0"
+        )),
+        [format!(
+            "widgets.button.body.focus.transition.timing: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&focus_timed(
+            "100",
+            "\"linear\"",
+            "focus.transition = { replace = { properties = [], kind = \"interpolate\", \
+             duration_ms = 0, delay_ms = 0, timing = \"absent\", engine = \"gtk_css\", from = \
+             \"none\" } }"
+        )),
+        NONE
+    );
+    assert_eq!(
+        bare(&presented("\"instant\"", "0", "\"linear\"")),
+        [format!(
+            "widgets.button.values.presentations[0].steps[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(bare(&presented("\"instant\"", "0", "\"absent\"")), NONE);
+}
+
+/// A duration is `Absent` only where its timing, followed through
+/// references, is a spring, whose time is its own (S2.7, S6.3, S12), a
+/// step's alike; a transition's under `WinUiAnimatedIcon` too, which the
+/// visual times.
+#[test]
+fn refusal_duration_absent() {
+    let refusal = "a duration absent where the timing is no spring";
+    assert_eq!(
+        bare(&timed("\"absent\"", "\"linear\"", "\"gtk_css\"")),
+        [format!(
+            "widgets.button.body.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    let spring = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, initial_velocity \
+                  = 0, rest_epsilon = 0.001, clamp = false, time_scale = 1 } }";
+    let adw = "{ adw_animation = { replays = false } }";
+    assert_eq!(bare(&timed("\"absent\"", spring, adw)), NONE);
+    let bounce = declare("timings = [\"bounce\"]");
+    let referenced = |timing: &str| {
+        toml(&format!(
+            "[tokens.motion]\ntimings.bounce = {timing}\n[widgets.button.body]\ntransitions = \
+             [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \"absent\", \
+             delay_ms = 0, timing = \"= token.motion.timings.bounce\", engine = {adw} }}]"
+        ))
+    };
+    assert_eq!(found(&referenced(spring), &bounce), NONE);
+    assert_eq!(
+        found(&referenced("\"linear\""), &bounce),
+        [format!(
+            "widgets.button.body.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&presented("\"fade\"", "\"absent\"", "\"linear\"")),
+        [format!(
+            "widgets.button.values.presentations[0].steps[0].duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(bare(&presented("\"fade\"", "\"absent\"", spring)), NONE);
+}
+
+/// An `Instant` step states a zero duration and an `Absent` timing, its
+/// one form (S2.7, S12; ADD-A125).
+#[test]
+fn refusal_instant_not_zero() {
+    assert_eq!(
+        bare(&presented("\"instant\"", "100", "\"linear\"")),
+        [
+            "widgets.button.values.presentations[0].steps[0].duration_ms: an `instant` step whose \
+          duration is not a stated zero"
+        ]
+    );
+    assert_eq!(bare(&presented("\"instant\"", "0", "\"absent\"")), NONE);
+}
+
+/// A step of another kind than `Instant` states no zero duration: an
+/// instant step is `Instant`, its one spelling (S2.7, S12; ADD-A125).
+#[test]
+fn refusal_zero_not_instant() {
+    assert_eq!(
+        bare(&presented("\"fade\"", "0", "\"absent\"")),
+        [
+            "widgets.button.values.presentations[0].steps[0].duration_ms: a stated zero duration \
+          on a step that is not `instant`"
+        ]
+    );
+    assert_eq!(bare(&presented("\"fade\"", "100", "\"linear\"")), NONE);
+}
+
+/// A transition's stated timing, followed through references, is one its
+/// engine's code computes (S2.7, S12); a stated zero's, which is refused,
+/// is not read by the lists.
+#[test]
+fn refusal_timing_not_computed() {
+    let spring = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, initial_velocity \
+                  = 0, rest_epsilon = 0.001, clamp = false, time_scale = 1 } }";
+    assert_eq!(
+        bare(&timed("100", spring, "\"gtk_css\"")),
+        [
+            "widgets.button.body.transitions[0].timing: a timing the `gtk_css` engine does not \
+          compute"
+        ]
+    );
+    assert_eq!(
+        bare(&timed(
+            "100",
+            "{ cubic_bezier = [0.25, 0.1, 0.25, 1] }",
+            "\"gtk_css\""
+        )),
+        NONE
+    );
+    assert_eq!(
+        bare(&timed("0", spring, "\"gtk_css\"")),
+        [
+            "widgets.button.body.transitions[0].timing: a timing stated where the duration is a \
+          stated zero"
+        ]
+    );
+    let curve = declare("timings = [\"curve\"]");
+    let referenced = |timing: &str, engine: &str| {
+        toml(&format!(
+            "[tokens.motion]\ntimings.curve = {timing}\n[widgets.button.body]\ntransitions = \
+             [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = \"= token.motion.timings.curve\", engine = {engine} }}]"
+        ))
+    };
+    let adw = "{ platform = { adw = \"ease_out_cubic\" } }";
+    assert_eq!(
+        found(&referenced(adw, "\"qt_quick\""), &curve),
+        [
+            "widgets.button.body.transitions[0].timing: a timing the `qt_quick` engine does not \
+          compute"
+        ]
+    );
+    assert_eq!(
+        found(
+            &referenced(adw, "{ adw_animation = { replays = false } }"),
+            &curve
+        ),
+        NONE
+    );
+    assert_eq!(
+        found(
+            &referenced("{ platform = \"kirigami_velocity\" }", "\"qt_quick\""),
+            &curve
+        ),
+        NONE
+    );
+    assert_eq!(
+        found(&referenced("\"linear\"", "\"compose_held\""), &curve),
+        [
+            "widgets.button.body.transitions[0].timing: a timing the `compose_held` engine does \
+          not compute"
+        ]
+    );
+    // A tokens rule can change the referenced curve where the transition
+    // applies.
+    let ruled = toml(&format!(
+        "[tokens.motion]\ntimings.curve = \"linear\"\n[[rules]]\nwhen = {{ conditions = \
+         [\"reduced_motion\"] }}\ntarget = \"tokens\"\nset = {{ motion.timings.curve = {spring} \
+         }}\n[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \
+         \"= token.motion.timings.curve\", engine = \"gtk_css\" }}]"
+    ));
+    assert_eq!(
+        found(&ruled, &curve),
+        [
+            "widgets.button.body.transitions[0].timing: a timing the `gtk_css` engine does not \
+          compute"
+        ]
+    );
 }
 
 /// A Breeze test's flags and conditions are read as a `when` writes them
@@ -3136,6 +3430,12 @@ kinds! {
     FocusTransitionProperties,
     FromNoState,
     UnknownVisual { .. },
+    TimingAbsent,
+    TimingOnZero,
+    DurationAbsent,
+    InstantNotZero,
+    ZeroNotInstant,
+    TimingNotComputed { .. },
     RecencyTooSmall,
     RecencyOrder { .. },
     NotInRecencySet { .. },
@@ -3707,10 +4007,46 @@ fn layer_error_every_variant_triggers() {
             V::UnknownVisual,
             over(
                 &toml(
-                    "[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
+                    "[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"absent\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
                 ),
                 &declare("transition_kinds = { normal_off = {} }"),
                 &[],
+            ),
+        ),
+        (
+            V::TimingAbsent,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"absent\", engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::TimingOnZero,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 0, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::DurationAbsent,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \"absent\", delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::InstantNotZero,
+            read(
+                "[widgets.button.values]\npresentations = [{ event = \"appear\", steps = [{ kind = \"instant\", duration_ms = 100, delay_ms = 0, timing = \"linear\", stagger_ms = 0 }] }]",
+            ),
+        ),
+        (
+            V::ZeroNotInstant,
+            read(
+                "[widgets.button.values]\npresentations = [{ event = \"appear\", steps = [{ kind = \"fade\", duration_ms = 0, delay_ms = 0, timing = \"absent\", stagger_ms = 0 }] }]",
+            ),
+        ),
+        (
+            V::TimingNotComputed,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = { spring = { mass = 1, stiffness = 100, damping_ratio = 1, initial_velocity = 0, rest_epsilon = 0.001, clamp = false, time_scale = 1 } }, engine = \"gtk_css\" }]",
             ),
         ),
         (

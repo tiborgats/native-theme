@@ -374,13 +374,18 @@ pub struct Transition {
     /// How the change is drawn.
     #[parts(block = "set")]
     pub kind: TransitionKind,
-    /// The duration; absent only for a spring, whose time is its own (S12).
+    /// The duration; absent only for a spring, whose time is its own, and
+    /// under `WinUiAnimatedIcon`, whose visual times it (S2.7, S12). A
+    /// *stated zero* is the literal zero in the field itself; a reference
+    /// or an expression is never one, even where it resolves to zero.
     #[parts(may_be_absent)]
     pub duration: Value<Ms>,
     /// The delay before it starts.
     pub delay: Value<Ms>,
-    /// The timing: a timing, or a reference to a timing token.
-    #[parts(block = "set")]
+    /// The timing: a timing, or a reference to a timing token; absent
+    /// exactly where the duration is a stated zero, which runs no curve, or
+    /// the engine is `WinUiAnimatedIcon`, whose visual times it (S2.7, S12).
+    #[parts(block = "set", may_be_absent)]
     pub timing: Value<Timing>,
     /// The toolkit code that runs it, a stated zero's included: what starts
     /// it, where it starts from while a value it times is moving, and what a
@@ -692,13 +697,16 @@ pub struct PresentationStep {
     /// What the step draws.
     #[parts(block = "set")]
     pub kind: PresentationKind,
-    /// The duration; absent only for a spring (S12).
+    /// The duration; absent only for a spring (S12). A step of kind
+    /// [`PresentationKind::Instant`] states a zero, its one form, and a step
+    /// of another kind none (S2.7).
     #[parts(may_be_absent)]
     pub duration: Value<Ms>,
     /// The delay before it starts.
     pub delay: Value<Ms>,
-    /// The timing.
-    #[parts(block = "set")]
+    /// The timing; absent exactly where the duration is a stated zero, which
+    /// runs no curve (S2.7, S12).
+    #[parts(block = "set", may_be_absent)]
     pub timing: Value<Timing>,
     /// The time between items, where the element presents items.
     pub stagger: Value<Ms>,
