@@ -1024,6 +1024,20 @@ proof = "git ls-remote https://github.com/MicrosoftDocs/visualstudio-docs.git re
 sparse = ["docs/extensibility/ux-guidelines"]
 note = "Documentation has no tags: the head of `main`; the page's git_commit_id 12e72ec4… is its ancestor."
 
+[[source]]
+id = "win11-vs2026-arm64@20261022.194.1"
+kind = "sdk"
+runner = "windows-11-arm"
+image_version = "20261022.194.1"
+windows = "Windows 11 Enterprise 25H2, 10.0.26200 Build 9711"
+readme = "images/windows/Windows11-VS2026-Arm64-Readme.md"
+readme_commit = "7b2820c777293d63940eece0b880f6883bb9ec6b"
+release = "Windows 11 25H2 on GitHub's windows-11-arm image (Windows 11 Arm64 with Visual Studio 2026), the image os-probe.yml's `windows-11-arm` job measured in run 40348854007"
+generations = ["windows-11"]
+researched = "2026-11-06"
+proof = "gh run view 40348854007 --repo tiborgats/native-theme --job 121663089038 --log (Set up job): 'Microsoft Windows 11', '10.0.26200', 'Enterprise', 'Image: windows-11-vs2026-arm64', 'Version: 20261022.194.1', 'Image Release: https://github.com/actions/runner-images/releases/tag/win11-vs2026-arm64%2F20261022.194'; gh api 'repos/actions/runner-images/commits?path=images/windows/Windows11-VS2026-Arm64-Readme.md&sha=win11-vs2026-arm64/20261022.194&per_page=1' (the README's commit at the image's release tag, 'Updating readme file for win11-vs2026-arm64 version 20261022.194.1'); the README: 'OS Version: 10.0.26200 Build 9711', 'Image Version: 20261022.194.1'; the run's os-probe-windows-11-arm/probe.toml [os] and [probe]: DisplayVersion 25H2, CurrentBuild 26200, UBR 9711, runner_image win11-vs2026-arm64, runner_image_version 20261022.194.1"
+note = "The README's commit is the release tag's, one commit off `main` (compare API: diverged, ahead 1). The image moves within the release (20261101.203.1 on `main`, 2026-11-06); an evidence file names the build it ran on. The registry's ProductName reads 'Windows 10 Enterprise' (probe.toml [os]); the job's log and the README name Windows 11."
+
 # Apple (D12: macOS 26.x and iOS 26 on `macos-26`, macOS 15 and iOS 18 on `macos-15`). The images move within a
 # release, so each evidence file records its exact build; these entries name what the images' READMEs listed at
 # actions/runner-images 9329c776c4a38d3dcb31fc78b8180005041c07fb (main, 2026-10-29).
