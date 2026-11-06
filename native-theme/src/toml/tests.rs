@@ -527,6 +527,30 @@ fn spelling_list() {
     );
 }
 
+/// A paint layer's `blend`: each member's snake_case name, a keyed mode
+/// `@<key>` (S2.3, S11; ADD-A134's `difference`).
+#[test]
+fn blend_mode_spellings() {
+    for (text, expected) in [
+        ("\"normal\"", BlendMode::Normal),
+        ("\"mask\"", BlendMode::Mask),
+        ("\"difference\"", BlendMode::Difference),
+        ("\"@vibrant\"", BlendMode::Keyed(key!("vibrant"))),
+    ] {
+        let style = body_of(&format!(
+            "fill = {{ layers = [{{ kind = {{ color = \"#ffffff\" }}, blend = {text} }}] }}"
+        ));
+        let Some(PaintPatch::Set(Value::Stated(paint))) = style.fill else {
+            panic!("{text}: {:?}", style.fill);
+        };
+        assert_eq!(
+            paint.layers.first().map(|layer| layer.blend.clone()),
+            Some(expected),
+            "{text}"
+        );
+    }
+}
+
 #[test]
 fn spelling_tuple() {
     let style = body_of(

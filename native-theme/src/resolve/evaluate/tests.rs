@@ -1354,6 +1354,36 @@ fn animated_visual_resolves_into_engine() {
     );
 }
 
+/// A `Difference` layer resolves as any layer, its blend kept, over the
+/// layers beneath it in stated order (S2.3; ADD-A134): WinUI's caret, a
+/// white layer of `token.caret.color` blended by `difference`.
+#[test]
+fn difference_layer_resolves_with_its_blend() {
+    use crate::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
+    let over = "[widgets.button.body]\nfill = { layers = [{ kind = { color = \"#102030\" }, \
+                blend = \"normal\" }, { kind = { color = \"#ffffff\" }, blend = \"difference\" }] }";
+    let theme = resolved(&[BASE, over], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+    let body = theme
+        .evaluate_part(BODY, &element, &|_| true)
+        .value
+        .unwrap();
+    let layer = |color, blend| ResolvedPaintLayer {
+        kind: ResolvedPaintKind::Color(Some(color)),
+        blend,
+    };
+    assert_eq!(
+        body.fill,
+        Some(ResolvedPaint {
+            layers: vec![
+                layer(rgb(0x10, 0x20, 0x30), BlendMode::Normal),
+                layer(rgb(0xff, 0xff, 0xff), BlendMode::Difference),
+            ]
+        })
+    );
+}
+
 /// A synthetic layer's step decides whether a part is drawn only where it
 /// states a presence that changes what the steps before it make the part
 /// (S6.3, S17, ADD-A128, ADD-A126): a step of fields alone decides

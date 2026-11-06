@@ -186,6 +186,14 @@ pub enum BlendMode {
     /// layers beneath it in the same paint (Porter-Duff destination-in). A
     /// paint whose bottom layer is a mask is refused (S12).
     Mask,
+    /// CSS Compositing's `difference` blend against its backdrop, everything
+    /// drawn beneath it at that point (the paint's layers below it, and what
+    /// lies beneath the part): each channel `|backdrop − layer|` on straight
+    /// sRGB values, composited by the layer's alpha as CSS composites a
+    /// blended source. An opaque white layer so draws the inverse of what
+    /// lies beneath (WinUI's caret, S4.2). A toolkit that cannot blend a
+    /// layer records it as its limit (R23).
+    Difference,
     /// A platform's blending mode, as the facts name it (macOS vibrancy).
     Keyed(Key),
 }
