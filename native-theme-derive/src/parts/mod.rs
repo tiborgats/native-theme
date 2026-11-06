@@ -528,6 +528,43 @@ mod tests {
     }
 
     #[test]
+    fn an_added_field_is_the_resolved_types_alone() {
+        let out = expand(syn::parse_quote! {
+            #[parts(block, resolved_patch, added(name = "tests", ty = "Vec<Probe>", doc = "The tests."))]
+            pub struct Probe {
+                pub width: Value<Px>,
+            }
+        });
+        for expected in [
+            "pub struct ResolvedProbe { pub width : :: core :: option :: Option < Px > , # [doc = \"The tests.\"] pub tests : Vec < Probe > , }",
+            "tests : :: core :: default :: Default :: default () ,",
+            "pub struct ResolvedProbePatch { pub width : :: core :: option :: Option < :: core :: option :: Option < Px > > , }",
+            "pub struct ProbePatch { pub width : :: core :: option :: Option < Value < Px > > , }",
+        ] {
+            assert!(out.contains(expected), "{expected}\n{out}");
+        }
+        for (input, refusal) in [
+            (
+                syn::parse_quote! {
+                    #[parts(block, own_resolved, added(name = "tests", ty = "Vec<u8>", doc = "The tests."))]
+                    pub struct Probe { pub width: Value<Px> }
+                },
+                "added is a field of a resolved type the derive writes, a struct block's \
+                 patched by fields",
+            ),
+            (
+                syn::parse_quote! {
+                    #[parts(block, added(name = "tests", ty = "Vec<u8>"))]
+                    pub struct Probe { pub width: Value<Px> }
+                },
+                "added names its field by name, ty and doc",
+            ),
+        ] {
+            assert_eq!(refused(input), refusal);
+        }
+    }
+
+    #[test]
     fn create_leaves_absent_only_what_may_be_and_requires_the_rest() {
         let out = expand(syn::parse_quote! {
             #[parts(block)]
@@ -1091,7 +1128,7 @@ mod tests {
                     pub struct Probe { pub x: Value<Px> }
                 },
                 "unknown parts attribute: expected block, widget, append, own_resolved, \
-                 resolved_patch, toml, own_toml or check",
+                 resolved_patch, toml, own_toml, check or added",
             ),
             (
                 syn::parse_quote! {

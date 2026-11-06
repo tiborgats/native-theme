@@ -320,6 +320,18 @@ impl<'e> Matched<'e> {
     /// position, variants, size, density, size classes, direction, flags
     /// and latest flags; its conditions held when the theme was resolved.
     pub(crate) fn matches(&self, selector: &Selector) -> bool {
+        self.can_apply(selector)
+            && set_holds(&selector.states, |flag| self.states.contains(flag))
+            && selector
+                .latest
+                .iter()
+                .all(|(set, flag)| self.latest_is(set, flag))
+    }
+
+    /// Whether a part's rule can apply to the element whatever its flags
+    /// (S2.7's `breeze_tests`, S8): [`Matched::matches`] with its flags and
+    /// latest flags left unread.
+    pub(crate) fn can_apply(&self, selector: &Selector) -> bool {
         let size = &selector.size;
         selector.context.iter().all(|context| self.context(context))
             && !selector
@@ -346,11 +358,6 @@ impl<'e> Matched<'e> {
             && selector
                 .direction
                 .is_none_or(|direction| direction == self.direction)
-            && set_holds(&selector.states, |flag| self.states.contains(flag))
-            && selector
-                .latest
-                .iter()
-                .all(|(set, flag)| self.latest_is(set, flag))
     }
 
     /// Whether `flag` is the latest of the element's recency set `set`

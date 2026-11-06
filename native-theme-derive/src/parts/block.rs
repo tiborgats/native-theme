@@ -8,7 +8,7 @@ use syn::{
     Type, Visibility,
 };
 
-use super::attrs::{self, BlockKind, FieldAttrs, TypeAttrs};
+use super::attrs::{self, Added, BlockKind, FieldAttrs, TypeAttrs};
 
 /// The module the expansions name the model's types by.
 fn model() -> TokenStream {
@@ -985,6 +985,13 @@ pub(crate) fn expand(input: &DeriveInput, type_attrs: &TypeAttrs) -> Result<Toke
                     "resolved_patch is a struct block's, patched by fields",
                 ));
             }
+            if !type_attrs.added.is_empty() && (type_attrs.append || type_attrs.own_resolved) {
+                return Err(Error::new_spanned(
+                    &input.ident,
+                    "added is a field of a resolved type the derive writes, a struct block's \
+                     patched by fields",
+                ));
+            }
             if type_attrs.append {
                 expand_append(input, type_attrs, &fields)
             } else {
@@ -1002,6 +1009,13 @@ pub(crate) fn expand(input: &DeriveInput, type_attrs: &TypeAttrs) -> Result<Toke
                 return Err(Error::new_spanned(
                     &input.ident,
                     "resolved_patch is a struct block's, patched by fields",
+                ));
+            }
+            if !type_attrs.added.is_empty() {
+                return Err(Error::new_spanned(
+                    &input.ident,
+                    "added is a field of a resolved type the derive writes, a struct block's \
+                     patched by fields",
                 ));
             }
             expand_enum(input, type_attrs, data)
@@ -1041,11 +1055,15 @@ fn expand_struct_common(
             let ty = f.resolved_ty();
             quote!(#(#docs)* #vis #ident: #ty,)
         });
+        let added = type_attrs.added.iter().map(|added| {
+            let Added { name, ty, doc } = added;
+            quote!(#[doc = #doc] pub #name: #ty,)
+        });
         quote! {
             #[doc = #doc]
             #[derive(Clone, Debug, PartialEq)]
             #[non_exhaustive]
-            #vis struct #resolved { #(#members)* }
+            #vis struct #resolved { #(#members)* #(#added)* }
         }
     };
     let infos = fields.iter().map(|f| {
@@ -1234,7 +1252,8 @@ fn expand_fields(
     let resolve = if type_attrs.own_resolved {
         TokenStream::new()
     } else {
-        super::resolve::struct_resolve(name, fields)
+        let added: Vec<&Ident> = type_attrs.added.iter().map(|added| &added.name).collect();
+        super::resolve::struct_resolve(name, fields, &added)
     };
     quote! {
         #[doc = #doc]
@@ -1381,7 +1400,7 @@ fn expand_append(
     );
     let c = quote!(crate::next::resolve::compose);
     let locate = super::resolve::struct_locate(name, None, fields);
-    let resolve = super::resolve::struct_resolve(name, fields);
+    let resolve = super::resolve::struct_resolve(name, fields, &[]);
     Ok(quote! {
         #locate
 

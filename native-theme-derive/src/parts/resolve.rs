@@ -249,7 +249,7 @@ pub(super) fn resolve_call(owner: &Ident, field: &BlockField) -> (TokenStream, b
     match &field.shape {
         Shape::Leaf => {
             if let Some(inner) = generic_arg(ty, "Option").and_then(value_inner) {
-                return (quote!(cx.optional::<#inner>(&items, #signed)), true);
+                return (quote!(cx.optional::<#inner>(&items, #signed)), false);
             }
             let Some(inner) = value_inner(ty) else {
                 return (quote!(cx.plain::<#ty>(&items)), true);
@@ -392,8 +392,9 @@ fn field_value(owner: &Ident, field: &BlockField, items: &TokenStream) -> TokenS
 }
 
 /// `Resolve` and `ResolveWhole` for a struct block resolved into
-/// `Resolved<name>`.
-pub(super) fn struct_resolve(name: &Ident, fields: &[BlockField]) -> TokenStream {
+/// `Resolved<name>`, the fields the resolution adds (`added`) at their
+/// default, which the resolution sets.
+pub(super) fn struct_resolve(name: &Ident, fields: &[BlockField], added: &[&Ident]) -> TokenStream {
     let c = compose();
     let ev = evaluate();
     let resolved = format_ident!("Resolved{name}");
@@ -404,7 +405,10 @@ pub(super) fn struct_resolve(name: &Ident, fields: &[BlockField]) -> TokenStream
         quote!(#ident: #value,)
     });
     let body = quote! {
-        ::core::option::Option::Some(#resolved { #(#members)* })
+        ::core::option::Option::Some(#resolved {
+            #(#members)*
+            #(#added: ::core::default::Default::default(),)*
+        })
     };
     let body = if name == "TextStyle" {
         quote!(cx.text_style(folds, |cx| #body))

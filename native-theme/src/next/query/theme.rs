@@ -5,23 +5,26 @@
 use super::matching::{Matched, declarations, kept};
 use super::mirror::Mirror;
 use super::{Container, Element, Scope, ScopeEntry};
+use crate::next::blocks::BlockPatch;
+use crate::next::blocks::motion::{BreezeTest, Transition, TransitionEngine, same_test};
 use crate::next::blocks::part_style::{ResolvedBinding, ResolvedPartStyle, RoleRef};
 use crate::next::blocks::text::LanguageTag;
 use crate::next::color::Color;
 use crate::next::declare::ScalarUnit;
 use crate::next::expr::Ref;
 use crate::next::key::Key;
-use crate::next::resolve::ResolvedTheme;
 use crate::next::resolve::compose::Target;
 use crate::next::resolve::evaluate::Resolve;
+use crate::next::resolve::{ResolvedTheme, Step};
 use crate::next::selector::{
     Density, Direction, PartRef, Selector, SizeClass, SizeClasses, StateFlags, VariantRef,
     WidgetOrPart,
 };
 use crate::next::tokens::{ResolvedTokens, Tokens};
 use crate::next::toml::read::Named;
-use crate::next::units::{Px, Scalar, Size};
-use crate::next::widgets::{PartPresence, TypedPart, WidgetKind};
+use crate::next::units::{Ms, Px, Scalar, Size};
+use crate::next::value::Value;
+use crate::next::widgets::{PartPatch, PartPresence, TypedPart, WidgetKind};
 
 /// R2.7's answer for an element: its style, or why there is none to draw;
 /// not an error (S8).
@@ -139,6 +142,56 @@ fn lists_corners(part: TypedPart) -> bool {
         .is_some_and(|info| info.fields.iter().any(|field| field.path == "corners"))
 }
 
+/// The Breeze tests of a part's steps that can apply to the element (S2.7,
+/// S8): its bases' and then those of the rules `can_apply` accepts, each in
+/// the stack's order, each step's transitions in their order and then its
+/// focus indicator's; a test once, by its flags and conditions as sets, a
+/// stated zero naming none. A test a step reaches through a reference (a
+/// focus indicator read from the tokens) is not one it states.
+fn breeze_tests(
+    steps: &[Step<PartPatch>],
+    can_apply: impl Fn(&Selector) -> bool,
+) -> Vec<BreezeTest> {
+    let bases = steps.iter().filter(|step| step.selector.is_none());
+    let rules = steps
+        .iter()
+        .filter(|step| step.selector.as_ref().is_some_and(&can_apply));
+    let mut out: Vec<BreezeTest> = Vec::new();
+    for step in bases.chain(rules) {
+        let style = &step.patch.style;
+        let listed = style
+            .transitions
+            .iter()
+            .flatten()
+            .filter_map(Transition::merge_test);
+        let focus = match &style.focus {
+            Some(BlockPatch::Set(Value::Stated(focus))) => match &focus.transition {
+                Value::Stated(transition) => transition.merge_test(),
+                Value::Expr(_) | Value::Absent | Value::Auto => None,
+            },
+            Some(BlockPatch::Fields(focus)) => match &focus.transition {
+                Some(BlockPatch::Set(Value::Stated(transition))) => transition.merge_test(),
+                Some(BlockPatch::Fields(transition))
+                    if transition.duration != Some(Value::Stated(Ms(0.0))) =>
+                {
+                    transition
+                        .engine
+                        .as_ref()
+                        .and_then(TransitionEngine::breeze_test)
+                }
+                Some(BlockPatch::Fields(_) | BlockPatch::Set(_)) | None => None,
+            },
+            Some(BlockPatch::Set(Value::Expr(_) | Value::Absent | Value::Auto)) | None => None,
+        };
+        for test in listed.chain(focus) {
+            if !out.iter().any(|held| same_test(Some(held), Some(test))) {
+                out.push(test.clone());
+            }
+        }
+    }
+    out
+}
+
 /// The path of a role a `RoleRef` names, as a reference spells it.
 fn keys(path: &str) -> Option<Vec<Key>> {
     path.split('.')
@@ -228,6 +281,9 @@ impl ResolvedTheme {
         let Some(mut style) = evaluated.value else {
             return Styled::NotDrawn;
         };
+        style.breeze_tests = breeze_tests(self.part_steps(matched.part), |selector| {
+            matched.can_apply(selector)
+        });
         if matched.direction == Direction::Rtl {
             style.mirror();
         }

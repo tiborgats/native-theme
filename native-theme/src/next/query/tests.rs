@@ -147,12 +147,18 @@ fn layer(text: &str) -> Layer {
 
 /// The theme the fixture's preset and `layers` resolve to, under `declare`.
 fn theme_with(declare: &str, layers: &[&str]) -> ResolvedTheme {
+    theme_of(declare, layers.iter().map(|text| layer(text)).collect())
+}
+
+/// The theme the fixture's preset and `layers`, built in Rust, resolve to,
+/// under `declare`.
+fn theme_of(declare: &str, layers: Vec<Layer>) -> ResolvedTheme {
     let file = read_preset(&format!(
         "[preset]\nid = \"probe\"\ngeneration = \"probe-1\"\n{declare}"
     ))
     .unwrap_or_else(|e| panic!("{e}"));
     let mut stacked = vec![layer(PRESET)];
-    stacked.extend(layers.iter().map(|text| layer(text)));
+    stacked.extend(layers);
     Stack::unvalidated(file.declarations, stacked, None)
         .resolve(
             &mut WindowState::default(),
@@ -1049,4 +1055,127 @@ fn scope_records_the_container() {
             corners: body.corners
         }
     );
+}
+
+/// `PartStyle.shown` (S2.7, S2.11; ADD-A126): an `Option<Value<bool>>`
+/// resolving to `Option<bool>`, `None` where the part does not list it
+/// (drawn), the stated flag where a style states it; spelled `shown =
+/// true|false`, here in a keyframe's patch, which patches any field.
+#[test]
+fn part_shown_resolves_option() {
+    use crate::next::blocks::part_style::PartStylePatch;
+    use crate::next::value::Value;
+    use crate::next::widgets::{ButtonPatch, PartPatch};
+    let theme = fixture(&[]);
+    let scope = root(&theme, Direction::Ltr);
+    let element = Element::new(BODY, &scope, &Metrics);
+    let shown: Option<bool> = drawn(&theme, &element).0.shown;
+    assert_eq!(shown, None);
+    for flag in [false, true] {
+        let mut hidden = Layer::default();
+        hidden.bases.widgets.button = Some(Box::new(ButtonPatch {
+            body: Some(PartPatch::of_style(PartStylePatch {
+                shown: Some(Some(Value::Stated(flag))),
+                ..PartStylePatch::default()
+            })),
+            ..ButtonPatch::default()
+        }));
+        let theme = theme_of(DECLARE, vec![hidden]);
+        let scope = root(&theme, Direction::Ltr);
+        let element = Element::new(BODY, &scope, &Metrics);
+        assert_eq!(drawn(&theme, &element).0.shown, Some(flag));
+    }
+    let read = layer(
+        "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\n\
+         keyframes = [{ at = 0, timing = \"absent\", patch = { shown = false } }]",
+    );
+    let shown = read
+        .bases
+        .widgets
+        .button
+        .and_then(|button| button.icon)
+        .and_then(|icon| icon.style.icon)
+        .and_then(|icon| match icon {
+            crate::next::blocks::BlockPatch::Fields(icon) => icon.animation,
+            crate::next::blocks::BlockPatch::Set(_) => None,
+        })
+        .and_then(|animation| match animation {
+            crate::next::blocks::BlockPatch::Fields(animation) => animation.keyframes,
+            crate::next::blocks::BlockPatch::Set(_) => None,
+        })
+        .and_then(|keyframes| keyframes.into_iter().next())
+        .map(|keyframe| keyframe.patch.shown);
+    assert_eq!(shown, Some(Some(Some(Value::Stated(false)))));
+}
+
+/// `ResolvedPartStyle.breeze_tests` (S2.7, S6.1, S8; ADD-A126): the Breeze
+/// tests of every rule that can apply to the element, whatever its flags,
+/// in rank order: as they first appear in the part's base transitions
+/// (each step's list, then its focus indicator's transition), then a test
+/// only a rule names, in the rules' order; a test stated twice once, a
+/// stated zero's none, a rule the element's variants exclude left out.
+#[test]
+fn breeze_tests_in_rank_order() {
+    use crate::next::blocks::motion::BreezeTest;
+    let breeze = |group: &str, duration: u32, any: &str, none: &str| {
+        format!(
+            "{{ properties = [\"{group}\"], kind = \"interpolate\", duration_ms = {duration}, \
+             delay_ms = 0, timing = {}, engine = {{ breeze = {{ any = [{any}], none = [{none}], \
+             conditions = [] }} }} }}",
+            if duration == 0 {
+                "\"absent\""
+            } else {
+                "\"linear\""
+            }
+        )
+    };
+    let rule = |when: &str, item: String| {
+        format!(
+            "[[rules]]\nwhen = {{ {when} }}\ntarget = \"button.body\"\nset = {{ transitions = [{item}] }}\n"
+        )
+    };
+    let stated = format!(
+        "[widgets.button.body]\ntransitions = [{}, {}, {}]\n[widgets.button.body.focus]\n\
+         transition = {{ properties = [], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+         0, timing = \"linear\", engine = {{ breeze = {{ any = [\"focused\"], none = [], \
+         conditions = [] }} }}, from = \"none\" }}\n{}{}{}{}",
+        breeze("fill", 100, "\"hover\"", ""),
+        breeze("stroke", 100, "\"focus_visible\"", "\"disabled\""),
+        breeze("opacity", 100, "\"hover\"", ""),
+        rule(
+            "variants = [\"flat\"]",
+            breeze("fill", 100, "\"checked\"", "")
+        ),
+        rule(
+            "states = [\"pressed\"]",
+            breeze("fill", 100, "\"pressed\"", "")
+        ),
+        rule("states = [\"disabled\"]", breeze("fill", 0, "", "")),
+        rule(
+            "states = [\"hover\"]",
+            breeze("stroke", 100, "\"hover\"", "")
+        ),
+    );
+    let theme = fixture(&[&stated]);
+    let scope = root(&theme, Direction::Ltr);
+    let test = |any: StateFlag, none: &[StateFlag]| BreezeTest {
+        any: vec![any],
+        none: none.to_vec(),
+        conditions: Vec::new(),
+    };
+    let ranked = [
+        test(StateFlag::Hover, &[]),
+        test(StateFlag::FocusVisible, &[StateFlag::Disabled]),
+        test(StateFlag::Focused, &[]),
+        test(StateFlag::Pressed, &[]),
+    ];
+    let element = Element::new(BODY, &scope, &Metrics);
+    assert_eq!(drawn(&theme, &element).0.breeze_tests, ranked);
+    let flat = [VariantRef::Typed(Variant::Flat)];
+    let element = Element::new(BODY, &scope, &Metrics).with_variants(&flat);
+    let mut with_flat = ranked.to_vec();
+    with_flat.insert(3, test(StateFlag::Checked, &[]));
+    assert_eq!(drawn(&theme, &element).0.breeze_tests, with_flat);
+    let element = Element::new(LABEL, &scope, &Metrics);
+    assert_eq!(drawn(&theme, &element).0.breeze_tests, []);
 }

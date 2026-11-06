@@ -1,6 +1,6 @@
 // The `#[parts(...)]` attributes of `ThemeParts`.
 
-use syn::{Attribute, Error, LitStr, Result};
+use syn::{Attribute, Error, Ident, LitStr, Result, Type};
 
 /// How a block is patched (S2.2, S6.1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +36,21 @@ pub(crate) struct TypeAttrs {
     /// `#[parts(check)]`: a block with constraints of its own (S12), its walk
     /// (and its patch's) handing it to the visit as its `Node` variant.
     pub check: bool,
+    /// `#[parts(added(name = "…", ty = "…", doc = "…"))]`: a field of the
+    /// struct block's resolved type that no patch sets, added by the
+    /// resolution (S6.1: `ResolvedPartStyle.breeze_tests`).
+    pub added: Vec<Added>,
+}
+
+/// A field the resolution adds to a struct block's resolved type.
+#[derive(Debug)]
+pub(crate) struct Added {
+    /// Its name.
+    pub name: Ident,
+    /// Its type.
+    pub ty: Type,
+    /// Its documentation.
+    pub doc: LitStr,
 }
 
 /// The attributes on one variant of an enum.
@@ -112,15 +127,47 @@ pub(crate) fn parse_type_attrs(attrs: &[Attribute]) -> Result<TypeAttrs> {
                 flag(&mut out.own_toml, &meta)
             } else if meta.path.is_ident("check") {
                 flag(&mut out.check, &meta)
+            } else if meta.path.is_ident("added") {
+                out.added.push(parse_added(&meta)?);
+                Ok(())
             } else {
                 Err(meta.error(
                     "unknown parts attribute: expected block, widget, append, own_resolved, \
-                     resolved_patch, toml, own_toml or check",
+                     resolved_patch, toml, own_toml, check or added",
                 ))
             }
         })?;
     }
     Ok(out)
+}
+
+/// `added(name = "…", ty = "…", doc = "…")`, each named once.
+fn parse_added(meta: &syn::meta::ParseNestedMeta<'_>) -> Result<Added> {
+    let (mut name, mut ty, mut doc) = (None, None, None);
+    meta.parse_nested_meta(|inner| {
+        let slot = if inner.path.is_ident("name") {
+            &mut name
+        } else if inner.path.is_ident("ty") {
+            &mut ty
+        } else if inner.path.is_ident("doc") {
+            &mut doc
+        } else {
+            return Err(inner.error("unknown added item: expected name, ty or doc"));
+        };
+        if slot.is_some() {
+            return Err(inner.error("duplicate added item"));
+        }
+        *slot = Some(inner.value()?.parse::<LitStr>()?);
+        Ok(())
+    })?;
+    match (name, ty, doc) {
+        (Some(name), Some(ty), Some(doc)) => Ok(Added {
+            name: name.parse()?,
+            ty: ty.parse()?,
+            doc,
+        }),
+        _ => Err(meta.error("added names its field by name, ty and doc")),
+    }
 }
 
 pub(crate) fn parse_variant_attrs(attrs: &[Attribute]) -> Result<VariantAttrs> {

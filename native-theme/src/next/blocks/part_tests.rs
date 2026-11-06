@@ -254,6 +254,7 @@ fn part_style_paths() -> Vec<String> {
             "mirroring",
         ],
     ));
+    out.push("shown".to_owned());
     out.extend(under("focus", &["kind", "width"]));
     out.extend(paint("focus.paint"));
     out.extend(under(

@@ -209,6 +209,10 @@ fn gen_inventory_submit(
 /// - `#[parts(resolved_patch)]`: a struct block's patch resolved,
 ///   `Resolved<T>Patch`, each field `Option<resolved field>` (`None`: the
 ///   patch leaves it), for a field holding the block's patch.
+/// - `#[parts(added(name = "<field>", ty = "<type>", doc = "<doc>"))]`: a
+///   field of a struct block's `Resolved<T>` that no patch sets and the
+///   resolution adds (S6.1: `ResolvedPartStyle.breeze_tests`), resolved at its
+///   default for the resolution to set; in no patch, table or registry.
 ///
 /// # Field attributes
 ///

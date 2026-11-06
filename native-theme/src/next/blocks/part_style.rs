@@ -20,7 +20,7 @@ use native_theme_derive::ThemeParts;
 use super::focus::{FocusIndicator, ResolvedFocusIndicator};
 use super::icon::{Glyph, IconStyle, ResolvedGlyph, ResolvedIconStyle};
 use super::interaction::{Interaction, ResolvedInteraction};
-use super::motion::{ResolvedTransition, Transition};
+use super::motion::{BreezeTest, ResolvedTransition, Transition};
 use super::outline::{Corners, ResolvedCorners, ResolvedStroke, Stroke};
 use super::paint::{Paint, PaintPatch, ResolvedPaint};
 use super::shadow::{ResolvedShadow, Shadow};
@@ -36,7 +36,18 @@ use crate::next::value::Value;
 
 /// The style of one part of a widget.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block, resolved_patch)]
+#[parts(
+    block,
+    resolved_patch,
+    added(
+        name = "breeze_tests",
+        ty = "Vec<BreezeTest>",
+        doc = "The Breeze tests of every rule that can apply to the element, whatever its \
+               flags, in rank order: as they first appear in the part's base transitions, then \
+               those only a rule names, in the rules' order (S2.7, S8). No patch sets it: the \
+               query adds it, a run's rank its test's position here."
+    )
+)]
 #[non_exhaustive]
 pub struct PartStyle {
     /// The fill; absent on a part that paints nothing at rest.
@@ -68,6 +79,11 @@ pub struct PartStyle {
     /// The glyph.
     #[parts(block = "fields", may_be_absent)]
     pub glyph: Value<Glyph>,
+    /// Whether the part is shown at rest: `false`, drawn only while it
+    /// leaves; `None`, on a part whose catalogue entry does not list it,
+    /// drawn. Listed on the parts a platform hides by state and animates in
+    /// or out; it changes no layout (S2.7, *A part not shown at rest*).
+    pub shown: Option<Value<bool>>,
     /// The focus indicator.
     #[parts(block = "fields", may_be_absent)]
     pub focus: Value<FocusIndicator>,

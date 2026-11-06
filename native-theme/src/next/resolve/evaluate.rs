@@ -2061,13 +2061,11 @@ impl<'t> Cx<'t> {
         }
     }
 
-    /// An `Option<Value<X>>` field's value: `Some(None)` where the step states
-    /// the `Option`'s own `None` (S1).
-    pub(crate) fn optional<'f, X: Leaf>(
-        &mut self,
-        items: &[Fold<'f>],
-        signed: bool,
-    ) -> Option<Option<X>>
+    /// An `Option<Value<X>>` field's value: `None` where the step states the
+    /// `Option`'s own `None` (S1), and where no step states the field, as on
+    /// a part whose catalogue entry does not list it (`PartStyle.shown`,
+    /// S2.7); elsewhere a field validation refuses unstated (S2.2).
+    pub(crate) fn optional<'f, X: Leaf>(&mut self, items: &[Fold<'f>], signed: bool) -> Option<X>
     where
         't: 'f,
     {
@@ -2079,9 +2077,9 @@ impl<'t> Cx<'t> {
         match held {
             None => {
                 self.touch(pos);
-                Some(None)
+                None
             }
-            Some(_) => Some(self.value::<X>(items, signed)),
+            Some(_) => self.value::<X>(items, signed),
         }
     }
 
@@ -2920,7 +2918,6 @@ impl ResolvedTheme {
         cx.follow(Target::Tokens, path, false, |cx, folds| {
             cx.optional::<Px>(folds, false)
         })
-        .flatten()
     }
 
     /// `f` over an evaluation context in `scope` for `element`, its kept
