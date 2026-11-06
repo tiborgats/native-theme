@@ -956,7 +956,7 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         &mut t,
         "method",
         out::text(format!(
-            "a titled window (empty title, content {} from {}) holding at {} an NSView subclass (NativeThemeOsProbeFocusView) that accepts first responder and whose drawFocusRingMask fills its bounds (NSBezierPath fillRect:) and focusRingMaskBounds is its bounds, focusRingType as made; made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); per appearance (the window's appearance set) the window captured with screencapture -x -o -l after makeFirstResponder: nil (unfocused) and with the view (focused), then noteFocusRingMaskChanged and setKeyboardFocusRingNeedsDisplayInRect: of its bounds, display, each after {SETTLE_STEPS} steps, to focus_view/<appearance>-<unfocused|focused>.png; view_frame_from_top_left_xywh in the window frame's points from its top left",
+            "a titled window (empty title, content {} from {}) holding at {} an NSView subclass (NativeThemeOsProbeFocusView) that accepts first responder and whose drawFocusRingMask fills its bounds (NSBezierPath fillRect:) and focusRingMaskBounds is its bounds, focusRingType as made; made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); per appearance (the window's appearance set) the window captured with screencapture -x -o -l after makeFirstResponder: nil (unfocused) and with the view (focused), then noteFocusRingMaskChanged and setKeyboardFocusRingNeedsDisplayInRect: of its bounds, display, each after {SETTLE_STEPS} steps, to focus_view/<appearance>-<unfocused|focused>.png, and once more focused after setFocusRingType: NSFocusRingTypeExterior (focused_exterior); view_frame_from_top_left_xywh in the window frame's points from its top left",
             super::rect_text(NSRect::new(NSPoint::new(0.0, 0.0), FOCUS_FRAME.size)),
             super::point_text(FOCUS_FRAME.origin),
             super::rect_text(FOCUS_VIEW_FRAME),
@@ -1024,8 +1024,24 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         };
         window.setAppearance(Some(&appearance));
         let mut a = Table::new();
-        for (state, focused) in [("unfocused", false), ("focused", true)] {
+        for (state, focused) in [
+            ("unfocused", false),
+            ("focused", true),
+            ("focused_exterior", true),
+        ] {
             let mut s = Table::new();
+            if state == "focused_exterior" {
+                // NSGraphics.h's ring types: the made view's default (0)
+                // drew nothing in run 42272240639; exterior asked for.
+                view.setFocusRingType(objc2_app_kit::NSFocusRingType::Exterior);
+                window.makeFirstResponder(None);
+            }
+            out::put(
+                &mut s,
+                "focusRingType_raw",
+                i64::try_from(view.focusRingType().0)
+                    .map_or_else(|_| out::text("out of range"), Value::Integer),
+            );
             let view_responder: &NSResponder = &view;
             let responder = if focused { Some(view_responder) } else { None };
             out::put(
@@ -1057,6 +1073,7 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         out::put_table(&mut t, key, a);
     }
     window.makeFirstResponder(None);
+    view.setFocusRingType(objc2_app_kit::NSFocusRingType::Default);
     window.setAppearance(None);
     window.close();
     t
