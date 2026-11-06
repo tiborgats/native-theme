@@ -1199,7 +1199,7 @@ quote = "<CornerRadius x:Key=\"ControlCornerRadius\">4,4,4,4</CornerRadius>"
 [[fact]]
 key = "button.body.transitions"
 value = [{ properties = ["fill"], kind = "interpolate", duration_ms = 83, delay_ms = 0, timing = "linear", engine = "win_ui" }]
-rows = ["W1-023", "W3-34"]
+rows = ["W1-023", "W3-34", "W3-32"]
 
 [[fact.cite]]
 kind = "published"
@@ -1275,6 +1275,42 @@ quote = "CBrushTransition* const backgroundTransition = CUIElement::GetBrushTran
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/panel.cpp:78-82"
 quote = "CBrushTransition* const backgroundTransition = CUIElement::GetBrushTransitionNoRef(*this, KnownPropertyIndex::Panel_BackgroundTransition); if (backgroundTransition != nullptr) { dcompTreeHost->GetWUCBrushManager()->SetUpBrushTransitionIfAllowed("
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:1-378"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ToggleButton_themeresources.xaml:1-363"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:1-148"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:1-381"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:1-495"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:1-104"
+quote = "<!-- Copyright (c) Microsoft Corporation. All rights reserved."
+absent = ["PointerDownThemeAnimation", "PointerUpThemeAnimation"]
 
 [[fact.cite]]
 kind = "published"
@@ -1503,7 +1539,7 @@ quote = "<Setter Property=\"Foreground\" Value=\"{ThemeResource AccentButtonFore
 [[fact]]
 key = "button.body.transform.scale_x"
 value = 1
-rows = []
+rows = ["W3-32"]
 
 [[fact.cite]]
 kind = "published"
@@ -7437,7 +7473,7 @@ quote = "<DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource RepeatButt
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["tool"], not_variants = ["toggle"] }
+when = { variants = ["tool"] }
 value = "= role.@subtle_fill_transparent"
 rows = []
 
@@ -7463,7 +7499,7 @@ quote = "<Setter Property=\"Background\" Value=\"{ThemeResource AppBarButtonBack
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["tool"], states = ["hover"], not_variants = ["toggle"] }
+when = { variants = ["tool"], states = ["hover"] }
 value = "= role.@subtle_fill_secondary"
 rows = ["W1-099"]
 
@@ -7484,7 +7520,7 @@ quote = "<Setter Target=\"AppBarButtonInnerBorder.Background\" Value=\"{ThemeRes
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["tool"], states = ["pressed"], not_variants = ["toggle"] }
+when = { variants = ["tool"], states = ["pressed"] }
 value = "= role.@subtle_fill_tertiary"
 rows = ["W1-099"]
 
@@ -7505,7 +7541,7 @@ quote = "<Setter Target=\"AppBarButtonInnerBorder.Background\" Value=\"{ThemeRes
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["tool"], states = ["disabled"], not_variants = ["toggle"] }
+when = { variants = ["tool"], states = ["disabled"] }
 value = "= role.@subtle_fill_disabled"
 rows = ["W1-099"]
 
@@ -13836,7 +13872,7 @@ quote = "<DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource RepeatButt
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["contrast_high"], variants = ["tool"], not_variants = ["toggle"] }
+when = { conditions = ["contrast_high"], variants = ["tool"] }
 value = "= role.@system_control_transparent"
 rows = []
 
@@ -13852,7 +13888,7 @@ quote = "<Setter Property=\"Background\" Value=\"{ThemeResource AppBarButtonBack
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"], not_variants = ["toggle"] }
+when = { conditions = ["contrast_high"], variants = ["tool"], states = ["hover"] }
 value = "= role.@system_control_highlight_list_low"
 rows = ["W1-099"]
 
@@ -13868,7 +13904,7 @@ quote = "<Setter Target=\"AppBarButtonInnerBorder.Background\" Value=\"{ThemeRes
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed"], not_variants = ["toggle"] }
+when = { conditions = ["contrast_high"], variants = ["tool"], states = ["pressed"] }
 value = "= role.@system_control_highlight_list_medium"
 rows = ["W1-099"]
 
@@ -13884,7 +13920,7 @@ quote = "<Setter Target=\"AppBarButtonInnerBorder.Background\" Value=\"{ThemeRes
 
 [[fact]]
 key = "button.body.fill"
-when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disabled"], not_variants = ["toggle"] }
+when = { conditions = ["contrast_high"], variants = ["tool"], states = ["disabled"] }
 value = "= role.@system_control_transparent"
 rows = ["W1-099"]
 
@@ -17327,3 +17363,803 @@ quote = "<VisualState x:Name=\"SecondaryAsDefaultButton\"> <VisualState.Setters>
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml:206-208"
 quote = "<VisualState x:Name=\"CloseAsDefaultButton\"> <VisualState.Setters> <Setter Target=\"CloseButton.Style\" Value=\"{StaticResource AccentButtonStyle}\" />"
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# M1b: the preset's completeness (the Windows facts lane's M1b pass).
+# ---------------------------------------------------------------------------------------------------------------
+
+# The app-bar toggle button's fill (AppBarToggleButton, `tool` with `toggle`): its Background per visual state, the
+# Light and Default dictionaries alike, set on AppBarToggleButtonInnerBorder (Background="{TemplateBinding
+# Background}", :469) at rest and by the CommonStates setters otherwise. Its colours of label, icon and stroke are
+# stated above; its fill was not. The app-bar button's fill facts above (`variants = ["tool"]`) hold for it too and
+# these, after them and after their high-contrast ones, replace them (the high-contrast ones last), so the fill's
+# facts at rest are one under `tool` and one under its complement, which give the preset its base (S11).
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"] }
+value = "= role.@subtle_fill_transparent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:5"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackground\" ResourceKey=\"SubtleFillColorTransparentBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:135"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackground\" ResourceKey=\"SubtleFillColorTransparentBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:213"
+quote = "<Setter Property=\"Background\" Value=\"{ThemeResource AppBarToggleButtonBackground}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["hover"] }
+value = "= role.@subtle_fill_secondary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:6"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPointerOver\" ResourceKey=\"SubtleFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:136"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPointerOver\" ResourceKey=\"SubtleFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:308"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundPointerOver}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["pressed"] }
+value = "= role.@subtle_fill_tertiary"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:7"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPressed\" ResourceKey=\"SubtleFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:137"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPressed\" ResourceKey=\"SubtleFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:319"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundPressed}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["disabled"] }
+value = "= role.@subtle_fill_disabled"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:8"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundDisabled\" ResourceKey=\"SubtleFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:138"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundDisabled\" ResourceKey=\"SubtleFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:330"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundDisabled}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["checked"] }
+value = "= role.@accent_fill_default"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:9"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundChecked\" ResourceKey=\"AccentFillColorDefaultBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:139"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundChecked\" ResourceKey=\"AccentFillColorDefaultBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:341"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundChecked}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["checked", "hover"] }
+value = "= role.@accent_fill_secondary"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:10"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPointerOver\" ResourceKey=\"AccentFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:140"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPointerOver\" ResourceKey=\"AccentFillColorSecondaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:352"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedPointerOver}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["checked", "pressed"] }
+value = "= role.@accent_fill_tertiary"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:11"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPressed\" ResourceKey=\"AccentFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:141"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPressed\" ResourceKey=\"AccentFillColorTertiaryBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:365"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedPressed}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["tool", "toggle"], states = ["checked", "disabled"] }
+value = "= role.@accent_fill_disabled"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:12"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedDisabled\" ResourceKey=\"AccentFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:142"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedDisabled\" ResourceKey=\"AccentFillColorDisabledBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:378"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedDisabled}\" />"
+
+# The same under a high-contrast theme: the HighContrast dictionary's system-colour brushes (Common_themeresources_any.xaml).
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"] }
+value = "= role.@system_button_face"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:70"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackground\" ResourceKey=\"SystemColorButtonFaceColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:511"
+quote = "<SolidColorBrush x:Key=\"SystemColorButtonFaceColorBrush\" Color=\"{ThemeResource SystemColorButtonFaceColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:213"
+quote = "<Setter Property=\"Background\" Value=\"{ThemeResource AppBarToggleButtonBackground}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["hover"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:71"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPointerOver\" ResourceKey=\"SystemColorHighlightColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:513"
+quote = "<SolidColorBrush x:Key=\"SystemColorHighlightColorBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:308"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundPointerOver}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["pressed"] }
+value = "= role.@system_highlight"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:72"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundPressed\" ResourceKey=\"SystemColorHighlightColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:513"
+quote = "<SolidColorBrush x:Key=\"SystemColorHighlightColorBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:319"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundPressed}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["disabled"] }
+value = "= role.@system_window"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:73"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundDisabled\" ResourceKey=\"SystemColorWindowColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:510"
+quote = "<SolidColorBrush x:Key=\"SystemColorWindowColorBrush\" Color=\"{ThemeResource SystemColorWindowColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:330"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundDisabled}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["checked"] }
+value = "= role.@system_highlight"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:74"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundChecked\" ResourceKey=\"SystemColorHighlightColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:513"
+quote = "<SolidColorBrush x:Key=\"SystemColorHighlightColorBrush\" Color=\"{ThemeResource SystemColorHighlightColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:341"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundChecked}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["checked", "hover"] }
+value = "= role.@system_highlight_text"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:75"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPointerOver\" ResourceKey=\"SystemColorHighlightTextColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:514"
+quote = "<SolidColorBrush x:Key=\"SystemColorHighlightTextColorBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:352"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedPointerOver}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["checked", "pressed"] }
+value = "= role.@system_highlight_text"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:76"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedPressed\" ResourceKey=\"SystemColorHighlightTextColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:514"
+quote = "<SolidColorBrush x:Key=\"SystemColorHighlightTextColorBrush\" Color=\"{ThemeResource SystemColorHighlightTextColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:365"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedPressed}\" />"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["contrast_high"], variants = ["tool", "toggle"], states = ["checked", "disabled"] }
+value = "= role.@system_gray_text"
+rows = ["W1-100"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:77"
+quote = "<StaticResource x:Key=\"AppBarToggleButtonBackgroundCheckedDisabled\" ResourceKey=\"SystemColorGrayTextColorBrush\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:516"
+quote = "<SolidColorBrush x:Key=\"SystemColorGrayTextColorBrush\" Color=\"{ThemeResource SystemColorGrayTextColor}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:378"
+quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.Background\" Value=\"{ThemeResource AppBarToggleButtonBackgroundCheckedDisabled}\" />"
+
+
+# The app-bar buttons' label (`tool`): the template's TextLabel, a TextBlock at FontSize 12 bound to the control's
+# FontFamily (ContentControlThemeFontFamily, XamlAutoFontFamily: Segoe UI Variable where the default language's
+# script is Latin, as for the other buttons above), its weight the control's Normal, which a TextBlock inherits, and
+# every other text property its default (both templates alike: AppBarButton :369, AppBarToggleButton :487).
+[[fact]]
+key = "button.label.text.font.family"
+when = { variants = ["tool"] }
+value = "Segoe UI Variable"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:131"
+quote = "<Setter Property=\"FontFamily\" Value=\"{ThemeResource ContentControlThemeFontFamily}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:219"
+quote = "<Setter Property=\"FontFamily\" Value=\"{ThemeResource ContentControlThemeFontFamily}\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:369"
+quote = "<TextBlock x:Name=\"TextLabel\" Grid.Row=\"1\" Text=\"{TemplateBinding Label}\" Foreground=\"{TemplateBinding Foreground}\" FontSize=\"12\" FontFamily=\"{TemplateBinding FontFamily}\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:14"
+quote = "<FontFamily x:Key=\"ContentControlThemeFontFamily\">XamlAutoFontFamily</FontFamily>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/inc/FontAndScriptServices.h:29"
+quote = "DECLARE_CONST_XSTRING_PTR_STORAGE(c_strUltimateFallbackFontNameCobaltStorage, L\"Segoe UI Variable\");"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
+quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { variants = ["tool"] }
+value = "12px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:369"
+quote = "<TextBlock x:Name=\"TextLabel\" Grid.Row=\"1\" Text=\"{TemplateBinding Label}\" Foreground=\"{TemplateBinding Foreground}\" FontSize=\"12\""
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:487"
+quote = "<TextBlock x:Name=\"TextLabel\" Grid.Row=\"1\" Text=\"{TemplateBinding Label}\" Foreground=\"{TemplateBinding Foreground}\" FontSize=\"12\""
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { variants = ["tool"] }
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:132"
+quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:220"
+quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_normal.md:14"
+quote = "Specifies a font weight value of 400."
+
+[[fact]]
+key = "button.label.text.font.style"
+when = { variants = ["tool"] }
+value = "normal"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_fontstyle.md:25"
+quote = "The requested font style, which is a [FontStyle](/uwp/api/windows.ui.text.fontstyle) enumeration value. The default is Normal."
+
+[[fact]]
+key = "button.label.text.letter_spacing"
+when = { variants = ["tool"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_characterspacing.md:22"
+quote = "The uniform spacing between characters, in units of 1/1000 of an em. The default is 0."
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { variants = ["tool"] }
+value = "auto"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_lineheight.md:22"
+quote = "The height of each line in pixels. A value of 0 indicates that the line height is determined automatically from the current font characteristics. The default is 0."
+
+[[fact]]
+key = "button.label.text.elision"
+when = { variants = ["tool"] }
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_texttrimming.md:24"
+quote = "One of the [TextTrimming](../microsoft.ui.xaml/texttrimming.md) values that specifies the text trimming behavior to employ. The default is **None**."
+
+[[fact]]
+key = "button.label.text.max_lines"
+when = { variants = ["tool"] }
+value = "none"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.controls/textblock_maxlines.md:22"
+quote = "The maximum number of lines of text shown in the [TextBlock](textblock.md). The default is 0, which is a special value that represents \"Auto\" behavior."
+
+# TextWrapping="Wrap" breaks at a line break opportunity and, where there is none, within a word
+# (textwrapping.md:28-30): the model's `Wrap` has no member for word-then-character breaking (spec finding), U518.
+[[fact]]
+key = "button.label.text.wrap"
+when = { variants = ["tool"] }
+pending = "U518"
+rows = []
+
+# The accent style (`primary`) sets no font: whether DefaultButtonStyle's setters reach it is U1's measurement, as
+# for its padding, border width and focus margin.
+[[fact]]
+key = "button.label.text.font.family"
+when = { variants = ["primary"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.size"
+when = { variants = ["primary"] }
+pending = "U1"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.weight"
+when = { variants = ["primary"] }
+pending = "U1"
+rows = []
+
+# The label's other text leaves (S2.8): the content presenter's default TextBlock and the app-bar TextLabel have no
+# casing or word-spacing property (the text drawn as written, no added word spacing; S17's zero stated by omission).
+# The decoration, the mnemonic's decoration, the font's width, axes (Segoe UI Variable's optical size follows the
+# size, W3-23) and features and the scaling role are not read yet for every variant (U518).
+[[fact]]
+key = "button.label.text.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/ContentPresenter.g.h:30-133"
+quote = "class __declspec(novtable) ContentPresenterGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "button.label.text.decoration"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "button.label.text.mnemonic_decoration"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "button.label.text.font.axes"
+pending = "U518"
+rows = ["W3-23"]
+
+[[fact]]
+key = "button.label.text.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "button.label.text.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/ContentPresenter.g.h:30-133"
+quote = "class __declspec(novtable) ContentPresenterGenerated:"
+absent = ["WordSpacing"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "button.label.text.scaling_role"
+pending = "U518"
+rows = []
+
+# The icon part: a Button's content is the application's (an IconElement it places), an app-bar button's its Icon
+# in a 16px Viewbox. The icon style's leaves, the icon's placement and gap, the label position and the
+# AnimatedIcon state transitions a button's icon takes (W1-024) are not read yet (U517).
+[[fact]]
+key = "button.icon.icon.size"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.rendering_mode"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.weight"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.scale"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.axes"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.animation"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.icon.transitions"
+pending = "U517"
+rows = ["W1-024"]
+
+[[fact]]
+key = "button.values.icon_placement"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.values.icon_text_gap"
+pending = "U517"
+rows = []
+
+[[fact]]
+key = "button.values.label_position"
+pending = "U517"
+rows = []
+
+# WinUI draws no state layer or ripple (S2.12's `interaction`): not read yet per variant (U517).
+[[fact]]
+key = "button.body.interaction"
+pending = "U517"
+rows = []
+
+# The drop-down button's chevron (`menu`): an AnimatedIcon of AnimatedChevronDownSmall, its fallback the FontIcon
+# U+E96E of SymbolThemeFontFamily at 8 (DropDownButton.xaml:93-97). How its glyph (source, stroke, the drawn part
+# of its path, axes, mirroring), its margin, minimum height and transform are stated is open (ledger #109's
+# question for AnimatedIcon glyphs), U519. The app-bar button's chevron outside a command bar likewise (its facts
+# above hold in `context toolbar.bar`).
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.margin"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.transform"
+when = { variants = ["menu"], not_variants = ["tool"] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.margin"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { variants = ["menu", "tool"], not_context = [{ widget = "toolbar", part = "bar" }] }
+pending = "U519"
+rows = []
+
+# Outside `menu` no indicator is drawn (`button.menu_indicator` absent above): the anchor and gap take the
+# drop-down button's values as their base, which never shows (the decision ledger #155 (3) took for macos-tahoe).
+[[fact]]
+key = "button.values.menu_indicator_anchor"
+when = { not_variants = ["menu"] }
+value = "inline"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:88-91"
+quote = "<Grid.ColumnDefinitions> <ColumnDefinition Width=\"*\" /> <ColumnDefinition Width=\"Auto\" /> </Grid.ColumnDefinitions>"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=\"8,0,0,0\""
+
+[[fact]]
+key = "button.values.menu_indicator_gap"
+when = { not_variants = ["menu"] }
+value = "8px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "Margin=\"8,0,0,0\""
