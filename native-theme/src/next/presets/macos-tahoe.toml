@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 bbbb5b2dbf39bcf2873213dcdd3af78b9c301709d1ab72ccd6445cdf00d72369
+# generated lines: sha256 e29d714b0e18920f3b4dd0533a05b3c208ebb872d946b6863382d46e65301210
 
 [preset]
 id = "macos-tahoe"
@@ -167,11 +167,11 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 # docs/facts/macos/button.toml:44188
 "widgets.button.icon.icon.size_px" = ["U102", "U323"]
 # docs/facts/macos/button.toml:44220
-"widgets.button.icon.glyph" = ["U314", "U323"]
+"widgets.button.icon.glyph" = ["U314", "U323", "U334"]
 # docs/facts/macos/button.toml:44259
 "widgets.button.menu_indicator" = "U315"
 # docs/facts/macos/button.toml:44265
-"widgets.button.values.menu_indicator_gap_px" = "U315"
+"widgets.button.values.menu_indicator_gap_px" = ["U315", "U333"]
 # docs/facts/macos/button.toml:44276
 "widgets.button.body.corners.bottom_left" = "U323"
 # docs/facts/macos/button.toml:44282
@@ -6072,6 +6072,56 @@ target = "button.menu_indicator"
 [rules.set]
 # docs/facts/macos/button.toml:44228
 absent = true
+
+[[rules]]
+when = { not_variants = ["circular", "route", "@small_square", "tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:45191
+margin.top_px = 0
+# docs/facts/macos/button.toml:45697
+margin.right_px = 0
+# docs/facts/macos/button.toml:46203
+margin.bottom_px = 0
+# docs/facts/macos/button.toml:46709
+margin.left_px = 0
+
+[[rules]]
+when = { variants = ["@small_square"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:47215
+margin.top_px = 1
+# docs/facts/macos/button.toml:47246
+margin.right_px = 0
+# docs/facts/macos/button.toml:47277
+margin.bottom_px = 1
+# docs/facts/macos/button.toml:47308
+margin.left_px = 0
+
+[[rules]]
+when = { variants = ["tool"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/macos/button.toml:47339
+margin.top_px = 1
+# docs/facts/macos/button.toml:47370
+margin.right_px = 1
+# docs/facts/macos/button.toml:47401
+margin.bottom_px = 2
+# docs/facts/macos/button.toml:47432
+margin.left_px = 1
+
+[[rules]]
+when = { not_variants = ["help", "menu", "route"] }
+target = "button.icon"
+
+[rules.set]
+# docs/facts/macos/button.toml:47491
+glyph = "absent"
 
 [[rules]]
 when = { conditions = ["scheme:dark", "contrast_increased"] }

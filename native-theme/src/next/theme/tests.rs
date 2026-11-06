@@ -118,6 +118,40 @@ fn adwaita_refused_plain_and_loaded_synthetic() {
     assert_eq!(theme.preset(), PresetId::Adwaita);
 }
 
+/// `macos-tahoe` while its `[pending]` table lists paths (S16, S17,
+/// ADD-A128, ADD-A133): `Theme::from_preset` refuses it, each listed path
+/// a field no layer states among the problems (a listed default size and
+/// a listed input by their own problems), and
+/// `Theme::from_preset_synthetic` loads it with its synthetic layers.
+#[test]
+fn macos_tahoe_refused_plain_and_loaded_synthetic() {
+    let file = read_preset(PresetId::MacosTahoe.source()).unwrap();
+    assert!(!file.pending.is_empty());
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        super::Theme::from_preset(PresetId::MacosTahoe, Scheme::Light)
+    else {
+        panic!("macos-tahoe's listed paths are missing on the plain route");
+    };
+    for (path, _) in &file.pending {
+        if crate::next::toml::read::listed_default(path).is_some()
+            || crate::next::toml::read::listed_input(path).is_some()
+        {
+            continue;
+        }
+        let listed = crate::next::toml::read::listed_path(path);
+        assert!(
+            problems
+                .iter()
+                .any(|problem| problem.kind == ProblemKind::Missing && problem.path == listed),
+            "{listed}"
+        );
+    }
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let theme =
+        super::Theme::from_preset_synthetic(PresetId::MacosTahoe, Scheme::Light, layers).unwrap();
+    assert_eq!(theme.preset(), PresetId::MacosTahoe);
+}
+
 /// The build test's two routes, over the fixture preset with a listed
 /// path (a small preset, beside `adwaita`'s whole one): the build test takes the
 /// synthetic route for it, whose layers state the listed path, so it

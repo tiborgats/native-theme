@@ -42,6 +42,8 @@ macro_rules! presets {
 presets! {
     /// GNOME's libadwaita.
     Adwaita => "adwaita", "adwaita.toml";
+    /// Apple's macOS 26 Tahoe.
+    MacosTahoe => "macos-tahoe", "macos-tahoe.toml";
 }
 
 impl PresetId {

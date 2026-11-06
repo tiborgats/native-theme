@@ -3593,7 +3593,7 @@ fn inset_chain(part: TypedPart) -> Vec<(TypedPart, &'static str)> {
 /// checks (S9.1, S14); `kde-breeze` is not bundled yet (M1b adds it).
 pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
     preset.is_some_and(|preset| match preset {
-        PresetId::Adwaita => false,
+        PresetId::Adwaita | PresetId::MacosTahoe => false,
     })
 }
 
