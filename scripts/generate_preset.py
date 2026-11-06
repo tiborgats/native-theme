@@ -787,7 +787,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     for f in facts:
         if f.reason == SET_WHOLE_SPLIT and f.ckey[:-1] in pending_blocks:
             f.reason = SET_WHOLE_PENDING
-    listed = pending_table(ctx, facts, bases) + waiting
+    listed = pending_table(ctx, facts, bases, models=models) + waiting
     tables, read_rules = read_tables(facts)
     return Draft(preset, platform, facts, rules, bases, declare, conditions, models, left_models, staged, dropped,
                  listed, gaps, definitions(preset, tree), tables, read_rules)
@@ -865,15 +865,56 @@ def alive(f: Fact, facts) -> tuple:
     return tuple(s for s in slots_of(f.when) if not any(covers(g.when, f.when, s) for g in later))
 
 
-def ruled_beneath(f: Fact, facts, scheme) -> bool:
-    """Whether an earlier rule of the fact's key holds wherever the fact holds under the scheme (covers()), so the
-    preset's own layer states the key beneath it there (S17: a listed path has "no fact or base beneath")."""
+def ruled_beneath(f: Fact, facts, scheme, model=None) -> bool:
+    """Whether earlier rules of the fact's key hold wherever the fact holds under the scheme, so the preset's own
+    layer states the key beneath it there (S17: a listed path has "no fact or base beneath" it "in some combination"):
+    one rule covering the fact's `when` (covers()), or, for a widget's fact naming no size, one rule per size at
+    each size its elements take (sized_beneath()), as a key stated per size alone is beneath every fact of a sized
+    element."""
     same = [g for g in facts if g.ckey == f.ckey]
     at = next((i for i, g in enumerate(same) if g is f), len(same))
-    return any(g.status == "rule" and covers(g.rule_when or {}, f.when, scheme) for g in same[:at])
+    earlier = [g for g in same[:at] if g.status == "rule"]
+    if any(covers(g.rule_when or {}, f.when, scheme) for g in earlier):
+        return True
+    return sized_beneath(f, earlier, scheme, model)
 
 
-def pending_table(ctx, facts, bases, block_of=None) -> list:
+def sized_beneath(f: Fact, earlier: list, scheme: str, model) -> bool:
+    """Whether every element the widget's fact `f` holds for takes a size and, at each size it takes, an earlier rule
+    of `earlier` holds wherever `f` does (covers()). The elements are the gate's (S17 *State models*): those holding
+    no variant, one, or a set `variant_sets` lists, each one `f`'s `variants` and `not_variants` admit, at the sizes
+    its variant's `sizes_by_variant` entry takes, else the widget's (S10), less those `f`'s `not_sizes` refuses; one
+    taking none (an unsized variant's) is beneath no size's rule. False for a fact naming a size, a model stating
+    `variant_products` or a `sizes_by_context` entry taking no size, which this does not follow, and where no
+    element holds the fact."""
+    if f.kind != "widget" or not isinstance(model, dict) or "sizes" in f.when:
+        return False
+    if model.get("variant_products") or any(isinstance(e, dict) and not e.get("sizes")
+                                            for e in model.get("sizes_by_context", [])):
+        return False
+    variants = [v for v in model.get("variants", []) if isinstance(v, str)]
+    sets = [[]] + [[v] for v in variants] + [s for s in model.get("variant_sets", []) if isinstance(s, list)]
+    wanted, refused = set(f.when.get("variants", [])), set(f.when.get("not_variants", []))
+    entries = [e for e in model.get("sizes_by_variant", []) if isinstance(e, dict) and isinstance(e.get("sizes"), list)]
+    widget_sizes = [z for z in model.get("sizes", []) if isinstance(z, str)]
+    held = False
+    for held_set in sets:
+        if not wanted <= set(held_set) or refused & set(held_set):
+            continue
+        held = True
+        entry = next((e for e in entries if e.get("variant") in held_set), None)
+        sizes = [z for z in (entry["sizes"] if entry else widget_sizes) if z not in f.when.get("not_sizes", [])]
+        if not sizes:
+            return False
+        others = sorted(set(variants) - set(held_set))
+        for z in sizes:
+            at = {**f.when, "variants": sorted(held_set), "not_variants": others, "sizes": [z]}
+            if not any(covers(g.rule_when or {}, at, scheme) for g in earlier):
+                return False
+    return held
+
+
+def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
     """The preset's `[pending]` table (S11, S17 *A pending fact with nothing beneath it*, ADD-A128): each path a
     pending fact of the preset states where it applies (no later fact covering it everywhere) and the draft writes no
     base at it, above it (a block stated whole, a whole part) or below it, so the preset's own layer leaves it unstated
@@ -881,8 +922,9 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
     the block, which its bases cannot state without it. Each with its pending facts' register id, or the list of
     their distinct ids in fact order where they differ (S11: `"tokens.behavior.key_repeat" = ["<id>", "<id>"]`, the
     leaves of a field set whole pending under different ids), and the first such fact: [(path, id or ids, fact)],
-    the path spelled as S11 writes its key, unit suffix included. An earlier rule of the key holding wherever the
-    pending fact does is beneath it too (ruled_beneath()), in that scheme. The list of ids is broader than S11's
+    the path spelled as S11 writes its key, unit suffix included. Earlier rules of the key holding wherever the
+    pending fact does are beneath it too (ruled_beneath(), the state models `models` giving the sizes an element
+    takes), in that scheme. The list of ids is broader than S11's
     letter ("a list of ids where a field S6.1 sets whole has leaves pending under different ids"): every path whose
     pending facts carry several ids takes one, as a plain field pending under different ids per combination has no
     other encoding (iOS's and macOS's drafts; S11, ADD-A131: one id is the string, a list of one never written). A
@@ -913,7 +955,8 @@ def pending_table(ctx, facts, bases, block_of=None) -> list:
                 raise InputError(f"{f.key} ({f.item.data['pending']}): a component's pending presence, "
                                  f"`components.<key>.<part>`, has no [pending] key the reader takes until components "
                                  f"are typed (S11, S17; ledger #150)")
-            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s))
+            model = (models or {}).get((f.widget, None))
+            slots = tuple(s for s in alive(f, facts) if not ruled_beneath(f, facts, s, model))
             below = f.dotted[:-1] if block_of(ctx, f) else f.dotted
             schemes = slots if f.kind == "role" else (None,)
             paths = [(f.section,) + ((scheme,) if scheme else ()) + f.header + tuple(below)
@@ -2778,6 +2821,26 @@ def self_test() -> int:
                ("widgets.button.label", "U15")]:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
                         f"the scheme input's dark, the double click under a narrower rule and the label's presence")
+    # macOS's icon-only padding: a pending fact under a variant whose elements take every size has one earlier rule
+    # per size beneath it at each, so it lists nothing; one under a variant whose entry takes no size, or a model
+    # whose variant sets give one of its elements such a variant, is listed
+    def sized(when, uid, status=PENDING):
+        f = any_fact("button.body.min_width", uid, "widget", when, widget="button", status=status)
+        f.rule_when = f.when
+        return f
+
+    per_size = [sized({"sizes": [z]}, "", "rule") for z in ("small", "regular")]
+    icon_only, route_fact = sized({"variants": ["icon_only"]}, "U18"), sized({"variants": ["route"]}, "U19")
+    route_model = {"variants": ["icon_only", "route"], "sizes": ["small", "regular"], "default_size": "regular",
+                   "sizes_by_variant": [{"variant": "route", "sizes": []}]}
+    for model, want in ((route_model, [("widgets.button.body.min_width", "U19")]),
+                        ({**route_model, "variant_sets": [["icon_only", "route"]]},
+                         [("widgets.button.body.min_width", ["U18", "U19"])])):
+        got = [(path, uid) for path, uid, _ in pending_table(None, per_size + [icon_only, route_fact], [],
+                                                             repeat_block, {("button", None): model})]
+        if got != want:
+            failures.append(f"pending_table over per-size rules ({model.get('variant_sets')}): {got}, expected "
+                            f"{want}")
     # a component's pending presence is refused, as the reader refuses its key until components are typed
     try:
         pending_table(None, [any_fact("component.rail.item", "U17", "widget")], [])

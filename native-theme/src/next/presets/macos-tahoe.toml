@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 e22e82f65be9ac3cb3607296ca39d043b170d95905ba18025f5320dedf576a0f
+# generated lines: sha256 bbbb5b2dbf39bcf2873213dcdd3af78b9c301709d1ab72ccd6445cdf00d72369
 
 [preset]
 id = "macos-tahoe"
@@ -140,14 +140,6 @@ exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", 
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 
 [pending]
-# docs/facts/macos/button.toml:14146
-"widgets.button.body.corners.top_left" = ["U96", "U91", "U92", "U93", "U323"]
-# docs/facts/macos/button.toml:14554
-"widgets.button.body.corners.top_right" = ["U96", "U91", "U92", "U93", "U323"]
-# docs/facts/macos/button.toml:14962
-"widgets.button.body.corners.bottom_right" = ["U96", "U91", "U92", "U93", "U323"]
-# docs/facts/macos/button.toml:15370
-"widgets.button.body.corners.bottom_left" = ["U96", "U91", "U92", "U93", "U323"]
 # docs/facts/macos/button.toml:21332
 "widgets.button.body.focus.transition" = "U182"
 # docs/facts/macos/button.toml:22022
@@ -174,24 +166,32 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.body.margin.left_px" = ["U159", "U323"]
 # docs/facts/macos/button.toml:44188
 "widgets.button.icon.icon.size_px" = ["U102", "U323"]
-# docs/facts/macos/button.toml:44195
-"widgets.button.body.padding.top_px" = ["U313", "U323"]
-# docs/facts/macos/button.toml:44201
-"widgets.button.body.padding.right_px" = ["U313", "U323"]
-# docs/facts/macos/button.toml:44207
-"widgets.button.body.padding.bottom_px" = ["U313", "U323"]
-# docs/facts/macos/button.toml:44213
-"widgets.button.body.padding.left_px" = ["U313", "U323"]
 # docs/facts/macos/button.toml:44220
 "widgets.button.icon.glyph" = ["U314", "U323"]
 # docs/facts/macos/button.toml:44259
 "widgets.button.menu_indicator" = "U315"
 # docs/facts/macos/button.toml:44265
 "widgets.button.values.menu_indicator_gap_px" = "U315"
+# docs/facts/macos/button.toml:44276
+"widgets.button.body.corners.bottom_left" = "U323"
+# docs/facts/macos/button.toml:44282
+"widgets.button.body.corners.bottom_right" = "U323"
+# docs/facts/macos/button.toml:44294
+"widgets.button.body.corners.top_left" = "U323"
+# docs/facts/macos/button.toml:44300
+"widgets.button.body.corners.top_right" = "U323"
 # docs/facts/macos/button.toml:44426
 "widgets.button.body.min_height_px" = "U323"
 # docs/facts/macos/button.toml:44432
 "widgets.button.body.min_width_px" = "U323"
+# docs/facts/macos/button.toml:44438
+"widgets.button.body.padding.bottom_px" = "U323"
+# docs/facts/macos/button.toml:44444
+"widgets.button.body.padding.left_px" = "U323"
+# docs/facts/macos/button.toml:44450
+"widgets.button.body.padding.right_px" = "U323"
+# docs/facts/macos/button.toml:44456
+"widgets.button.body.padding.top_px" = "U323"
 # docs/facts/macos/button.toml:44534
 "widgets.button.label.text.font.size" = "U323"
 # docs/facts/macos/button.toml:44564
@@ -906,6 +906,36 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "tokens.icons.sizes.panel.symbolic_colors" = "U102"
 # docs/facts/macos/tokens.toml:40454
 "tokens.icons.sizes.panel.animation" = "U102"
+# docs/facts/macos/tokens.toml:40462
+"tokens.icons.sizes.keyed.button.fill" = "U102"
+# docs/facts/macos/tokens.toml:40468
+"tokens.icons.sizes.keyed.button.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40474
+"tokens.icons.sizes.keyed.button.animation" = "U102"
+# docs/facts/macos/tokens.toml:40480
+"tokens.icons.sizes.keyed.list_row.fill" = "U102"
+# docs/facts/macos/tokens.toml:40486
+"tokens.icons.sizes.keyed.list_row.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40492
+"tokens.icons.sizes.keyed.list_row.animation" = "U102"
+# docs/facts/macos/tokens.toml:40498
+"tokens.icons.sizes.keyed.tab.fill" = "U102"
+# docs/facts/macos/tokens.toml:40504
+"tokens.icons.sizes.keyed.tab.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40510
+"tokens.icons.sizes.keyed.tab.animation" = "U102"
+# docs/facts/macos/tokens.toml:40516
+"tokens.icons.sizes.keyed.status_item.fill" = "U102"
+# docs/facts/macos/tokens.toml:40522
+"tokens.icons.sizes.keyed.status_item.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40528
+"tokens.icons.sizes.keyed.status_item.animation" = "U102"
+# docs/facts/macos/tokens.toml:40534
+"tokens.icons.sizes.keyed.sidebar.fill" = "U102"
+# docs/facts/macos/tokens.toml:40540
+"tokens.icons.sizes.keyed.sidebar.state_effect" = "U102"
+# docs/facts/macos/tokens.toml:40546
+"tokens.icons.sizes.keyed.sidebar.animation" = "U102"
 
 [inputs.selected_content_background]
 # docs/facts/macos/roles.toml:896
