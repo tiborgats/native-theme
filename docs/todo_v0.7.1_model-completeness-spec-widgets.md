@@ -1883,8 +1883,9 @@ spaces:
   - `ios-*`: `UIControl.State` (normal, highlighted, disabled, selected, focused) × `UIButton.Configuration` style ×
     `buttonSize` × `cornerStyle` × `UIButton.ButtonType`; `UIBarButtonItem.Style`, `isSelected`; measured. Its
     `axes.states` include `drop_target`: UIButton adopts spring loading (`UISpringLoadedInteractionSupporting`), so a
-    button under a drag draws a drop-target state (P3-11†, U475); the citation, `UIButton.h` at the pinned Xcode, is
-    pending the SDK header pass (ledger queue #159; ADD-A134).
+    button under a drag draws a drop-target state (P3-11†, U475), cited to `UIButton.h:184` at both pinned Xcodes
+    (`@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>`, xcode@16.4 and xcode@26.6; ledger
+    queue #159; ADD-A134).
   - `windows-11`: the VisualStateGroups of the Button, ToggleButton (with Checked*/Indeterminate*), AccentButtonStyle,
     SubtleButtonStyle, AppBarButton and AppBarToggleButton templates (`Button_themeresources.xaml`,
     `ToggleButton_themeresources.xaml`, `AppBarButton_themeresources.xaml`, `AppBarToggleButton_themeresources.xaml`).
