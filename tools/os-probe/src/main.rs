@@ -11,7 +11,7 @@
 //! that it supports macOS and Windows only and exits with success.
 //!
 //! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass
-//! [--focus | --focus-transition | --not-key | --inactive]]`. `--out` (or `--out=<dir>`) names the
+//! [--focus | --focus-transition | --not-key | --inactive]] [--symbols]`. `--out` (or `--out=<dir>`) names the
 //! output directory, `os-probe-out` by default; `--not-key`, macOS only,
 //! makes the key-window section capture its window after a second window has
 //! taken the key; `--button-pass`, macOS only, runs the button pass alone:
@@ -20,7 +20,9 @@
 //! the window key, or with each button focused (`--focus`), a second window
 //! key (`--not-key`) or another application active (`--inactive`); with
 //! `--focus-transition` it records the screen instead while two buttons are
-//! focused and unfocused.
+//! focused and unfocused. `--symbols`, macOS only, runs the symbols pass
+//! alone: the SF Symbol configuration and image size each place gives a
+//! symbol image.
 
 #![deny(unsafe_code)]
 #![deny(
@@ -56,7 +58,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive]]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive]] [--symbols]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --symbols, macOS only: the symbols pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -74,6 +76,8 @@ struct Options {
     inactive: bool,
     /// Whether the button pass records the focus ring's transition instead.
     focus_transition: bool,
+    /// Whether the macOS probe runs the symbols pass alone.
+    symbols: bool,
 }
 
 /// The options from the command line, or the usage error.
@@ -92,6 +96,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
     let mut focus = false;
     let mut inactive = false;
     let mut focus_transition = false;
+    let mut symbols = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
@@ -101,6 +106,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             Some("--focus") => focus = true,
             Some("--inactive") => inactive = true,
             Some("--focus-transition") => focus_transition = true,
+            Some("--symbols") => symbols = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -133,6 +139,11 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             "the button pass takes one of --focus, --focus-transition, --not-key and --inactive\n{USAGE}"
         ));
     }
+    if symbols && (button_pass || not_key) {
+        return Err(format!(
+            "--symbols runs alone, without --button-pass or --not-key\n{USAGE}"
+        ));
+    }
     Ok(Options {
         out,
         not_key,
@@ -140,6 +151,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         focus,
         inactive,
         focus_transition,
+        symbols,
     })
 }
 
@@ -173,7 +185,9 @@ fn run(options: &Options) -> ExitCode {
 
     let mut doc = toml::Table::new();
     #[cfg(target_os = "macos")]
-    if options.button_pass {
+    if options.symbols {
+        macos::symbols_probe(&mut doc, out_dir);
+    } else if options.button_pass {
         let mode = if options.focus {
             macos::ButtonMode::Focus
         } else if options.focus_transition {
@@ -245,6 +259,7 @@ mod tests {
             focus: false,
             inactive: false,
             focus_transition: false,
+            symbols: false,
         })
     }
 
@@ -301,6 +316,7 @@ mod tests {
                 focus: false,
                 inactive: false,
                 focus_transition: false,
+                symbols: false,
             })
         };
         assert_eq!(parse(&["--button-pass"]), pass("os-probe-out"));
@@ -323,6 +339,7 @@ mod tests {
                 focus,
                 inactive,
                 focus_transition: false,
+                symbols: false,
             })
         };
         assert_eq!(
@@ -346,6 +363,7 @@ mod tests {
                 focus: false,
                 inactive: false,
                 focus_transition: true,
+                symbols: false,
             })
         );
         assert!(parse(&["--focus"]).is_err());
@@ -354,5 +372,24 @@ mod tests {
         assert!(parse(&["--inactive"]).is_err());
         assert!(parse(&["--button-pass", "--focus", "--inactive"]).is_err());
         assert!(parse(&["--button-pass", "--focus", "--not-key"]).is_err());
+    }
+
+    /// `--symbols` is taken in any order, and alone.
+    #[test]
+    fn symbols_is_taken_alone() {
+        assert_eq!(
+            parse(&["--symbols", "--out", "/tmp/s"]),
+            Ok(Options {
+                out: PathBuf::from("/tmp/s"),
+                not_key: false,
+                button_pass: false,
+                focus: false,
+                inactive: false,
+                focus_transition: false,
+                symbols: true,
+            })
+        );
+        assert!(parse(&["--symbols", "--button-pass"]).is_err());
+        assert!(parse(&["--not-key", "--symbols"]).is_err());
     }
 }

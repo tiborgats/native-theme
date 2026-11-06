@@ -5,13 +5,16 @@
 //! and a table's selected row ([`selection`]); the fonts' descriptors and
 //! line heights are read in [`text`].
 //! With `--button-pass`, only the buttons in titled windows per state and
-//! condition ([`buttons`], its pixel work in [`layer`]). The calls
+//! condition ([`buttons`], its pixel work in [`layer`]); with `--symbols`,
+//! only the symbol configuration and image size each place gives an SF
+//! Symbol ([`symbols`]). The calls
 //! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
 
 mod buttons;
 mod ffi;
 mod layer;
 mod selection;
+mod symbols;
 mod text;
 
 pub(crate) use buttons::Mode as ButtonMode;
@@ -165,6 +168,40 @@ pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path, mode: ButtonMode) {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
             out::put(&mut mac, "button_pass", reason);
+        }
+    }
+    out::put_table(doc, "macos", mac);
+}
+
+/// `--symbols`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// symbols pass only; its renders go under `out_dir`.
+pub(crate) fn symbols_probe(doc: &mut Table, out_dir: &Path) {
+    let (os, version) = os_table();
+    out::put_table(doc, "os", os);
+    out::put_table(doc, "probe", crate::probe_table());
+    let mut mac = Table::new();
+    match MainThreadMarker::new() {
+        Some(mtm) => {
+            let app = NSApplication::sharedApplication(mtm);
+            let mut env = Table::new();
+            out::put(
+                &mut env,
+                "effectiveAppearance",
+                out::text(app.effectiveAppearance().name().to_string()),
+            );
+            out::put_table(&mut env, "mainScreen", screen_table(mtm));
+            out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut mac, "environment", env);
+            out::put_table(
+                &mut mac,
+                "symbols",
+                symbols::symbols_table(mtm, &app, out_dir, &version),
+            );
+        }
+        None => {
+            let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
+            out::put(&mut mac, "environment", reason.clone());
+            out::put(&mut mac, "symbols", reason);
         }
     }
     out::put_table(doc, "macos", mac);

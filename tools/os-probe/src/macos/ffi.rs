@@ -19,8 +19,8 @@ use objc2_app_kit::{
     NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontVariationAttribute, NSFontWeightBlack,
     NSFontWeightBold, NSFontWeightHeavy, NSFontWeightLight, NSFontWeightMedium,
     NSFontWeightRegular, NSFontWeightSemibold, NSFontWeightThin, NSFontWeightTrait,
-    NSFontWeightUltraLight, NSFontWidthTrait, NSLayoutManager, NSTableCellView, NSTableColumn,
-    NSTableView, NSTableViewDataSource, NSTableViewDelegate, NSTextField, NSToolbar,
+    NSFontWeightUltraLight, NSFontWidthTrait, NSImageView, NSLayoutManager, NSTableCellView,
+    NSTableColumn, NSTableView, NSTableViewDataSource, NSTableViewDelegate, NSTextField, NSToolbar,
     NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
 use objc2_core_foundation::{CFArray, CFBundle, CFDictionary, CFRetained, CFString, CFType};
@@ -213,6 +213,15 @@ pub(super) fn set_text_field(cell: &NSTableCellView, field: &NSTextField) {
     // the view hierarchy keeps it alive as long as the cell, and the
     // `TableSource` that hands the cell out holds both.
     unsafe { cell.setTextField(Some(field)) };
+}
+
+/// `-[NSTableCellView setImageView:]`: `view`, a subview of `cell`, as its
+/// image view.
+pub(super) fn set_image_view(cell: &NSTableCellView, view: &NSImageView) {
+    // SAFETY: the outlet is unretained; `view` is a subview of `cell`, so
+    // the view hierarchy keeps it alive as long as the cell, and the
+    // `TableSource` that hands the cell out holds both.
+    unsafe { cell.setImageView(Some(view)) };
 }
 
 /// A borderless, buffered, non-deferred NSWindow that is never ordered
