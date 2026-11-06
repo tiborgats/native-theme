@@ -14,7 +14,7 @@
 [[fact]]
 key = "token.text.keyed.large_title.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -64,7 +64,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_1.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -114,7 +114,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_2.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -164,7 +164,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.title_3.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -214,7 +214,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.headline.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -264,7 +264,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.subheadline.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -314,7 +314,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.body.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -364,7 +364,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.callout.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -414,7 +414,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.footnote.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -464,7 +464,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_1.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -514,7 +514,7 @@ tolerance = 0
 [[fact]]
 key = "token.text.keyed.caption_2.font.family"
 value = ".AppleSystemUIFont"
-rows = ["TS-1", "TS-3"]
+rows = ["TS-1", "TS-3", "D-3"]
 
 [[fact.cite]]
 kind = "measured"
@@ -598,7 +598,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.large_title.scaling_role"
 value = "large_title"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -678,7 +678,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.title_1.scaling_role"
 value = "title1"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -758,7 +758,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.title_2.scaling_role"
 value = "title2"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -838,7 +838,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.title_3.scaling_role"
 value = "title3"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -918,7 +918,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.headline.scaling_role"
 value = "headline"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -998,7 +998,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.subheadline.scaling_role"
 value = "subheadline"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1078,7 +1078,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.body.scaling_role"
 value = "body"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1158,7 +1158,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.callout.scaling_role"
 value = "callout"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1238,7 +1238,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.footnote.scaling_role"
 value = "footnote"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1318,7 +1318,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.caption_1.scaling_role"
 value = "caption"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1398,7 +1398,7 @@ tolerance = 0.01
 # the style is its own Dynamic Type text style, so its own slot's curve scales it
 key = "token.text.keyed.caption_2.scaling_role"
 value = "caption2"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1445,7 +1445,7 @@ absent = []
 # each text style's size per content size category, not a factor (run1/index.toml `[[text_style]]` reads every category)
 key = "token.text.scaling"
 value = "dynamic_type"
-rows = ["D-5", "TS-2"]
+rows = ["D-5", "TS-2", "X-DT-1"]
 
 [[fact.cite]]
 kind = "published"
@@ -1515,7 +1515,7 @@ conversion = ["seconds_to_ms"]
 # UIKit's default spring: the SDK states its duration and bounce, the model's spring its mass, stiffness and damping
 key = "token.motion.timings.default"
 pending = "U128"
-rows = ["X-MO-1"]
+rows = ["X-MO-1", "X-MO-2"]
 
 [[fact]]
 # the colour space (S2.7, ADD-A125): Core Animation's colour interpolation has no source in the cache; the iOS host
@@ -1862,3 +1862,3665 @@ tolerance = 0
 kind = "measured"
 evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/run1/index.toml#caret.rect.10.text_field_caret_rect_pt.2"
 tolerance = 0
+
+# ---- M1b (the iOS facts lane): the text styles' other leaves, and the tokens the slice still lacked ----
+
+# ios-26: the system font tracks by size, the HIG's iOS SF Pro table (D-1; S2.2's `sf_tracking`, whose table equals it); the row of the style's size cited
+[[fact]]
+key = "token.text.keyed.large_title.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
+quote = "34"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
+quote = "+12"
+
+# U462: ios-13's tracking: no pinned source of iOS 18's lifetime states it (the HIG snapshot serves ios-26 only)
+[[fact]]
+key = "token.text.keyed.large_title.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+# a Dynamic Type style is a font (UIFont and its descriptor), which holds no colour, decoration, case, word spacing,
+# line breaking or line limit: those are the label's or the text view's (S2.8); the names cited absent are UIKit's for them
+[[fact]]
+key = "token.text.keyed.large_title.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.large_title.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.large_title.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.large_title.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.large_title.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.large_title.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.large_title.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+# U463: the font leaves the run did not read: style, width (D-3), the optical-size axis (D-2) and the features (D-8)
+[[fact]]
+key = "token.text.keyed.large_title.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.large_title.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.large_title.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.large_title.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_1.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
+
+[[fact]]
+key = "token.text.keyed.title_1.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.title_1.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_1.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_1.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_1.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_1.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_1.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_1.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.title_1.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_2.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
+
+[[fact]]
+key = "token.text.keyed.title_2.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.title_2.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_2.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_2.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_2.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_2.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_2.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_2.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.title_2.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_3.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/15/0/0/inlineContent/0/text"
+quote = "20"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
+quote = "-23"
+
+[[fact]]
+key = "token.text.keyed.title_3.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.title_3.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_3.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.title_3.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_3.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.title_3.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_3.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.title_3.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.title_3.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.headline.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
+
+[[fact]]
+key = "token.text.keyed.headline.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.headline.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.headline.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.headline.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.headline.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.headline.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.headline.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.headline.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.headline.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.headline.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.headline.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.headline.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.subheadline.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
+
+[[fact]]
+key = "token.text.keyed.subheadline.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.subheadline.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.subheadline.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.subheadline.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
+
+[[fact]]
+key = "token.text.keyed.body.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.body.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.body.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.body.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.body.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.body.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.body.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.body.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.body.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.body.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.body.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.body.font.features"
+pending = "U463"
+rows = ["D-8"]
+
+[[fact]]
+key = "token.text.keyed.callout.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/11/0/0/inlineContent/0/text"
+quote = "16"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
+quote = "-20"
+
+[[fact]]
+key = "token.text.keyed.callout.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.callout.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.callout.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.callout.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.callout.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.callout.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.callout.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.callout.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.callout.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.callout.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.callout.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.callout.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.footnote.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
+
+[[fact]]
+key = "token.text.keyed.footnote.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.footnote.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.footnote.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.footnote.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.footnote.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.footnote.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.footnote.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.footnote.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.footnote.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.footnote.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.footnote.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.footnote.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.caption_1.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
+quote = "0"
+
+[[fact]]
+key = "token.text.keyed.caption_1.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.caption_1.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.caption_1.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.caption_1.font.features"
+pending = "U463"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.caption_2.letter_spacing"
+when = { conditions = ["preset:ios-26"] }
+value = "= sf_tracking(font_size, sf_pro)"
+rows = ["D-1", "TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/80/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
+
+[[fact]]
+key = "token.text.keyed.caption_2.letter_spacing"
+when = { conditions = ["preset:ios-13"] }
+pending = "U462"
+rows = ["D-1"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.fill"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["textColor", "NSForegroundColorAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.decoration"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["NSUnderlineStyleAttributeName", "NSStrikethroughStyleAttributeName"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.case"
+value = "mixed"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.caption_2.word_spacing"
+value = "0px"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.text.keyed.caption_2.elision"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.wrap"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["lineBreakMode", "NSLineBreakMode"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.max_lines"
+value = "absent"
+rows = ["TS-1"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFont.h:19-76"
+quote = "@interface UIFont : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIFontDescriptor.h:66-107"
+quote = "@interface UIFontDescriptor : NSObject <NSCopying, NSSecureCoding>"
+absent = ["numberOfLines"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.style"
+pending = "U463"
+rows = ["TS-1"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.width"
+pending = "U463"
+rows = ["D-3"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.axes"
+pending = "U463"
+rows = ["D-2"]
+
+[[fact]]
+key = "token.text.keyed.caption_2.font.features"
+pending = "U463"
+rows = []
+
+
+# U464: the tight and loose leading variants (UIFontDescriptorTraitTightLeading, …LooseLeading): never read
+[[fact]]
+key = "token.text.keyed.large_title_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.large_title_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_1_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_1_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_2_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_2_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_3_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.title_3_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.headline_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.headline_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.subheadline_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.subheadline_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.body_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.body_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.callout_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.callout_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.footnote_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.footnote_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.caption_1_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.caption_1_loose"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.caption_2_tight"
+pending = "U464"
+rows = ["D-6"]
+
+[[fact]]
+key = "token.text.keyed.caption_2_loose"
+pending = "U464"
+rows = ["D-6"]
+
+# U465: the emphasized variants (the bold symbolic trait): never read; the HIG's iOS table names their weights in words only
+[[fact]]
+key = "token.text.keyed.large_title_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.title_1_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.title_2_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.title_3_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.headline_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.subheadline_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.body_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.callout_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.footnote_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.caption_1_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.keyed.caption_2_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.roles.body_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+pending = "U465"
+rows = ["D-7"]
+
+# U466: `extraLargeTitle`, `extraLargeTitle2`: whether iOS draws with them
+[[fact]]
+key = "token.text.keyed.extra_large_title"
+pending = "U466"
+rows = ["TS-4"]
+
+[[fact]]
+key = "token.text.keyed.extra_large_title_2"
+pending = "U466"
+rows = ["TS-4"]
+
+# U467: the text-role slots UIKit names no style for (the monospaced-digit font, D-8, among them)
+[[fact]]
+key = "token.text.roles.display_large"
+pending = "U467"
+rows = []
+
+[[fact]]
+key = "token.text.roles.display_medium"
+pending = "U467"
+rows = []
+
+[[fact]]
+key = "token.text.roles.display_small"
+pending = "U467"
+rows = []
+
+[[fact]]
+key = "token.text.roles.label"
+pending = "U467"
+rows = []
+
+[[fact]]
+key = "token.text.roles.monospace"
+pending = "U467"
+rows = []
+
+[[fact]]
+key = "token.text.roles.numeric"
+pending = "U467"
+rows = ["D-8"]
+
+# U468: Core Text's fallback cascade and emoji font: never read
+[[fact]]
+key = "token.text.fallbacks.families"
+pending = "U468"
+rows = []
+
+[[fact]]
+key = "token.text.fallbacks.per_language"
+pending = "U468"
+rows = ["FM-2†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_family"
+pending = "U468"
+rows = ["FM-2†"]
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+pending = "U468"
+rows = ["FM-1†"]
+
+# U469: UIKit's text rendering: no API reports it
+[[fact]]
+key = "token.text.rendering.engine"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.hinting"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.gamma"
+pending = "U469"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.contrast"
+pending = "U469"
+rows = []
+
+# U470: the caret's blink: UIKit has no API that reports its timing (run1/index.toml `motion.unexposed`); a capture over time
+[[fact]]
+key = "token.caret.blink_on"
+pending = "U470"
+rows = ["X-CA-2", "X-BT-1"]
+
+[[fact]]
+key = "token.caret.blink_off"
+pending = "U470"
+rows = ["X-CA-2", "X-BT-1"]
+
+[[fact]]
+key = "token.caret.blink_style"
+pending = "U470"
+rows = ["X-CA-2"]
+
+[[fact]]
+key = "token.caret.blink_timeout"
+pending = "U470"
+rows = []
+
+[[fact]]
+key = "token.caret.solid_while_typing"
+pending = "U470"
+rows = ["X-CA-2"]
+
+# U471: the caret's colour, secondary caret and read-only display: never read
+[[fact]]
+key = "token.caret.color"
+pending = "U471"
+rows = []
+
+[[fact]]
+key = "token.caret.secondary"
+pending = "U471"
+rows = []
+
+[[fact]]
+key = "token.caret.shown_in_read_only"
+pending = "U471"
+rows = []
+
+# U472: the pointer's and the click's timings and distances (an iPad pointer): never read
+[[fact]]
+key = "token.behavior.double_click_time"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.double_click_distance"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.double_click_height"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.drag_time"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.drag_min_delay"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.hover_time"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+pending = "U472"
+rows = []
+
+[[fact]]
+key = "token.behavior.single_click_activates"
+pending = "U472"
+rows = []
+
+# U473: the hardware keyboard's key repeat: UIKit has no API that reports it
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+pending = "U473"
+rows = ["P3-13†"]
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+pending = "U473"
+rows = ["P3-13†"]
+
+# U474: touch: the highlight delay in scroll views (`delaysContentTouches` is true; its duration unread), the slops, the double tap
+[[fact]]
+key = "token.behavior.touch.delay"
+pending = "U474"
+rows = ["X-BT-1"]
+
+[[fact]]
+key = "token.behavior.touch.slop"
+pending = "U474"
+rows = ["X-BT-2†"]
+
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+pending = "U474"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+pending = "U474"
+rows = ["X-BT-2†"]
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+pending = "U474"
+rows = ["P4-11†"]
+
+# U475: spring loading (UISpringLoadedInteraction): its hover time and look, never captured
+[[fact]]
+key = "token.behavior.spring_loading"
+pending = "U475"
+rows = ["P3-11†"]
+
+# U476: mnemonics and the focus ring's visibility (iPad keyboard focus): the sources are UIKit's headers, not in the source cache
+[[fact]]
+key = "token.behavior.mnemonics"
+pending = "U476"
+rows = []
+
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+pending = "U476"
+rows = []
+
+[[fact]]
+key = "token.behavior.focus_visible_when"
+pending = "U476"
+rows = []
+
+# U477: the iPad focus halo (UIFocusHaloEffect): never drawn (the focus pass found no focusable button)
+[[fact]]
+key = "token.focus.kind"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.paint"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.width"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.dash"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.offset.top"
+pending = "U477"
+rows = ["D-18"]
+
+[[fact]]
+key = "token.focus.offset.right"
+pending = "U477"
+rows = ["D-18"]
+
+[[fact]]
+key = "token.focus.offset.bottom"
+pending = "U477"
+rows = ["D-18"]
+
+[[fact]]
+key = "token.focus.offset.left"
+pending = "U477"
+rows = ["D-18"]
+
+[[fact]]
+key = "token.focus.corners.top_left"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.corners.top_right"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.corners.bottom_right"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.corners.bottom_left"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.corners.curve"
+pending = "U477"
+rows = ["D-18"]
+
+[[fact]]
+key = "token.focus.shadow"
+pending = "U477"
+rows = []
+
+[[fact]]
+key = "token.focus.transition"
+pending = "U477"
+rows = []
+
+# U478: the icon set, its themes and its mirroring: not stated by a cached source
+[[fact]]
+key = "token.icons.set"
+pending = "U478"
+rows = []
+
+[[fact]]
+key = "token.icons.theme"
+pending = "U478"
+rows = []
+
+[[fact]]
+key = "token.icons.theme_fallback"
+pending = "U478"
+rows = []
+
+[[fact]]
+key = "token.icons.mirroring"
+pending = "U478"
+rows = ["X-SV-3", "P3-14†"]
+
+# U479: the icon contexts' other leaves (beside U127's size, weight and scale): never read
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbolic_colors"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.rendering_mode"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.fill"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.axes"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbol_variants"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.symbolic_colors"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.state_effect"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.small.animation"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.rendering_mode"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.fill"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.axes"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbol_variants"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.symbolic_colors"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.state_effect"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large.animation"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.rendering_mode"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.fill"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.axes"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbol_variants"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbolic_colors"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.state_effect"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.animation"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.rendering_mode"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.fill"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.axes"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbol_variants"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.symbolic_colors"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.state_effect"
+pending = "U479"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel.animation"
+pending = "U479"
+rows = []
+
+# U480: the elevation ramp and the size classes' thresholds: not stated by a cached source
+[[fact]]
+key = "token.elevation"
+pending = "U480"
+rows = []
+
+[[fact]]
+key = "token.size_classes"
+pending = "U480"
+rows = []
+
+# U481: the speed factor and the navigation push and pop (X-MO-3): never read
+[[fact]]
+key = "token.motion.speed_factor"
+pending = "U481"
+rows = []
+
+[[fact]]
+key = "token.motion.durations.navigation"
+pending = "U481"
+rows = ["X-MO-3"]
+
+[[fact]]
+key = "token.motion.timings.navigation"
+pending = "U481"
+rows = ["X-MO-3"]
+
+# U486: a disabled control's alpha, where a control dims by alpha (D-20): read on no control
+[[fact]]
+key = "token.params.opacity.disabled"
+pending = "U486"
+rows = ["D-20"]

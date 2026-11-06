@@ -4225,415 +4225,415 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["@share"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["add"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["back"], not_variants = ["@paste_control", "@share", "add"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["close"], not_variants = ["@paste_control", "@share", "add", "back"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["done"], not_variants = ["@paste_control", "@share", "add", "back", "close"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], variants = ["flat"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["route"], not_variants = ["@share", "add", "back", "close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back"], not_variants = ["@share", "add", "close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["back", "toggle"], not_variants = ["@share", "add", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share"], not_variants = ["close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add"], not_variants = ["close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["@share", "toggle"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["add", "toggle"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close"], not_variants = ["done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["close", "toggle"], not_variants = ["done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["done"], not_variants = ["flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["done", "toggle"], not_variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["flat"], not_variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], not_variants = ["toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["route"], not_variants = ["@share", "add", "back", "close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back"], not_variants = ["@share", "add", "close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["back", "toggle"], not_variants = ["@share", "add", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share"], not_variants = ["close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add"], not_variants = ["close", "done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["@share", "toggle"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["add", "toggle"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close"], not_variants = ["done", "flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["close", "toggle"], not_variants = ["done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["done"], not_variants = ["flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["done", "toggle"], not_variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["flat"], not_variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], not_variants = ["toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["flat", "toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["@share"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["add"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["back"], not_variants = ["@paste_control", "@share", "add"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["close"], not_variants = ["@paste_control", "@share", "add", "back"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["done"], not_variants = ["@paste_control", "@share", "add", "back", "close"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], variants = ["flat"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["@share"], not_variants = ["@paste_control", "back", "route"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["add"], not_variants = ["@paste_control", "back", "route"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["close"], not_variants = ["@paste_control", "@share", "add", "back", "route"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["done"], not_variants = ["@paste_control", "@share", "add", "back", "close", "route"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["flat"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "route", "toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["back"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["@share"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["add"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["back"], not_variants = ["@paste_control", "@share", "add"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["close"], not_variants = ["@paste_control", "@share", "add", "back"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["done"], not_variants = ["@paste_control", "@share", "add", "back", "close"], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], variants = ["flat"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "toggle", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], not_variants = ["@paste_control", "@share", "add", "back", "close", "done", "flat", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["back"], not_variants = ["@share", "add", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["@share"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["add"], not_variants = ["close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["close"], not_variants = ["done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["done"], not_variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
@@ -5185,7 +5185,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_variants = ["@share", "add", "back", "close", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "C-17"]
 
 [[fact]]
 key = "button.body.fill"
@@ -5293,7 +5293,7 @@ rows = ["C-36†"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["hover"], not_states = ["focus_visible"] }
 pending = "U113"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "X-PH-1"]
 
 [[fact]]
 key = "button.body.fill"
@@ -9078,7 +9078,7 @@ rows = ["C-36†"]
 key = "button.body.shadow"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["hover"], not_states = ["focus_visible"] }
 pending = "U113"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4", "X-PH-1", "X-SH-1"]
 
 [[fact]]
 key = "button.body.shadow"
@@ -9096,7 +9096,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"] }
 value = 1.0
-rows = ["B-1", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-14", "B-6", "B-7", "B-5"]
 
 [[fact.cite]]
 kind = "measured"
@@ -9706,6 +9706,46 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/focus1/index.toml#render.24.view.0.layer_opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.mini.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.small.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.medium.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain.large.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.mini.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.small.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.medium.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain.large.highlighted.opacity"
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration (the host's forms.<scheme>.system)
@@ -15845,7 +15885,7 @@ rows = ["B-3"]
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -16849,7 +16889,7 @@ rows = ["B-3"]
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.top_right"
@@ -17853,7 +17893,7 @@ rows = ["B-3"]
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -18857,7 +18897,7 @@ rows = ["B-3"]
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -19784,7 +19824,7 @@ rows = ["B-3"]
 key = "button.body.corners.curve"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.curve"
@@ -23756,7 +23796,7 @@ rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
 key = "button.label.text.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_variants = ["back", "done", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
+rows = ["B-1", "B-14", "B-6", "B-7", "TB-4", "C-17"]
 
 [[fact]]
 key = "button.label.text.fill"
@@ -27109,7 +27149,7 @@ rows = ["B-12"]
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-13"] }
 value = 400
-rows = ["B-3"]
+rows = ["B-3", "B-13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -32523,7 +32563,7 @@ rows = ["B-12", "B-9", "TB-4", "P3-3†"]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_variants = ["@share", "add", "back", "close", "flat"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-12", "B-9", "TB-4"]
+rows = ["B-12", "B-9", "TB-4", "C-17"]
 
 [[fact]]
 key = "button.icon.icon.fill"
@@ -38513,7 +38553,7 @@ rows = ["B-1"]
 key = "button.body.transform"
 when = { conditions = ["preset:ios-13"] }
 pending = "U124"
-rows = ["B-2", "B-6"]
+rows = ["B-2", "B-6", "X-PH-1"]
 
 [[fact]]
 key = "button.menu_indicator.transform"
@@ -38525,7 +38565,7 @@ rows = ["B-18†"]
 key = "button.body.transitions"
 when = { conditions = ["preset:ios-13"] }
 pending = "U125"
-rows = ["B-6"]
+rows = ["B-6", "X-MO-6", "B-5", "P3-12†"]
 
 [[fact]]
 key = "button.icon.transitions"
@@ -38567,7 +38607,7 @@ rows = ["B-12", "B-9"]
 key = "button.icon.glyph"
 when = { conditions = ["preset:ios-13"] }
 pending = "U126"
-rows = ["B-12", "B-9"]
+rows = ["B-12", "B-9", "C-42†"]
 
 [[fact]]
 key = "button.menu_indicator.glyph"
@@ -38665,7 +38705,7 @@ rows = ["B-3"]
 
 [[fact]]
 key = "button.label.text.decoration"
-when = { conditions = ["preset:ios-13"] }
+when = { conditions = ["preset:ios-13"], not_conditions = ["button_shapes"] }
 pending = "U256"
 rows = ["B-3"]
 
@@ -42591,19 +42631,19 @@ tolerance = 0
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["button_shapes", "contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U110"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-MT-6"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["button_shapes", "contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U110"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-MT-6"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["button_shapes", "contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover"], variants = ["glass"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U110"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-MT-6"]
 
 [[fact]]
 key = "button.body.fill"
@@ -42639,55 +42679,55 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "disabled"], not_states = ["focus_visible", "hover"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], not_variants = ["@paste_control", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked", "pressed"], not_states = ["disabled", "focus_visible", "hover"], variants = ["route"], not_variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["checked"], not_states = ["disabled", "focus_visible", "hover", "pressed"], variants = ["route"], not_variants = ["toggle"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled", "pressed"], not_states = ["checked", "focus_visible", "hover"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["disabled"], not_states = ["checked", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], not_states = ["checked", "disabled", "focus_visible", "hover", "pressed"], not_variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "button_shapes"], not_conditions = ["contrast_increased", "idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover"], not_variants = ["@paste_control", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U118"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "B-15", "X-A11-5"]
 
 [[fact]]
 key = "button.body.fill"
@@ -42771,7 +42811,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "C-17"]
 
 [[fact]]
 key = "button.body.fill"
@@ -42867,7 +42907,7 @@ rows = ["C-36†"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], states = ["hover"], not_states = ["focus_visible"] }
 pending = "U113"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-PH-1"]
 
 [[fact]]
 key = "button.body.fill"
@@ -43102,7 +43142,7 @@ rows = ["B-12"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], variants = ["glass"], not_variants = ["flat", "@gray", "tinted", "primary", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "add", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U110"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-MT-6"]
 
 [[fact]]
 key = "button.body.fill"
@@ -43114,7 +43154,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
 key = "button.body.fill"
 when = { conditions = ["preset:ios-26", "idiom:pad"], not_conditions = ["contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading"], variants = ["glass", "primary"], not_variants = ["flat", "@gray", "tinted", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "@share", "add", "@paste_control", "route", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 pending = "U110"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-MT-6"]
 
 [[fact]]
 key = "button.body.fill"
@@ -45114,7 +45154,7 @@ rows = ["C-36†"]
 key = "button.body.shadow"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], states = ["hover"], not_states = ["focus_visible"] }
 pending = "U113"
-rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "X-PH-1", "X-SH-1"]
 
 [[fact]]
 key = "button.body.shadow"
@@ -45132,7 +45172,7 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7"]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-26"] }
 value = 1.0
-rows = ["B-1", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-14", "B-6", "B-7", "B-5"]
 
 [[fact.cite]]
 kind = "measured"
@@ -46232,6 +46272,46 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/focus1/index.toml#render.48.view.0.layer_opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.mini.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.small.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.medium.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain.large.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.mini.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.small.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.medium.highlighted.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain.large.highlighted.opacity"
 tolerance = 0
 
 # the base, UIButton(type: .system) with no configuration (the host's forms.<scheme>.system)
@@ -54388,7 +54468,7 @@ rows = ["B-3"]
 key = "button.body.corners.top_left"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.top_left"
@@ -56069,7 +56149,7 @@ rows = ["B-3"]
 key = "button.body.corners.top_right"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.top_right"
@@ -57750,7 +57830,7 @@ rows = ["B-3"]
 key = "button.body.corners.bottom_right"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.bottom_right"
@@ -59431,7 +59511,7 @@ rows = ["B-3"]
 key = "button.body.corners.bottom_left"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.bottom_left"
@@ -60926,7 +61006,7 @@ rows = ["B-3"]
 key = "button.body.corners.curve"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-3"]
+rows = ["B-3", "C-17"]
 
 [[fact]]
 key = "button.body.corners.curve"
@@ -64463,7 +64543,7 @@ rows = ["B-1", "B-14", "B-6", "B-7"]
 key = "button.label.text.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-1", "B-14", "B-6", "B-7"]
+rows = ["B-1", "B-14", "B-6", "B-7", "C-17"]
 
 [[fact]]
 key = "button.label.text.fill"
@@ -67864,7 +67944,7 @@ rows = ["B-12"]
 key = "button.label.text.font.weight"
 when = { conditions = ["preset:ios-26"] }
 value = 400
-rows = ["B-3"]
+rows = ["B-3", "B-13"]
 
 [[fact.cite]]
 kind = "measured"
@@ -73417,7 +73497,7 @@ rows = ["B-12", "B-9"]
 key = "button.icon.icon.fill"
 when = { conditions = ["preset:ios-26"], not_conditions = ["idiom:pad"], not_states = ["focus_visible", "hover"], variants = ["@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U122"
-rows = ["B-12", "B-9"]
+rows = ["B-12", "B-9", "C-17"]
 
 [[fact]]
 key = "button.icon.icon.fill"
@@ -81189,7 +81269,7 @@ rows = ["B-1"]
 key = "button.body.transform"
 when = { conditions = ["preset:ios-26"] }
 pending = "U124"
-rows = ["B-2", "B-6"]
+rows = ["B-2", "B-6", "X-PH-1"]
 
 [[fact]]
 key = "button.menu_indicator.transform"
@@ -81201,7 +81281,7 @@ rows = ["B-18†"]
 key = "button.body.transitions"
 when = { conditions = ["preset:ios-26"] }
 pending = "U125"
-rows = ["B-6"]
+rows = ["B-6", "X-MO-6", "B-5", "P3-12†"]
 
 [[fact]]
 key = "button.icon.transitions"
@@ -81243,7 +81323,7 @@ rows = ["B-12", "B-9"]
 key = "button.icon.glyph"
 when = { conditions = ["preset:ios-26"] }
 pending = "U126"
-rows = ["B-12", "B-9"]
+rows = ["B-12", "B-9", "C-42†"]
 
 [[fact]]
 key = "button.menu_indicator.glyph"
@@ -81342,7 +81422,7 @@ rows = ["B-3"]
 
 [[fact]]
 key = "button.label.text.decoration"
-when = { conditions = ["preset:ios-26"] }
+when = { conditions = ["preset:ios-26"], not_conditions = ["button_shapes"] }
 pending = "U256"
 rows = ["B-3"]
 
@@ -81463,3 +81543,156 @@ key = "button.subtitle.text.max_lines"
 when = { conditions = ["preset:ios-26"] }
 pending = "U256"
 rows = ["B-8"]
+
+# ---- M1b (the iOS facts lane): the button keys no fact stated ----
+
+# U482: the body's bindings, cursor, interaction, margin, maximum width and touch target, and the label's padding: never read
+[[fact]]
+key = "button.body.bindings"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.interaction"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.margin.top"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.margin.right"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.margin.bottom"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.margin.left"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.max_width"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.label.padding"
+pending = "U482"
+rows = []
+
+# U483: the image's symbol leaves beside U126's: never read
+[[fact]]
+key = "button.icon.icon.axes"
+pending = "U483"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbol_variants"
+pending = "U483"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.symbolic_colors"
+pending = "U483"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.state_effect"
+pending = "U483"
+rows = []
+
+[[fact]]
+key = "button.icon.icon.animation"
+pending = "U483"
+rows = []
+
+# U484: the button's values no reading gives (the back button's title fallback and display mode, C-2; the paste control's display mode, C-17; the presentations, P3-11†)
+[[fact]]
+key = "button.values.back_title_fallback"
+pending = "U484"
+rows = ["C-2"]
+
+[[fact]]
+key = "button.values.back_display_mode"
+pending = "U484"
+rows = ["C-2"]
+
+[[fact]]
+key = "button.values.display_mode"
+pending = "U484"
+rows = ["C-17"]
+
+[[fact]]
+key = "button.values.focus_visible_when"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.label_position"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.menu_trigger"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.presentations"
+pending = "U484"
+rows = ["P3-11†"]
+
+[[fact]]
+key = "button.values.repeat_delay"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.repeat_interval"
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.shows_icon"
+pending = "U484"
+rows = []
+
+# U485: Button Shapes' underline: the run drew with Button Shapes off
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-13", "button_shapes"] }
+pending = "U485"
+rows = ["B-15", "X-A11-5"]
+
+[[fact]]
+key = "button.label.text.decoration"
+when = { conditions = ["preset:ios-26", "button_shapes"] }
+pending = "U485"
+rows = ["B-15", "X-A11-5"]
