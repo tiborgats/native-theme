@@ -1895,8 +1895,15 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
             let states = views.map { view -> String in
                 let opacity = view.layer.presentation()?.opacity ?? view.layer.opacity
                 let blinking = (view as? UITextCursorView)?.isBlinking
+                // The blink runs on a sublayer: each sublayer's presentation
+                // opacity and its animations' begin times.
+                let sublayers = (view.layer.sublayers ?? []).map { layer -> String in
+                    let shown = layer.presentation()?.opacity ?? layer.opacity
+                    let begins = (layer.animationKeys() ?? []).compactMap { layer.animation(forKey: $0)?.beginTime }
+                    return "{ opacity = \(precise(Double(shown))), animation_begin_times = [\(begins.map(precise).joined(separator: ", "))] }"
+                }
                 return "{ opacity = \(precise(Double(opacity))), hidden = \(view.isHidden), alpha = \(number(view.alpha)), "
-                    + "blinking = \(blinking.map { "\($0)" } ?? absent) }"
+                    + "blinking = \(blinking.map { "\($0)" } ?? absent), sublayers = [\(sublayers.joined(separator: ", "))] }"
             }
             samples.append("{ t = \(precise(now)), views = [\(states.joined(separator: ", "))] }")
             if now < seconds {
@@ -2063,10 +2070,11 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
                         field.becomeFirstResponder()
                         c.sampleCaret(field, key: "text_field", seconds: 6, typeAt: nil, input: nil)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+                            c.appendCaretRead(root: field, key: "text_field")
                             readOnly.becomeFirstResponder()
                             c.sampleCaret(readOnly, key: "read_only_focused", seconds: 6, typeAt: nil, input: nil)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
-                                c.appendCaretNotes(field: field, readOnly: readOnly)
+                                c.appendCaretRead(root: readOnly, key: "read_only_focused")
                                 c.view.endEditing(true)
                                 UIView.setAnimationsEnabled(false)
                                 done()
@@ -2077,17 +2085,15 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         return list
     }
 
-    /// The text field's and the focused read-only text view's caret reads,
-    /// made after the scene's capture, as a [[scene_read]] of their own.
-    func appendCaretNotes(field: UITextField, readOnly: UITextView) {
+    /// A focused input's caret read, made while it is first responder, as a
+    /// [[scene_read]] of its own.
+    func appendCaretRead(root: UIView, key: String) {
         let read = SceneRead()
-        read.set("scene", quoted("caret_after"))
+        read.set("scene", quoted("caret_\(key)"))
         read.set("appearance", quoted(view.window?.overrideUserInterfaceStyle == .dark ? "dark" : "light"))
-        caretRead(read, root: field, key: "text_field")
-        read.set("read_only_focused_samples", notes["read_only_focused"] ?? absent)
-        read.set("read_only_focused_is_first_responder", "\(readOnly.isFirstResponder)")
-        read.set("read_only_focused_cursor_views", "\(cursorViews(readOnly).count)")
+        caretRead(read, root: root, key: key)
         reads.append("[[scene_read]]\n" + read.fields.joined(separator: "\n") + "\n\n" + read.views.joined())
     }
+
 
 }

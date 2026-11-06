@@ -1,0 +1,77 @@
+./index.toml:79986: pixels = { count = 63720, chroma_over_2 = 19747, distinct_colors = 264 } | pixels = { count = 63720, chroma_over_2 = 19747, distinct_colors = 265 }
+./index.toml:80000: pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 210 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 211 }
+./index.toml:80014: pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 210 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 211 }
+./index.toml:80028: pixels = { count = 63720, chroma_over_2 = 5, distinct_colors = 357 } | pixels = { count = 63720, chroma_over_2 = 0, distinct_colors = 198 }
+./index.toml:80042: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 511 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 501 }
+./index.toml:80056: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 511 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 501 }
+./index.toml:80070: pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 573 } | pixels = { count = 63720, chroma_over_2 = 21027, distinct_colors = 664 }
+./index.toml: differs (80449 and 80449 lines)
+./pages/dark/action_sheet/default-black.png: 950 pixels differ, by at most 255 levels
+./pages/dark/action_sheet/default-system.png: 967 pixels differ, by at most 255 levels
+./pages/dark/action_sheet/default-white.png: 394 pixels differ, by at most 133 levels
+./pages/dark/alert/default-black.png: 967 pixels differ, by at most 255 levels
+./pages/dark/alert/default-system.png: 967 pixels differ, by at most 255 levels
+./pages/dark/alert/default-white.png: 967 pixels differ, by at most 133 levels
+./pages/dark/button_titles/default-grid.png: 124236 pixels differ, by at most 255 levels
+./pages/dark/disabled/default-grid.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/find/default-black.png: 1481 pixels differ, by at most 255 levels
+./pages/dark/find/default-system.png: 1383 pixels differ, by at most 255 levels
+./pages/dark/find/default-white.png: 967 pixels differ, by at most 255 levels
+./pages/dark/popover/default-black.png: 394 pixels differ, by at most 255 levels
+./pages/dark/popover/default-system.png: 394 pixels differ, by at most 255 levels
+./pages/dark/popover/default-white.png: 394 pixels differ, by at most 255 levels
+./pages/dark/selection/grouped-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/selection/inset_grouped-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/selection/plain-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/selection/sidebar-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/selection/sidebar_plain-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/sheet/default-black.png: 394 pixels differ, by at most 255 levels
+./pages/dark/sheet/default-system.png: 394 pixels differ, by at most 255 levels
+./pages/dark/sheet/default-white.png: 392 pixels differ, by at most 133 levels
+./pages/dark/symbol_contexts/default-system.png: 1433 pixels differ, by at most 255 levels
+./pages/dark/text_rendering/default-grid.png: 394 pixels differ, by at most 255 levels
+./pages/dark/text_selection/focused-black.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/text_selection/focused-system.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/text_selection/focused-white.png: 1107 pixels differ, by at most 255 levels
+./pages/dark/text_selection/unfocused-grid.png: 909 pixels differ, by at most 255 levels
+./pages/dark/tint_dimmed/default-grid.png: 1727 pixels differ, by at most 255 levels
+./pages/dark/window_inactive/default-grid.png: 1727 pixels differ, by at most 255 levels
+./pages/light/action_sheet/default-black.png: 1632 pixels differ, by at most 255 levels
+./pages/light/action_sheet/default-system.png: 1631 pixels differ, by at most 204 levels
+./pages/light/action_sheet/default-white.png: 1638 pixels differ, by at most 204 levels
+./pages/light/alert/default-black.png: 1521 pixels differ, by at most 255 levels
+./pages/light/alert/default-system.png: 1521 pixels differ, by at most 204 levels
+./pages/light/alert/default-white.png: 1528 pixels differ, by at most 204 levels
+./pages/light/button_titles/default-grid.png: 394 pixels differ, by at most 255 levels
+./pages/light/disabled/default-grid.png: 2065 pixels differ, by at most 255 levels
+./pages/light/find/default-black.png: 1935 pixels differ, by at most 204 levels
+./pages/light/find/default-system.png: 1917 pixels differ, by at most 204 levels
+./pages/light/find/default-white.png: 2037 pixels differ, by at most 204 levels
+./pages/light/popover/default-black.png: 1632 pixels differ, by at most 255 levels
+./pages/light/popover/default-system.png: 1632 pixels differ, by at most 255 levels
+./pages/light/popover/default-white.png: 1632 pixels differ, by at most 255 levels
+./pages/light/selection/grouped-system.png: 1934 pixels differ, by at most 255 levels
+./pages/light/selection/inset_grouped-system.png: 1934 pixels differ, by at most 255 levels
+./pages/light/selection/plain-system.png: 1934 pixels differ, by at most 255 levels
+./pages/light/selection/sidebar-system.png: 1934 pixels differ, by at most 255 levels
+./pages/light/selection/sidebar_plain-system.png: 1934 pixels differ, by at most 255 levels
+./pages/light/sheet/default-black.png: 1632 pixels differ, by at most 255 levels
+./pages/light/sheet/default-system.png: 1631 pixels differ, by at most 204 levels
+./pages/light/sheet/default-white.png: 1631 pixels differ, by at most 204 levels
+./pages/light/symbol_contexts/default-system.png: 1433 pixels differ, by at most 255 levels
+./pages/light/text_rendering/default-grid.png: 394 pixels differ, by at most 255 levels
+./pages/light/text_selection/focused-black.png: 1030 pixels differ, by at most 255 levels
+./pages/light/text_selection/focused-system.png: 1905 pixels differ, by at most 255 levels
+./pages/light/text_selection/focused-white.png: 1521 pixels differ, by at most 255 levels
+./pages/light/text_selection/unfocused-grid.png: 1521 pixels differ, by at most 255 levels
+./pages/light/tint_dimmed/default-grid.png: 2059 pixels differ, by at most 255 levels
+./pages/light/window_inactive/default-grid.png: 2059 pixels differ, by at most 255 levels
+./screen/dark/button_titles/default/black/glass.png: 10 pixels differ, by at most 2 levels
+./screen/dark/button_titles/default/black/prominent_glass.png: 263 pixels differ, by at most 4 levels
+./screen/dark/button_titles/default/system/glass.png: 10 pixels differ, by at most 2 levels
+./screen/dark/button_titles/default/system/prominent_glass.png: 263 pixels differ, by at most 4 levels
+./screen/dark/button_titles/default/white/filled.png: 1204 pixels differ, by at most 1 levels
+./screen/dark/button_titles/default/white/glass.png: 60401 pixels differ, by at most 222 levels
+./screen/dark/button_titles/default/white/prominent_glass.png: 60422 pixels differ, by at most 94 levels
+./screen/light/disabled/default/system/text_field_normal.png: 3 pixels differ, by at most 1 levels
+./screen/light/disabled/default/white/text_field_normal.png: 3 pixels differ, by at most 1 levels

@@ -262,6 +262,8 @@ serve() {
       page=$((page + 1))
       attempt=0
     elif [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+      # The app exits once it has written sync/done.
+      [ -e "$sync/done" ] && return 0
       note "$label: the process (the UI test, or the app) ended before sync/done"
       return 1
     elif [ $(($(date +%s) - start)) -gt 10800 ]; then
