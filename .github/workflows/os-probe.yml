@@ -734,9 +734,11 @@ jobs:
           } >> "$out/settings.txt" 2>&1
           tail -n 4 "$out/settings.txt"
       # The reads pass (MP-timing U301, MP-route U323, MP-accent U104's plain
-      # view; `--reads`): Core Animation's named timing functions and the
-      # animation context's defaults, the output route button's colours and
-      # renders, and the ring round a plain focusable view; once with the
+      # view, MP-text U317 and U319; `--reads`): Core Animation's named timing
+      # functions and the animation context's defaults, the output route
+      # button's colours and renders, the ring round a plain focusable view,
+      # the font-smoothing defaults and text renders, and Core Text's
+      # substitute fonts and cascade lists; once with the
       # image's settings, once under the red accent.
       - name: Run the reads pass (macOS)
         if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads,'))

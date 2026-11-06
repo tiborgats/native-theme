@@ -5,7 +5,10 @@
 //! route button (`AVRoutePickerView`): its colour per button state and
 //! appearance, bordered and not, and its renders; and the focus ring AppKit
 //! draws round a plain view whose focus ring mask is its bounds, captured
-//! focused and not per appearance in a key window.
+//! focused and not per appearance in a key window; the font-smoothing user
+//! defaults and the system font's text rendered at 1 and 2 pixels a point;
+//! and Core Text's substitute fonts for other scripts and its default
+//! cascade list per language.
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -71,6 +74,223 @@ pub(super) fn reads_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &
     out::put_table(&mut t, "timing", timing_table());
     out::put_table(&mut t, "route_picker", route_picker_table(mtm, out_dir));
     out::put_table(&mut t, "focus_view", focus_view_table(mtm, app, out_dir));
+    out::put_table(&mut t, "text_rendering", text_rendering_table(mtm, out_dir));
+    out::put_table(&mut t, "fallbacks", fallbacks_table());
+    t
+}
+
+/// The font-smoothing user defaults, as the standard defaults (the global
+/// domain included) give them.
+const SMOOTHING_DEFAULTS: [&str; 3] = [
+    "AppleFontSmoothing",
+    "CGFontRenderingFontSmoothingDisabled",
+    "AppleAntiAliasingThreshold",
+];
+
+/// The text the rendering pass draws.
+const RENDER_TEXT: &str = "Ag Hamburgefonstiv";
+
+/// The point size it draws it at.
+const RENDER_TEXT_SIZE: f64 = 13.0;
+
+/// The strings whose substitute font Core Text is asked for: an emoji, and
+/// a letter of each script the per-language cascade lists cover.
+const FALLBACK_STRINGS: [(&str, &str); 10] = [
+    ("emoji", "\u{1F600}"),
+    ("hiragana", "\u{3042}"),
+    ("han", "\u{4E2D}"),
+    ("hangul", "\u{D55C}"),
+    ("arabic", "\u{0639}"),
+    ("hebrew", "\u{05D0}"),
+    ("thai", "\u{0E01}"),
+    ("devanagari", "\u{0905}"),
+    ("cyrillic", "\u{0416}"),
+    ("greek", "\u{03A9}"),
+];
+
+/// The languages whose default cascade list is read, one at a time.
+const CASCADE_LANGUAGES: [&str; 11] = [
+    "en", "ja", "zh-Hans", "zh-Hant", "ko", "ar", "he", "th", "hi", "ru", "el",
+];
+
+/// The font-smoothing defaults and the system font's text drawn on white,
+/// at 1 and 2 pixels a point: how many of its pixels are grey and how many
+/// coloured (a channel apart from the others), which tells greyscale from
+/// subpixel antialiasing.
+fn text_rendering_table(mtm: MainThreadMarker, out_dir: &Path) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "defaults: -[NSUserDefaults standardUserDefaults] objectForKey: of each key (absent: nil); renders: an NSTextField labelWithString: {RENDER_TEXT:?} in systemFontOfSize: {RENDER_TEXT_SIZE}, drawsBackground YES, backgroundColor white (sRGB 1, 1, 1), textColor black, sized to fit, in an offscreen borderless window under the aqua appearance, rendered with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point to text_rendering/text-<scale>.png; per render the pixels that are not white (ink_pixels), those whose largest and smallest of r, g, b differ by more than 2 (colored_pixels: subpixel antialiasing draws them, greyscale does not) and the distinct grey levels among the rest (grey_levels)"
+        )),
+    );
+    let defaults = objc2_foundation::NSUserDefaults::standardUserDefaults();
+    let mut d = Table::new();
+    for key in SMOOTHING_DEFAULTS {
+        let value = defaults
+            .objectForKey(&ns(key))
+            .map_or_else(|| out::text("absent"), |v| super::default_value(&v));
+        out::put(&mut d, key, value);
+    }
+    out::put_table(&mut t, "defaults", d);
+
+    let window = match ffi::offscreen_window(mtm, OFFSCREEN_FRAME) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "renders", out::unavailable(reason));
+            return t;
+        }
+    };
+    let Some(content) = window.contentView() else {
+        out::put(&mut t, "renders", out::unavailable("no content view"));
+        return t;
+    };
+    if let Some(aqua) = NSAppearance::appearanceNamed(&ns("NSAppearanceNameAqua")) {
+        window.setAppearance(Some(&aqua));
+    }
+    let field = objc2_app_kit::NSTextField::labelWithString(&ns(RENDER_TEXT), mtm);
+    field.setFont(Some(&objc2_app_kit::NSFont::systemFontOfSize(
+        RENDER_TEXT_SIZE,
+    )));
+    field.setDrawsBackground(true);
+    field.setBackgroundColor(Some(&objc2_app_kit::NSColor::whiteColor()));
+    field.setTextColor(Some(&objc2_app_kit::NSColor::blackColor()));
+    field.sizeToFit();
+    field.setFrameOrigin(NSPoint::new(10.0, 10.0));
+    content.addSubview(&field);
+    let dir = out_dir.join("text_rendering");
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        out::put(
+            &mut t,
+            "renders",
+            out::unavailable(format!("cannot create {}: {e}", dir.display())),
+        );
+        return t;
+    }
+    let mut renders = Table::new();
+    for (scale_name, scale) in RENDER_SCALES {
+        let file = format!("text-{scale_name}.png");
+        let mut r = Table::new();
+        let bounds = field.bounds();
+        match bitmap_at_scale(bounds.size, scale) {
+            Ok(rep) => {
+                field.cacheDisplayInRect_toBitmapImageRep(bounds, &rep);
+                match ffi::png_data(&rep) {
+                    Ok(data) => match std::fs::write(dir.join(&file), data) {
+                        Ok(()) => {
+                            out::put(&mut r, "file", out::text(format!("text_rendering/{file}")))
+                        }
+                        Err(e) => out::put(&mut r, "file", out::unavailable(e.to_string())),
+                    },
+                    Err(reason) => out::put(&mut r, "file", out::unavailable(reason)),
+                }
+                match ffi::bitmap_buffer(&rep) {
+                    Ok(buffer) => {
+                        let (ink, colored, greys) = ink_stats(&buffer, &rep);
+                        out::put(&mut r, "ink_pixels", Value::Integer(ink));
+                        out::put(&mut r, "colored_pixels", Value::Integer(colored));
+                        out::put(&mut r, "grey_levels", Value::Integer(greys));
+                    }
+                    Err(reason) => out::put(&mut r, "ink_pixels", out::unavailable(reason)),
+                }
+            }
+            Err(reason) => out::put(&mut r, "file", out::unavailable(reason)),
+        }
+        out::put_table(&mut renders, scale_name, r);
+    }
+    out::put_table(&mut t, "renders", renders);
+    field.removeFromSuperview();
+    t
+}
+
+/// Of a meshed 8-bit RGBA render: the pixels that are not white, those of
+/// them whose channels differ by more than 2, and the distinct grey levels
+/// of the rest.
+fn ink_stats(buffer: &[u8], rep: &objc2_app_kit::NSBitmapImageRep) -> (i64, i64, i64) {
+    let row = usize::try_from(rep.bytesPerRow()).unwrap_or_default();
+    let wide = usize::try_from(rep.pixelsWide()).unwrap_or_default();
+    let mut ink = 0i64;
+    let mut colored = 0i64;
+    let mut greys = std::collections::BTreeSet::new();
+    for line in buffer.chunks(row.max(1)) {
+        for px in line.chunks_exact(4).take(wide) {
+            let (r, g, b) = match px {
+                [r, g, b, _] => (*r, *g, *b),
+                _ => continue,
+            };
+            if r == u8::MAX && g == u8::MAX && b == u8::MAX {
+                continue;
+            }
+            ink = ink.saturating_add(1);
+            let hi = r.max(g).max(b);
+            let lo = r.min(g).min(b);
+            if hi.abs_diff(lo) > 2 {
+                colored = colored.saturating_add(1);
+            } else {
+                greys.insert(r);
+            }
+        }
+    }
+    (ink, colored, i64::try_from(greys.len()).unwrap_or(i64::MAX))
+}
+
+/// The fonts Core Text substitutes for other scripts and the system font's
+/// default cascade list per language.
+fn fallbacks_table() -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(
+            "font: systemFontOfSize: systemFontSize; substitutes: per string CTFontCreateForString of the font over the whole string, the font it returns as [PostScript name, family name]; cascade: per language CTFontCopyDefaultCascadeListForLanguages of the font with that language alone, each descriptor's fontAttributes in order; preferredLanguages: NSLocale's",
+        ),
+    );
+    let font = objc2_app_kit::NSFont::systemFontOfSize(objc2_app_kit::NSFont::systemFontSize());
+    out::put(&mut t, "font", out::text(font.fontName().to_string()));
+    out::put(
+        &mut t,
+        "preferredLanguages",
+        out::array(
+            objc2_foundation::NSLocale::preferredLanguages()
+                .iter()
+                .map(|l| out::text(l.to_string()))
+                .collect(),
+        ),
+    );
+    let mut substitutes = Table::new();
+    for (name, text) in FALLBACK_STRINGS {
+        let (postscript, family) = ffi::font_for_string(&font, text);
+        out::put(
+            &mut substitutes,
+            name,
+            out::array(vec![out::text(postscript), out::text(family)]),
+        );
+    }
+    out::put_table(&mut t, "substitutes", substitutes);
+    let mut cascade = Table::new();
+    for language in CASCADE_LANGUAGES {
+        let value = match ffi::default_cascade(&font, &[language]) {
+            Some(list) => out::array(
+                list.iter()
+                    .map(
+                        |d| match d.downcast_ref::<objc2_app_kit::NSFontDescriptor>() {
+                            Some(descriptor) => {
+                                let attributes = descriptor.fontAttributes();
+                                let obj: &objc2::runtime::AnyObject = &attributes;
+                                super::text::object_value(obj, super::text::OBJECT_DEPTH)
+                            }
+                            None => out::text("not a font descriptor"),
+                        },
+                    )
+                    .collect(),
+            ),
+            None => out::unavailable("NULL"),
+        };
+        out::put(&mut cascade, language, value);
+    }
+    out::put_table(&mut t, "cascade", cascade);
     t
 }
 

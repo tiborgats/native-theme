@@ -9,7 +9,7 @@ use std::ptr::NonNull;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyClass, AnyObject, NSObjectProtocol};
 use objc2::{
-    AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send, sel,
+    AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, Message, define_class, msg_send, sel,
 };
 use objc2_app_kit::{
     NSAnimationContext, NSBackingStoreType, NSBezierPath, NSBitmapFormat, NSBitmapImageFileType,
@@ -25,7 +25,9 @@ use objc2_app_kit::{
     NSTableCellView, NSTableColumn, NSTableView, NSTableViewDataSource, NSTableViewDelegate,
     NSTextField, NSToolbar, NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
-use objc2_core_foundation::{CFArray, CFBundle, CFDictionary, CFRetained, CFString, CFType};
+use objc2_core_foundation::{
+    CFArray, CFBundle, CFDictionary, CFRange, CFRetained, CFString, CFType,
+};
 use objc2_core_text::{CTFont, kCTFontOpticalSizeAttribute};
 use objc2_foundation::{
     NSArray, NSBundle, NSDefaultRunLoopMode, NSDictionary, NSInteger, NSObject, NSRect,
@@ -806,4 +808,40 @@ impl FocusView {
         // as objc2's `define_class!` documents.
         unsafe { msg_send![super(this), initWithFrame: frame] }
     }
+}
+
+// ── Core Text's fallbacks ──────────────────────────────────────────────────
+
+/// `CTFontCreateForString` of `font` over the whole of `text`: the font
+/// Core Text draws it in, as its PostScript and family names.
+pub(super) fn font_for_string(font: &NSFont, text: &str) -> (String, String) {
+    let ct: &CTFont = font.as_ref();
+    let string = CFString::from_str(text);
+    let range = CFRange {
+        location: 0,
+        length: string.length(),
+    };
+    // SAFETY: a live CTFont (NSFont is toll-free bridged), a CFString and a
+    // range within it; the font it returns is owned by the `CFRetained`.
+    let substitute = unsafe { ct.for_string(&string, range) };
+    // SAFETY: getters of a live CTFont returning owned copies.
+    let names = unsafe { (substitute.post_script_name(), substitute.family_name()) };
+    (names.0.to_string(), names.1.to_string())
+}
+
+/// `CTFontCopyDefaultCascadeListForLanguages` of `font` for `languages`
+/// (BCP 47 tags, most preferred first), as the NSArray of font descriptors
+/// it is toll-free bridged to.
+pub(super) fn default_cascade(font: &NSFont, languages: &[&str]) -> Option<Retained<NSArray>> {
+    let ct: &CTFont = font.as_ref();
+    let tags: Vec<CFRetained<CFString>> = languages.iter().map(|l| CFString::from_str(l)).collect();
+    let list = CFArray::from_retained_objects(&tags);
+    let opaque: &CFArray = (*list).as_ref();
+    // SAFETY: a live CTFont and a CFArray of CFStrings, the element type
+    // the function documents for its language list; the array it returns
+    // is owned by the `CFRetained`.
+    let cascade = unsafe { ct.default_cascade_list_for_languages(Some(opaque)) }?;
+    let cf: &CFType = &cascade;
+    let object: &AnyObject = cf.as_ref();
+    object.downcast_ref::<NSArray>().map(Message::retain)
 }

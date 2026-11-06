@@ -335,7 +335,7 @@ pub(super) fn symbols_table(
 
 fn method_text() -> String {
     format!(
-        "symbol images from imageWithSystemSymbolName:accessibilityDescription: (\"{SIZE_SYMBOL}\" for the size, weight and scale; \"{MODE_SYMBOL}\" for the rendering mode), accessibility description \"{DESCRIPTION}\"; reference_grid: per point size ({GRID_FIRST} pt in steps of {GRID_STEP}, {GRID_COUNT} sizes), NSFontWeight (the nine constants) and NSImageSymbolScale (small, medium, large), an NSImageView (imageScaling NSImageScaleNone) showing \"{SIZE_SYMBOL}\" with setSymbolConfiguration: configurationWithPointSize:weight:scale:, sized to its intrinsicContentSize rounded up plus {REFERENCE_MARGIN} pt each side, in an offscreen borderless window under the aqua appearance, rendered with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps at 1 and 2 pixels a point; each place: the view AppKit draws the symbol in, rendered the same way with the symbol and again with a blank template NSImage of the symbol's size in its place (the view's frame kept), the glyph's coverage per pixel the largest change of a premultiplied channel or alpha between the two (alone the render's alpha where the two renders differ in size), cropped to the pixels above {COVERAGE_THRESHOLD} and scaled to a largest value of 1; glyph: bbox_px_xywh (in the render, top-left origin), max_coverage (unscaled, 0..1) and ink (the scaled coverage's sum); best: the {BEST_COUNT} references closest to the glyph at the same render scale among those whose glyph is within {SIZE_TOLERANCE} px of its width and height, each [score, point_size, weight, scale], score = sum |g - r| / sum (g + r) over the two masks aligned at their top-left corners and shifted up to {SHIFT} px either way, the smallest over the shifts (0: the same pixels); colors: the {HISTOGRAM_COUNT} commonest colours of the render with the symbol among its pixels whose alpha is not 0, un-premultiplied, as [#rrggbbaa, pixels], and opaque_colors, how many distinct colours its pixels of alpha 255 have; places in the offscreen window are read per appearance (window appearance set, inside performAsCurrentDrawingAppearance:), the toolbar, status item and alert under the system's"
+        "symbol images from imageWithSystemSymbolName:accessibilityDescription: (\"{SIZE_SYMBOL}\" for the size, weight and scale; \"{MODE_SYMBOL}\" for the rendering mode), accessibility description \"{DESCRIPTION}\"; reference_grid: per point size ({GRID_FIRST} pt in steps of {GRID_STEP}, {GRID_COUNT} sizes), NSFontWeight (the nine constants) and NSImageSymbolScale (small, medium, large), an NSImageView (imageScaling NSImageScaleNone) showing \"{SIZE_SYMBOL}\" with setSymbolConfiguration: configurationWithPointSize:weight:scale:, sized to frameForAlignmentRect: of its intrinsicContentSize (the image's full rect: the intrinsic size is its alignment rect's) rounded up plus {REFERENCE_MARGIN} pt each side, in an offscreen borderless window under the aqua appearance, rendered with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps at 1 and 2 pixels a point; each place: the view AppKit draws the symbol in, rendered the same way with the symbol and again with a blank template NSImage of the symbol's size in its place (the view's frame kept), the glyph's coverage per pixel the largest change of a premultiplied channel or alpha between the two (alone the render's alpha where the two renders differ in size), cropped to the pixels above {COVERAGE_THRESHOLD} and scaled to a largest value of 1; glyph: bbox_px_xywh (in the render, top-left origin), max_coverage (unscaled, 0..1) and ink (the scaled coverage's sum); best: the {BEST_COUNT} references closest to the glyph at the same render scale among those whose glyph is within {SIZE_TOLERANCE} px of its width and height, each [score, point_size, weight, scale], score = sum |g - r| / sum (g + r) over the two masks aligned at their top-left corners and shifted up to {SHIFT} px either way, the smallest over the shifts (0: the same pixels); colors: the {HISTOGRAM_COUNT} commonest colours of the render with the symbol among its pixels whose alpha is not 0, un-premultiplied, as [#rrggbbaa, pixels], and opaque_colors, how many distinct colours its pixels of alpha 255 have; places in the offscreen window are read per appearance (window appearance set, inside performAsCurrentDrawingAppearance:), the toolbar, status item and alert under the system's"
     )
 }
 
@@ -473,11 +473,12 @@ fn reference(
     view.setImageScaling(NSImageScaling::ScaleNone);
     view.setSymbolConfiguration(Some(&config));
     let intrinsic = view.intrinsicContentSize();
+    let frame = view.frameForAlignmentRect(NSRect::new(PLACE_ORIGIN, intrinsic));
     view.setFrame(NSRect::new(
         PLACE_ORIGIN,
         NSSize::new(
-            intrinsic.width.max(1.0).ceil() + REFERENCE_MARGIN + REFERENCE_MARGIN,
-            intrinsic.height.max(1.0).ceil() + REFERENCE_MARGIN + REFERENCE_MARGIN,
+            frame.size.width.max(1.0).ceil() + REFERENCE_MARGIN + REFERENCE_MARGIN,
+            frame.size.height.max(1.0).ceil() + REFERENCE_MARGIN + REFERENCE_MARGIN,
         ),
     ));
     content.addSubview(&view);
@@ -695,14 +696,16 @@ impl Ctx<'_> {
         // A plain image view, no configuration, at its intrinsic size.
         {
             let view = NSImageView::imageViewWithImage(&self.star, self.mtm);
-            view.setFrameSize(view.intrinsicContentSize());
+            let frame =
+                view.frameForAlignmentRect(NSRect::new(PLACE_ORIGIN, view.intrinsicContentSize()));
+            view.setFrameSize(frame.size);
             place(content, &view);
             let mut p = self.view_reads(&view);
             out::put(
                 &mut p,
                 "setup",
                 out::text(
-                    "imageViewWithImage:, its defaults, frame its intrinsicContentSize rounded up",
+                    "imageViewWithImage:, its defaults, frame frameForAlignmentRect: of its intrinsicContentSize, rounded up",
                 ),
             );
             let set = |i: Option<&NSImage>| view.setImage(i);

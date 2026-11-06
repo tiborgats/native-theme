@@ -23,7 +23,7 @@ use crate::out;
 const SECOND_SIZE_FACTOR: f64 = 2.0;
 
 /// How deep the conversion of a returned object into TOML goes.
-const OBJECT_DEPTH: u32 = 6;
+pub(super) const OBJECT_DEPTH: u32 = 6;
 
 /// The text the line heights are laid out with: two lines.
 const TWO_LINES: &str = "Ag\nAg";
@@ -203,7 +203,7 @@ fn cf_value(cf: Option<&CFType>) -> Value {
 /// string its text, a number its `doubleValue`, an array an array, a
 /// dictionary a table keyed by its keys' text, anything else its class and
 /// description; `depth` levels deep at most.
-fn object_value(obj: &AnyObject, depth: u32) -> Value {
+pub(super) fn object_value(obj: &AnyObject, depth: u32) -> Value {
     if let Some(s) = obj.downcast_ref::<NSString>() {
         return out::text(s.to_string());
     }
