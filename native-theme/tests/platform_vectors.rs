@@ -16,9 +16,11 @@ use native_theme::platform::kde_selection_inactive::kde_selection_inactive;
 use native_theme::platform::kde_shade::{KdeShadeRole, kde_shade};
 use native_theme::platform::kirigami_lerp::kirigami_lerp;
 use native_theme::platform::kirigami_tint::kirigami_tint;
+use native_theme::platform::m3_role::m3_role;
 use native_theme::platform::sf_tracking::{TrackingDesign, sf_tracking};
 use native_theme::{
-    Color, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind, Scheme,
+    Color, KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, KdeRoleKind,
+    MaterialVariant, Scheme,
 };
 
 /// A table's rows, each by its column names; the header lines skipped.
@@ -278,16 +280,20 @@ fn vectors_kde_selection_inactive() {
     }
 }
 
+fn scheme(cell: &str) -> Scheme {
+    match cell {
+        "light" => Scheme::Light,
+        "dark" => Scheme::Dark,
+        other => panic!("no scheme `{other}`"),
+    }
+}
+
 #[test]
 fn vectors_adw_standalone() {
     let rows = rows("adw_standalone");
     assert_eq!(rows.len(), 628);
     for row in rows {
-        let scheme = match row["scheme"].as_str() {
-            "light" => Scheme::Light,
-            "dark" => Scheme::Dark,
-            other => panic!("no scheme `{other}`"),
-        };
+        let scheme = scheme(&row["scheme"]);
         let got = adw_standalone(channels(color(&row["c"])), scheme);
         assert_color(from_channels(got), output(&row["result"]), &row);
     }
@@ -319,5 +325,27 @@ fn vectors_sf_tracking() {
             (f64::from(got) - expected).abs() <= 1e-6 * expected.abs().max(1.0),
             "{got} for {expected}: {row:?}"
         );
+    }
+}
+
+#[test]
+fn vectors_m3_role() {
+    let rows = rows("m3_role");
+    assert_eq!(rows.len(), 2556);
+    for row in rows {
+        let variant = match row["variant"].as_str() {
+            "tonal_spot" => MaterialVariant::TonalSpot,
+            other => panic!("no variant `{other}` in the table's scheme"),
+        };
+        let got = m3_role(
+            row["role"].strip_prefix('@').expect("a keyed role"),
+            channels(color(&row["accent"])),
+            variant,
+            &row["spec_version"],
+            number(&row["contrast_level"]),
+            scheme(&row["scheme"]),
+        )
+        .expect("a role of the implemented scheme");
+        assert_color(from_channels(got), output(&row["result"]), &row);
     }
 }

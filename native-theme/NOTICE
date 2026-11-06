@@ -21,3 +21,16 @@ Copyright 2005-2008 The Android Open Source Project
 
 This product includes software developed as part of
 The Android Open Source Project (http://source.android.com).
+
+native-theme's src/platform/m3_role.rs ports code of material-color-utilities
+(github.com/material-foundation/material-color-utilities), which the Apache
+License, Version 2.0 (LICENSE-APACHE) covers:
+
+- material-color-utilities at commit bd811e4c: java/dynamiccolor/
+  ColorSpec2021.java, DynamicColor.java, DynamicScheme.java,
+  ContrastCurve.java, ToneDeltaPair.java and TonePolarity.java;
+  java/scheme/SchemeTonalSpot.java; java/palettes/TonalPalette.java;
+  java/hct/Hct.java, HctSolver.java, Cam16.java and ViewingConditions.java;
+  java/contrast/Contrast.java; java/utils/ColorUtils.java and MathUtils.java.
+
+Copyright 2021, 2022, 2023, 2025 Google LLC. The project ships no NOTICE file.
