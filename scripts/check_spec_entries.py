@@ -17,7 +17,7 @@ from spec_catalogue import CATALOGUE, ENTRY_ITEMS, absence_sections, depth0_toke
 
 FIELDS = {"fill", "stroke", "corners", "shape", "shadow", "opacity", "transform", "text", "icon", "glyph", "focus",
           "padding", "margin", "min_width", "min_height", "max_width", "max_height", "cursor", "touch_target", "bindings",
-          "transitions"}
+          "transitions", "shown", "interaction"}
 
 PRESET_RX = re.compile(r"^(?:adwaita|kde-breeze|macos-\*|macos-monterey|macos-tahoe|windows-11|ios-\*|ios-13|ios-26|"
                        r"material-3)$")
@@ -232,6 +232,8 @@ def self_test() -> int:
            ["good: the root bullet names several parts"])
     expect("part without a field", edit(good, "the text: `text`.", "the text."),
            ["good: part bullet names no field: '`label` *(element)* — the text.'"])
+    expect("part naming `shown` alone", edit(good, "the text: `text`.", "the text: `shown`."), [])
+    expect("part naming `interaction` alone", edit(good, "the text: `text`.", "the text: `interaction`."), [])
     expect("root absent", edit(good, "parts: `label` (", "parts: `body` ("),
            ["good: root `body` listed as a may-be-absent part"])
     expect("preset's statement as the reason", edit(good, "(`adwaita`), `label.text`",
