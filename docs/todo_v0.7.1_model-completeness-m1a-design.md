@@ -65,7 +65,7 @@ reader and walked against the registry (not serde derive on the model): the only
 shorthands, refusing unknown keys with their TOML path and collecting every `Problem`. Serde stays for unit-variant
 enums. `toml`'s `preserve_order` feature is turned on so keyed maps keep a deterministic order.
 
-**Errors** (`error.rs`): `LayerError`, `Problem { path, kind }`, `ProblemKind` (one variant per S12 item, and one per problem of S11's TOML reader: `Toml`, `UnknownKey`, `Mistyped`, `UnknownName`, `NotAKey`, `Expression`, as S1 lists them),
+**Errors** (`error.rs`): `LayerError`, `Problem { path, kind }`, `ProblemKind` (one variant per S12 item, one per problem of S11's TOML reader: `Toml`, `UnknownKey`, `Mistyped`, `UnknownName`, `NotAKey`, `Expression`, and one per refusal of S17's synthetic route: `SyntheticExpression`, `SyntheticOverlap`, as S1 lists them; ADD-A134),
 `ThemeError`, `ReaderStatus`, `ReaderFailure`, `KeyError`, each with `Display` and `Error`; all enums exhaustive;
 every public struct `#[non_exhaustive]` except S1's two lists (S21.2).
 

@@ -642,9 +642,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X16 | `TextStyle.{letter_spacing,line_height}, TextStyle.font.{axes,features}` | field |
 | MAT-X16 | `token.text.keyed.<key>.font.family (brand or plain typeface)` | token |
 | MAT-X16 | `token.text.roles.*` | token |
-| MAT-X17 | `input.accent (the seed, S9.1)` | input |
+| MAT-X17 | `input.accent (the baseline's primary in the preset; the seed where a layer above gives it, S9.1, ADD-A134)` | input |
 | MAT-X17 | `token.material.variant (the scheme variant the user chose)` | token |
-| MAT-X17 | `role.@<m3 role> = m3_role(<role>)` (it reads `input.accent`, `token.material.{variant,spec_version,contrast_level}` and the colours' scheme itself, S2.2) | role |
+| MAT-X17 | `role.@<m3 role> = m3_role(<role>)` (in the accent-derivation layer, where a layer above the preset gives the seed, the preset stating Compose's baseline literals, S9.1, S9.2, ADD-A134; it reads `input.accent`, `token.material.{variant,spec_version,contrast_level}` and the colours' scheme itself, S2.2) | role |
 | MAT-X17 | `reader:android:dynamic colour scheme roles and variant` | readers (R18) |
 | MAT-X18 | `cond contrast_increased (medium)` | condition |
 | MAT-X18 | `cond contrast_high (high)` | condition |

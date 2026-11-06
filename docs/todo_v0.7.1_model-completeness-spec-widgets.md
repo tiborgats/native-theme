@@ -1492,7 +1492,10 @@ spaces:
   - `label_position: Value<ButtonLabelPosition>` — which of icon and text a tool button shows, and how (K1.153 read
     per toolbar kind, W1-099, MAC-TL02, Q1.9, Q1.76), by rules in `context toolbar.bar`.
   - `subtitle_gap_px: Value<Px>` — iOS `titlePadding` (B-8).
-  - `menu_indicator_gap_px: Value<Px>` — between label and indicator (K1.27 `Button_ItemSpacing`).
+  - `menu_indicator_gap_px: Value<Px>` — between label and indicator (K1.27 `Button_ItemSpacing`). It and
+    `menu_indicator_anchor` are stated on every preset, never absent, a base holding where no indicator is drawn
+    too, which shows nowhere there: `macos-*`'s outside `menu` its `menu` value (ledger queue #155 (3), U333, U315),
+    `material-3`'s its shared button row's (#157); ADD-A134.
   - `menu_indicator_anchor: Value<IndicatorAnchor>`, `IndicatorAnchor { Inline, InlineTop, TopEnd, BottomEnd }` —
     where the `menu_indicator` lies (ADD-A122, ADD-A123). `Inline` and `InlineTop` in the content's row, after the
     content, `menu_indicator_gap_px` from it, its `margin` a margin in the row as every part's is (S2.11, CSS's: it adds
@@ -1551,7 +1554,11 @@ spaces:
     touch-and-hold variant (B-18†); AdwBackButton's navigation menu opens on a long press or a secondary click
     (GN-1.278†).
   - `shows_icon: Value<bool>` — whether push buttons show icons (K1.28, read from `kdeglobals`).
-  - `focus_visible_when` (S2.11's `FocusVisibleWhen`) — when focus becomes visible (K1.21, R17).
+  - `focus_visible_when` (S2.11's `FocusVisibleWhen`) — when focus becomes visible (K1.21, R17). On `macos-*` a
+    button draws its focus ring only under Full Keyboard Access: `keyboard` by a rule
+    `@ cond full_keyboard_access` and `never` without it, the reader's condition (S7.1's `FullKeyboardAccess`, S8's
+    `ReaderState`), its values pending until a source or a committed `canBecomeKeyView` analysis states them (U331;
+    ledger queue #155 (2), ADD-A134).
   - `repeat_delay_ms: Value<Ms>`, `repeat_interval_ms: Value<Ms>` — durations of an auto-repeating button (K-RL07†,
     W2-19, MAC-X12). One home per fact, as `drag_hover_delay_ms` (Entry format): on `macos-*`, whose platform states
     one system pointer auto-repeat (`NSButtonCell.getPeriodicDelay(_:interval:)`, MAC-X12), the bases are `=
@@ -1874,7 +1881,10 @@ spaces:
     `NSControl.ControlSize` × `NSControl.BorderShape` (26) × key window, main, application active × appearance;
     `NSToolbarItem` (bordered, style, enabled, selected); the probe renders each.
   - `ios-*`: `UIControl.State` (normal, highlighted, disabled, selected, focused) × `UIButton.Configuration` style ×
-    `buttonSize` × `cornerStyle` × `UIButton.ButtonType`; `UIBarButtonItem.Style`, `isSelected`; measured.
+    `buttonSize` × `cornerStyle` × `UIButton.ButtonType`; `UIBarButtonItem.Style`, `isSelected`; measured. Its
+    `axes.states` include `drop_target`: UIButton adopts spring loading (`UISpringLoadedInteractionSupporting`), so a
+    button under a drag draws a drop-target state (P3-11†, U475); the citation, `UIButton.h` at the pinned Xcode, is
+    pending the SDK header pass (ledger queue #159; ADD-A134).
   - `windows-11`: the VisualStateGroups of the Button, ToggleButton (with Checked*/Indeterminate*), AccentButtonStyle,
     SubtleButtonStyle, AppBarButton and AppBarToggleButton templates (`Button_themeresources.xaml`,
     `ToggleButton_themeresources.xaml`, `AppBarButton_themeresources.xaml`, `AppBarToggleButton_themeresources.xaml`).
@@ -2486,7 +2496,8 @@ spaces:
     `transitions`.
   - `progress` — GNOME's entry progress line, its extent the progress fraction the connector draws: `fill`,
     `corners`, `min_height`, `margin` (its bottom margin, GN-1.48).
-  - `caret` — the line caret: `fill` (base `= token.caret.color`), `min_width` (the caret's width, base
+  - `caret` — the line caret: `fill` (base `= token.caret.color`; on `windows-11` one layer of it under
+    `BlendMode::Difference`, WinUI's inverting caret, every caret part alike, S2.3, S4.2, ADD-A134), `min_width` (the caret's width, base
     `= token.caret.width`, with rules under KDE's tablet mode, Q1.14; on `adwaita`, whose `token.caret.width` is
     absent, `= add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), <length>)`, GTK's stem from the
     caret's drawn height, S4.2, GN-3.36, ADD-A130), `min_height` (its height against the line,
@@ -9254,9 +9265,10 @@ tertiary); `background`, `on_background`, `surface`, `on_surface`, `surface_vari
 [MAT-X1]. Beside them, the platform popup-menu style's colours Compose's text context menu resolves,
 `popup_menu_background` (`Widget_PopupMenu`'s `colorBackground`) and `popup_menu_text`
 (`TextAppearance_Widget_PopupMenu_Large`'s `textColorPrimary`) [MAT-P3-11†]. The typed record's fields and the global
-roles reference them (`accent = role.@primary`; the scheme function
-`m3_role` supplies them from the seed input, R2.6, `input.accent`, the preset's one input and so its `accent_inputs`,
-S9.1).
+roles reference them (`accent = role.@primary`). The preset states them as Compose's baseline scheme, the fixed
+tokens of `lightColorScheme()` and `darkColorScheme()`; where a layer above the preset gives the seed input, R2.6,
+`input.accent`, the preset's one input and so its `accent_inputs`, the accent-derivation layer states each as the
+scheme function's `m3_role` of that seed (S9.1, S9.2; ADD-A134).
 
 ### Text ramp
 
@@ -9285,27 +9297,28 @@ facts win and this table is not consulted. The structure here is the slots and t
 | `title1` | dialog/page title, today's `dialog_title` | `title_1` | `title` | `title_2` | `heading_1` (Kirigami's dialog and page title, Q1.5) | `headline_small` |
 | `title2` | sheet/section title | `title_2` | `subtitle` | `title_3` | `heading_2` | `title_large` |
 | `title3` | sub-section title | `title_3` | `subtitle` = | `title_4` | `heading_3` | `title_large` = |
-| `headline` | section heading, today's `section_heading` | `headline` | `subtitle` = | `heading` | `heading_3` = | `title_medium` |
+| `headline` | section heading, today's `section_heading` | `headline` | `subtitle` = | `heading` | `heading_3` = | `title_large` = (`= token.text.roles.title2`, ADD-A134) |
 | `subheadline` | secondary line under a heading | `subheadline` | `body` = | `body` = | `heading_4` | `title_small` |
 | `body` | running and UI text, today's `defaults.font` | `body` | `body` | `body` | `default` | `body_large` |
-| `body_emphasized` | emphasised body | `body_emphasized` | `body_strong` | `heading` = | `heading_5_primary` | `body_large_emphasized` (expressive, the emphasised form of `body`'s `body_large`); `title_small` = (baseline: `= token.text.roles.subheadline`) |
+| `body_emphasized` | emphasised body | `body_emphasized` | `body_strong` | `heading` = | `heading_5_primary` | `body_large_emphasized` (the emphasised form of `body`'s `body_large`, both flavours, ADD-A134) |
 | `callout` | body-sized text, slightly set apart | `callout` | `body_large` | `body` = | `default` = | `body_large` = |
 | `footnote` | notes | `footnote` | `caption` = | `caption` = | `smallest_readable` = | `body_small` = |
 | `caption` | smallest readable, today's `text_scale.caption` | `caption_1` | `caption` | `caption` | `smallest_readable` | `body_small` |
-| `caption_emphasized` | emphasised caption | `caption_1_emphasized` | `caption` = | `caption_heading` | `smallest_readable` = | `body_small_emphasized` (expressive); `label_medium` (baseline) |
+| `caption_emphasized` | emphasised caption | `caption_1_emphasized` | `caption` = | `caption_heading` | `smallest_readable` = | `body_small_emphasized` (the emphasised form of `caption`'s `body_small`, both flavours, ADD-A134) |
 | `caption2` | the smallest style | `caption_2` | `caption` = | `caption` = | `smallest_readable` = | `label_small` |
-| `label` | control labels | `control_content` (macOS), `body` = (iOS) | `body` = | `body` = | `default` = | `label_large` |
-| `monospace` | monospace text, today's `mono_font` | `monospaced` | `monospace` | `monospace` (the `monospace-font-name` setting) | `fixed` | `monospace` |
-| `numeric` | tabular figures | `body_monospaced_digits` (D-8) | `body` = | `numeric` | `default` = | `body_large` = |
+| `label` | control labels | `label` (macOS, `labelFontOfSize:`, ledger queue #155 (1)), `body` = (iOS) | `body` = | `body` = | `default` = | `label_large` |
+| `monospace` | monospace text, today's `mono_font` | `user_fixed_pitch` (macOS, the user's fixed-pitch font, MAC-I07, #155 (1)), `monospaced` (iOS) | `monospace` | `monospace` (the `monospace-font-name` setting) | `fixed` | `monospace` |
+| `numeric` | tabular figures | `monospaced_digit_system` (macOS, `monospacedDigitSystemFontOfSize:weight:`, #155 (1)), `body_monospaced_digits` (iOS, D-8) | `body` = | `numeric` | `default` = | `body_large` = |
 
 The assignment of KDE's levels follows Kirigami's own use (Q1.5: dialog and page title level 1, sheet header level 2,
 form
-section level 3, drawer section level 4, list section header level 5 in its primary type). The Material
-"expressive/baseline" alternatives are a flavour rule on the token (`cond flavor:expressive`, S7.1); the emphasised
-set exists only in Expressive [MAT-TS4]. Under `flavor:baseline`, `body_emphasized` takes `title_small`, which
-`subheadline` owns, so that rule states `body_emphasized = "= token.text.roles.subheadline"`, and
-`caption_emphasized` references `label_medium` directly (no other slot takes it); every other `Tokens` rule that
-points a slot at a style another slot owns references the owner slot likewise (S4.4, S12). Every
+section level 3, drawer section level 4, list section header level 5 in its primary type). Material's emphasised
+styles [MAT-TS4] are in Compose's `Typography` under either flavour, its default constructor taking each from the
+typography tokens and documenting it as "an emphasized version of" its base style (`androidx@e4d933c9
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Typography.kt:136-138`, `:413-420`), so
+`body_emphasized` and `caption_emphasized` take the emphasised forms of the styles `body` and `caption` take, with no
+flavour rule (ADD-A134); a `Tokens` rule that points a slot at a style another slot owns references the owner slot
+(S4.4, S12). Every
 cell above is a proposal: the value phase states the facts, and where a fact names another style, the fact, cited,
 replaces the cell.
 
@@ -9328,7 +9341,17 @@ assigns to a use), `title2`, `title3`, `headline`, `subheadline`, `body_emphasiz
 `caption_emphasized` and `caption2`, are **unsourced**: no Compose component or token assigns their use, and two
 uses near them point elsewhere (a navigation drawer's section headline is `title_small`,
 `tokens/NavigationDrawerTokens.kt:76-77`; a list item's supporting line is `body_medium`, `tokens/ListTokens.kt:320-321`),
-so they stay the draft's proposal until the maintainer confirms them or a source assigns them. The letter spacings
+so they stay the draft's proposal until the maintainer confirms them or a source assigns them. The Material facts
+lane's M1b pass (5831a316) sourced nine of them by the component that draws text of that use (`docs/facts/material/tokens.toml`'s
+*S4.4* block); the last three no component assigns (U562), and ADD-A134 decides them by logic, as the ledger's queue
+#155 (1) decided macOS's: `headline`, a section heading, is the sub-section title where the platform has no style
+of its own for it, as `windows-11` and `kde-breeze` map it, so `= token.text.roles.title2`, the owner of
+`title_large`, which `title3` shares (the drawer's `title_small` headline is a drawer section's, which KDE's mapping
+puts at `subheadline`, already `title_small` here); `body_emphasized` and `caption_emphasized` are the emphasised
+forms of `body`'s and `caption`'s styles, `body_large_emphasized` and `body_small_emphasized`, as Apple's emphasised
+slots are its styles' emphasised forms. Rejected: `title_medium` for `headline` (a style no source assigns to the
+use, chosen by size alone); the draft's baseline alternatives, `title_small` and `label_medium` (no source assigns
+them, and Compose's baseline `Typography` holds the emphasised forms). The letter spacings
 Compose states in sp (`tokens/TypeScaleTokens.kt`, read by `tokens/TypographyTokens.kt`, each style's
 `letterSpacing` in its own block: `BodyLarge` `:27-35`, `BodyMedium` `:37-45`, `BodySmall` `:47-55`, `DisplayLarge` `:57-65`, `DisplayMedium` `:67-75`, `DisplaySmall` `:77-85`, `HeadlineLarge` `:87-95`, `HeadlineMedium` `:97-105`, `HeadlineSmall` `:107-115`, `LabelLarge` `:117-125`, `LabelMedium` `:127-135`, `LabelSmall` `:137-145`, `TitleLarge` `:147-155`, `TitleMedium` `:157-165`, `TitleSmall` `:167-175`, and the emphasised ones `BodyLargeEmphasized` `:178-186`, `BodyMediumEmphasized` `:188-196`, `BodySmallEmphasized` `:198-206`, `DisplayLargeEmphasized` `:208-216`, `DisplayMediumEmphasized` `:218-226`, `DisplaySmallEmphasized` `:228-236`, `HeadlineLargeEmphasized` `:238-246`, `HeadlineMediumEmphasized` `:248-256`, `HeadlineSmallEmphasized` `:258-266`, `LabelLargeEmphasized` `:268-276`, `LabelMediumEmphasized` `:278-286`, `LabelSmallEmphasized` `:288-296`, `TitleLargeEmphasized` `:298-306`, `TitleMediumEmphasized` `:308-316`, `TitleSmallEmphasized` `:318-326`) are what Compose
 draws; where material-web's `latest` tokens state another in rem (body medium, display large, title medium, and the
@@ -9340,8 +9363,8 @@ draws, and a rem value is never converted (S17's notations give rem no dimension
 A keyed text style is a `TextStyle` (S2.8) the preset declares in `[declare] text_styles`. Each platform lists the
 named styles its rows name, whether or not a slot references them, so nothing the rows trace is lost; a named style
 no row names is added with the row that needs it (on macOS, AppKit's `menuFont`, `toolTipsFont` and `titleBarFont`
-are in no row; its `userFont` and `userFixedPitchFont` are read into `text_area`'s text and the `monospace` slot,
-MAC-I07, not keyed).
+are in no row; its `userFont` is read into `text_area`'s text, MAC-I07, not keyed, while its `userFixedPitchFont`
+is the keyed style `user_fixed_pitch` the `monospace` slot references, MAC-I07, ledger queue #155 (1)).
 
 **Apple.** The eleven text styles, snake_case: `large_title`, `title_1`, `title_2`, `title_3`, `headline`,
 `subheadline`, `body`, `callout`, `footnote`, `caption_1`, `caption_2` [MAC-TS01, TS-1]; for each, the emphasised-weight
@@ -9351,7 +9374,9 @@ leading forms `<style>_tight`, `<style>_loose` (font-descriptor traits; they dif
 MAC-TS03]; iOS adds `extra_large_title`, `extra_large_title_2` (iOS 17) [TS-4]; the named AppKit fonts `label`,
 `message`,
 `palette`, `menu_bar`, `control_content` and `small_system` (MAC-TS02's probed set) [MAC-TS02]; `monospaced`, `body_monospaced_digits`
-(below). Per style: `letter_spacing` is
+(below); on macOS `user_fixed_pitch` (`userFixedPitchFontOfSize:`) and `monospaced_digit_system`
+(`monospacedDigitSystemFontOfSize:weight:`), the fonts the `monospace` and `numeric` slots take there, each style's
+leaves from the probe's read of its font (U325; ledger queue #155 (1), ADD-A134). Per style: `letter_spacing` is
 `sf_tracking(font_size, <design>)`, the style's `TrackingDesign` (`sf_pro`, `sf_pro_rounded`, `new_york`) (ADD-A54) [D-1]; `font.axes` carries `opsz` as `FollowsSize` [D-2]; `font.width` and
 the
 family carry the system design and width [D-3]; `font.features` carries monospaced digits where a style uses them [D-8];
@@ -9621,7 +9646,7 @@ is not).
 | windows-11 | the elevation steps WinUI names (1 to 128), each its ambient layer, the dark scheme's intensity as a colour-role-free rule under `scheme:dark` | W3-01, W3-02, W3-03 |
 | material-3 | levels 0 to 5, each a key and an ambient layer (layers per level), per-state level by rules | MAT-X2, MAT-X3, MAT-X4, MAT-X5 |
 | kde-breeze | the window shadow size steps and the popup shadow size steps (two tables, two layers per step), with `token.params.shadow.strength` and the shadow colour read from breezerc | K3.1, K3.2 |
-| Kirigami (flavour `kirigami`) | one entry per Kirigami and qqc2 surface, declared preset-wide (S10 has flavour declarations for widgets and components only) and referred to only by rules under `cond flavor:kirigami` | Q3.21 |
+| Kirigami (flavour `kirigami`) | one entry per Kirigami and qqc2 surface, declared preset-wide (S10 has flavour declarations for widgets and components only) and referred to only by rules under `cond flavor:kirigami`; each layer `falloff = "kirigami_smoothstep"`, its `blur` the `ShadowedRectangle`'s `shadow.size` (S2.5, U403; ADD-A134) | Q3.21 |
 | libadwaita, macos-*, ios-* | (none): layers are stated per part (`PartStyle.shadow.layers`) | GN-3.01, MAC-X01, X-SH-1 |
 
 **token.params** (ADD-A44), keyed scalar tokens in groups, each group of one unit its declaration names (S4.6, S10):
@@ -9668,7 +9693,8 @@ MAT-P3-15†, MAT-X32†, P3-13†, GN-P3-15†. Scroll physics (`token.behavior
 overshoot and its spring, animated-scroll duration and curve, snap settle, momentum: GN-3.24, GN-3.06, K-P3-18†,
 MAC-P4-4†, MAC-X32†, W3-52†, X-MO-8, MAT-P3-16† (its minimum and maximum fling velocities: `min_fling_velocity`,
 `max_fling_velocity`; Kirigami's wheel step whose duration grows with the distance between `wheel_step_duration`
-and `wheel_step_duration_max`, K-P3-18†). New fields: ADD-A45; `hide_pointer_delay` (KLineEdit's, K3.65†),
+and `wheel_step_duration_max`, K-P3-18†). New fields: ADD-A45; `hide_pointer_delay` (KLineEdit's idle hide, K3.65†; absent where no idle hide exists,
+GTK's, S4.2's *Hiding the pointer*, ADD-A134),
 `hide_pointer_fade` (Android's gradual fade, MAT-P3-15†), `scroll.wheel_step_distance` (Android's pixels per wheel
 step, MAT-X32†; ADD-A86, moved into `scroll` by ADD-A130); `drag_min_delay` (GTK's earliest drag, GN-3.48) and
 `mnemonic_when_disabled` (GN-3.50): ADD-A130. GTK's step from the view's page size is `scroll_view.values.wheel_step` (GN-P3-15†), as are
@@ -9712,9 +9738,11 @@ is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 its platform's facts except on `macos-*` and `ios-*`, where it is 72, the specification's own value, as their point is
 the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
 `forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
-styles one flavour alone uses (Material's `_emphasized` styles, Expressive's) are declared preset-wide, since S10
+styles one flavour alone uses are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as
-Kirigami's elevation entries are (`token.elevation`). Group 8 adds
+Kirigami's elevation entries are (`token.elevation`); Material's `_emphasized` styles are no such styles, Compose's
+`Typography` holding them under either flavour (`body_emphasized` and `caption_emphasized` reference two of them,
+*Text ramp*; ADD-A134). Group 8 adds
 the per-role line height, letter spacing and optical-size axis (MAC-X18, W3-23, MAT-X16,
 X-DT-5, GN-3.57's weight), the default size category's sizes on `ios-*` (X-DT-1), `monospace` with a source on
 `windows-11` (W3-47†) and the platform default sans and monospace on `material-3` (MAT-X36†). `token.text.fallbacks`
@@ -9738,13 +9766,16 @@ them), keyed by visual (`accept`, W1-039; the chevrons, the back arrow, the hamb
 operation (`copy`, `move`, `link`, `ask`, `none`, `not_allowed`) for GN-P3-12†, K-P4-7†, W-P4-5†, MAT-P4-3†, P3-10†.
 
 **token.size_classes**: no row of group 8 adds a threshold list. `ios-*` takes its class from the system (X-SV-1,
-read by the connector at the root, R16); Material's width thresholds are stated by the widget groups' rows.
+read by the connector at the root, R16); Material's width thresholds are stated by the widget groups' rows;
+`kde-breeze` under `cond flavor:kirigami` states Kirigami's `wideScreen` as `Compact` and `Regular` on the horizontal
+axis, the connector measuring the window less its drawers (S7.3's *Kirigami's wide screen*, Q1.7, U402; ADD-A134).
 
 **token.material** (`MaterialScheme`, S4.8, `material-3` only): `variant`, `spec_version` (a key of `[declare]
 spec_versions`, the versions `m3_role` implements, S10) and `contrast_level`, which `m3_role` reads and so is never
 absent: the base states the standard level, and `Tokens` rules under `cond contrast_increased` and `cond
-contrast_high` set the medium and high levels (MAT-X18, MAT-P3-19†); the seed is `input.accent` (S9.1), which `m3_role`
-reads (MAT-X17). The preset's `variant` is the one Android applies where the user chose no style, which
+contrast_high` set the medium and high levels (MAT-X18, MAT-P3-19†); the seed is the `input.accent` a layer above
+the preset gives, which the accent-derivation layer's `m3_role` reads (MAT-X17; S9.1, S9.2), the preset's own being
+Compose's baseline `primary`, which no role reads (ADD-A134). The preset's `variant` is the one Android applies where the user chose no style, which
 SystemUI's theme code chooses (`frameworks/base/packages/SystemUI`, outside the pinned sparse checkout of
 `frameworks-base@android-17.0.0_r1`): **not pinned**, so the facts state it measured on the emulator image (the reader's
 `variant`, MAT-X17) or cite SystemUI once it is pinned, never assumed (ADD-A123).
