@@ -145,8 +145,8 @@ Targets and paths (S11): `role.<set>.<role>` is `surfaces.<set>.<role>` of `colo
 below it), `role.global.<…>` is `global.<…>`, `role.@<key>` is `keyed.<key>` (S3's `ColorRoles.keyed`, a map whose
 key is a `Key`, bare, S11); `token.<path>` is `<path>` of `tokens`; `<widget>.<part>.<field…>` is `<field…>` of
 target `<widget>.<part>`, `<widget>.values.<name>` of `<widget>.values`, `component.<key>.…` likewise; a whole part's
-`"absent"` is `absent = true` and its `{ drawn_as = … }` is `drawn_as = …` (S6.3, S11); `input.<name>` is
-`[inputs.<name>]`.
+`"absent"` is `absent = true`, its `"present"` `absent = false` and its `{ drawn_as = … }` is `drawn_as = …` (S6.3,
+S11, S17); `input.<name>` is `[inputs.<name>]`.
 
 Spelling (S11's table; spell()): a unit literal under a one-unit key is its number under the suffixed key
 (`min_height_px = 24`, `_ms`, `_deg`), and any other value of it, an expression, `"auto"`, `"absent"`, `"none"`,
@@ -186,19 +186,18 @@ units or defaults.
 
 The round trip (the exactness proof)
 ------------------------------------
-The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in
-its rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling
-(unspell(): the suffix into the value's unit, a map's entries likewise, `absent = true` into `"absent"`); a value
-at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases, then the rules in
-order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value; and (2) for
-every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs) and
-each scheme, that `when`'s minimal combination (its required names present and nothing else; ancestors as its
-contexts list them; a lone element where it names no position) resolves under the generated bases and rules to the
-value of the fact that applies there among all the key's facts, or to none where none holds (the
-last in file order, after the state model's exclusive reduction and its recency sets' stated order, S7.2, S10,
-S17); a combination where a pending or a left-out fact applies is skipped and counted, and a fact whose `when` no
-element can hold (two sizes, a required name refused, a state its group drops) is counted apart. Any difference is a
-mismatch.
+The draft is read back with tomllib: each transcribed fact's value read at its TOML path (in its base table, or in its
+rule's `set` below that rule's `when` and `target` as read back) and turned back into the fact's spelling (unspell():
+the suffix into the value's unit, a map's entries likewise, `absent = true` into `"absent"`, `absent = false` into
+`"present"`); a value at no transcribed fact's path is a mismatch. Then (1) for every key the read-back sequence (bases,
+then the rules in order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value;
+and (2) for every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs)
+and each scheme, that `when`'s minimal combination (its required names present and nothing else; ancestors as its
+contexts list them; a lone element where it names no position) resolves under the generated bases and rules to the value
+of the fact that applies there among all the key's facts, or to none where none holds (the last in file order, after the
+state model's exclusive reduction and its recency sets' stated order, S7.2, S10, S17); a combination where a pending or
+a left-out fact applies is skipped and counted, and a fact whose `when` no element can hold (two sizes, a required name
+refused, a state its group drops) is counted apart. Any difference is a mismatch.
 
     python3 scripts/generate_preset.py --self-test   # fixture facts against the expected draft, and each rule
 """
@@ -562,6 +561,8 @@ def place(f: Fact):
                 return
             if value == "absent":
                 rel, value = ["absent"], True
+            elif value == "present":
+                rel, value = ["absent"], False
             elif isinstance(value, dict) and set(value) == {"drawn_as"}:
                 rel, value = ["drawn_as"], value["drawn_as"]
             else:
@@ -862,12 +863,21 @@ def unsuffixed(path: tuple) -> tuple:
     return path
 
 
+def whole_part(section, dotted, value) -> bool:
+    """Whether a base states its part whole (S6.3): `absent = true` or `drawn_as`, not `absent = false`, which draws
+    the part with its own fields."""
+    if section not in ("widgets", "components"):
+        return False
+    return tuple(dotted) == ("drawn_as",) or (tuple(dotted) == ("absent",) and value is True)
+
+
 def based_paths(bases) -> list:
-    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent`, `drawn_as`) the part's,
-    which holds every field of it (S6.3)."""
+    """Each base's path as a listed path compares (unsuffixed()); a whole part's (`absent = true`, `drawn_as`) the
+    part's, which holds every field of it (S6.3); a drawn part's (`absent = false`) its own, `<part>.absent`, which
+    no field's path lies above or below."""
     out = []
-    for section, scheme, header, dotted, _, _ in bases:
-        whole = section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))
+    for section, scheme, header, dotted, value, _ in bases:
+        whole = whole_part(section, dotted, value)
         out.append(unsuffixed((section,) + ((scheme,) if scheme else ()) + header + (() if whole else tuple(dotted))))
     return out
 
@@ -948,7 +958,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
     contrast condition and the input's base states no per-scheme value there; a pending contrast base is never
     listed, the per-scheme value standing beneath it (S11, S17, ADD-A132). A pending presence (a whole part's fact)
     is listed by its part's path, `widgets.<widget>.<part>`, where no presence is beneath it: a base of the part's
-    presence (`absent`, `drawn_as`), or an earlier rule of its key holding wherever it does; its fields' bases are
+    presence (`absent = true` or `false`, `drawn_as`), or an earlier rule of its key holding wherever it does; its fields' bases are
     none (S6.3, S17, ADD-A131). A component's (`components.<key>.<part>`) is refused (InputError) until components
     are typed, as the reader refuses that key."""
     block_of = block_of or set_whole_block
@@ -980,7 +990,7 @@ def pending_table(ctx, facts, bases, block_of=None, models=None) -> list:
         for path in paths:
             key = unsuffixed(path)
             if presence:
-                beneath = key in based
+                beneath = key in based or key + ("absent",) in based
             else:
                 beneath = any(b[:len(key)] == key or key[:len(b)] == b for b in based)
             if beneath:
@@ -1001,8 +1011,7 @@ def redrawn_pending(facts, bases) -> list:
     field (based_paths()), and no stated value, so loading refuses the field as S12's missing one "judged under each
     combination in which its part resolves drawn" where that fact draws it. S17 gives such a field no encoding (task
     15c's review, minor 10): reported, the draft stating nothing for it. [(key, register id, fact)]"""
-    wholes = {tuple(header) for section, _, header, dotted, _, _ in bases
-              if section in ("widgets", "components") and tuple(dotted) in (("absent",), ("drawn_as",))}
+    wholes = {tuple(header) for section, _, header, dotted, value, _ in bases if whole_part(section, dotted, value)}
     present = {f.ckey for f in facts if f.kind == "widget" and f.status not in (PENDING, SHADOWED)
                and f.item.data.get("value") == "present"}
     out = []
@@ -1958,9 +1967,12 @@ def model_of(models: dict, widget, when: dict):
 
 
 def back_value(f: Fact, node):
-    """A read-back TOML value as the fact writes it (unspell; a whole part's `absent = true` and `drawn_as`)."""
+    """A read-back TOML value as the fact writes it (unspell; a whole part's `absent = true`, `absent = false` and
+    `drawn_as`)."""
     if f.kind == "widget" and len(f.ckey) == len(f.target.split(".")):
-        return "absent" if f.rel == ("absent",) and node is True else {f.rel[-1]: node}
+        if f.rel == ("absent",) and isinstance(node, bool):
+            return "absent" if node else "present"
+        return {f.rel[-1]: node}
     if f.param_unit and isinstance(node, (int, float)) and not isinstance(node, bool):
         return f"{node}{f.param_unit}"
     return unspell(f.rel[-1], node, f.typ)[1]
@@ -2885,6 +2897,16 @@ def self_test() -> int:
                ("widgets.button.label", "U15")]:
         failures.append(f"pending_table: {got}, expected the dark scheme's status role, the accent input per scheme, "
                         f"the scheme input's dark, the double click under a narrower rule and the label's presence")
+    # a part's base `absent = false` (`"present"`, S6.3) is a presence beneath its pending presence, and states none
+    # of its fields: the pending rendering mode is listed, and no field is reported as drawn again over it
+    drawn = [b if b[5] is not mode else b[:4] + (False, mode) for b in bases]
+    got = [(path, uid) for path, uid, _ in pending_table(None, [mode, icon], drawn, repeat_block)]
+    if got != [("widgets.button.icon.icon.rendering_mode", "U9")]:
+        failures.append(f"pending_table under a drawn part's base: {got}, expected the icon's rendering mode alone")
+    present = any_fact("button.icon", "", "widget", {"states": ["checked"]}, widget="button", status="rule")
+    present.item.data = {"value": "present"}
+    if redrawn_pending([mode, present], drawn):
+        failures.append("redrawn_pending: a field reported under a drawn part's base")
     # macOS's icon-only padding: a pending fact under a variant whose elements take every size has one earlier rule
     # per size beneath it at each, so it lists nothing; one under a variant whose entry takes no size, or a model
     # whose variant sets give one of its elements such a variant, is listed
@@ -3163,6 +3185,20 @@ def self_test() -> int:
         if (pending_trip.mismatches or '"declare.widget.button.default_size" = "U9"' not in pending_text
                 or "default_size" in declared):
             failures.append(f"a pending default size: {pending_trip}, [declare.widget.button] {declared!r}")
+        # a part drawn again over its absence (S17: `value = "present"`, S6.3's `absent = false`): a rule of its own,
+        # read back as `present`
+        root = Path(tmp) / "present"
+        write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": SELF_TEST_FILES["docs/facts/gnome/button.toml"]
+                     + _fact("button.mark", '"present"', '{ variants = ["@pill"], states = ["hover"] }')})
+        present_draft, present_text, present_trip, _ = generate(fixture_context(root), "adwaita")
+        redrawn = [(f.status, f.reason) for f in present_draft.facts if f.item.data.get("value") == "present"]
+        rule = ('[[rules]]\nwhen = { variants = ["@pill"], states = ["hover"] }\ntarget = "button.mark"\n\n'
+                '[rules.set]\n'
+                f'# docs/facts/gnome/button.toml:{SELF_TEST_FILES["docs/facts/gnome/button.toml"].count(chr(10)) + 2}\n'
+                'absent = false\n')
+        if present_trip.mismatches or redrawn != [("rule", "")] or rule not in present_text:
+            failures.append(f"a `present` fact: {redrawn}, round trip {present_trip}, its rule written "
+                            f"{rule in present_text}")
         # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here) and says so,
         # over a committed preset the new text differs from; it writes the preset where it finds none
         root = Path(tmp) / "mismatch"
