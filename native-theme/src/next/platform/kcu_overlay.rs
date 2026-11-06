@@ -1,11 +1,7 @@
 //! `kcu_overlay`: KColorUtils' overlay, a source-over paint of one colour on an opaque other,
 //! through Qt's 8-bit premultiplied raster image.
 
-#[allow(dead_code)]
-#[path = "kde_color_common.rs"]
-mod kde_color_common;
-
-use kde_color_common::{enter, q16, read, QtColor, Rgba};
+use super::kde_color_common::{QtColor, Rgba, enter, q16, read};
 
 /// `(x + 128 - ((x + 128) >> 8)) >> 8`: a 16-bit value to 8 bits, rounded.
 fn div257(x: u64) -> Option<u64> {
@@ -69,23 +65,5 @@ pub fn kcu_overlay(under: Rgba, over: Rgba) -> Rgba {
             let [r, g, b, _] = read(QtColor::Standard(u));
             [r, g, b, 1.0]
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::kcu_overlay;
-    use super::kde_color_common::table::{check, colour};
-
-    #[test]
-    fn vectors() {
-        let (total, failures) = check(include_str!("../../vectors/kcu_overlay.tsv"), |t, row| {
-            Some(kcu_overlay(
-                colour(t.cell(row, "under")?)?,
-                colour(t.cell(row, "over")?)?,
-            ))
-        });
-        assert!(total > 0, "no rows");
-        assert!(failures.is_empty(), "{} of {total} rows fail:\n{}", failures.len(), failures.join("\n"));
     }
 }

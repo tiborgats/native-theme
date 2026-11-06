@@ -90,10 +90,20 @@ pub(crate) trait Env {
 pub(super) enum Platform {
     /// `adw_standalone(c, scheme)`.
     AdwStandalone,
+    /// `kcu_mix(a, b, bias)`.
+    KcuMix,
+    /// `kcu_overlay(under, over)`.
+    KcuOverlay,
+    /// `kcu_shade(c, luma, chroma)`.
+    KcuShade,
+    /// `kcu_tint(a, b, amount)`.
+    KcuTint,
     /// `kde_shade(c, role, contrast)`.
     KdeShade,
     /// `kirigami_lerp(a, b, balance)`.
     KirigamiLerp,
+    /// `kirigami_tint(c, tint, alpha)`.
+    KirigamiTint,
     /// `sf_tracking(font_size, design)`, which reads the font DPI itself.
     SfTracking,
 }
@@ -104,8 +114,13 @@ impl Platform {
     pub(super) fn of(func: Func) -> Option<Platform> {
         match func {
             Func::AdwStandalone => Some(Platform::AdwStandalone),
+            Func::KcuMix => Some(Platform::KcuMix),
+            Func::KcuOverlay => Some(Platform::KcuOverlay),
+            Func::KcuShade => Some(Platform::KcuShade),
+            Func::KcuTint => Some(Platform::KcuTint),
             Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
+            Func::KirigamiTint => Some(Platform::KirigamiTint),
             Func::SfTracking => Some(Platform::SfTracking),
             _ => None,
         }
@@ -114,6 +129,9 @@ impl Platform {
     /// The function's value over its typed arguments.
     fn eval(self, args: &[Node], env: &dyn Env) -> Val {
         let arg = |index: usize| args.get(index).map(|node| eval(node, env));
+        let color_arg =
+            |index: usize| channels(arg(index).as_ref().map_or_else(transparent, color));
+        let number_arg = |index: usize| arg(index).as_ref().map_or(0.0, number);
         match self {
             Platform::AdwStandalone => {
                 let (c, scheme) = (arg(0), arg(1));
@@ -131,6 +149,37 @@ impl Platform {
                     None => Val::Color(c),
                 }
             }
+            // The KDE colour functions take a colour outside sRGB's gamut as
+            // Qt's extended RGB and read Qt's invalid colour as transparent.
+            Platform::KcuMix => Val::Color(from_channels(crate::next::platform::kcu_mix::kcu_mix(
+                color_arg(0),
+                color_arg(1),
+                number_arg(2),
+            ))),
+            Platform::KcuOverlay => Val::Color(from_channels(
+                crate::next::platform::kcu_overlay::kcu_overlay(color_arg(0), color_arg(1)),
+            )),
+            Platform::KcuShade => {
+                Val::Color(from_channels(crate::next::platform::kcu_shade::kcu_shade(
+                    color_arg(0),
+                    number_arg(1),
+                    number_arg(2),
+                )))
+            }
+            Platform::KcuTint => {
+                Val::Color(from_channels(crate::next::platform::kcu_tint::kcu_tint(
+                    color_arg(0),
+                    color_arg(1),
+                    number_arg(2),
+                )))
+            }
+            Platform::KirigamiTint => Val::Color(from_channels(
+                crate::next::platform::kirigami_tint::kirigami_tint(
+                    color_arg(0),
+                    color_arg(1),
+                    number_arg(2),
+                ),
+            )),
             Platform::KdeShade => {
                 let (c, role, contrast) = (arg(0), arg(1), arg(2));
                 let role = match role {
@@ -429,6 +478,49 @@ mod tests {
 
     fn value(text: &str, ty: Ty) -> Val {
         eval_as(text, ty, Bound::Unbounded)
+    }
+
+    #[test]
+    fn evaluates_kde_colour_functions() {
+        // Breeze Light's frame colour: its window background mixed toward its
+        // text by 0.2, in Qt's 16-bit storage (`tests/vectors/kcu_mix.tsv`).
+        assert_eq!(
+            value("kcu_mix(#eff0f1, #232629, 0.2)", Ty::Color),
+            Val::Color(Color {
+                r: 50937.0 / 65535.0,
+                g: 51297.0 / 65535.0,
+                b: 51657.0 / 65535.0,
+                a: 1.0
+            })
+        );
+        // Every other call is its function over the operands (synthetic
+        // colours and amounts).
+        let [a, b, translucent] =
+            ["#eff0f1", "#3daee9", "#3daee980"].map(|c| channels(Color::parse(c).unwrap()));
+        for (text, expected) in [
+            (
+                "kcu_tint(#eff0f1, #3daee9, 0.4)",
+                crate::next::platform::kcu_tint::kcu_tint(a, b, 0.4),
+            ),
+            (
+                "kcu_shade(#eff0f1, -0.1, 0.2)",
+                crate::next::platform::kcu_shade::kcu_shade(a, -0.1, 0.2),
+            ),
+            (
+                "kcu_overlay(#eff0f1, #3daee980)",
+                crate::next::platform::kcu_overlay::kcu_overlay(a, translucent),
+            ),
+            (
+                "kirigami_tint(#eff0f1, #3daee980, 0.5)",
+                crate::next::platform::kirigami_tint::kirigami_tint(a, translucent, 0.5),
+            ),
+        ] {
+            assert_eq!(
+                value(text, Ty::Color),
+                Val::Color(from_channels(expected)),
+                "{text}"
+            );
+        }
     }
 
     #[test]

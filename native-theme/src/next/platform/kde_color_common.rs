@@ -3,11 +3,11 @@
 //! stored colours. Every step is one IEEE operation, never fused.
 
 /// A model colour: straight-alpha `[r, g, b, a]`, nominally within `[0, 1]`.
-pub type Rgba = [f32; 4];
+pub(super) type Rgba = [f32; 4];
 
 /// A colour as Qt stores it.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum QtColor {
+pub(super) enum QtColor {
     /// Four 16-bit channels `R, G, B, A`.
     Standard([u16; 4]),
     /// Four half-precision values, held as the `f32`s they equal exactly.
@@ -16,38 +16,15 @@ pub enum QtColor {
     Invalid,
 }
 
-/// The kind of colour role a KDE state effect is applied to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum KdeRoleKind {
-    /// A text colour.
-    Foreground,
-    /// A focus or hover decoration colour.
-    Decoration,
-    /// A background colour.
-    Background,
-}
-
-impl KdeRoleKind {
-    /// The kind named by its lower-case table spelling.
-    pub fn from_name(name: &str) -> Option<Self> {
-        match name {
-            "foreground" => Some(Self::Foreground),
-            "decoration" => Some(Self::Decoration),
-            "background" => Some(Self::Background),
-            _ => None,
-        }
-    }
-}
-
 /// Rec. 709 red weight.
-pub const K_R: f64 = 0.2126;
+pub(super) const K_R: f64 = 0.2126;
 /// Rec. 709 green weight.
-pub const K_G: f64 = 0.7152;
+pub(super) const K_G: f64 = 0.7152;
 /// Rec. 709 blue weight.
-pub const K_B: f64 = 0.0722;
+pub(super) const K_B: f64 = 0.0722;
 
 /// `qRound(x * 65535)` in single precision: one multiplication, one addition, truncation.
-pub fn q16(x: f32) -> u16 {
+pub(super) fn q16(x: f32) -> u16 {
     let p = x * 65535.0_f32;
     let s = p + 0.5_f32;
     s as u16
@@ -55,7 +32,7 @@ pub fn q16(x: f32) -> u16 {
 
 /// `x` rounded to the nearest half-precision value (ties to even), as an `f32`; a magnitude of
 /// at least 65520 becomes an infinity.
-pub fn round_to_half(x: f32) -> f32 {
+pub(super) fn round_to_half(x: f32) -> f32 {
     if !x.is_finite() {
         return x;
     }
@@ -80,7 +57,7 @@ pub fn round_to_half(x: f32) -> f32 {
 }
 
 /// `QColor::fromRgbF` with single arguments.
-pub fn from_rgbf(r: f32, g: f32, b: f32, a: f32) -> QtColor {
+pub(super) fn from_rgbf(r: f32, g: f32, b: f32, a: f32) -> QtColor {
     let unit = |x: f32| (0.0..=1.0).contains(&x);
     if !unit(a) {
         QtColor::Invalid
@@ -94,18 +71,18 @@ pub fn from_rgbf(r: f32, g: f32, b: f32, a: f32) -> QtColor {
 }
 
 /// `QColor::fromRgbF` with double arguments, each first rounded to a single.
-pub fn from_rgbd(r: f64, g: f64, b: f64, a: f64) -> QtColor {
+pub(super) fn from_rgbd(r: f64, g: f64, b: f64, a: f64) -> QtColor {
     from_rgbf(r as f32, g as f32, b as f32, a as f32)
 }
 
 /// A model colour entering Qt.
-pub fn enter(c: Rgba) -> QtColor {
+pub(super) fn enter(c: Rgba) -> QtColor {
     let [r, g, b, a] = c;
     from_rgbf(r, g, b, a)
 }
 
 /// The four channels as `redF()` .. `alphaF()` read them; an invalid colour reads as zeros.
-pub fn read(c: QtColor) -> Rgba {
+pub(super) fn read(c: QtColor) -> Rgba {
     match c {
         QtColor::Standard(s) => s.map(|v| f32::from(v) / 65535.0_f32),
         QtColor::Extended(h) => h,
@@ -114,10 +91,10 @@ pub fn read(c: QtColor) -> Rgba {
 }
 
 /// `Qt::transparent`.
-pub const TRANSPARENT: QtColor = QtColor::Standard([0, 0, 0, 0]);
+pub(super) const TRANSPARENT: QtColor = QtColor::Standard([0, 0, 0, 0]);
 
 /// KDE's normalize: `x` inside `(0, 1)`, 1 at or above 1, else 0 (NaN too).
-pub fn norm(x: f64) -> f64 {
+pub(super) fn norm(x: f64) -> f64 {
     if x > 0.0 && x < 1.0 {
         x
     } else if x >= 1.0 {
@@ -128,26 +105,26 @@ pub fn norm(x: f64) -> f64 {
 }
 
 /// `a < b ? b : a`.
-pub fn maxd(a: f64, b: f64) -> f64 {
+pub(super) fn maxd(a: f64, b: f64) -> f64 {
     if a < b { b } else { a }
 }
 
 /// `a < b ? a : b`.
-pub fn mind(a: f64, b: f64) -> f64 {
+pub(super) fn mind(a: f64, b: f64) -> f64 {
     if a < b { a } else { b }
 }
 
 /// A colour in KDE's HCY space: hue, chroma, luma, alpha.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hcy {
+pub(super) struct Hcy {
     /// Hue, unwrapped.
-    pub h: f64,
+    pub(super) h: f64,
     /// Chroma.
-    pub c: f64,
+    pub(super) c: f64,
     /// Luma.
-    pub y: f64,
+    pub(super) y: f64,
     /// Alpha.
-    pub a: f64,
+    pub(super) a: f64,
 }
 
 fn linear(c: QtColor) -> (f64, f64, f64, f64) {
@@ -165,13 +142,13 @@ fn luma_of(r: f64, g: f64, b: f64) -> f64 {
 }
 
 /// The luma of a stored colour.
-pub fn luma(c: QtColor) -> f64 {
+pub(super) fn luma(c: QtColor) -> f64 {
     let (r, g, b, _) = linear(c);
     luma_of(r, g, b)
 }
 
 /// A stored colour in HCY.
-pub fn to_hcy(c: QtColor) -> Hcy {
+pub(super) fn to_hcy(c: QtColor) -> Hcy {
     let (r, g, b, a) = linear(c);
     let y = luma_of(r, g, b);
     let p = maxd(maxd(r, g), b);
@@ -194,6 +171,10 @@ pub fn to_hcy(c: QtColor) -> Hcy {
     Hcy { h, c, y, a }
 }
 
+#[allow(
+    clippy::modulo_arithmetic,
+    reason = "a float remainder, which cannot panic"
+)]
 fn wrap(h: f64) -> f64 {
     let q = h % 1.0;
     if q < 0.0 {
@@ -206,7 +187,7 @@ fn wrap(h: f64) -> f64 {
 }
 
 /// An HCY colour back to a stored colour.
-pub fn from_hcy(x: Hcy) -> QtColor {
+pub(super) fn from_hcy(x: Hcy) -> QtColor {
     let hh = wrap(x.h);
     let cc = norm(x.c);
     let yy = norm(x.y);
@@ -256,7 +237,7 @@ pub fn from_hcy(x: Hcy) -> QtColor {
 }
 
 /// `KColorUtils::mix` on stored colours with a double bias.
-pub fn mix_q(a: QtColor, b: QtColor, t: f64) -> QtColor {
+pub(super) fn mix_q(a: QtColor, b: QtColor, t: f64) -> QtColor {
     if t.is_nan() || t <= 0.0 {
         return a;
     }
@@ -287,7 +268,7 @@ fn contrast_ratio(y1: f64, y2: f64) -> f64 {
 }
 
 /// `KColorUtils::tint` on stored colours with a double amount.
-pub fn tint_q(a: QtColor, b: QtColor, k: f64) -> QtColor {
+pub(super) fn tint_q(a: QtColor, b: QtColor, k: f64) -> QtColor {
     if k.is_nan() || k <= 0.0 {
         return a;
     }
@@ -317,119 +298,9 @@ pub fn tint_q(a: QtColor, b: QtColor, k: f64) -> QtColor {
 }
 
 /// `KColorUtils::shade` on a stored colour with double offsets.
-pub fn shade_q(c: QtColor, ky: f64, kc: f64) -> QtColor {
+pub(super) fn shade_q(c: QtColor, ky: f64, kc: f64) -> QtColor {
     let mut x = to_hcy(c);
     x.y = norm(x.y + ky);
     x.c = norm(x.c + kc);
     from_hcy(x)
-}
-
-/// Test-table reading shared by the function files.
-#[cfg(test)]
-pub mod table {
-    use super::Rgba;
-
-    /// A parsed vector table: its column names and its rows with their 1-based line numbers.
-    pub struct Table<'a> {
-        /// Column names.
-        pub columns: Vec<&'a str>,
-        /// `(line, cells)` per data row.
-        pub rows: Vec<(usize, Vec<&'a str>)>,
-    }
-
-    impl<'a> Table<'a> {
-        /// Parses the text: `# ` lines are comments, the first other line is the header.
-        pub fn parse(text: &'a str) -> Option<Self> {
-            let mut lines = text
-                .lines()
-                .enumerate()
-                .filter(|(_, l)| !l.starts_with("# ") && *l != "#" && !l.trim().is_empty());
-            let (_, header) = lines.next()?;
-            let columns = header.split('\t').collect();
-            let rows = lines
-                .map(|(i, l)| (i.saturating_add(1), l.split('\t').collect()))
-                .collect();
-            Some(Self { columns, rows })
-        }
-
-        /// The cell of a row under a column name.
-        pub fn cell<'r>(&self, row: &'r [&'a str], name: &str) -> Option<&'a str> {
-            let i = self.columns.iter().position(|c| *c == name)?;
-            row.get(i).copied()
-        }
-    }
-
-    /// A colour cell: `#rrggbb`, `#rrggbbaa` or `srgb(r, g, b, a)`.
-    pub fn colour(s: &str) -> Option<Rgba> {
-        if let Some(hex) = s.strip_prefix('#') {
-            let byte = |i: usize| {
-                let end = i.checked_add(2)?;
-                let v = u8::from_str_radix(hex.get(i..end)?, 16).ok()?;
-                Some((f64::from(v) / 255.0) as f32)
-            };
-            let alpha = match hex.len() {
-                6 => 1.0,
-                8 => byte(6)?,
-                _ => return None,
-            };
-            Some([byte(0)?, byte(2)?, byte(4)?, alpha])
-        } else {
-            let inner = s.strip_prefix("srgb(")?.strip_suffix(')')?;
-            let mut it = inner.split(',').map(|p| p.trim().parse::<f32>().ok());
-            let c = [it.next()??, it.next()??, it.next()??, it.next()??];
-            if it.next().is_some() {
-                return None;
-            }
-            Some(c)
-        }
-    }
-
-    /// A number cell.
-    pub fn number(s: &str) -> Option<f32> {
-        s.parse().ok()
-    }
-
-    /// A boolean cell.
-    pub fn boolean(s: &str) -> Option<bool> {
-        match s {
-            "true" => Some(true),
-            "false" => Some(false),
-            _ => None,
-        }
-    }
-
-    /// Runs `f` on every row, compares its result with the `result` column exactly (bit for bit
-    /// per channel) and returns one message per failing row.
-    pub fn check<F>(text: &str, f: F) -> (usize, Vec<String>)
-    where
-        F: Fn(&Table<'_>, &[&str]) -> Option<Rgba>,
-    {
-        let Some(table) = Table::parse(text) else {
-            return (0, vec!["table does not parse".to_string()]);
-        };
-        let mut failures = Vec::new();
-        for (line, row) in &table.rows {
-            let expected = table.cell(row, "result").and_then(colour);
-            match (f(&table, row), expected) {
-                (Some(got), Some(want)) => {
-                    let same = got
-                        .iter()
-                        .zip(want.iter())
-                        .all(|(g, w)| g.to_bits() == w.to_bits());
-                    if !same {
-                        let worst = got
-                            .iter()
-                            .zip(want.iter())
-                            .map(|(g, w)| ((g - w) * 255.0).abs())
-                            .fold(0.0_f32, f32::max);
-                        failures.push(format!(
-                            "line {line}: got {got:?}, want {want:?} (max diff {worst:e} on 0-255)"
-                        ));
-                    }
-                }
-                _ => failures.push(format!("line {line}: row does not parse")),
-            }
-        }
-        (table.rows.len(), failures)
-    }
 }

@@ -1,10 +1,6 @@
 //! `kirigami_tint`: Kirigami's `ColorUtils::tintWithAlpha`, a straight-alpha source-over tint.
 
-#[allow(dead_code)]
-#[path = "kde_color_common.rs"]
-mod kde_color_common;
-
-use kde_color_common::{enter, from_rgbd, mind, read, Rgba};
+use super::kde_color_common::{Rgba, enter, from_rgbd, mind, read};
 
 /// Tints the target colour `c` with `tint` at the tint's alpha times `alpha`, as Kirigami's
 /// `ColorUtils::tintWithAlpha` does: the red, green and blue channels are blended straight (not
@@ -29,23 +25,4 @@ pub fn kirigami_tint(c: Rgba, tint: Rgba, alpha: f32) -> Rgba {
         blend(tb, cb),
         ta + ia * f64::from(ca),
     ))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::kde_color_common::table::{check, colour, number};
-    use super::kirigami_tint;
-
-    #[test]
-    fn vectors() {
-        let (total, failures) = check(include_str!("../../vectors/kirigami_tint.tsv"), |t, row| {
-            Some(kirigami_tint(
-                colour(t.cell(row, "c")?)?,
-                colour(t.cell(row, "tint")?)?,
-                number(t.cell(row, "alpha")?)?,
-            ))
-        });
-        assert!(total > 0, "no rows");
-        assert!(failures.is_empty(), "{} of {total} rows fail:\n{}", failures.len(), failures.join("\n"));
-    }
 }
