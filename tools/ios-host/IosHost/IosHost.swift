@@ -17,7 +17,8 @@
 // (`changesSelectionAsPrimaryAction`, not selected); selected (the same,
 // `isSelected = true`); selected_highlighted (both); focused (a focus update to
 // the system column's specimen is requested, and whether UIKit focused it is
-// recorded). A specimen lists the states it can take. The backdrops: the
+// recorded). A specimen lists the states it can take. `set=campaign` draws
+// the campaign set instead (campaignSpecimens). The backdrops: the
 // system background, opaque black and opaque white, all else equal, for a
 // per-pixel solve of the layer's colour and alpha (tools/ios-host/solve.swift);
 // a glass style has a second page over a known pattern, with a column of the
@@ -191,6 +192,10 @@ enum ButtonState: String {
     case focused
     case pressed
     case pressedSelected = "pressed_selected"
+    /// A toggle on and disabled; a highlighted button disabled (the
+    /// campaign set).
+    case disabledSelected = "disabled_selected"
+    case disabledHighlighted = "disabled_highlighted"
 }
 
 let allStates: [ButtonState] = [.normal, .highlighted, .disabled, .toggleOff, .selected, .selectedHighlighted, .focused]
@@ -480,6 +485,129 @@ func specimens(quick: Bool) -> [Specimen] {
     }
 }
 
+/// The campaign set (`set=campaign`, run.sh's IOS_HOST_SET): the variants the
+/// base set draws at medium only, at the other sizes (the corner styles on
+/// filled, gray and glass, `dynamic` on the other glass styles at every size,
+/// an image, an image alone, a subtitle, the pop-up indicator, the primary
+/// role); every style and the system type disabled while selected and while
+/// highlighted; the system type with an image, an image alone and a menu; a
+/// pop-up button (its menu changing the selection) under each of two
+/// selections, at its own width and at fixed widths of 200 and 60 points.
+@MainActor
+func campaignSpecimens() -> [Specimen] {
+    let styles = configurationStyles()
+    let otherSizes = sizes.filter { $0.name != "medium" }
+    let disabledStates: [ButtonState] = [.disabledSelected, .disabledHighlighted]
+    var list: [Specimen] = []
+    for style in styles {
+        list.append(configured(style, variant: [("states", "disabled_combinations")], states: disabledStates))
+    }
+    list.append(
+        Specimen(
+            name: "system+states_disabled_combinations", kind: "button_type", style: "system",
+            variant: [("states", "disabled_combinations")], sizes: [noSize], states: disabledStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }))
+    let corners: [(String, UIButton.Configuration.CornerStyle)] = [
+        ("fixed", .fixed), ("dynamic", .dynamic), ("small", .small), ("medium", .medium), ("large", .large),
+        ("capsule", .capsule),
+    ]
+    for style in styles where ["filled", "gray", "glass"].contains(style.name) {
+        for (name, corner) in corners {
+            list.append(
+                configured(
+                    style, variant: [("corner_style", name)], sizes: otherSizes, configure: { $0.cornerStyle = corner }))
+        }
+    }
+    for style in styles where ["clear_glass", "prominent_glass", "prominent_clear_glass"].contains(style.name) {
+        list.append(
+            configured(style, variant: [("corner_style", "dynamic")], sizes: sizes, configure: { $0.cornerStyle = .dynamic }))
+    }
+    for style in styles {
+        list.append(
+            configured(
+                style, variant: [("image", "star")], sizes: otherSizes,
+                configure: { $0.image = UIImage(systemName: "star") }))
+        list.append(
+            configured(
+                style, variant: [("image", "star"), ("title", "none")], sizes: otherSizes,
+                configure: {
+                    $0.image = UIImage(systemName: "star")
+                    $0.title = nil
+                }))
+        list.append(
+            configured(
+                style, variant: [("subtitle", "Subtitle")], sizes: otherSizes, configure: { $0.subtitle = "Subtitle" }))
+        list.append(configured(style, variant: [("role", "primary")], sizes: otherSizes, adjust: { $0.role = .primary }))
+    }
+    let menu = UIMenu(children: [UIAction(title: "Item") { _ in }])
+    let popups = styles.filter { ["filled", "gray", "plain", "glass"].contains($0.name) }
+    for style in popups {
+        list.append(
+            configured(
+                style, variant: [("menu", "primary_action"), ("indicator", "popup")], sizes: otherSizes,
+                states: untoggledStates, configure: { $0.indicator = .popup },
+                adjust: {
+                    $0.menu = menu
+                    $0.showsMenuAsPrimaryAction = true
+                }))
+    }
+    list += [
+        Specimen(
+            name: "system+image_star", kind: "button_type", style: "system", variant: [("image", "star")],
+            sizes: [noSize], states: allStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                button.setImage(UIImage(systemName: "star"), for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }),
+        Specimen(
+            name: "system+image_star+title_none", kind: "button_type", style: "system",
+            variant: [("image", "star"), ("title", "none")], sizes: [noSize], states: allStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setImage(UIImage(systemName: "star"), for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }),
+        Specimen(
+            name: "system+menu_primary_action", kind: "button_type", style: "system",
+            variant: [("menu", "primary_action")], sizes: [noSize], states: untoggledStates,
+            make: { _ in
+                let button = UIButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                button.menu = menu
+                button.showsMenuAsPrimaryAction = true
+                return Sample(view: button, control: button, button: button)
+            }),
+    ]
+    let selections: [(String, Int)] = [("first", 0), ("second", 1)]
+    let widths: [(String, CGFloat?)] = [("own", nil), ("wide", 200), ("narrow", 60)]
+    for style in popups {
+        for (selectionName, selected) in selections {
+            for (widthName, width) in widths {
+                list.append(
+                    configured(
+                        style, variant: [("pop_up", "selected_\(selectionName)"), ("width", widthName)],
+                        states: untoggledStates,
+                        adjust: { button in
+                            button.menu = UIMenu(children: [
+                                UIAction(title: "One", state: selected == 0 ? .on : .off) { _ in },
+                                UIAction(title: "Two longer", state: selected == 1 ? .on : .off) { _ in },
+                            ])
+                            button.showsMenuAsPrimaryAction = true
+                            button.changesSelectionAsPrimaryAction = true
+                            if let width { button.widthAnchor.constraint(equalToConstant: width).isActive = true }
+                        }))
+            }
+        }
+    }
+    return list
+}
+
 typealias Slot = (state: ButtonState, backdrop: Backdrop)
 
 /// The cells of the states (rows) over the backdrops (columns).
@@ -713,6 +841,7 @@ final class HostViewController: UIViewController {
     private let pressMode: Bool
     private let focusMode: Bool
     private let quick: Bool
+    private let specimenSet: String
     private let colorNames: [String]
     private let pages: [Page]
     private let run: String
@@ -762,6 +891,8 @@ final class HostViewController: UIViewController {
         pressMode = press
         focusMode = focus
         quick = quickRun
+        let set = arguments.first { $0.hasPrefix("set=") }.map { String($0.dropFirst("set=".count)) } ?? "base"
+        specimenSet = set
         colorNames = arguments.first { $0.hasPrefix("colors=") }.map {
             $0.dropFirst("colors=".count).split(separator: ",").map(String.init)
         } ?? []
@@ -769,7 +900,7 @@ final class HostViewController: UIViewController {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         out = documents.appendingPathComponent(runName, isDirectory: true)
         var pages: [Page] = []
-        let list = specimens(quick: quickRun)
+        let list = set == "campaign" ? campaignSpecimens() : specimens(quick: quickRun)
         for appearance in appearances {
             for specimen in list {
                 // A glass style's shadow and its press's halo reach far past
@@ -1010,6 +1141,14 @@ final class HostViewController: UIViewController {
             button.changesSelectionAsPrimaryAction = true
             button.isSelected = true
             button.isHighlighted = true
+        case .disabledSelected:
+            guard let button = sample.button else { return false }
+            button.changesSelectionAsPrimaryAction = true
+            button.isSelected = true
+            button.isEnabled = false
+        case .disabledHighlighted:
+            control.isHighlighted = true
+            control.isEnabled = false
         }
         return true
     }
@@ -1822,10 +1961,13 @@ final class HostViewController: UIViewController {
         func value(_ key: String) -> String { quoted(environment[key] ?? "absent") }
         func plist(_ key: String) -> String { quoted((info[key] as? String) ?? "absent") }
         let styles = configurationStyles().map { quoted($0.name) }.joined(separator: ", ")
-        let names = specimens(quick: quick).map { quoted($0.name) }.joined(separator: ", ")
+        let names = (specimenSet == "campaign" ? campaignSpecimens() : specimens(quick: quick)).map {
+            quoted($0.name)
+        }.joined(separator: ", ")
         return """
             [environment]
             mode = \(quoted(pressMode ? "press" : focusMode ? "focus" : "render"))
+            specimen_set = \(quoted(specimenSet))
             quick = \(quick)
             simulator_runtime_version = \(value("SIMULATOR_RUNTIME_VERSION"))
             simulator_runtime_build = \(value("SIMULATOR_RUNTIME_BUILD_VERSION"))

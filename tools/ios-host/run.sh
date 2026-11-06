@@ -18,7 +18,18 @@
 # render (run<N>), press (press<N>), focus (focus1, on the iPad) and measure
 # (measure<N>, twice, after the press pass: the app's measure mode,
 # tools/ios-host/IosHost/Measure.swift, given IOS_HOST_MEASURE, its own
-# comma-separated list of passes, default roles,fonts,symbols). Writes into $1:
+# comma-separated list of passes, default roles,fonts,symbols). IOS_HOST_SET
+# (base, the default, or campaign) is the render pass's specimen set
+# (IosHost.swift, campaignSpecimens). IOS_HOST_DEVICE (iphone, the default, or
+# ipad) is the simulator every pass but focus runs on: the newest "iPhone <N>
+# Pro", or the last "iPad Pro" the runtime lists. IOS_HOST_SETTINGS (a
+# comma-separated list, default none) is set on that simulator after its boot,
+# before the passes: increase_contrast (`simctl ui increase_contrast`),
+# content_size=<category> (`simctl ui content_size`), bold_text and
+# button_shapes (com.apple.Accessibility's EnhancedTextLegibilityEnabled and
+# ButtonShapesEnabled, written with `simctl spawn defaults`; the app's index
+# records what UIAccessibility then reports, [motion] in run<N>/index.toml,
+# [environment] in measure<N>/index.toml). Writes into $1:
 #   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once), measure<N>/
 #                 the app's draw/ (not measure), screen/ and pages/ PNGs,
 #                 index.toml;
@@ -60,6 +71,10 @@ build="${RUNNER_TEMP:-/tmp}/ios-host-build"
 note "quick: $quick"
 note "passes: $passes"
 has measure && note "measure passes: $measure"
+specimen_set=${IOS_HOST_SET:-base}
+device=${IOS_HOST_DEVICE:-iphone}
+settings=${IOS_HOST_SETTINGS:-}
+note "specimen set: $specimen_set; device: $device; settings: ${settings:-none}"
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 uikit="$sdk/System/Library/Frameworks/UIKit.framework/Headers"
@@ -138,7 +153,7 @@ if [ $status -ne 0 ] || [ -z "$colors" ]; then exit 1; fi
 
 xcrun simctl list -j runtimes >"$out/runtimes.json"
 sdk_version=$(xcrun --sdk iphonesimulator --show-sdk-version)
-choice=$(python3 -I - "$out/runtimes.json" "$sdk_version" <<'EOF'
+choice=$(python3 -I - "$out/runtimes.json" "$sdk_version" "$device" <<'EOF'
 import json, re, sys
 major = sys.argv[2].split(".")[0]
 runtimes = [r for r in json.load(open(sys.argv[1]))["runtimes"]
@@ -147,6 +162,8 @@ runtime = max(runtimes, key=lambda r: tuple(int(p) for p in r["version"].split("
 pro = [(int(m.group(1)), t) for t in runtime.get("supportedDeviceTypes", [])
        if (m := re.fullmatch(r"iPhone (\d+) Pro", t["name"]))]
 device = max(pro, key=lambda p: p[0])[1]
+if sys.argv[3] == "ipad":
+    device = [t for t in runtime.get("supportedDeviceTypes", []) if t["name"].startswith("iPad Pro")][-1]
 print("\t".join([runtime["identifier"], runtime["version"], runtime["buildversion"],
                  device["identifier"], device["name"]]))
 EOF
@@ -183,6 +200,16 @@ xcrun simctl install "$udid" "$app"
 status=$?
 note "simctl install: exit $status"
 if [ $status -ne 0 ]; then xcrun simctl delete "$udid"; exit 1; fi
+for setting in ${settings//,/ }; do
+  case "$setting" in
+    increase_contrast) xcrun simctl ui "$udid" increase_contrast enabled ;;
+    content_size=*) xcrun simctl ui "$udid" content_size "${setting#content_size=}" ;;
+    bold_text) xcrun simctl spawn "$udid" defaults write com.apple.Accessibility EnhancedTextLegibilityEnabled -bool YES ;;
+    button_shapes) xcrun simctl spawn "$udid" defaults write com.apple.Accessibility ButtonShapesEnabled -bool YES ;;
+    *) false ;;
+  esac
+  note "setting $setting: exit $?"
+done
 # The first screenshots after a boot can take over a minute (macos-26):
 # one is taken before the runs.
 shot=$(date +%s)
@@ -256,7 +283,8 @@ quick_argument=()
 for run in 1 2; do
   has render || break
   xcrun simctl launch --terminate-running-process --stdout="$out/run$run-stdout.log" \
-    --stderr="$out/run$run-stderr.log" "$udid" "$bundle" "run$run" "colors=$colors" ${quick_argument[@]+"${quick_argument[@]}"}
+    --stderr="$out/run$run-stderr.log" "$udid" "$bundle" "run$run" "colors=$colors" "set=$specimen_set" \
+    ${quick_argument[@]+"${quick_argument[@]}"}
   status=$?
   note "simctl launch run $run: exit $status"
   if [ $status -ne 0 ]; then failed=1; continue; fi

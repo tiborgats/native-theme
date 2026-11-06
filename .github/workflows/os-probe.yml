@@ -37,6 +37,18 @@ on:
         description: "The ios-host job's measure passes (run.sh's IOS_HOST_MEASURE: roles, fonts, symbols), comma-separated"
         required: false
         default: "roles,fonts,symbols"
+      ios_host_set:
+        description: "The ios-host job's render specimen set (run.sh's IOS_HOST_SET: base or campaign)"
+        required: false
+        default: "base"
+      ios_host_device:
+        description: "The ios-host job's simulator (run.sh's IOS_HOST_DEVICE: iphone or ipad)"
+        required: false
+        default: "iphone"
+      ios_host_settings:
+        description: "The ios-host job's simulator settings (run.sh's IOS_HOST_SETTINGS: increase_contrast, bold_text, button_shapes, content_size=<category>), comma-separated; empty sets none"
+        required: false
+        default: ""
       kde_accent_pairs:
         description: "The kde-accent job's pairs file (scripts/measure_kde_accent.sh's pairs.tsv); the default is the KDE facts' accent run"
         required: false
@@ -939,6 +951,9 @@ jobs:
         env:
           IOS_HOST_PASSES: ${{ inputs.ios_host_passes }}
           IOS_HOST_MEASURE: ${{ inputs.ios_host_measure }}
+          IOS_HOST_SET: ${{ inputs.ios_host_set }}
+          IOS_HOST_DEVICE: ${{ inputs.ios_host_device }}
+          IOS_HOST_SETTINGS: ${{ inputs.ios_host_settings }}
         run: bash tools/ios-host/run.sh ios-host-out
       - name: Upload the renders
         if: always() && runner.os == 'macOS'
