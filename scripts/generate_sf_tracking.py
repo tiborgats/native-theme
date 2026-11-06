@@ -176,7 +176,7 @@ def rustfmt(code: str) -> str:
 
 
 def vectors_file(found: dict) -> str:
-    out = ["# function: sf_tracking", "# route: published", f"# source: {SOURCE}", "# generations: macos-tahoe",
+    out = ["# function: sf_tracking", "# route: published", f"# source: {SOURCE}", "# generations: macos-tahoe, ios-26",
            "# inputs: font_size:font_size design:enum<TrackingDesign> font_dpi:number", "# outputs: tracking:length",
            f"# written by scripts/generate_sf_tracking.py from {SOURCE}'s {FILE}; do not edit.",
            f"# Every row of the three tables (SF Pro: {MACOS}; SF Pro Rounded and New York: the tabs",

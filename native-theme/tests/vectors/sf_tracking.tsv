@@ -1,7 +1,7 @@
 # function: sf_tracking
 # route: published
 # source: hig-typography@2026-02-09
-# generations: macos-tahoe
+# generations: macos-tahoe, ios-26
 # inputs: font_size:font_size design:enum<TrackingDesign> font_dpi:number
 # outputs: tracking:length
 # written by scripts/generate_sf_tracking.py from hig-typography@2026-02-09's typography.json; do not edit.
