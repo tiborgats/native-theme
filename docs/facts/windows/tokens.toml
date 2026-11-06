@@ -2621,6 +2621,14 @@ key = "token.icons.sizes.panel"
 pending = "U516"
 rows = []
 
+# the further icon contexts (S4.5's keyed map): WinUI states its icon sizes per control (AppBarButtonContentHeight,
+# above), while Win32's shell names more image-list sizes (SHGetImageList's extra-large and jumbo lists); which of
+# them windows-11's keyed contexts hold, if any, waits with the other contexts: U681 (M1b round 2, the mop-up lane)
+[[fact]]
+key = "token.icons.sizes.keyed"
+pending = "U681"
+rows = []
+
 [[fact]]
 key = "token.icons.sizes.toolbar.fill"
 pending = "U516"

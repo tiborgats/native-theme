@@ -15549,10 +15549,11 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 # every toggle form's border colour by DefaultEffects and width by FastSpatial (ToggleButton.kt:182, :1722-1751; MAT-B12,
 # ADD-A125): the filled, elevated and tonal forms state no default border, so the stroke stays absent there and the
 # transitions time a border an application layer gives them.
+# The rest fact holds with no condition, the preset's base: the expressive rest fact and the menu buttons' facts
+# after it replace it wherever they hold (every menu set and every expressive combination; M1b round 2).
 
 [[fact]]
 key = "button.body.transitions"
-when = { not_variants = ["menu"], not_conditions = ["flavor:expressive"] }
 value = [{ properties = ["state_layer"], kind = "interpolate", duration_ms = 15, delay_ms = 0, timing = "linear", engine = "compose_animatable" }, { properties = ["shadow"], kind = "interpolate", duration_ms = 150, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["pressed", "focus_visible"] }, { properties = ["shadow"], kind = "interpolate", duration_ms = 120, delay_ms = 0, timing = { cubic_bezier = [0.4, 0, 0.6, 1] }, engine = "compose_animatable", from = ["hover"] }]
 rows = ["MAT-B13", "MAT-X7", "MAT-X9"]
 
