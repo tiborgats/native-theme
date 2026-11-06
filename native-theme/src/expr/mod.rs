@@ -473,11 +473,12 @@ impl Func {
         Func::ALL.into_iter().find(|func| func.name() == name)
     }
 
-    /// The tokens a call of the function with the arguments `args` reads
-    /// itself, listed as its operands (S2.2): `kde_effects`' group's
-    /// ([`kde_group_tokens`]; both groups' where its `group` is no
-    /// literal), `kde_selection_inactive`'s
-    /// `token.kde.inactive_change_selection_color`; none for any other.
+    /// The tokens, inputs and scheme a call of the function with the
+    /// arguments `args` reads itself, listed as its operands (S2.2):
+    /// `kde_effects`' group's ([`kde_group_tokens`]; both groups' where its
+    /// `group` is no literal), `kde_selection_inactive`'s
+    /// `token.kde.inactive_change_selection_color`, `m3_role`'s
+    /// ([`m3_role_operands`]); none for any other.
     pub(crate) fn token_operands(self, args: &[Expr]) -> &'static [Ref] {
         let groups = KDE_EFFECT_FIELDS.len().saturating_mul(2).saturating_add(1);
         match self {
@@ -489,9 +490,27 @@ impl Func {
                 _ => kde_tokens(0, groups),
             },
             Func::KdeSelectionInactive => kde_selection_tokens(),
+            Func::M3Role => m3_role_operands(),
             _ => &[],
         }
     }
+}
+
+/// What `m3_role` reads itself (S2.2), in this order: the seed
+/// `input.accent`, `token.material.variant`, `.spec_version` and
+/// `.contrast_level`, and the scheme of the colours being resolved.
+pub(crate) fn m3_role_operands() -> &'static [Ref] {
+    static OPERANDS: LazyLock<[Ref; 5]> = LazyLock::new(|| {
+        let material = |field: Key| Ref::Token(vec![key!("material"), field]);
+        [
+            Ref::Input(vec![key!("accent")]),
+            material(key!("variant")),
+            material(key!("spec_version")),
+            material(key!("contrast_level")),
+            Ref::Scheme,
+        ]
+    });
+    OPERANDS.as_slice()
 }
 
 /// `KdeEffects`' fields as `token.kde.<group>.<field>` names them, in the
@@ -717,6 +736,35 @@ mod tests {
             ["token.kde.inactive_change_selection_color"]
         );
         assert!(call("kcu_mix(#000000, #ffffff, 0.5)").is_empty());
+    }
+
+    /// `m3_role` lists the seed, `token.material`'s three fields and the
+    /// scheme as its operands (S2.2), whatever role it names.
+    #[test]
+    fn m3_role_operands_name_its_reads() {
+        let Expr::Call(func, args) = Expr::parse("m3_role(@primary)").unwrap() else {
+            panic!("a call");
+        };
+        let named: Vec<String> = func
+            .token_operands(&args)
+            .iter()
+            .map(Ref::to_string)
+            .collect();
+        assert_eq!(
+            named,
+            [
+                "input.accent",
+                "token.material.variant",
+                "token.material.spec_version",
+                "token.material.contrast_level",
+                "scheme"
+            ]
+        );
+        let fields: Vec<&str> = <crate::tokens::MaterialScheme as crate::blocks::Table>::FIELDS
+            .iter()
+            .map(|field| field.path)
+            .collect();
+        assert_eq!(fields, ["variant", "spec_version", "contrast_level"]);
     }
 
     #[test]

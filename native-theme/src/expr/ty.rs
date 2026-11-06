@@ -1598,7 +1598,6 @@ mod tests {
         // Arguments that type: the call reaches the platform function, not
         // implemented yet.
         for (text, ty, func) in [
-            ("m3_role(@primary)", Ty::Color, Func::M3Role),
             ("uifm_scaled(4px, caption2)", Ty::Length, Func::UifmScaled),
             ("uifm_scaled(4px, @body)", Ty::Length, Func::UifmScaled),
             (
@@ -1960,6 +1959,118 @@ mod tests {
         ] {
             assert!(seen.contains(&name), "no KDE fact calls {name}");
         }
+    }
+
+    /// The Material facts' `m3_role` calls (`docs/facts/material`) type
+    /// over the model's references, as a `material-3` preset states them,
+    /// each to a colour, and evaluate over synthetic operands to an opaque
+    /// colour, `m3_role` reading the seed, `token.material` and the scheme
+    /// itself. The keyed roles and the spec version are the preset's to
+    /// declare: declared here with the roles the calls name and the facts'
+    /// version.
+    #[test]
+    fn material_facts_calls_type() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts/material");
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|e| e == "toml"))
+            .collect();
+        files.sort();
+        let mut calls_of: Vec<(String, String)> = Vec::new();
+        for file in &files {
+            let text = std::fs::read_to_string(file).unwrap();
+            let facts: toml::Table = toml::from_str(&text).unwrap();
+            let Some(toml::Value::Array(facts)) = facts.get("fact") else {
+                continue;
+            };
+            let mut values = Vec::new();
+            for fact in facts {
+                if let Some(value) = fact.get("value") {
+                    value_strings(value, &mut values);
+                }
+            }
+            for value in values {
+                if let Some(text) = value
+                    .strip_prefix('=')
+                    .filter(|text| calls(text, "m3_role"))
+                {
+                    calls_of.push((file.display().to_string(), text.trim().to_owned()));
+                }
+            }
+        }
+        let roles: Vec<Key> = calls_of
+            .iter()
+            .filter_map(|(_, text)| match Expr::parse(text).ok()? {
+                Expr::Call(Func::M3Role, args) => match args.first()? {
+                    Expr::Lit(Literal::Name(Name::Key(role))) => Some(role.clone()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        assert_eq!(roles.len(), calls_of.len(), "every call names a keyed role");
+        let decl = crate::declare::Declarations {
+            color_roles: roles,
+            spec_versions: vec![key!("spec_2021")],
+            ..Default::default()
+        };
+        let env = crate::validate::type_env(&decl, crate::validate::TypeTarget::Roles);
+
+        /// The synthetic operands, the spec version the declared one and the
+        /// scheme the one given.
+        struct Material<'t>(Synthetic<'t>, Scheme);
+        impl crate::expr::Env for Material<'_> {
+            fn get(&self, reference: &Ref) -> crate::expr::Val {
+                match reference {
+                    Ref::Scheme => crate::expr::Val::Name(Name::Variant(
+                        Key::new(<Scheme as crate::toml::read::Named>::name(&self.1)).unwrap(),
+                    )),
+                    _ if reference.to_string() == "token.material.spec_version" => {
+                        crate::expr::Val::Name(Name::Key(key!("spec_2021")))
+                    }
+                    _ => self.0.get(reference),
+                }
+            }
+
+            fn font_size(&self, size: crate::units::FontSize) -> crate::units::Px {
+                self.0.font_size(size)
+            }
+
+            fn font_dpi(&self) -> Option<f32> {
+                self.0.font_dpi()
+            }
+        }
+
+        for (file, text) in &calls_of {
+            let at = format!("{file}: {text}");
+            let expr = Expr::parse(text).unwrap_or_else(|e| panic!("{at}: {e}"));
+            let typed = expr
+                .check(&FieldType::new(Ty::Color, Bound::Unbounded), &env)
+                .unwrap_or_else(|e| panic!("{at}: {e}"));
+            assert_eq!(typed.ty(), &Ty::Color, "{at}");
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let value = typed.eval(&Material(Synthetic(&env), scheme));
+                assert!(
+                    matches!(&value, crate::expr::Val::Color(c)
+                        if [c.r, c.g, c.b].iter().all(|x| x.is_finite()) && c.a == 1.0),
+                    "{at}, {scheme:?}: {value:?}"
+                );
+            }
+        }
+        assert_eq!(calls_of.len(), 49, "the Material facts' m3_role calls");
+    }
+
+    #[test]
+    fn m3_role_is_implemented() {
+        assert_eq!(typed("m3_role(@primary)", Ty::Color), Ty::Color);
+        assert_eq!(
+            refused("m3_role(@primary, @primary)", Ty::Color),
+            TypeError::Arity {
+                func: Func::M3Role,
+                found: 2
+            }
+        );
     }
 
     #[test]

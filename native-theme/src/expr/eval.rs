@@ -3,14 +3,18 @@
 
 use super::arith;
 use super::ty::{Bound, Node, Ty, TypedExpr};
-use super::{Func, KDE_EFFECT_FIELDS, Name, Ref, kde_group_tokens, kde_selection_tokens};
+use super::{
+    Func, KDE_EFFECT_FIELDS, Name, Ref, kde_group_tokens, kde_selection_tokens, m3_role_operands,
+};
 use crate::blocks::paint::{BlendMode, ResolvedPaint, ResolvedPaintKind, ResolvedPaintLayer};
 use crate::color::Color;
 use crate::platform::kde_effects::KdeGroupEffects;
 use crate::platform::kde_shade::KdeShadeRole;
 use crate::platform::sf_tracking::TrackingDesign;
 use crate::selector::Scheme;
-use crate::tokens::{KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect};
+use crate::tokens::{
+    KdeColorEffect, KdeContrastEffect, KdeGroup, KdeIntensityEffect, MaterialVariant,
+};
 use crate::toml::read::Named;
 use crate::units::{Deg, FontSize, Ms, Px};
 
@@ -114,6 +118,9 @@ pub(super) enum Platform {
     KirigamiLerp,
     /// `kirigami_tint(c, tint, alpha)`.
     KirigamiTint,
+    /// `m3_role(role)`, which reads the seed, `token.material` and the
+    /// scheme itself.
+    M3Role,
     /// `sf_tracking(font_size, design)`, which reads the font DPI itself.
     SfTracking,
 }
@@ -133,6 +140,7 @@ impl Platform {
             Func::KdeShade => Some(Platform::KdeShade),
             Func::KirigamiLerp => Some(Platform::KirigamiLerp),
             Func::KirigamiTint => Some(Platform::KirigamiTint),
+            Func::M3Role => Some(Platform::M3Role),
             Func::SfTracking => Some(Platform::SfTracking),
             _ => None,
         }
@@ -253,6 +261,9 @@ impl Platform {
                 );
                 Val::Color(lerped.map_or_else(transparent, from_channels))
             }
+            Platform::M3Role => {
+                Val::Color(m3_role(arg(0), env).map_or_else(transparent, from_channels))
+            }
             Platform::SfTracking => {
                 let (size, design) = (arg(0), arg(1));
                 let design = match design {
@@ -272,6 +283,41 @@ impl Platform {
             }
         }
     }
+}
+
+/// `m3_role`'s value for its `role` operand, from the operands it reads
+/// itself ([`m3_role_operands`]): `None`, which evaluates to transparent as
+/// S2.2's *Totality* has it, for a role, variant or version the port does
+/// not implement and for an operand of no value of its type (validation
+/// refuses an absent one, S12).
+fn m3_role(role: Option<Val>, env: &dyn Env) -> Option<[f32; 4]> {
+    let Some(Val::Name(Name::Key(role))) = role else {
+        return None;
+    };
+    let operand = |index: usize| {
+        m3_role_operands()
+            .get(index)
+            .map(|reference| env.get(reference))
+    };
+    let Some(Val::Color(accent)) = operand(0) else {
+        return None;
+    };
+    let variant: MaterialVariant = named(operand(1))?;
+    let Some(Val::Name(Name::Key(spec_version))) = operand(2) else {
+        return None;
+    };
+    let Some(Val::Number(contrast_level)) = operand(3) else {
+        return None;
+    };
+    let scheme: Scheme = named(operand(4))?;
+    crate::platform::m3_role::m3_role(
+        role.as_str(),
+        channels(accent),
+        variant,
+        spec_version.as_str(),
+        contrast_level,
+        scheme,
+    )
 }
 
 /// The variant an enum operand names; `None` for another value.
