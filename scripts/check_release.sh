@@ -87,6 +87,7 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  and the 0.8.0 plan's data checks (generate_widgets.py --check,
                  generate_preset.py <id> --check per bundled preset,
                  generate_sf_tracking.py --check,
+                 generate_dynamic_type.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py,
                  generate_platform_facts.py --check, check_spec_names.py,
@@ -622,6 +623,7 @@ if [[ $QUICK_MODE ]]; then
             python3 scripts/generate_preset.py "$preset" --check
     done
     run_check "sf_tracking's tables are the HIG snapshot's" python3 scripts/generate_sf_tracking.py --check
+    run_check "dynamic_type's table is the HIG snapshot's" python3 scripts/generate_dynamic_type.py --check
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
     run_check "the facts are well formed" python3 scripts/check_facts.py
     run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
@@ -1407,6 +1409,17 @@ else
 fi
 run_check "data documents: sf_tracking generator self-test" \
     python3 scripts/generate_sf_tracking.py --self-test
+# dynamic_type's table and vector table (specification S9.4): generated from
+# the HIG snapshot in the source cache, which --commit mode may lack, and
+# checked against the iOS host's evidence.
+if [[ $COMMIT_MODE && ! -d "${NATIVE_THEME_SOURCES:-/run/media/tibi/work/cargo-build/native-theme-sources}" ]]; then
+    print_skipped "dynamic_type's table (no source cache)"
+else
+    run_check "data documents: dynamic_type's table is the HIG snapshot's" \
+        python3 scripts/generate_dynamic_type.py --check
+fi
+run_check "data documents: dynamic_type generator self-test" \
+    python3 scripts/generate_dynamic_type.py --self-test
 # The platform functions and placement strategies (specification S2.2, S13):
 # each one the facts or a bundled preset calls is implemented and has its
 # vector table, and each table has its test.

@@ -2016,3 +2016,185 @@ fn value_block_nothing_states_is_none() {
         "a block of `None` leaves, which no `Value` resolves to"
     );
 }
+
+/// A keyed style `y` the label's text references under the text scaling
+/// `kind` at 72 DPI, `fields` its patch's TOML lines (its font size, role,
+/// line height and letter spacing).
+fn scaled_style(kind: &str, fields: &str) -> [String; 2] {
+    [
+        format!(
+            "{}[tokens.text]\nscaling = \"{kind}\"\nfont_dpi = 72\n\
+             [widgets.button.label]\ntext = \"= token.text.keyed.y\"\n",
+            text_style("tokens.text.keyed.y")
+        ),
+        format!("[tokens.text.keyed.y]\n{fields}"),
+    ]
+}
+
+/// The label's text under the stand-in `factor` and `category`.
+fn scaled_text(
+    style: &[String; 2],
+    factor: f32,
+    category: Option<crate::resolve::ContentSizeCategory>,
+) -> crate::blocks::text::ResolvedTextStyle {
+    let mut state = ReaderState::new(Scheme::Light, factor);
+    state.content_size_category = category;
+    label_text_by(&[BASE, &style[0], &style[1]], state)
+}
+
+/// S9.4's `AndroidNonLinear`: a font size and a spacing go through
+/// Android's curve, each as a value of its own; a line height in px above
+/// Compose's threshold (1.05) keeps its proportion to its font's change,
+/// at or below it goes through the curve itself. Synthetic sizes.
+#[test]
+fn android_non_linear_scales_by_the_curve() {
+    use crate::platform::android_non_linear::{android_non_linear, android_non_linear_inverse};
+    use crate::units::Length;
+
+    let style = scaled_style(
+        "android_non_linear",
+        "font.size_px = 14\nline_height_px = 20\nletter_spacing_px = -0.5",
+    );
+    let text = scaled_text(&style, 1.3, None);
+    let size = android_non_linear(14.0, 1.3);
+    assert_eq!(text.font.size, Some(Px(size)));
+    // 1.3's table maps 14 sp to 18.8 dp: large sizes scale less.
+    assert_eq!(size, 18.8);
+    assert_eq!(
+        text.line_height,
+        Some(Length::Px(
+            20.0 / android_non_linear_inverse(size, 1.3) * size
+        ))
+    );
+    assert_eq!(text.letter_spacing, Some(Px(android_non_linear(-0.5, 1.3))));
+
+    let text = scaled_text(&style, 1.04, None);
+    assert_eq!(text.font.size, Some(Px(android_non_linear(14.0, 1.04))));
+    assert_eq!(
+        text.line_height,
+        Some(Length::Px(android_non_linear(20.0, 1.04)))
+    );
+
+    // Below the curves a size scales by the factor, at one not at all.
+    let text = scaled_text(&style, 1.0, None);
+    assert_eq!(text.font.size, Some(Px(14.0)));
+    assert_eq!(text.line_height, Some(Length::Px(20.0)));
+}
+
+/// S9.4: under `AndroidNonLinear` a font size stated over another style's
+/// reads it unscaled and goes through the curve once, as its own size; a
+/// font size read as an operand is its style's, through the curve.
+#[test]
+fn android_non_linear_scales_derived_sizes_once() {
+    use crate::platform::android_non_linear::android_non_linear;
+
+    let style = scaled_style(
+        "android_non_linear",
+        "font.size = \"= mul(token.text.roles.body.font.size, 2)\"",
+    );
+    let text = scaled_text(&style, 1.5, None);
+    // The body slot's 9pt at the fixture's 72 DPI, doubled, then the curve.
+    assert_eq!(text.font.size, Some(Px(android_non_linear(18.0, 1.5))));
+
+    let theme = resolved(&[BASE, &style[0], &style[1]], 1.5);
+    assert_eq!(
+        operand(&theme, "token.text.keyed.y.font.size"),
+        Some(Val::FontSize(Px(android_non_linear(18.0, 1.5))))
+    );
+}
+
+/// S9.4's `DynamicType`: at the default category the preset's sizes hold;
+/// at another, a size scales by its `scaling_role`'s row of Apple's table
+/// (`body`'s where it states none), the row's own leading becomes the
+/// category's, and the factor is not read.
+#[test]
+fn dynamic_type_scales_by_the_table() {
+    use crate::platform::dynamic_type::dynamic_type;
+    use crate::resolve::ContentSizeCategory;
+    use crate::units::Length;
+
+    let xl = Some(ContentSizeCategory::ExtraLarge);
+    // The table's body row at the default category, 17 pt on 22 pt.
+    let style = scaled_style(
+        "dynamic_type",
+        "font.size_px = 17\nline_height_px = 22\nscaling_role = \"body\"",
+    );
+    let text = scaled_text(&style, 2.0, None);
+    assert_eq!(text.font.size, Some(Px(17.0)));
+    assert_eq!(text.line_height, Some(Length::Px(22.0)));
+    let row = dynamic_type(
+        crate::blocks::text::TextRole::Body,
+        ContentSizeCategory::ExtraLarge,
+        72.0,
+    )
+    .expect("the body row");
+    let text = scaled_text(&style, 2.0, xl);
+    assert_eq!(text.font.size, Some(Px(row.font_size)));
+    assert_eq!(text.line_height, Some(Length::Px(row.line_height)));
+    // No role: `body`'s row.
+    let none = scaled_style("dynamic_type", "font.size_px = 17\nline_height_px = 22");
+    assert_eq!(
+        scaled_text(&none, 1.0, xl).font.size,
+        Some(Px(row.font_size))
+    );
+
+    // Another size follows the row's ratio; a line height other than the
+    // row's has no rule yet, nor has a spacing in px; one on `font_size`
+    // follows the scaled font.
+    let custom = scaled_style(
+        "dynamic_type",
+        "font.size_px = 34\nline_height_px = 23\nletter_spacing_px = 1\nscaling_role = \"body\"",
+    );
+    let text = scaled_text(&custom, 1.0, xl);
+    assert_eq!(text.font.size, Some(Px(34.0 * row.font_size / 17.0)));
+    assert_eq!(text.line_height, None);
+    assert_eq!(text.letter_spacing, None);
+    let following = scaled_style(
+        "dynamic_type",
+        "font.size_px = 17\nscaling_role = \"body\"\n\
+         line_height = \"= mul(font_size, 1.5)\"\nletter_spacing = \"= mul(font_size, 0.5)\"",
+    );
+    let text = scaled_text(&following, 1.0, xl);
+    assert_eq!(text.line_height, Some(Length::Px(row.font_size * 1.5)));
+    assert_eq!(text.letter_spacing, Some(Px(row.font_size * 0.5)));
+
+    // A role without a row scales nowhere but at the default category.
+    let display = scaled_style(
+        "dynamic_type",
+        "font.size_px = 17\nline_height_px = 22\nscaling_role = \"display_large\"",
+    );
+    assert_eq!(scaled_text(&display, 1.0, xl).font.size, None);
+    assert_eq!(scaled_text(&display, 1.0, None).font.size, Some(Px(17.0)));
+}
+
+/// S9.4: under `DynamicType` a size stated over another style's is scaled
+/// once, by its own style's row; read as an operand, a style's size and line
+/// height follow their style's row.
+#[test]
+fn dynamic_type_scales_by_the_own_row() {
+    use crate::blocks::text::TextRole;
+    use crate::platform::dynamic_type::dynamic_type;
+    use crate::resolve::ContentSizeCategory;
+
+    let category = ContentSizeCategory::AccessibilityMedium;
+    let row = |role| dynamic_type(role, category, 72.0).expect("a row");
+    let default = |role| dynamic_type(role, ContentSizeCategory::Large, 72.0).expect("a row");
+    let style = scaled_style(
+        "dynamic_type",
+        "font.size = \"= add(token.text.roles.body.font.size, 19px)\"\n\
+         line_height_px = 34\nscaling_role = \"title1\"",
+    );
+    let mut state = ReaderState::new(Scheme::Light, 1.0);
+    state.content_size_category = Some(category);
+    let theme = resolved_by(&[BASE, &style[0], &style[1]], state);
+    let size = 28.0 * row(TextRole::Title1).font_size / default(TextRole::Title1).font_size;
+    // The body slot's 9pt and 19px: 28px, title 1's size at the default.
+    assert_eq!(
+        operand(&theme, "token.text.keyed.y.font.size"),
+        Some(Val::FontSize(Px(size)))
+    );
+    assert_eq!(
+        operand(&theme, "token.text.keyed.y.line_height"),
+        Some(Val::FontSize(Px(row(TextRole::Title1).line_height)))
+    );
+}

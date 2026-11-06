@@ -285,7 +285,7 @@ data documents' checks (the four on the registry, the platform-facts
 sections, `docs/todo.md` and the presets' definition comments, the first
 three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
 triage, the pinned sources and their cache, the facts and their citations,
-the generated widgets, presets, `sf_tracking` tables and
+the generated widgets, presets, `sf_tracking` and `dynamic_type` tables and
 `docs/platform-facts.md`, the function vectors, the trace lines and the
 pinned line citations), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the

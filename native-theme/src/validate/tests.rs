@@ -4694,7 +4694,6 @@ kinds! {
     TextRoleOrder { .. },
     ShapeOverCorners,
     EllipseCorners,
-    TextScalingNotImplemented,
     EntryCreatedUnset { .. },
     ElementSizeInLayout { .. },
     LeftToPreset { .. },
@@ -5415,14 +5414,6 @@ fn layer_error_every_variant_triggers() {
             ),
         ),
         (
-            V::TextScalingNotImplemented,
-            over(
-                &toml("[tokens.text]\nscaling = \"dynamic_type\""),
-                &Declarations::default(),
-                &[],
-            ),
-        ),
-        (
             V::RecencyTooSmall,
             preset_problems("[declare.widget.button]\nrecency = { glow = [\"hover\"] }"),
         ),
@@ -5575,18 +5566,17 @@ fn refusal_unused_flag_in_a_latest_term() {
     );
 }
 
-/// S9.4's non-linear curves are refused until they are implemented; linear
-/// scaling is not.
+/// S9.4: every text scaling kind is implemented, so validation refuses
+/// none.
 #[test]
-fn refusal_text_scaling_not_implemented() {
-    for kind in ["android_non_linear", "dynamic_type"] {
+fn every_text_scaling_kind_accepted() {
+    for kind in ["linear", "android_non_linear", "dynamic_type"] {
         assert_eq!(
             bare(&toml(&format!("[tokens.text]\nscaling = \"{kind}\""))),
-            ["tokens.text.scaling: a text scaling whose curve is not implemented yet"],
+            NONE,
             "{kind}"
         );
     }
-    assert_eq!(bare(&toml("[tokens.text]\nscaling = \"linear\"")), NONE);
 }
 
 /// Task 11's review: a keyed flag in a token's transition `from` is one the

@@ -82,7 +82,7 @@ plan's data checks, each with its `--self-test` (the plan's ledger,
 `scripts/check_sources.py`, and their cache, `scripts/update_sources.sh
 --verify`; the facts' form and citations, `scripts/check_facts.py` and
 `scripts/check_fact_citations.py`; the generated widget declarations,
-bundled presets, `sf_tracking` tables and `docs/platform-facts.md`, each
+bundled presets, `sf_tracking` and `dynamic_type` tables and `docs/platform-facts.md`, each
 generator's `--check`; the platform functions' vector tables,
 `scripts/check_function_vectors.py`; the enabled units' trace lines,
 `scripts/check_facts_trace.py --enabled`; the line citations of today's

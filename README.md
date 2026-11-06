@@ -112,9 +112,10 @@ Licensed under any of
 
 at your option.
 
-Two files are not: `native-theme/src/ripple.rs` ports code of the Android
-Open Source Project and `native-theme/src/platform/m3_role.rs` code of Google's
-material-color-utilities; both stay under the
+Three files are not: `native-theme/src/ripple.rs` and
+`native-theme/src/platform/android_non_linear.rs` port code of the Android Open
+Source Project and `native-theme/src/platform/m3_role.rs` code of Google's
+material-color-utilities; all three stay under the
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) with
 their copyright notices, whichever licence you pick for the rest. The
 `native-theme` crate's licence is therefore

@@ -598,9 +598,6 @@ pub enum ProblemKind {
     /// all four, or with a `Continuous` curve, under some combination (S2.4,
     /// S12, ADD-A124).
     EllipseCorners,
-    /// A text scaling kind whose curve is not implemented yet (S9.4:
-    /// `AndroidNonLinear`, `DynamicType`), refused until it is.
-    TextScalingNotImplemented,
     /// A `Concentric` corner whose two insets can differ, until the value
     /// phase states UIKit's rule for them (S2.4, S12, ADD-A122).
     UnequalInsets {
@@ -860,9 +857,6 @@ impl fmt::Display for ProblemKind {
                     f,
                     "`follow_part` on `{corner}`, whose sides' offsets can differ"
                 )
-            }
-            ProblemKind::TextScalingNotImplemented => {
-                f.write_str("a text scaling whose curve is not implemented yet")
             }
             ProblemKind::EllipseCorners => f.write_str(
                 "`ellipse` on a corner, not on all four corners with a `circular` curve",
