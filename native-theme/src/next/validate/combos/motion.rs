@@ -268,25 +268,13 @@ impl Stack<'_> {
     }
 
     /// Whether the delay the source `number` states at `place` is no delay
-    /// under a world where the source applies: a stated zero, or a value
-    /// that resolves to zero there.
-    fn no_delay_stated(
-        &self,
-        worlds: &[World],
-        number: usize,
-        source: &Source,
-        place: &str,
-    ) -> bool {
+    /// under `world`: a stated zero, or a value that resolves to zero there.
+    fn no_delay_stated(&self, world: &World, number: usize, source: &Source, place: &str) -> bool {
         if zero_at(source, place).is_some() {
             return true;
         }
-        let Some(found) = stated_at(number, source, place) else {
-            return false;
-        };
-        matches!(found.got, Got::Expr(_))
-            && worlds
-                .iter()
-                .any(|world| self.applies(world, source) && self.undelayed(world, found))
+        stated_at(number, source, place)
+            .is_some_and(|found| matches!(found.got, Got::Expr(_)) && self.undelayed(world, found))
     }
 
     /// The Breeze test of a found engine, as its source states it.
@@ -620,16 +608,17 @@ impl Checks<'_, '_> {
     }
 
     /// A stated zero with no delay that overrides nothing (S2.7, S12;
-    /// ADD-A126; one with a delay holds its start): no other transition of
-    /// one of its groups (a group timing the stroke's widths or the glyph's
-    /// path also overriding the stroke's or the glyph's whole transition),
-    /// earlier in its own list, in the base or in an earlier rule of its
-    /// part, can apply under some world where its own source does; for a
+    /// ADD-A126; one with a delay holds its start): refused where, under
+    /// some world where its own source applies and its delay is none, no
+    /// other transition of one of its groups (a group timing the stroke's
+    /// widths or the glyph's path also overriding the stroke's or the
+    /// glyph's whole transition), earlier in its own list, in the base or in
+    /// an earlier rule of its part, applies; for a
     /// `FocusIndicator.transition`, no transition of the indicator below
     /// it. Where none can, no transition is stated. A delay is read by its
-    /// value, a reference followed: one resolving to zero under a world
-    /// where the source applies is no delay. The states the transitions
-    /// apply from are not read: any two can apply from one update's flags.
+    /// value, a reference followed, in that world: one resolving to zero
+    /// there is no delay. The states the transitions apply from are not
+    /// read: any two can apply from one update's flags.
     pub(super) fn zeros(&mut self) {
         let stack = self.stack;
         for (number, source) in stack.sources.iter().enumerate() {
@@ -640,38 +629,47 @@ impl Checks<'_, '_> {
                 let Some(duration) = zero_at(source, &below(&item.place, "duration")) else {
                     continue;
                 };
-                let seeds = vec![Seed::Field(source.target, item.place.clone(), true)];
                 let delay = below(&item.place, "delay");
-                if !stack.no_delay_stated(&stack.worlds(seeds), number, source, &delay) {
+                if zero_at(source, &delay).is_none()
+                    && stated_at(number, source, &delay)
+                        .is_none_or(|found| !matches!(found.got, Got::Expr(_)))
+                {
                     continue;
                 }
                 let overriding: Vec<PropertyGroup> =
                     groups(item).into_iter().flat_map(overridden).collect();
-                let overrides = stack.of(source.target).any(|(other_number, other)| {
-                    other
-                        .items
-                        .iter()
-                        .enumerate()
-                        .any(|(other_index, other_item)| {
-                            let earlier = other.pos < source.pos
-                                || (other_number == number && other_index < index);
-                            let shared = groups(other_item)
-                                .iter()
-                                .any(|group| overriding.contains(group));
-                            if !earlier || !shared || !other_item.place.starts_with("transitions[")
-                            {
-                                return false;
-                            }
-                            let seeds = vec![
-                                Seed::Field(source.target, item.place.clone(), true),
-                                Seed::Field(source.target, other_item.place.clone(), true),
-                            ];
-                            stack.worlds(seeds).iter().any(|world| {
-                                stack.applies(world, source) && stack.applies(world, other)
+                let overriding = &overriding;
+                let earlier: Vec<(&Source, &str)> = stack
+                    .of(source.target)
+                    .flat_map(|(other_number, other)| {
+                        other
+                            .items
+                            .iter()
+                            .enumerate()
+                            .filter(move |(other_index, other_item)| {
+                                let earlier = other.pos < source.pos
+                                    || (other_number == number && *other_index < index);
+                                earlier
+                                    && other_item.place.starts_with("transitions[")
+                                    && groups(other_item)
+                                        .iter()
+                                        .any(|group| overriding.contains(group))
                             })
-                        })
+                            .map(move |(_, other_item)| (other, other_item.place.as_str()))
+                    })
+                    .collect();
+                let mut seeds = vec![Seed::Field(source.target, item.place.clone(), true)];
+                seeds.extend(
+                    earlier
+                        .iter()
+                        .map(|(_, place)| Seed::Field(source.target, (*place).to_owned(), true)),
+                );
+                let refused = stack.worlds(seeds).iter().any(|world| {
+                    stack.applies(world, source)
+                        && stack.no_delay_stated(world, number, source, &delay)
+                        && !earlier.iter().any(|(other, _)| stack.applies(world, other))
                 });
-                if !overrides {
+                if refused {
                     self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
                 }
             }
@@ -680,9 +678,10 @@ impl Checks<'_, '_> {
     }
 
     /// [`Checks::zeros`] for a focus indicator's transition stated a zero
-    /// by `source`, the source `number`: refused where no transition of the
-    /// indicator lies below it under any world where the source applies. A
-    /// delay the source leaves unstated is the one below it.
+    /// by `source`, the source `number`: refused where, under some world
+    /// where the source applies and its delay is none, no transition of the
+    /// indicator lies below it. A delay the source leaves unstated is the
+    /// one below it.
     fn focus_zero(&mut self, number: usize, source: &Source) {
         let stack = self.stack;
         let place = "focus.transition";
@@ -695,27 +694,22 @@ impl Checks<'_, '_> {
             bases_only: false,
         };
         let seeds = vec![Seed::Field(source.target, place.to_owned(), true)];
-        let worlds = stack.worlds(seeds);
-        let mut delayed = false;
-        let mut overrides = false;
-        for world in worlds.iter() {
-            if !stack.applies(world, source) {
-                continue;
-            }
-            if !states_at(source, &delay) {
-                delayed |= stack
+        let refused = stack.worlds(seeds).iter().any(|world| {
+            let no_delay = if states_at(source, &delay) {
+                stack.no_delay_stated(world, number, source, &delay)
+            } else {
+                stack
                     .value_at(world, source.target, &delay, below_it, 0)
                     .iter()
-                    .any(|found| !stack.undelayed(world, *found));
-            }
-            overrides |= stack
+                    .all(|found| stack.undelayed(world, *found))
+            };
+            let overrides = stack
                 .value_at(world, source.target, &below(place, "engine"), below_it, 0)
                 .iter()
                 .any(|found| !matches!(found.got, Got::Absent | Got::Auto));
-        }
-        let zero_delay =
-            !states_at(source, &delay) || stack.no_delay_stated(&worlds, number, source, &delay);
-        if zero_delay && !delayed && !overrides && worlds.iter().any(|w| stack.applies(w, source)) {
+            stack.applies(world, source) && no_delay && !overrides
+        });
+        if refused {
             self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
         }
     }

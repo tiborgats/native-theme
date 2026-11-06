@@ -1554,6 +1554,57 @@ fn overrides_nothing_reads_the_delay_by_its_value() {
     assert_eq!(found(&focus("50"), &quick), NONE);
 }
 
+/// A stated zero's delay and what it overrides are read in one world
+/// (S2.7, S12): a delay resolving to zero under a world where no earlier
+/// transition applies refuses the zero there, though the delay is another
+/// elsewhere and an earlier transition applies elsewhere; where the earlier
+/// one applies in every world of a zero delay, it is accepted.
+#[test]
+fn overrides_nothing_reads_delay_and_override_per_world() {
+    let quick = declare("durations = [\"quick\"]");
+    let refusal = "a stated zero with no delay that overrides no transition";
+    let layer = |earlier: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = 50\n[widgets.button.body]\ntransitions = \
+             []\n[[rules]]\nwhen = {{ conditions = [\"scheme:dark\"] }}\ntarget = \"tokens\"\n\
+             set = {{ motion.durations.quick_ms = 0 }}\n[[rules]]\nwhen = {{ conditions = \
+             [\"scheme:{earlier}\"] }}\ntarget = \"button.body\"\nset = {{ transitions = [{{ \
+             properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, \
+             timing = \"linear\", engine = \"gtk_css\" }}] }}\n[[rules]]\nwhen = {{ states = \
+             [\"hover\"] }}\ntarget = \"button.body\"\nset = {{ transitions = [{{ properties = \
+             [\"fill\"], kind = \"interpolate\", duration_ms = 0, delay_ms = \"= \
+             token.motion.durations.quick\", timing = \"absent\", engine = \"gtk_css\" }}] }}"
+        ))
+    };
+    assert_eq!(
+        found(&layer("light"), &quick),
+        [format!(
+            "rules[2].set.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(found(&layer("dark"), &quick), NONE);
+    let focus = |earlier: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = 50\n[[rules]]\nwhen = {{ conditions = \
+             [\"scheme:dark\"] }}\ntarget = \"tokens\"\nset = {{ motion.durations.quick_ms = 0 \
+             }}\n[[rules]]\nwhen = {{ conditions = [\"scheme:{earlier}\"] }}\ntarget = \
+             \"button.body\"\nset = {{ focus.transition = {{ properties = [], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \
+             \"gtk_css\", from = \"none\" }} }}\n[[rules]]\nwhen = {{ states = [\"hover\"] }}\n\
+             target = \"button.body\"\nset = {{ focus.transition = {{ properties = [], kind = \
+             \"interpolate\", duration_ms = 0, delay_ms = \"= token.motion.durations.quick\", \
+             timing = \"absent\", engine = \"gtk_css\", from = \"none\" }} }}"
+        ))
+    };
+    assert_eq!(
+        found(&focus("light"), &quick),
+        [format!(
+            "rules[2].set.focus.transition.duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(found(&focus("dark"), &quick), NONE);
+}
+
 /// A Breeze test's flags and conditions are read as a `when` writes them
 /// and walked as a rule's are: a keyed flag the widget declares, a keyed
 /// condition the preset declares (S2.7, S10, S11, S12; ADD-A126).
