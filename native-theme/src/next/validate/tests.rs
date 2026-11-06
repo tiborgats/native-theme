@@ -829,6 +829,66 @@ fn refusal_timing_not_computed() {
           does not compute"
         ]
     );
+    // The lists of the engines the presets have not used yet: one timing
+    // computed, one not, each. `GtkSwitch` and `ComposeHeld` take no part
+    // of the catalogue yet: the timing's refusal shows beside that one.
+    let breeze = "{ breeze = { any = [\"hover\"], none = [], conditions = [] } }";
+    let ease = "{ cubic_bezier = [0.25, 0.1, 0.25, 1] }";
+    let not_computed = |engine: &str| {
+        format!(
+            "widgets.button.body.transitions[0].timing: a timing the `{engine}` engine does not \
+             compute"
+        )
+    };
+    let place = |engine: &str, takes: &str| {
+        format!("widgets.button.body.transitions[0].engine: the `{engine}` engine takes {takes}")
+    };
+    assert_eq!(
+        bare(&timed(
+            "100",
+            "{ platform = { qt = \"out_cubic\" } }",
+            breeze
+        )),
+        NONE
+    );
+    assert_eq!(bare(&timed("100", ease, breeze)), [not_computed("breeze")]);
+    assert_eq!(
+        bare(&timed(
+            "100",
+            "{ steps = { count = 3, jump = \"jump_end\" } }",
+            "\"win_ui\""
+        )),
+        NONE
+    );
+    assert_eq!(
+        bare(&timed("100", spring, "\"win_ui\"")),
+        [not_computed("win_ui")]
+    );
+    let segment = place(
+        "compose_held",
+        "a segmented control's segment's `geometry` transition only",
+    );
+    assert_eq!(
+        bare(&timed("\"absent\"", spring, "\"compose_held\"")),
+        [segment.as_str()]
+    );
+    assert_eq!(
+        bare(&timed("100", "\"linear\"", "\"compose_held\"")),
+        [segment, not_computed("compose_held")]
+    );
+    let thumb = place(
+        "gtk_switch",
+        "the switch thumb's `geometry` transition only",
+    );
+    assert_eq!(bare(&timed("100", adw, "\"gtk_switch\"")), [thumb.as_str()]);
+    assert_eq!(
+        bare(&timed(
+            "100",
+            "{ platform = { adw = \"ease_in_cubic\" } }",
+            "\"gtk_switch\""
+        )),
+        [thumb, not_computed("gtk_switch")]
+    );
     // A tokens rule can change the referenced curve where the transition
     // applies.
     let ruled = toml(&format!(
@@ -933,6 +993,94 @@ fn refusal_engine_mismatch() {
             "{at}.kind: the `gtk_css` engine takes no `keyed` transition"
         )]
     );
+    let one = |kind: &str, duration: &str, delay: &str, timing: &str, engine: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = {kind}, \
+             duration_ms = {duration}, delay_ms = {delay}, timing = {timing}, engine = {engine} \
+             }}]"
+        ))
+    };
+    // `GtkSwitch` and `ComposeHeld` take no part of the catalogue yet: the
+    // checks of their other fields show beside that refusal.
+    let adw = "{ platform = { adw = \"ease_out_cubic\" } }";
+    let switch_takes = "the `gtk_switch` engine takes";
+    let thumb =
+        format!("{at}.engine: {switch_takes} the switch thumb's `geometry` transition only");
+    assert_eq!(
+        found(
+            &one("\"interpolate\"", "100", "0", adw, "\"gtk_switch\""),
+            &kinds
+        ),
+        [thumb.as_str()]
+    );
+    assert_eq!(
+        found(&one(keyed, "100", "10", adw, "\"gtk_switch\""), &kinds),
+        [
+            thumb,
+            format!("{at}.delay_ms: {switch_takes} no delay"),
+            format!("{at}.kind: {switch_takes} an `interpolate` transition only"),
+        ]
+    );
+    let segment = format!(
+        "{at}.engine: the `compose_held` engine takes a segmented control's segment's \
+         `geometry` transition only"
+    );
+    assert_eq!(
+        found(
+            &one(
+                "\"interpolate\"",
+                "\"absent\"",
+                "0",
+                spring,
+                "\"compose_held\""
+            ),
+            &kinds
+        ),
+        [segment.as_str()]
+    );
+    assert_eq!(
+        found(
+            &one(keyed, "\"absent\"", "0", spring, "\"compose_held\""),
+            &kinds
+        ),
+        [
+            segment,
+            format!("{at}.kind: the `compose_held` engine takes no `keyed` transition"),
+        ]
+    );
+    assert_eq!(
+        found(
+            &one("\"interpolate\"", "100", "0", "\"linear\"", "\"win_ui\""),
+            &kinds
+        ),
+        NONE
+    );
+    assert_eq!(
+        found(&one(keyed, "100", "0", "\"linear\"", "\"win_ui\""), &kinds),
+        [format!(
+            "{at}.kind: the `win_ui` engine takes no `keyed` transition"
+        )]
+    );
+    let tab_bar = "{ breeze_tab_bar = { any = [\"hover\"], none = [], conditions = [] } }";
+    assert_eq!(
+        found(
+            &one("\"interpolate\"", "100", "0", "\"linear\"", tab_bar),
+            &kinds
+        ),
+        NONE
+    );
+    let tab_bar_takes = "the `breeze_tab_bar` engine takes";
+    assert_eq!(
+        found(
+            &one(keyed, "\"absent\"", "10", "\"linear\"", tab_bar),
+            &kinds
+        ),
+        [
+            format!("{at}.duration_ms: {tab_bar_takes} a duration, on which its time runs"),
+            format!("{at}.delay_ms: {tab_bar_takes} no delay"),
+            format!("{at}.kind: {tab_bar_takes} an `interpolate` transition only"),
+        ]
+    );
 }
 
 /// A Breeze test holds somewhere and reads what the engine can (S2.7,
@@ -969,15 +1117,32 @@ fn refusal_breeze_test_invalid() {
         NONE
     );
     assert_eq!(bare(&breeze("0", "\"absent\"", empty)), NONE);
+    for (list, test) in [
+        ("any", "any = [\"hover\"], none = [], conditions = []"),
+        ("none", "any = [], none = [\"hover\"], conditions = []"),
+        (
+            "conditions",
+            "any = [], none = [], conditions = [\"window_inactive\"]",
+        ),
+    ] {
+        assert_eq!(
+            bare(&breeze("0", "\"absent\"", test)),
+            [format!(
+                "{at}.{list}: a Breeze test of a stated zero is empty: a zero reads none"
+            )]
+        );
+    }
+    let tab_bar = toml(&format!(
+        "[widgets.button.body]\ntransitions = [{fade}, {{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = {{ \
+         breeze_tab_bar = {{ {empty} }} }} }}]"
+    ));
     assert_eq!(
-        bare(&breeze(
-            "0",
-            "\"absent\"",
-            "any = [\"hover\"], none = [], conditions = []"
-        )),
-        [format!(
-            "{at}.any: a Breeze test of a stated zero is empty: a zero reads none"
-        )]
+        bare(&tab_bar),
+        [
+            "widgets.button.body.transitions[1].engine.breeze_tab_bar: a Breeze test names a flag \
+          in `any` or a condition: it holds nowhere"
+        ]
     );
     assert_eq!(
         bare(&breeze(
