@@ -3207,7 +3207,10 @@ mod tests {
     /// refuses at any combination it reaches, fails here until it has one;
     /// a refusal of the fixture's surroundings ([`surroundings`]) is not the
     /// value's. A map's key is one validation takes (an axis no field
-    /// routes). A path the model holds no field at is refused, naming it.
+    /// routes). A key the field cannot leave `absent` has no synthetic value
+    /// ([`synthetic_of`]) and is refused by name, the one such path today
+    /// `MaterialScheme.spec_version` (S4.8). A path the model holds no field
+    /// at is refused, naming it.
     #[test]
     fn synthetic_layers_state_every_listable_type() {
         let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
@@ -3232,6 +3235,7 @@ mod tests {
         }
         assert!(paths.len() > 500, "{}", paths.len());
         let mut failures = Vec::new();
+        let mut keys = Vec::new();
         for path in &paths {
             let spelled = ["", "_ms", "_px", "_deg", "_pt"]
                 .iter()
@@ -3244,6 +3248,10 @@ mod tests {
             let pending = [(spelled.clone(), vec!["U1".to_owned()])];
             let layers = match synthetic_layers(&pending, &Layer::default()) {
                 Ok(layers) => layers,
+                Err(why) if why.ends_with("the gate has no synthetic value of `Key`") => {
+                    keys.push(spelled);
+                    continue;
+                }
                 Err(why) => {
                     failures.push(why);
                     continue;
@@ -3275,6 +3283,7 @@ mod tests {
             }
         }
         assert_eq!(failures, Vec::<String>::new());
+        assert_eq!(keys, ["tokens.material.spec_version"]);
         let refused = synthetic_layers(
             &[("tokens.behavior.bogus_ms".to_owned(), vec!["U1".to_owned()])],
             &Layer::default(),

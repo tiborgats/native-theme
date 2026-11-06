@@ -53,8 +53,7 @@ pub(crate) struct Declarations {
     pub(crate) symbol_variants: Vec<Key>,
     /// The symbol scales (`IconStyle.scale`).
     pub(crate) symbol_scales: Vec<Key>,
-    /// The Material spec versions (`MaterialScheme.spec_version`); staged
-    /// with that field, so the reader refuses the key until its unit enters.
+    /// The Material spec versions (`MaterialScheme.spec_version`).
     pub(crate) spec_versions: Vec<Key>,
     /// The icon state effects.
     pub(crate) icon_state_effects: Vec<Key>,

@@ -946,7 +946,7 @@ fn combination_per_flavour_declarations() {
 /// an inactive input role to the preset (S9.1, S9.2, S14, S12). No preset
 /// is bundled yet, so the check runs here directly over a stack whose
 /// preset states the roles (M1b's `kde-breeze` and palettes exercise it
-/// through `Theme::apply_palette`).
+/// through `Theme::apply_palette`); the scheme's tint takes every key in.
 #[test]
 fn combination_mapping_palette() {
     use super::combos::mapping_palette;
@@ -1009,6 +1009,20 @@ fn combination_mapping_palette() {
     let port =
         format!("{partial}\n[inputs.\"kde_scheme.window.background_normal\"]\nlight = \"#000000\"");
     assert_eq!(problems(&port, &preset), NONE);
+    // Wherever the preset's scheme tints, every key of the set depends on
+    // the accent: the background too (S9.1); not where it is `none`.
+    let tinting = toml(&format!("{roles}\n[tokens.kde]\ntint_factor = 0.5"));
+    assert_eq!(
+        problems(&whole, &tinting),
+        ["colors.light.surfaces.window.background: \
+             `colors.light.surfaces.window.background` left to the preset's value under \
+             the palette"]
+    );
+    let untinted = toml(&format!("{roles}\n[tokens.kde]\ntint_factor = \"none\""));
+    assert_eq!(problems(&whole, &untinted), NONE);
+    let stated =
+        format!("{partial}\ndecoration_hover = \"#100004\"\nbackground = \"#100005\"\n{input}");
+    assert_eq!(problems(&stated, &tinting), NONE);
 }
 
 /// `part.corners.<c>` names a field the part lists (S12): a part with no

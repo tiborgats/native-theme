@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 87dbeb3126fa87c50a05eb6900be65fb95f1ff18f8927c0c3af43f5734331d4f
+# generated lines: sha256 c4eedde149e1336227dad24ef786640ca9a802d31ab7e94d9c6cf991224503a3
 
 [preset]
 id = "macos-tahoe"
@@ -3320,6 +3320,10 @@ animated_visuals = {}
 elevation = {}
 # docs/facts/macos/tokens.toml:40034
 size_classes = {}
+# docs/facts/macos/tokens.toml:41687
+kde = "absent"
+# docs/facts/macos/tokens.toml:41704
+material = "absent"
 
 [tokens.focus]
 # hand-written: begin bases tokens.focus

@@ -39,6 +39,7 @@ pub(crate) fn read_declarations(item: &Item, at: &str, cx: &mut Reader) -> Optio
             "presentation_events" => out.presentation_events = keys(cx),
             "symbol_variants" => out.symbol_variants = keys(cx),
             "symbol_scales" => out.symbol_scales = keys(cx),
+            "spec_versions" => out.spec_versions = keys(cx),
             "icon_state_effects" => out.icon_state_effects = keys(cx),
             "focus_kinds" => out.focus_kinds = keys(cx),
             "device_models" => out.device_models = keys(cx),

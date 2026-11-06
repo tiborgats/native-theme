@@ -3873,9 +3873,9 @@ pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
 /// a port converts to them, S14) at `palette` in the stack leaving an
 /// accent-dependent role (S9.1's list) or an inactive input role to a layer
 /// below it, under some combination, for a scheme it states (S9.2, S12,
-/// S14). Every other key of every declared set wherever
-/// `token.kde.tint_factor` can be `Some` enters with `token.kde` (M1b; the
-/// M1a design, decision 9).
+/// S14): wherever `token.kde.tint_factor` can be `Some` (conservatively, a
+/// value other than `none` under some combination), every key of every
+/// declared set (S9.1's tinting entries).
 pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem> {
     let mut problems = Vec::new();
     let Some(layer) = stack.layers.get(palette).map(|stacked| stacked.layer) else {
@@ -3901,6 +3901,16 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
     if port {
         return problems;
     }
+    let tint = "kde.tint_factor";
+    let tints = stack
+        .worlds(vec![Seed::Field(Target::Tokens, tint.to_owned(), false)])
+        .iter()
+        .any(|world| {
+            stack
+                .value_at(world, Target::Tokens, tint, Bound::ALL, 0)
+                .iter()
+                .any(|found| !matches!(found.got, Got::Absent | Got::Stated(Fact::Nothing)))
+        });
     let mut roles: Vec<String> = Vec::new();
     for set in &decl.surface_sets {
         use crate::inputs::KdeSchemeKey as K;
@@ -3912,6 +3922,7 @@ pub(super) fn mapping_palette(stack: &Stack<'_>, palette: usize) -> Vec<Problem>
             K::DecorationHover,
         ];
         match set {
+            _ if tints => keys = K::ALL.to_vec(),
             S::Selection => keys.extend([
                 K::BackgroundNormal,
                 K::BackgroundAlternate,

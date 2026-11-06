@@ -4,11 +4,10 @@
 //! `Behavior.scroll` and its `ScrollPhysics` and `ScrollDecay`, the wheel
 //! steps among them, are staged: they enter with the unit holding the
 //! `scroll_view` widget (S6.1). So are
-//! four of `Tokens`' fields, which the slice reads nowhere and its facts do
-//! not state (the M1a design, decision 9), their types already here: `kde`
-//! and `material` enter at M1b, `theme_change` with M3's tokens unit (S4's
-//! remaining groups and conditions), `pointer` with the first unit that
-//! reads it.
+//! two of `Tokens`' fields, which the slice reads nowhere and its facts do
+//! not state (the M1a design, decision 9), their types already here:
+//! `theme_change` with M3's tokens unit (S4's remaining groups and
+//! conditions), `pointer` with the first unit that reads it.
 //!
 //! The marks of what may be absent are S6.3's: the core's marks of these
 //! blocks' fields, and the catalogue's token table for the tokens no block
@@ -72,6 +71,14 @@ pub struct Tokens {
     /// names may be `Absent`.
     #[expect(clippy::type_complexity, reason = "S4's type, as the spec writes it")]
     pub params: Vec<(Key, Vec<(Key, Value<Scalar>)>)>,
+    /// KDE's colour effects and scheme options (S4.8): `kde-breeze`'s only,
+    /// absent on every other preset.
+    #[parts(block = "fields", may_be_absent)]
+    pub kde: Value<KdeTokens>,
+    /// Material's dynamic scheme (S4.8): `material-3`'s only, absent on every
+    /// other preset.
+    #[parts(block = "fields", may_be_absent)]
+    pub material: Value<MaterialScheme>,
 }
 
 /// The keyed scalar groups whose keys may be `Absent` (S4.6, S6.3):

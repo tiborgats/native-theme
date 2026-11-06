@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 ef37374a82136393aabdcd3fb054fe299572d449de134bdf398ae8ec83ce4ca9
+# generated lines: sha256 e6a84874a3ec2d82a9b85303097b74a053494b15e94274a169c6a60c8836fc29
 
 [preset]
 id = "adwaita"
@@ -2354,6 +2354,10 @@ touch.double_tap_slop_px = "absent"
 elevation = {}
 # docs/facts/gnome/tokens.toml:2280
 size_classes = {}
+# docs/facts/gnome/tokens.toml:7916
+kde = "absent"
+# docs/facts/gnome/tokens.toml:7933
+material = "absent"
 
 [tokens.text]
 # docs/facts/gnome/tokens.toml:2314
