@@ -1035,7 +1035,7 @@ fn states_table() -> Table {
 
 fn backdrops_text() -> String {
     format!(
-        "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and {GREY_BYTE} (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin ({} pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a {PATTERN_SIZE} x {PATTERN_SIZE} px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares {PATTERN_SQUARE} px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png)",
+        "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and {GREY_BYTE} (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin ({} pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a {PATTERN_SIZE} x {PATTERN_SIZE} px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares {PATTERN_SQUARE} px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png); and in the key mode the normal, pressed and disabled states are also drawn offscreen, the backdrop hidden: the content view with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps of its bounds at 1 and 2 pixels a point (<state>.renders, <state>-render-<1x|2x>.png; content_from_top_left_xywh places the content view in the window frame's points from its top left), so the buttons are drawn over transparency at a backing scale of 2 the runner's screen lacks; what an offscreen draw leaves out of a control (a layer AppKit composites only on screen) the 1x render's comparison with the capture's layer shows",
         BUTTON_MARGIN / 2.0
     )
 }
@@ -1309,6 +1309,11 @@ impl Pass<'_> {
                 "over_pattern",
                 self.pattern_shot(sheet, &dir, &rel),
             );
+            out::put_table(
+                &mut normal,
+                "renders",
+                self.renders(sheet, &dir, &rel, "normal"),
+            );
         }
         out::put_table(&mut t, "normal", normal);
         let normal_rgba = normal_shots.window;
@@ -1342,6 +1347,13 @@ impl Pass<'_> {
             false,
             None,
         );
+        if self.mode == Mode::Key {
+            out::put_table(
+                &mut pressed,
+                "renders",
+                self.renders(sheet, &dir, &rel, "pressed"),
+            );
+        }
         diffs(
             &mut pressed,
             "diff_from_normal",
@@ -1372,6 +1384,13 @@ impl Pass<'_> {
             false,
             None,
         );
+        if self.mode == Mode::Key {
+            out::put_table(
+                &mut disabled,
+                "renders",
+                self.renders(sheet, &dir, &rel, "disabled"),
+            );
+        }
         diffs(
             &mut disabled,
             "diff_from_normal",
@@ -1817,6 +1836,46 @@ impl Pass<'_> {
     }
 
     /// Display the window and pump the run loop `steps` steps.
+    /// The sheet's content view drawn offscreen (`cacheDisplayInRect:
+    /// toBitmapImageRep:`) at 1 and 2 pixels a point, the backdrop hidden,
+    /// to `<stem>-render-<scale>.png`: the buttons over transparency, at a
+    /// backing scale the runner's screen does not have.
+    fn renders(&self, sheet: &Sheet, dir: &Path, rel: &str, stem: &str) -> Table {
+        let mut t = Table::new();
+        sheet.show(Backdrop::Window);
+        let content = &sheet.content;
+        let bounds = content.bounds();
+        let frame = sheet.window.frame().size;
+        out::put(
+            &mut t,
+            "content_from_top_left_xywh",
+            rect(from_top_left(content, frame)),
+        );
+        out::put(
+            &mut t,
+            "content_isFlipped",
+            out::boolean(content.isFlipped()),
+        );
+        for (scale_name, scale) in [("1x", 1.0), ("2x", 2.0)] {
+            let file = format!("{stem}-render-{scale_name}.png");
+            let value = match super::bitmap_at_scale(bounds.size, scale) {
+                Ok(rep) => {
+                    content.cacheDisplayInRect_toBitmapImageRep(bounds, &rep);
+                    match ffi::png_data(&rep) {
+                        Ok(data) => match std::fs::write(dir.join(&file), data) {
+                            Ok(()) => out::text(format!("{rel}/{file}")),
+                            Err(e) => out::unavailable(format!("cannot write {file}: {e}")),
+                        },
+                        Err(reason) => out::unavailable(reason),
+                    }
+                }
+                Err(reason) => out::unavailable(reason),
+            };
+            out::put(&mut t, scale_name, value);
+        }
+        t
+    }
+
     /// The normal state captured once more over the patterned backdrop
     /// ([`pattern_color`]), to `normal-over-pattern.png`.
     fn pattern_shot(&self, sheet: &Sheet, dir: &Path, rel: &str) -> Value {
