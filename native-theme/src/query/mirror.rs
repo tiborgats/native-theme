@@ -11,7 +11,7 @@ use crate::blocks::focus::ResolvedFocusIndicator;
 use crate::blocks::icon::ResolvedIconStyle;
 use crate::blocks::motion::{
     EdgeSide, ResolvedKeyframe, ResolvedLoop, ResolvedPresentationKind, ResolvedPresentationStep,
-    ResolvedPresentationTransition, RevealOrigin,
+    ResolvedPresentationTransition, ResolvedTransition, ResolvedTransitionKind, RevealOrigin,
 };
 use crate::blocks::part_style::{ResolvedPartStyle, ResolvedPartStylePatch};
 use crate::blocks::transform::ResolvedTransform;
@@ -61,9 +61,23 @@ impl Mirror for ResolvedTransform {
 }
 
 impl Mirror for ResolvedFocusIndicator {
-    /// Its offsets, a `Sides`; its corners are physical.
+    /// Its offsets, a `Sides`, and its transition's keyframes; its corners
+    /// are physical.
     fn mirror(&mut self) {
         self.offset.mirror();
+        self.transition.mirror();
+    }
+}
+
+impl Mirror for ResolvedTransition {
+    /// A `Keyframes` transition's keyframes.
+    fn mirror(&mut self) {
+        match &mut self.kind {
+            ResolvedTransitionKind::Keyframes { keyframes } => keyframes.mirror(),
+            ResolvedTransitionKind::Interpolate
+            | ResolvedTransitionKind::FocusMove
+            | ResolvedTransitionKind::Keyed { .. } => {}
+        }
     }
 }
 
@@ -93,6 +107,7 @@ impl Mirror for ResolvedPartStyle {
         self.transform.mirror();
         self.focus.mirror();
         self.icon.mirror();
+        self.transitions.mirror();
     }
 }
 
@@ -103,6 +118,7 @@ impl Mirror for ResolvedPartStylePatch {
         self.transform.mirror();
         self.focus.mirror();
         self.icon.mirror();
+        self.transitions.mirror();
     }
 }
 

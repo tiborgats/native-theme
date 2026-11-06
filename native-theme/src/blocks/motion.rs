@@ -542,6 +542,14 @@ pub enum TransitionEngine {
     },
     /// `GtkSwitch`'s own slide of its thumb.
     GtkSwitch,
+    /// A CSS animation, as a browser runs it (W3C CSS Animations Level 1):
+    /// material-web's md-focus-ring's entrance. It runs a
+    /// [`TransitionKind::Keyframes`] transition, and only it (S12), once
+    /// from when the block or part it times becomes drawn, drawing the new
+    /// value during its delay; it ends at the end of its duration, or at
+    /// once where the block or part stops being drawn, and starts again from
+    /// its beginning when it is drawn again (S2.7).
+    CssAnimation,
 }
 
 /// [`TransitionEngine`] resolved (S6.1): its members, a
@@ -578,6 +586,8 @@ pub enum ResolvedEngine {
     WinUiAnimatedIcon(ResolvedAnimatedVisual),
     /// `GtkSwitch`'s own slide of its thumb.
     GtkSwitch,
+    /// A CSS animation, as a browser runs it.
+    CssAnimation,
 }
 
 /// The derive's name for [`TransitionEngine`]'s resolved type.
@@ -596,7 +606,8 @@ impl TransitionEngine {
             | TransitionEngine::ComposeHeld
             | TransitionEngine::WinUi
             | TransitionEngine::WinUiAnimatedIcon { .. }
-            | TransitionEngine::GtkSwitch => None,
+            | TransitionEngine::GtkSwitch
+            | TransitionEngine::CssAnimation => None,
         }
     }
 }
@@ -658,6 +669,18 @@ pub enum TransitionKind {
     Interpolate,
     /// The focus indicator travelling between elements.
     FocusMove,
+    /// The fields its keyframes state run through them, under
+    /// [`TransitionEngine::CssAnimation`] only (S12): at each fraction of the
+    /// duration the keyframes that state a field give its value, its new
+    /// value where none at 0 (or at 1) states it, the span after a keyframe
+    /// on that keyframe's `timing`, else the transition's; a field no
+    /// keyframe states takes its new value at once (S2.7).
+    Keyframes {
+        /// The keyframes, their `at` increasing within `0..=1`; none names a
+        /// part, each styling the part or block the transition times (S12).
+        #[parts(block = "fields")]
+        keyframes: Vec<Keyframe>,
+    },
     /// A platform's keyed transition (SF Symbols' content transitions and
     /// effects, WinUI's `AnimatedIcon` states), its parameters measured.
     Keyed {

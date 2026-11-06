@@ -1610,6 +1610,7 @@ fn transition_engine_spellings() {
         ("\"win_ui\"", TransitionEngine::WinUi),
         ("\"gtk_switch\"", TransitionEngine::GtkSwitch),
         ("\"compose_held\"", TransitionEngine::ComposeHeld),
+        ("\"css_animation\"", TransitionEngine::CssAnimation),
         (
             "{ win_ui_animated_icon = { visual = \"accept\" } }",
             TransitionEngine::WinUiAnimatedIcon {
@@ -1659,6 +1660,54 @@ fn transition_engine_spellings() {
             item(", engine = \"breeze_style\"")
         )),
         [format!("{at}.engine: unknown name \"breeze_style\"")]
+    );
+}
+
+/// A `Keyframes` transition's kind (S2.7, S11; ADD-A134): `{ keyframes = {
+/// keyframes = [ … ] } }`, each keyframe as a loop's, its `part` left out.
+#[test]
+fn spelling_keyframes_kind() {
+    use crate::blocks::motion::{Keyframe, TransitionKind};
+    let style = body_of(
+        "focus.transition = { properties = [], kind = { keyframes = { keyframes = [{ at = 0, \
+         timing = \"absent\", patch = { focus.width_px = 0 } }, { at = 0.25, timing = \
+         \"linear\", patch = { focus.width_px = 8 } }] } }, duration_ms = 600, delay_ms = 0, \
+         timing = \"linear\", engine = \"css_animation\", from = \"none\" }",
+    );
+    let Some(BlockPatch::Fields(focus)) = style.focus else {
+        panic!("fields");
+    };
+    let Some(BlockPatch::Fields(transition)) = focus.transition else {
+        panic!("fields: {:?}", focus.transition);
+    };
+    let Some(TransitionKind::Keyframes { keyframes }) = transition.kind else {
+        panic!("{:?}", transition.kind);
+    };
+    let width = |px: f32| PartStylePatch {
+        focus: Some(BlockPatch::Fields(
+            crate::blocks::focus::FocusIndicatorPatch {
+                width: Some(Value::Stated(Px(px))),
+                ..crate::blocks::focus::FocusIndicatorPatch::default()
+            },
+        )),
+        ..PartStylePatch::default()
+    };
+    assert_eq!(
+        keyframes,
+        [
+            Keyframe {
+                at: Fraction(0.0),
+                part: None,
+                timing: Value::Absent,
+                patch: width(0.0),
+            },
+            Keyframe {
+                at: Fraction(0.25),
+                part: None,
+                timing: Value::Stated(Timing::Linear),
+                patch: width(8.0),
+            },
+        ]
     );
 }
 

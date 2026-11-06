@@ -6,16 +6,17 @@ use std::rc::Rc;
 
 use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk, Walker};
 use super::{Context, LayerKind};
-use crate::blocks::Table;
 use crate::blocks::motion::{
     BreezeTest, Keyframe, PresentationKind, PropertyGroup, StepJump, Timing, Transition,
     TransitionEngine, TransitionKind,
 };
 use crate::blocks::outline::Radius;
+use crate::blocks::outline::StrokePatch;
 use crate::blocks::paint::{BlendMode, PaintKind, PaintPatch};
 use crate::blocks::part_style::PartStylePatch;
 use crate::blocks::shadow::Shadow;
 use crate::blocks::text::{AxisTag, AxisValue, FeatureTag};
+use crate::blocks::{BlockPatch, Table};
 use crate::declare::{
     DataName, DataOwner, Declarations, DefaultSize, FontMetric, ScalarUnit, WidgetDecl,
 };
@@ -1588,12 +1589,8 @@ impl<'a> Checker<'a> {
     /// the catalogue entry of the part it names lists, or of the part the
     /// loop is on where it names none (S2.7, S2.11).
     fn keyframes(&mut self, keyframes: &[Keyframe], path: &Path) {
-        let increasing = keyframes
-            .iter()
-            .zip(keyframes.iter().skip(1))
-            .all(|(earlier, later)| earlier.at.0 < later.at.0);
         let at = path.join("keyframes");
-        if !increasing {
+        if !increasing(keyframes) {
             self.problem(&at, ProblemKind::KeyframesNotIncreasing);
         }
         for (index, keyframe) in keyframes.iter().enumerate() {
@@ -1616,6 +1613,68 @@ impl<'a> Checker<'a> {
                     info,
                     &format!("{at}[{index}].patch"),
                 );
+            }
+        }
+    }
+
+    /// A `Keyframes` transition's keyframes (S2.7, S12; ADD-A134): at least
+    /// one, their `at` increasing, none naming a part, as each styles the
+    /// part or block the transition times, and each patch setting only
+    /// fields its part has; in a focus indicator's transition, which times
+    /// the indicator, a patch states `focus`'s fields alone. What a part's
+    /// transition's keyframes may state is [`Checker::keyframe_groups`]'.
+    fn transition_keyframes(&mut self, keyframes: &[Keyframe], path: &Path) {
+        let at = path.join("keyframes.keyframes");
+        if keyframes.is_empty() {
+            self.problem(&at, ProblemKind::NoKeyframe);
+        }
+        if !increasing(keyframes) {
+            self.problem(&at, ProblemKind::KeyframesNotIncreasing);
+        }
+        let focus = path.fields().rev().nth(1) == Some(("FocusIndicator", "transition"));
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            let keyframe_at = format!("{at}[{index}]");
+            if keyframe.part.is_some() {
+                let at = format!("{keyframe_at}.part");
+                self.problem(&at, ProblemKind::KeyframeNamesPart);
+            }
+            let patch_at = format!("{keyframe_at}.patch");
+            if focus {
+                for field in keyframe.patch.set_fields() {
+                    if field != "focus" {
+                        let at = join(&patch_at, field);
+                        self.problem(&at, ProblemKind::KeyframeOutsideGroups);
+                    }
+                }
+            }
+            if let Region::Part(widget, _, info, _) = self.region {
+                self.part_fields(&keyframe.patch, widget, info, &patch_at);
+            }
+        }
+    }
+
+    /// A part's `Keyframes` transition's keyframes state only fields its
+    /// groups time (S2.7, S12; ADD-A134; [`times`]); a focus indicator's
+    /// transition, which lists no group, is [`Checker::transition_keyframes`]'.
+    fn keyframe_groups(
+        &mut self,
+        properties: &[PropertyGroup],
+        kind: &TransitionKind,
+        path: &Path,
+    ) {
+        let TransitionKind::Keyframes { keyframes } = kind else {
+            return;
+        };
+        if path.last_field() == Some(("FocusIndicator", "transition")) {
+            return;
+        }
+        let at = path.join("kind.keyframes.keyframes");
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            for place in stated_places(&keyframe.patch) {
+                if !properties.iter().any(|group| times(*group, &place)) {
+                    let at = format!("{at}[{index}].patch.{place}");
+                    self.problem(&at, ProblemKind::KeyframeOutsideGroups);
+                }
             }
         }
     }
@@ -1719,7 +1778,8 @@ impl<'a> Checker<'a> {
             | TransitionEngine::ComposeHeld
             | TransitionEngine::WinUi
             | TransitionEngine::WinUiAnimatedIcon { .. }
-            | TransitionEngine::GtkSwitch => None,
+            | TransitionEngine::GtkSwitch
+            | TransitionEngine::CssAnimation => None,
         };
         let Some(transition) = whole else {
             return;
@@ -1867,6 +1927,7 @@ impl Visit for Checker<'_> {
                 self.from(transition.from.as_deref(), path);
                 self.state_layer(&transition.properties, path);
                 self.engine(&transition.engine, Some(transition), path);
+                self.keyframe_groups(&transition.properties, &transition.kind, path);
             }
             Node::StateFlag(flag) => match self.region {
                 Region::Part(widget, ..) | Region::Values(widget) => self.flag(widget, flag, &at),
@@ -1889,6 +1950,9 @@ impl Visit for Checker<'_> {
                 if let Some(engine) = &transition.engine {
                     self.engine(engine, None, path);
                 }
+                if let (Some(properties), Some(kind)) = (&transition.properties, &transition.kind) {
+                    self.keyframe_groups(properties, kind, path);
+                }
             }
             Node::TransitionKind(kind) => match kind {
                 TransitionKind::Keyed { key, params } => {
@@ -1896,6 +1960,9 @@ impl Visit for Checker<'_> {
                     self.keyed_params(path, kinds, "transition_kinds", key, params);
                 }
                 TransitionKind::FocusMove => self.problem(&at, ProblemKind::FocusMoveNotRun),
+                TransitionKind::Keyframes { keyframes } => {
+                    self.transition_keyframes(keyframes, path);
+                }
                 TransitionKind::Interpolate => {}
             },
             Node::PresentationKind(kind) => {
@@ -3069,12 +3136,14 @@ pub(super) enum Read {
 /// `Interpolate` one with a duration and no delay; `GtkSwitch` the switch
 /// thumb's `Geometry` transition alone, `Interpolate`, with no delay;
 /// `ComposeHeld` a segmented control's segment's `Geometry` transition
-/// alone; and no value engine a `Keyed` one. A `FocusMove` kind is refused
-/// on its own.
+/// alone; `CssAnimation` a `Keyframes` transition, and no other engine one;
+/// and no value engine a `Keyed` one. A `FocusMove` kind is refused on its
+/// own.
 pub(super) fn takes(engine: &str, read: Read) -> Option<&'static str> {
     let icon = engine == "win_ui_animated_icon";
     let breeze = matches!(engine, "breeze" | "breeze_tab_bar");
     let switch = engine == "gtk_switch";
+    let css = engine == "css_animation";
     match read {
         Read::Place { geometry, part } => match engine {
             "gtk_switch" if !(geometry && part.is_some_and(switch_thumb)) => {
@@ -3094,6 +3163,8 @@ pub(super) fn takes(engine: &str, read: Read) -> Option<&'static str> {
         Read::Kind(kind) if (breeze || switch) && kind != "interpolate" => {
             Some("an `interpolate` transition only")
         }
+        Read::Kind(kind) if css && kind != "keyframes" => Some("a `keyframes` transition only"),
+        Read::Kind("keyframes") if !css => Some("no `keyframes` transition"),
         Read::Kind("keyed") if !icon && !breeze && !switch => Some("no `keyed` transition"),
         Read::Duration { .. } | Read::Timing { .. } | Read::Delay | Read::Kind(_) => None,
     }
@@ -3143,6 +3214,101 @@ fn kind_name(kind: &TransitionKind) -> &'static str {
         TransitionKind::Interpolate => "interpolate",
         TransitionKind::Keyed { .. } => "keyed",
         TransitionKind::FocusMove => "focus_move",
+        TransitionKind::Keyframes { .. } => "keyframes",
+    }
+}
+
+/// Whether keyframes' `at` increase: each above the one before it (S2.7,
+/// S12).
+fn increasing(keyframes: &[Keyframe]) -> bool {
+    keyframes
+        .iter()
+        .zip(keyframes.iter().skip(1))
+        .all(|(earlier, later)| earlier.at.0 < later.at.0)
+}
+
+/// The places a keyframe's patch states, as [`times`] reads them: each
+/// field it sets, and below a stroke or a glyph stated field by field each
+/// of their fields it sets (`stroke.top.width`, `glyph.draw_extent`), which
+/// `StrokeWidth` and `GlyphDraw` time apart from their blocks.
+fn stated_places(patch: &PartStylePatch) -> Vec<String> {
+    let mut out = Vec::new();
+    for field in patch.set_fields() {
+        match (field, &patch.stroke, &patch.glyph) {
+            ("stroke", Some(BlockPatch::Fields(stroke)), _) => out.extend(stroke_places(stroke)),
+            ("glyph", _, Some(BlockPatch::Fields(glyph))) => out.extend(
+                glyph
+                    .set_fields()
+                    .into_iter()
+                    .map(|inner| format!("glyph.{inner}")),
+            ),
+            _ => out.push(field.to_owned()),
+        }
+    }
+    out
+}
+
+/// The places a stroke's patch states: each edge's fields it sets
+/// (`stroke.top.width`), and its own other fields.
+fn stroke_places(stroke: &StrokePatch) -> Vec<String> {
+    let edges = [
+        ("top", &stroke.top),
+        ("right", &stroke.right),
+        ("bottom", &stroke.bottom),
+        ("left", &stroke.left),
+    ];
+    let mut out: Vec<String> = edges
+        .iter()
+        .filter_map(|(name, edge)| edge.as_ref().map(|edge| (name, edge.set_fields())))
+        .flat_map(|(name, fields)| {
+            fields
+                .into_iter()
+                .map(move |field| format!("stroke.{name}.{field}"))
+        })
+        .collect();
+    out.extend(
+        stroke
+            .set_fields()
+            .into_iter()
+            .filter(|field| !edges.iter().any(|(name, _)| name == field))
+            .map(|field| format!("stroke.{field}")),
+    );
+    out
+}
+
+/// Whether a transition of `group` times a keyframe's `place`
+/// ([`stated_places`]; S2.7): each group its part style's field of that
+/// name, `Stroke` and `Glyph` every field of their blocks, `StrokeWidth` the
+/// edges' widths, `GlyphDraw` the glyph's source (its path), `draw_extent`
+/// and `draw_start`, `Geometry` the fields that size and place the laid-out
+/// box (padding, margin and the size limits), and `StateLayer` the part's
+/// `interaction`.
+fn times(group: PropertyGroup, place: &str) -> bool {
+    let block = place.split('.').next().unwrap_or(place);
+    match group {
+        PropertyGroup::Fill => place == "fill",
+        PropertyGroup::Stroke => block == "stroke",
+        PropertyGroup::StrokeWidth => matches!(
+            place,
+            "stroke.top.width" | "stroke.right.width" | "stroke.bottom.width" | "stroke.left.width"
+        ),
+        PropertyGroup::Corners => place == "corners",
+        PropertyGroup::Shape => place == "shape",
+        PropertyGroup::Shadow => place == "shadow",
+        PropertyGroup::Opacity => place == "opacity",
+        PropertyGroup::Transform => place == "transform",
+        PropertyGroup::Text => place == "text",
+        PropertyGroup::Icon => place == "icon",
+        PropertyGroup::Glyph => block == "glyph",
+        PropertyGroup::GlyphDraw => matches!(
+            place,
+            "glyph.source" | "glyph.draw_extent" | "glyph.draw_start"
+        ),
+        PropertyGroup::Geometry => matches!(
+            place,
+            "padding" | "margin" | "min_width" | "min_height" | "max_width" | "max_height"
+        ),
+        PropertyGroup::StateLayer => place == "interaction",
     }
 }
 
@@ -3160,6 +3326,7 @@ fn engine_name(engine: &TransitionEngine) -> &'static str {
         TransitionEngine::WinUi => "win_ui",
         TransitionEngine::WinUiAnimatedIcon { .. } => "win_ui_animated_icon",
         TransitionEngine::GtkSwitch => "gtk_switch",
+        TransitionEngine::CssAnimation => "css_animation",
     }
 }
 

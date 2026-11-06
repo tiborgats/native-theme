@@ -216,7 +216,7 @@ fn computes(engine: &str, facts: &[(String, Fact)]) -> bool {
         (Some(form), _) => form,
     };
     let listed: &[&str] = match engine {
-        "gtk_css" => &["cubic_bezier", "linear", "steps"],
+        "gtk_css" | "css_animation" => &["cubic_bezier", "linear", "steps"],
         "breeze" | "breeze_tab_bar" => &["linear", "steps", "qt"],
         "qt_quick" => &["linear", "cubic_bezier", "qt", "kirigami_velocity"],
         "adw_animation" => &["linear", "cubic_bezier", "adw", "spring"],

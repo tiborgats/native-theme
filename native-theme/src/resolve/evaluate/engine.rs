@@ -40,6 +40,7 @@ impl ResolveWhole for TransitionEngine {
                 ResolvedEngine::WinUiAnimatedIcon(visual)
             }
             TransitionEngine::GtkSwitch => ResolvedEngine::GtkSwitch,
+            TransitionEngine::CssAnimation => ResolvedEngine::CssAnimation,
         })
     }
 }

@@ -1246,6 +1246,45 @@ fn breeze_tests_through_a_token_reference() {
     );
 }
 
+/// A `Keyframes` transition's keyframes resolve over the part as a loop's
+/// do, each field it states `Some`, and mirror with the layout (S2.4, S2.7;
+/// ADD-A134): the body's padding at the keyframe its start one in
+/// right-to-left.
+#[test]
+fn keyframes_transition_resolves_and_mirrors() {
+    use crate::blocks::motion::{ResolvedEngine, ResolvedTransitionKind};
+    let theme = fixture(&[
+        "[widgets.button.body]\ntransitions = [{ properties = [\"geometry\", \"opacity\"], kind = \
+         { keyframes = { keyframes = [{ at = 0, timing = \"absent\", patch = { padding.left_px = \
+         10, opacity = 0 } }] } }, duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \
+         \"css_animation\" }]",
+    ]);
+    let keyframes = |direction: Direction| {
+        let scope = root(&theme, direction);
+        let style = drawn(&theme, &Element::new(BODY, &scope, &Metrics)).0;
+        let transition = style.transitions.first().cloned().unwrap();
+        assert_eq!(transition.engine, ResolvedEngine::CssAnimation);
+        match transition.kind {
+            ResolvedTransitionKind::Keyframes { keyframes } => keyframes,
+            other => panic!("{other:?}"),
+        }
+    };
+    let ltr = keyframes(Direction::Ltr);
+    let patch = &ltr.first().unwrap().patch;
+    assert_eq!(patch.opacity, Some(Some(Fraction(0.0))));
+    let padding = patch.padding.unwrap();
+    assert_eq!(
+        (padding.left, padding.right),
+        (Some(Px(10.0)), Some(Px(2.0)))
+    );
+    let rtl = keyframes(Direction::Rtl);
+    let padding = rtl.first().unwrap().patch.padding.unwrap();
+    assert_eq!(
+        (padding.left, padding.right),
+        (Some(Px(2.0)), Some(Px(10.0)))
+    );
+}
+
 /// The button whose icon part draws a loop of `keyframes` (synthetic: a
 /// period and an icon size of no platform's), over the fixture's body, its
 /// stroke stated with its outset absent, and `layers`.

@@ -137,9 +137,13 @@ fn timing(prefix: &str) -> Vec<String> {
 }
 
 /// S2.7's transition: `interpolate` and `focus_move` its kind's unit
-/// variants.
+/// variants, `keyframes` its keyframes, each as a loop's.
 fn transition_paths(prefix: &str) -> Vec<String> {
     let mut out = under(prefix, &["properties", "kind"]);
+    let keyframes = join(prefix, "kind.keyframes.keyframes");
+    out.extend(under(&keyframes, &["at", "part"]));
+    out.extend(timing(&join(&keyframes, "timing")));
+    out.push(join(&keyframes, "patch"));
     out.extend(under(&join(prefix, "kind"), &["keyed.key", "keyed.params"]));
     out.extend(under(prefix, &["duration", "delay"]));
     out.extend(timing(&join(prefix, "timing")));

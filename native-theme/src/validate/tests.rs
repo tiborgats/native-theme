@@ -781,6 +781,22 @@ fn refusal_timing_not_computed() {
         )),
         NONE
     );
+    // Under `CssAnimation` the curves CSS states, as under `GtkCss`.
+    let css = |timing: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = {}, \
+             duration_ms = 100, delay_ms = 0, timing = {timing}, engine = \"css_animation\" }}]",
+            keyframes_kind(&[("0", ", patch = { fill = \"#000000\" }")])
+        ))
+    };
+    assert_eq!(
+        bare(&css(spring)),
+        [
+            "widgets.button.body.transitions[0].timing: a timing the `css_animation` engine does \
+             not compute"
+        ]
+    );
+    assert_eq!(bare(&css("{ cubic_bezier = [0.2, 0, 0, 1] }")), NONE);
     assert_eq!(
         bare(&zeroed(spring, "\"gtk_css\"")),
         [
@@ -1083,6 +1099,31 @@ fn refusal_engine_mismatch() {
             format!("{at}.kind: {tab_bar_takes} an `interpolate` transition only"),
         ]
     );
+    // `CssAnimation` runs a `Keyframes` transition, and only it (ADD-A134).
+    let frames = keyframes_kind(&[("0", ", patch = { fill = \"#000000\" }")]);
+    let css = "\"css_animation\"";
+    assert_eq!(
+        found(&one(&frames, "100", "0", "\"linear\"", css), &kinds),
+        NONE
+    );
+    assert_eq!(
+        found(
+            &one("\"interpolate\"", "100", "0", "\"linear\"", css),
+            &kinds
+        ),
+        [format!(
+            "{at}.kind: the `css_animation` engine takes a `keyframes` transition only"
+        )]
+    );
+    assert_eq!(
+        found(
+            &one(&frames, "100", "0", "\"linear\"", "\"gtk_css\""),
+            &kinds
+        ),
+        [format!(
+            "{at}.kind: the `gtk_css` engine takes no `keyframes` transition"
+        )]
+    );
 }
 
 /// A Breeze test holds somewhere and reads what the engine can (S2.7,
@@ -1280,6 +1321,109 @@ fn delay_read_by_its_resolved_value() {
 /// A `FocusMove` transition is refused: no engine runs one yet, as an
 /// engine runs per element part and the move crosses two (S2.7, S2.10,
 /// S12; ADD-A126).
+/// A `css_animation` transition of `kind` timing `groups` on the button's
+/// body, synthetic.
+fn css_transition(groups: &str, kind: &str) -> Layer {
+    toml(&format!(
+        "[widgets.button.body]\ntransitions = [{{ properties = [{groups}], kind = {kind}, \
+         duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"css_animation\" }}]"
+    ))
+}
+
+/// `Keyframes` with `keyframes`, each `(at, its line's rest)`.
+fn keyframes_kind(keyframes: &[(&str, &str)]) -> String {
+    let keyframes: Vec<String> = keyframes
+        .iter()
+        .map(|(at, rest)| format!("{{ at = {at}, timing = \"absent\"{rest} }}"))
+        .collect();
+    format!(
+        "{{ keyframes = {{ keyframes = [{}] }} }}",
+        keyframes.join(", ")
+    )
+}
+
+/// A `Keyframes` transition has a keyframe (S2.7, S12; ADD-A134).
+#[test]
+fn refusal_no_keyframe() {
+    let at = "widgets.button.body.transitions[0].kind.keyframes.keyframes";
+    assert_eq!(
+        bare(&css_transition("\"opacity\"", &keyframes_kind(&[]))),
+        [format!("{at}: a `keyframes` transition with no keyframe")]
+    );
+    let one = keyframes_kind(&[("0", ", patch = { opacity = 0 }")]);
+    assert_eq!(bare(&css_transition("\"opacity\"", &one)), NONE);
+}
+
+/// A `Keyframes` transition's keyframes name no part, their `at` within
+/// `0..=1` and increasing (S2.7, S12; ADD-A134).
+#[test]
+fn refusal_keyframe_names_part() {
+    let at = "widgets.button.body.transitions[0].kind.keyframes.keyframes";
+    let named = keyframes_kind(&[("0", ", part = \"body\", patch = { opacity = 0 }")]);
+    assert_eq!(
+        bare(&css_transition("\"opacity\"", &named)),
+        [format!(
+            "{at}[0].part: a `keyframes` transition's keyframe names a part"
+        )]
+    );
+    let repeated = keyframes_kind(&[
+        ("0.25", ", patch = { opacity = 0 }"),
+        ("0.25", ", patch = { opacity = 1 }"),
+    ]);
+    assert_eq!(
+        bare(&css_transition("\"opacity\"", &repeated)),
+        [format!("{at}: the keyframes' `at` do not increase")]
+    );
+    let beyond = keyframes_kind(&[("1.5", ", patch = { opacity = 0 }")]);
+    assert_eq!(
+        bare(&css_transition("\"opacity\"", &beyond)),
+        [format!("{at}[0].at: out of range: 0..=1")]
+    );
+}
+
+/// A `Keyframes` transition's keyframes state only the fields its groups
+/// time; a focus indicator's, which lists none, only `focus`'s (S2.7,
+/// S2.10, S12; ADD-A134): md-focus-ring's entrance, its width from 0 to the
+/// active width over a quarter of the run, the end the ring's own.
+#[test]
+fn refusal_keyframe_outside_groups() {
+    let at = "widgets.button.body.transitions[0].kind.keyframes.keyframes";
+    let outside = "a field the keyframes' transition does not time";
+    let opacity = keyframes_kind(&[("0", ", patch = { opacity = 0 }")]);
+    assert_eq!(bare(&css_transition("\"opacity\"", &opacity)), NONE);
+    assert_eq!(
+        bare(&css_transition("\"fill\"", &opacity)),
+        [format!("{at}[0].patch.opacity: {outside}")]
+    );
+    // `StrokeWidth` times the edges' widths alone, `Stroke` the whole stroke.
+    let width = keyframes_kind(&[("0", ", patch = { stroke.top.width_px = 0 }")]);
+    assert_eq!(bare(&css_transition("\"stroke_width\"", &width)), NONE);
+    assert_eq!(bare(&css_transition("\"stroke\"", &width)), NONE);
+    let paint = keyframes_kind(&[("0", ", patch = { stroke.top.paint = \"#000000\" }")]);
+    assert_eq!(
+        bare(&css_transition("\"stroke_width\"", &paint)),
+        [format!("{at}[0].patch.stroke.top.paint: {outside}")]
+    );
+    let padding = keyframes_kind(&[("0", ", patch = { padding.top_px = 0 }")]);
+    assert_eq!(bare(&css_transition("\"geometry\"", &padding)), NONE);
+
+    let focus = |patch: &str| {
+        toml(&format!(
+            "[widgets.button.body]\nfocus.transition = {{ properties = [], kind = {}, duration_ms = \
+             600, delay_ms = 0, timing = \"linear\", engine = \"css_animation\" }}",
+            keyframes_kind(&[("0", patch), ("0.25", ", patch = { focus.width_px = 8 }")])
+        ))
+    };
+    assert_eq!(bare(&focus(", patch = { focus.width_px = 0 }")), NONE);
+    assert_eq!(
+        bare(&focus(", patch = { opacity = 0 }")),
+        [format!(
+            "widgets.button.body.focus.transition.kind.keyframes.keyframes[0].patch.opacity: \
+             {outside}"
+        )]
+    );
+}
+
 #[test]
 fn refusal_focus_move_not_run() {
     let kind = |kind: &str| {
@@ -4398,6 +4542,9 @@ kinds! {
     IndicationBoxPartAbsent { .. },
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
+    NoKeyframe,
+    KeyframeNamesPart,
+    KeyframeOutsideGroups,
     FollowPartOutsideFocus,
     RoundPtMisused,
     RouteDuplicated { .. },
@@ -4745,6 +4892,36 @@ fn layer_error_every_variant_triggers() {
         (
             V::KeyframeWithoutPart,
             super::checks::triggers::keyframe_without_part(),
+        ),
+        (
+            V::NoKeyframe,
+            over(
+                &css_transition("\"opacity\"", &keyframes_kind(&[])),
+                &none,
+                &[],
+            ),
+        ),
+        (
+            V::KeyframeNamesPart,
+            over(
+                &css_transition(
+                    "\"opacity\"",
+                    &keyframes_kind(&[("0", ", part = \"body\", patch = { opacity = 0 }")]),
+                ),
+                &none,
+                &[],
+            ),
+        ),
+        (
+            V::KeyframeOutsideGroups,
+            over(
+                &css_transition(
+                    "\"fill\"",
+                    &keyframes_kind(&[("0", ", patch = { opacity = 0 }")]),
+                ),
+                &none,
+                &[],
+            ),
         ),
         (
             V::FollowPartOutsideFocus,

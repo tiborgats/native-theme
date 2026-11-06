@@ -262,7 +262,9 @@ pub enum ProblemKind {
     /// or another kind than `Interpolate`; a `GtkSwitch` one not the switch
     /// thumb's `Geometry` one, `Interpolate`, with no delay; a
     /// `ComposeHeld` one not the `Geometry` one of a segmented control's
-    /// segment; a `Keyed` one under a value engine (S2.7, S12; ADD-A126).
+    /// segment; a `Keyed` one under a value engine; a `Keyframes` one under
+    /// another engine than `CssAnimation`, or a `CssAnimation` one of
+    /// another kind (S2.7, S12; ADD-A126, ADD-A134).
     EngineMismatch {
         /// The engine, as S11 spells it.
         engine: &'static str,
@@ -334,12 +336,21 @@ pub enum ProblemKind {
         /// The part named.
         part: String,
     },
-    /// A loop's keyframes' `at` do not increase, or repeat a value (S2.7,
-    /// S12).
+    /// A loop's or a `Keyframes` transition's keyframes' `at` do not
+    /// increase, or repeat a value (S2.7, S12).
     KeyframesNotIncreasing,
     /// A keyframe of a loop stated as a widget's or a component's value
     /// leaves its `part` out: such a loop is on no part (S2.7, S12).
     KeyframeWithoutPart,
+    /// A `Keyframes` transition with no keyframe (S2.7, S12; ADD-A134).
+    NoKeyframe,
+    /// A `Keyframes` transition's keyframe naming a `part`: each styles the
+    /// part or block the transition times (S2.7, S12; ADD-A134).
+    KeyframeNamesPart,
+    /// A `Keyframes` transition's keyframe patch stating a field its
+    /// transition's groups do not time; in a `FocusIndicator.transition`,
+    /// any field but `focus`'s (S2.7, S12; ADD-A134).
+    KeyframeOutsideGroups,
     /// `Radius::FollowPart` outside a `FocusIndicator.corners` (S2.4, S12).
     FollowPartOutsideFocus,
     /// `round_pt` called outside an expression stated on a `Font.size`, or
@@ -658,6 +669,13 @@ impl fmt::Display for ProblemKind {
             }
             ProblemKind::KeyframeWithoutPart => {
                 f.write_str("a widget's or component's loop's keyframe names no part")
+            }
+            ProblemKind::NoKeyframe => f.write_str("a `keyframes` transition with no keyframe"),
+            ProblemKind::KeyframeNamesPart => {
+                f.write_str("a `keyframes` transition's keyframe names a part")
+            }
+            ProblemKind::KeyframeOutsideGroups => {
+                f.write_str("a field the keyframes' transition does not time")
             }
             ProblemKind::FollowPartOutsideFocus => {
                 f.write_str("`follow_part` outside a focus indicator's corners")
