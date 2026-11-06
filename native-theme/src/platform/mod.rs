@@ -5,8 +5,9 @@
 //! `kde_selection_inactive`, their shared arithmetic in `kde_color_common`)
 //! were written in a clean room, from behavioural descriptions and the vector
 //! tables alone (the plan's D10); `sf_tracking` reads Apple's published
-//! tables, `gen_sf_tracking` generated from them. The model's names for their
-//! operands are here.
+//! tables, `gen_sf_tracking` generated from them; `m3_role` ports
+//! material-color-utilities under that code's Apache-2.0 licence (D10). The
+//! model's names for their operands are here.
 
 pub mod adw_standalone;
 mod gen_sf_tracking;
@@ -20,6 +21,7 @@ pub mod kde_selection_inactive;
 pub mod kde_shade;
 pub mod kirigami_lerp;
 pub mod kirigami_tint;
+pub mod m3_role;
 pub mod sf_tracking;
 
 use kde_shade::KdeShadeRole;
