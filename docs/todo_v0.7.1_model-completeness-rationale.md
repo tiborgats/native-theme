@@ -1330,7 +1330,7 @@ caller's build, and a default would hide it.
   connectors again, and a release with some capabilities filled shows mixed looks.
 - *One release.* Against: a long branch.
 - *0.8.0 at today's coverage, then the rest by units* (added by the maintainer's decision D13 of the 0.8.0 plan,
-  2026-11-07): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
+  2026-11-06): 0.8.0 holds every widget, colour role, token and value today's model holds, the catalogue's other
   units following in later releases. For: users lose nothing 0.7.0 has and get the new model weeks earlier; each
   release's units are whole, every capability filled on them, so no widget shows a mixed look. Against: several
   releases, each with its gate run; a later widget that adds members to an exhaustive enum is a breaking release
@@ -1581,7 +1581,7 @@ Amended in place by the specification's batch ADD-A128 (2026-10-31), decided fro
   every role; a colour outside the gamut is clamped where it is drawn, premultiplied first, the connector's hand-over
   following GTK's.
 
-Amended by the maintainer's decision D13 of the 0.8.0 plan (2026-11-07):
+Amended by the maintainer's decision D13 of the 0.8.0 plan (2026-11-06):
 
 - R21: 0.8.0 is released when the new model holds everything today's model holds, on every platform preset, with the
   connectors on it; the catalogue's other units follow in later releases, each whole and passing the gate. "Everything

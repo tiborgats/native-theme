@@ -2,7 +2,7 @@
 
 **Status:** approved 2026-10-29 with the maintainer's decisions D1, D4, D5, D7, D9, D10, D11 and D12 (each marked
 below); draft 12. Eleven independent reviews; draft 11 consolidated
-their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-07) applies the maintainer's
+their fixes into one text, and draft 12 applies the eleventh review's. Draft 13 (2026-11-06) applies the maintainer's
 scope decision D13: 0.8.0 covers what 0.7.0 covers, the rest of the catalogue follows in later releases.
 
 **Goal:** the model the specification states, implemented; the eight platform presets on six platforms written from
@@ -312,7 +312,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     facts may describe a beta; S16's `PresetOlder` example and the 26 facts already gathered change.
   - **(c) both**, a fact per release: the per-release overlay R1.5 rejected.
 
-- **D13 — 0.8.0's scope** (decided by the maintainer, 2026-11-07: (B)). 0.8.0 ships when the new model covers what
+- **D13 — 0.8.0's scope** (decided by the maintainer, 2026-11-06: (B)). 0.8.0 ships when the new model covers what
   0.7.0 covers: every widget, colour role, token and value 0.7.0's model holds is in the new model, on every preset
   0.7.0 ships for, with the connectors running on it. The rest of the catalogue follows in later releases, the
   follow-up releases ("0.8.x" in the decision; D14 numbers them). "Cover everything visible" stays the goal; only its
@@ -334,7 +334,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     0.8.0 (S21.1 makes it a release condition, and its slice facts are written): every preset that exists states every
     field the model holds.
 
-- **D14 — the follow-up releases' version numbers** (open, for the maintainer). A follow-up release that enables a
+- **D14 — the follow-up releases' version numbers** (decided by logic, 2026-11-06: (a); D13's "0.8.x" is the decision's wording for the follow-up releases, whose numbers follow SemVer). A follow-up release that enables a
   typed widget adds members to the generated enums `WidgetKind`, `Variant` and `TypedPart`, which are exhaustive (R21,
   S21.2). Cargo's SemVer rules count a new member of an exhaustive public enum as breaking, and Cargo resolves a
   requirement `0.8.0` to any 0.8.N, so an 0.8.N that adds one breaks every build that matches the enum in full: an
@@ -348,6 +348,7 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
     For: the names D13 uses. Against: a connector's build no longer breaks on a new widget (its contract test still
     fails on the widget's unmapped fields, S21.3), and every application matches with a wildcard arm.
   - **(c)** breaking 0.8.N releases: rejected, Cargo would pull them into the builds they break.
+  - **Decided (a):** R21 makes the generated enums exhaustive so that a connector's build breaks on a widget it does not map yet, which (b) gives up for a name; D13's two reasons hold under any number.
   - Recommended: (a). Nothing before M6 depends on it; until it is decided the plan says "follow-up release".
 
 ### Scheduled
@@ -895,7 +896,7 @@ tasks; the generator's drift check makes the code follow.
 - [ ] M1a slice core
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
-- [x] D13 0.8.0's scope, (B) (2026-11-07)
+- [x] D13 0.8.0's scope, (B) (2026-11-06)
 - [ ] D14 the follow-up releases' version numbers
 - [ ] M2 model core
 - [ ] M3a 0.8.0's units (per unit in the ledger)
