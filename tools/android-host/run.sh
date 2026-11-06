@@ -22,7 +22,8 @@
 #   run<N>/capture/   the PNGs and index.toml (device.toml and each test's
 #                     fragment, merged)
 #   run<N>/measure/   AH-pass: MeasureTest's fonts.toml, popup-menu.toml, focus.toml
-#                     and focus-*.png; RippleTest's ripple-*.png and ripple.toml
+#                     and focus-*.png; RippleTest's ripple-*.png and ripple.toml;
+#                     ButtonGroupTest's button-group-*.csv; AllHostsTest's all-hosts.toml
 #   run<N>/system-fonts/  the device's fonts.xml, font_fallback.xml,
 #                     fonts_customization.xml and /system/fonts listing
 #   run<N>/           emulator.txt, instrument.txt, instrument-measure.txt,
@@ -191,16 +192,17 @@ EOF
     failed=1
   fi
   "$adb" exec-out run-as dev.nativetheme.androidhost tar -cf - -C files capture | tar -xf - -C "$dir"
-  # AH-pass (the 0.8.0 measurement plan): MeasureTest's fonts, popup-menu
-  # attributes and focus steps and RippleTest's repeated presses, into
-  # files/measure; the system's font configuration files and font list.
+  # AH-pass and all-hosts (the 0.8.0 measurement plan): MeasureTest's fonts,
+  # popup-menu attributes and focus steps, RippleTest's repeated presses,
+  # ButtonGroupTest's widths and AllHostsTest's steps, into files/measure; the
+  # system's font configuration files and font list.
   timeout 1200 "$adb" shell am instrument -w -r \
-    -e class dev.nativetheme.androidhost.MeasureTest,dev.nativetheme.androidhost.RippleTest \
+    -e class dev.nativetheme.androidhost.MeasureTest,dev.nativetheme.androidhost.RippleTest,dev.nativetheme.androidhost.ButtonGroupTest,dev.nativetheme.androidhost.AllHostsTest \
     dev.nativetheme.androidhost.test/androidx.test.runner.AndroidJUnitRunner >"$dir/instrument-measure.txt" 2>&1
-  if grep -q '^OK (18 tests)' "$dir/instrument-measure.txt"; then
-    note "run $run: MeasureTest and RippleTest OK"
+  if grep -q '^OK (21 tests)' "$dir/instrument-measure.txt"; then
+    note "run $run: MeasureTest, RippleTest, ButtonGroupTest and AllHostsTest OK"
   else
-    note "run $run: MeasureTest or RippleTest failed"
+    note "run $run: MeasureTest, RippleTest, ButtonGroupTest or AllHostsTest failed"
     tail -n 60 "$dir/instrument-measure.txt"
     failed=1
   fi
