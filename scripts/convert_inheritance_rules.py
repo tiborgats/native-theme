@@ -79,7 +79,9 @@ Output
 `[[base]]` entries, preset by preset (PRESETS' order), each preset's rules in the file's order (a generated section's
 fields in its lists' order, each field's sub-fields in its keys' order): `preset`, `field`,
 `schemes`, `rule`, `source` (`inheritance-rules.toml@fc6109d1:<line>`), `target`, `value`, `mapping`, and `note`
-where a field is empty or the rule needs a word.
+where a field is empty or the rule needs a word. A `[wrong_safety_nets]` entry's text, quoted in a `note`, cites
+today's `platform-facts.md` by line: each `platform-facts.md:<line>` is written `platform-facts.md@fc6109d1:<line>`,
+the commit it was read at (the plan's *Citations of today's platform-facts.md by line*).
 """
 import re
 import subprocess
@@ -94,6 +96,7 @@ DOCS = Path("docs")
 RULES = DOCS / "inheritance-rules.toml"
 SOURCE_PIN = "fc6109d1"
 CITE = f"inheritance-rules.toml@{SOURCE_PIN}"
+FACTS_LINE = re.compile(r"platform-facts\.md:(?=\d)")
 CATALOGUE = DOCS / "todo_v0.7.1_model-completeness-spec-widgets.md"
 TODAY_PRESETS = Path("native-theme/src/presets")
 STAGED = DOCS / "facts" / "staged" / "inheritance-bases.toml"
@@ -485,7 +488,8 @@ def build(root: Path, rev: str = SOURCE_PIN) -> tuple[str, dict]:
                 elif own != source:
                     notes.append(f"[per_platform] names `{own}` for {platform}; today's resolve() fills the fallback")
             if field in wrong:
-                notes.append(f"also a [wrong_safety_nets] entry (not converted): {wrong[field].get('why_wrong', '')}")
+                why = FACTS_LINE.sub(f"platform-facts.md@{SOURCE_PIN}:", wrong[field].get("why_wrong", ""))
+                notes.append(f"also a [wrong_safety_nets] entry (not converted): {why}")
             mapping = list(dict.fromkeys(q for q in (t_quote, s_quote) if q))
             fields = [("preset", preset), ("field", field), ("schemes", schemes), ("rule", rule),
                       ("source", f"{CITE}:{src_line}"), ("target", target or ""), ("value", value),
@@ -565,7 +569,7 @@ gnome    = "defaults.text_color"
 
 [wrong_safety_nets."button.background_color"]
 inherits_from = "defaults.background_color"
-why_wrong     = "distinct"
+why_wrong     = "distinct (platform-facts.md:1177, :1192)"
 
 [border_inheritance]
 widgets_with_border = ["button", "list"]
@@ -662,7 +666,8 @@ SELF_TEST_WANT = [
     ("adwaita", "button.background_color", None, None),
     ("kde-breeze", "button.background_color", "target", "button.body.fill"),
     ("kde-breeze", "button.background_color", "value", "= role.window.background"),
-    ("kde-breeze", "button.background_color", "note", "also a [wrong_safety_nets] entry (not converted): distinct"),
+    ("kde-breeze", "button.background_color", "note",
+     "also a [wrong_safety_nets] entry (not converted): distinct (platform-facts.md@fc6109d1:1177, :1192)"),
     ("kde-breeze", "button.background_color", "source", f"{CITE}:5"),
     ("kde-breeze", "button.background_color", "schemes", ["light", "dark"]),
     ("adwaita", "button.hover_text_color", "target", "button.label.text.fill @ {hover}"),

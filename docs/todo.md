@@ -214,7 +214,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 - [ ] [1.0] `SliderTheme` states the thumb's fill and diameter, and nothing
       round it: no border and no shadow (`docs/property-registry.toml`
       `[slider]`). macos-tahoe light leaves `slider.thumb_color` to
-      inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml:211`),
+      inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml@fc6109d1:211`),
       `#ffffff` (`macos-tahoe.toml` `[light.defaults] surface_color`), on a
       `#ffffff` window (`[light.defaults] background_color`), and the iced
       connector draws the handle with iced's own `border_width` 0
@@ -399,7 +399,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       `[dark.scrollbar]`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
-      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:205`),
+      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml@fc6109d1:205`),
       a fallback the same file lists among its wrong safety nets, a text
       colour for "a semi-transparent UI control" (`:559-561`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
@@ -511,7 +511,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
       measured rendering) with citations, then register the shape there.
 - [ ] [1.0] Open question: does a Windows 11 text box show the system focus
-      visual at all? `docs/platform-facts.md` §2.1.5 gives WinUI's focus
+      visual at all? `docs/platform-facts.md@fc6109d1` §2.1.5 gives WinUI's focus
       visual (`focus_ring_*`) and §2.4 Text Input (`:1219`), for the
       field's own line, the accent underline a focused `TextBox` thickens
       to 2 (`focus_border_color`, `TextBox_themeresources.xaml:136`,
@@ -823,7 +823,7 @@ model, the platform presets and the three connectors
 ### macOS: what the OS probe does not render yet
 
 - [ ] [1.0] The OS probe renders no hovered control on macOS, so
-      `docs/platform-facts.md` gives no hover colour for a slider knob
+      `docs/platform-facts.md@fc6109d1` gives no hover colour for a slider knob
       (§2.9, `:1324`), a sidebar row (§2.12, `:1379`), a table row (§2.15,
       `:1435`) or a switch (§2.21, `:1527-1528`). The macOS presets draw a
       hovered table or sidebar row in its own background (D9) and a hovered
@@ -890,7 +890,7 @@ model, the platform presets and the three connectors
       kept in `docs/archive/todo_v0.7.0_code-review-findings.md`, `## M2c — iOS`,
       *Steps 16–18*. Three of those carry an open choice:
       `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
-      `docs/inheritance-rules.toml:364-371`) or WebKit's 0.4 (html.css:945-947,
+      `docs/inheritance-rules.toml@fc6109d1:364-371`) or WebKit's 0.4 (html.css:945-947,
       RenderThemeCocoa.mm:1585); `defaults.selection_text_color` white on
       the inherited accent or label on UIKit's grey row selection;
       `button.min_width_px` 44 (the HIG's default control size) or 28 (its
@@ -1793,7 +1793,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
       cannot show them; settle them on the macOS 14 key-window render (the review of
       2026-10-28 found the pop-up's alpha fading below its bezel like the push button's,
-      which `platform-facts.md` calls a soft shadow). (2) `:1236`, no
+      which `platform-facts.md@fc6109d1` calls a soft shadow). (2) `:1236`, no
       checkbox shadow on 12–15, was never measured on a 12–15 render. (3) The reader does
       not read `NSColor.shadowColor` for `defaults.shadow_color`
       (`native-theme/src/macos.rs:157` at caeddd6b), and the sidebar's width is readable
@@ -1901,7 +1901,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       opaque `button.hover_background` (`#e0e0e5` / `#444446`), carried and
       marked "no macOS 26 source" (`docs/platform-facts.md@fc6109d1:1192` is ❓; the
       inherited window colour is a wrong safety net,
-      `docs/inheritance-rules.toml:167`), so the contract's check that a
+      `docs/inheritance-rules.toml@fc6109d1:167`), so the contract's check that a
       `TRANSLUCENT_BUTTON_FILL` combination's hover layer is opaque holds
       for that stated value.
       (1) fixed (M6 T9, 2026-10-15): `colors::over` composites the pressed
@@ -3749,7 +3749,7 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 - [ ] [v0.7.x] On macOS the iced showcase puts its menus into the system menu bar from `update`, on a message `boot`'s task sends (`system_menu` and `boot` in `connectors/native-theme-iced/examples/showcase-iced.rs`, M9b T17), which an `iced::application` runs once its window is open (`iced_winit-0.14.0/src/lib.rs:108-113`), so possibly after the window's first frame, and winit's default app menu can stand for that frame. Not in `boot`: iced 0.14 builds winit's event loop with winit's default menu on and offers no way to turn it off (`iced_winit-0.14.0/src/lib.rs:79-81`; the egui showcase turns it off through eframe's `event_loop_builder`, `with_default_menu(false)`), and winit installs that menu when the application has finished launching (`winit-0.30.13/src/platform_impl/macos/app_state.rs:139-143`), inside the event loop's run (`iced_winit-0.14.0/src/lib.rs:451`), which `boot` comes before (`:105`), so it would replace a menu `boot` installed. Proposal: run the showcase as an `iced::daemon`. A daemon opens no window of its own (`iced-0.14.0/src/daemon.rs:76-78`), so its boot task runs at once (`iced_winit-0.14.0/src/lib.rs:108-119`); an `update` on its message installs the menus and then opens the window (`window::open` with `main`'s and `capture_window_settings`' settings), `view`, `title` and `theme` take the `window::Id`, and the run exits on the window's close. The menus are then in before any window or frame exists, provided winit's launch handling, which installs its default menu, has run by the time `update` handles the boot task's message: that order is assumed here, not read from the sources, so when the entry is picked up, check that winit's launch handling cannot replace a daemon's menus. Not taken in M9b (controller's ruling, M9b T17 fix round 1): a daemon opens and closes its window itself, which changes the start, the exit and the window settings on every platform, for one frame of winit's menu on macOS that no capture shows.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
-- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
+- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md@fc6109d1` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
@@ -3825,7 +3825,7 @@ items below stay.
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`
-      (`docs/inheritance-rules.toml:274`), which windows-11 states as
+      (`docs/inheritance-rules.toml@fc6109d1:274`), which windows-11 states as
       `CardBackgroundFillColorDefault`, #ffffffb3 / #ffffff0d
       (`windows-11.toml` `[light.defaults] surface_color`,
       `[dark.defaults] surface_color`), so the card is filled in the
@@ -3869,7 +3869,7 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 - [ ] [1.0] The egui showcase's command palette moves its highlighted row only by the keys (`command_palette`, `palette_highlight` and `PaletteState::selected` in `connectors/native-theme-egui/examples/showcase-egui/chrome.rs` at 5de1f8b1); gpui-component's `Command` also moves it to the row under the pointer (each enabled row's `on_hover` calls `select`, gpui-component 0.8.0 `src/command/state.rs:854-858`; `select`, `:534-551`, highlights without scrolling). With the pointer resting on the palette, egui paints the hovered row's hover fill beside the highlighted row, so two rows can look marked where gpui marks one. A known parity gap that M9-119 did not ask for (M9c T11 review, *Parity: hover*; the controller's ruling of 2026-10-24). A fix needs "the pointer moved this pass and is over a row", so a resting pointer does not override the arrow keys, one more writer of `PaletteState::selected` and a kittest that moves the pointer.
 
 ### Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours
-- [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
+- [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml@fc6109d1:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
 
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.

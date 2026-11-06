@@ -163,7 +163,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.tooltip.font.get_or_insert_default().color = Some(color);
     }
 
-    // Sidebar (docs/platform-facts.md:1370, :1372, §2.12): the View set, as the KDE HIG's
+    // Sidebar (docs/platform-facts.md@fc6109d1:1370, :1372, §2.12): the View set, as the KDE HIG's
     // sidebar, the non-modal GlobalDrawer, is docked in it (Kirigami GlobalDrawer.qml:337)
     // and System Settings' sidebar sets it (CategoriesPage.qml:19-20).
     variant.sidebar.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -434,7 +434,7 @@ inactiveForeground=161,169,177
     }
 
     /// A scheme's accent other than Breeze's reaches the slider's value through
-    /// inheritance (docs/platform-facts.md:1317, KDE ← `defaults.accent_color`),
+    /// inheritance (docs/platform-facts.md@fc6109d1:1317, KDE ← `defaults.accent_color`),
     /// which kde-breeze does not state, and its selection colour reaches the
     /// three blends the reader writes, the checked checkbox, the on switch and
     /// the progress bar.

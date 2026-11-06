@@ -101,7 +101,7 @@ that changes it is a change of this catalogue (the derive generates the `may_be_
 - `checkbox`, `radio` and the `combo_box` list: the facts ADD-A126 leaves to the lanes (nothing claimed until they
   are made):
   - `macos-*`: the mixed checkbox's box fill, key and not key (MAC-C01), and the checked radio's dot colour in a key
-    window (MAC-C07; `platform-facts.md:1232` states it unsourced), each a render;
+    window (MAC-C07; `platform-facts.md@fc6109d1:1232` states it unsourced), each a render;
   - `windows-11`: what a never-changed unchecked check box draws at the accept visual's progress 0, the template's
     `NormalOff` with no segment played (`AnimatedIcon.cpp:23`, `:47`, `:549`; its first layer visible and untrimmed
     there, `AnimatedAcceptVisualSource.cpp:1366-1376`, `:1617-1622`), which the model draws as nothing (`shown`
