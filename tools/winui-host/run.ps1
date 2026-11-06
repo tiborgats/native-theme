@@ -65,12 +65,12 @@ foreach ($n in 1, 2) {
     $process = Start-Process -FilePath $exe.FullName -ArgumentList @('--out', "`"$dir`"") -PassThru `
         -RedirectStandardOutput (Join-Path $dir 'stdout.txt') -RedirectStandardError (Join-Path $dir 'stderr.txt')
     $null = $process.Handle
-    if ($process.WaitForExit(240000)) {
+    if ($process.WaitForExit(420000)) {
         Note "run${n}: exit $($process.ExitCode)"
         if ($process.ExitCode -ne 0) { $failed = $true }
     } else {
         $process.Kill()
-        Note "run${n}: timed out after 240 s"
+        Note "run${n}: timed out after 420 s"
         $failed = $true
     }
     if (-not (Test-Path (Join-Path $dir 'frames.toml'))) { Note "run${n}: no frames.toml"; $failed = $true }

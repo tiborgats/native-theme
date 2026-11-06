@@ -583,7 +583,7 @@ internal static unsafe class DWrite
                 collection = IntPtr.Zero;
             }
             IntPtr source = CreateSource();
-            foreach (string? family in new string?[] { null, "Segoe UI", "Segoe UI Variable" })
+            foreach (string? family in new string?[] { null, "Segoe UI", "Segoe UI Variable", "Segoe UI Variable Text" })
             {
                 foreach ((string locale, string text) in samples)
                 {

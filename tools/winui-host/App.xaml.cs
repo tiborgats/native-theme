@@ -17,8 +17,9 @@
 //   screen-<pass>.png  the primary display (GDI), the popups on screen, and
 //                      screen-<pass>-window.png, the window's part of it
 // Then the measurement passes of Reads.cs (WP-reads, WH-defaults and the
-// gesture recognizer's defaults), with their own tables in frames.toml and
-// text-<pass>.png, screen-dialog.png and screen-app_bar-<pass>.png; with
+// gesture recognizer's defaults) and Motion.cs (WH-motion, WH-captures and the
+// all-hosts passes), with their own tables in frames.toml and text-<pass>.png,
+// screen-dialog.png, screen-app_bar-<pass>.png, motion-<name>.png/.csv; with
 // --text-scale-only, the text pass alone (run.ps1's text-scale run).
 // XAML coordinates are in effective pixels relative to the window's content;
 // HWND rectangles and the screen captures are in physical pixels.
@@ -120,11 +121,11 @@ public partial class App : Application
         }
 
         watchdog = DispatcherQueue.GetForCurrentThread().CreateTimer();
-        watchdog.Interval = TimeSpan.FromSeconds(200);
+        watchdog.Interval = TimeSpan.FromSeconds(360);
         watchdog.IsRepeating = false;
         watchdog.Tick += (_, _) =>
         {
-            errors.Add("watchdog: the passes did not finish within 200 s");
+            errors.Add("watchdog: the passes did not finish within 360 s");
             Finish(2);
         };
         watchdog.Start();
@@ -167,6 +168,7 @@ public partial class App : Application
             await ToolTipPass("tooltip_programmatic", false);
             await ToolTipPass("tooltip_hover", true);
             await ReadPasses();
+            await MotionPasses();
         }
         catch (Exception e)
         {
@@ -238,10 +240,7 @@ public partial class App : Application
         RepeatButton repeat = new();
         section.Int("repeat_button_delay", (uint)repeat.Delay);
         section.Int("repeat_button_interval", (uint)repeat.Interval);
-        section.Str("button_focus_visual_primary_thickness", anchor!.FocusVisualPrimaryThickness.ToString());
-        section.Str("button_focus_visual_secondary_thickness", anchor.FocusVisualSecondaryThickness.ToString());
-        section.Str("button_focus_visual_margin", anchor.FocusVisualMargin.ToString());
-        RecordControl(section, "button", anchor);
+        RecordControl(section, "button", anchor!);
         RecordFocusVisual(section, "button", anchor);
         RecordLabel(section, "button", anchor);
 
