@@ -2075,6 +2075,58 @@ fn refusal_keyframe_field_its_part_does_not_list() {
     assert_eq!(bare(&looped("", "glyph = \"absent\"")), NONE);
 }
 
+/// A keyframe's patch states no `icon.animation`: a keyframe resolves its
+/// part's icon without the icon's own animation, so it would have no effect
+/// (S2.7, S12; ledger queue #163), in a loop's keyframe and a `Keyframes`
+/// transition's alike; a whole icon stated with its animation absent, the
+/// field a whole block states, is no such statement.
+#[test]
+fn refusal_keyframe_animation() {
+    let looped = |patch: &str| {
+        toml(&format!(
+            "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\n\
+             keyframes = [{{ at = 0, timing = \"absent\", patch = {{ {patch} }} }}]"
+        ))
+    };
+    let refused = "a keyframe's `icon.animation`, which has no effect";
+    let at = "widgets.button.icon.icon.animation.keyframes[0].patch";
+    assert_eq!(
+        bare(&looped("icon.animation.period_ms = 50")),
+        [format!("{at}.icon.animation: {refused}")]
+    );
+    assert_eq!(
+        bare(&looped("icon.animation = \"absent\"")),
+        [format!("{at}.icon.animation: {refused}")]
+    );
+    assert_eq!(bare(&looped("icon.size_px = 20")), NONE);
+    let whole = |animation: &str| {
+        looped(&format!(
+            "icon = {{ replace = {{ size_px = 16, fill = \"absent\", rendering_mode = \
+             \"original\", weight = \"absent\", scale = \"absent\", axes = {{}}, state_effect = \
+             \"absent\", symbol_variants = [], symbolic_colors = {{}}, animation = {animation} }} }}"
+        ))
+    };
+    assert_eq!(bare(&whole("\"absent\"")), NONE);
+    assert_eq!(
+        bare(&whole(
+            "{ period_ms = 100, timing = \"linear\", keyframes = [] }"
+        )),
+        [format!("{at}.icon.animation: {refused}")]
+    );
+    let transition = toml(&format!(
+        "[widgets.button.icon]\ntransitions = [{{ properties = [\"icon\"], kind = {}, \
+         duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"css_animation\" }}]",
+        keyframes_kind(&[("0", ", patch = { icon.animation.period_ms = 50 }")])
+    ));
+    assert_eq!(
+        bare(&transition),
+        [format!(
+            "widgets.button.icon.transitions[0].kind.keyframes.keyframes[0].patch.icon.animation: \
+             {refused}"
+        )]
+    );
+}
+
 #[test]
 fn refusal_follow_part_outside_focus() {
     let corner = |focus: bool| {
@@ -4545,6 +4597,7 @@ kinds! {
     NoKeyframe,
     KeyframeNamesPart,
     KeyframeOutsideGroups,
+    KeyframeAnimation,
     FollowPartOutsideFocus,
     RoundPtMisused,
     RouteDuplicated { .. },
@@ -4910,6 +4963,12 @@ fn layer_error_every_variant_triggers() {
                 ),
                 &none,
                 &[],
+            ),
+        ),
+        (
+            V::KeyframeAnimation,
+            read(
+                "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\nkeyframes = [{ at = 0, timing = \"absent\", patch = { icon.animation.period_ms = 50 } }]",
             ),
         ),
         (

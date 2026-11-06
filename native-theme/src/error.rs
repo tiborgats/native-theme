@@ -351,6 +351,10 @@ pub enum ProblemKind {
     /// transition's groups do not time; in a `FocusIndicator.transition`,
     /// any field but `focus`'s (S2.7, S12; ADD-A134).
     KeyframeOutsideGroups,
+    /// A keyframe's patch stating `icon.animation`, which has no effect: a
+    /// keyframe resolves its part's icon without the icon's own animation
+    /// (S2.7, S12).
+    KeyframeAnimation,
     /// `Radius::FollowPart` outside a `FocusIndicator.corners` (S2.4, S12).
     FollowPartOutsideFocus,
     /// `round_pt` called outside an expression stated on a `Font.size`, or
@@ -676,6 +680,9 @@ impl fmt::Display for ProblemKind {
             }
             ProblemKind::KeyframeOutsideGroups => {
                 f.write_str("a field the keyframes' transition does not time")
+            }
+            ProblemKind::KeyframeAnimation => {
+                f.write_str("a keyframe's `icon.animation`, which has no effect")
             }
             ProblemKind::FollowPartOutsideFocus => {
                 f.write_str("`follow_part` outside a focus indicator's corners")

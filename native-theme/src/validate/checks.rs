@@ -1606,14 +1606,28 @@ impl<'a> Checker<'a> {
                 (Some(PartRef::Component { .. }), _)
                 | (None, Region::Roles | Region::Tokens | Region::Values(_)) => None,
             };
+            let patch_at = format!("{at}[{index}].patch");
+            self.keyframe_animation(&keyframe.patch, &patch_at);
             if let Some((widget, info)) = part {
-                self.part_fields(
-                    &keyframe.patch,
-                    widget,
-                    info,
-                    &format!("{at}[{index}].patch"),
-                );
+                self.part_fields(&keyframe.patch, widget, info, &patch_at);
             }
+        }
+    }
+
+    /// A keyframe's patch at `at` states no `icon.animation` (S2.7, S12;
+    /// ledger queue #163): a keyframe resolves its part's icon without the
+    /// icon's own animation, so one stated there has no effect. A whole
+    /// icon states its animation, so there only an animation other than
+    /// `Absent` is one.
+    fn keyframe_animation(&mut self, patch: &PartStylePatch, at: &str) {
+        let stated = match &patch.icon {
+            Some(BlockPatch::Fields(icon)) => icon.animation.is_some(),
+            Some(BlockPatch::Set(Value::Stated(icon))) => icon.animation != Value::Absent,
+            Some(BlockPatch::Set(_)) | None => false,
+        };
+        if stated {
+            let at = join(at, "icon.animation");
+            self.problem(&at, ProblemKind::KeyframeAnimation);
         }
     }
 
@@ -1639,6 +1653,7 @@ impl<'a> Checker<'a> {
                 self.problem(&at, ProblemKind::KeyframeNamesPart);
             }
             let patch_at = format!("{keyframe_at}.patch");
+            self.keyframe_animation(&keyframe.patch, &patch_at);
             if focus {
                 for field in keyframe.patch.set_fields() {
                     if field != "focus" {
