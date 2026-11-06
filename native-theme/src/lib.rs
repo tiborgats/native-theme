@@ -1,15 +1,65 @@
 //! # native-theme
 //!
-//! Cross-platform native theme detection and loading for Rust GUI applications.
+//! A theme model for Rust GUI toolkits: a bundled platform preset with the
+//! application's layers over it, resolved for each window into the style of
+//! each part of each widget, which a connector hands its toolkit.
 //!
-//! The crate is between two models: today's theme model, its presets and its
-//! platform readers are removed, and the 0.8.0 model that replaces them is
-//! not yet in place. What stays is the detection, the icons and the fonts.
+//! - [`Theme`] owns the stack: a preset ([`PresetId`]), the application's
+//!   [`Layer`]s, the accent and the application's conditions.
+//!   [`Theme::from_preset`] builds one under a [`Scheme`]; every change
+//!   validates the whole stack and is refused whole ([`LayerError`]), the
+//!   theme staying as it was.
+//! - [`Layer::from_toml`] reads a layer in the presets' format; a layer
+//!   built in Rust is its [`Bases`] and its [`Rule`]s, each a [`Selector`]
+//!   and what it sets.
+//! - [`Theme::resolve`] resolves the theme for one window, which its
+//!   [`WindowState`] records, under its [`WindowConditions`]: a
+//!   [`Resolution`], whose [`ResolvedTheme`] the connector queries:
+//!   [`ResolvedTheme::style`] of an [`Element`]'s part,
+//!   [`ResolvedTheme::values`] of a widget, [`ResolvedTheme::tokens`],
+//!   [`ResolvedTheme::role`] and [`ResolvedTheme::size_classes`]. A query
+//!   answers [`Styled`]: the style, or why there is none to draw.
+//! - The blocks a style is made of ([`Paint`], [`Stroke`], [`Corners`],
+//!   [`Shadow`], [`TextStyle`], [`IconStyle`], [`Transition`], …), their
+//!   units ([`Px`], [`Ms`], [`Deg`], [`Fraction`]) and colours ([`Color`],
+//!   extended sRGB); the typed widgets (the button: [`ButtonPart`],
+//!   [`ButtonValues`]).
+//! - What a connector computes itself, at layout or per frame: [`corners`],
+//!   [`shapes`], [`transitions`], [`timing`], [`ripple`] and
+//!   [`color::composite_over`]; [`expr`], the expressions a value may derive
+//!   by; [`placement`], where a popup goes against its anchor.
+//!
+//! ```no_run
+//! use native_theme::{InputKind, Layer, PresetId, Scheme, Theme, WindowConditions, WindowState};
+//!
+//! let mut theme = Theme::from_preset(PresetId::Adwaita, Scheme::Light)?;
+//! theme.add_layer(Layer::from_toml(
+//!     r#"
+//!     [[rules]]
+//!     when = { states = ["hover"] }
+//!     target = "button.body"
+//!     set = { opacity = 0.5 }
+//!     "#,
+//! )?)?;
+//! let mut window = WindowState::default();
+//! let resolved = theme
+//!     .resolve(&mut window, &WindowConditions::new(InputKind::Mouse))
+//!     .theme;
+//! # let _ = resolved;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! The model is being built: the two bundled presets, `adwaita` and
+//! `macos-tahoe`, still list fields whose facts are pending, and
+//! [`Theme::from_preset`] refuses a preset with a pending field
+//! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
+//! widget is the button; the platform readers are not back yet.
 //!
 //! # Feature flags
 //!
 //! Each OS-specific dependency is compiled only on its own target, so
-//! `native` on macOS pulls in only the macOS dependencies.
+//! `native` on macOS pulls in only the macOS dependencies. The model and its
+//! bundled presets need no feature.
 //!
 //! | Feature | Enables |
 //! |---|---|
@@ -26,10 +76,10 @@
 //!
 //! The minimum supported Rust version is 1.88.0.
 //!
-//! # Modules
+//! # Modules beside the model
 //!
-//! - The crate root: [`Error`] and [`Result`], and from [`pipeline`]
-//!   [`VersionMatch`] and [`DiagnosticEntry`].
+//! - The crate root: [`Error`] and [`Result`], the platform APIs' errors, and
+//!   from [`pipeline`] [`VersionMatch`] and [`DiagnosticEntry`].
 //! - [`detect`]: OS detection: the Linux desktop environment, and the
 //!   detection caches.
 //! - [`icons`]: the icon roles and sets, the per-set icon loaders, the icon

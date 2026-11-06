@@ -4,10 +4,26 @@
 
 ## What it does
 
-Cross-platform theme data model with 24 semantic color roles, 26 per-widget
-themes, and 17 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
-(via `xdg-desktop-portal`), macOS, and Windows, and produces a fully populated
-`ResolvedTheme` any GUI toolkit can consume.
+A theme model for Rust GUI toolkits. A `Theme` is a bundled platform preset
+with the application's layers over it; resolved for a window, under that
+window's conditions, it gives the style of each part of each widget (its
+fill, stroke, corners, shadow, text, icon, padding, motion and the rest), the
+widget's own values, the tokens and the colour roles. A connector hands them
+to its toolkit. A preset is generated from the platform's verified facts
+(`docs/facts/` in the repository), each generated value citing its fact, and
+every layer is validated over the whole stack when it is added, so a resolved
+theme has a value wherever the model requires one.
+
+This is the 0.8.0 model while it is being built:
+
+- Two presets are bundled: `adwaita` (GNOME's libadwaita) and `macos-tahoe`
+  (macOS 26). Both still list fields whose facts are pending (their
+  `[pending]` tables), and `Theme::from_preset` refuses a preset with a
+  pending field (`ThemeError::Preset`), so neither builds a theme yet.
+- The one typed widget is the button; the other widgets come unit by unit.
+- The OS readers are not back yet: a theme is a preset and its layers, read
+  from no system, and the reader features enable only what
+  [Feature flags](#feature-flags) says.
 
 ## How it fits
 
@@ -26,55 +42,88 @@ Add the dependency:
 cargo add native-theme
 ```
 
-For OS readers, enable the `native` feature (or an individual `kde` / `portal`
-/ `macos` / `windows`) — see [Feature flags](#feature-flags) below. No features
-are needed to use bundled presets.
+Build a theme from a bundled preset, resolve it for a window and ask for a
+part's style. The connector states the window's conditions and measures text
+with its toolkit's fonts (`FontMetrics`):
+
+```rust,no_run
+use native_theme::{
+    ButtonPart, Direction, Element, FontMetrics, InputKind, PartRef, PresetId, Px, RootInputs,
+    Scheme, Size, Styled, Theme, TypedPart, WindowConditions, WindowState,
+};
+
+fn draw_button(theme: &Theme, window: &mut WindowState, metrics: &dyn FontMetrics) {
+    let resolved = theme
+        .resolve(window, &WindowConditions::new(InputKind::Mouse))
+        .theme;
+    let size = Size { width: Px(1280.0), height: Px(720.0) };
+    let scope = resolved.root_scope(&RootInputs::new(size, size, Direction::Ltr));
+    let body = PartRef::Typed(TypedPart::Button(ButtonPart::Body));
+    match resolved.style(&Element::new(body, &scope, metrics)) {
+        Styled::Style((style, _children)) => {
+            // Draw the bezel: style.fill, style.stroke, style.corners, style.padding, …
+            let _ = style;
+        }
+        // Another widget draws the part: build an element of it instead.
+        Styled::DrawnAs { .. } => {}
+        // The part is not drawn, or the platform has no such widget or part.
+        Styled::NotDrawn | Styled::NotAvailable(_) => {}
+    }
+}
+
+let theme = Theme::from_preset(PresetId::Adwaita, Scheme::Light)?;
+# let _ = (theme, draw_button);
+# Ok::<(), native_theme::ThemeError>(())
+```
+
+An application changes the theme with layers of its own, in the presets'
+TOML format or built in Rust. `add_layer` validates the layer over the whole
+stack and refuses it whole, naming every problem, where it does not hold:
+
+```rust,no_run
+use native_theme::{Layer, PresetId, Scheme, Theme};
+
+let mut theme = Theme::from_preset(PresetId::Adwaita, Scheme::Dark)?;
+let layer = Layer::from_toml(
+    r#"
+    [[rules]]
+    when = { states = ["hover"] }
+    target = "button.body"
+    set = { opacity = 0.5 }
+    "#,
+)?;
+let id = theme.add_layer(layer)?;
+theme.remove_layer(id)?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
 
 ## Core concepts
 
-- **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — one resolved variant, safe to hand to UI code. Every font and every size the model requires has a value, and so does every colour but 34 optional ones. A field the model treats as optional is `None` where the theme states none:
-  - *Colours:* most of the 34 are state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`.
-  - *Sizes:* padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter. Where one is `None` the toolkit's own value applies.
-  - *Behaviour:* `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`, where the toolkit's own value applies too; and `tab.active_outward_corner_radius`, where unstated the selected tab's feet are square.
-  - *Switch outlines:* the track and thumb outlines' colours (five of the 34) and widths (`switch.track_border_line_width`, `switch.thumb_border_line_width`); where they are `None` no outline is drawn. A disabled track outline's colour (`switch.disabled_unchecked_track_border_color`, `switch.disabled_checked_track_border_color`) left `None` takes the enabled one.
-- **`SystemTheme`** — the OS theme, from `SystemTheme::from_system()`: both resolved variants (`light`, `dark`), the OS's active `mode`, the `preset` the reader's values were merged over and its `version_match`, the icon set and theme, and the accessibility preferences. `pick(mode)` gives one variant; `with_overlay(…)` applies an application's changes.
-- **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
-- **Preset** — a named bundled theme. 17 ship today:
-  - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`, `macos-tahoe`, `material-3`, `ios-13`
-  - *Community:* `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark`
-
-  `material-3` and `ios-13` have no OS reader; an application chooses them as a look. `material-3` suits any platform, and its Material Symbols icons load with the `material-icons` feature. `ios-13` is a look for desktop apps on macOS: its SF Symbols load only on macOS, so on every other platform, iOS included, its icons are `None` and are never replaced by another set.
-
-  Enumerate with `Theme::list_presets()` or `Theme::list_presets_for_platform()`.
-
-## Platform readers
-
-`SystemTheme::from_system()` reads the OS theme with the running platform's
-reader and merges what it reads over that platform's preset; a field the reader
-does not supply keeps the preset's value. Both variants are resolved.
-
-| Platform | Feature | Reads | Preset |
-|---|---|---|---|
-| KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
-| GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
-| macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
-| Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
-
-The KDE, GNOME and Windows readers read the active variant only, and the other
-variant is the preset's; the macOS reader reads both. On another Linux desktop,
-or without the desktop's reader feature, `from_system()` returns the desktop's
-preset (`kde-breeze` on KDE, `adwaita` elsewhere) with no live reading. On macOS
-and Windows without the reader feature it returns `Error::FeatureDisabled`.
-
-On macOS and Windows the preset is the one of the running OS version's visual
-generation. `SystemTheme::version_match` tells how the running version relates
-to it: macOS 27, which has no preset of its own yet, gets `macos-tahoe` as
-`VersionMatch::PresetOlder`, and Windows 10 gets `windows-11` as
-`VersionMatch::PresetNewer`. `SystemTheme::from_system_with_preset()` merges
-over another generation of the running platform instead, under the OS's live
-colours, fonts and accessibility settings. `pipeline::diagnose_platform_support()`
-lists what detection can see, for debugging.
+- **`Theme`** — the one owner of the stack: the preset, the application's
+  layers, the accent and the application's conditions. `from_preset(id,
+  scheme)` builds one; `set_preset`, `pick` (the scheme), `set_flavor`,
+  `add_layer`, `replace_layer`, `remove_layer`, `set_accent` and
+  `set_contrast` change it. Every change validates the whole stack and is
+  refused whole, the theme staying as it was.
+- **`PresetId`** — a bundled preset: `PresetId::all()` lists them, `key()`
+  names one as the TOML does (`adwaita`).
+- **`Layer`** — an application's layer: bases and rules, each rule a
+  selector (states, variants, sizes, the scheme, the window's conditions, …)
+  and what it sets. `Layer::from_toml` reads the presets' format.
+- **`Theme::resolve`** — the theme for one window: its `WindowState` records
+  the last resolution, its `WindowConditions` what the connector states, and
+  the `Resolution` says what changed since (`Change`).
+- **`ResolvedTheme`** — what the connector queries: `style` of an
+  `Element`'s part, with the scope its children take; `values` of a widget;
+  `tokens`; `role` (a colour role); `size_classes`. A query answers
+  `Styled::Style`, or why there is nothing to draw (`NotDrawn`, `DrawnAs`,
+  `NotAvailable`).
+- **The blocks** a style is made of (`Paint`, `Stroke`, `Corners`, `Shadow`,
+  `TextStyle`, `IconStyle`, `Transition`, …) and their units (`Px`, `Ms`,
+  `Deg`, `Fraction`); `Color` is extended sRGB, its literal forms `#rrggbb`,
+  `#rrggbbaa`, `srgb(…)` and `display_p3(…)`.
+- **What a connector computes itself**, at layout or per frame: `corners`,
+  `shapes`, `transitions`, `timing`, `ripple` and `color::composite_over`.
 
 ## Icon sets
 
@@ -102,21 +151,21 @@ let breeze_dark = FreedesktopLoader::new(IconRole::ActionCopy)
 
 ## Feature flags
 
+No feature is needed for the model and its bundled presets.
+
 ```toml
 [dependencies]
-native-theme = { version = "0.8", features = ["native"] }
+native-theme = { version = "0.8", features = ["system-icons"] }
 ```
-
-`native` is a meta-feature enabling every OS reader for the current target
-(`kde` + `portal` + `macos` + `windows`). Individual features:
 
 | Feature | Role |
 |---|---|
-| `kde` / `portal` / `macos` / `windows` | Platform-specific theme readers |
+| `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
+| `macos` / `windows` | The running OS version and its generation, in `pipeline::diagnose_platform_support` |
+| `portal` / `watch` | Nothing until the platform readers and the theme watcher return |
 | `linux-kde` / `linux-portal` | Aliases: `kde` and `portal` |
 | `linux` | Meta-feature: `linux-kde` + `linux-portal` |
 | `native` | Meta-feature: `linux` + `macos` + `windows` |
-| `watch` | Runtime theme-change notifications (`watch::on_theme_change`), on the platforms whose reader feature is on |
 | `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent Icons and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
 | `material-icons` / `lucide-icons` | Bundle those icon sets |
 | `svg-rasterize` | Rasterise SVG icons to RGBA via resvg |
@@ -125,12 +174,9 @@ native-theme = { version = "0.8", features = ["native"] }
 OS-specific dependencies are target-gated — `native` on macOS only pulls in
 macOS-related deps.
 
-The `macos` reader and the SF Symbols icons need macOS 11 or later: the
-reader reads each appearance's colours through
-[`performAsCurrentDrawingAppearance(_:)`](https://developer.apple.com/documentation/appkit/nsappearance/performascurrentdrawingappearance(_:))
-and the icons load through
+The SF Symbols icons need macOS 11 or later: they load through
 [`NSImage(systemSymbolName:accessibilityDescription:)`](https://developer.apple.com/documentation/appkit/nsimage/init(systemsymbolname:accessibilitydescription:)),
-both introduced in macOS 11.0.
+introduced in macOS 11.0.
 
 The minimum supported Rust version is 1.88.0.
 
@@ -139,6 +185,7 @@ The minimum supported Rust version is 1.88.0.
 - [API reference on docs.rs](https://docs.rs/native-theme)
 - Connectors: [`native-theme-gpui`](../connectors/native-theme-gpui/), [`native-theme-iced`](../connectors/native-theme-iced/), [`native-theme-egui`](../connectors/native-theme-egui/)
 - [Showcase examples](../connectors/)
+- [The bundled presets](src/presets/README.md): how each is generated from its facts and checked
 - [CHANGELOG](../CHANGELOG.md)
 
 ## License

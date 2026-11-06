@@ -6,12 +6,14 @@
 [![License: (MIT OR Apache-2.0 OR 0BSD) AND Apache-2.0](https://img.shields.io/badge/license-(MIT%20%7C%20Apache--2.0%20%7C%200BSD)%20AND%20Apache--2.0-blue.svg)](#license)
 [![core MSRV: 1.88.0](https://img.shields.io/badge/core%20MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
-Cross-platform native theme loading for Rust GUI applications. Reads OS themes
-on Linux (KDE, GNOME), macOS, and Windows, or loads any of 17 bundled presets
-(the platforms' own, such as `kde-breeze`, `adwaita`, `windows-11`,
-`macos-tahoe` and `material-3`, and colour schemes such as Catppuccin, Nord,
-Dracula and Tokyo Night), and hands your UI code a fully populated
-`ResolvedTheme`.
+Cross-platform native themes for Rust GUI applications. A theme is a bundled
+platform preset, generated from the platform's verified facts, with the
+application's layers over it; resolved for a window, it gives the style of
+each part of each widget, which a connector hands its toolkit.
+
+0.8.0, the model described here, is being built: its bundled presets are
+`adwaita` and `macos-tahoe`, the button is its one typed widget so far, and
+the OS readers and the connectors return to it in later steps.
 
 **gpui**
 
@@ -39,9 +41,8 @@ The connectors pull `native-theme` in transitively, so you only add one
 dependency for the common case. The core crates and the iced connector build
 with Rust 1.88; the gpui, egui and egui-widgets crates need Rust 1.95.
 
-The OS readers cover KDE Plasma and GNOME (Budgie too) on Linux, macOS and
-Windows. Any other Linux desktop gets the `adwaita` preset in the OS's light or
-dark mode.
+In 0.8.0 the OS readers are being ported to the new model; until they
+return, a theme is a bundled preset and the application's layers.
 
 ## Quick start
 
@@ -66,13 +67,10 @@ Windows.
 
 ## Core concepts
 
-- **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Your UI code reads from this. Every font has a value, and so does every colour and size the model requires. The rest are `Option`s, which a theme, a bundled preset included, may leave `None`:
-  - 34 colours, most of them state shades such as `checkbox.hover_background`;
-  - the sizes the model treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter), the tooltip show delay, the dialog entrance, the expander's arrow side and frame, and the tab's active-indicator side: where one is `None`, the toolkit's own value applies;
-  - `tab.active_outward_corner_radius`: where it is `None`, the selected tab's feet are square;
-  - the switch's track and thumb outlines, their colours (five of the 34) and widths: where they are `None`, no outline is drawn, and a disabled track outline's colour left `None` takes the enabled one.
-- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
+- **`Theme`** — the one owner of the stack: a bundled preset, the application's layers, the accent and the application's conditions. Every change validates the whole stack and is refused whole where it does not hold.
+- **Preset** — a platform's look as a bundled TOML file (`PresetId`), generated from the platform's verified facts: `adwaita` (GNOME's libadwaita) and `macos-tahoe` (macOS 26) today.
+- **`Layer`** — an application's changes, in the presets' TOML format (`Layer::from_toml`) or built in Rust: bases, and rules that set values where their selector holds (a state, a variant, the scheme, a window condition, …).
+- **`ResolvedTheme`** — the theme resolved for one window (`Theme::resolve`). The connector queries it: the style of each widget part (`style`), a widget's own values, the tokens and the colour roles; a query answers the style, or why there is nothing to draw.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
 ## See it in action
@@ -94,7 +92,6 @@ Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appro
 - **Material Symbols** and **Lucide** bundled for offline use
 - **freedesktop** on Linux — reads the active icon theme (Breeze, Adwaita, …)
 - **SF Symbols** on macOS, **Segoe Fluent Icons** on Windows (platform lookups)
-- Animated indicators respect the OS `prefers-reduced-motion` preference
 
 See [`native-theme` crate docs](native-theme/) for the icon-loading API.
 
