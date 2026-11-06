@@ -1,0 +1,4 @@
+# The layers solved from the captures over black and over white (tools/ios-host/solve.swift).
+run = "press1"
+model = "B = a F, W = a F + (1 - a) 255 per channel, 8-bit sRGB encoded; a = 1 - (W - B) / 255, F = B / a"
+
