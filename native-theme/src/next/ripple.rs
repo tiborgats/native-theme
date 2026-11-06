@@ -36,8 +36,9 @@
 //! after that, and counts `since_start` from that frame; when `pressed`
 //! stops being kept, the release, the effect's exit starts, and it ends by
 //! its own lifecycle (`progress` returning `None`). Several presses run
-//! several ripples, each drawn out. The box the effect is drawn in follows
-//! the element's while it runs.
+//! several ripples, each drawn out. The box the effect is drawn in, the
+//! indication's box (`RippleStyle.indication_box`), follows its part's
+//! while it runs.
 //!
 //! [`RippleEffect::AndroidPatterned`] is Android's `RippleDrawable` in its
 //! patterned style (`frameworks-base@android-17.0.0_r1
@@ -128,25 +129,40 @@ pub fn phase(effect: RippleEffect, start_uptime: Ms, since_start: Ms) -> f32 {
     }
 }
 
-/// The effect's colour at `point`, its box `bounds`, pressed at `touch`, at
-/// `progress` and `phase`, with the block's `ripple` as resolved for its
-/// first frame; straight alpha, transparent where the block draws nothing
-/// (its colour, alpha or radius not drawn).
+/// The effect's colour at `point`, its box `bounds` (the indication's box),
+/// pressed at `touch`, at `progress` and `phase`, with the block's `ripple`
+/// as resolved for its first frame, on a display of `scale` device pixels
+/// per logical pixel; straight alpha, transparent where the block draws
+/// nothing (its colour, alpha or radius not drawn) and outside the circle
+/// the ripple is drawn in.
 ///
+/// `point`, `bounds` and `touch` are logical, as every `Px` is: `shade`
+/// converts them, the radius and the padding to device pixels and evaluates
+/// there, so the sparkles' grain, set in device pixels
+/// (`RippleShader.java:195-197`), is Android's at every scale.
 /// `AndroidPatterned` is `RippleShader.java`'s shader (`:42-122`) with the
 /// uniforms its setters give (`:138-198`) and the inputs Compose gives
-/// `RippleDrawable`: the box's size rounded to whole pixels and its centre
-/// the bounds' integer centre (`RippleHostView.android.kt:178`,
+/// `RippleDrawable`: the box's size rounded to whole device pixels and its
+/// centre the bounds' integer centre (`RippleHostView.android.kt:178`,
 /// `RippleDrawable.java:895-896`); the radius `max_radius`, else half the
-/// box's diagonal plus `padding`, rounded (`Ripple.android.kt:105`); the
-/// colour with `alpha` replacing its own and the sparkles'
-/// `DEFAULT_EFFECT_COLOR`, each packed in 8 bits as Compose's `Color(…)` and
-/// `toArgb` pack it (`Color.kt:413-419`); the touch point the point pressed
-/// where `bounded`, else the box's centre (`RippleHostView.android.kt:141-
-/// 152`); a bounded ripple masked to its box, the outline's clip the
+/// box's diagonal plus `padding`, rounded to whole device pixels
+/// (`Ripple.android.kt:105`); the colour with `alpha` replacing its own and
+/// the sparkles' `DEFAULT_EFFECT_COLOR`, each packed in 8 bits as Compose's
+/// `Color(…)` and `toArgb` pack it (`Color.kt:413-419`); the touch point the
+/// point pressed where `bounded`, else the box's centre
+/// (`RippleHostView.android.kt:141-152`). The framework fills only the
+/// circle of that radius about the box's integer centre with the shader
+/// (`RippleDrawable.java:948-950`, `:1007-1008`), so `shade` is transparent
+/// outside it; a bounded ripple is also masked to its box
+/// (`RippleDrawable.java:890-891`), the part's outline's clip the
 /// connector's. A GLSL builtin is computed as GLSL defines it, in `f32`, a
-/// sine through `f64`; a ratio that is not a number is 0 (S2.2's totality).
+/// sine through `f64`; a ratio that is not a number is 0, a scale that is
+/// not finite or not above zero 1 (S2.2's totality).
 #[must_use]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "S2.12's signature: the effect, its inputs and the display's scale"
+)]
 pub fn shade(
     effect: RippleEffect,
     point: Point,
@@ -155,10 +171,11 @@ pub fn shade(
     progress: f32,
     phase: f32,
     ripple: &ResolvedRippleStyle,
+    scale: f32,
 ) -> Color {
     match effect {
         RippleEffect::AndroidPatterned => {
-            patterned(point, bounds, touch, progress, phase, ripple).unwrap_or(CLEAR)
+            patterned(point, bounds, touch, progress, phase, ripple, scale).unwrap_or(CLEAR)
         }
     }
 }
@@ -377,8 +394,8 @@ impl Turbulence {
     }
 }
 
-/// The patterned ripple's `main` (`RippleShader.java:102-122`); `None`
-/// where the block draws nothing.
+/// The patterned ripple's `main` (`RippleShader.java:102-122`), in device
+/// pixels; `None` where the block draws nothing.
 fn patterned(
     point: Point,
     bounds: Rect,
@@ -386,29 +403,43 @@ fn patterned(
     progress: f32,
     phase: f32,
     ripple: &ResolvedRippleStyle,
+    scale: f32,
 ) -> Option<Color> {
     let color = ripple.color?;
     let alpha = ripple.alpha?.0;
-    // The bounds Compose gives the drawable, whole pixels from the box's
-    // origin, and their integer centre.
-    let width = round_half_up(bounds.width.0).max(0.0);
-    let height = round_half_up(bounds.height.0).max(0.0);
+    let scale = if scale.is_finite() && scale > 0.0 {
+        scale
+    } else {
+        1.0
+    };
+    // The bounds Compose gives the drawable, whole device pixels from the
+    // box's origin, and their integer centre.
+    let (box_w, box_h) = (bounds.width.0 * scale, bounds.height.0 * scale);
+    let width = round_half_up(box_w).max(0.0);
+    let height = round_half_up(box_h).max(0.0);
     let origin = ((width / 2.0).floor(), (height / 2.0).floor());
-    let p = (point.x.0 - bounds.x.0, point.y.0 - bounds.y.0);
+    let device = |at: Point| ((at.x.0 - bounds.x.0) * scale, (at.y.0 - bounds.y.0) * scale);
+    let p = device(point);
     let touch = if ripple.bounded {
-        (touch.x.0 - bounds.x.0, touch.y.0 - bounds.y.0)
+        device(touch)
     } else {
         origin
     };
     let radius = match ripple.max_radius {
-        Some(radius) => radius.0,
+        Some(radius) => radius.0 * scale,
         None => {
-            let (half_w, half_h) = (bounds.width.0 / 2.0, bounds.height.0 / 2.0);
-            (half_w * half_w + half_h * half_h).sqrt() + ripple.padding?.0
+            let (half_w, half_h) = (box_w / 2.0, box_h / 2.0);
+            (half_w * half_w + half_h * half_h).sqrt() + ripple.padding?.0 * scale
         }
     };
+    // The circle the framework fills with the shader.
+    let radius = round_half_up(radius);
+    let inside = distance(p, origin) <= radius;
+    if !inside {
+        return None;
+    }
     // setRadius (`:138-140`) and setResolution (`:194-198`).
-    let max_radius = round_half_up(radius) * RADIUS_FACTOR;
+    let max_radius = radius * RADIUS_FACTOR;
     let resolution_scale = (1.0 / width, 1.0 / height);
     let noise_scale = (2.1 / width, 2.1 / height);
     let noise_phase = phase * 0.001;
@@ -502,14 +533,18 @@ mod tests {
         }
     }
 
-    /// The rows over a 120 × 48 box touched at (30, 20), bounded, the colour
-    /// (0.2, 0.4, 0.6) at alpha 0.1, the radius half the diagonal (no
-    /// padding), the phase 1000: `(progress, x, y)` and the premultiplied
-    /// colour the shader gives, to 1e-3 on the 0–255 scale (S2.2's generated
-    /// rows). Synthetic inputs.
+    /// `tools/motion-vectors`' rows over a 120 × 48 box at the origin,
+    /// touched at (30, 20), the colour (0.2, 0.4, 0.6) at alpha 0.1, the
+    /// radius half the diagonal (no padding), the phase 1000: `(scale,
+    /// bounded, progress, x, y)`, logical, and the premultiplied colour the
+    /// shader gives in the circle the framework fills, to 1e-3 on the 0–255
+    /// scale (S2.2's generated rows). At scale 2 the box is 240 × 96 device
+    /// pixels and the radius 129 (half of 258.5, rounded), where scale 1's is
+    /// 65: (125, 24) is inside the circle at scale 1 and outside at scale 2.
+    /// Synthetic inputs.
     #[test]
     fn ripple_shade_follows_the_shader() {
-        let style = ResolvedRippleStyle {
+        let style = |bounded: bool| ResolvedRippleStyle {
             effect: Some(E),
             color: Some(Color {
                 r: 0.2,
@@ -518,7 +553,7 @@ mod tests {
                 a: 1.0,
             }),
             alpha: Some(Fraction(0.1)),
-            bounded: true,
+            bounded,
             max_radius: None,
             padding: Some(Px(0.0)),
             indication_box: None,
@@ -533,62 +568,215 @@ mod tests {
             x: Px(30.0),
             y: Px(20.0),
         };
-        let rows: [(f32, f32, f32, [f32; 4]); 9] = [
+        let rows: [(f32, bool, f32, f32, f32, [f32; 4]); 20] = [
             (
+                1.0,
+                true,
                 0.05,
                 30.0,
                 20.0,
-                [0.007_843_138, 0.015_686_275, 0.023_529_414, 0.039_215_688],
+                [0.007843138, 0.015686275, 0.023529414, 0.039215688],
             ),
             (
+                1.0,
+                true,
                 0.1,
                 40.0,
                 24.0,
-                [0.015_686_275, 0.031_372_55, 0.047_058_83, 0.078_431_375],
+                [0.015686275, 0.03137255, 0.04705883, 0.078431375],
             ),
             (
+                1.0,
+                true,
                 0.25,
                 60.0,
                 24.0,
-                [0.020_392_157, 0.040_784_314, 0.061_176_475, 0.101_960_786],
+                [0.020392157, 0.040784314, 0.061176475, 0.101960786],
             ),
             (
+                1.0,
+                true,
                 0.3,
                 10.0,
                 5.0,
-                [0.101_105_2, 0.111_356_8, 0.121_608_41, 0.142_111_63],
+                [0.1011052, 0.1113568, 0.12160841, 0.14211163],
             ),
             (
+                1.0,
+                true,
                 0.45,
                 80.0,
                 30.0,
-                [0.018_692_812, 0.037_385_624, 0.056_078_434, 0.093_464_054],
+                [0.018692812, 0.037385624, 0.056078434, 0.093464054],
             ),
             (
+                1.0,
+                true,
                 0.6,
                 100.0,
                 40.0,
-                [0.013_594_771, 0.027_189_542, 0.040_784_314, 0.067_973_85],
+                [0.013594771, 0.027189542, 0.040784314, 0.06797385],
             ),
-            (0.6, 130.0, 40.0, [0.0, 0.0, 0.0, 0.0]),
+            (1.0, true, 0.6, 130.0, 40.0, [0.0, 0.0, 0.0, 0.0]),
             (
+                1.0,
+                true,
                 0.9,
                 60.0,
                 24.0,
-                [0.003_398_694_6, 0.006_797_389, 0.010_196_084, 0.016_993_472],
+                [0.0033986946, 0.006797389, 0.010196084, 0.016993472],
             ),
-            (0.0, 30.0, 20.0, [0.0, 0.0, 0.0, 0.0]),
+            (1.0, true, 0.0, 30.0, 20.0, [0.0, 0.0, 0.0, 0.0]),
+            (
+                1.0,
+                false,
+                0.3,
+                60.0,
+                24.0,
+                [0.020392157, 0.040784314, 0.061176475, 0.101960786],
+            ),
+            (
+                1.0,
+                false,
+                0.6,
+                122.0,
+                24.0,
+                [0.01229394, 0.02458788, 0.036881823, 0.0614697],
+            ),
+            (
+                1.0,
+                false,
+                0.6,
+                125.0,
+                24.0,
+                [0.011844922, 0.023689844, 0.035534766, 0.05922461],
+            ),
+            (1.0, false, 0.6, 128.0, 24.0, [0.0, 0.0, 0.0, 0.0]),
+            (
+                2.0,
+                true,
+                0.25,
+                60.0,
+                24.0,
+                [0.020392157, 0.040784314, 0.061176475, 0.101960786],
+            ),
+            (
+                2.0,
+                true,
+                0.3,
+                10.0,
+                5.0,
+                [0.0120499525, 0.024099905, 0.03614986, 0.06024976],
+            ),
+            (
+                2.0,
+                true,
+                0.45,
+                80.0,
+                30.0,
+                [0.018692812, 0.037385624, 0.056078434, 0.093464054],
+            ),
+            (2.0, true, 0.6, 130.0, 40.0, [0.0, 0.0, 0.0, 0.0]),
+            (
+                2.0,
+                false,
+                0.3,
+                60.0,
+                24.0,
+                [0.020392157, 0.040784314, 0.061176475, 0.101960786],
+            ),
+            (
+                2.0,
+                false,
+                0.6,
+                122.0,
+                24.0,
+                [0.012225635, 0.02445127, 0.036676906, 0.061128177],
+            ),
+            (2.0, false, 0.6, 125.0, 24.0, [0.0, 0.0, 0.0, 0.0]),
         ];
-        for (at, x, y, expected) in rows {
+        for (scale, bounded, at, x, y, expected) in rows {
             let point = Point { x: Px(x), y: Px(y) };
-            let c = shade(E, point, bounds, touch, at, 1000.0, &style);
+            let c = shade(E, point, bounds, touch, at, 1000.0, &style(bounded), scale);
             let found = [c.r * c.a, c.g * c.a, c.b * c.a, c.a];
             for (f, e) in found.iter().zip(expected) {
                 assert!(
                     (f - e).abs() * 255.0 <= 1e-3,
-                    "{at} {x} {y}: {found:?} {expected:?}"
+                    "{scale} {bounded} {at} {x} {y}: {found:?} {expected:?}"
                 );
             }
+        }
+    }
+
+    /// A box at another origin evaluates as the same box at the origin, the
+    /// point and the touch moved with it; a scale that is not a number is 1
+    /// (S2.2's totality).
+    #[test]
+    fn ripple_shade_reads_the_box_relative_to_its_origin() {
+        let style = ResolvedRippleStyle {
+            effect: Some(E),
+            color: Some(Color {
+                r: 0.2,
+                g: 0.4,
+                b: 0.6,
+                a: 1.0,
+            }),
+            alpha: Some(Fraction(0.1)),
+            bounded: true,
+            max_radius: None,
+            padding: Some(Px(0.0)),
+            indication_box: None,
+        };
+        let at = |x: f32, y: f32| Rect {
+            x: Px(x),
+            y: Px(y),
+            width: Px(120.0),
+            height: Px(48.0),
+        };
+        let point = |x: f32, y: f32| Point { x: Px(x), y: Px(y) };
+        let here = shade(
+            E,
+            point(10.0, 5.0),
+            at(0.0, 0.0),
+            point(30.0, 20.0),
+            0.3,
+            1000.0,
+            &style,
+            2.0,
+        );
+        let there = shade(
+            E,
+            point(17.0, 8.0),
+            at(7.0, 3.0),
+            point(37.0, 23.0),
+            0.3,
+            1000.0,
+            &style,
+            2.0,
+        );
+        assert_eq!(here, there);
+        let one = shade(
+            E,
+            point(10.0, 5.0),
+            at(0.0, 0.0),
+            point(30.0, 20.0),
+            0.3,
+            1000.0,
+            &style,
+            1.0,
+        );
+        for scale in [f32::NAN, 0.0, -2.0] {
+            let c = shade(
+                E,
+                point(10.0, 5.0),
+                at(0.0, 0.0),
+                point(30.0, 20.0),
+                0.3,
+                1000.0,
+                &style,
+                scale,
+            );
+            assert_eq!(c, one, "{scale}");
         }
     }
 }

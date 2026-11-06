@@ -11,8 +11,9 @@ Level 1, section 2.3.2), which no source code states, is `timing.c`'s transcript
 
 `ripple`: `RippleShader.java`'s uniform setters (`setRadius`, `setNoisePhase`, `setResolution`, `:138-184`, `:194-198`) copied
 from `frameworks-base@android-17.0.0_r1` unchanged into `Ripple.java`, which records the uniforms; the shader's AGSL
-(`:42-122`) transcribed there statement by statement in `float`, a GLSL builtin as GLSL defines it; the lifecycle's
-constants and curves from `RippleAnimationSession.java:42-48`, `:113-139`, `:150-220`; the (0.4, 0, 0.2, 1) curve,
+(`:42-122`) transcribed there statement by statement in `float`, a GLSL builtin as GLSL defines it, and evaluated in
+device pixels at scales 1 and 2, inside the circle `RippleDrawable` fills with it (`RippleDrawable.java:948-950`);
+the lifecycle's constants and curves from `RippleAnimationSession.java:42-48`, `:113-139`, `:150-220`; the (0.4, 0, 0.2, 1) curve,
 which `PathInterpolator` approximates through the native `Path.approximate` outside the cache, solved exactly by
 bisection to the double's precision.
 

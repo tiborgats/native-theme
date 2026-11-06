@@ -106,7 +106,7 @@ public final class Ripple {
     float colorR, colorG, colorB, colorA, sparkleR = 1f, sparkleG = 1f, sparkleB = 1f, sparkleA = 0x8d / 255f;
     float originX, originY, touchX, touchY, progress;
     boolean hasMask;
-    float boxW, boxH;
+    float boxW, boxH, circle;
 
     float[] main(float px, float py) {
         float fadeIn = subProgress(0f, 0.13f, progress);
@@ -128,8 +128,11 @@ public final class Ripple {
         float[] sparkle = { sparkleR * sparkleA, sparkleG * sparkleA, sparkleB * sparkleA, sparkleA };
         // ADDED: a box test in place of `in_shader.eval(p).a`, the mask's alpha, for a box with no outline of its own.
         float mask = hasMask ? (px >= 0 && py >= 0 && px < boxW && py < boxH ? 1f : 0f) : 1f;
+        // ADDED: the circle the framework fills with the shader, the computed radius about the bounds' integer centre
+        // (RippleDrawable.java:948-950, :1007-1008): nothing outside it.
+        float inCircle = distance(px, py, originX, originY) <= circle ? 1f : 0f;
         float[] out = new float[4];
-        for (int i = 0; i < 4; i++) out[i] = mix(wave[i], sparkle[i], sparkleAlpha) * mask;
+        for (int i = 0; i < 4; i++) out[i] = mix(wave[i], sparkle[i], sparkleAlpha) * mask * inCircle;
         return out;
     }
 
@@ -183,32 +186,45 @@ public final class Ripple {
         for (float[] row : phases) {
             System.out.println("ripple_phase " + row[0] + " " + row[1] + ": " + phase(row[0], row[1]));
         }
-        // (progress, px, py) over a 120 x 48 box, touched at (30, 20), bounded, colour (0.2, 0.4, 0.6) at
-        // alpha 0.1, radius half the diagonal (no padding), the phase 1000.
-        float[][] points = { { 0.05f, 30, 20 }, { 0.1f, 40, 24 }, { 0.25f, 60, 24 }, { 0.3f, 10, 5 },
-                { 0.45f, 80, 30 }, { 0.6f, 100, 40 }, { 0.6f, 130, 40 }, { 0.9f, 60, 24 }, { 0.0f, 30, 20 } };
+        // (scale, bounded, progress, px, py) over a 120 x 48 box at (0, 0), in logical pixels, touched at (30, 20),
+        // colour (0.2, 0.4, 0.6) at alpha 0.1, radius half the diagonal (no padding), the phase 1000; evaluated in
+        // device pixels, `scale` per logical pixel.
+        float[][] points = { { 1, 1, 0.05f, 30, 20 }, { 1, 1, 0.1f, 40, 24 }, { 1, 1, 0.25f, 60, 24 },
+                { 1, 1, 0.3f, 10, 5 }, { 1, 1, 0.45f, 80, 30 }, { 1, 1, 0.6f, 100, 40 }, { 1, 1, 0.6f, 130, 40 },
+                { 1, 1, 0.9f, 60, 24 }, { 1, 1, 0.0f, 30, 20 }, { 1, 0, 0.3f, 60, 24 }, { 1, 0, 0.6f, 122, 24 },
+                { 1, 0, 0.6f, 125, 24 }, { 1, 0, 0.6f, 128, 24 }, { 2, 1, 0.25f, 60, 24 }, { 2, 1, 0.3f, 10, 5 },
+                { 2, 1, 0.45f, 80, 30 }, { 2, 1, 0.6f, 130, 40 }, { 2, 0, 0.3f, 60, 24 }, { 2, 0, 0.6f, 122, 24 },
+                { 2, 0, 0.6f, 125, 24 } };
         for (float[] row : points) {
+            float scale = row[0];
+            boolean bounded = row[1] != 0;
             Ripple r = new Ripple();
-            r.boxW = 120;
-            r.boxH = 48;
-            r.hasMask = true;
+            // Compose's whole-pixel bounds (RippleHostView.android.kt:178) and their integer centre (Rect.java:324-326).
+            int w = Math.round(120 * scale), h = Math.round(48 * scale);
+            r.boxW = w;
+            r.boxH = h;
+            r.hasMask = bounded;
             // Compose's sRGB Color(...) packing (Color.kt:413-419), read back by Color.valueOf(int).
             r.colorR = (int) (0.2f * 255.0f + 0.5f) / 255.0f;
             r.colorG = (int) (0.4f * 255.0f + 0.5f) / 255.0f;
             r.colorB = (int) (0.6f * 255.0f + 0.5f) / 255.0f;
             r.colorA = (int) (0.1f * 255.0f + 0.5f) / 255.0f;
-            r.originX = 120 >> 1;
-            r.originY = 48 >> 1;
-            r.touchX = 30;
-            r.touchY = 20;
-            r.progress = row[0];
-            // Compose's targetRadius.roundToInt() (Ripple.android.kt:105).
-            r.setRadius(Math.round((float) Math.sqrt(60f * 60f + 24f * 24f)));
-            r.setResolution(120, 48);
+            r.originX = w >> 1;
+            r.originY = h >> 1;
+            // The point pressed where bounded, else the box's centre (RippleHostView.android.kt:141-152).
+            r.touchX = bounded ? 30 * scale : r.originX;
+            r.touchY = bounded ? 20 * scale : r.originY;
+            r.progress = row[2];
+            // Compose's targetRadius.roundToInt() (Ripple.android.kt:105), in device pixels.
+            float halfW = 120 * scale / 2, halfH = 48 * scale / 2;
+            int radius = Math.round((float) Math.sqrt(halfW * halfW + halfH * halfH));
+            r.circle = radius;
+            r.setRadius(radius);
+            r.setResolution(w, h);
             r.setNoisePhase(1000f);
-            float[] out = r.main(row[1], row[2]);
-            System.out.println("ripple_shade " + row[0] + " " + row[1] + " " + row[2] + ": " + out[0] + " "
-                    + out[1] + " " + out[2] + " " + out[3]);
+            float[] out = r.main(row[3] * scale, row[4] * scale);
+            System.out.println("ripple_shade " + row[0] + " " + row[1] + " " + row[2] + " " + row[3] + " " + row[4]
+                    + ": " + out[0] + " " + out[1] + " " + out[2] + " " + out[3]);
         }
     }
 }
