@@ -10,7 +10,9 @@
 //! and Core Text's substitute fonts for other scripts and its default
 //! cascade list per language; and the pop-up button, pull-down, combo box,
 //! mixed checkbox and checked radio per control size and appearance in a
-//! key window, read and drawn offscreen at 1 and 2 pixels a point.
+//! key window, read and drawn offscreen at 1 and 2 pixels a point; and
+//! directional symbols drawn under the process's languages (MP-text's
+//! mirroring, with `-AppleLanguages`).
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -79,6 +81,120 @@ pub(super) fn reads_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &
     out::put_table(&mut t, "text_rendering", text_rendering_table(mtm, out_dir));
     out::put_table(&mut t, "fallbacks", fallbacks_table());
     out::put_table(&mut t, "controls", controls_table(mtm, app, out_dir));
+    out::put_table(&mut t, "mirroring", mirroring_table(mtm, app, out_dir));
+    t
+}
+
+/// The symbols whose drawing under a right-to-left language shows whether
+/// AppKit mirrors a symbol: directional ones and one that is not.
+const MIRROR_SYMBOLS: [&str; 6] = [
+    "chevron.forward",
+    "arrow.forward",
+    "arrow.uturn.backward",
+    "list.bullet",
+    "text.alignleft",
+    "star",
+];
+
+/// The layout direction and each symbol drawn by an image view at 1 and 2
+/// pixels a point, under the process's languages (a pass gives
+/// `-AppleLanguages`).
+fn mirroring_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(
+            "NSApp userInterfaceLayoutDirection and NSLocale preferredLanguages; per symbol imageWithSystemSymbolName: in an NSImageView (its defaults, frame frameForAlignmentRect: of its intrinsicContentSize) in an offscreen borderless window under the aqua appearance, its userInterfaceLayoutDirection recorded, drawn with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point to mirroring/<symbol>-<scale>.png; the image's alignmentRect and size",
+        ),
+    );
+    out::put(
+        &mut t,
+        "userInterfaceLayoutDirection_raw",
+        i64::try_from(app.userInterfaceLayoutDirection().0)
+            .map_or_else(|_| out::text("out of range"), Value::Integer),
+    );
+    out::put(
+        &mut t,
+        "preferredLanguages",
+        out::array(
+            objc2_foundation::NSLocale::preferredLanguages()
+                .iter()
+                .map(|l| out::text(l.to_string()))
+                .collect(),
+        ),
+    );
+    let window = match ffi::offscreen_window(mtm, OFFSCREEN_FRAME) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    let Some(content) = window.contentView() else {
+        out::put(&mut t, "error", out::unavailable("no content view"));
+        return t;
+    };
+    if let Some(aqua) = NSAppearance::appearanceNamed(&ns("NSAppearanceNameAqua")) {
+        window.setAppearance(Some(&aqua));
+    }
+    let dir = out_dir.join("mirroring");
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable(format!("cannot create {}: {e}", dir.display())),
+        );
+        return t;
+    }
+    let mut symbols = Table::new();
+    for name in MIRROR_SYMBOLS {
+        let mut s = Table::new();
+        let Some(image) =
+            objc2_app_kit::NSImage::imageWithSystemSymbolName_accessibilityDescription(
+                &ns(name),
+                None,
+            )
+        else {
+            out::put(
+                &mut symbols,
+                name,
+                out::unavailable("imageWithSystemSymbolName: is nil"),
+            );
+            continue;
+        };
+        out::put(&mut s, "size_wh", size(image.size()));
+        out::put(&mut s, "alignmentRect_xywh", rect(image.alignmentRect()));
+        let view = objc2_app_kit::NSImageView::imageViewWithImage(&image, mtm);
+        let frame = view.frameForAlignmentRect(NSRect::new(
+            NSPoint::new(10.0, 10.0),
+            view.intrinsicContentSize(),
+        ));
+        view.setFrame(NSRect::new(
+            NSPoint::new(10.0, 10.0),
+            NSSize::new(frame.size.width.ceil(), frame.size.height.ceil()),
+        ));
+        content.addSubview(&view);
+        out::put(
+            &mut s,
+            "view_userInterfaceLayoutDirection_raw",
+            i64::try_from(view.userInterfaceLayoutDirection().0)
+                .map_or_else(|_| out::text("out of range"), Value::Integer),
+        );
+        let mut renders = Table::new();
+        for (scale_name, scale) in RENDER_SCALES {
+            let file = format!("{name}-{scale_name}.png");
+            out::put(
+                &mut renders,
+                scale_name,
+                render_value(&view, scale, &dir.join(&file), &format!("mirroring/{file}")),
+            );
+        }
+        out::put_table(&mut s, "renders", renders);
+        view.removeFromSuperview();
+        out::put_table(&mut symbols, name, s);
+    }
+    out::put_table(&mut t, "symbols", symbols);
     t
 }
 

@@ -29,7 +29,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, probe-not-key, app-bundle); empty runs every pass. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, probe-not-key, app-bundle); empty runs every pass. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -810,6 +810,19 @@ jobs:
             echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
           } >> "$out/settings.txt" 2>&1
           tail -n 4 "$out/settings.txt"
+      # The reads pass under a right-to-left language (MP-text's U318): the
+      # process given -AppleLanguages "(he)" in its arguments (the argument
+      # domain; no setting written), so its mirroring section draws the
+      # directional symbols as AppKit lays them out for Hebrew.
+      - name: Run the reads pass under a right-to-left language (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-rtl,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reads-rtl
+          mkdir -p "$out"
+          echo "no setting changed; the probe's arguments: -AppleLanguages (he)" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads -AppleLanguages "(he)"
       # A pass with the image's own settings in which the probe's window is
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.

@@ -97,7 +97,8 @@ fn parse_args() -> Result<Options, String> {
 /// The options from `args`, the command line after the program's name, in
 /// any order, or the usage error. An argument starting with `-psn_`, the
 /// process serial number LaunchServices may pass an application `open`
-/// starts, is ignored.
+/// starts, is ignored, and so are `-AppleLanguages <value>` and
+/// `-AppleLocale <value>`, defaults AppKit reads from the arguments.
 fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Options, String> {
     let mut out = PathBuf::from("os-probe-out");
     let mut not_key = false;
@@ -113,6 +114,14 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some(s) if s.starts_with("-psn_") => {}
+            // An argument-domain default (NSUserDefaults.h's
+            // NSArgumentDomain): AppKit reads it from the process's
+            // arguments itself, so the probe takes the pair and ignores it.
+            Some("-AppleLanguages" | "-AppleLocale") => {
+                if args.next().is_none() {
+                    return Err(format!("{} needs a value\n{USAGE}", arg.to_string_lossy()));
+                }
+            }
             Some("--not-key") => not_key = true,
             Some("--button-pass") => button_pass = true,
             Some("--focus") => focus = true,
@@ -439,6 +448,8 @@ mod tests {
         assert!(parse(&["--not-key", "--symbols"]).is_err());
         assert!(parse(&["--symbols", "--reads"]).is_err());
         assert!(parse(&["--reads", "--button-pass"]).is_err());
+        assert!(parse(&["--reads", "-AppleLanguages", "(he)"]).is_ok());
+        assert!(parse(&["--reads", "-AppleLanguages"]).is_err());
         assert!(parse(&["--key-not-main"]).is_err());
         assert!(parse(&["--button-pass", "--key-not-main", "--main-not-key"]).is_err());
         assert!(parse(&["--button-pass", "--main-not-key"]).is_ok());
