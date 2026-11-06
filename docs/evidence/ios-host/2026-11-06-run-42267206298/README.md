@@ -20,7 +20,8 @@ Kept here, per image folder: `run1/index.toml` (each cell's configuration, title
 screenshots, solved layers and second run (about 670 MB) stay in the run's artifacts until GitHub deletes them.
 
 What the run shows (each job's run.txt): on iOS 18 the two runs are byte-identical (13,159 files); on iOS 26 they differ
-in 678 of 20,421 files, 356 outside `draw/` (Liquid Glass and the bar items, as in run 41020880059), and compare.swift
+in 678 of 20,421 files, 356 outside `draw/` (all of the glass and prominent glass specimens: Liquid Glass, as in run
+41020880059), and compare.swift
 accepts them. Both jobs report a failure: on pages of the pop-up buttons (`+pop_up_selected_*`) the button, 200 points
 wide or grown with the longer selection, overflowed its third of the screen into the page margins, so the margin check
 failed after 5 retakes (sync/done lists the pages; the pages were kept). The facts take no pop-up reading from this run:
