@@ -36,7 +36,7 @@
 //! # Sources not watched
 //!
 //! - `$XDG_SESSION_TYPE`: the session type, which decides whether the
-//!   text-scaling factor is reported ([`toolkit_scale_carries_text_scale`]),
+//!   text-scaling factor is reported (`toolkit_scale_carries_text_scale`),
 //!   fixed for a session.
 
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
