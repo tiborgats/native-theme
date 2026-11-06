@@ -355,6 +355,10 @@ pub enum ProblemKind {
     /// keyframe resolves its part's icon without the icon's own animation
     /// (S2.7, S12).
     KeyframeAnimation,
+    /// A `KirigamiSmoothstep` shadow layer's `spread` that can be other
+    /// than zero, or its `inset` true: Kirigami's shadow has no spread and
+    /// is never inset (S2.5, S12; ADD-A134).
+    SmoothstepSpreadOrInset,
     /// `Radius::FollowPart` outside a `FocusIndicator.corners` (S2.4, S12).
     FollowPartOutsideFocus,
     /// `round_pt` called outside an expression stated on a `Font.size`, or
@@ -683,6 +687,9 @@ impl fmt::Display for ProblemKind {
             }
             ProblemKind::KeyframeAnimation => {
                 f.write_str("a keyframe's `icon.animation`, which has no effect")
+            }
+            ProblemKind::SmoothstepSpreadOrInset => {
+                f.write_str("a `kirigami_smoothstep` shadow layer's spread or inset")
             }
             ProblemKind::FollowPartOutsideFocus => {
                 f.write_str("`follow_part` outside a focus indicator's corners")

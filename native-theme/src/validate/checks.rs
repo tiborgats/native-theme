@@ -14,7 +14,7 @@ use crate::blocks::outline::Radius;
 use crate::blocks::outline::StrokePatch;
 use crate::blocks::paint::{BlendMode, PaintKind, PaintPatch};
 use crate::blocks::part_style::PartStylePatch;
-use crate::blocks::shadow::Shadow;
+use crate::blocks::shadow::{Shadow, ShadowFalloff};
 use crate::blocks::text::{AxisTag, AxisValue, FeatureTag};
 use crate::blocks::{BlockPatch, Table};
 use crate::declare::{
@@ -36,7 +36,7 @@ use crate::selector::{
 };
 use crate::tokens::ABSENT_PARAM_GROUPS;
 use crate::toml::read::{Named, listed_path, toml_key};
-use crate::units::{Ms, Scalar};
+use crate::units::{Ms, Px, Scalar};
 use crate::value::{SchemeMap, SurfaceMap, Value};
 use crate::widgets::{
     ButtonPatch, PartPatch, PartPresence, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch,
@@ -1876,6 +1876,34 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// A `KirigamiSmoothstep` shadow layer's `spread` a stated zero and its
+    /// `inset` false (S2.5, S12; ADD-A134): Kirigami's shadow has no spread
+    /// and is never inset. A layer is stated whole, so its own fields are
+    /// all the check reads; a spread written as an expression can be other
+    /// than zero, and is refused.
+    fn smoothstep(
+        &mut self,
+        falloff: Option<&ShadowFalloff>,
+        spread: Option<&Value<Px>>,
+        inset: Option<bool>,
+        path: &Path,
+    ) {
+        if falloff != Some(&ShadowFalloff::KirigamiSmoothstep) {
+            return;
+        }
+        let toml = self.toml;
+        let field = |key: &str, suffix: &str| path.join(&spelled_key(key, suffix, toml));
+        if spread.is_some_and(|spread| *spread != Value::Stated(Px(0.0))) {
+            self.problem(
+                &field("spread", "_px"),
+                ProblemKind::SmoothstepSpreadOrInset,
+            );
+        }
+        if inset == Some(true) {
+            self.problem(&field("inset", ""), ProblemKind::SmoothstepSpreadOrInset);
+        }
+    }
+
     /// A font's stated weight, the CSS and OpenType weight, 1 to 1000
     /// (S2.8).
     fn weight(&mut self, weight: Option<&Value<u16>>, path: &Path) {
@@ -1936,6 +1964,14 @@ impl Visit for Checker<'_> {
                 {
                     self.problem(&at, ProblemKind::NoLayer);
                 }
+            }
+            Node::ShadowLayer(layer) => {
+                let falloff = Some(&layer.falloff);
+                self.smoothstep(falloff, Some(&layer.spread), Some(layer.inset), path);
+            }
+            Node::ShadowLayerPatch(patch) => {
+                let (falloff, spread) = (patch.falloff.as_ref(), patch.spread.as_ref());
+                self.smoothstep(falloff, spread, patch.inset, path);
             }
             Node::Transition(transition) => {
                 self.properties(Some(&transition.properties), path);

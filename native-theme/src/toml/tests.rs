@@ -13,7 +13,7 @@ use crate::blocks::outline::{
 };
 use crate::blocks::paint::{BlendMode, Paint, PaintKind, PaintLayer, PaintPatch};
 use crate::blocks::part_style::PartStylePatch;
-use crate::blocks::shadow::Shadow;
+use crate::blocks::shadow::{Shadow, ShadowFalloff};
 use crate::blocks::text::TextStylePatch;
 use crate::color::Color;
 use crate::declare::{DataName, DataOwner, DefaultSize, ScalarUnit};
@@ -548,6 +548,36 @@ fn blend_mode_spellings() {
             Some(expected),
             "{text}"
         );
+    }
+}
+
+/// A shadow layer's `falloff`: each member's snake_case name (S2.5, S11;
+/// ADD-A134), stated on every layer, no default standing in for it.
+#[test]
+fn shadow_falloff_spellings() {
+    let layer = |falloff: &str| {
+        format!(
+            "shadow = {{ layers = [{{ x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, \
+             color = \"#00000026\", inset = false{falloff} }}] }}"
+        )
+    };
+    for (text, expected) in [
+        ("\"gaussian\"", ShadowFalloff::Gaussian),
+        ("\"kirigami_smoothstep\"", ShadowFalloff::KirigamiSmoothstep),
+    ] {
+        let style = body_of(&layer(&format!(", falloff = {text}")));
+        let Some(Value::Stated(Shadow::Layers(layers))) = style.shadow else {
+            panic!("{text}: {:?}", style.shadow);
+        };
+        assert_eq!(
+            layers.first().map(|layer| layer.falloff),
+            Some(expected),
+            "{text}"
+        );
+    }
+    for falloff in ["", ", falloff = \"smoothstep\""] {
+        let text = format!("[widgets.button.body]\n{}", layer(falloff));
+        assert!(Layer::from_toml(&text).is_err(), "{falloff:?}");
     }
 }
 

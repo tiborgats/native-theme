@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 e6a84874a3ec2d82a9b85303097b74a053494b15e94274a169c6a60c8836fc29
+# generated lines: sha256 78631b732839bf9b82d61d957d7b715318f766e159996cdbf4ff6acb06d76438
 
 [preset]
 id = "adwaita"
@@ -3146,9 +3146,9 @@ transitions = [{ properties = ["fill", "shadow"], kind = "interpolate", duration
 interaction = "absent"
 # docs/facts/gnome/button.toml:1162
 fill = "= alpha(surface.foreground, 0.1)"
-# docs/facts/gnome/button.toml:1178
+# docs/facts/gnome/button.toml:1180
 shadow = "absent"
-# docs/facts/gnome/button.toml:1449
+# docs/facts/gnome/button.toml:1481
 opacity = 1
 
 [widgets.button.label]
@@ -3268,31 +3268,31 @@ presentations = []
 absent = true
 
 [widgets.button.menu_indicator]
-# docs/facts/gnome/button.toml:3368
+# docs/facts/gnome/button.toml:3480
 glyph.size_px = 16
-# docs/facts/gnome/button.toml:3383
+# docs/facts/gnome/button.toml:3495
 glyph.fill = "= surface.foreground"
-# docs/facts/gnome/button.toml:3394
+# docs/facts/gnome/button.toml:3506
 glyph.stroke = "absent"
-# docs/facts/gnome/button.toml:3406
+# docs/facts/gnome/button.toml:3518
 glyph.source = { theme_icon = { name = "pan-down-symbolic", fallbacks = [] } }
-# docs/facts/gnome/button.toml:3486
+# docs/facts/gnome/button.toml:3598
 glyph.mirroring = "never"
-# docs/facts/gnome/button.toml:3496
+# docs/facts/gnome/button.toml:3608
 glyph.axes = {}
-# docs/facts/gnome/button.toml:3507
+# docs/facts/gnome/button.toml:3619
 glyph.draw_extent = "absent"
-# docs/facts/gnome/button.toml:3517
+# docs/facts/gnome/button.toml:3629
 glyph.draw_start = "absent"
-# docs/facts/gnome/button.toml:3529
+# docs/facts/gnome/button.toml:3641
 min_width_px = 16
-# docs/facts/gnome/button.toml:3545
+# docs/facts/gnome/button.toml:3657
 min_height_px = 16
-# docs/facts/gnome/button.toml:3563
+# docs/facts/gnome/button.toml:3675
 margin = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:3579
+# docs/facts/gnome/button.toml:3691
 transform = { scale_x = 1, scale_y = 1, rotate_deg = 0, translate_x_px = 0, translate_y_px = 0, origin = [0.5, 0.5] }
-# docs/facts/gnome/button.toml:3601
+# docs/facts/gnome/button.toml:3713
 transitions = []
 
 [[rules]]
@@ -3362,31 +3362,31 @@ when = { conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1188
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+# docs/facts/gnome/button.toml:1190
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@card"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1205
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+# docs/facts/gnome/button.toml:1217
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@card"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1216
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+# docs/facts/gnome/button.toml:1238
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1232
+# docs/facts/gnome/button.toml:1264
 fill = "= alpha(surface.foreground, 0.15)"
 
 [[rules]]
@@ -3394,7 +3394,7 @@ when = { states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1249
+# docs/facts/gnome/button.toml:1281
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3402,7 +3402,7 @@ when = { states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1266
+# docs/facts/gnome/button.toml:1298
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3410,7 +3410,7 @@ when = { states = ["open"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1283
+# docs/facts/gnome/button.toml:1315
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3418,7 +3418,7 @@ when = { states = ["open"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1305
+# docs/facts/gnome/button.toml:1337
 fill = "= alpha(surface.foreground, 0.3)"
 
 [[rules]]
@@ -3426,7 +3426,7 @@ when = { states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1327
+# docs/facts/gnome/button.toml:1359
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3434,7 +3434,7 @@ when = { states = ["open", "hover"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1344
+# docs/facts/gnome/button.toml:1376
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3442,7 +3442,7 @@ when = { states = ["open", "hover"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1366
+# docs/facts/gnome/button.toml:1398
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3450,7 +3450,7 @@ when = { states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1388
+# docs/facts/gnome/button.toml:1420
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3458,7 +3458,7 @@ when = { states = ["open", "pressed"], variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1405
+# docs/facts/gnome/button.toml:1437
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3466,7 +3466,7 @@ when = { states = ["open", "pressed"], variants = ["back"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1427
+# docs/facts/gnome/button.toml:1459
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3474,7 +3474,7 @@ when = { states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1459
+# docs/facts/gnome/button.toml:1491
 opacity = "= token.params.opacity.disabled"
 
 [[rules]]
@@ -3482,9 +3482,9 @@ when = { variants = ["icon_only"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1470
+# docs/facts/gnome/button.toml:1502
 min_width_px = "= add(24px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:1491
+# docs/facts/gnome/button.toml:1523
 padding = { top_px = 5, right_px = 5, bottom_px = 5, left_px = 5 }
 
 [[rules]]
@@ -3492,7 +3492,7 @@ when = { variants = ["with_icon"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1507
+# docs/facts/gnome/button.toml:1539
 padding = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
 
 [[rules]]
@@ -3500,7 +3500,7 @@ when = { variants = ["@custom_child"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1525
+# docs/facts/gnome/button.toml:1557
 padding = { top_px = 5, right_px = 10, bottom_px = 5, left_px = 10 }
 
 [[rules]]
@@ -3508,7 +3508,7 @@ when = { variants = ["@with_arrow"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1548
+# docs/facts/gnome/button.toml:1580
 padding = { top_px = 5, right_px = 9, bottom_px = 5, left_px = 9 }
 
 [[rules]]
@@ -3516,7 +3516,7 @@ when = { variants = ["@with_arrow"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1569
+# docs/facts/gnome/button.toml:1601
 menu_indicator_gap_px = 4
 
 [[rules]]
@@ -3524,25 +3524,25 @@ when = { states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1580
+# docs/facts/gnome/button.toml:1612
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent" } }]
-# docs/facts/gnome/button.toml:1596
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+# docs/facts/gnome/button.toml:1628
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@osd"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1612
+# docs/facts/gnome/button.toml:1654
 min_width_px = "= add(32px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:1633
+# docs/facts/gnome/button.toml:1675
 min_height_px = "= add(32px, add(part.padding.top, part.padding.bottom))"
-# docs/facts/gnome/button.toml:1656
+# docs/facts/gnome/button.toml:1698
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
-# docs/facts/gnome/button.toml:1714
+# docs/facts/gnome/button.toml:1756
 bindings = [{ role = { role = { surface = "foreground" }, value = "srgb(1, 1, 1, 0.9)" } }]
-# docs/facts/gnome/button.toml:1747
+# docs/facts/gnome/button.toml:1789
 fill = "srgb(0, 0, 0, 0.65)"
 
 [[rules]]
@@ -3550,7 +3550,7 @@ when = { variants = ["@osd"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1672
+# docs/facts/gnome/button.toml:1714
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3558,7 +3558,7 @@ when = { variants = ["@osd"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1693
+# docs/facts/gnome/button.toml:1735
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3566,7 +3566,7 @@ when = { variants = ["@osd"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1731
+# docs/facts/gnome/button.toml:1773
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent" } }]
 
 [[rules]]
@@ -3574,25 +3574,25 @@ when = { conditions = ["contrast_high"], variants = ["@osd"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1758
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= surface.foreground", inset = false }] }
+# docs/facts/gnome/button.toml:1800
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= surface.foreground", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@osd"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1769
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+# docs/facts/gnome/button.toml:1821
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["@osd"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1785
+# docs/facts/gnome/button.toml:1847
 bindings = [{ role = { role = { surface = "foreground" }, value = "#ffffff" } }]
-# docs/facts/gnome/button.toml:1797
+# docs/facts/gnome/button.toml:1859
 fill = "= alpha(mix(#000000, surface.foreground, 0.15), 0.65)"
 
 [[rules]]
@@ -3600,9 +3600,9 @@ when = { variants = ["@osd"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1809
+# docs/facts/gnome/button.toml:1871
 bindings = [{ role = { role = { surface = "foreground" }, value = "#ffffff" } }]
-# docs/facts/gnome/button.toml:1820
+# docs/facts/gnome/button.toml:1882
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3610,7 +3610,7 @@ when = { variants = ["@osd"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1832
+# docs/facts/gnome/button.toml:1894
 fill = "= alpha(mix(#000000, surface.foreground, 0.2), 0.65)"
 
 [[rules]]
@@ -3618,7 +3618,7 @@ when = { variants = ["menu", "@osd"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1844
+# docs/facts/gnome/button.toml:1906
 fill = "= alpha(mix(#000000, surface.foreground, 0.2), 0.65)"
 
 [[rules]]
@@ -3626,7 +3626,7 @@ when = { variants = ["@osd"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1861
+# docs/facts/gnome/button.toml:1923
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3634,7 +3634,7 @@ when = { variants = ["menu", "@osd"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1873
+# docs/facts/gnome/button.toml:1935
 fill = "= alpha(mix(#000000, surface.foreground, 0.25), 0.65)"
 
 [[rules]]
@@ -3642,7 +3642,7 @@ when = { variants = ["@osd"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1890
+# docs/facts/gnome/button.toml:1952
 fill = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
 
 [[rules]]
@@ -3650,7 +3650,7 @@ when = { variants = ["menu", "@osd"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1902
+# docs/facts/gnome/button.toml:1964
 fill = "= alpha(mix(#000000, surface.foreground, 0.35), 0.65)"
 
 [[rules]]
@@ -3658,13 +3658,13 @@ when = { variants = ["primary"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1919
+# docs/facts/gnome/button.toml:1981
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.global.accent_foreground" } }]
-# docs/facts/gnome/button.toml:1930
+# docs/facts/gnome/button.toml:1992
 fill = "= role.global.accent"
-# docs/facts/gnome/button.toml:1941
+# docs/facts/gnome/button.toml:2003
 shadow = "absent"
-# docs/facts/gnome/button.toml:1954
+# docs/facts/gnome/button.toml:2016
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
 
 [[rules]]
@@ -3672,7 +3672,7 @@ when = { variants = ["primary"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1970
+# docs/facts/gnome/button.toml:2032
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3680,7 +3680,7 @@ when = { variants = ["primary"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:1991
+# docs/facts/gnome/button.toml:2053
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3688,7 +3688,7 @@ when = { variants = ["primary"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2012
+# docs/facts/gnome/button.toml:2074
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3696,7 +3696,7 @@ when = { variants = ["primary"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2029
+# docs/facts/gnome/button.toml:2091
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "#00000633" }, blend = "normal" }] }
 
 [[rules]]
@@ -3704,7 +3704,7 @@ when = { variants = ["primary"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2045
+# docs/facts/gnome/button.toml:2107
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3712,7 +3712,7 @@ when = { variants = ["menu", "primary"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2061
+# docs/facts/gnome/button.toml:2123
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3720,7 +3720,7 @@ when = { variants = ["primary"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2082
+# docs/facts/gnome/button.toml:2144
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3728,7 +3728,7 @@ when = { variants = ["menu", "primary"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2098
+# docs/facts/gnome/button.toml:2160
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3736,7 +3736,7 @@ when = { variants = ["primary"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2119
+# docs/facts/gnome/button.toml:2181
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3744,7 +3744,7 @@ when = { variants = ["menu", "primary"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2135
+# docs/facts/gnome/button.toml:2197
 fill = { layers = [{ kind = { color = "= role.global.accent" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3752,13 +3752,13 @@ when = { variants = ["@opaque"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2156
+# docs/facts/gnome/button.toml:2218
 bindings = [{ role = { role = { surface = "foreground" }, value = "= role.window.foreground" } }]
-# docs/facts/gnome/button.toml:2167
+# docs/facts/gnome/button.toml:2229
 fill = "= mix(role.window.background, role.window.foreground, 0.15)"
-# docs/facts/gnome/button.toml:2184
+# docs/facts/gnome/button.toml:2246
 shadow = "absent"
-# docs/facts/gnome/button.toml:2197
+# docs/facts/gnome/button.toml:2259
 focus.offset = { top_px = 1, right_px = 1, bottom_px = 1, left_px = 1 }
 
 [[rules]]
@@ -3766,7 +3766,7 @@ when = { variants = ["@opaque"], not_states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2213
+# docs/facts/gnome/button.toml:2275
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3774,7 +3774,7 @@ when = { variants = ["@opaque"], not_states = ["focus_visible"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2234
+# docs/facts/gnome/button.toml:2296
 focus.offset = { top_px = "= add(1px, 4px)", right_px = "= add(1px, 4px)", bottom_px = "= add(1px, 4px)", left_px = "= add(1px, 4px)" }
 
 [[rules]]
@@ -3782,7 +3782,7 @@ when = { variants = ["@opaque"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2255
+# docs/facts/gnome/button.toml:2317
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3790,7 +3790,7 @@ when = { variants = ["@opaque"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2278
+# docs/facts/gnome/button.toml:2340
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "#00000633" }, blend = "normal" }] }
 
 [[rules]]
@@ -3798,7 +3798,7 @@ when = { variants = ["@opaque"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2300
+# docs/facts/gnome/button.toml:2362
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3806,7 +3806,7 @@ when = { variants = ["menu", "@opaque"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2322
+# docs/facts/gnome/button.toml:2384
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3814,7 +3814,7 @@ when = { variants = ["@opaque"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2350
+# docs/facts/gnome/button.toml:2412
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3822,7 +3822,7 @@ when = { variants = ["menu", "@opaque"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2372
+# docs/facts/gnome/button.toml:2434
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.05)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3830,7 +3830,7 @@ when = { variants = ["@opaque"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2404
+# docs/facts/gnome/button.toml:2466
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3838,7 +3838,7 @@ when = { variants = ["menu", "@opaque"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2426
+# docs/facts/gnome/button.toml:2488
 fill = { layers = [{ kind = { color = "= mix(role.window.background, role.window.foreground, 0.15)" }, blend = "normal" }, { kind = { color = "srgb(0, 0, 0.0235294, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -3846,9 +3846,9 @@ when = { variants = ["destructive"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2459
+# docs/facts/gnome/button.toml:2521
 bindings = [{ role = { role = { global = "accent" }, value = "= role.global.status.destructive.fill" } }, { role = { role = { global = "accent_foreground" }, value = "= role.global.status.destructive.foreground" } }, { role = { role = { global = "accent_standalone" }, value = "= role.global.status.destructive.standalone" } }, { role = { role = { surface = "foreground" }, value = "= role.global.status.destructive.standalone" } }]
-# docs/facts/gnome/button.toml:2470
+# docs/facts/gnome/button.toml:2532
 fill = "= alpha(surface.foreground, 0.15)"
 
 [[rules]]
@@ -3856,7 +3856,7 @@ when = { variants = ["destructive"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2487
+# docs/facts/gnome/button.toml:2549
 fill = "= alpha(surface.foreground, 0.2)"
 
 [[rules]]
@@ -3864,7 +3864,7 @@ when = { variants = ["destructive"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2504
+# docs/facts/gnome/button.toml:2566
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3872,7 +3872,7 @@ when = { variants = ["destructive"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2521
+# docs/facts/gnome/button.toml:2583
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3880,7 +3880,7 @@ when = { variants = ["menu", "destructive"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2538
+# docs/facts/gnome/button.toml:2600
 fill = "= alpha(surface.foreground, 0.35)"
 
 [[rules]]
@@ -3888,7 +3888,7 @@ when = { variants = ["destructive"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2560
+# docs/facts/gnome/button.toml:2622
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3896,7 +3896,7 @@ when = { variants = ["menu", "destructive"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2577
+# docs/facts/gnome/button.toml:2639
 fill = "= alpha(surface.foreground, 0.4)"
 
 [[rules]]
@@ -3904,7 +3904,7 @@ when = { variants = ["destructive"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2599
+# docs/facts/gnome/button.toml:2661
 fill = "= alpha(surface.foreground, 0.45)"
 
 [[rules]]
@@ -3912,7 +3912,7 @@ when = { variants = ["menu", "destructive"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2616
+# docs/facts/gnome/button.toml:2678
 fill = "= alpha(surface.foreground, 0.45)"
 
 [[rules]]
@@ -3920,9 +3920,9 @@ when = { variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2638
+# docs/facts/gnome/button.toml:2700
 fill = "absent"
-# docs/facts/gnome/button.toml:2649
+# docs/facts/gnome/button.toml:2711
 shadow = "absent"
 
 [[rules]]
@@ -3930,39 +3930,39 @@ when = { variants = ["flat"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2661
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }] }
+# docs/facts/gnome/button.toml:2723
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2677
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+# docs/facts/gnome/button.toml:2749
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2693
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+# docs/facts/gnome/button.toml:2775
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { conditions = ["contrast_high"], variants = ["flat"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2709
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }] }
+# docs/facts/gnome/button.toml:2801
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["flat"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2725
+# docs/facts/gnome/button.toml:2827
 fill = "= alpha(surface.foreground, 0.07)"
 
 [[rules]]
@@ -3970,7 +3970,7 @@ when = { variants = ["flat"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2742
+# docs/facts/gnome/button.toml:2844
 fill = "= alpha(surface.foreground, 0.16)"
 
 [[rules]]
@@ -3978,7 +3978,7 @@ when = { variants = ["flat"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2759
+# docs/facts/gnome/button.toml:2861
 fill = "= alpha(surface.foreground, 0.1)"
 
 [[rules]]
@@ -3986,7 +3986,7 @@ when = { variants = ["menu", "flat"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2776
+# docs/facts/gnome/button.toml:2878
 fill = "= alpha(surface.foreground, 0.1)"
 
 [[rules]]
@@ -3994,7 +3994,7 @@ when = { variants = ["flat"], states = ["checked", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2798
+# docs/facts/gnome/button.toml:2900
 fill = "= alpha(surface.foreground, 0.13)"
 
 [[rules]]
@@ -4002,7 +4002,7 @@ when = { variants = ["menu", "flat"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2815
+# docs/facts/gnome/button.toml:2917
 fill = "= alpha(surface.foreground, 0.13)"
 
 [[rules]]
@@ -4010,7 +4010,7 @@ when = { variants = ["flat"], states = ["checked", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2837
+# docs/facts/gnome/button.toml:2939
 fill = "= alpha(surface.foreground, 0.19)"
 
 [[rules]]
@@ -4018,7 +4018,7 @@ when = { variants = ["menu", "flat"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2854
+# docs/facts/gnome/button.toml:2956
 fill = "= alpha(surface.foreground, 0.19)"
 
 [[rules]]
@@ -4026,7 +4026,7 @@ when = { variants = ["flat"], states = ["disabled"], not_states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2876
+# docs/facts/gnome/button.toml:2978
 opacity = "= token.params.opacity.strong_disabled"
 
 [[rules]]
@@ -4034,13 +4034,13 @@ when = { variants = ["circular"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2892
+# docs/facts/gnome/button.toml:2994
 min_width_px = "= add(34px, add(part.padding.left, part.padding.right))"
-# docs/facts/gnome/button.toml:2913
+# docs/facts/gnome/button.toml:3015
 min_height_px = "= add(34px, add(part.padding.top, part.padding.bottom))"
-# docs/facts/gnome/button.toml:2934
+# docs/facts/gnome/button.toml:3036
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:2945
+# docs/facts/gnome/button.toml:3047
 corners = { replace = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" } }
 
 [[rules]]
@@ -4048,9 +4048,9 @@ when = { variants = ["pill"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2961
+# docs/facts/gnome/button.toml:3063
 padding = { top_px = 10, right_px = 32, bottom_px = 10, left_px = 32 }
-# docs/facts/gnome/button.toml:2972
+# docs/facts/gnome/button.toml:3074
 corners = { replace = { top_left = { full = { maximum_px = "absent" } }, top_right = { full = { maximum_px = "absent" } }, bottom_right = { full = { maximum_px = "absent" } }, bottom_left = { full = { maximum_px = "absent" } }, curve = "circular" } }
 
 [[rules]]
@@ -4058,11 +4058,11 @@ when = { variants = ["@card"], not_variants = ["menu"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:2990
+# docs/facts/gnome/button.toml:3092
 fill = "= role.card.background"
-# docs/facts/gnome/button.toml:3013
+# docs/facts/gnome/button.toml:3115
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
-# docs/facts/gnome/button.toml:3026
+# docs/facts/gnome/button.toml:3128
 focus.offset = { top_px = -1, right_px = -1, bottom_px = -1, left_px = -1 }
 
 [[rules]]
@@ -4070,7 +4070,7 @@ when = { variants = ["@card"], not_variants = ["menu"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3002
+# docs/facts/gnome/button.toml:3104
 text.font.weight = "= token.text.roles.body.font.weight"
 
 [[rules]]
@@ -4078,7 +4078,7 @@ when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focused"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3042
+# docs/facts/gnome/button.toml:3144
 focus.offset = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
 
 [[rules]]
@@ -4086,7 +4086,7 @@ when = { variants = ["@card"], not_variants = ["menu"], not_states = ["focus_vis
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3063
+# docs/facts/gnome/button.toml:3165
 focus.offset = { top_px = "= add(add(-1px, token.focus.width), 4px)", right_px = "= add(add(-1px, token.focus.width), 4px)", bottom_px = "= add(add(-1px, token.focus.width), 4px)", left_px = "= add(add(-1px, token.focus.width), 4px)" }
 
 [[rules]]
@@ -4094,7 +4094,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3084
+# docs/facts/gnome/button.toml:3186
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.04)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4102,7 +4102,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3106
+# docs/facts/gnome/button.toml:3208
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.08)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4110,7 +4110,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3128
+# docs/facts/gnome/button.toml:3230
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4118,7 +4118,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "ho
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3150
+# docs/facts/gnome/button.toml:3252
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4126,7 +4126,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "pr
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3172
+# docs/facts/gnome/button.toml:3274
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4134,7 +4134,7 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["checked", "op
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3194
+# docs/facts/gnome/button.toml:3296
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4142,7 +4142,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3218
+# docs/facts/gnome/button.toml:3320
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.25)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4150,7 +4150,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3241
+# docs/facts/gnome/button.toml:3343
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4158,7 +4158,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3264
+# docs/facts/gnome/button.toml:3366
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.39)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4166,7 +4166,7 @@ when = { context = [{ scope = "any", variants = ["@osd"] }], variants = ["@card"
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3287
+# docs/facts/gnome/button.toml:3389
 fill = { layers = [{ kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }, { kind = { color = "= alpha(role.global.accent, 0.32)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4174,15 +4174,15 @@ when = { variants = ["@card"], not_variants = ["menu"], states = ["drop_target"]
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3310
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true }] }
+# docs/facts/gnome/button.toml:3412
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= role.global.accent", inset = true, falloff = "gaussian" }] }
 
 [[rules]]
 when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3327
+# docs/facts/gnome/button.toml:3439
 absent = true
 
 [[rules]]
@@ -4190,7 +4190,7 @@ when = { variants = ["menu"], not_variants = ["@with_arrow", "@arrow_only"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3347
+# docs/facts/gnome/button.toml:3459
 absent = true
 
 [[rules]]
@@ -4198,7 +4198,7 @@ when = { variants = ["menu", "@arrow_up"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3421
+# docs/facts/gnome/button.toml:3533
 glyph.source = { theme_icon = { name = "pan-up-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4206,7 +4206,7 @@ when = { variants = ["menu", "@arrow_start"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3437
+# docs/facts/gnome/button.toml:3549
 glyph.source = { theme_icon = { name = "pan-start-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4214,7 +4214,7 @@ when = { variants = ["menu", "@arrow_end"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3453
+# docs/facts/gnome/button.toml:3565
 glyph.source = { theme_icon = { name = "pan-end-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4222,7 +4222,7 @@ when = { variants = ["menu", "@arrow_none"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3469
+# docs/facts/gnome/button.toml:3581
 glyph.source = { theme_icon = { name = "open-menu-symbolic", fallbacks = [] } }
 
 [[rules]]
@@ -4230,7 +4230,7 @@ when = { variants = ["with_icon"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3612
+# docs/facts/gnome/button.toml:3724
 icon_text_gap_px = 6
 
 [[rules]]
@@ -4238,7 +4238,7 @@ when = { variants = ["with_icon"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3624
+# docs/facts/gnome/button.toml:3736
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
 
 [[rules]]
@@ -4246,7 +4246,7 @@ when = { variants = ["with_icon", "@with_arrow"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3643
+# docs/facts/gnome/button.toml:3755
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 0 }
 
 [[rules]]
@@ -4254,7 +4254,7 @@ when = { variants = ["with_icon", "@image_text_box"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3676
+# docs/facts/gnome/button.toml:3788
 icon_text_gap_px = 4
 
 [[rules]]
@@ -4262,7 +4262,7 @@ when = { variants = ["with_icon", "@image_text_box"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3687
+# docs/facts/gnome/button.toml:3799
 padding = { top_px = 0, right_px = 2, bottom_px = 0, left_px = 2 }
 
 [[rules]]
@@ -4270,9 +4270,9 @@ when = { variants = ["menu", "@card"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3704
+# docs/facts/gnome/button.toml:3816
 corners = { replace = { top_left_px = 12, top_right_px = 12, bottom_right_px = 12, bottom_left_px = 12, curve = "circular" } }
-# docs/facts/gnome/button.toml:3723
+# docs/facts/gnome/button.toml:3835
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.1)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4280,7 +4280,7 @@ when = { variants = ["menu", "@card"], states = ["hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3745
+# docs/facts/gnome/button.toml:3857
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.15)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4288,7 +4288,7 @@ when = { variants = ["menu", "@card"], states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3767
+# docs/facts/gnome/button.toml:3879
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4296,7 +4296,7 @@ when = { variants = ["menu", "@card"], states = ["open"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3789
+# docs/facts/gnome/button.toml:3901
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.3)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4304,7 +4304,7 @@ when = { variants = ["menu", "@card"], states = ["open", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3816
+# docs/facts/gnome/button.toml:3928
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.35)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4312,7 +4312,7 @@ when = { variants = ["menu", "@card"], states = ["open", "pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3843
+# docs/facts/gnome/button.toml:3955
 fill = { layers = [{ kind = { color = "= role.card.background" }, blend = "normal" }, { kind = { color = "= alpha(surface.foreground, 0.4)" }, blend = "normal" }] }
 
 [[rules]]
@@ -4320,24 +4320,24 @@ when = { variants = ["menu", "@card"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3871
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+# docs/facts/gnome/button.toml:3983
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(surface.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["menu", "@card"], states = ["drop_target"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3892
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+# docs/facts/gnome/button.toml:4014
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { variants = ["menu", "@card"], states = ["drop_target"], conditions = ["contrast_high"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/gnome/button.toml:3914
-shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false }] }
+# docs/facts/gnome/button.toml:4046
+shadow = { layers = [{ x_px = 0, y_px = 0, blur_px = 0, spread_px = 2, color = "= role.global.accent", inset = true, falloff = "gaussian" }, { x_px = 0, y_px = 0, blur_px = 0, spread_px = 1, color = "= alpha(role.card.foreground, token.params.opacity.border)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 1, blur_px = 3, spread_px = 1, color = "srgb(0, 0, 0.0235294, 0.07)", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = 2, blur_px = 6, spread_px = 2, color = "srgb(0, 0, 0.0235294, 0.03)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
 when = { conditions = ["contrast_high"] }

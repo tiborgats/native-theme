@@ -21,7 +21,7 @@ use crate::blocks::motion::{
 };
 use crate::blocks::outline::Radius;
 use crate::blocks::paint::{Paint, PaintKind, PaintPatch};
-use crate::blocks::shadow::Shadow;
+use crate::blocks::shadow::{Shadow, ShadowLayer, ShadowLayerPatch};
 use crate::blocks::text::{Font, FontPatch, LanguageTag};
 use crate::color::Color;
 use crate::expr::{EnumTy, Expr, SURFACE_SET, Ty};
@@ -107,6 +107,10 @@ pub(crate) enum Node<'a> {
     PaintKind(&'a PaintKind),
     /// A shadow.
     Shadow(&'a Shadow),
+    /// A shadow layer.
+    ShadowLayer(&'a ShadowLayer),
+    /// A shadow layer's patch.
+    ShadowLayerPatch(&'a ShadowLayerPatch),
     /// A transition.
     Transition(&'a Transition),
     /// A transition's patch.

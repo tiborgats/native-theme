@@ -26,7 +26,7 @@ pub type ResolvedShadow = Vec<ResolvedShadowLayer>;
 
 /// One layer of a shadow.
 #[derive(Clone, Debug, PartialEq, ThemeParts)]
-#[parts(block)]
+#[parts(block, check)]
 #[non_exhaustive]
 pub struct ShadowLayer {
     /// The horizontal offset, physical: not mirrored in right-to-left.
@@ -35,7 +35,8 @@ pub struct ShadowLayer {
     /// The vertical offset.
     #[parts(signed)]
     pub y: Value<Px>,
-    /// The blur radius.
+    /// The blur radius, CSS's: under [`ShadowFalloff::Gaussian`] twice the
+    /// blur's standard deviation.
     pub blur: Value<Px>,
     /// The spread.
     pub spread: Value<Px>,
@@ -43,4 +44,19 @@ pub struct ShadowLayer {
     pub color: Value<Color>,
     /// Drawn inside the box.
     pub inset: bool,
+    /// How the layer's edge fades over `blur`; every layer states it (S1).
+    pub falloff: ShadowFalloff,
+}
+
+/// How a shadow layer's edge fades over its `blur` (S2.5).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
+#[parts(toml)]
+pub enum ShadowFalloff {
+    /// CSS's `box-shadow`: the layer's shape blurred by a Gaussian whose
+    /// standard deviation is half of `blur`.
+    Gaussian,
+    /// Kirigami's `ShadowedRectangle`: the alpha a smoothstep of the signed
+    /// distance to the shape across a band centred on its edge, `blur` its
+    /// `shadow.size`. Such a layer has no spread and is never inset (S12).
+    KirigamiSmoothstep,
 }
