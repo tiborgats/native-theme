@@ -682,6 +682,31 @@ python3 scripts/check_preset_citations.py
 python3 scripts/check_preset_citations.py --self-test
 ```
 
+## check_pinned_citations.py
+
+Lists every citation of today's `docs/platform-facts.md` or the deleted
+`docs/inheritance-rules.toml` by line that names no commit
+(`platform-facts.md:N` where `platform-facts.md@fc6109d1:N` is meant,
+the 0.8.0 plan's *Citations of today's platform-facts.md by line*): since
+the switch the document is generated and the rules file is gone, so a line
+number without its commit names a line of another file, or of none. It
+reads every file git tracks or would track, but `docs/archive/`,
+`docs/evidence/` and the scripts that define and convert the format
+(`citations.py`, `repin_citations.py`, `import_platform_facts.py`,
+`convert_inheritance_rules.py` and itself). A `:N` continuation after a
+pinned citation inherits its commit; a mention with no line is no line
+citation. Prints one line per finding (file:line, citation) and exits 0 when
+there is none, 1 when there are some, 2 when git cannot list the files.
+`--self-test` runs the rule on synthetic files. `check_release.sh` (both
+modes) and `ci.yml`'s parity job run it and its self-test.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_pinned_citations.py
+python3 scripts/check_pinned_citations.py --self-test
+```
+
 ## spec_catalogue.py
 
 Reads the v0.7.1 specification's widget catalogue,

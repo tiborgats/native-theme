@@ -1413,6 +1413,15 @@ run_check "data documents: the enabled units' trace lines are carried" \
     python3 scripts/check_facts_trace.py --enabled
 run_check "data documents: facts trace self-test" \
     python3 scripts/check_facts_trace.py --self-test
+# The citations of today's platform-facts.md and the deleted
+# inheritance-rules.toml by line name the commit they read (`@fc6109d1`, the
+# 0.8.0 plan's *Citations of today's platform-facts.md by line*), outside
+# docs/archive/, docs/evidence/ and the scripts that define the format. CI's
+# parity job runs the same two.
+run_check "data documents: today's platform-facts.md and inheritance-rules.toml cited by line at a commit" \
+    python3 scripts/check_pinned_citations.py
+run_check "data documents: pinned citations self-test" \
+    python3 scripts/check_pinned_citations.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
