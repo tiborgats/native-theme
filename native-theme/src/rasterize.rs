@@ -3,7 +3,7 @@
 // Converts SVG byte data to IconData::Rgba pixel data at a specified size.
 // Enabled behind the `svg-rasterize` feature gate.
 
-use crate::IconData;
+use crate::icons::IconData;
 use resvg::tiny_skia;
 use resvg::usvg;
 
@@ -17,10 +17,9 @@ use resvg::usvg;
 ///
 /// # Errors
 ///
-/// Returns [`crate::Error::ReaderFailed`] with reader `"svg-rasterizer"`,
-/// whose [`kind`](crate::Error::kind) is
-/// [`ErrorKind::Platform`](crate::error::ErrorKind::Platform), if the SVG
-/// cannot be parsed or its `size × size` RGBA buffer cannot be allocated.
+/// Returns [`crate::Error::ReaderFailed`] with reader `"svg-rasterizer"` if
+/// the SVG cannot be parsed or its `size × size` RGBA buffer cannot be
+/// allocated.
 ///
 /// An `<image>` is drawn only from an inline `data:` URL; an `href` naming a
 /// file is not read.

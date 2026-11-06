@@ -6,7 +6,6 @@ All scripts are run from the project root. Each asset is generated into the
 crate it documents so relative paths in per-crate READMEs resolve everywhere
 (offline, on GitHub, and in the published crate on crates.io / docs.rs):
 
-- Spinner GIFs → `native-theme/docs/assets/`
 - gpui screenshots + theme-switching GIF → `connectors/native-theme-gpui/docs/assets/`
 - iced screenshots + theme-switching GIF → `connectors/native-theme-iced/docs/assets/`
 - egui screenshots + theme-switching GIF → `connectors/native-theme-egui/docs/assets/`
@@ -14,25 +13,12 @@ crate it documents so relative paths in per-crate READMEs resolve everywhere
 
 ## generate_assets_local.sh
 
-Master orchestration script. Runs all five asset generators in sequence:
-spinner GIFs, iced screenshots, gpui screenshots, egui screenshots, and
-theme-switching GIFs.
+Master orchestration script. Runs all four asset generators in sequence:
+iced screenshots, gpui screenshots, egui screenshots, and theme-switching
+GIFs.
 
 ```sh
 ./scripts/generate_assets_local.sh
-```
-
-## generate_gifs_spinners.py
-
-Generates looping spinner GIF animations from the bundled Material and Lucide
-SVG icons into `native-theme/docs/assets/`. Each GIF shows the spinner centered
-on a styled card background (24 rotation frames, 42ms/frame).
-
-Requires: Python 3, Pillow, ImageMagick 7
-
-```sh
-# Spinner GIFs (default output: native-theme/docs/assets/)
-python3 scripts/generate_gifs_spinners.py
 ```
 
 ## generate_gifs_assemble.py
@@ -182,24 +168,6 @@ still renders, with a fallback face.
 ./scripts/generate_diagrams.sh
 ```
 
-## generate_qt_color_vectors.py
-
-Writes `native-theme/src/kde/qt_color_vectors.rs`, the Qt test vectors the
-KDE reader's colour helpers are checked against (`kde::colors`' tests):
-`Qt.tint`, run by Qt's own QML engine, and `KColorUtils::mix` and Kirigami's
-`ColorUtils::linearInterpolation`, transcribed over Qt's `QColor`. Each table
-holds the Breeze inputs, edge cases and seeded random inputs, among them
-inputs on which a naive float port gives another colour. The output is
-deterministic; run it again only to change the tables.
-
-Requires: Python 3 and PySide6 6.11.2 (Qt 6.11.2), the version the tables were
-generated with; it refuses another, and a Qt build whose `QColor::toRgb` does
-not fuse `1.0f - (s * f)` into one multiply-add, as the reference build does.
-
-```sh
-python3 -I scripts/generate_qt_color_vectors.py
-```
-
 ## generate_assets_release.sh
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
@@ -226,7 +194,7 @@ releases, runs `check_widget_coverage.py` (Python 3.11+), and rewrites
 connector that fails on the newest set fails the script.
 
 Requires: gh CLI (authenticated), spectacle, kscreen-doctor, qdbus6,
-dbus-monitor, dbus-send, Python 3.11+, Pillow, ImageMagick 7, network access
+dbus-monitor, dbus-send, Python 3.11+, Pillow, network access
 
 ```sh
 ./scripts/generate_assets_release.sh
@@ -649,25 +617,6 @@ python3 scripts/check_platform_facts_rows.py
 python3 scripts/check_platform_facts_rows.py --self-test
 ```
 
-## check_wrong_safety_nets.py
-
-Checks `docs/inheritance-rules.toml`'s `[wrong_safety_nets]` against the
-file's rules: a `[uniform]` rule marked `# see wrong_safety_nets` has an entry
-with the rule's source, a `[uniform]` rule that has an entry carries the mark,
-and an entry that is no `[uniform]` rule is inherited by `[font_inheritance]`
-or `[border_inheritance]`, or states `removed`; the script's docstring states
-the whole rule. Prints one line per finding and exits 0 when there is none, 1
-when there are some, 2 on an input it cannot read. `--self-test` runs the
-rule on a synthetic rules file. `check_release.sh` (both modes) and
-`ci.yml`'s parity job run it and its self-test.
-
-Requires Python 3.11+ (for `tomllib`).
-
-```sh
-python3 scripts/check_wrong_safety_nets.py
-python3 scripts/check_wrong_safety_nets.py --self-test
-```
-
 ## check_section_refs.py
 
 Lists every numbered `§` reference in `docs/property-registry.toml`,
@@ -712,35 +661,21 @@ python3 scripts/check_todo_citations.py --self-test
 
 ## check_preset_citations.py
 
-Checks the `docs/platform-facts.md` citations in the presets' comments. A
-citation (`platform-facts.md:N`, a range `N-M` or further `, :K` lines, each
-with its `(§x)`) cites the key its comment names (`no K:`, `K not stated:`,
-`K ← X`, ...), or else the value straight below the comment, and its row
-must name that key or value: the row's backticked name must be the key path
-inside its widget, `<sub-table>.<key>` without `_px`, `_ms` or `_pt`
-(`[light.button.border] color` is `border.color`), and the row must lie in
-the section the comment states; a citation of several rows for a value also
-needs each row of the value's section to name a value it covers. A line
-number drifts with every edit above it, which is how 52 of material-3's
-comments in each variant came to cite a neighbouring row. The stated
-cross-row citations pass by rules (a disabled colour citing
-`disabled_opacity`, an unchecked or hovered fill citing the widget's
-`background_color`, ..., each only where the section has no row of the
-value's own), and the rest by the script's `EXCEPTIONS` list, keyed by
-preset, key path and cited row, each with its reason; an exception no
-citation uses is a finding. A value the specification defines carries its
-section as its comment in place of a citation (`font_dpi = 72  # S9.4` on
-`macos-*` and `ios-*`, `animated_visuals = {}  # S4.5` on every preset but
-`windows-11`, ADD-A125, ADD-A131): the comment is accepted for that key,
-value and presets alone, in today's presets and the new model's
-(`native-theme/src/next/presets/`). The script's docstring states the whole
-rule. Prints one line per finding (preset:line, key path, cited line, what is
-wrong) and the counts of every preset, and exits 0 when there is none, 1
-when there are some, 2 on an input it cannot read (not UTF-8 or TOML, or a
-preset citing `platform-facts.md:N` where the rule reads no citation).
-`--self-test` runs the rule on a synthetic facts file and preset.
-`check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
-self-test.
+Checks the bundled presets' definition comments. A value the specification
+defines, not a fact, carries its section as its comment in place of a
+citation (`font_dpi = 72  # S9.4` on `macos-*` and `ios-*`,
+`animated_visuals = {}  # S4.5` on every preset but `windows-11`, ADD-A125,
+ADD-A131): the comment is accepted for that key, value and presets alone. The
+presets are the new model's, one folder: `native-theme/src/next/presets/`
+while `native-theme/src/next/mod.rs` exists, `native-theme/src/presets/` once
+the switch has moved `next` into place. Its citation rule over today's presets
+went with them at the switch; M2.6 rewrites it to read the facts. The
+script's docstring states the whole rule. Prints one line per finding
+(preset:line, key path, what is wrong) and exits 0 when there is none, 1 when
+there are some, 2 on an input it cannot read (a folder without presets, or a
+file that is not UTF-8 or TOML). `--self-test` runs the rule on synthetic
+presets. `check_release.sh` (both modes) and `ci.yml`'s parity job run it and
+its self-test.
 
 Requires Python 3.11+ (for `tomllib`).
 

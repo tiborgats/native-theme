@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Each variant represents a conceptual icon role (not a specific icon image).
 /// Platform-specific icon identifiers are resolved via
-/// [`icon_name()`](crate::icon_name) using an [`IconSet`].
+/// [`icon_name()`] using an [`IconSet`].
 ///
 /// # Categories
 ///
@@ -38,7 +38,6 @@ use serde::{Deserialize, Serialize};
 /// assert!(IconRole::ALL.iter().any(|role| role.name() == "action-save"));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
 pub enum IconRole {
     // Dialog / Alert (6)
     /// Warning indicator for dialogs
@@ -292,7 +291,6 @@ impl IconRole {
 /// assert_eq!(IconData::rgba(16, 16, vec![]), None);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[non_exhaustive]
 #[must_use]
 pub enum IconData {
     /// SVG content as raw bytes (from freedesktop themes, bundled icon sets).
@@ -349,6 +347,7 @@ impl IconData {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawRgbaData")]
+#[non_exhaustive]
 pub struct RgbaData {
     width: u32,
     height: u32,
@@ -421,7 +420,7 @@ impl TryFrom<RawRgbaData> for RgbaData {
 /// # Examples
 ///
 /// ```
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 ///
 /// let set = IconSet::from_name("sf-symbols").unwrap();
 /// assert_eq!(set, IconSet::SfSymbols);
@@ -436,7 +435,6 @@ impl TryFrom<RawRgbaData> for RgbaData {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-#[non_exhaustive]
 pub enum IconSet {
     /// Apple SF Symbols (macOS, iOS).
     SfSymbols,
@@ -512,7 +510,7 @@ impl IconSet {
 ///
 /// ```
 /// use native_theme::icons::IconProvider;
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 /// use std::borrow::Cow;
 ///
 /// #[derive(Debug)]
@@ -550,7 +548,7 @@ impl IconProvider for IconRole {
     }
 
     fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
-        crate::model::bundled::bundled_icon_svg(*self, set).map(Cow::Borrowed)
+        super::bundled::bundled_icon_svg(*self, set).map(Cow::Borrowed)
     }
 }
 
@@ -564,14 +562,13 @@ impl IconProvider for IconRole {
 ///
 /// ```
 /// use native_theme::icons::{IconRole, icon_name};
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::IconSet;
 ///
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::SfSymbols), Some("doc.on.doc"));
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));
 /// assert_eq!(icon_name(IconRole::FolderOpen, IconSet::SfSymbols), None);
 /// ```
 #[must_use]
-#[allow(unreachable_patterns)] // wildcard arm kept for #[non_exhaustive] forward compat
 pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
     match set {
         IconSet::SfSymbols => sf_symbols_name(role),
@@ -579,7 +576,6 @@ pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
         IconSet::Freedesktop => freedesktop_name(role),
         IconSet::Material => material_name(role),
         IconSet::Lucide => lucide_name(role),
-        _ => None,
     }
 }
 
@@ -929,8 +925,7 @@ mod tests {
     #[test]
     fn icon_role_all_contains_every_variant() {
         // Exhaustive match — adding a new IconRole variant without adding it
-        // here will cause a compile error (missing match arm). This is valid
-        // within the defining crate despite #[non_exhaustive].
+        // here will cause a compile error (missing match arm).
         use std::collections::HashSet;
         let all_set: HashSet<IconRole> = IconRole::ALL.iter().copied().collect();
         let check = |role: IconRole| {
@@ -1615,7 +1610,7 @@ mod tests {
     #[test]
     #[cfg(all(feature = "material-icons", feature = "lucide-icons"))]
     fn all_roles_have_bundled_svg() {
-        use crate::bundled_icon_svg;
+        use super::super::bundled::bundled_icon_svg;
         for set in [IconSet::Material, IconSet::Lucide] {
             for role in IconRole::ALL.iter().copied() {
                 assert!(

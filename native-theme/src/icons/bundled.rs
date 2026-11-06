@@ -4,7 +4,7 @@
 // embeds SVG files at compile time and makes them available via
 // `bundled_icon_svg()`. Without features, the function always returns None.
 
-use super::icons::{IconRole, IconSet, icon_name};
+use super::model::{IconRole, IconSet, icon_name};
 
 /// Returns the raw SVG bytes for a bundled icon, if the corresponding
 /// feature flag is enabled.

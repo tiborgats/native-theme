@@ -1,15 +1,13 @@
-//! Wall-clock timings of the paths the code review measures: preset parsing, resolution,
-//! the system reader, the GNOME reader, the accessibility reader and its cache, and icon loading.
+//! Wall-clock timings of the paths the code review measures: icon loading.
 //! Ignored by default; run on the release profile, before and after a perf fix:
 //!
 //! `cargo test -p native-theme --release --all-features --test timings -- --ignored --nocapture --test-threads=1`
 
+// Every probe loads icons, `system-icons` enabling `material-icons`.
+#![cfg(feature = "material-icons")]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stdout)]
 
 use std::time::{Duration, Instant};
-
-use native_theme::ResolutionContext;
-use native_theme::theme::{ColorMode, Theme};
 
 fn median<T>(runs: usize, mut f: impl FnMut() -> T) -> Duration {
     let mut times: Vec<Duration> = (0..runs)
@@ -23,83 +21,6 @@ fn median<T>(runs: usize, mut f: impl FnMut() -> T) -> Duration {
     times.get(runs / 2).copied().unwrap_or_default()
 }
 
-#[test]
-#[ignore = "timing probe; run with --ignored --nocapture"]
-fn presets_parse_and_resolve() {
-    for info in Theme::list_presets() {
-        let key = info.key;
-        let parse = median(21, || Theme::preset(key));
-        let theme = Theme::preset(key).expect("bundled preset parses");
-        let light = median(21, || theme.resolve(ColorMode::Light));
-        let dark = median(21, || theme.resolve(ColorMode::Dark));
-        println!("timing preset {key}: parse {parse:?}, resolve light {light:?}, dark {dark:?}");
-        let ctx = ResolutionContext::for_tests();
-        let light = median(21, || theme.resolve_with(ColorMode::Light, &ctx));
-        let dark = median(21, || theme.resolve_with(ColorMode::Dark, &ctx));
-        println!("timing preset {key}: resolve_with for_tests() light {light:?}, dark {dark:?}");
-    }
-}
-
-/// One cold `Theme::preset` call: meaningful only as the first call in a fresh process, so run
-/// it alone (`-- --ignored --nocapture --exact preset_cold_first_call`), once per process.
-#[test]
-#[ignore = "timing probe; run with --ignored --nocapture"]
-fn preset_cold_first_call() {
-    let start = Instant::now();
-    let theme = Theme::preset("kde-breeze");
-    let cold = start.elapsed();
-    println!(
-        "timing preset kde-breeze cold first call: {cold:?} (ok: {})",
-        theme.is_ok()
-    );
-}
-
-#[test]
-#[ignore = "timing probe; run with --ignored --nocapture"]
-fn system_readers() {
-    let start = Instant::now();
-    let first = native_theme::SystemTheme::from_system();
-    println!(
-        "timing from_system cold: {:?} (ok: {})",
-        start.elapsed(),
-        first.is_ok()
-    );
-    let warm = median(5, native_theme::SystemTheme::from_system);
-    println!("timing from_system warm: {warm:?}");
-    let prefs = median(5, native_theme::AccessibilityPreferences::from_system);
-    println!("timing accessibility: {prefs:?}");
-    native_theme::detect::invalidate_caches();
-    let _ = native_theme::SystemTheme::from_system();
-    let start = Instant::now();
-    let _ = native_theme::detect::accessibility_preferences();
-    let first = start.elapsed();
-    let cached = median(5, native_theme::detect::accessibility_preferences);
-    println!("timing accessibility cached, after from_system: first {first:?}, then {cached:?}");
-}
-
-/// The GNOME reader through `from_system`, which selects it on GNOME: on another desktop with
-/// gsettings, run it as `XDG_CURRENT_DESKTOP=GNOME cargo test ... -- --ignored --exact gnome_reader`.
-#[cfg(all(target_os = "linux", feature = "portal"))]
-#[test]
-#[ignore = "timing probe; run with --ignored --nocapture"]
-fn gnome_reader() {
-    use native_theme::detect::{LinuxDesktop, detect_linux_desktop};
-    if detect_linux_desktop() != LinuxDesktop::Gnome {
-        println!("timing gnome reader: skipped, XDG_CURRENT_DESKTOP is not GNOME");
-        return;
-    }
-    let start = Instant::now();
-    let first = native_theme::SystemTheme::from_system();
-    println!(
-        "timing gnome reader cold: {:?} (ok: {})",
-        start.elapsed(),
-        first.is_ok()
-    );
-    let warm = median(11, native_theme::SystemTheme::from_system);
-    println!("timing gnome reader warm: {warm:?}");
-}
-
-#[cfg(feature = "material-icons")]
 #[test]
 #[ignore = "timing probe; run with --ignored --nocapture"]
 fn bundled_icons() {
