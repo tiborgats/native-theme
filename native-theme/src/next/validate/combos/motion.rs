@@ -7,7 +7,7 @@ use super::super::stack::{
     Fact, Item as Listed, ItemKey, Op, OpKind, Source, Stack, Target, Val, below, is_above,
     part_info, tail,
 };
-use super::{Bound, Checks, Found, Got, Seed, World, all_parts, variant};
+use super::{Bound, Checks, Found, Got, Seed, World, all_parts, cx_of, got_of, variant};
 use crate::next::blocks::motion::{BreezeTest, PropertyGroup};
 use crate::next::error::ProblemKind;
 
@@ -81,6 +81,27 @@ fn overridden(group: PropertyGroup) -> Vec<PropertyGroup> {
 fn zero_at<'s>(source: &'s Source, place: &str) -> Option<&'s Op> {
     source.ops.iter().find(|op| {
         op.path == place && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Number(n))) if n == 0.0)
+    })
+}
+
+/// The value the source `number` states at `place`, as a lookup finds it.
+fn stated_at<'s>(number: usize, source: &'s Source, place: &str) -> Option<Found<'s>> {
+    let (index, op) = source
+        .ops
+        .iter()
+        .enumerate()
+        .find(|(_, op)| op.path == place)?;
+    let OpKind::Set(val) = &op.kind else {
+        return None;
+    };
+    Some(Found {
+        got: got_of(val),
+        at: &op.at,
+        cx: cx_of(source, op),
+        layer: source.layer,
+        id: Some((number, index)),
+        via: false,
+        above: false,
     })
 }
 
@@ -233,6 +254,39 @@ impl Stack<'_> {
             .0
             .iter()
             .any(|end| matches!(end.got, Got::Stated(Fact::Number(n)) if n != 0.0))
+    }
+
+    /// Whether a found delay is no delay under `world` (S2.7, S12): its
+    /// references followed, each end a stated zero; a value the check
+    /// cannot read is not.
+    fn undelayed(&self, world: &World, found: Found<'_>) -> bool {
+        let (ends, _) = self.follow(world, found);
+        !ends.is_empty()
+            && ends
+                .iter()
+                .all(|end| matches!(end.got, Got::Stated(Fact::Number(n)) if n == 0.0))
+    }
+
+    /// Whether the delay the source `number` states at `place` is no delay
+    /// under a world where the source applies: a stated zero, or a value
+    /// that resolves to zero there.
+    fn no_delay_stated(
+        &self,
+        worlds: &[World],
+        number: usize,
+        source: &Source,
+        place: &str,
+    ) -> bool {
+        if zero_at(source, place).is_some() {
+            return true;
+        }
+        let Some(found) = stated_at(number, source, place) else {
+            return false;
+        };
+        matches!(found.got, Got::Expr(_))
+            && worlds
+                .iter()
+                .any(|world| self.applies(world, source) && self.undelayed(world, found))
     }
 
     /// The Breeze test of a found engine, as its source states it.
@@ -572,21 +626,25 @@ impl Checks<'_, '_> {
     /// earlier in its own list, in the base or in an earlier rule of its
     /// part, can apply under some world where its own source does; for a
     /// `FocusIndicator.transition`, no transition of the indicator below
-    /// it. Where none can, no transition is stated. The states the
-    /// transitions apply from are not read: any two can apply from one
-    /// update's flags.
+    /// it. Where none can, no transition is stated. A delay is read by its
+    /// value, a reference followed: one resolving to zero under a world
+    /// where the source applies is no delay. The states the transitions
+    /// apply from are not read: any two can apply from one update's flags.
     pub(super) fn zeros(&mut self) {
         let stack = self.stack;
         for (number, source) in stack.sources.iter().enumerate() {
             for (index, item) in source.items.iter().enumerate() {
-                if !item.place.starts_with("transitions[")
-                    || zero_at(source, &below(&item.place, "delay")).is_none()
-                {
+                if !item.place.starts_with("transitions[") {
                     continue;
                 }
                 let Some(duration) = zero_at(source, &below(&item.place, "duration")) else {
                     continue;
                 };
+                let seeds = vec![Seed::Field(source.target, item.place.clone(), true)];
+                let delay = below(&item.place, "delay");
+                if !stack.no_delay_stated(&stack.worlds(seeds), number, source, &delay) {
+                    continue;
+                }
                 let overriding: Vec<PropertyGroup> =
                     groups(item).into_iter().flat_map(overridden).collect();
                 let overrides = stack.of(source.target).any(|(other_number, other)| {
@@ -617,15 +675,15 @@ impl Checks<'_, '_> {
                     self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
                 }
             }
-            self.focus_zero(source);
+            self.focus_zero(number, source);
         }
     }
 
     /// [`Checks::zeros`] for a focus indicator's transition stated a zero
-    /// by `source`: refused where no transition of the indicator lies below
-    /// it under any world where the source applies. A delay the source
-    /// leaves unstated is the one below it.
-    fn focus_zero(&mut self, source: &Source) {
+    /// by `source`, the source `number`: refused where no transition of the
+    /// indicator lies below it under any world where the source applies. A
+    /// delay the source leaves unstated is the one below it.
+    fn focus_zero(&mut self, number: usize, source: &Source) {
         let stack = self.stack;
         let place = "focus.transition";
         let Some(duration) = zero_at(source, &below(place, "duration")) else {
@@ -648,14 +706,15 @@ impl Checks<'_, '_> {
                 delayed |= stack
                     .value_at(world, source.target, &delay, below_it, 0)
                     .iter()
-                    .any(|found| !matches!(found.got, Got::Stated(Fact::Number(n)) if n == 0.0));
+                    .any(|found| !stack.undelayed(world, *found));
             }
             overrides |= stack
                 .value_at(world, source.target, &below(place, "engine"), below_it, 0)
                 .iter()
                 .any(|found| !matches!(found.got, Got::Absent | Got::Auto));
         }
-        let zero_delay = !states_at(source, &delay) || zero_at(source, &delay).is_some();
+        let zero_delay =
+            !states_at(source, &delay) || stack.no_delay_stated(&worlds, number, source, &delay);
         if zero_delay && !delayed && !overrides && worlds.iter().any(|w| stack.applies(w, source)) {
             self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
         }

@@ -1513,6 +1513,45 @@ fn refusal_overrides_nothing() {
     assert_eq!(bare(&over), NONE);
 }
 
+/// A stated zero's delay is read by its value (S2.7, S12): one written as a
+/// reference that resolves to zero is no delay, so the zero is refused
+/// where it overrides nothing; one resolving to another than zero holds
+/// its start. A list's item's and a focus indicator's transition's alike.
+#[test]
+fn overrides_nothing_reads_the_delay_by_its_value() {
+    let quick = declare("durations = [\"quick\"]");
+    let delay = "\"= token.motion.durations.quick\"";
+    let refusal = "a stated zero with no delay that overrides no transition";
+    let item = |token: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = {token}\n[widgets.button.body]\n\
+             transitions = [{{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = \
+             0, delay_ms = {delay}, timing = \"absent\", engine = \"gtk_css\" }}]"
+        ))
+    };
+    assert_eq!(
+        found(&item("0"), &quick),
+        [format!(
+            "widgets.button.body.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(found(&item("50"), &quick), NONE);
+    let focus = |token: &str| {
+        toml(&format!(
+            "[tokens.motion]\ndurations.quick_ms = {token}\n[widgets.button.body.focus]\n\
+             transition = {{ properties = [], kind = \"interpolate\", duration_ms = 0, \
+             delay_ms = {delay}, timing = \"absent\", engine = \"gtk_css\", from = \"none\" }}"
+        ))
+    };
+    assert_eq!(
+        found(&focus("0"), &quick),
+        [format!(
+            "widgets.button.body.focus.transition.duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(found(&focus("50"), &quick), NONE);
+}
+
 /// A Breeze test's flags and conditions are read as a `when` writes them
 /// and walked as a rule's are: a keyed flag the widget declares, a keyed
 /// condition the preset declares (S2.7, S10, S11, S12; ADD-A126).
