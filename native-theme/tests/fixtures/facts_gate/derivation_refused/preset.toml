@@ -1,0 +1,11 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+target = "button.body"
+set = { fill = "= input.accent" }

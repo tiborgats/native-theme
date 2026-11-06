@@ -107,13 +107,13 @@ fn happy_path_icon_name_material() {
 
     assert!(
         output.code().contains(
-            "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
+            "(Self::PlayPause, native_theme::icons::IconSet::Material) => Some(\"play_pause\")"
         ),
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
         output.code().contains(
-            "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
+            "(Self::SkipForward, native_theme::icons::IconSet::Material) => Some(\"skip_next\")"
         ),
         "should have Material icon_name arm for SkipForward"
     );
@@ -125,13 +125,13 @@ fn happy_path_icon_name_sf_symbols() {
 
     assert!(
         output.code().contains(
-            "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+            "(Self::PlayPause, native_theme::icons::IconSet::SfSymbols) => Some(\"play.fill\")"
         ),
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
         output.code().contains(
-            "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+            "(Self::SkipForward, native_theme::icons::IconSet::SfSymbols) => Some(\"forward.fill\")"
         ),
         "should have SfSymbols icon_name arm for SkipForward"
     );
@@ -440,7 +440,7 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         output
             .code()
             .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
-        "should read the desktop native-theme's readers use. code:\n{}",
+        "should read the desktop native-theme's icon-theme detection uses. code:\n{}",
         output.code()
     );
     assert!(
@@ -925,6 +925,86 @@ fn compile_generated_files_in_one_module() {
     if let Err(stderr) = result {
         panic!(
             "generated code failed to compile:\n{stderr}\n\n--- media ---\n{media}\n--- nav ---\n{nav}\n--- option ---\n{option}"
+        );
+    }
+}
+
+/// The two matches a wildcard arm is decided for compile under `deny(unused)`:
+/// an enum without roles, whose matches keep their `_ => None` (`&self` of an
+/// empty enum is inhabited), and a role every icon set maps, whose
+/// `icon_name` covers every pair and has none, which would be unreachable.
+#[test]
+fn compile_generated_empty_and_fully_covered_matches() {
+    let generate = |name: &str, roles: &[&str]| {
+        let dir = create_temp_dir(&format!("wildcard_{name}"));
+        for (theme, icon) in [
+            ("material", "play_pause"),
+            ("lucide", "play"),
+            ("sf-symbols", "play.fill"),
+            ("segoe-fluent", "Play"),
+            ("freedesktop", "media-playback-start"),
+        ] {
+            let mapping: String = roles
+                .iter()
+                .map(|r| format!("{r} = \"{icon}\"\n"))
+                .collect();
+            write_file(&dir, &format!("{theme}/mapping.toml"), &mapping);
+            if matches!(theme, "material" | "lucide") && !roles.is_empty() {
+                write_file(&dir, &format!("{theme}/{icon}.svg"), SVG_STUB);
+            }
+        }
+        let roles_list = roles
+            .iter()
+            .map(|r| format!("\"{r}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        write_file(
+            &dir,
+            "icons.toml",
+            &format!(
+                "name = \"{name}\"\nroles = [{roles_list}]\n\
+                 bundled-themes = [\"material\", \"lucide\"]\n\
+                 system-themes = [\"sf-symbols\", \"segoe-fluent\", \"freedesktop\"]\n"
+            ),
+        );
+        let code = IconGenerator::new()
+            .source(dir.join("icons.toml"))
+            .output_dir(&dir)
+            .generate()
+            .unwrap_or_else(|e| panic!("{name}: expected no errors: {e}"))
+            .code()
+            .to_string();
+        (code, dir)
+    };
+    let (empty, empty_dir) = generate("empty-icons", &[]);
+    let (full, full_dir) = generate("full-icons", &["play-pause"]);
+    assert_eq!(empty.matches("_ => None,").count(), 2, "{empty}");
+    assert_eq!(full.matches("_ => None,").count(), 1, "{full}");
+
+    let lib_rs = "#![deny(missing_docs, unused)]\n\
+                  //! compile check\n\
+                  /// An enum without roles.\n\
+                  pub mod empty {\n\
+                  include!(\"empty_icons.rs\");\n\
+                  }\n\
+                  /// A role every set maps.\n\
+                  pub mod full {\n\
+                  include!(\"full_icons.rs\");\n\
+                  }\n";
+    let result = cargo_check(
+        "wildcard_check",
+        &[
+            ("lib.rs", lib_rs),
+            ("empty_icons.rs", &empty),
+            ("full_icons.rs", &full),
+        ],
+    );
+    for dir in [empty_dir, full_dir] {
+        let _ = fs::remove_dir_all(dir);
+    }
+    if let Err(stderr) = result {
+        panic!(
+            "generated code failed to compile:\n{stderr}\n\n--- empty ---\n{empty}\n--- full ---\n{full}"
         );
     }
 }

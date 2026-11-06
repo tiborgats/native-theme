@@ -1,0 +1,43 @@
+# Synthetic token facts (S17): the key repeat's delay differs under high contrast, its interval does not,
+# so the composed value differs between the two classes of combinations (ADD-A128).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+value = "500ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+when = { conditions = ["contrast_high"] }
+value = "600ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+value = "= div(1000ms, 25)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

@@ -3097,6 +3097,14 @@ bundled-themes = ["material"]
         // Generated code should still be valid (empty enum with #[non_exhaustive])
         assert!(result.code.contains("pub enum Test {"));
         assert!(result.code.contains("#[non_exhaustive]"));
+        // `&self` of an empty enum counts as inhabited: each match keeps its
+        // wildcard, or it would not compile
+        assert_eq!(
+            result.code.matches("_ => None,").count(),
+            2,
+            "{}",
+            result.code
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }

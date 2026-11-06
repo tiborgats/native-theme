@@ -1,0 +1,22 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+# The key repeat stated whole per class (S6.1).
+[[rules]]
+target = "tokens"
+set = { behavior.key_repeat = { delay_ms = 500, interval_ms = 40 } }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+set = { behavior.key_repeat = { delay_ms = 600, interval_ms = 40 } }

@@ -1,0 +1,22 @@
+[declare.widget.button]
+variants = ["flat", "@with_arrow"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { not_variants = ["flat"] }
+target = "button.subtitle"
+set = { absent = true }
+
+[[rules]]
+when = { variants = ["flat"], not_variants = ["@with_arrow"] }
+target = "button.subtitle"
+set = { absent = true }

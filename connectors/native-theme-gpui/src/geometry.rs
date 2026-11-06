@@ -1026,7 +1026,7 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// A toolbar row (docs/platform-facts.md §2.13), the application's own or
 /// gpui-component's `Toolbar`: its height the content's, at least
 /// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
-/// toolbars size to their content and state none (platform-facts.md:1390),
+/// toolbars size to their content and state none (platform-facts.md@fc6109d1:1390),
 /// and a fixed height would be an invention there, so the refinement sets
 /// the height to `auto`, and replaces the `min_h_8` gpui-component's
 /// `Toolbar` sets at its Small size (toolbar.rs:253-255) with
@@ -1415,7 +1415,7 @@ pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
 /// states neither. The text colour is `ThemeColor::link`, the
 /// `link.font.color` row. The fill is `link.background_color`: upstream paints
 /// none (`link.rs:73-90`), so it displaces nothing, and every preset states a
-/// transparent one, as inline links have none (`docs/inheritance-rules.toml:405`).
+/// transparent one, as inline links have none (`docs/inheritance-rules.toml@fc6109d1:405`).
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
@@ -2397,7 +2397,7 @@ mod tests {
     /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
     /// select is the exception, its `combo_box.font.color` the accent), because
     /// a preset that states no `font.color` for a widget inherits the window's
-    /// (docs/inheritance-rules.toml:121-142), and `foreground` is fed from
+    /// (docs/inheritance-rules.toml@fc6109d1:121-142), and `foreground` is fed from
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child

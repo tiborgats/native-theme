@@ -1,0 +1,11 @@
+# Synthetic passes of a measured derivation (S17): the fill follows the accent; the second pass's result is
+# one 8-bit step off the accent, beyond the citation's tolerance of 0.5.
+[[derivation.fill]]
+"input.accent" = "#ff0000"
+result = "#ff0000"
+conditions = ["scheme:light"]
+
+[[derivation.fill]]
+"input.accent" = "#00ff00"
+result = "#01ff00"
+conditions = ["scheme:light"]

@@ -1,0 +1,23 @@
+# Synthetic token facts (S17).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# A token is read in the root scope, where no element's flag holds.
+[[fact]]
+key = "token.focus.width"
+when = { states = ["hover"] }
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

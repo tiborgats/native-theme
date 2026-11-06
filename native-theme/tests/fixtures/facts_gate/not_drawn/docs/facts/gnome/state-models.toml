@@ -1,0 +1,11 @@
+# A synthetic state model (S17): a button with one variant and two flags.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+not_drawn = [{ states = ["pressed"] }]
+rows = []

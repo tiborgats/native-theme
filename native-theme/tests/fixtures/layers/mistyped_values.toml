@@ -1,0 +1,29 @@
+# A value of another kind than its field takes, a name the model does not
+# have, a key outside the key grammar, an expression that does not parse, a
+# number that is not finite: each reported, none stopping the others.
+# problem: tokens.motion.timings.standard: unknown name "springy"
+# problem: tokens.params.Layout: "Layout" is not a key: 'L' is outside `[a-z0-9][a-z0-9_]*`
+# problem: widgets.button.body.cursor: unknown name "hand"
+# problem: widgets.button.body.fill: expected a colour (S2.1)
+# problem: widgets.button.body.min_width_px: expected a number
+# problem: widgets.button.body.opacity: expression: at byte 5: the expression ends too early
+# problem: widgets.button.body.padding.top_px: not a finite number
+# problem: widgets.button.values.back_title_fallback: expected a boolean
+# problem: widgets.button.values.icon_placement: unknown name "left"
+
+[tokens.motion.timings]
+standard = "springy"
+
+[tokens.params.Layout]
+grid_unit_px = 18
+
+[widgets.button.body]
+fill = "dark grey"
+min_width_px = "4px"
+opacity = "= mix("
+padding.top_px = inf
+cursor = "hand"
+
+[widgets.button.values]
+back_title_fallback = "yes"
+icon_placement = "left"

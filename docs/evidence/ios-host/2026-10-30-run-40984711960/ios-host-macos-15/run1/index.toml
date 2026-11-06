@@ -1,0 +1,5150 @@
+[environment]
+simulator_runtime_version = "18.6"
+simulator_runtime_build = "22G86"
+simulator_device_name = "ios-host"
+simulator_model_identifier = "iPhone17,1"
+system_version = "18.6"
+operating_system_version = "Version 18.6 (Build 22G86)"
+xcode = "1640"
+xcode_build = "16F6"
+sdk = "iphonesimulator18.5"
+sdk_build = "22F76"
+platform_version = "18.5"
+platform_build = "22F76"
+compiler = "com.apple.compilers.llvm.clang.1_0"
+styles = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent"]
+sizes = ["mini", "small", "medium", "large"]
+states = ["normal", "highlighted", "disabled", "toggle_off", "selected"]
+title = "Button"
+render_draw = "drawHierarchy(in:afterScreenUpdates: true), UIGraphicsImageRenderer, standard range"
+render_screen = "xcrun simctl io screenshot, cropped to the cell"
+settle_seconds = 2.0
+
+[screen]
+scale = 3.000
+bounds_pt = [0.000, 0.000, 402.000, 874.000]
+native_bounds_px = [0.000, 0.000, 1206.000, 2622.000]
+safe_area_top_pt = 62.000
+screenshot_color_space = "kCGColorSpaceSRGB"
+display_gamut = 1
+preferred_content_size_category = "UICTContentSizeCategoryL"
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "mini"
+state = "normal"
+draw = "draw/light/plain/mini/normal.png"
+screen = "screen/light/plain/mini/normal.png"
+page = "pages/0.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/plain/mini/highlighted.png"
+screen = "screen/light/plain/mini/highlighted.png"
+page = "pages/0.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "mini"
+state = "disabled"
+draw = "draw/light/plain/mini/disabled.png"
+screen = "screen/light/plain/mini/disabled.png"
+page = "pages/0.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/plain/mini/toggle_off.png"
+screen = "screen/light/plain/mini/toggle_off.png"
+page = "pages/0.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "mini"
+state = "selected"
+draw = "draw/light/plain/mini/selected.png"
+screen = "screen/light/plain/mini/selected.png"
+page = "pages/0.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "small"
+state = "normal"
+draw = "draw/light/plain/small/normal.png"
+screen = "screen/light/plain/small/normal.png"
+page = "pages/1.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "small"
+state = "highlighted"
+draw = "draw/light/plain/small/highlighted.png"
+screen = "screen/light/plain/small/highlighted.png"
+page = "pages/1.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "small"
+state = "disabled"
+draw = "draw/light/plain/small/disabled.png"
+screen = "screen/light/plain/small/disabled.png"
+page = "pages/1.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/plain/small/toggle_off.png"
+screen = "screen/light/plain/small/toggle_off.png"
+page = "pages/1.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "small"
+state = "selected"
+draw = "draw/light/plain/small/selected.png"
+screen = "screen/light/plain/small/selected.png"
+page = "pages/1.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "medium"
+state = "normal"
+draw = "draw/light/plain/medium/normal.png"
+screen = "screen/light/plain/medium/normal.png"
+page = "pages/2.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/plain/medium/highlighted.png"
+screen = "screen/light/plain/medium/highlighted.png"
+page = "pages/2.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "medium"
+state = "disabled"
+draw = "draw/light/plain/medium/disabled.png"
+screen = "screen/light/plain/medium/disabled.png"
+page = "pages/2.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/plain/medium/toggle_off.png"
+screen = "screen/light/plain/medium/toggle_off.png"
+page = "pages/2.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "medium"
+state = "selected"
+draw = "draw/light/plain/medium/selected.png"
+screen = "screen/light/plain/medium/selected.png"
+page = "pages/2.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "large"
+state = "normal"
+draw = "draw/light/plain/large/normal.png"
+screen = "screen/light/plain/large/normal.png"
+page = "pages/3.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "large"
+state = "highlighted"
+draw = "draw/light/plain/large/highlighted.png"
+screen = "screen/light/plain/large/highlighted.png"
+page = "pages/3.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "large"
+state = "disabled"
+draw = "draw/light/plain/large/disabled.png"
+screen = "screen/light/plain/large/disabled.png"
+page = "pages/3.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/plain/large/toggle_off.png"
+screen = "screen/light/plain/large/toggle_off.png"
+page = "pages/3.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "plain"
+size = "large"
+state = "selected"
+draw = "draw/light/plain/large/selected.png"
+screen = "screen/light/plain/large/selected.png"
+page = "pages/3.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "mini"
+state = "normal"
+draw = "draw/light/gray/mini/normal.png"
+screen = "screen/light/gray/mini/normal.png"
+page = "pages/4.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/gray/mini/highlighted.png"
+screen = "screen/light/gray/mini/highlighted.png"
+page = "pages/4.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "mini"
+state = "disabled"
+draw = "draw/light/gray/mini/disabled.png"
+screen = "screen/light/gray/mini/disabled.png"
+page = "pages/4.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/gray/mini/toggle_off.png"
+screen = "screen/light/gray/mini/toggle_off.png"
+page = "pages/4.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "mini"
+state = "selected"
+draw = "draw/light/gray/mini/selected.png"
+screen = "screen/light/gray/mini/selected.png"
+page = "pages/4.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "small"
+state = "normal"
+draw = "draw/light/gray/small/normal.png"
+screen = "screen/light/gray/small/normal.png"
+page = "pages/5.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "small"
+state = "highlighted"
+draw = "draw/light/gray/small/highlighted.png"
+screen = "screen/light/gray/small/highlighted.png"
+page = "pages/5.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "small"
+state = "disabled"
+draw = "draw/light/gray/small/disabled.png"
+screen = "screen/light/gray/small/disabled.png"
+page = "pages/5.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/gray/small/toggle_off.png"
+screen = "screen/light/gray/small/toggle_off.png"
+page = "pages/5.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "small"
+state = "selected"
+draw = "draw/light/gray/small/selected.png"
+screen = "screen/light/gray/small/selected.png"
+page = "pages/5.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "medium"
+state = "normal"
+draw = "draw/light/gray/medium/normal.png"
+screen = "screen/light/gray/medium/normal.png"
+page = "pages/6.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/gray/medium/highlighted.png"
+screen = "screen/light/gray/medium/highlighted.png"
+page = "pages/6.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "medium"
+state = "disabled"
+draw = "draw/light/gray/medium/disabled.png"
+screen = "screen/light/gray/medium/disabled.png"
+page = "pages/6.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/gray/medium/toggle_off.png"
+screen = "screen/light/gray/medium/toggle_off.png"
+page = "pages/6.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "medium"
+state = "selected"
+draw = "draw/light/gray/medium/selected.png"
+screen = "screen/light/gray/medium/selected.png"
+page = "pages/6.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "large"
+state = "normal"
+draw = "draw/light/gray/large/normal.png"
+screen = "screen/light/gray/large/normal.png"
+page = "pages/7.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "large"
+state = "highlighted"
+draw = "draw/light/gray/large/highlighted.png"
+screen = "screen/light/gray/large/highlighted.png"
+page = "pages/7.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "large"
+state = "disabled"
+draw = "draw/light/gray/large/disabled.png"
+screen = "screen/light/gray/large/disabled.png"
+page = "pages/7.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/gray/large/toggle_off.png"
+screen = "screen/light/gray/large/toggle_off.png"
+page = "pages/7.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "gray"
+size = "large"
+state = "selected"
+draw = "draw/light/gray/large/selected.png"
+screen = "screen/light/gray/large/selected.png"
+page = "pages/7.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "mini"
+state = "normal"
+draw = "draw/light/tinted/mini/normal.png"
+screen = "screen/light/tinted/mini/normal.png"
+page = "pages/8.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/tinted/mini/highlighted.png"
+screen = "screen/light/tinted/mini/highlighted.png"
+page = "pages/8.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "mini"
+state = "disabled"
+draw = "draw/light/tinted/mini/disabled.png"
+screen = "screen/light/tinted/mini/disabled.png"
+page = "pages/8.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/tinted/mini/toggle_off.png"
+screen = "screen/light/tinted/mini/toggle_off.png"
+page = "pages/8.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "mini"
+state = "selected"
+draw = "draw/light/tinted/mini/selected.png"
+screen = "screen/light/tinted/mini/selected.png"
+page = "pages/8.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "small"
+state = "normal"
+draw = "draw/light/tinted/small/normal.png"
+screen = "screen/light/tinted/small/normal.png"
+page = "pages/9.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "small"
+state = "highlighted"
+draw = "draw/light/tinted/small/highlighted.png"
+screen = "screen/light/tinted/small/highlighted.png"
+page = "pages/9.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "small"
+state = "disabled"
+draw = "draw/light/tinted/small/disabled.png"
+screen = "screen/light/tinted/small/disabled.png"
+page = "pages/9.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/tinted/small/toggle_off.png"
+screen = "screen/light/tinted/small/toggle_off.png"
+page = "pages/9.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "small"
+state = "selected"
+draw = "draw/light/tinted/small/selected.png"
+screen = "screen/light/tinted/small/selected.png"
+page = "pages/9.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "medium"
+state = "normal"
+draw = "draw/light/tinted/medium/normal.png"
+screen = "screen/light/tinted/medium/normal.png"
+page = "pages/10.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/tinted/medium/highlighted.png"
+screen = "screen/light/tinted/medium/highlighted.png"
+page = "pages/10.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "medium"
+state = "disabled"
+draw = "draw/light/tinted/medium/disabled.png"
+screen = "screen/light/tinted/medium/disabled.png"
+page = "pages/10.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/tinted/medium/toggle_off.png"
+screen = "screen/light/tinted/medium/toggle_off.png"
+page = "pages/10.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "medium"
+state = "selected"
+draw = "draw/light/tinted/medium/selected.png"
+screen = "screen/light/tinted/medium/selected.png"
+page = "pages/10.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "large"
+state = "normal"
+draw = "draw/light/tinted/large/normal.png"
+screen = "screen/light/tinted/large/normal.png"
+page = "pages/11.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "large"
+state = "highlighted"
+draw = "draw/light/tinted/large/highlighted.png"
+screen = "screen/light/tinted/large/highlighted.png"
+page = "pages/11.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "large"
+state = "disabled"
+draw = "draw/light/tinted/large/disabled.png"
+screen = "screen/light/tinted/large/disabled.png"
+page = "pages/11.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/tinted/large/toggle_off.png"
+screen = "screen/light/tinted/large/toggle_off.png"
+page = "pages/11.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "tinted"
+size = "large"
+state = "selected"
+draw = "draw/light/tinted/large/selected.png"
+screen = "screen/light/tinted/large/selected.png"
+page = "pages/11.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "mini"
+state = "normal"
+draw = "draw/light/filled/mini/normal.png"
+screen = "screen/light/filled/mini/normal.png"
+page = "pages/12.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/filled/mini/highlighted.png"
+screen = "screen/light/filled/mini/highlighted.png"
+page = "pages/12.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "mini"
+state = "disabled"
+draw = "draw/light/filled/mini/disabled.png"
+screen = "screen/light/filled/mini/disabled.png"
+page = "pages/12.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/filled/mini/toggle_off.png"
+screen = "screen/light/filled/mini/toggle_off.png"
+page = "pages/12.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "mini"
+state = "selected"
+draw = "draw/light/filled/mini/selected.png"
+screen = "screen/light/filled/mini/selected.png"
+page = "pages/12.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "small"
+state = "normal"
+draw = "draw/light/filled/small/normal.png"
+screen = "screen/light/filled/small/normal.png"
+page = "pages/13.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "small"
+state = "highlighted"
+draw = "draw/light/filled/small/highlighted.png"
+screen = "screen/light/filled/small/highlighted.png"
+page = "pages/13.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "small"
+state = "disabled"
+draw = "draw/light/filled/small/disabled.png"
+screen = "screen/light/filled/small/disabled.png"
+page = "pages/13.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/filled/small/toggle_off.png"
+screen = "screen/light/filled/small/toggle_off.png"
+page = "pages/13.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "small"
+state = "selected"
+draw = "draw/light/filled/small/selected.png"
+screen = "screen/light/filled/small/selected.png"
+page = "pages/13.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "medium"
+state = "normal"
+draw = "draw/light/filled/medium/normal.png"
+screen = "screen/light/filled/medium/normal.png"
+page = "pages/14.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/filled/medium/highlighted.png"
+screen = "screen/light/filled/medium/highlighted.png"
+page = "pages/14.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "medium"
+state = "disabled"
+draw = "draw/light/filled/medium/disabled.png"
+screen = "screen/light/filled/medium/disabled.png"
+page = "pages/14.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/filled/medium/toggle_off.png"
+screen = "screen/light/filled/medium/toggle_off.png"
+page = "pages/14.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "medium"
+state = "selected"
+draw = "draw/light/filled/medium/selected.png"
+screen = "screen/light/filled/medium/selected.png"
+page = "pages/14.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "large"
+state = "normal"
+draw = "draw/light/filled/large/normal.png"
+screen = "screen/light/filled/large/normal.png"
+page = "pages/15.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "large"
+state = "highlighted"
+draw = "draw/light/filled/large/highlighted.png"
+screen = "screen/light/filled/large/highlighted.png"
+page = "pages/15.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "large"
+state = "disabled"
+draw = "draw/light/filled/large/disabled.png"
+screen = "screen/light/filled/large/disabled.png"
+page = "pages/15.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/filled/large/toggle_off.png"
+screen = "screen/light/filled/large/toggle_off.png"
+page = "pages/15.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "filled"
+size = "large"
+state = "selected"
+draw = "draw/light/filled/large/selected.png"
+screen = "screen/light/filled/large/selected.png"
+page = "pages/15.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "mini"
+state = "normal"
+draw = "draw/light/borderless/mini/normal.png"
+screen = "screen/light/borderless/mini/normal.png"
+page = "pages/16.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/borderless/mini/highlighted.png"
+screen = "screen/light/borderless/mini/highlighted.png"
+page = "pages/16.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "mini"
+state = "disabled"
+draw = "draw/light/borderless/mini/disabled.png"
+screen = "screen/light/borderless/mini/disabled.png"
+page = "pages/16.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/borderless/mini/toggle_off.png"
+screen = "screen/light/borderless/mini/toggle_off.png"
+page = "pages/16.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "mini"
+state = "selected"
+draw = "draw/light/borderless/mini/selected.png"
+screen = "screen/light/borderless/mini/selected.png"
+page = "pages/16.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "small"
+state = "normal"
+draw = "draw/light/borderless/small/normal.png"
+screen = "screen/light/borderless/small/normal.png"
+page = "pages/17.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "small"
+state = "highlighted"
+draw = "draw/light/borderless/small/highlighted.png"
+screen = "screen/light/borderless/small/highlighted.png"
+page = "pages/17.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "small"
+state = "disabled"
+draw = "draw/light/borderless/small/disabled.png"
+screen = "screen/light/borderless/small/disabled.png"
+page = "pages/17.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/borderless/small/toggle_off.png"
+screen = "screen/light/borderless/small/toggle_off.png"
+page = "pages/17.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "small"
+state = "selected"
+draw = "draw/light/borderless/small/selected.png"
+screen = "screen/light/borderless/small/selected.png"
+page = "pages/17.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "medium"
+state = "normal"
+draw = "draw/light/borderless/medium/normal.png"
+screen = "screen/light/borderless/medium/normal.png"
+page = "pages/18.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/borderless/medium/highlighted.png"
+screen = "screen/light/borderless/medium/highlighted.png"
+page = "pages/18.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "medium"
+state = "disabled"
+draw = "draw/light/borderless/medium/disabled.png"
+screen = "screen/light/borderless/medium/disabled.png"
+page = "pages/18.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/borderless/medium/toggle_off.png"
+screen = "screen/light/borderless/medium/toggle_off.png"
+page = "pages/18.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "medium"
+state = "selected"
+draw = "draw/light/borderless/medium/selected.png"
+screen = "screen/light/borderless/medium/selected.png"
+page = "pages/18.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "large"
+state = "normal"
+draw = "draw/light/borderless/large/normal.png"
+screen = "screen/light/borderless/large/normal.png"
+page = "pages/19.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "large"
+state = "highlighted"
+draw = "draw/light/borderless/large/highlighted.png"
+screen = "screen/light/borderless/large/highlighted.png"
+page = "pages/19.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "large"
+state = "disabled"
+draw = "draw/light/borderless/large/disabled.png"
+screen = "screen/light/borderless/large/disabled.png"
+page = "pages/19.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/borderless/large/toggle_off.png"
+screen = "screen/light/borderless/large/toggle_off.png"
+page = "pages/19.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "borderless"
+size = "large"
+state = "selected"
+draw = "draw/light/borderless/large/selected.png"
+screen = "screen/light/borderless/large/selected.png"
+page = "pages/19.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "mini"
+state = "normal"
+draw = "draw/light/bordered/mini/normal.png"
+screen = "screen/light/bordered/mini/normal.png"
+page = "pages/20.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/bordered/mini/highlighted.png"
+screen = "screen/light/bordered/mini/highlighted.png"
+page = "pages/20.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "mini"
+state = "disabled"
+draw = "draw/light/bordered/mini/disabled.png"
+screen = "screen/light/bordered/mini/disabled.png"
+page = "pages/20.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/bordered/mini/toggle_off.png"
+screen = "screen/light/bordered/mini/toggle_off.png"
+page = "pages/20.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "mini"
+state = "selected"
+draw = "draw/light/bordered/mini/selected.png"
+screen = "screen/light/bordered/mini/selected.png"
+page = "pages/20.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "small"
+state = "normal"
+draw = "draw/light/bordered/small/normal.png"
+screen = "screen/light/bordered/small/normal.png"
+page = "pages/21.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "small"
+state = "highlighted"
+draw = "draw/light/bordered/small/highlighted.png"
+screen = "screen/light/bordered/small/highlighted.png"
+page = "pages/21.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "small"
+state = "disabled"
+draw = "draw/light/bordered/small/disabled.png"
+screen = "screen/light/bordered/small/disabled.png"
+page = "pages/21.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/bordered/small/toggle_off.png"
+screen = "screen/light/bordered/small/toggle_off.png"
+page = "pages/21.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "small"
+state = "selected"
+draw = "draw/light/bordered/small/selected.png"
+screen = "screen/light/bordered/small/selected.png"
+page = "pages/21.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "medium"
+state = "normal"
+draw = "draw/light/bordered/medium/normal.png"
+screen = "screen/light/bordered/medium/normal.png"
+page = "pages/22.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/bordered/medium/highlighted.png"
+screen = "screen/light/bordered/medium/highlighted.png"
+page = "pages/22.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "medium"
+state = "disabled"
+draw = "draw/light/bordered/medium/disabled.png"
+screen = "screen/light/bordered/medium/disabled.png"
+page = "pages/22.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/bordered/medium/toggle_off.png"
+screen = "screen/light/bordered/medium/toggle_off.png"
+page = "pages/22.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "medium"
+state = "selected"
+draw = "draw/light/bordered/medium/selected.png"
+screen = "screen/light/bordered/medium/selected.png"
+page = "pages/22.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "large"
+state = "normal"
+draw = "draw/light/bordered/large/normal.png"
+screen = "screen/light/bordered/large/normal.png"
+page = "pages/23.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "large"
+state = "highlighted"
+draw = "draw/light/bordered/large/highlighted.png"
+screen = "screen/light/bordered/large/highlighted.png"
+page = "pages/23.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "large"
+state = "disabled"
+draw = "draw/light/bordered/large/disabled.png"
+screen = "screen/light/bordered/large/disabled.png"
+page = "pages/23.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/bordered/large/toggle_off.png"
+screen = "screen/light/bordered/large/toggle_off.png"
+page = "pages/23.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered"
+size = "large"
+state = "selected"
+draw = "draw/light/bordered/large/selected.png"
+screen = "screen/light/bordered/large/selected.png"
+page = "pages/23.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "mini"
+state = "normal"
+draw = "draw/light/bordered_tinted/mini/normal.png"
+screen = "screen/light/bordered_tinted/mini/normal.png"
+page = "pages/24.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/bordered_tinted/mini/highlighted.png"
+screen = "screen/light/bordered_tinted/mini/highlighted.png"
+page = "pages/24.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "mini"
+state = "disabled"
+draw = "draw/light/bordered_tinted/mini/disabled.png"
+screen = "screen/light/bordered_tinted/mini/disabled.png"
+page = "pages/24.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/bordered_tinted/mini/toggle_off.png"
+screen = "screen/light/bordered_tinted/mini/toggle_off.png"
+page = "pages/24.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "mini"
+state = "selected"
+draw = "draw/light/bordered_tinted/mini/selected.png"
+screen = "screen/light/bordered_tinted/mini/selected.png"
+page = "pages/24.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "small"
+state = "normal"
+draw = "draw/light/bordered_tinted/small/normal.png"
+screen = "screen/light/bordered_tinted/small/normal.png"
+page = "pages/25.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "small"
+state = "highlighted"
+draw = "draw/light/bordered_tinted/small/highlighted.png"
+screen = "screen/light/bordered_tinted/small/highlighted.png"
+page = "pages/25.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "small"
+state = "disabled"
+draw = "draw/light/bordered_tinted/small/disabled.png"
+screen = "screen/light/bordered_tinted/small/disabled.png"
+page = "pages/25.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/bordered_tinted/small/toggle_off.png"
+screen = "screen/light/bordered_tinted/small/toggle_off.png"
+page = "pages/25.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "small"
+state = "selected"
+draw = "draw/light/bordered_tinted/small/selected.png"
+screen = "screen/light/bordered_tinted/small/selected.png"
+page = "pages/25.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "medium"
+state = "normal"
+draw = "draw/light/bordered_tinted/medium/normal.png"
+screen = "screen/light/bordered_tinted/medium/normal.png"
+page = "pages/26.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/bordered_tinted/medium/highlighted.png"
+screen = "screen/light/bordered_tinted/medium/highlighted.png"
+page = "pages/26.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "medium"
+state = "disabled"
+draw = "draw/light/bordered_tinted/medium/disabled.png"
+screen = "screen/light/bordered_tinted/medium/disabled.png"
+page = "pages/26.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/bordered_tinted/medium/toggle_off.png"
+screen = "screen/light/bordered_tinted/medium/toggle_off.png"
+page = "pages/26.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "medium"
+state = "selected"
+draw = "draw/light/bordered_tinted/medium/selected.png"
+screen = "screen/light/bordered_tinted/medium/selected.png"
+page = "pages/26.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "large"
+state = "normal"
+draw = "draw/light/bordered_tinted/large/normal.png"
+screen = "screen/light/bordered_tinted/large/normal.png"
+page = "pages/27.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "large"
+state = "highlighted"
+draw = "draw/light/bordered_tinted/large/highlighted.png"
+screen = "screen/light/bordered_tinted/large/highlighted.png"
+page = "pages/27.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "large"
+state = "disabled"
+draw = "draw/light/bordered_tinted/large/disabled.png"
+screen = "screen/light/bordered_tinted/large/disabled.png"
+page = "pages/27.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/bordered_tinted/large/toggle_off.png"
+screen = "screen/light/bordered_tinted/large/toggle_off.png"
+page = "pages/27.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_tinted"
+size = "large"
+state = "selected"
+draw = "draw/light/bordered_tinted/large/selected.png"
+screen = "screen/light/bordered_tinted/large/selected.png"
+page = "pages/27.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "mini"
+state = "normal"
+draw = "draw/light/bordered_prominent/mini/normal.png"
+screen = "screen/light/bordered_prominent/mini/normal.png"
+page = "pages/28.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "mini"
+state = "highlighted"
+draw = "draw/light/bordered_prominent/mini/highlighted.png"
+screen = "screen/light/bordered_prominent/mini/highlighted.png"
+page = "pages/28.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "mini"
+state = "disabled"
+draw = "draw/light/bordered_prominent/mini/disabled.png"
+screen = "screen/light/bordered_prominent/mini/disabled.png"
+page = "pages/28.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "mini"
+state = "toggle_off"
+draw = "draw/light/bordered_prominent/mini/toggle_off.png"
+screen = "screen/light/bordered_prominent/mini/toggle_off.png"
+page = "pages/28.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "mini"
+state = "selected"
+draw = "draw/light/bordered_prominent/mini/selected.png"
+screen = "screen/light/bordered_prominent/mini/selected.png"
+page = "pages/28.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "small"
+state = "normal"
+draw = "draw/light/bordered_prominent/small/normal.png"
+screen = "screen/light/bordered_prominent/small/normal.png"
+page = "pages/29.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "small"
+state = "highlighted"
+draw = "draw/light/bordered_prominent/small/highlighted.png"
+screen = "screen/light/bordered_prominent/small/highlighted.png"
+page = "pages/29.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "small"
+state = "disabled"
+draw = "draw/light/bordered_prominent/small/disabled.png"
+screen = "screen/light/bordered_prominent/small/disabled.png"
+page = "pages/29.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "small"
+state = "toggle_off"
+draw = "draw/light/bordered_prominent/small/toggle_off.png"
+screen = "screen/light/bordered_prominent/small/toggle_off.png"
+page = "pages/29.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "small"
+state = "selected"
+draw = "draw/light/bordered_prominent/small/selected.png"
+screen = "screen/light/bordered_prominent/small/selected.png"
+page = "pages/29.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "medium"
+state = "normal"
+draw = "draw/light/bordered_prominent/medium/normal.png"
+screen = "screen/light/bordered_prominent/medium/normal.png"
+page = "pages/30.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "medium"
+state = "highlighted"
+draw = "draw/light/bordered_prominent/medium/highlighted.png"
+screen = "screen/light/bordered_prominent/medium/highlighted.png"
+page = "pages/30.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "medium"
+state = "disabled"
+draw = "draw/light/bordered_prominent/medium/disabled.png"
+screen = "screen/light/bordered_prominent/medium/disabled.png"
+page = "pages/30.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "medium"
+state = "toggle_off"
+draw = "draw/light/bordered_prominent/medium/toggle_off.png"
+screen = "screen/light/bordered_prominent/medium/toggle_off.png"
+page = "pages/30.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "medium"
+state = "selected"
+draw = "draw/light/bordered_prominent/medium/selected.png"
+screen = "screen/light/bordered_prominent/medium/selected.png"
+page = "pages/30.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "large"
+state = "normal"
+draw = "draw/light/bordered_prominent/large/normal.png"
+screen = "screen/light/bordered_prominent/large/normal.png"
+page = "pages/31.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "large"
+state = "highlighted"
+draw = "draw/light/bordered_prominent/large/highlighted.png"
+screen = "screen/light/bordered_prominent/large/highlighted.png"
+page = "pages/31.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "large"
+state = "disabled"
+draw = "draw/light/bordered_prominent/large/disabled.png"
+screen = "screen/light/bordered_prominent/large/disabled.png"
+page = "pages/31.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "large"
+state = "toggle_off"
+draw = "draw/light/bordered_prominent/large/toggle_off.png"
+screen = "screen/light/bordered_prominent/large/toggle_off.png"
+page = "pages/31.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 1
+
+[[render]]
+appearance = "light"
+style = "bordered_prominent"
+size = "large"
+state = "selected"
+draw = "draw/light/bordered_prominent/large/selected.png"
+screen = "screen/light/bordered_prominent/large/selected.png"
+page = "pages/31.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 1
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "mini"
+state = "normal"
+draw = "draw/dark/plain/mini/normal.png"
+screen = "screen/dark/plain/mini/normal.png"
+page = "pages/32.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/plain/mini/highlighted.png"
+screen = "screen/dark/plain/mini/highlighted.png"
+page = "pages/32.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/plain/mini/disabled.png"
+screen = "screen/dark/plain/mini/disabled.png"
+page = "pages/32.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/plain/mini/toggle_off.png"
+screen = "screen/dark/plain/mini/toggle_off.png"
+page = "pages/32.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "mini"
+state = "selected"
+draw = "draw/dark/plain/mini/selected.png"
+screen = "screen/dark/plain/mini/selected.png"
+page = "pages/32.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "small"
+state = "normal"
+draw = "draw/dark/plain/small/normal.png"
+screen = "screen/dark/plain/small/normal.png"
+page = "pages/33.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/plain/small/highlighted.png"
+screen = "screen/dark/plain/small/highlighted.png"
+page = "pages/33.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "small"
+state = "disabled"
+draw = "draw/dark/plain/small/disabled.png"
+screen = "screen/dark/plain/small/disabled.png"
+page = "pages/33.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/plain/small/toggle_off.png"
+screen = "screen/dark/plain/small/toggle_off.png"
+page = "pages/33.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "small"
+state = "selected"
+draw = "draw/dark/plain/small/selected.png"
+screen = "screen/dark/plain/small/selected.png"
+page = "pages/33.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "medium"
+state = "normal"
+draw = "draw/dark/plain/medium/normal.png"
+screen = "screen/dark/plain/medium/normal.png"
+page = "pages/34.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/plain/medium/highlighted.png"
+screen = "screen/dark/plain/medium/highlighted.png"
+page = "pages/34.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/plain/medium/disabled.png"
+screen = "screen/dark/plain/medium/disabled.png"
+page = "pages/34.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/plain/medium/toggle_off.png"
+screen = "screen/dark/plain/medium/toggle_off.png"
+page = "pages/34.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "medium"
+state = "selected"
+draw = "draw/dark/plain/medium/selected.png"
+screen = "screen/dark/plain/medium/selected.png"
+page = "pages/34.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "large"
+state = "normal"
+draw = "draw/dark/plain/large/normal.png"
+screen = "screen/dark/plain/large/normal.png"
+page = "pages/35.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/plain/large/highlighted.png"
+screen = "screen/dark/plain/large/highlighted.png"
+page = "pages/35.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "large"
+state = "disabled"
+draw = "draw/dark/plain/large/disabled.png"
+screen = "screen/dark/plain/large/disabled.png"
+page = "pages/35.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/plain/large/toggle_off.png"
+screen = "screen/dark/plain/large/toggle_off.png"
+page = "pages/35.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "plain"
+size = "large"
+state = "selected"
+draw = "draw/dark/plain/large/selected.png"
+screen = "screen/dark/plain/large/selected.png"
+page = "pages/35.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "mini"
+state = "normal"
+draw = "draw/dark/gray/mini/normal.png"
+screen = "screen/dark/gray/mini/normal.png"
+page = "pages/36.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/gray/mini/highlighted.png"
+screen = "screen/dark/gray/mini/highlighted.png"
+page = "pages/36.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/gray/mini/disabled.png"
+screen = "screen/dark/gray/mini/disabled.png"
+page = "pages/36.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/gray/mini/toggle_off.png"
+screen = "screen/dark/gray/mini/toggle_off.png"
+page = "pages/36.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "mini"
+state = "selected"
+draw = "draw/dark/gray/mini/selected.png"
+screen = "screen/dark/gray/mini/selected.png"
+page = "pages/36.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "small"
+state = "normal"
+draw = "draw/dark/gray/small/normal.png"
+screen = "screen/dark/gray/small/normal.png"
+page = "pages/37.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/gray/small/highlighted.png"
+screen = "screen/dark/gray/small/highlighted.png"
+page = "pages/37.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "small"
+state = "disabled"
+draw = "draw/dark/gray/small/disabled.png"
+screen = "screen/dark/gray/small/disabled.png"
+page = "pages/37.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/gray/small/toggle_off.png"
+screen = "screen/dark/gray/small/toggle_off.png"
+page = "pages/37.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "small"
+state = "selected"
+draw = "draw/dark/gray/small/selected.png"
+screen = "screen/dark/gray/small/selected.png"
+page = "pages/37.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "medium"
+state = "normal"
+draw = "draw/dark/gray/medium/normal.png"
+screen = "screen/dark/gray/medium/normal.png"
+page = "pages/38.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/gray/medium/highlighted.png"
+screen = "screen/dark/gray/medium/highlighted.png"
+page = "pages/38.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/gray/medium/disabled.png"
+screen = "screen/dark/gray/medium/disabled.png"
+page = "pages/38.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/gray/medium/toggle_off.png"
+screen = "screen/dark/gray/medium/toggle_off.png"
+page = "pages/38.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "medium"
+state = "selected"
+draw = "draw/dark/gray/medium/selected.png"
+screen = "screen/dark/gray/medium/selected.png"
+page = "pages/38.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "large"
+state = "normal"
+draw = "draw/dark/gray/large/normal.png"
+screen = "screen/dark/gray/large/normal.png"
+page = "pages/39.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/gray/large/highlighted.png"
+screen = "screen/dark/gray/large/highlighted.png"
+page = "pages/39.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "large"
+state = "disabled"
+draw = "draw/dark/gray/large/disabled.png"
+screen = "screen/dark/gray/large/disabled.png"
+page = "pages/39.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/gray/large/toggle_off.png"
+screen = "screen/dark/gray/large/toggle_off.png"
+page = "pages/39.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "gray"
+size = "large"
+state = "selected"
+draw = "draw/dark/gray/large/selected.png"
+screen = "screen/dark/gray/large/selected.png"
+page = "pages/39.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "mini"
+state = "normal"
+draw = "draw/dark/tinted/mini/normal.png"
+screen = "screen/dark/tinted/mini/normal.png"
+page = "pages/40.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/tinted/mini/highlighted.png"
+screen = "screen/dark/tinted/mini/highlighted.png"
+page = "pages/40.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/tinted/mini/disabled.png"
+screen = "screen/dark/tinted/mini/disabled.png"
+page = "pages/40.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/tinted/mini/toggle_off.png"
+screen = "screen/dark/tinted/mini/toggle_off.png"
+page = "pages/40.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "mini"
+state = "selected"
+draw = "draw/dark/tinted/mini/selected.png"
+screen = "screen/dark/tinted/mini/selected.png"
+page = "pages/40.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "small"
+state = "normal"
+draw = "draw/dark/tinted/small/normal.png"
+screen = "screen/dark/tinted/small/normal.png"
+page = "pages/41.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/tinted/small/highlighted.png"
+screen = "screen/dark/tinted/small/highlighted.png"
+page = "pages/41.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "small"
+state = "disabled"
+draw = "draw/dark/tinted/small/disabled.png"
+screen = "screen/dark/tinted/small/disabled.png"
+page = "pages/41.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/tinted/small/toggle_off.png"
+screen = "screen/dark/tinted/small/toggle_off.png"
+page = "pages/41.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "small"
+state = "selected"
+draw = "draw/dark/tinted/small/selected.png"
+screen = "screen/dark/tinted/small/selected.png"
+page = "pages/41.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "medium"
+state = "normal"
+draw = "draw/dark/tinted/medium/normal.png"
+screen = "screen/dark/tinted/medium/normal.png"
+page = "pages/42.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/tinted/medium/highlighted.png"
+screen = "screen/dark/tinted/medium/highlighted.png"
+page = "pages/42.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/tinted/medium/disabled.png"
+screen = "screen/dark/tinted/medium/disabled.png"
+page = "pages/42.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/tinted/medium/toggle_off.png"
+screen = "screen/dark/tinted/medium/toggle_off.png"
+page = "pages/42.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "medium"
+state = "selected"
+draw = "draw/dark/tinted/medium/selected.png"
+screen = "screen/dark/tinted/medium/selected.png"
+page = "pages/42.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "large"
+state = "normal"
+draw = "draw/dark/tinted/large/normal.png"
+screen = "screen/dark/tinted/large/normal.png"
+page = "pages/43.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/tinted/large/highlighted.png"
+screen = "screen/dark/tinted/large/highlighted.png"
+page = "pages/43.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "large"
+state = "disabled"
+draw = "draw/dark/tinted/large/disabled.png"
+screen = "screen/dark/tinted/large/disabled.png"
+page = "pages/43.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/tinted/large/toggle_off.png"
+screen = "screen/dark/tinted/large/toggle_off.png"
+page = "pages/43.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "tinted"
+size = "large"
+state = "selected"
+draw = "draw/dark/tinted/large/selected.png"
+screen = "screen/dark/tinted/large/selected.png"
+page = "pages/43.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "mini"
+state = "normal"
+draw = "draw/dark/filled/mini/normal.png"
+screen = "screen/dark/filled/mini/normal.png"
+page = "pages/44.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/filled/mini/highlighted.png"
+screen = "screen/dark/filled/mini/highlighted.png"
+page = "pages/44.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/filled/mini/disabled.png"
+screen = "screen/dark/filled/mini/disabled.png"
+page = "pages/44.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/filled/mini/toggle_off.png"
+screen = "screen/dark/filled/mini/toggle_off.png"
+page = "pages/44.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "mini"
+state = "selected"
+draw = "draw/dark/filled/mini/selected.png"
+screen = "screen/dark/filled/mini/selected.png"
+page = "pages/44.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "small"
+state = "normal"
+draw = "draw/dark/filled/small/normal.png"
+screen = "screen/dark/filled/small/normal.png"
+page = "pages/45.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/filled/small/highlighted.png"
+screen = "screen/dark/filled/small/highlighted.png"
+page = "pages/45.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "small"
+state = "disabled"
+draw = "draw/dark/filled/small/disabled.png"
+screen = "screen/dark/filled/small/disabled.png"
+page = "pages/45.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/filled/small/toggle_off.png"
+screen = "screen/dark/filled/small/toggle_off.png"
+page = "pages/45.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "small"
+state = "selected"
+draw = "draw/dark/filled/small/selected.png"
+screen = "screen/dark/filled/small/selected.png"
+page = "pages/45.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "medium"
+state = "normal"
+draw = "draw/dark/filled/medium/normal.png"
+screen = "screen/dark/filled/medium/normal.png"
+page = "pages/46.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/filled/medium/highlighted.png"
+screen = "screen/dark/filled/medium/highlighted.png"
+page = "pages/46.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/filled/medium/disabled.png"
+screen = "screen/dark/filled/medium/disabled.png"
+page = "pages/46.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/filled/medium/toggle_off.png"
+screen = "screen/dark/filled/medium/toggle_off.png"
+page = "pages/46.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "medium"
+state = "selected"
+draw = "draw/dark/filled/medium/selected.png"
+screen = "screen/dark/filled/medium/selected.png"
+page = "pages/46.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "large"
+state = "normal"
+draw = "draw/dark/filled/large/normal.png"
+screen = "screen/dark/filled/large/normal.png"
+page = "pages/47.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/filled/large/highlighted.png"
+screen = "screen/dark/filled/large/highlighted.png"
+page = "pages/47.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "large"
+state = "disabled"
+draw = "draw/dark/filled/large/disabled.png"
+screen = "screen/dark/filled/large/disabled.png"
+page = "pages/47.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/filled/large/toggle_off.png"
+screen = "screen/dark/filled/large/toggle_off.png"
+page = "pages/47.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "filled"
+size = "large"
+state = "selected"
+draw = "draw/dark/filled/large/selected.png"
+screen = "screen/dark/filled/large/selected.png"
+page = "pages/47.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "mini"
+state = "normal"
+draw = "draw/dark/borderless/mini/normal.png"
+screen = "screen/dark/borderless/mini/normal.png"
+page = "pages/48.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/borderless/mini/highlighted.png"
+screen = "screen/dark/borderless/mini/highlighted.png"
+page = "pages/48.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/borderless/mini/disabled.png"
+screen = "screen/dark/borderless/mini/disabled.png"
+page = "pages/48.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/borderless/mini/toggle_off.png"
+screen = "screen/dark/borderless/mini/toggle_off.png"
+page = "pages/48.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "mini"
+state = "selected"
+draw = "draw/dark/borderless/mini/selected.png"
+screen = "screen/dark/borderless/mini/selected.png"
+page = "pages/48.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "small"
+state = "normal"
+draw = "draw/dark/borderless/small/normal.png"
+screen = "screen/dark/borderless/small/normal.png"
+page = "pages/49.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/borderless/small/highlighted.png"
+screen = "screen/dark/borderless/small/highlighted.png"
+page = "pages/49.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "small"
+state = "disabled"
+draw = "draw/dark/borderless/small/disabled.png"
+screen = "screen/dark/borderless/small/disabled.png"
+page = "pages/49.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/borderless/small/toggle_off.png"
+screen = "screen/dark/borderless/small/toggle_off.png"
+page = "pages/49.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "small"
+state = "selected"
+draw = "draw/dark/borderless/small/selected.png"
+screen = "screen/dark/borderless/small/selected.png"
+page = "pages/49.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "medium"
+state = "normal"
+draw = "draw/dark/borderless/medium/normal.png"
+screen = "screen/dark/borderless/medium/normal.png"
+page = "pages/50.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/borderless/medium/highlighted.png"
+screen = "screen/dark/borderless/medium/highlighted.png"
+page = "pages/50.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/borderless/medium/disabled.png"
+screen = "screen/dark/borderless/medium/disabled.png"
+page = "pages/50.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/borderless/medium/toggle_off.png"
+screen = "screen/dark/borderless/medium/toggle_off.png"
+page = "pages/50.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "medium"
+state = "selected"
+draw = "draw/dark/borderless/medium/selected.png"
+screen = "screen/dark/borderless/medium/selected.png"
+page = "pages/50.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "large"
+state = "normal"
+draw = "draw/dark/borderless/large/normal.png"
+screen = "screen/dark/borderless/large/normal.png"
+page = "pages/51.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/borderless/large/highlighted.png"
+screen = "screen/dark/borderless/large/highlighted.png"
+page = "pages/51.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "large"
+state = "disabled"
+draw = "draw/dark/borderless/large/disabled.png"
+screen = "screen/dark/borderless/large/disabled.png"
+page = "pages/51.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/borderless/large/toggle_off.png"
+screen = "screen/dark/borderless/large/toggle_off.png"
+page = "pages/51.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "borderless"
+size = "large"
+state = "selected"
+draw = "draw/dark/borderless/large/selected.png"
+screen = "screen/dark/borderless/large/selected.png"
+page = "pages/51.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "mini"
+state = "normal"
+draw = "draw/dark/bordered/mini/normal.png"
+screen = "screen/dark/bordered/mini/normal.png"
+page = "pages/52.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/bordered/mini/highlighted.png"
+screen = "screen/dark/bordered/mini/highlighted.png"
+page = "pages/52.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/bordered/mini/disabled.png"
+screen = "screen/dark/bordered/mini/disabled.png"
+page = "pages/52.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/bordered/mini/toggle_off.png"
+screen = "screen/dark/bordered/mini/toggle_off.png"
+page = "pages/52.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "mini"
+state = "selected"
+draw = "draw/dark/bordered/mini/selected.png"
+screen = "screen/dark/bordered/mini/selected.png"
+page = "pages/52.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "small"
+state = "normal"
+draw = "draw/dark/bordered/small/normal.png"
+screen = "screen/dark/bordered/small/normal.png"
+page = "pages/53.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/bordered/small/highlighted.png"
+screen = "screen/dark/bordered/small/highlighted.png"
+page = "pages/53.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "small"
+state = "disabled"
+draw = "draw/dark/bordered/small/disabled.png"
+screen = "screen/dark/bordered/small/disabled.png"
+page = "pages/53.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/bordered/small/toggle_off.png"
+screen = "screen/dark/bordered/small/toggle_off.png"
+page = "pages/53.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "small"
+state = "selected"
+draw = "draw/dark/bordered/small/selected.png"
+screen = "screen/dark/bordered/small/selected.png"
+page = "pages/53.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "medium"
+state = "normal"
+draw = "draw/dark/bordered/medium/normal.png"
+screen = "screen/dark/bordered/medium/normal.png"
+page = "pages/54.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/bordered/medium/highlighted.png"
+screen = "screen/dark/bordered/medium/highlighted.png"
+page = "pages/54.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/bordered/medium/disabled.png"
+screen = "screen/dark/bordered/medium/disabled.png"
+page = "pages/54.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/bordered/medium/toggle_off.png"
+screen = "screen/dark/bordered/medium/toggle_off.png"
+page = "pages/54.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "medium"
+state = "selected"
+draw = "draw/dark/bordered/medium/selected.png"
+screen = "screen/dark/bordered/medium/selected.png"
+page = "pages/54.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "large"
+state = "normal"
+draw = "draw/dark/bordered/large/normal.png"
+screen = "screen/dark/bordered/large/normal.png"
+page = "pages/55.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/bordered/large/highlighted.png"
+screen = "screen/dark/bordered/large/highlighted.png"
+page = "pages/55.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "large"
+state = "disabled"
+draw = "draw/dark/bordered/large/disabled.png"
+screen = "screen/dark/bordered/large/disabled.png"
+page = "pages/55.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/bordered/large/toggle_off.png"
+screen = "screen/dark/bordered/large/toggle_off.png"
+page = "pages/55.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered"
+size = "large"
+state = "selected"
+draw = "draw/dark/bordered/large/selected.png"
+screen = "screen/dark/bordered/large/selected.png"
+page = "pages/55.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "mini"
+state = "normal"
+draw = "draw/dark/bordered_tinted/mini/normal.png"
+screen = "screen/dark/bordered_tinted/mini/normal.png"
+page = "pages/56.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/bordered_tinted/mini/highlighted.png"
+screen = "screen/dark/bordered_tinted/mini/highlighted.png"
+page = "pages/56.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/bordered_tinted/mini/disabled.png"
+screen = "screen/dark/bordered_tinted/mini/disabled.png"
+page = "pages/56.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/bordered_tinted/mini/toggle_off.png"
+screen = "screen/dark/bordered_tinted/mini/toggle_off.png"
+page = "pages/56.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "mini"
+state = "selected"
+draw = "draw/dark/bordered_tinted/mini/selected.png"
+screen = "screen/dark/bordered_tinted/mini/selected.png"
+page = "pages/56.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "small"
+state = "normal"
+draw = "draw/dark/bordered_tinted/small/normal.png"
+screen = "screen/dark/bordered_tinted/small/normal.png"
+page = "pages/57.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/bordered_tinted/small/highlighted.png"
+screen = "screen/dark/bordered_tinted/small/highlighted.png"
+page = "pages/57.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "small"
+state = "disabled"
+draw = "draw/dark/bordered_tinted/small/disabled.png"
+screen = "screen/dark/bordered_tinted/small/disabled.png"
+page = "pages/57.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/bordered_tinted/small/toggle_off.png"
+screen = "screen/dark/bordered_tinted/small/toggle_off.png"
+page = "pages/57.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "small"
+state = "selected"
+draw = "draw/dark/bordered_tinted/small/selected.png"
+screen = "screen/dark/bordered_tinted/small/selected.png"
+page = "pages/57.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "medium"
+state = "normal"
+draw = "draw/dark/bordered_tinted/medium/normal.png"
+screen = "screen/dark/bordered_tinted/medium/normal.png"
+page = "pages/58.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/bordered_tinted/medium/highlighted.png"
+screen = "screen/dark/bordered_tinted/medium/highlighted.png"
+page = "pages/58.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/bordered_tinted/medium/disabled.png"
+screen = "screen/dark/bordered_tinted/medium/disabled.png"
+page = "pages/58.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/bordered_tinted/medium/toggle_off.png"
+screen = "screen/dark/bordered_tinted/medium/toggle_off.png"
+page = "pages/58.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "medium"
+state = "selected"
+draw = "draw/dark/bordered_tinted/medium/selected.png"
+screen = "screen/dark/bordered_tinted/medium/selected.png"
+page = "pages/58.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "large"
+state = "normal"
+draw = "draw/dark/bordered_tinted/large/normal.png"
+screen = "screen/dark/bordered_tinted/large/normal.png"
+page = "pages/59.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/bordered_tinted/large/highlighted.png"
+screen = "screen/dark/bordered_tinted/large/highlighted.png"
+page = "pages/59.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "large"
+state = "disabled"
+draw = "draw/dark/bordered_tinted/large/disabled.png"
+screen = "screen/dark/bordered_tinted/large/disabled.png"
+page = "pages/59.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/bordered_tinted/large/toggle_off.png"
+screen = "screen/dark/bordered_tinted/large/toggle_off.png"
+page = "pages/59.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_tinted"
+size = "large"
+state = "selected"
+draw = "draw/dark/bordered_tinted/large/selected.png"
+screen = "screen/dark/bordered_tinted/large/selected.png"
+page = "pages/59.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "mini"
+state = "normal"
+draw = "draw/dark/bordered_prominent/mini/normal.png"
+screen = "screen/dark/bordered_prominent/mini/normal.png"
+page = "pages/60.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "mini"
+state = "highlighted"
+draw = "draw/dark/bordered_prominent/mini/highlighted.png"
+screen = "screen/dark/bordered_prominent/mini/highlighted.png"
+page = "pages/60.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "mini"
+state = "disabled"
+draw = "draw/dark/bordered_prominent/mini/disabled.png"
+screen = "screen/dark/bordered_prominent/mini/disabled.png"
+page = "pages/60.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "mini"
+state = "toggle_off"
+draw = "draw/dark/bordered_prominent/mini/toggle_off.png"
+screen = "screen/dark/bordered_prominent/mini/toggle_off.png"
+page = "pages/60.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "mini"
+state = "selected"
+draw = "draw/dark/bordered_prominent/mini/selected.png"
+screen = "screen/dark/bordered_prominent/mini/selected.png"
+page = "pages/60.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "small"
+state = "normal"
+draw = "draw/dark/bordered_prominent/small/normal.png"
+screen = "screen/dark/bordered_prominent/small/normal.png"
+page = "pages/61.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "small"
+state = "highlighted"
+draw = "draw/dark/bordered_prominent/small/highlighted.png"
+screen = "screen/dark/bordered_prominent/small/highlighted.png"
+page = "pages/61.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "small"
+state = "disabled"
+draw = "draw/dark/bordered_prominent/small/disabled.png"
+screen = "screen/dark/bordered_prominent/small/disabled.png"
+page = "pages/61.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "small"
+state = "toggle_off"
+draw = "draw/dark/bordered_prominent/small/toggle_off.png"
+screen = "screen/dark/bordered_prominent/small/toggle_off.png"
+page = "pages/61.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "small"
+state = "selected"
+draw = "draw/dark/bordered_prominent/small/selected.png"
+screen = "screen/dark/bordered_prominent/small/selected.png"
+page = "pages/61.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [152.333, 34.000, 65.667, 28.000]
+intrinsic_size_pt = [65.667, 28.000]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "medium"
+state = "normal"
+draw = "draw/dark/bordered_prominent/medium/normal.png"
+screen = "screen/dark/bordered_prominent/medium/normal.png"
+page = "pages/62.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "medium"
+state = "highlighted"
+draw = "draw/dark/bordered_prominent/medium/highlighted.png"
+screen = "screen/dark/bordered_prominent/medium/highlighted.png"
+page = "pages/62.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "medium"
+state = "disabled"
+draw = "draw/dark/bordered_prominent/medium/disabled.png"
+screen = "screen/dark/bordered_prominent/medium/disabled.png"
+page = "pages/62.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "medium"
+state = "toggle_off"
+draw = "draw/dark/bordered_prominent/medium/toggle_off.png"
+screen = "screen/dark/bordered_prominent/medium/toggle_off.png"
+page = "pages/62.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "medium"
+state = "selected"
+draw = "draw/dark/bordered_prominent/medium/selected.png"
+screen = "screen/dark/bordered_prominent/medium/selected.png"
+page = "pages/62.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [147.667, 31.000, 75.000, 34.333]
+intrinsic_size_pt = [75.000, 34.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "large"
+state = "normal"
+draw = "draw/dark/bordered_prominent/large/normal.png"
+screen = "screen/dark/bordered_prominent/large/normal.png"
+page = "pages/63.png"
+cell_px = [48.000, 234.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "large"
+state = "highlighted"
+draw = "draw/dark/bordered_prominent/large/highlighted.png"
+screen = "screen/dark/bordered_prominent/large/highlighted.png"
+page = "pages/63.png"
+cell_px = [48.000, 546.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = true
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "large"
+state = "disabled"
+draw = "draw/dark/bordered_prominent/large/disabled.png"
+screen = "screen/dark/bordered_prominent/large/disabled.png"
+page = "pages/63.png"
+cell_px = [48.000, 858.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = false
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "large"
+state = "toggle_off"
+draw = "draw/dark/bordered_prominent/large/toggle_off.png"
+screen = "screen/dark/bordered_prominent/large/toggle_off.png"
+page = "pages/63.png"
+cell_px = [48.000, 1170.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = false
+user_interface_style = 2
+
+[[render]]
+appearance = "dark"
+style = "bordered_prominent"
+size = "large"
+state = "selected"
+draw = "draw/dark/bordered_prominent/large/selected.png"
+screen = "screen/dark/bordered_prominent/large/selected.png"
+page = "pages/63.png"
+cell_px = [48.000, 1482.000, 1110.000, 288.000]
+button_frame_pt = [139.667, 23.000, 91.000, 50.333]
+intrinsic_size_pt = [91.000, 50.333]
+is_highlighted = false
+is_enabled = true
+is_selected = true
+user_interface_style = 2

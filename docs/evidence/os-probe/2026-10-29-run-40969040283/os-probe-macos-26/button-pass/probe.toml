@@ -1,0 +1,2282 @@
+[os]
+platform = "macOS"
+version = "26.6.2"
+major = 26
+minor = 6
+patch = 2
+operatingSystemVersionString = "Version 26.6.2 (Build 25G83)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos26"
+runner_image_version = "20261013.0424.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.button_pass]
+method = """activation policy set to Regular, finishLaunching and activation as in the key-window section; a titled NSWindow (600 x 320 pt content from [200, 200] (x, y), empty title) holding a grid of NSButtons, bezelStyle push, title "Button", each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit: a row per control size (mini, small, regular, large, extraLarge where the OS has it) from the top, 56 pt apart, each button centred in its row on whole points, and a column per variant (plain, default, toggle_off, toggle_on) every 140 pt from x 20; made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow; per appearance the window's appearance is set and the run loop pumped 10 steps of 50 ms, then each state is set (states), the window displayed and the run loop pumped 10 steps (20 after a cursor move), and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/<state>[-<button>].png; isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture is compared with the same appearance's normal capture inside each button's frame grown by 6 pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked 100 pt right of the window's frame before the normal capture and after the hovered and clicked ones"""
+activationPolicy_regular_set = true
+CGPreflightPostEventAccess = true
+makeFirstResponder_nil = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+key_wait_steps = 1
+window_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 600.0, 352.0]
+defaultButtonCell = "mini-default"
+cursor_away_screen_xy = [900.0, 376.0]
+all_captures_key = true
+
+[macos.button_pass.states]
+normal = "nothing set; the cursor parked outside the window"
+pressed = "-[NSButton highlight:] YES on every button, as NSButtonCell's mouse tracking does, then the run loop pumped; the cells' isHighlighted read back (cells_highlighted)"
+disabled = "setEnabled: NO on every button"
+hovered = "per button: the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)"
+clicked = "per plain and default button at the regular size: the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up"
+
+[macos.button_pass.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.button_pass.buttons.mini-plain]
+variant = "plain"
+setup = "buttonType momentaryPushIn"
+controlSize_requested_raw = 2
+controlSize_raw = 2
+keyEquivalent = ""
+state = 0
+frame_xywh = [20.0, 264.0, 46.0, 16.0]
+intrinsicContentSize_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [20.0, 72.0, 46.0, 16.0]
+
+[macos.button_pass.buttons.mini-default]
+variant = "default"
+setup = 'buttonType momentaryPushIn, keyEquivalent "\r" (Return)'
+controlSize_requested_raw = 2
+controlSize_raw = 2
+keyEquivalent = "\r"
+state = 0
+frame_xywh = [160.0, 264.0, 46.0, 16.0]
+intrinsicContentSize_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [160.0, 72.0, 46.0, 16.0]
+
+[macos.button_pass.buttons.mini-toggle_off]
+variant = "toggle_off"
+setup = "buttonType pushOnPushOff, state off"
+controlSize_requested_raw = 2
+controlSize_raw = 2
+keyEquivalent = ""
+state = 0
+frame_xywh = [300.0, 264.0, 46.0, 16.0]
+intrinsicContentSize_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [300.0, 72.0, 46.0, 16.0]
+
+[macos.button_pass.buttons.mini-toggle_on]
+variant = "toggle_on"
+setup = "buttonType pushOnPushOff, state on"
+controlSize_requested_raw = 2
+controlSize_raw = 2
+keyEquivalent = ""
+state = 1
+frame_xywh = [440.0, 264.0, 46.0, 16.0]
+intrinsicContentSize_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [440.0, 72.0, 46.0, 16.0]
+
+[macos.button_pass.buttons.small-plain]
+variant = "plain"
+setup = "buttonType momentaryPushIn"
+controlSize_requested_raw = 1
+controlSize_raw = 1
+keyEquivalent = ""
+state = 0
+frame_xywh = [20.0, 206.0, 55.0, 20.0]
+intrinsicContentSize_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [20.0, 126.0, 55.0, 20.0]
+
+[macos.button_pass.buttons.small-default]
+variant = "default"
+setup = 'buttonType momentaryPushIn, keyEquivalent "\r" (Return)'
+controlSize_requested_raw = 1
+controlSize_raw = 1
+keyEquivalent = "\r"
+state = 0
+frame_xywh = [160.0, 206.0, 55.0, 20.0]
+intrinsicContentSize_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [160.0, 126.0, 55.0, 20.0]
+
+[macos.button_pass.buttons.small-toggle_off]
+variant = "toggle_off"
+setup = "buttonType pushOnPushOff, state off"
+controlSize_requested_raw = 1
+controlSize_raw = 1
+keyEquivalent = ""
+state = 0
+frame_xywh = [300.0, 206.0, 55.0, 20.0]
+intrinsicContentSize_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [300.0, 126.0, 55.0, 20.0]
+
+[macos.button_pass.buttons.small-toggle_on]
+variant = "toggle_on"
+setup = "buttonType pushOnPushOff, state on"
+controlSize_requested_raw = 1
+controlSize_raw = 1
+keyEquivalent = ""
+state = 1
+frame_xywh = [440.0, 206.0, 55.0, 20.0]
+intrinsicContentSize_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [440.0, 126.0, 55.0, 20.0]
+
+[macos.button_pass.buttons.regular-plain]
+variant = "plain"
+setup = "buttonType momentaryPushIn"
+controlSize_requested_raw = 0
+controlSize_raw = 0
+keyEquivalent = ""
+state = 0
+frame_xywh = [20.0, 148.0, 65.0, 24.0]
+intrinsicContentSize_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [20.0, 180.0, 65.0, 24.0]
+
+[macos.button_pass.buttons.regular-default]
+variant = "default"
+setup = 'buttonType momentaryPushIn, keyEquivalent "\r" (Return)'
+controlSize_requested_raw = 0
+controlSize_raw = 0
+keyEquivalent = "\r"
+state = 0
+frame_xywh = [160.0, 148.0, 65.0, 24.0]
+intrinsicContentSize_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [160.0, 180.0, 65.0, 24.0]
+
+[macos.button_pass.buttons.regular-toggle_off]
+variant = "toggle_off"
+setup = "buttonType pushOnPushOff, state off"
+controlSize_requested_raw = 0
+controlSize_raw = 0
+keyEquivalent = ""
+state = 0
+frame_xywh = [300.0, 148.0, 65.0, 24.0]
+intrinsicContentSize_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [300.0, 180.0, 65.0, 24.0]
+
+[macos.button_pass.buttons.regular-toggle_on]
+variant = "toggle_on"
+setup = "buttonType pushOnPushOff, state on"
+controlSize_requested_raw = 0
+controlSize_raw = 0
+keyEquivalent = ""
+state = 1
+frame_xywh = [440.0, 148.0, 65.0, 24.0]
+intrinsicContentSize_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [440.0, 180.0, 65.0, 24.0]
+
+[macos.button_pass.buttons.large-plain]
+variant = "plain"
+setup = "buttonType momentaryPushIn"
+controlSize_requested_raw = 3
+controlSize_raw = 3
+keyEquivalent = ""
+state = 0
+frame_xywh = [20.0, 90.0, 69.0, 28.0]
+intrinsicContentSize_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [20.0, 234.0, 69.0, 28.0]
+
+[macos.button_pass.buttons.large-default]
+variant = "default"
+setup = 'buttonType momentaryPushIn, keyEquivalent "\r" (Return)'
+controlSize_requested_raw = 3
+controlSize_raw = 3
+keyEquivalent = "\r"
+state = 0
+frame_xywh = [160.0, 90.0, 69.0, 28.0]
+intrinsicContentSize_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [160.0, 234.0, 69.0, 28.0]
+
+[macos.button_pass.buttons.large-toggle_off]
+variant = "toggle_off"
+setup = "buttonType pushOnPushOff, state off"
+controlSize_requested_raw = 3
+controlSize_raw = 3
+keyEquivalent = ""
+state = 0
+frame_xywh = [300.0, 90.0, 69.0, 28.0]
+intrinsicContentSize_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [300.0, 234.0, 69.0, 28.0]
+
+[macos.button_pass.buttons.large-toggle_on]
+variant = "toggle_on"
+setup = "buttonType pushOnPushOff, state on"
+controlSize_requested_raw = 3
+controlSize_raw = 3
+keyEquivalent = ""
+state = 1
+frame_xywh = [440.0, 90.0, 69.0, 28.0]
+intrinsicContentSize_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [440.0, 234.0, 69.0, 28.0]
+
+[macos.button_pass.buttons.extraLarge-plain]
+variant = "plain"
+setup = "buttonType momentaryPushIn"
+controlSize_requested_raw = 4
+controlSize_raw = 4
+keyEquivalent = ""
+state = 0
+frame_xywh = [20.0, 30.0, 77.0, 36.0]
+intrinsicContentSize_wh = [77.0, 36.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [20.0, 286.0, 77.0, 36.0]
+
+[macos.button_pass.buttons.extraLarge-default]
+variant = "default"
+setup = 'buttonType momentaryPushIn, keyEquivalent "\r" (Return)'
+controlSize_requested_raw = 4
+controlSize_raw = 4
+keyEquivalent = "\r"
+state = 0
+frame_xywh = [160.0, 30.0, 77.0, 36.0]
+intrinsicContentSize_wh = [77.0, 36.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [160.0, 286.0, 77.0, 36.0]
+
+[macos.button_pass.buttons.extraLarge-toggle_off]
+variant = "toggle_off"
+setup = "buttonType pushOnPushOff, state off"
+controlSize_requested_raw = 4
+controlSize_raw = 4
+keyEquivalent = ""
+state = 0
+frame_xywh = [300.0, 30.0, 77.0, 36.0]
+intrinsicContentSize_wh = [77.0, 36.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [300.0, 286.0, 77.0, 36.0]
+
+[macos.button_pass.buttons.extraLarge-toggle_on]
+variant = "toggle_on"
+setup = "buttonType pushOnPushOff, state on"
+controlSize_requested_raw = 4
+controlSize_raw = 4
+keyEquivalent = ""
+state = 1
+frame_xywh = [440.0, 30.0, 77.0, 36.0]
+intrinsicContentSize_wh = [77.0, 36.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+in_window_frame_from_top_left_xywh = [440.0, 286.0, 77.0, 36.0]
+
+[macos.button_pass.aqua.normal]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/normal.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.normal.cursor]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.aqua.normal.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.pressed]
+cells_highlighted = ["mini-plain", "mini-default", "mini-toggle_off", "mini-toggle_on", "small-plain", "small-default", "small-toggle_off", "small-toggle_on", "regular-plain", "regular-default", "regular-toggle_off", "regular-toggle_on", "large-plain", "large-default", "large-toggle_off", "large-toggle_on", "extraLarge-plain", "extraLarge-default", "extraLarge-toggle_off", "extraLarge-toggle_on"]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/pressed.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.pressed.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 720
+max_byte_delta = 25
+
+[macos.button_pass.aqua.pressed.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 721
+max_byte_delta = 24
+
+[macos.button_pass.aqua.pressed.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1090
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1047
+max_byte_delta = 25
+
+[macos.button_pass.aqua.pressed.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1090
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1049
+max_byte_delta = 24
+
+[macos.button_pass.aqua.pressed.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1489
+max_byte_delta = 25
+
+[macos.button_pass.aqua.pressed.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1490
+max_byte_delta = 24
+
+[macos.button_pass.aqua.pressed.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1749
+max_byte_delta = 25
+
+[macos.button_pass.aqua.pressed.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1750
+max_byte_delta = 24
+
+[macos.button_pass.aqua.pressed.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2493
+max_byte_delta = 25
+
+[macos.button_pass.aqua.pressed.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 23
+
+[macos.button_pass.aqua.pressed.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2494
+max_byte_delta = 24
+
+[macos.button_pass.aqua.disabled]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/disabled.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.disabled.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 245
+
+[macos.button_pass.aqua.disabled.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1088
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1094
+max_byte_delta = 245
+
+[macos.button_pass.aqua.disabled.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1088
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1094
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 245
+
+[macos.button_pass.aqua.disabled.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1806
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 245
+
+[macos.button_pass.aqua.disabled.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1806
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2548
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 245
+
+[macos.button_pass.aqua.disabled.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2548
+max_byte_delta = 146
+
+[macos.button_pass.aqua.disabled.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 146
+
+[macos.button_pass.aqua.hovered.mini-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-mini-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.mini-plain.cursor]
+target_screen_xy = [243.0, 472.0]
+target_quartz_xy = [243.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [243.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.mini-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 2
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.mini-plain.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.mini-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-mini-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.mini-default.cursor]
+target_screen_xy = [383.0, 472.0]
+target_quartz_xy = [383.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [383.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.mini-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.mini-default.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.mini-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-mini-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.mini-toggle_off.cursor]
+target_screen_xy = [523.0, 472.0]
+target_quartz_xy = [523.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [523.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.mini-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.mini-toggle_off.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.mini-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-mini-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.mini-toggle_on.cursor]
+target_screen_xy = [663.0, 472.0]
+target_quartz_xy = [663.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [663.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.mini-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.mini-toggle_on.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.small-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-small-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.small-plain.cursor]
+target_screen_xy = [247.5, 416.0]
+target_quartz_xy = [247.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [247.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.small-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.small-plain.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.small-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-small-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.small-default.cursor]
+target_screen_xy = [387.5, 416.0]
+target_quartz_xy = [387.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [387.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.small-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.small-default.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.small-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-small-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.small-toggle_off.cursor]
+target_screen_xy = [527.5, 416.0]
+target_quartz_xy = [527.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [527.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.small-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.small-toggle_off.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.small-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-small-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.small-toggle_on.cursor]
+target_screen_xy = [667.5, 416.0]
+target_quartz_xy = [667.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [667.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.small-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.small-toggle_on.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.regular-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-regular-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.regular-plain.cursor]
+target_screen_xy = [252.5, 360.0]
+target_quartz_xy = [252.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [252.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.regular-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.regular-plain.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.regular-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-regular-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.regular-default.cursor]
+target_screen_xy = [392.5, 360.0]
+target_quartz_xy = [392.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [392.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.regular-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.regular-default.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.regular-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-regular-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.regular-toggle_off.cursor]
+target_screen_xy = [532.5, 360.0]
+target_quartz_xy = [532.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [532.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.regular-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.regular-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-regular-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.regular-toggle_on.cursor]
+target_screen_xy = [672.5, 360.0]
+target_quartz_xy = [672.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [672.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.regular-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.large-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-large-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.large-plain.cursor]
+target_screen_xy = [254.5, 304.0]
+target_quartz_xy = [254.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [254.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.large-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.large-plain.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.large-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-large-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.large-default.cursor]
+target_screen_xy = [394.5, 304.0]
+target_quartz_xy = [394.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [394.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.large-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.large-default.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.large-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-large-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.large-toggle_off.cursor]
+target_screen_xy = [534.5, 304.0]
+target_quartz_xy = [534.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [534.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.large-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.large-toggle_off.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.large-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-large-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.large-toggle_on.cursor]
+target_screen_xy = [674.5, 304.0]
+target_quartz_xy = [674.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [674.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.large-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.large-toggle_on.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-extraLarge-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.extraLarge-plain.cursor]
+target_screen_xy = [258.5, 248.0]
+target_quartz_xy = [258.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [258.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.extraLarge-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-plain.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-extraLarge-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.extraLarge-default.cursor]
+target_screen_xy = [398.5, 248.0]
+target_quartz_xy = [398.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [398.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.extraLarge-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-default.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-extraLarge-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_off.cursor]
+target_screen_xy = [538.5, 248.0]
+target_quartz_xy = [538.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [538.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_off.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "aqua/hovered-extraLarge-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_on.cursor]
+target_screen_xy = [678.5, 248.0]
+target_quartz_xy = [678.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [678.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.hovered.extraLarge-toggle_on.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.hovered.cursor_parked]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.aqua.hovered.cursor_parked.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 2
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.clicked.regular-plain]
+wait_steps = 14
+mouseUp_created = true
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+key_status_read = "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken"
+highlighted_after = false
+file = "aqua/clicked-regular-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.clicked.regular-plain.cursor]
+target_screen_xy = [252.5, 360.0]
+target_quartz_xy = [252.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [252.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.clicked.regular-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 2
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.clicked.regular-plain.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 23
+
+[macos.button_pass.aqua.clicked.regular-plain.diff_from_pressed.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.clicked.regular-default]
+wait_steps = 14
+mouseUp_created = true
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+key_status_read = "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken"
+highlighted_after = false
+file = "aqua/clicked-regular-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.aqua.clicked.regular-default.cursor]
+target_screen_xy = [392.5, 360.0]
+target_quartz_xy = [392.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [392.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.aqua.clicked.regular-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.aqua.clicked.regular-default.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1489
+max_byte_delta = 25
+
+[macos.button_pass.aqua.clicked.regular-default.diff_from_pressed.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.aqua.clicked.cursor_parked]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.aqua.clicked.cursor_parked.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 2
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.normal]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/normal.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.normal.cursor]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.darkAqua.normal.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.pressed]
+cells_highlighted = ["mini-plain", "mini-default", "mini-toggle_off", "mini-toggle_on", "small-plain", "small-default", "small-toggle_off", "small-toggle_on", "regular-plain", "regular-default", "regular-toggle_off", "regular-toggle_on", "large-plain", "large-default", "large-toggle_off", "large-toggle_on", "extraLarge-plain", "extraLarge-default", "extraLarge-toggle_off", "extraLarge-toggle_on"]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/pressed.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 721
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 722
+max_byte_delta = 24
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1090
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1046
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1090
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1050
+max_byte_delta = 24
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1491
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1491
+max_byte_delta = 24
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1751
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1751
+max_byte_delta = 24
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2495
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.pressed.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2495
+max_byte_delta = 24
+
+[macos.button_pass.darkAqua.disabled]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/disabled.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 217
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 732
+max_byte_delta = 204
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1088
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1094
+max_byte_delta = 217
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1088
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 1094
+max_byte_delta = 204
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 217
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 204
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1806
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 217
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1806
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 1808
+max_byte_delta = 204
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2548
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 217
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2548
+max_byte_delta = 131
+
+[macos.button_pass.darkAqua.disabled.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 2552
+max_byte_delta = 204
+
+[macos.button_pass.darkAqua.hovered.mini-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-mini-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.mini-plain.cursor]
+target_screen_xy = [243.0, 472.0]
+target_quartz_xy = [243.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [243.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.mini-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 2
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.mini-plain.diff_from_normal.mini-plain]
+rect_px_xywh = [14, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.mini-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-mini-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.mini-default.cursor]
+target_screen_xy = [383.0, 472.0]
+target_quartz_xy = [383.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [383.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.mini-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.mini-default.diff_from_normal.mini-default]
+rect_px_xywh = [154, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-mini-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_off.cursor]
+target_screen_xy = [523.0, 472.0]
+target_quartz_xy = [523.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [523.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_off.diff_from_normal.mini-toggle_off]
+rect_px_xywh = [294, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-mini-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_on.cursor]
+target_screen_xy = [663.0, 472.0]
+target_quartz_xy = [663.0, 296.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [663.0, 472.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.mini-toggle_on.diff_from_normal.mini-toggle_on]
+rect_px_xywh = [434, 66, 58, 28]
+pixels = 1624
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.small-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-small-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.small-plain.cursor]
+target_screen_xy = [247.5, 416.0]
+target_quartz_xy = [247.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [247.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.small-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.small-plain.diff_from_normal.small-plain]
+rect_px_xywh = [14, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.small-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-small-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.small-default.cursor]
+target_screen_xy = [387.5, 416.0]
+target_quartz_xy = [387.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [387.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.small-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.small-default.diff_from_normal.small-default]
+rect_px_xywh = [154, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.small-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-small-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.small-toggle_off.cursor]
+target_screen_xy = [527.5, 416.0]
+target_quartz_xy = [527.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [527.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.small-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.small-toggle_off.diff_from_normal.small-toggle_off]
+rect_px_xywh = [294, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.small-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-small-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.small-toggle_on.cursor]
+target_screen_xy = [667.5, 416.0]
+target_quartz_xy = [667.5, 352.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [667.5, 416.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.small-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.small-toggle_on.diff_from_normal.small-toggle_on]
+rect_px_xywh = [434, 120, 67, 32]
+pixels = 2144
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.regular-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-regular-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.regular-plain.cursor]
+target_screen_xy = [252.5, 360.0]
+target_quartz_xy = [252.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [252.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.regular-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.regular-plain.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.regular-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-regular-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.regular-default.cursor]
+target_screen_xy = [392.5, 360.0]
+target_quartz_xy = [392.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [392.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.regular-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.regular-default.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-regular-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_off.cursor]
+target_screen_xy = [532.5, 360.0]
+target_quartz_xy = [532.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [532.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_off.diff_from_normal.regular-toggle_off]
+rect_px_xywh = [294, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-regular-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_on.cursor]
+target_screen_xy = [672.5, 360.0]
+target_quartz_xy = [672.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [672.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.regular-toggle_on.diff_from_normal.regular-toggle_on]
+rect_px_xywh = [434, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.large-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-large-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.large-plain.cursor]
+target_screen_xy = [254.5, 304.0]
+target_quartz_xy = [254.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [254.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.large-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.large-plain.diff_from_normal.large-plain]
+rect_px_xywh = [14, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.large-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-large-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.large-default.cursor]
+target_screen_xy = [394.5, 304.0]
+target_quartz_xy = [394.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [394.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.large-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.large-default.diff_from_normal.large-default]
+rect_px_xywh = [154, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.large-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-large-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.large-toggle_off.cursor]
+target_screen_xy = [534.5, 304.0]
+target_quartz_xy = [534.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [534.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.large-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.large-toggle_off.diff_from_normal.large-toggle_off]
+rect_px_xywh = [294, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.large-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-large-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.large-toggle_on.cursor]
+target_screen_xy = [674.5, 304.0]
+target_quartz_xy = [674.5, 464.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [674.5, 304.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.large-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.large-toggle_on.diff_from_normal.large-toggle_on]
+rect_px_xywh = [434, 228, 81, 40]
+pixels = 3240
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-plain]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-extraLarge-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.extraLarge-plain.cursor]
+target_screen_xy = [258.5, 248.0]
+target_quartz_xy = [258.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [258.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.extraLarge-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-plain.diff_from_normal.extraLarge-plain]
+rect_px_xywh = [14, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-default]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-extraLarge-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.extraLarge-default.cursor]
+target_screen_xy = [398.5, 248.0]
+target_quartz_xy = [398.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [398.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.extraLarge-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-default.diff_from_normal.extraLarge-default]
+rect_px_xywh = [154, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_off]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-extraLarge-toggle_off.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_off.cursor]
+target_screen_xy = [538.5, 248.0]
+target_quartz_xy = [538.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [538.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_off.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_off.diff_from_normal.extraLarge-toggle_off]
+rect_px_xywh = [294, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_on]
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+file = "darkAqua/hovered-extraLarge-toggle_on.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_on.cursor]
+target_screen_xy = [678.5, 248.0]
+target_quartz_xy = [678.5, 520.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [678.5, 248.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_on.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.hovered.extraLarge-toggle_on.diff_from_normal.extraLarge-toggle_on]
+rect_px_xywh = [434, 280, 89, 48]
+pixels = 4272
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.hovered.cursor_parked]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.darkAqua.hovered.cursor_parked.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 2
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.clicked.regular-plain]
+wait_steps = 12
+mouseUp_created = true
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+key_status_read = "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken"
+highlighted_after = false
+file = "darkAqua/clicked-regular-plain.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.clicked.regular-plain.cursor]
+target_screen_xy = [252.5, 360.0]
+target_quartz_xy = [252.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [252.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.clicked.regular-plain.cursor.events]
+mouseMoved = 1
+mouseEntered = 2
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.clicked.regular-plain.diff_from_normal.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1548
+max_byte_delta = 20
+
+[macos.button_pass.darkAqua.clicked.regular-plain.diff_from_pressed.regular-plain]
+rect_px_xywh = [14, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.clicked.regular-default]
+wait_steps = 13
+mouseUp_created = true
+isKeyWindow_before = true
+isKeyWindow_after = true
+NSApp_isActive_before = true
+NSApp_isActive_after = true
+key_at_capture = true
+key_status_read = "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken"
+highlighted_after = false
+file = "darkAqua/clicked-regular-default.png"
+pixels_wh = [600, 352]
+
+[macos.button_pass.darkAqua.clicked.regular-default.cursor]
+target_screen_xy = [392.5, 360.0]
+target_quartz_xy = [392.5, 408.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [392.5, 360.0]
+window_under_cursor_is_ours = true
+
+[macos.button_pass.darkAqua.clicked.regular-default.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.darkAqua.clicked.regular-default.diff_from_normal.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 1491
+max_byte_delta = 25
+
+[macos.button_pass.darkAqua.clicked.regular-default.diff_from_pressed.regular-default]
+rect_px_xywh = [154, 174, 77, 36]
+pixels = 2772
+differing_pixels = 0
+max_byte_delta = 0
+
+[macos.button_pass.darkAqua.clicked.cursor_parked]
+target_screen_xy = [900.0, 376.0]
+target_quartz_xy = [900.0, 392.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [900.0, 376.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.darkAqua.clicked.cursor_parked.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 2
+cursorUpdate = 0
+other = 0

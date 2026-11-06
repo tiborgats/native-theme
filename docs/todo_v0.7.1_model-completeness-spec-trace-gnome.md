@@ -99,10 +99,11 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.27 | `button.body.padding @ variant icon_only` | rule |
 | GN-1.27 | `button.body.min_width @ variant icon_only` | rule |
 | GN-1.27 | `button.body.padding @ variant with_icon` | rule |
-| GN-1.27 | `button.values.icon_text_gap @ variant with_icon` | rule |
-| GN-1.27 | `button.label.padding @ variant with_icon` | rule |
-| GN-1.27 | `button.body.padding @ variant @arrow_only` | rule |
-| GN-1.27 | `button.values.menu_indicator_gap @ variant @arrow_only` | rule |
+| GN-1.27 | `button.values.icon_text_gap @ variants {with_icon,@image_text_box}` (the box GTK's classes style, `> box`, `> box > box`; AdwButtonContent's gap is GN-1.39's) | rule |
+| GN-1.27 | `button.label.padding @ variants {with_icon,@image_text_box}` (on both sides) | rule |
+| GN-1.27 | `button.body.padding @ variant @custom_child` (GtkButton's base padding, no `.text-button` or `.image-button` class; the base is `.text-button`'s) | rule |
+| GN-1.27 | `button.body.padding @ variant @with_arrow` | rule |
+| GN-1.27 | `button.values.menu_indicator_gap @ variant @with_arrow` | rule |
 | GN-1.28 | `button.body.corners @ variant circular` | rule |
 | GN-1.28 | `button.body.min_width, button.body.min_height, button.body.padding @ variant circular` | rule |
 | GN-1.28 | `button.body.corners, button.body.padding @ variant pill` | rule |
@@ -111,8 +112,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.29 | `button.body.fill @ {hover} / {pressed} / {checked} / {checked,hover} / {checked,pressed} variant flat` | rule |
 | GN-1.29 | `button.body.opacity @ {disabled} !{checked} variant flat` | rule |
 | GN-1.29 | `button.body.shadow @ {hover} / {pressed} / {checked} variant flat cond contrast_high (inset ring layer)` | rule |
-| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar (the flat look; libadwaita flattens image, image-text and arrow buttons only)` | rule |
-| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar` | rule |
+| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = toolbar.bar (the flat look; libadwaita flattens image, image-text and arrow buttons only)` | rule |
+| GN-1.29 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque not_context any layout variant @linked context nearest {toolbar, window, popover} = window.title_bar` | rule |
 | GN-1.30 | `button.body.fill, button.label.text.fill @ variant primary` | rule |
 | GN-1.30 | `button.body.fill @ {hover} / {pressed} / {checked} / {checked,hover} / {checked,pressed} variant primary (appended layers)` | rule |
 | GN-1.30 | `button.body.focus @ variant primary (outer, offset)` | rule |
@@ -136,7 +137,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.38 | `button.body.shadow @ cond contrast_high (inset ring layer at rest)` | rule |
 | GN-1.39 | `button.values.icon_text_gap @ variant with_icon (AdwButtonContent's box)` | rule |
 | GN-1.39 | `button.label.{padding,text} @ variant with_icon / variant with_icon dir rtl (the label's heavier weight, its end padding)` | rule |
-| GN-1.39 | `button.label.padding @ variants {with_icon,@arrow_only} / variants {with_icon,@arrow_only} dir rtl (no end padding next to the arrow)` | rule |
+| GN-1.39 | `split_button.primary_label.padding (no end padding: `splitbutton > button > buttoncontent` drops the content's, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:638-643`; a menu button's label keeps its end padding beside the arrow, the `.arrow-button > box > buttoncontent` branch never matching, as GtkMenuButton puts its child in a `contents` node, `gtk@4.24.1 gtk/gtkmenubutton.c:1516`, `:1527-1532`; ADD-A122)` | field |
 | GN-1.40 | `button.menu_indicator.glyph (ThemeIcon, size) @ variant menu` | rule |
 | GN-1.40 | `button.menu_indicator.glyph @ variant @arrow_up / variant @arrow_start / variant @arrow_end / variant @arrow_none` | rule |
 | GN-1.41 | `badge.body.{fill,min_width,min_height,corners} @ variants {dot,attention} context view_switcher.item` (the accent radial dot on a stack or view switcher's button, which is a `view_switcher.item` element; Nested controls) | rule |
@@ -145,7 +146,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.42 | `button.body.corners @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variant @linked pos last among any / context any layout variant @linked pos only among any` (position among siblings of any kind, `SiblingScope::Any`, CONTRA-3) | rule |
 | GN-1.42 | `button.body.corners @ context any layout variant @linked pos first among any dir rtl / context any layout variant @linked pos last among any dir rtl` | rule |
 | GN-1.42 | `button.body.corners @ context any layout variants {@linked,vertical} pos first among any / context any layout variants {@linked,vertical} pos last among any` | rule |
-| GN-1.42 | `layout.values.item_gap @ variant @linked / variants {@linked,vertical} (negative overlap)` | rule |
+| GN-1.42 | `button.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (the overlap is each child's own negative start or top margin, none on the first, `_linked.scss:16-21`, `:34-37`) | rule |
+| GN-1.42 | `input.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (an entry in a linked box overlaps as a button does, `_linked.scss:9-10`, `:16-21`, `:34-37`) | rule |
+| GN-1.42 | `combo_box.body.margin @ context any layout variant @linked / context any layout variant @linked pos first among any / context any layout variants {@linked,vertical} / context any layout variants {@linked,vertical} pos first among any` (a drop-down's button in a linked box overlaps likewise, `_linked.scss:5`, `:16-21`, `:34-37`) | rule |
 | GN-1.43 | `input.values.icon_text_gap` | field |
 | GN-1.43 | `input.icon.padding @ variant leading / variant trailing (the icon's margin toward the text)` | rule |
 | GN-1.44 | `input.icon.opacity` | field |
@@ -172,14 +175,17 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.281† | `input.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` | rule |
 | GN-1.281† | `text_area.preedit.{text,fill} @ variant @whole / variant @selection / variant @prediction / variant @prefix / variant @suffix / variant @spelling_error / variant @compose_error` (declared on `text_area` as on `input`) | rule |
 | GN-1.55 | `checkbox.box.fill @ {pressed} !{checked,indeterminate}` | rule |
-| GN-1.55 | `checkbox.box.stroke @ {pressed} !{checked,indeterminate} (no ring)` | rule |
-| GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked}` | rule |
-| GN-1.56 | `checkbox.box.stroke @ {hover} !{checked,indeterminate}` | rule |
-| GN-1.56 | `radio.ring.stroke @ {hover} !{checked}` | rule |
-| GN-1.57 | `checkbox.box.fill @ {checked,hover} / {checked,pressed} (appended layers; also {indeterminate,hover} / {indeterminate,pressed})` | rule |
-| GN-1.57 | `radio.ring.fill @ {checked,hover} / {checked,pressed}` | rule |
-| GN-1.58 | `checkbox.box.fill @ {indeterminate}` | rule |
+| GN-1.55 | `checkbox.box.stroke @ {pressed} !{checked,indeterminate} (no ring)` (the order argument, stated once: libadwaita's unchecked `:active` `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:42-44`, beats the hover and high-contrast shadows by specificity and order, and its checked and inconsistent `box-shadow: none`, `:52-56`, beats the high-contrast shadow, `:29-31`, so the ring rules of GN-1.56 and GN-1.65 exclude `pressed`, `checked` and `indeterminate`, and their order against GN-1.55's, GN-1.57's and GN-1.58's rows does not matter; the checked hover layer excludes `pressed` as the press's replaces it, `:58-59`; the `{checked}` and `{indeterminate}` fills, GN-1.57, precede GN-1.57's and GN-1.58's appended layers; among themselves GN-1.65 follows GN-1.56, its hover alternative after its base one, as the media query's hover beats both, `:34-38`, ADD-A125) | rule |
+| GN-1.55 | `radio.ring.fill, radio.ring.stroke @ {pressed} !{checked,indeterminate}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`, ADD-A125) | rule |
+| GN-1.56 | `checkbox.box.stroke @ {hover} !{checked,indeterminate,pressed}` (excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
+| GN-1.56 | `radio.ring.stroke @ {hover} !{checked,indeterminate,pressed}` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; excluding `pressed`, GN-1.55's note, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.fill @ {checked} / {indeterminate}; radio.ring.fill @ {checked} / {indeterminate}` (the accent fill, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-54`, written before the appended layers below and GN-1.58's, which sit on it, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.fill @ {checked,hover} !{pressed} / {checked,pressed} (appended layers; also {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked})` (a box both checked and inconsistent taking the checked layer once, GTK setting the two flags apart, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-879`, `:946-952`, and libadwaita one `background-image` for both; the hovered 10 % layer, 10 % of the accent foreground, the box's `color`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:55`, drawn alone, the pressed 20 % one replacing it, one `background-image`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
+| GN-1.57 | `radio.ring.fill @ {checked,hover} !{pressed} / {checked,pressed}` (as the check's, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:58-59`, ADD-A125) | rule |
+| GN-1.57 | `checkbox.box.stroke @ {checked}; radio.ring.stroke @ {checked}` (no ring on a checked box or radio, the checked and inconsistent `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`; GN-1.55's note, ADD-A125) | rule |
+| GN-1.58 | `checkbox.box.stroke @ {indeterminate}` (the inconsistent box's `box-shadow: none`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-56`, as the checked one's, GN-1.57, its fill GN-1.57's, ADD-A125) | rule |
 | GN-1.58 | `checkbox.mark.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` | rule |
+| GN-1.58 | `radio.ring.stroke @ {indeterminate}; radio.ring.fill @ {indeterminate,hover} !{checked,pressed} / {indeterminate,pressed} !{checked} (appended layers); radio.dot.glyph @ {indeterminate} (GlyphSource::Path from dash.svg)` (GTK's inconsistent radio drawn as the checked one with the dash, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:52-60`, `:79-81`, `gtk@4.24.1 gtk/gtkcheckbutton.c:871-874`; the dot drawn there, GN-P4-7†'s absent rule naming `indeterminate` beside `checked`, ADD-A125, ADD-A126) | rule |
 | GN-1.60 | `checkbox.box.corners` | field |
 | GN-1.60 | `radio.ring.corners (Full)` | field |
 | GN-1.61 | `checkbox.body.padding, checkbox.body.corners, checkbox.body.focus` | field |
@@ -193,10 +199,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.63 | `radio.body.corners (GTK's grouped checkbutton is the radio)` | field |
 | GN-1.64 | `checkbox.box.transitions (Fill, Stroke); radio.ring.transitions` | field |
 | GN-1.64 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
-| GN-1.65 | `checkbox.box.stroke @ cond contrast_high / {hover} !{checked,indeterminate} cond contrast_high` | rule |
-| GN-1.65 | `checkbox.box.fill @ {pressed} !{checked,indeterminate} cond contrast_high` | rule |
-| GN-1.65 | `radio.ring.stroke @ cond contrast_high / {hover} !{checked} cond contrast_high` | rule |
-| GN-1.65 | `radio.ring.fill @ {pressed} !{checked} cond contrast_high` | rule |
+| GN-1.65 | `checkbox.box.stroke @ !{checked,indeterminate,pressed} cond contrast_high / {hover} !{checked,indeterminate,pressed} cond contrast_high` (excluding `pressed`, `checked` and `indeterminate`, written after GN-1.56, GN-1.55's note, ADD-A125) | rule |
+| GN-1.65 | `checkbox.box.fill @ {pressed} !{checked,indeterminate} cond contrast_high` (written after GN-1.55, whose pressed fill it replaces under high contrast, the nested media rule following `:active`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:42-48`, ADD-A125) | rule |
+| GN-1.65 | `radio.ring.stroke @ !{checked,indeterminate,pressed} cond contrast_high / {hover} !{checked,indeterminate,pressed} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; excluding `pressed`, `checked` and `indeterminate`, written after GN-1.56, GN-1.55's note, ADD-A125) | rule |
+| GN-1.65 | `radio.ring.fill @ {pressed} !{checked,indeterminate} cond contrast_high` (libadwaita's `:not(:checked):not(:indeterminate)`, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:33`; written after GN-1.55, the nested media rule following `:active`'s, `:42-48`, ADD-A125) | rule |
 | GN-1.66 | `menu.item.fill @ {pressed}` | rule |
 | GN-1.67 | `menu.item.fill @ {focused} / {hover}` (GTK's `:selected` model button, the keyboard- or pointer-highlighted item, drawn as hover: `focused` or `hover`, never `selected`, S7.2) | rule |
 | GN-1.68 | `menu.item.corners` | field |
@@ -207,6 +213,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.72 | `menu.accelerator.{opacity,padding}` | field |
 | GN-1.72 | `menu.values.accelerator_gap` | field |
 | GN-1.73 | `menu.check_indicator.{min_width,min_height,padding,glyph}` | field |
+| GN-1.73 | `menu.check_indicator.glyph @ variant radio (GlyphSource::Path from bullet.svg) / {indeterminate} (GlyphSource::Path from dash.svg)` (a checked radio item's bullet, and the dash the CSS gives a mixed node, which GTK4's menus never set, `GtkModelButton` setting only `CHECKED`, `gtk@4.24.1 gtk/gtkmodelbutton.c:407-420`, as libadwaita's `check` and `radio` nodes draw them in menus too, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:80`, `widgets/_menus.scss:83-121`; written before the absent rule, ADD-A126) | rule |
+| GN-1.73 | `menu.check_indicator.glyph (Absent) @ !{checked,indeterminate} not_context any combo_box / !{selected} context any combo_box` (an unchecked item draws its column and any box or ring but no mark, the absent rule written after the lane's glyph rules (GN-1.234), the catalogue's one spelling; S6.3, ADD-A126) | rule |
 | GN-1.73 | `menu.check_indicator.margin / menu.check_indicator.margin @ dir rtl` (its margins, the outer one negative, ADD-A79) | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio` | rule |
 | GN-1.73 | `menu.check_indicator.stroke @ variant radio cond contrast_high` | rule |
@@ -217,6 +225,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.76 | `menu.values.presentations events @submenu_push, @submenu_pop (GtkStack's slide left and right, its default duration)` | field |
 | GN-1.77 | `menu.values.submenu_open_delay @ context any menu_bar (nested popover menus only; the base opens at once)` | rule |
 | GN-1.77 | `menu.values.submenu_switch (TimerRestartedOnMotion)` | field |
+| GN-1.77 | `token.behavior.hover_time (absent: GTK has no hover setting, each widget its own delay, this submenu's and the tooltip's; S4.2, ADD-A130)` | token |
 | GN-1.78 | `menu.item.{min_width,min_height,padding,fill} @ variant icon_only / {focused} variant icon_only / {hover} variant icon_only / {focused,pressed} variant icon_only / {hover,pressed} variant icon_only` (GTK's `:selected`: the highlighted item, S7.2) | rule |
 | GN-1.78 | `menu.item.{padding,stroke,fill} @ variants {icon_only,circular} / {focused} variants {icon_only,circular} / {hover} variants {icon_only,circular} / {focused,pressed} variants {icon_only,circular} / {hover,pressed} variants {icon_only,circular}` | rule |
 | GN-1.78 | `menu.values.icon_row_gap` | field |
@@ -301,6 +310,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.121 | `tab.values.tab_gap` | field |
 | GN-1.122 | `tab.pane.fill (= the View surface)` | field |
 | GN-1.123 | `tab.tab.fill, tab.indicator.fill, tab.icon.icon.fill @ {disabled} (the tab dimmed by the disabled opacity except its label and close button)` | rule |
+| GN-1.124 | `tab.tab.fill @ variant document` (transparent at rest: AdwTabBar's tab, `libadwaita@1.10.0 src/stylesheet/widgets/_tab-view.scss:58-78`, states a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the state rules' appends draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | rule |
 | GN-1.124 | `tab.tab.fill.append @ {hover} / {pressed} / {selected} / {selected,hover} / {selected,pressed} variant document` | rule |
 | GN-1.124 | `tab.tab.min_height, tab.tab.padding, tab.tab.corners @ variant document` | rule |
 | GN-1.124 | `tab.tab.fill @ pos only variant document` | rule |
@@ -354,7 +364,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.148 | `list.row_background.stroke @ {selected} / {hover} / {pressed} cond contrast_high variant sidebar` | rule |
 | GN-1.149 | `toolbar.bar.padding, toolbar.bar.corners, toolbar.bar.bindings (surface Osd) @ variant @osd` | rule |
 | GN-1.150 | `toolbar.bar.padding @ variant @collapse_spacing` | rule |
-| GN-1.151 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant @arrow_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (a popover between them restores the raised look)` | rule |
+| GN-1.151 | `button.body.{fill,shadow} @ variant icon_only !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant with_icon !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar / variant @with_arrow !variant @raised !variant primary !variant destructive !variant @opaque context nearest {toolbar, popover} = toolbar.bar (a popover between them restores the raised look)` | rule |
 | GN-1.151 | `split_button.{primary,secondary}.fill, split_button.divider.opacity @ !variant primary !variant destructive !variant @opaque !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat split button; `.raised` is `@raised`) | rule |
 | GN-1.151 | `combo_box.body.{fill,shadow} @ !variant @raised context nearest {toolbar, popover} = toolbar.bar` (the flat drop-down; `.raised` is `@raised`) | rule |
 | GN-1.152 | `switch.body.padding @ context toolbar.bar` | rule |
@@ -369,6 +379,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.157 | `toolbar.values.item_gap @ variant bottom` | rule |
 | GN-1.157 | `toolbar.bar.fill @ cond window_inactive variant bottom` | rule |
 | GN-1.157 | `toolbar.content.opacity @ cond window_inactive variant bottom` (the bar's content, as one group) | rule |
+| GN-1.158 | `list.row_background.fill` (transparent at rest: adwaita's list row, `libadwaita@1.10.0 src/stylesheet/widgets/_lists.scss:16-19`, `:47-95`, its boxed-list row, `:343-365`, its sidebar row, `src/stylesheet/widgets/_sidebars.scss:126-147`, and its grid child, `src/stylesheet/widgets/_views.scss:52-66`, state a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the state rules' appends here and in GN-1.141, GN-1.165 and GN-1.174 draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | field |
 | GN-1.158 | `list.row_background.fill.append @ {pressed}` | rule |
 | GN-1.159 | `list.row_background.fill @ {selected,hover} / {selected,pressed}` | rule |
 | GN-1.160 | `list.row_background.fill @ {context_menu_open} / {selected,context_menu_open}` | rule |
@@ -384,6 +395,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.165 | `list.row_background.corners @ pos first variant inset / pos last variant inset / pos only variant inset` | rule |
 | GN-1.165 | `list.row_background.focus @ variant inset` | rule |
 | GN-1.165 | `list.row_background.transitions @ variant inset` | rule |
+| GN-1.165 | `form.row.fill` (transparent at rest: an AdwPreferencesGroup's rows are a boxed list's, `libadwaita@1.10.0 src/adw-preferences-group.ui:64`, whose row, `src/stylesheet/widgets/_lists.scss:16-19`, `:343-365`, `:520-554`, states a `background-color` only by state, so at rest it keeps GTK's initial value, transparent, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:902-907`; stated drawn so the hover and pressed appends below draw over it, an `Append` over a paint that resolves `Absent` appending to nothing, S6.1) | field |
 | GN-1.165 | `form.card.{fill,corners,shadow,stroke}; form.row_separator.stroke; form.row.fill.append @ {hover} / {pressed}; form.row.corners @ pos first / pos last / pos only; form.row.{focus,transitions}` (an AdwPreferencesGroup's boxed list: the same source on the form's own parts, R20) | rule |
 | GN-1.166 | `list.row_background.{fill,corners,shadow} @ variant separated` | rule |
 | GN-1.166 | `list.row_background.fill.append @ {hover} / {pressed} / {selected} variant separated` | rule |
@@ -404,6 +416,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.174 | `list.row_background.focus @ variant grid` | rule |
 | GN-1.175 | `rubber_band.body.{fill,stroke} @ context list` | rule |
 | GN-1.176 | `list.view.fill, list.row.text.fill @ {disabled}` | rule |
+| GN-1.176 | `role.view.disabled.background, role.view.disabled.foreground` (the `.view:disabled` pair) | role |
+| GN-1.176 | `role.window.disabled.background, role.window.disabled.foreground` (the GTK 3 compatibility colours `insensitive_bg_color`, `insensitive_fg_color`, `libadwaita@1.10.0 src/stylesheet/_compat-colors.scss:12-13`; ADD-A122) | role |
 | GN-1.177 | `list.row_background.corners @ {selected} variant grid` | rule |
 | GN-1.178 | `scroll_view.edge_effect.{fill,stroke} @ variant top {scrolled} context list variant table (under the column view's header)` | rule |
 | GN-1.279† | `list.branch_line.stroke (dash, ADD-A32), list.row_separator.stroke, list.column_separator.stroke (dash, ADD-A32) @ variant @tree_view / variant @tree_view cond contrast_high` | rule |
@@ -435,7 +449,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.185 | `popover.body.{min_width,max_width} (Auto)` | field |
 | GN-1.286† | `edit_menu.body.{fill,shadow,padding}; edit_menu.arrow.{fill,min_width,min_height}` | field |
 | GN-1.286† | `button.{body,icon} @ variant icon_only context edit_menu.body context any layout variant @linked (the commands: a linked row of image buttons with the touch icons)` | rule |
-| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content box's spacing)` | rule |
+| GN-1.286† | `layout.values.item_gap @ context edit_menu.body (the content area's spacing)` | rule |
 | GN-1.286† | `edit_menu.values.placement (GtkPopover, anchor_grow)` | placement |
 | GN-1.186 | `splitter.divider.stroke, splitter.divider.min_width @ variant wide` | rule |
 | GN-1.187 | `menu.separator.margin` (the menu's separator item, its margins) | field |
@@ -476,7 +490,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.202 | `switch.on_glyph.glyph.fill, switch.off_glyph.glyph.fill @ cond differentiate_without_color cond contrast_high` | rule |
 | GN-1.202 | `reader:gnome:org.gnome.desktop.a11y.interface show-status-shapes` | reader |
 | GN-1.202 | `cond differentiate_without_color (GNOME: from show-status-shapes)` | condition |
-| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide)` | field |
+| GN-1.203 | `switch.thumb.transitions (Geometry: the thumb's slide; engine GtkSwitch, the switch's own code, not CSS: an activation slides it from the end it rests at and sets the switch's state as the slide ends, a second activation restarting it, a drag and a change made in code moving it at once, `gtk@4.24.1 gtk/gtkswitch.c:182-216`, `:242-259`, `:262-319`, `:779-809`; its duration GTK's constant, `ANIMATION_DURATION`, `gtk/gtkswitch.c:203`, stated `= mul(<its key>, token.motion.speed_factor)`, so it is zero under `cond animations_off` and the activation sets the state at once, `:208-219`, as GTK does; its curve GTK's ease_out_cubic, `gtk/gtkprogresstracker.c:246-251`, libadwaita's, `Timing::Platform(Adw(EaseOutCubic))`, `libadwaita@1.10.0 src/adw-easing.c:174-181`; the connector setting `checked` at the slide's end, `Motion::take_slide_end`; S2.7, ADD-A126)` | field |
 | GN-1.204 | `switch.track.transitions (Fill)` | field |
 | GN-1.204 | `token.motion.durations.button, token.motion.timings.ease_out_quad` | token |
 | GN-1.205 | `switch.track.fill @ {checked} context any variant @osd (any widget, R25.9)` | rule |
@@ -528,7 +542,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.230 | `spinner.values.loop @ variant @gtk_spinner (the animated SVG's own animation, GN-P3-19†)` | rule |
 | GN-1.231 | `spinner.body.opacity @ {disabled}` | rule |
 | GN-1.232 | `spinner.{body.min_width,body.min_height,values.stroke_weight} @ context any status_page` | rule |
-| GN-1.233 | `combo_box.values.label_arrow_gap` | field |
+| GN-1.233 | `combo_box.body.padding; combo_box.label.padding; combo_box.arrow.margin; combo_box.values.{label_arrow_gap,content_width,content_slack,input_placement}` (the content row, the catalogue: GtkDropDown's button padding, 5 and 10, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:20-22`, with its CSS border as S2.11's GTK widgets; the label's stack and the `arrow` spaced by the box's `border-spacing`, 6, `_dropdowns.scss:1-3`, the arrow 16 square with no margin, `:14-18`, the label with no padding; the stack at its visible page, the current item or "(None)", `gtk@4.24.1 gtk/ui/gtkdropdown.ui:17-29`: `Shown`, the slack 0; the label never allocated less than its text, `gtk/gtklabel.c:1287-1297`; `input_placement` `Row`, GtkDropDown having no entry, for the entry combo, GN-1.238; ADD-A127) | field |
 | GN-1.234 | `menu.body.padding @ context combo_box; menu.item.min_width @ context combo_box` | rule |
 | GN-1.234 | `menu.check_indicator.glyph @ context combo_box; menu.values.check_indicator_side @ context combo_box` | rule |
 | GN-1.235 | `search_field.body.padding @ context menu.body context any combo_box` | rule |
@@ -539,6 +553,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-1.236 | `combo_box.body.shadow @ {hover} variant flat cond contrast_high / {pressed} variant flat cond contrast_high / {open} variant flat cond contrast_high` (the inset border ring) | rule |
 | GN-1.237 | `combo_box.body.fill @ {open} / {open,hover}` | rule |
 | GN-1.238 | `combo_box.body.{padding,min_height} @ variant @gtk_combo_box` | rule |
+| GN-1.238 | `combo_box.label.padding, combo_box.values.{label_arrow_gap,content_width} @ variant @gtk_combo_box` (libadwaita's drop-down spacing does not reach it: its combo-box rule extends the drop-down's, so the spacing selects a box in a button that is the combo box's own child, `libadwaita@1.10.0 src/stylesheet/widgets/_deprecated.scss:100-101`, while GtkComboBox's button sits in a box inside it, `gtk@4.24.1 gtk/ui/gtkcombobox.ui:5-18`, so its inner box keeps GtkBox's spacing 0, `gtk/gtkbox.c:264-269`, the gap 0; the text renderer's 2 × 2 padding, `gtk/deprecated/gtkcellrenderertext.c:222-224`, inside the cell, `:1622-1628`, the label's padding, so the button's minimum stays S2.11's expression over its own padding; the cell view's `fit-model`, `gtk/deprecated/gtkcombobox.c:1071-1077`: `Widest` with no floor, no `empty`, no `or_shown`; ADD-A127) | rule |
+| GN-1.238 | `combo_box.body.padding, combo_box.arrow.margin, combo_box.arrow_area.{fill,stroke,corners,min_width,margin}, combo_box.values.{label_arrow_gap,content_width} @ variants {editable,@gtk_combo_box}; combo_box.label (absent = true) @ variants {editable,@gtk_combo_box}; input.body.corners @ context any combo_box variants {editable,@gtk_combo_box}` (the entry combo: an entry with class `combo` before the button in the linked box, `gtk@4.24.1 gtk/deprecated/gtkcombobox.c:1058-1068`, `:1103-1104`, `gtk/ui/gtkcombobox.ui:5-23`, the input in the row, the padding 0; the button the arrow area at the end, its margin 0, its width the arrow's 16 and the button's two sides of 10, `libadwaita@1.10.0 src/stylesheet/widgets/_dropdowns.scss:14-18`, `_buttons.scss:20-22`, its look the button's (next row); the arrow's margin the button's padding, 10 at the sides and 2 at the top and bottom, `_deprecated.scss:105-108`; the button's negative start margin of 1 over the entry, so the gap −1, and the joined corners square, `_linked.scss:1-30`; `Fixed`, 150, the entry's natural text width, `gtk/gtktext.c:207`, `:2575-2601`; ADD-A127) | rule |
+| GN-1.238 | `combo_box.body.{fill,stroke,shadow} (absent = true) @ variants {editable,@gtk_combo_box} / {open} variants {editable,@gtk_combo_box} / {open,hover} variants {editable,@gtk_combo_box}; combo_box.arrow_area.fill @ variants {editable,@gtk_combo_box} / {hover} variants {editable,@gtk_combo_box} / {pressed} variants {editable,@gtk_combo_box} / variants {editable,@gtk_combo_box} context combo_box {open} / {hover} variants {editable,@gtk_combo_box} context combo_box {open} / {pressed} variants {editable,@gtk_combo_box} context combo_box {open}` (the entry combo's body is the combo box's own node, which draws nothing, its button and entry drawing themselves, `gtk@4.24.1 gtk/ui/gtkcombobox.ui:5-23`, so no drop-down button look, GN-1.237's `{open}` fill included; the arrow button a raised toggle button, checked while the popup is open, `:10`: its rest, hover, active and checked fills, the checked ones with their hover and active, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:1-6`, `:28-55`; ADD-A127) | rule |
+| GN-1.238 | `combo_box.arrow_area.stroke @ variants {editable,@gtk_combo_box} cond contrast_high` (the arrow button's inset ring of 1 in the border colour under the raised button's high-contrast rule, `libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:31-33`, a stroke inside the box; ADD-A127) | rule |
 | GN-1.239 | `segmented_control.track.padding, segmented_control.track.corners` | field |
 | GN-1.239 | `segmented_control.segment.corners (Concentric)` | field |
 | GN-1.240 | `segmented_control.segment.shadow @ {selected}` | rule |
@@ -636,7 +654,9 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.03 | `form.row.bindings, form.row_title.text.fill, form.row_subtitle.opacity @ variants {entry,error} / variants {entry,warning} / variants {entry,success}` (the accent rebound to the status colour) | rule |
 | GN-2.03 | `input.text.text @ context form.row variants {entry,@monospace}` | rule |
 | GN-2.04 | `form.row_title.text @ variant entry !{empty} / variant entry {focus_within}` | rule |
-| GN-2.04 | `form.row_title.transitions (Geometry, Text: the title shrinking)` | field |
+| GN-2.04 | `form.row_title.transitions (Geometry: the title shrinking and both labels moved by `title_offset`, lerped by the progress, `libadwaita@1.10.0 src/adw-entry-row.c:383-387`, `:395`, its scale and cross-fade the row below; engine AdwAnimation, replays: AdwEntryRow plays it again on each change of its text and of its text's state, its end unchanged included, `libadwaita@1.10.0 src/adw-entry-row.c:141-163`, `:166-189`; S2.7, ADD-A126)` | field |
+| GN-2.04 | `form.row_title.transitions (Transform, Opacity: libadwaita draws two labels, the empty title and the title, each at its own measure, scaled by a factor lerped by the progress, the ratio of the two labels' measured heights, so of their fonts, and no stated `Transform` value (`:381-382`), cross-faded by it, `libadwaita@1.10.0 src/adw-entry-row.c:381-401`, `:433-440`, never one text re-laid out at the sizes between, so the title's change is that scale and cross-fade of the two ends' text, not a Text interpolation; the empty title's geometry a second label the GNOME lane states with its facts, a catalogue part added with them, S2.7, ADD-A126)` | field |
+| GN-2.04 | `input.text.{opacity,transitions} @ context form.row variant entry; input.text.opacity @ context form.row variant entry !{empty} / {focused} context form.row variant entry` (the entry's own text, a part of its own (GN-2.03), its flags its own, `focused` where the row's title reads `focus_within`, drawn inside the title's cross-fade, `libadwaita@1.10.0 src/adw-entry-row.c:433-436`, so its opacity is the row's `empty_progress`: 0 while the row shows its empty title, 1 otherwise, `:141-163`; its transition `Opacity`, engine AdwAnimation, replays, the title's, `:166-189`, so text set while the row is unfocused fades in with the title; S2.7, ADD-A126) | rule |
 | GN-2.05 | `stepper.body.{fill,stroke} @ variant @row (no entry frame)` | rule |
 | GN-2.05 | `stepper.increment.{corners,min_width,min_height,margin}, stepper.decrement.{corners,min_width,min_height,margin} @ variant @row (circular filled buttons, their margins outside the circle, `_lists.scss:240-259`)` | rule |
 | GN-2.06 | `form.row_arrow.{icon,padding} @ variant combo` | rule |
@@ -736,7 +756,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.30 | `menu.body.{padding,corners} @ context any menu_bar (the submenu popovers)` | rule |
 | GN-2.30 | `menu_bar.item.fill @ {open} / {hover}; menu_bar.item.stroke @ cond contrast_high` | rule |
 | GN-2.31 | `banner.body.fill @ variant @info_bar / variants {@info_bar,info} / variants {@info_bar,@question} / variants {@info_bar,warning} / variants {@info_bar,error}` (the first: a GtkInfoBar of `GTK_MESSAGE_OTHER`, no severity, its fill as `_deprecated.scss:150-191` states it) | rule |
-| GN-2.31 | `banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant) | rule |
+| GN-2.31 | `banner.edge_line (absent = false), banner.edge_line.stroke, banner.body.padding, banner.values.content_gap @ variant @info_bar` (GtkInfoBar, the application's choice of widget, its rows under the keyed variant; the line drawn again over GN-2.11's absent base by `absent = false`, as a field patch does not bring it back, S6.3, ADD-A126) | rule |
 | GN-2.31 | `button.body.fill @ {hover} context banner.action_area variant @info_bar / {pressed} context banner.action_area variant @info_bar` | rule |
 | GN-2.31 | `button.body.{fill,min_width,min_height,corners} @ variant close context banner variant @info_bar (round, flat)` | rule |
 | GN-2.32 | `group_box.body.stroke, group_box.body.corners, group_box.values.title_margin` | field |
@@ -761,6 +781,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-2.36 | `badge.body.{fill,min_height,padding,corners}, badge.label.text @ variant count; badge.values.cutout` | rule |
 | GN-2.37 | `badge.label.text @ context button.body[@tab_button] / size small context button.body[@tab_button]` (AdwTabButton's counter) | rule |
 | GN-2.37 | `badge.values.{anchor_offset_x,anchor_offset_y} @ context button.body[@tab_button]` | rule |
+| GN-2.37 | `button.icon.glyph @ variant @tab_button / variant @tab_overflow` (the counter frame `adw-tab-counter-symbolic`, a `ThemeIcon` glyph, and from 100 pages `adw-tab-overflow-symbolic` with no counter; ADD-A130) | rule |
 | GN-2.38 | `carousel.item.transitions (Geometry, spring: the page settle), carousel.values.scroll_timeout` | field |
 | GN-2.38 | `page_indicator.dot.transitions, page_indicator.line.transitions` | field |
 | GN-2.39 | `about_dialog.icon.icon.size` | field |
@@ -880,17 +901,22 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.17 | `role.global.accent_standalone = adw_standalone(...)` | role |
 | GN-3.18 | `token.motion.durations.<transition tokens>` | token |
 | GN-3.18 | `token.motion.timings.<transition tokens>` | token |
+| GN-3.18 | `token.motion (color_space PremultipliedSrgb: GTK's CSS colour transitions, gtk@4.24.1 gtk/gtkcsscolorvalue.c:586-604, S2.7, ADD-A125)` | token |
+| GN-3.18 | `PartStyle.transitions, FocusIndicator.transition (engine GtkCss for every stylesheet transition: from the value drawn, a running one cut where the style after has none, a value's curve taken by its property id, `gtk@4.24.1 gtk/gtkcssanimatedstyle.c:822-882`; S2.7, ADD-A126)` | field |
 | GN-3.19 | `token.motion.timings.<easing curves, default timed-animation easing>` | token |
+| GN-3.19 | `token.motion.timings.linear (Timing::Linear: CSS's keyword, the Bézier (0, 0, 1, 1), and the code's ADW_LINEAR, t / d, are the identity, S2.7, ADD-A125)` | token |
 | GN-3.20 | `token.motion.timings.<spring keys> Timing::Spring` | token |
+| GN-3.20 | `token.motion.timings.flap_reveal, token.motion.timings.leaflet_child (Timing::Spring, clamp true: the deprecated AdwFlap's reveal and AdwLeaflet's child transition, `libadwaita@1.10.0 src/adw-flap.c:1598-1601`, `adw-leaflet.c:2474-2478`)` | token |
 | GN-3.21 | `token.motion.durations.<timed animations defined in code>` | token |
+| GN-3.21 | `token.motion.durations.flap_fold, token.motion.durations.leaflet_mode (the deprecated AdwFlap's fold and AdwLeaflet's mode transition, `libadwaita@1.10.0 src/adw-flap.c:1551`, `adw-leaflet.c:2445`)` | token |
 | GN-3.22 | `token.motion.durations.revealer` | token |
 | GN-3.22 | `token.motion.durations.stack` | token |
 | GN-3.22 | `navigation_view.values.presentations` | field |
-| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration)` | token |
+| GN-3.23 | `token.theme_change Suspend (CSS transitions off for the stated duration: the GtkCss engine's, a running one ending at its new value, an AdwAnimation still running; on the application's scheme choice too, the model's pick, `adw-style-manager.c:979-991`; conditions [reduced_motion], as libadwaita suspends on that change too, `libadwaita@1.10.0 src/adw-style-manager.c:409-413`; S4.3, ADD-A126)` | token |
 | GN-3.24 | `token.behavior.scroll.deceleration (kinetic friction)` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll` | token |
 | GN-3.24 | `token.behavior.scroll.overscroll_extent (the maximum overshoot, ADD-A29)` | token |
-| GN-3.24 | `token.motion.durations.scroll_animation` | token |
+| GN-3.24 | `token.motion.durations.scrolled_window` | token |
 | GN-3.25 | `token.motion.speed_factor @ cond animations_off` | rule |
 | GN-3.25 | `dialog.values.presentations @ cond reduced_motion (bottom sheet slide to crossfade)` | rule |
 | GN-3.25 | `navigation_view.values.presentations @ cond reduced_motion` | rule |
@@ -903,8 +929,8 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.71† | - | out (R1.1) |
 | GN-3.27 | `token.focus (FocusIndicator width, offset)` | token |
 | GN-3.27 | `PartStyle.focus per part (S2.10)` | field |
-| GN-3.28 | `FocusIndicator.transition (grow-in)` | field |
-| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box)` | field |
+| GN-3.28 | `FocusIndicator.transition (grow-in: from the rest outline, zero wide and transparent at the larger offset, and back to it, `libadwaita@1.10.0 src/stylesheet/_drawing.scss:12-27`; engine GtkCss; S2.10, ADD-A126)` | field |
+| GN-3.29 | `FocusIndicator.corners and offset per part (target node differs from the widget box; corners FollowPart where the part's corner is rounded and Radius::Px(0) where it is square, as GTK keeps a zero outline radius zero, gtk@4.24.1 gtk/gtkcssboxesimplprivate.h:498-501, S2.10)` | field |
 | GN-3.30 | `token.behavior.focus_visible_when (FocusVisibleWhen::Keyboard with its timeout_ms)` | token |
 | GN-3.30 | `reader:gnome:org.gnome.desktop.a11y.interface keyboard-focus-visible-timeout` | reader |
 | GN-3.31 | `token.focus @ cond contrast_high (paint)` | rule |
@@ -916,7 +942,10 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.34 | `token.caret.blink_timeout_ms` | token |
 | GN-3.34 | `reader:gnome:org.gnome.desktop.interface caret blink timeout` | reader |
 | GN-3.35 | `token.caret.blink_style Fade (ADD-A24)` | token |
-| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(mul(widget.text.line_height, token.params.caret.<aspect_ratio>), <length>): the text part's line, the caret having no font, S2.2; ADD-A44)` | field |
+| GN-3.36 | `input.caret.min_width, text_area.caret.min_width (= add(floor(mul(element.caret_height, token.params.caret.aspect_ratio)), <length>): GTK's stem from the caret's drawn height, the run's extents rounded outward, `data = { caret = ["caret_height"] }`, S4.2; ADD-A44, ADD-A130)` | field |
+| GN-3.36 | `input.secondary_caret.min_width, text_area.secondary_caret.min_width, input.drop_caret.min_width, text_area.drop_caret.min_width, code_editor.caret.min_width, code_editor.secondary_caret.min_width, selectable_label.caret.min_width` (the same stem over each part's own `caret_height`, each declaring it, `data = { secondary_caret = ["caret_height"] }`, …; S4.2, ADD-A130) | field |
+| GN-3.36 | `token.caret.width (absent: GTK's width follows each line, S4.2, S6.3; ADD-A130)` | token |
+| GN-3.36 | `token.params.caret.aspect_ratio (gtk-cursor-aspect-ratio)` | token |
 | GN-3.37 | `token.caret.secondary (the secondary caret's colour; the base of every caret part's secondary caret, ADD-A24)` | token |
 | GN-3.37 | `input.secondary_caret.fill, text_area.secondary_caret.fill (= token.caret.secondary), input.secondary_caret.{min_width,min_height}, text_area.secondary_caret.{min_width,min_height}` (GTK's split cursor) | field |
 | GN-3.38 | `token.caret.shown_in_read_only (ADD-A70)` | token |
@@ -958,8 +987,11 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.47 | `reader:gnome:org.gnome.desktop.peripherals double-click` | reader |
 | GN-3.48 | `token.behavior.drag_threshold` | token |
 | GN-3.48 | `reader:gnome:org.gnome.desktop.peripherals drag threshold` | reader |
+| GN-3.48 | `token.behavior.drag_min_delay (GTK's MIN_TIME_TO_DND: no drag before it, however far the pointer moves), token.behavior.drag_time (absent: only movement starts a drag; S4.2, ADD-A130)` | token |
 | GN-3.49 | `token.behavior.long_press (ADD-A45)` | token |
 | GN-3.50 | `token.behavior.mnemonics OnAlt delay (ADD-A12)` | token |
+| GN-3.50 | `token.behavior.mnemonic_when_disabled (false: no underline on a disabled label or beside a disabled target, gtklabel.c:3878-3880; ADD-A130)` | token |
+| GN-3.50 | `button.label.text.mnemonic_decoration, checkbox.label.text.mnemonic_decoration, radio.label.text.mnemonic_decoration, menu.item_label.text.mnemonic_decoration` and every other label that takes a mnemonic (line UnderlineLow, thickness and offset = element.font_underline_thickness, declared `data = { label = ["font_underline_thickness"] }`, the menu's `data = { item_label = ["font_underline_thickness"] }`: Pango's low underline; the styles' and slots' `mnemonic_decoration` absent, a token reading no element data; S2.8, ADD-A130) | field |
 | GN-3.51 | `token.behavior.spring_loading (ADD-A45)` | token |
 | GN-3.51 | `expander.values.drag_hover_delay, view_switcher.values.drag_hover_delay, sidebar.values.drag_hover_delay, tab.values.drag_hover_delay, component.tab_overview.values.drag_hover_delay` (each `= token.behavior.spring_loading`; the last the tab grid's) | field |
 | GN-3.68† | `token.behavior.key_repeat.delay, token.behavior.key_repeat.interval` | token |
@@ -973,10 +1005,12 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.56 | `token.text.rendering.engine (font-rendering: automatic or manual, keyed; ADD-B04)` | token |
 | GN-3.56 | `reader:gnome:org.gnome.desktop.interface font-antialiasing, font-hinting, font-rgba-order, font-rendering` | reader |
 | GN-3.57 | `PartStyle.icon.weight per part (S2.9)` | field |
-| GN-3.58 | `PartStyle.icon.status_colors (the symbolic palette's success, warning, error; ADD-A37)` | field |
+| GN-3.58 | `PartStyle.icon.symbolic_colors (the icon palette's success, warning, error and accent, `_common.scss:19-22`; keys declared `[declare] symbolic_colors`; ADD-A37, ADD-A130)` | field |
 | GN-3.58 | `IconStyle.fill` | field |
+| GN-3.58 | `PartStyle.icon.rendering_mode (from_icon: the icon's own colouring, path by path, a symbolic file's or a path's symbolic paint taking the style's colours; the check context's template, its images recoloured whatever their files, S2.9; ADD-A130)` | field |
 | GN-3.58 | `role.global.status.*` | role |
 | GN-3.59 | `token.icons.sizes.<contexts>` | token |
+| GN-3.59 | `token.icons.sizes.keyed.<contexts>.rendering_mode` (the check box's and radio's `template`, `_checks.scss:67-81`; absent in the contexts that set none, S4.5; the status page's spinner is the `spinner` element in `context status_page`, which carries its own box and loop, GN-1.232, GN-1.229, so no context carries it, S2.9; ADD-A130) | token |
 | GN-3.60 | `PartStyle.opacity of icon parts @ widget states` | rule |
 | GN-3.61 | `PartStyle fill, stroke rules @ cond contrast_high per widget` | rule |
 | GN-3.61 | `roles @ cond contrast_high` | rule |
@@ -984,6 +1018,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.61 | `cond contrast_high` | condition |
 | GN-3.63 | `text_scale (the S2.2 operand, ADD-A55)` | field |
 | GN-3.63 | `length bases in sp: = mul(<length>, text_scale)` | field |
+| GN-3.63 | `token.text.font_dpi` (96, the DPI a font's points convert by before text scaling, S9.4: GTK's `-gtk-dpi` initial value, `gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:880-885`, which the `gtk-xft-dpi` setting replaces only where it is set, `gtk/gtkcssinitialvalue.c:49-60`, the reader's `ReaderState.font_dpi`; the fact `docs/facts/gnome/tokens.toml:5558-5566`; ADD-A103, ADD-A125) | token |
 | GN-3.70† | - | out (R1.1) |
 | GN-SF01† | `code_editor.* bases: the Adwaita and Adwaita-dark schemes the adwaita preset carries (ADD-A64)` | field |
 | GN-SF01† | `code_editor.* @ variant @classic (GtkSourceView's default scheme when the application sets none; ADD-A64, R25.11)` | rule |
@@ -1060,11 +1095,12 @@ rationale, each decided in the core's additions register (S22).
 | GN-P3-14† | - | out (R1.1) |
 | GN-P3-15† | `scroll_view.values.wheel_step (= gtk_wheel_step(element.height), gtk_wheel_step(element.width): the view's page sizes, ADD-A90)` (a slider's step is its adjustment's page increment, the application's) | field |
 | GN-P3-15† | `token.behavior.scroll.touchpad_factor` (ADD-A91) | token |
+| GN-P3-15† | `token.behavior.scroll.wheel_step_lines, token.behavior.scroll.wheel_step_distance` (both absent: the step follows the page size, `scroll_view.values.wheel_step`; S4.2, ADD-A130) | token |
 | GN-P3-16† | `Edge.snap (ADD-A33: libadwaita's one-pixel lines at a fractional scale)` | field |
 | GN-P3-16† | - (the display scale itself) | out (R1.1) |
 | GN-P3-17† | - | preset (R1.3) |
 | GN-P3-18† | - | newest (R1.5) |
-| GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition: sliders.gpa on the font dialog's toggle; ADD-A27, R25.12) | field |
+| GN-P3-19† | `button.icon.transitions` (PropertyGroup::Icon, TransitionKind::Keyed per GtkSvg state transition; at gtk@4.24.1 none: `sliders.gpa`, the font dialog's toggle, has one state, only `process-working.gpa`, the spinner's, animates, so the fact is `[]`; ADD-A27, R25.12, ledger queue #152) | field |
 | GN-P3-19† | `spinner.icon.glyph, spinner.values.loop (the looping process-working.gpa, R25.12)` | field |
 | GN-P3-20† | `font_chooser.filter_title.text, font_chooser.family_row_label.text, font_chooser.preview.text, font_chooser.values.row_margins, font_chooser.values.grid_gap` | field |
 | GN-P3-20† | `input @ context any layout variant @linked context font_chooser.body (the search entry)` | rule |
@@ -1107,6 +1143,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-P4-6† | `menu.values.submenu_presentation (Cascade), menu.arrow (absent = true) @ context any menu_bar` (nested popover menus: the submenu opens beside its item, arrowless; GN-1.76's Slide stays the base) | rule |
 | GN-P4-7† | `checkbox.mark.glyph (GlyphSource::Path from check.svg)` | field |
 | GN-P4-7† | `radio.dot.glyph (GlyphSource::Path from bullet.svg)` | field |
+| GN-P4-7† | `checkbox.mark (absent = true) @ !{checked,indeterminate}; radio.dot (absent = true) @ !{checked,indeterminate}` (no mark unchecked, the inconsistent radio's dash drawn on its dot as the check box's on its mark, GN-1.58: GTK swaps the icon source at once, setting none but `:checked`'s and `:indeterminate`'s, `libadwaita@1.10.0 src/stylesheet/widgets/_checks.scss:70`, `:76`, `:79-81`, the check's CSS transitions naming neither, `_common.scss:6-7`, so neither is a `shown` part, S2.7; written last, S6.3; ADD-A126) | rule |
 | GN-P4-8† | `menu.values.placement @ context input / context text_area` (GtkPopover, point anchor) | placement |
 | GN-P4-8† | `menu.arrow (absent = true) @ context input / context text_area` (the arrowless text context menu) | rule |
 | GN-P4-8† | `input.values.context_menu_items, text_area.values.context_menu_items` | field |

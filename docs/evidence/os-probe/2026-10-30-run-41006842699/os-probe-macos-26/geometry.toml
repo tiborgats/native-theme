@@ -1,0 +1,851 @@
+# Output of analysis/measure_button_layers.py (its docstring is the method), file geometry.toml.
+# input_image: every file this part reads (layers, captures, and the probe.toml files whose frames,
+# cell rects and colours it takes).
+input_image = [
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml",
+]
+
+[geometry.push.mini-plain]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.push.mini-default]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.push.mini-toggle_off]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.push.mini-toggle_on]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.push.small-plain]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.push.small-default]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.push.small-toggle_off]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.push.small-toggle_on]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.push.regular-plain]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.push.regular-default]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.push.regular-toggle_off]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.push.regular-toggle_on]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.push.large-plain]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.push.large-default]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.push.large-toggle_off]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.push.large-toggle_on]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.push.extraLarge-plain]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.push.extraLarge-default]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.push.extraLarge-toggle_off]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.push.extraLarge-toggle_on]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_a.mini-flexible_push]
+min_height = "13px"
+padding_left = "8px"
+padding_top = "1px"
+padding_right = "8px"
+padding_bottom = "1px"
+
+[geometry.styles_a.small-flexible_push]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_a.regular-flexible_push]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_a.large-flexible_push]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_a.extraLarge-flexible_push]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_a.mini-small_square]
+min_height = "15px"
+padding_left = "1px"
+padding_top = "2px"
+padding_right = "1px"
+padding_bottom = "2px"
+
+[geometry.styles_a.small-small_square]
+min_height = "18px"
+padding_left = "1px"
+padding_top = "2px"
+padding_right = "1px"
+padding_bottom = "2px"
+
+[geometry.styles_a.regular-small_square]
+min_height = "20px"
+padding_left = "1px"
+padding_top = "2px"
+padding_right = "1px"
+padding_bottom = "2px"
+
+[geometry.styles_a.large-small_square]
+min_height = "20px"
+padding_left = "1px"
+padding_top = "2px"
+padding_right = "1px"
+padding_bottom = "2px"
+
+[geometry.styles_a.extraLarge-small_square]
+min_height = "20px"
+padding_left = "1px"
+padding_top = "2px"
+padding_right = "1px"
+padding_bottom = "2px"
+
+[geometry.styles_a.mini-shadowless_square]
+min_height = "17px"
+padding_left = "3px"
+padding_top = "3px"
+padding_right = "3px"
+padding_bottom = "3px"
+
+[geometry.styles_a.small-shadowless_square]
+min_height = "20px"
+padding_left = "3px"
+padding_top = "3px"
+padding_right = "3px"
+padding_bottom = "3px"
+
+[geometry.styles_a.regular-shadowless_square]
+min_height = "22px"
+padding_left = "3px"
+padding_top = "3px"
+padding_right = "3px"
+padding_bottom = "3px"
+
+[geometry.styles_a.large-shadowless_square]
+min_height = "22px"
+padding_left = "3px"
+padding_top = "3px"
+padding_right = "3px"
+padding_bottom = "3px"
+
+[geometry.styles_a.extraLarge-shadowless_square]
+min_height = "22px"
+padding_left = "3px"
+padding_top = "3px"
+padding_right = "3px"
+padding_bottom = "3px"
+
+[geometry.styles_a.mini-accessory_bar]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_a.small-accessory_bar]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_a.regular-accessory_bar]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_a.large-accessory_bar]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_a.extraLarge-accessory_bar]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_a.mini-accessory_bar_action]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_a.small-accessory_bar_action]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_a.regular-accessory_bar_action]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_a.large-accessory_bar_action]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_a.extraLarge-accessory_bar_action]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_a.mini-badge]
+min_height = "18px"
+padding_left = "4px"
+padding_top = "2px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_a.small-badge]
+min_height = "18px"
+padding_left = "4px"
+padding_top = "2px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_a.regular-badge]
+min_height = "18px"
+padding_left = "4px"
+padding_top = "2px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_a.large-badge]
+min_height = "18px"
+padding_left = "4px"
+padding_top = "2px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_a.extraLarge-badge]
+min_height = "18px"
+padding_left = "4px"
+padding_top = "2px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_a.mini-circular]
+min_height = "8px"
+padding_left = "1px"
+padding_top = "-3px"
+padding_right = "1px"
+padding_bottom = "-1px"
+
+[geometry.styles_a.small-circular]
+min_height = "14px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "0px"
+
+[geometry.styles_a.regular-circular]
+min_height = "17px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "1px"
+
+[geometry.styles_a.large-circular]
+min_height = "21px"
+padding_left = "6px"
+padding_top = "2px"
+padding_right = "6px"
+padding_bottom = "3px"
+
+[geometry.styles_a.extraLarge-circular]
+min_height = "29px"
+padding_left = "10px"
+padding_top = "6px"
+padding_right = "10px"
+padding_bottom = "7px"
+
+[geometry.styles_b.mini-help]
+min_height = "16px"
+
+[geometry.styles_b.small-help]
+min_height = "20px"
+
+[geometry.styles_b.regular-help]
+min_height = "24px"
+
+[geometry.styles_b.large-help]
+min_height = "28px"
+
+[geometry.styles_b.extraLarge-help]
+min_height = "36px"
+
+[geometry.styles_b.mini-toolbar]
+min_height = "13px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "2px"
+
+[geometry.styles_b.small-toolbar]
+min_height = "16px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "2px"
+
+[geometry.styles_b.regular-toolbar]
+min_height = "20px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
+
+[geometry.styles_b.large-toolbar]
+min_height = "20px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
+
+[geometry.styles_b.extraLarge-toolbar]
+min_height = "20px"
+padding_left = "5px"
+padding_top = "1px"
+padding_right = "5px"
+padding_bottom = "3px"
+
+[geometry.styles_b.mini-glass]
+min_height = "13px"
+padding_left = "8px"
+padding_top = "1px"
+padding_right = "8px"
+padding_bottom = "1px"
+
+[geometry.styles_b.small-glass]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_b.regular-glass]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_b.large-glass]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_b.extraLarge-glass]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_b.mini-flat]
+min_height = "11px"
+padding_left = "0px"
+padding_top = "0px"
+padding_right = "0px"
+padding_bottom = "0px"
+
+[geometry.styles_b.small-flat]
+min_height = "14px"
+padding_left = "0px"
+padding_top = "0px"
+padding_right = "0px"
+padding_bottom = "0px"
+
+[geometry.styles_b.regular-flat]
+min_height = "16px"
+padding_left = "0px"
+padding_top = "0px"
+padding_right = "0px"
+padding_bottom = "0px"
+
+[geometry.styles_b.large-flat]
+min_height = "16px"
+padding_left = "0px"
+padding_top = "0px"
+padding_right = "0px"
+padding_bottom = "0px"
+
+[geometry.styles_b.extraLarge-flat]
+min_height = "16px"
+padding_left = "0px"
+padding_top = "0px"
+padding_right = "0px"
+padding_bottom = "0px"
+
+[geometry.styles_b.mini-primary]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_b.small-primary]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_b.regular-primary]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_b.large-primary]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_b.extraLarge-primary]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_b.mini-tinted]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_b.small-tinted]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_b.regular-tinted]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_b.large-tinted]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_b.extraLarge-tinted]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_b.mini-destructive]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "3px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_b.small-destructive]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_b.regular-destructive]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_b.large-destructive]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_b.extraLarge-destructive]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_c.mini-capsule]
+min_height = "13px"
+padding_left = "8px"
+padding_top = "1px"
+padding_right = "8px"
+padding_bottom = "1px"
+
+[geometry.styles_c.small-capsule]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_c.regular-capsule]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_c.large-capsule]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_c.extraLarge-capsule]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_c.mini-rounded_rectangle]
+min_height = "13px"
+padding_left = "8px"
+padding_top = "1px"
+padding_right = "8px"
+padding_bottom = "1px"
+
+[geometry.styles_c.small-rounded_rectangle]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_c.regular-rounded_rectangle]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_c.large-rounded_rectangle]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_c.extraLarge-rounded_rectangle]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_c.mini-circle]
+min_height = "8px"
+padding_left = "1px"
+padding_top = "-3px"
+padding_right = "1px"
+padding_bottom = "-1px"
+
+[geometry.styles_c.small-circle]
+min_height = "14px"
+padding_left = "3px"
+padding_top = "0px"
+padding_right = "3px"
+padding_bottom = "0px"
+
+[geometry.styles_c.regular-circle]
+min_height = "17px"
+padding_left = "4px"
+padding_top = "0px"
+padding_right = "4px"
+padding_bottom = "1px"
+
+[geometry.styles_c.large-circle]
+min_height = "21px"
+padding_left = "6px"
+padding_top = "2px"
+padding_right = "6px"
+padding_bottom = "3px"
+
+[geometry.styles_c.extraLarge-circle]
+min_height = "29px"
+padding_left = "10px"
+padding_top = "6px"
+padding_right = "10px"
+padding_bottom = "7px"
+
+[geometry.styles_c.mini-combo_split]
+min_height = "16px"
+
+[geometry.styles_c.small-combo_split]
+min_height = "20px"
+
+[geometry.styles_c.regular-combo_split]
+min_height = "24px"
+
+[geometry.styles_c.large-combo_split]
+min_height = "28px"
+
+[geometry.styles_c.extraLarge-combo_split]
+min_height = "36px"
+
+[geometry.styles_c.mini-combo_unified]
+min_height = "16px"
+
+[geometry.styles_c.small-combo_unified]
+min_height = "20px"
+
+[geometry.styles_c.regular-combo_unified]
+min_height = "24px"
+
+[geometry.styles_c.large-combo_unified]
+min_height = "28px"
+
+[geometry.styles_c.extraLarge-combo_unified]
+min_height = "36px"
+
+[geometry.styles_c.mini-icon_only]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "2px"
+padding_right = "8px"
+padding_bottom = "2px"
+
+[geometry.styles_c.small-icon_only]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+
+[geometry.styles_c.regular-icon_only]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "4px"
+
+[geometry.styles_c.large-icon_only]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "6px"
+
+[geometry.styles_c.extraLarge-icon_only]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "10px"
+
+[geometry.styles_c.mini-with_icon]
+min_height = "16px"
+padding_left = "8px"
+padding_top = "2px"
+padding_right = "8px"
+padding_bottom = "1px"
+icon_text_gap = "2px"
+
+[geometry.styles_c.small-with_icon]
+min_height = "20px"
+padding_left = "10px"
+padding_top = "3px"
+padding_right = "10px"
+padding_bottom = "3px"
+icon_text_gap = "2px"
+
+[geometry.styles_c.regular-with_icon]
+min_height = "24px"
+padding_left = "12px"
+padding_top = "4px"
+padding_right = "12px"
+padding_bottom = "3px"
+icon_text_gap = "2px"
+
+[geometry.styles_c.large-with_icon]
+min_height = "28px"
+padding_left = "14px"
+padding_top = "6px"
+padding_right = "14px"
+padding_bottom = "5px"
+icon_text_gap = "2px"
+
+[geometry.styles_c.extraLarge-with_icon]
+min_height = "36px"
+padding_left = "18px"
+padding_top = "10px"
+padding_right = "18px"
+padding_bottom = "9px"
+icon_text_gap = "2px"
+
+[geometry.sizes.mini]
+min_width = "26px"
+font_size = 9.0
+font_family = ".AppleSystemUIFont"
+
+[geometry.sizes.small]
+min_width = "30px"
+font_size = 11.0
+font_family = ".AppleSystemUIFont"
+
+[geometry.sizes.regular]
+min_width = "34px"
+font_size = 13.0
+font_family = ".AppleSystemUIFont"
+
+[geometry.sizes.large]
+min_width = "38px"
+font_size = 13.0
+font_family = ".AppleSystemUIFont"
+
+[geometry.sizes.extraLarge]
+min_width = "46px"
+font_size = 13.0
+font_family = ".AppleSystemUIFont"

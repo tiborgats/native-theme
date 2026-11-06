@@ -1,320 +1,285 @@
-// Rgba color type with custom hex serde
+//! Colours in extended sRGB, their literal forms and conversions (S2.1).
 
-use serde::de;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
-use std::str::FromStr;
-
-/// An sRGB color with alpha, stored as four u8 components.
+/// Extended sRGB, straight (not premultiplied) alpha. Channels may lie outside
+/// `0..=1` (Display P3 colours expressed in extended sRGB, or a derivation's
+/// result, S2.2); alpha is `0..=1`.
 ///
-/// All values are in the sRGB color space. When parsing hex strings,
-/// alpha defaults to 255 (fully opaque) if omitted.
+/// A channel outside `0..=1` is clamped where the colour is drawn, as GTK
+/// draws it (S2.1's hand-over): a connector hands a premultiplied colour
+/// type [`Color::to_srgb8_premultiplied`], a straight float type the
+/// toolkit premultiplies itself the unclamped value, and any other type
+/// [`Color::to_srgb8_clamped`] or the clamped floats, which cannot be exact
+/// for a translucent colour out of the gamut.
 ///
-/// # Hex Format
-///
-/// Supports parsing from and displaying as hex strings:
-/// - `#RGB` / `RGB` -- 3-digit shorthand (each digit doubled: `#abc` -> `#aabbcc`)
-/// - `#RGBA` / `RGBA` -- 4-digit shorthand with alpha
-/// - `#RRGGBB` / `RRGGBB` -- standard 6-digit hex
-/// - `#RRGGBBAA` / `RRGGBBAA` -- 8-digit hex with alpha
-///
-/// Display outputs lowercase hex: `#rrggbb` when alpha is 255,
-/// `#rrggbbaa` otherwise.
-///
-/// # Examples
+/// Its literal forms, in TOML and in expressions: `#rrggbb`, `#rrggbbaa`,
+/// `srgb(r, g, b[, a])` and `display_p3(r, g, b[, a])`, the last a colour as
+/// it is published in Display P3, converted to extended sRGB when read.
 ///
 /// ```
-/// use native_theme::color::Rgba;
+/// use native_theme::Color;
 ///
-/// // Create an opaque color
-/// let blue = Rgba::rgb(0, 120, 215);
-/// assert_eq!(blue.a, 255);
-///
-/// // Parse from a hex string
-/// let parsed: Rgba = "#3daee9".parse().unwrap();
-/// assert_eq!(parsed.r, 61);
-///
-/// // Convert to f32 array for toolkit interop
-/// let arr = Rgba::rgb(255, 0, 0).to_f32_array();
-/// assert_eq!(arr, [1.0, 0.0, 0.0, 1.0]);
+/// let accent = Color::parse("#3daee9").ok_or("not a colour")?;
+/// assert_eq!(accent.to_srgb8_clamped(), [0x3d, 0xae, 0xe9, 0xff]);
+/// let p3_red = Color::parse("display_p3(1, 0, 0)").ok_or("not a colour")?;
+/// assert!(p3_red.r > 1.0 && p3_red.g < 0.0);
+/// # Ok::<(), &str>(())
 /// ```
-///
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Rgba {
-    /// Red component (0-255).
-    pub r: u8,
-    /// Green component (0-255).
-    pub g: u8,
-    /// Blue component (0-255).
-    pub b: u8,
-    /// Alpha component (0-255, where 255 is fully opaque).
-    pub a: u8,
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Color {
+    /// Red, gamma-encoded.
+    pub r: f32,
+    /// Green, gamma-encoded.
+    pub g: f32,
+    /// Blue, gamma-encoded.
+    pub b: f32,
+    /// Alpha, `0..=1`.
+    pub a: f32,
 }
 
-// Phase 93-01 (G1): no `impl Default for Rgba`. §16 of the v0.5.7 API
-// critique flagged that a theme library where `Rgba::default()` silently
-// returns "transparent black" is a footgun. Callers who need a named zero
-// colour use `Rgba::TRANSPARENT`, `Rgba::BLACK`, or `Rgba::WHITE` (all
-// `const`). Task 1 of this plan broke the sole transitive bound chain that
-// forced the Default impl (see `resolve::validate_helpers::require`).
+// The Display P3 and sRGB conversions of CSS Color Module Level 4, section 19,
+// "Sample code for Color Conversions" (https://drafts.csswg.org/css-color-4/#color-conversion-code,
+// its conversions.js, the Editor's Draft dated 29 October 2026, read on 30 October 2026): `lin_P3_to_XYZ`,
+// `XYZ_to_lin_sRGB`, `lin_sRGB_to_XYZ` and `XYZ_to_lin_P3`, D65 throughout, no
+// chromatic adaptation; the matrices as the source writes them, in rational form.
 
-impl Rgba {
-    /// Create an opaque color (alpha = 255).
+/// Linear-light Display P3 to CIE XYZ (`lin_P3_to_XYZ`).
+const LIN_P3_TO_XYZ: [[f64; 3]; 3] = [
+    [
+        608311.0 / 1250200.0,
+        189793.0 / 714400.0,
+        198249.0 / 1000160.0,
+    ],
+    [
+        35783.0 / 156275.0,
+        247089.0 / 357200.0,
+        198249.0 / 2500400.0,
+    ],
+    [0.0 / 1.0, 32229.0 / 714400.0, 5220557.0 / 5000800.0],
+];
+
+/// CIE XYZ to linear-light sRGB (`XYZ_to_lin_sRGB`).
+const XYZ_TO_LIN_SRGB: [[f64; 3]; 3] = [
+    [12831.0 / 3959.0, -329.0 / 214.0, -1974.0 / 3959.0],
+    [
+        -851781.0 / 878810.0,
+        1648619.0 / 878810.0,
+        36519.0 / 878810.0,
+    ],
+    [705.0 / 12673.0, -2585.0 / 12673.0, 705.0 / 667.0],
+];
+
+/// Linear-light sRGB to CIE XYZ (`lin_sRGB_to_XYZ`).
+const LIN_SRGB_TO_XYZ: [[f64; 3]; 3] = [
+    [506752.0 / 1228815.0, 87881.0 / 245763.0, 12673.0 / 70218.0],
+    [87098.0 / 409605.0, 175762.0 / 245763.0, 12673.0 / 175545.0],
+    [7918.0 / 409605.0, 87881.0 / 737289.0, 1001167.0 / 1053270.0],
+];
+
+/// CIE XYZ to linear-light Display P3 (`XYZ_to_lin_P3`).
+const XYZ_TO_LIN_P3: [[f64; 3]; 3] = [
+    [
+        446124.0 / 178915.0,
+        -333277.0 / 357830.0,
+        -72051.0 / 178915.0,
+    ],
+    [-14852.0 / 17905.0, 63121.0 / 35810.0, 423.0 / 17905.0],
+    [11844.0 / 330415.0, -50337.0 / 660830.0, 316169.0 / 330415.0],
+];
+
+impl Color {
+    /// The colour a literal states: `#rrggbb`, `#rrggbbaa`, `srgb(r, g, b[, a])`
+    /// or `display_p3(r, g, b[, a])`, each number `["-"] digits ["." digits]`,
+    /// with whitespace allowed around the whole, the name, the parentheses and
+    /// the commas, as in an expression; `None` for any other text, a
+    /// non-finite channel or an alpha outside `0..=1`.
     #[must_use]
-    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b, a: 255 }
-    }
-
-    /// Create a color with explicit red, green, blue, and alpha components.
-    #[must_use]
-    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self { r, g, b, a }
-    }
-
-    /// Transparent black `(0, 0, 0, 0)` -- the zero colour.
-    ///
-    /// ```
-    /// use native_theme::color::Rgba;
-    ///
-    /// assert_eq!(Rgba::TRANSPARENT, Rgba::new(0, 0, 0, 0));
-    /// assert_eq!(Rgba::BLACK, Rgba::new(0, 0, 0, 255));
-    /// assert_eq!(Rgba::WHITE, Rgba::new(255, 255, 255, 255));
-    /// ```
-    pub const TRANSPARENT: Self = Self {
-        r: 0,
-        g: 0,
-        b: 0,
-        a: 0,
-    };
-
-    /// Opaque black `(0, 0, 0, 255)`.
-    pub const BLACK: Self = Self {
-        r: 0,
-        g: 0,
-        b: 0,
-        a: 255,
-    };
-
-    /// Opaque white `(255, 255, 255, 255)`.
-    pub const WHITE: Self = Self {
-        r: 255,
-        g: 255,
-        b: 255,
-        a: 255,
-    };
-
-    /// Create a color from floating-point components in the 0.0..=1.0 range.
-    ///
-    /// Values are clamped to 0.0..=1.0 before conversion.
-    ///
-    /// Note: round-trip through `from_f32` -> `to_f32_array` is lossy due to
-    /// u8 quantization (e.g., `from_f32(0.5, ...)` -> r=128 ->
-    /// `to_f32_array()` -> 0.50196...).
-    #[must_use]
-    pub fn from_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
-        Self {
-            r: (r.clamp(0.0, 1.0) * 255.0).round() as u8,
-            g: (g.clamp(0.0, 1.0) * 255.0).round() as u8,
-            b: (b.clamp(0.0, 1.0) * 255.0).round() as u8,
-            a: (a.clamp(0.0, 1.0) * 255.0).round() as u8,
+    pub fn parse(text: &str) -> Option<Color> {
+        let text = text.trim();
+        if let Some(hex) = text.strip_prefix('#') {
+            return parse_hex(hex);
         }
+        let (name, rest) = text.split_once('(')?;
+        let mut numbers = rest.strip_suffix(')')?.split(',').map(|n| number(n.trim()));
+        let [r, g, b] = [numbers.next()??, numbers.next()??, numbers.next()??];
+        let a = numbers.next().unwrap_or(Some(1.0))?;
+        if numbers.next().is_some() || !(0.0..=1.0).contains(&a) {
+            return None;
+        }
+        let color = match name.trim_end() {
+            "srgb" => Color {
+                r: r as f32,
+                g: g as f32,
+                b: b as f32,
+                a: a as f32,
+            },
+            "display_p3" => from_display_p3([r, g, b], a),
+            _ => return None,
+        };
+        [color.r, color.g, color.b]
+            .iter()
+            .all(|c| c.is_finite())
+            .then_some(color)
     }
 
-    /// Convert to `[r, g, b, a]` in the 0.0..=1.0 range (for toolkit interop).
-    ///
-    /// Note: round-trip through `from_f32` -> `to_f32_array` is lossy due to
-    /// u8 quantization (256 discrete steps per channel).
+    /// `[r, g, b, a]` in 8-bit sRGB, each channel clamped to `0..=1` first:
+    /// for a connector that renders sRGB.
     #[must_use]
-    pub fn to_f32_array(&self) -> [f32; 4] {
-        [
-            self.r as f32 / 255.0,
-            self.g as f32 / 255.0,
-            self.b as f32 / 255.0,
-            self.a as f32 / 255.0,
-        ]
+    pub fn to_srgb8_clamped(self) -> [u8; 4] {
+        [self.r, self.g, self.b, self.a].map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8)
+    }
+
+    /// `[r, g, b, a]` in 8-bit premultiplied sRGB: each channel times the
+    /// alpha, then clamped to `0..=1` and rounded, the alpha with it, as GTK
+    /// draws a colour (S2.1's hand-over): for a connector whose toolkit
+    /// takes premultiplied bytes.
+    #[must_use]
+    pub fn to_srgb8_premultiplied(self) -> [u8; 4] {
+        let a = self.a;
+        [self.r * a, self.g * a, self.b * a, a].map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8)
+    }
+
+    /// `[r, g, b, a]` in Display P3, gamma-encoded and not clamped.
+    #[must_use]
+    pub fn to_display_p3(self) -> [f32; 4] {
+        let xyz = multiply(
+            &LIN_SRGB_TO_XYZ,
+            [self.r, self.g, self.b].map(|c| linear(f64::from(c))),
+        );
+        let [r, g, b] = multiply(&XYZ_TO_LIN_P3, xyz).map(|c| gamma(c) as f32);
+        [r, g, b, self.a]
     }
 }
 
-/// `layer` composited over `base`: source-over with straight (not
-/// premultiplied) alpha in sRGB, each colour `[r, g, b, a]` in `0.0..=1.0`
-/// as [`Rgba::to_f32_array`] gives it.
+/// `layer` composited over `base`: source-over in sRGB, drawn as S2.1's
+/// hand-over draws (S16, ADD-A128, ADD-A131).
 ///
-/// The result covers `a = layer.a + base.a × (1 − layer.a)`, and each channel
-/// is the two channels weighted by what each contributes, divided by `a`, so
-/// a translucent layer over a translucent base covers more than either. Where
-/// one input decides the result, that input is returned exactly, with no
-/// division to move it by an ulp:
+/// Each colour is premultiplied by its alpha and each premultiplied channel,
+/// the alpha with it, clamped to `0..=1`, as GTK draws a colour on its 8-bit
+/// frame; the two are then blended, `l + b × (1 − l.a)` per premultiplied
+/// channel and alpha, and the composite's straight colour returned. Every
+/// input is drawn so, an opaque or a transparent one included, so an opaque
+/// layer comes back with its channels clamped and no input's channel
+/// outside `0..=1` is returned unchanged; a composite of alpha 0 is
+/// transparent black, `#00000000`.
 ///
-/// - an opaque layer (`layer.a >= 1`) is the layer;
-/// - a transparent layer (`layer.a <= 0`) is `base`, a transparent one
-///   included;
-/// - a layer over a transparent base (`base.a <= 0`) is the layer.
-///
-/// This is how a platform lays a stated hover or pressed colour over a
-/// widget's fill (a state *layer*), for a toolkit that replaces the fill per
-/// state instead: the iced and gpui connectors composite with it, so an
-/// application drawing a layered state of its own matches them. The blend is
-/// in sRGB rather than linear light, because it reproduces the composite the
-/// platform performed when it measured the value a preset records, and
-/// platform compositors blend in sRGB.
+/// This is how a platform lays a translucent colour over what lies beneath,
+/// for a toolkit that draws the composite as one colour. The blend is in sRGB
+/// rather than linear light, as platform compositors blend.
 ///
 /// ```
+/// use native_theme::Color;
 /// use native_theme::color::composite_over;
 ///
-/// let half_black = [0.0, 0.0, 0.0, 0.5];
-/// assert_eq!(composite_over(half_black, [1.0, 1.0, 1.0, 1.0]), [0.5, 0.5, 0.5, 1.0]);
-/// assert_eq!(composite_over(half_black, half_black)[3], 0.75);
+/// let half_black = Color { r: 0.0, g: 0.0, b: 0.0, a: 0.5 };
+/// let white = Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
+/// assert_eq!(composite_over(half_black, white), Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 });
+/// assert_eq!(composite_over(half_black, half_black).a, 0.75);
 /// ```
 #[must_use]
-pub fn composite_over(layer: [f32; 4], base: [f32; 4]) -> [f32; 4] {
-    let [lr, lg, lb, la] = layer;
-    let [br, bg, bb, ba] = base;
-    if la >= 1.0 {
-        return layer;
+pub fn composite_over(layer: Color, base: Color) -> Color {
+    let [lr, lg, lb, la] = premultiplied(layer);
+    let [br, bg, bb, ba] = premultiplied(base);
+    let under = 1.0 - la;
+    let a = la + ba * under;
+    if a <= 0.0 {
+        return Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
+        };
     }
-    if la <= 0.0 {
-        return base;
-    }
-    if ba <= 0.0 {
-        return layer;
-    }
-    // How much of `base` reaches the result, in the composite's own alpha.
-    let under = ba * (1.0 - la);
-    let a = la + under;
-    let channel = |l: f32, b: f32| (l * la + b * under) / a;
-    [channel(lr, br), channel(lg, bg), channel(lb, bb), a]
-}
-
-impl fmt::Display for Rgba {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.a == 255 {
-            write!(f, "#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
-        } else {
-            write!(
-                f,
-                "#{:02x}{:02x}{:02x}{:02x}",
-                self.r, self.g, self.b, self.a
-            )
-        }
+    let channel = |l: f32, b: f32| (l + b * under) / a;
+    Color {
+        r: channel(lr, br),
+        g: channel(lg, bg),
+        b: channel(lb, bb),
+        a,
     }
 }
 
-/// Error returned when parsing a hex color string fails.
-///
-/// Wraps a human-readable message describing the failure cause.
-/// Implements [`std::error::Error`] so it works with `?` in functions
-/// returning `Box<dyn Error>`.
-#[derive(Debug, Clone)]
-pub struct ParseColorError(String);
+/// `color` premultiplied by its alpha, each channel and the alpha clamped
+/// to `0..=1` (S2.1's hand-over).
+fn premultiplied(color: Color) -> [f32; 4] {
+    let a = color.a.clamp(0.0, 1.0);
+    [color.r * a, color.g * a, color.b * a, a].map(|c| c.clamp(0.0, 1.0))
+}
 
-impl fmt::Display for ParseColorError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+/// `#rrggbb` or `#rrggbbaa` without its `#`, hex digits in either case.
+fn parse_hex(hex: &str) -> Option<Color> {
+    if !matches!(hex.len(), 6 | 8) || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let mut channels = hex
+        .as_bytes()
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| {
+            std::str::from_utf8(pair)
+                .ok()
+                .and_then(|p| u8::from_str_radix(p, 16).ok())
+        })
+        .map(|byte| byte.map(|byte| f32::from(byte) / 255.0));
+    let [r, g, b] = [channels.next()??, channels.next()??, channels.next()??];
+    let a = channels.next().unwrap_or(Some(1.0))?;
+    Some(Color { r, g, b, a })
+}
+
+/// A number literal, `["-"] digits ["." digits]`, if finite.
+fn number(text: &str) -> Option<f64> {
+    let unsigned = text.strip_prefix('-').unwrap_or(text);
+    let (whole, fraction) = match unsigned.split_once('.') {
+        Some((whole, fraction)) => (whole, Some(fraction)),
+        None => (unsigned, None),
+    };
+    let digits = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit());
+    if !digits(whole) || !fraction.is_none_or(digits) {
+        return None;
+    }
+    text.parse::<f64>().ok().filter(|n| n.is_finite())
+}
+
+/// The colour a Display P3 value states (gamma-encoded channels), in
+/// extended sRGB.
+fn from_display_p3(p3: [f64; 3], a: f64) -> Color {
+    let xyz = multiply(&LIN_P3_TO_XYZ, p3.map(linear));
+    let [r, g, b] = multiply(&XYZ_TO_LIN_SRGB, xyz).map(gamma);
+    Color {
+        r: r as f32,
+        g: g as f32,
+        b: b as f32,
+        a: a as f32,
     }
 }
 
-impl std::error::Error for ParseColorError {}
-
-/// Parse one ASCII hex digit byte to a nibble (0..=15).
-fn hex_nibble(b: u8, label: &str) -> Result<u8, ParseColorError> {
-    char::from(b)
-        .to_digit(16)
-        .and_then(|v| u8::try_from(v).ok())
-        .ok_or_else(|| ParseColorError(format!("invalid {label} hex digit {:?}", char::from(b))))
+fn multiply(matrix: &[[f64; 3]; 3], [x, y, z]: [f64; 3]) -> [f64; 3] {
+    matrix.map(|[a, b, c]| a * x + b * y + c * z)
 }
 
-/// Combine two nibbles (high, low) into a byte. Inputs assumed 0..=15.
-fn hex_byte(hi: u8, lo: u8) -> u8 {
-    // wrapping_shl(4) on 0..=15 produces 0..=240 in u8; BitOr is not panic-prone.
-    hi.wrapping_shl(4) | (lo & 0x0f)
-}
-
-/// Expand a nibble to a byte by doubling it: `0xf -> 0xff`, `0xa -> 0xaa`.
-/// Equivalent to `n * 17` for `n` in 0..=15, but panic-free.
-fn double_nibble(n: u8) -> u8 {
-    n.wrapping_shl(4) | (n & 0x0f)
-}
-
-impl FromStr for Rgba {
-    type Err = ParseColorError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hex = s.strip_prefix('#').unwrap_or(s);
-
-        if hex.is_empty() {
-            return Err(ParseColorError("empty hex color string".into()));
-        }
-
-        // A non-ASCII char is 2+ bytes in UTF-8, so its bytes could fill the
-        // single-byte slots below and be reported as a wrong digit or length.
-        if !hex.is_ascii() {
-            return Err(ParseColorError(format!(
-                "invalid hex color {s:?}: not ASCII hex digits"
-            )));
-        }
-
-        // Destructure hex bytes directly: with ASCII input each byte is one char,
-        // and this avoids panic-prone string slicing / indexing.
-        match hex.as_bytes() {
-            // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa)
-            [r, g, b] => {
-                let r = hex_nibble(*r, "red")?;
-                let g = hex_nibble(*g, "green")?;
-                let b = hex_nibble(*b, "blue")?;
-                Ok(Rgba::rgb(
-                    double_nibble(r),
-                    double_nibble(g),
-                    double_nibble(b),
-                ))
-            }
-            // #RGBA shorthand
-            [r, g, b, a] => {
-                let r = hex_nibble(*r, "red")?;
-                let g = hex_nibble(*g, "green")?;
-                let b = hex_nibble(*b, "blue")?;
-                let a = hex_nibble(*a, "alpha")?;
-                Ok(Rgba::new(
-                    double_nibble(r),
-                    double_nibble(g),
-                    double_nibble(b),
-                    double_nibble(a),
-                ))
-            }
-            // #RRGGBB
-            [r1, r2, g1, g2, b1, b2] => {
-                let r = hex_byte(hex_nibble(*r1, "red")?, hex_nibble(*r2, "red")?);
-                let g = hex_byte(hex_nibble(*g1, "green")?, hex_nibble(*g2, "green")?);
-                let b = hex_byte(hex_nibble(*b1, "blue")?, hex_nibble(*b2, "blue")?);
-                Ok(Rgba::rgb(r, g, b))
-            }
-            // #RRGGBBAA
-            [r1, r2, g1, g2, b1, b2, a1, a2] => {
-                let r = hex_byte(hex_nibble(*r1, "red")?, hex_nibble(*r2, "red")?);
-                let g = hex_byte(hex_nibble(*g1, "green")?, hex_nibble(*g2, "green")?);
-                let b = hex_byte(hex_nibble(*b1, "blue")?, hex_nibble(*b2, "blue")?);
-                let a = hex_byte(hex_nibble(*a1, "alpha")?, hex_nibble(*a2, "alpha")?);
-                Ok(Rgba::new(r, g, b, a))
-            }
-            other => Err(ParseColorError(format!(
-                "invalid hex color length {}: expected 3, 4, 6, or 8 hex digits",
-                other.len()
-            ))),
-        }
+/// CSS Color 4's `lin_sRGB` (Display P3's `lin_P3` too): the extended sRGB
+/// transfer function, reflected for negative values.
+fn linear(v: f64) -> f64 {
+    let abs = v.abs();
+    if abs <= 0.04045 {
+        v / 12.92
+    } else {
+        ((abs + 0.055) / 1.055).powf(2.4).copysign(v)
     }
 }
 
-impl Serialize for Rgba {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&self.to_string())
+/// CSS Color 4's `gam_sRGB` (Display P3's `gam_P3` too), the inverse of
+/// [`linear`].
+fn gamma(v: f64) -> f64 {
+    let abs = v.abs();
+    if abs > 0.0031308 {
+        (1.055 * abs.powf(1.0 / 2.4) - 0.055).copysign(v)
+    } else {
+        12.92 * v
     }
 }
 
-impl<'de> Deserialize<'de> for Rgba {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        Rgba::from_str(&s).map_err(de::Error::custom)
-    }
-}
+// sRGB pixel utilities for the icon loaders.
 
 /// Convert premultiplied RGBA pixel data to straight (non-premultiplied) alpha.
 ///
@@ -371,191 +336,206 @@ pub(crate) fn tint_monochrome(buffer: &mut [u8], rgb: Option<[u8; 3]>) {
 mod tests {
     use super::*;
 
-    // === Constructor tests ===
+    fn rgba(r: f32, g: f32, b: f32, a: f32) -> Color {
+        Color { r, g, b, a }
+    }
+
+    fn assert_close(actual: [f32; 4], expected: [f64; 4]) {
+        let close = actual
+            .iter()
+            .zip(expected)
+            .all(|(a, e)| (f64::from(*a) - e).abs() < 1e-5);
+        assert!(close, "{actual:?} != {expected:?}");
+    }
+
+    fn channels(c: Color) -> [f32; 4] {
+        [c.r, c.g, c.b, c.a]
+    }
 
     #[test]
-    fn rgb_constructor_sets_alpha_255() {
-        let c = Rgba::rgb(61, 174, 233);
+    fn color_parses_s2_1_forms() {
         assert_eq!(
-            c,
-            Rgba {
-                r: 61,
-                g: 174,
-                b: 233,
-                a: 255
-            }
+            Color::parse("#ff8000"),
+            Some(rgba(1.0, 128.0 / 255.0, 0.0, 1.0))
         );
-    }
-
-    #[test]
-    fn rgba_constructor_sets_all_fields() {
-        let c = Rgba::new(61, 174, 233, 128);
         assert_eq!(
-            c,
-            Rgba {
-                r: 61,
-                g: 174,
-                b: 233,
-                a: 128
-            }
+            Color::parse("#FF800080"),
+            Some(rgba(1.0, 128.0 / 255.0, 0.0, 128.0 / 255.0))
         );
-    }
-
-    // === FromStr parsing tests ===
-
-    #[test]
-    fn parse_6_digit_hex_with_hash() {
-        let c: Rgba = "#3daee9".parse().unwrap();
-        assert_eq!(c, Rgba::rgb(61, 174, 233));
-    }
-
-    #[test]
-    fn parse_8_digit_hex_with_hash() {
-        let c: Rgba = "#3daee980".parse().unwrap();
-        assert_eq!(c, Rgba::new(61, 174, 233, 128));
-    }
-
-    #[test]
-    fn parse_6_digit_hex_without_hash() {
-        let c: Rgba = "3daee9".parse().unwrap();
-        assert_eq!(c, Rgba::rgb(61, 174, 233));
-    }
-
-    #[test]
-    fn parse_3_digit_shorthand() {
-        let c: Rgba = "#abc".parse().unwrap();
-        assert_eq!(c, Rgba::rgb(0xaa, 0xbb, 0xcc));
-    }
-
-    #[test]
-    fn parse_4_digit_shorthand() {
-        let c: Rgba = "#abcd".parse().unwrap();
-        assert_eq!(c, Rgba::new(0xaa, 0xbb, 0xcc, 0xdd));
-    }
-
-    #[test]
-    fn parse_uppercase_hex() {
-        let c: Rgba = "#AABBCC".parse().unwrap();
-        assert_eq!(c, Rgba::rgb(0xaa, 0xbb, 0xcc));
-    }
-
-    #[test]
-    fn parse_empty_string_is_error() {
-        assert!("".parse::<Rgba>().is_err());
-    }
-
-    #[test]
-    fn parse_invalid_hex_chars_is_error() {
-        assert!("#gggggg".parse::<Rgba>().is_err());
-    }
-
-    #[test]
-    fn parse_invalid_length_5_chars_is_error() {
-        assert!("#12345".parse::<Rgba>().is_err());
-    }
-
-    #[test]
-    fn parse_non_ascii_three_bytes_names_the_input() {
-        let err = "#é0".parse::<Rgba>().unwrap_err();
         assert_eq!(
-            err.to_string(),
-            "invalid hex color \"#é0\": not ASCII hex digits"
+            Color::parse("srgb(0.25, 0.5, 1)"),
+            Some(rgba(0.25, 0.5, 1.0, 1.0))
         );
-    }
-
-    #[test]
-    fn parse_non_ascii_two_bytes_names_the_input() {
-        let err = "#é".parse::<Rgba>().unwrap_err();
         assert_eq!(
-            err.to_string(),
-            "invalid hex color \"#é\": not ASCII hex digits"
+            Color::parse("srgb(1.5,-0.25,0,0.5)"),
+            Some(rgba(1.5, -0.25, 0.0, 0.5))
         );
-    }
-
-    // === Display tests ===
-
-    #[test]
-    fn display_omits_alpha_when_255() {
-        assert_eq!(Rgba::rgb(61, 174, 233).to_string(), "#3daee9");
-    }
-
-    #[test]
-    fn display_includes_alpha_when_not_255() {
-        assert_eq!(Rgba::new(61, 174, 233, 128).to_string(), "#3daee980");
-    }
-
-    // === Serde round-trip tests ===
-
-    #[test]
-    fn serde_json_round_trip() {
-        let c = Rgba::rgb(61, 174, 233);
-        let json = serde_json::to_string(&c).unwrap();
-        assert_eq!(json, "\"#3daee9\"");
-        let deserialized: Rgba = serde_json::from_str(&json).unwrap();
-        assert_eq!(deserialized, c);
-    }
-
-    #[test]
-    fn serde_toml_round_trip() {
-        #[derive(Debug, PartialEq, Serialize, Deserialize)]
-        struct Wrapper {
-            color: Rgba,
+        assert_eq!(
+            Color::parse("srgb( 0 , 0 , 0 , 0 )"),
+            Some(rgba(0.0, 0.0, 0.0, 0.0))
+        );
+        assert_eq!(Color::parse(" #ff0000 "), Some(rgba(1.0, 0.0, 0.0, 1.0)));
+        assert_eq!(
+            Color::parse(" srgb (1, 0, 0) "),
+            Some(rgba(1.0, 0.0, 0.0, 1.0))
+        );
+        assert_eq!(
+            Color::parse("display_p3 ( 1,0,0 )"),
+            Some(from_display_p3([1.0, 0.0, 0.0], 1.0))
+        );
+        assert_eq!(
+            Color::parse("display_p3(0.5, 0.25, 0.75)"),
+            Some(from_display_p3([0.5, 0.25, 0.75], 1.0))
+        );
+        assert_eq!(
+            Color::parse("display_p3(1, 0, 0, 0.5)"),
+            Some(from_display_p3([1.0, 0.0, 0.0], 0.5))
+        );
+        for refused in [
+            "",
+            "#",
+            "#fff",
+            "#ffff",
+            "#fffffff",
+            "#fffffffff",
+            "#gggggg",
+            "#+fffff",
+            "ff8000",
+            "srgb(0.5, 0.5)",
+            "srgb(0.5, 0.5, 0.5, 0.5, 0.5)",
+            "srgb(0.5, 0.5, 0.5, 1.5)",
+            "srgb(0.5, 0.5, 0.5, -0.5)",
+            "srgb(0.5, 0.5, 0.5, 1.0000000001)",
+            "display_p3(0.5, 0.5, 0.5, 1.0000000001)",
+            "# ff0000",
+            "sr gb(0.5, 0.5, 0.5)",
+            "srgb(.5, 0.5, 0.5)",
+            "srgb(0.5., 0.5, 0.5)",
+            "srgb(+0.5, 0.5, 0.5)",
+            "srgb(1e0, 0.5, 0.5)",
+            "srgb(0.5, 0.5, 0.5",
+            "srgb 0.5, 0.5, 0.5)",
+            "rgb(0.5, 0.5, 0.5)",
+            "display_p3(0.5, 0.5)",
+            "display-p3(0.5, 0.5, 0.5)",
+        ] {
+            assert_eq!(Color::parse(refused), None, "{refused}");
         }
-        let w = Wrapper {
-            color: Rgba::new(61, 174, 233, 128),
-        };
-        let toml_str = toml::to_string(&w).unwrap();
-        let deserialized: Wrapper = toml::from_str(&toml_str).unwrap();
-        assert_eq!(deserialized, w);
-    }
-
-    // === to_f32_array tests ===
-
-    #[test]
-    fn to_f32_array_black() {
-        let arr = Rgba::rgb(0, 0, 0).to_f32_array();
-        assert_eq!(arr, [0.0, 0.0, 0.0, 1.0]);
+        let huge = format!("srgb({}, 0, 0)", "9".repeat(60));
+        assert_eq!(Color::parse(&huge), None);
     }
 
     #[test]
-    fn to_f32_array_white_transparent() {
-        let arr = Rgba::new(255, 255, 255, 0).to_f32_array();
-        assert_eq!(arr, [1.0, 1.0, 1.0, 0.0]);
-    }
-
-    // === Trait tests ===
-
-    #[test]
-    fn rgba_is_copy() {
-        let a = Rgba::rgb(1, 2, 3);
-        let b = a; // Copy
-        assert_eq!(a, b); // a still accessible after copy
-    }
-
-    #[test]
-    fn rgba_is_hash() {
-        use std::collections::HashSet;
-        let mut set = HashSet::new();
-        set.insert(Rgba::rgb(1, 2, 3));
-        assert!(set.contains(&Rgba::rgb(1, 2, 3)));
-    }
-
-    // === from_f32 tests ===
-
-    #[test]
-    fn from_f32_basic() {
-        let c = Rgba::from_f32(1.0, 0.5, 0.0, 1.0);
-        assert_eq!(c.r, 255);
-        assert_eq!(c.g, 128); // 0.5 * 255 = 127.5, round to 128
-        assert_eq!(c.b, 0);
-        assert_eq!(c.a, 255);
+    fn display_p3_converts_by_css_color_4() {
+        // Expected values: CSS Color 4's conversions.js chain, gam_sRGB(XYZ_to_lin_sRGB(
+        // lin_P3_to_XYZ(lin_P3(c)))) and its inverse gam_P3(XYZ_to_lin_P3(lin_sRGB_to_XYZ(
+        // lin_sRGB(c)))), evaluated in Python with the matrices as exact fractions (each entry
+        // the published ratio) and the transfer functions in double precision, printed to seven
+        // decimals.
+        let p3_to_srgb = [
+            ([1.0, 0.0, 0.0], [1.0930664, -0.2267420, -0.1501346]),
+            ([0.0, 1.0, 0.0], [-0.5116050, 1.0182657, -0.3106746]),
+            ([0.0, 0.0, 1.0], [0.0, 0.0, 1.0420216]),
+            ([1.0, 1.0, 1.0], [1.0, 1.0, 1.0]),
+            ([0.5, 0.25, 0.75], [0.5378318, 0.2321319, 0.7770569]),
+        ];
+        for ([r, g, b], [er, eg, eb]) in p3_to_srgb {
+            assert_close(channels(from_display_p3([r, g, b], 0.5)), [er, eg, eb, 0.5]);
+            assert_close(
+                from_display_p3([r, g, b], 1.0).to_display_p3(),
+                [r, g, b, 1.0].map(f64::from),
+            );
+        }
+        let srgb_to_p3 = [
+            ([1.0, 0.0, 0.0], [0.9174876, 0.2002868, 0.1385606]),
+            ([0.0, 1.0, 0.0], [0.4584016, 0.9852646, 0.2982947]),
+            ([0.0, 0.0, 1.0], [0.0, 0.0, 0.9595880]),
+        ];
+        for ([r, g, b], [er, eg, eb]) in srgb_to_p3 {
+            assert_close(rgba(r, g, b, 1.0).to_display_p3(), [er, eg, eb, 1.0]);
+        }
     }
 
     #[test]
-    fn from_f32_clamps_out_of_range() {
-        let c = Rgba::from_f32(-0.5, 1.5, 0.0, 0.0);
-        assert_eq!(c.r, 0);
-        assert_eq!(c.g, 255);
+    fn srgb8_clamps_then_rounds() {
+        assert_eq!(
+            rgba(1.093, -0.2, 0.5, 1.0).to_srgb8_clamped(),
+            [255, 0, 128, 255]
+        );
+        assert_eq!(
+            rgba(0.2, 0.4, 0.6, 0.0).to_srgb8_clamped(),
+            [51, 102, 153, 0]
+        );
+    }
+
+    #[test]
+    fn to_srgb8_premultiplied_clamps_after_premultiplying() {
+        // Light teal's standalone red at alpha 0.5 (S2.1): -0.085, clamped
+        // to 0; a channel of 1.2 at 0.5 is 0.6, which clamping first would
+        // make 0.5.
+        assert_eq!(
+            rgba(-0.17, 1.2, 0.5, 0.5).to_srgb8_premultiplied(),
+            [0, 153, 64, 128]
+        );
+        assert_eq!(
+            rgba(1.5, -0.2, 0.2, 1.0).to_srgb8_premultiplied(),
+            [255, 0, 51, 255]
+        );
+        assert_eq!(
+            rgba(0.2, 0.4, 0.6, 0.0).to_srgb8_premultiplied(),
+            [0, 0, 0, 0]
+        );
+    }
+
+    #[test]
+    fn composite_over_is_source_over_with_straight_alpha() {
+        let half_red = rgba(1.0, 0.0, 0.0, 0.5);
+        let half_blue = rgba(0.0, 0.0, 1.0, 0.5);
+        let over = composite_over(half_red, half_blue);
+        // a = 0.5 + 0.5 × 0.5; red = 1 × 0.5 / 0.75, blue = 1 × 0.25 / 0.75.
+        assert_close(channels(over), [2.0 / 3.0, 0.0, 1.0 / 3.0, 0.75]);
+        let opaque = rgba(0.1, 0.2, 0.3, 1.0);
+        assert_eq!(composite_over(opaque, half_blue), opaque);
+        assert_eq!(
+            composite_over(rgba(0.1, 0.2, 0.3, 0.0), half_blue),
+            half_blue
+        );
+        let clear = rgba(0.0, 0.0, 0.0, 0.0);
+        assert_eq!(composite_over(half_red, clear), half_red);
+    }
+
+    #[test]
+    fn composite_over_clamps_premultiplied_channels() {
+        // Light teal's standalone red at alpha 0.5 over white (S2.1): its
+        // premultiplied -0.085 clamped to 0, where blending it unclamped
+        // draws about 22 steps of 255 darker.
+        let white = rgba(1.0, 1.0, 1.0, 1.0);
+        let teal = composite_over(rgba(-0.17, 0.5, 0.5, 0.5), white);
+        assert_close(channels(teal), [0.5, 0.75, 0.75, 1.0]);
+        // An opaque layer's channels come back clamped, as do a base's
+        // under a transparent layer: no input passes through unclamped.
+        assert_eq!(
+            composite_over(rgba(1.2, -0.1, 0.5, 1.0), white),
+            rgba(1.0, 0.0, 0.5, 1.0)
+        );
+        assert_eq!(
+            composite_over(rgba(0.3, 0.3, 0.3, 0.0), rgba(1.5, 0.5, -0.5, 1.0)),
+            rgba(1.0, 0.5, 0.0, 1.0)
+        );
+        assert_eq!(
+            composite_over(rgba(1.5, 0.5, -0.5, 1.0), rgba(0.0, 0.0, 0.0, 0.0)),
+            rgba(1.0, 0.5, 0.0, 1.0)
+        );
+    }
+
+    #[test]
+    fn composite_over_of_zero_alpha_is_transparent_black() {
+        let clear = rgba(0.0, 0.0, 0.0, 0.0);
+        assert_eq!(
+            composite_over(rgba(1.0, 0.5, 0.2, 0.0), rgba(0.4, 0.6, 0.8, 0.0)),
+            clear
+        );
+        assert_eq!(composite_over(clear, clear), clear);
     }
 
     // === tint_monochrome tests ===
@@ -580,89 +560,5 @@ mod tests {
         let mut buf = original;
         tint_monochrome(&mut buf, None);
         assert_eq!(buf, original);
-    }
-
-    // === composite_over tests ===
-
-    #[test]
-    fn composite_over_a_transparent_layer_is_the_base_exactly() {
-        let layer = [0.9, 0.1, 0.3, 0.0];
-        for base in [
-            [0.2, 0.4, 0.6, 1.0],
-            [0.2, 0.4, 0.6, 0.3],
-            // A transparent base keeps its own channels: nothing is divided.
-            [0.2, 0.4, 0.6, 0.0],
-        ] {
-            assert_eq!(composite_over(layer, base), base, "over {base:?}");
-        }
-    }
-
-    #[test]
-    fn composite_over_a_transparent_base_is_the_layer_exactly() {
-        let base = [0.2, 0.4, 0.6, 0.0];
-        for layer in [[0.9, 0.1, 0.3, 0.3], [0.1, 0.2, 0.3, 0.078_431_375]] {
-            assert_eq!(composite_over(layer, base), layer, "{layer:?}");
-        }
-    }
-
-    #[test]
-    fn composite_over_an_opaque_layer_is_the_layer() {
-        let layer = [0.3, 0.7, 0.1, 1.0];
-        for base in [[0.2, 0.4, 0.6, 1.0], [1.0, 1.0, 1.0, 0.25]] {
-            assert_eq!(composite_over(layer, base), layer, "over {base:?}");
-        }
-    }
-
-    /// Over an opaque base the result is opaque and each channel is the
-    /// plain mix `l·la + b·(1 − la)`.
-    #[test]
-    fn composite_over_an_opaque_base_is_the_plain_mix() {
-        let (layer, base) = ([0.9_f32, 0.1, 0.3, 0.5], [0.2_f32, 0.4, 0.6, 1.0]);
-        let [r, g, b, a] = composite_over(layer, base);
-        assert_eq!(a, 1.0);
-        let mix = |l: f32, b: f32| l * layer[3] + b * (1.0 - layer[3]);
-        assert_eq!(
-            [r, g, b],
-            [
-                mix(layer[0], base[0]),
-                mix(layer[1], base[1]),
-                mix(layer[2], base[2])
-            ]
-        );
-    }
-
-    /// A translucent layer over a translucent base covers more than either,
-    /// `la + ba·(1 − la)`, and its channels are un-premultiplied by that.
-    #[test]
-    fn composite_over_two_translucent_colours_covers_both() {
-        let (layer, base) = ([0.8_f32, 0.2, 0.4, 0.5], [1.0_f32, 1.0, 1.0, 0.25]);
-        let [r, g, b, a] = composite_over(layer, base);
-        assert_eq!(a, 0.5 + 0.25 * 0.5);
-        let under = 0.25 * 0.5;
-        let channel = |l: f32, b: f32| (l * 0.5 + b * under) / a;
-        assert_eq!(
-            [r, g, b],
-            [channel(0.8, 1.0), channel(0.2, 1.0), channel(0.4, 1.0)]
-        );
-        // Associative: stacked on the base first, then painted on white, is
-        // painting the base and then the layer.
-        let white = [1.0, 1.0, 1.0, 1.0];
-        let stacked = composite_over(composite_over(layer, base), white);
-        let painted = composite_over(layer, composite_over(base, white));
-        for (s, p) in stacked.into_iter().zip(painted) {
-            assert!((s - p).abs() < 1e-6, "{stacked:?} against {painted:?}");
-        }
-    }
-
-    /// macos-tahoe light's push button is `#00000014` (macos-tahoe.toml
-    /// `[light.button]`, docs/platform-facts.md:1177), and the pressed fill a
-    /// connector derives from it keeps that alpha; the pressed button is one
-    /// over the other, alpha 0.0784 → 0.1507 (the M6 T9 ruling).
-    #[test]
-    fn composite_over_macos_tahoe_lights_two_button_fills_is_source_over() {
-        let fill = Rgba::new(0, 0, 0, 0x14).to_f32_array();
-        let [.., a] = composite_over(fill, fill);
-        assert_eq!(a, fill[3] + fill[3] * (1.0 - fill[3]));
-        assert!((a - 0.1507).abs() < 5e-5, "{a}");
     }
 }

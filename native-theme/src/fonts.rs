@@ -12,7 +12,7 @@
 //! one it has no face of — on Linux and the other fontconfig platforms,
 //! fontconfig's best match, which `system_face` then finds by name.
 
-use crate::theme::FontStyle;
+use crate::FontStyle;
 
 /// What [`select_face`] knows about one candidate face.
 #[derive(Clone, Copy, Debug)]
@@ -122,7 +122,7 @@ fn weight_rank(face: u16, wanted: u16) -> (u8, u16) {
 
 /// Whether `family` names the macOS system UI font: caselessly equal to
 /// "SF Pro", the name the platform documents for it
-/// (`docs/platform-facts.md:63-71`) and `macos-monterey` states. A pure
+/// (`docs/platform-facts.md@fc6109d1:63-71`) and `macos-monterey` states. A pure
 /// predicate, on every platform, with no font database: `system_face`'s
 /// macOS branch asks it beside its Core Text family comparison, and the
 /// gpui connector asks it alone to map the family to gpui's own alias.
@@ -133,7 +133,7 @@ pub fn is_macos_system_ui_family(family: &str) -> bool {
 
 /// Whether `family` names the macOS system monospaced font: caselessly equal
 /// to "SF Mono", the name the platform facts give
-/// `+monospacedSystemFontOfSize:weight:` (`docs/platform-facts.md:65`) and the
+/// `+monospacedSystemFontOfSize:weight:` (`docs/platform-facts.md@fc6109d1:65`) and the
 /// macOS presets state. The font's family name is
 /// `.AppleSystemUIFontMonospaced`, as macOS 26 reports it
 /// (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`);
@@ -150,6 +150,7 @@ pub fn is_macos_system_mono_family(family: &str) -> bool {
 /// A face [`system_face`] chose: its bytes, and what fontdb records for it.
 #[cfg(feature = "system-fonts")]
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SystemFace {
     /// The face's file, whole: for a face of a collection (`.ttc`), the
     /// collection, addressed by `index`.
@@ -553,7 +554,7 @@ mod tests {
     }
 
     /// The macOS system UI font's documented name, caselessly, and nothing
-    /// else (`docs/platform-facts.md:63-71`).
+    /// else (`docs/platform-facts.md@fc6109d1:63-71`).
     #[test]
     fn the_macos_system_ui_family_is_sf_pro_caselessly() {
         assert!(is_macos_system_ui_family("SF Pro"));
@@ -564,7 +565,7 @@ mod tests {
     }
 
     /// The macOS system monospaced font's stated name, caselessly, and
-    /// nothing else (`docs/platform-facts.md:65`).
+    /// nothing else (`docs/platform-facts.md@fc6109d1:65`).
     #[test]
     fn the_macos_system_mono_family_is_sf_mono_caselessly() {
         assert!(is_macos_system_mono_family("SF Mono"));

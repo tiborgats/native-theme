@@ -1,0 +1,60 @@
+# Synthetic facts (S17).
+
+[[fact]]
+key = "button.body.fill"
+value = "#e0e0e0"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"] }
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.min_width"
+value = "40px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Pending where the state model draws nothing: listed, on no combination.
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+pending = "U2"
+rows = []
+
+# The parts the base leaves out (S17, ADD-A130: a part with no part fact is expected drawn).
+[[fact]]
+key = "button.icon"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

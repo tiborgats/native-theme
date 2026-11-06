@@ -1,0 +1,23 @@
+# Synthetic token facts (S17).
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# A parameter group no enabled unit holds (scripts/widget_units.toml's slice holds `pointer_repeat`, `color` and
+# `opacity` alone): the fact is skipped while its unit is not enabled, counted, not compared (S17).
+[[fact]]
+key = "token.params.caret.aspect_ratio"
+value = 0.5
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

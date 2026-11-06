@@ -1,0 +1,102 @@
+# Synthetic facts (S17): measured citations, several serving the preset or another preset.
+
+[[fact]]
+key = "button.body.fill"
+value = "#e0e0e0"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.fill"
+when = { variants = ["flat"] }
+value = "#00000000"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Two measured citations serve the preset: the smaller tolerance, 0.2, holds, and 0.3px fails it.
+[[fact]]
+key = "button.body.min_width"
+value = "40.3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#body.min_width"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#body.min_width_again"
+tolerance = 0.2
+
+[[fact]]
+key = "button.body.min_width"
+when = { states = ["pressed"] }
+value = "44px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.body.opacity"
+when = { states = ["hover"] }
+pending = "U1"
+rows = []
+
+# The 0.1 citation serves another preset: the preset's own 0.5 holds, and 0.3px is within it.
+[[fact]]
+key = "button.values.icon_text_gap"
+value = "4.3px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/probe-image/probe.toml#values.icon_text_gap"
+tolerance = 0.5
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/probe-host/2026-10-31-run-1/other-image/probe.toml#values.icon_text_gap"
+tolerance = 0.1
+
+# The parts the base leaves out (S17, ADD-A130: a part with no part fact is expected drawn).
+[[fact]]
+key = "button.icon"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "button.menu_indicator"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

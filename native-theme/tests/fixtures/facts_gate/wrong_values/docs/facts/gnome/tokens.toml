@@ -1,0 +1,11 @@
+# Synthetic token facts (S17).
+
+[[fact]]
+key = "token.focus.width"
+value = "3px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

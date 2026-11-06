@@ -226,14 +226,14 @@ mod tests {
         assert!(!is_known_theme(""));
     }
 
-    // === Drift detection: THEME_TABLE vs native_theme::theme::IconSet ===
+    // === Drift detection: THEME_TABLE vs native_theme::icons::IconSet ===
 
     /// Verify every THEME_TABLE entry resolves to a real IconSet variant
     /// and that the variant path string matches the Debug representation.
     #[test]
     fn theme_table_entries_match_icon_set_variants() {
         for (toml_key, variant_str) in THEME_TABLE {
-            let icon_set = native_theme::theme::IconSet::from_name(toml_key).unwrap_or_else(|| {
+            let icon_set = native_theme::icons::IconSet::from_name(toml_key).unwrap_or_else(|| {
                 panic!(
                     "THEME_TABLE key \"{toml_key}\" does not match any IconSet variant \
                      (IconSet::from_name returned None)"
@@ -255,12 +255,12 @@ mod tests {
     /// the developer to update both THEME_TABLE and this test.
     #[test]
     fn theme_table_covers_all_icon_set_variants() {
-        let all_variants: &[native_theme::theme::IconSet] = &[
-            native_theme::theme::IconSet::SfSymbols,
-            native_theme::theme::IconSet::SegoeFluent,
-            native_theme::theme::IconSet::Freedesktop,
-            native_theme::theme::IconSet::Material,
-            native_theme::theme::IconSet::Lucide,
+        let all_variants: &[native_theme::icons::IconSet] = &[
+            native_theme::icons::IconSet::SfSymbols,
+            native_theme::icons::IconSet::SegoeFluent,
+            native_theme::icons::IconSet::Freedesktop,
+            native_theme::icons::IconSet::Material,
+            native_theme::icons::IconSet::Lucide,
         ];
 
         assert_eq!(

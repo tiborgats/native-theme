@@ -1,0 +1,91 @@
+# Output of analysis/measure_button_layers.py (its docstring is the method), file derivations.toml.
+# input_image: every file this part reads (layers, captures, and the probe.toml files whose frames,
+# cell rects and colours it takes).
+input_image = [
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/darkAqua/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/styles_b/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/darkAqua/styles_b/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/probe.toml",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/caret/caret-1.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/darkAqua/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/styles_b/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/darkAqua/styles_b/normal-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/probe.toml",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/caret/caret-1.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/probe.toml",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/accent-red/probe.toml",
+]
+
+[[derivation.default_fill_light]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:light"]
+
+[[derivation.default_fill_light]]
+"input.accent" = "#e0383e"
+result = "#e0383e"
+conditions = ["scheme:light"]
+
+[[derivation.default_fill_dark]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:dark"]
+
+[[derivation.default_fill_dark]]
+"input.accent" = "#ff5257"
+result = "#ff5257"
+conditions = ["scheme:dark"]
+
+[[derivation.primary_fill_light]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:light"]
+
+[[derivation.primary_fill_light]]
+"input.accent" = "#e0383e"
+result = "#e0383e"
+conditions = ["scheme:light"]
+
+[[derivation.primary_fill_dark]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:dark"]
+
+[[derivation.primary_fill_dark]]
+"input.accent" = "#ff5257"
+result = "#ff5257"
+conditions = ["scheme:dark"]
+
+[[derivation.tinted_label_light]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:light"]
+
+[[derivation.tinted_label_light]]
+"input.accent" = "#e0383e"
+result = "#e0383e"
+conditions = ["scheme:light"]
+
+[[derivation.tinted_label_dark]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:dark"]
+
+[[derivation.tinted_label_dark]]
+"input.accent" = "#ff5257"
+result = "#ff5257"
+conditions = ["scheme:dark"]
+
+[[derivation.caret_color_light]]
+"input.accent" = "#007aff"
+result = "#007aff"
+conditions = ["scheme:light"]
+
+[[derivation.caret_color_light]]
+"input.accent" = "#e0383e"
+result = "#e0383e"
+conditions = ["scheme:light"]

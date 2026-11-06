@@ -752,7 +752,7 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
 /// Text supplies its own system UI font. Its twin, the system monospaced
 /// font's stated family — "SF Mono" caselessly,
 /// `native_theme::fonts::is_macos_system_mono_family` — becomes the font's
-/// family name, `.AppleSystemUIFontMonospaced` (`docs/platform-facts.md:65`;
+/// family name, `.AppleSystemUIFontMonospaced` (`docs/platform-facts.md@fc6109d1:65`;
 /// the familyName macOS 26 reports for `+monospacedSystemFontOfSize:weight:`,
 /// `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`),
 /// which the same lookup takes as it takes `.AppleSystemUIFont`: font-kit's
@@ -1593,7 +1593,7 @@ mod tests {
 
     /// M9x CI item 10 (M9-167): on macOS the system monospaced font's stated
     /// family, "SF Mono" caselessly, becomes the face's own name,
-    /// `.AppleSystemUIFontMonospaced` (docs/platform-facts.md:65), which gpui's
+    /// `.AppleSystemUIFontMonospaced` (docs/platform-facts.md@fc6109d1:65), which gpui's
     /// macOS text system looks up as it does `.AppleSystemUIFont`; on another
     /// platform it stays as stated. The platform is a parameter, so this runs
     /// everywhere.
@@ -2305,7 +2305,7 @@ mod apply_tests {
     /// differs from `drag_border`, which upstream's projection writes there.
     /// `handle` cannot serve as the observable: every preset inherits
     /// `splitter.divider_color` from `defaults.border.color`
-    /// (`docs/inheritance-rules.toml:250`), which is also what upstream writes,
+    /// (`docs/inheritance-rules.toml@fc6109d1:250`), which is also what upstream writes,
     /// so that slot holds the same value whichever side wrote it.
     fn preset_for_observer_tests(prefs: &AccessibilityPreferences) -> (GpuiTheme, ResolvedTheme) {
         let (theme, resolved) =

@@ -1,0 +1,41 @@
+# Synthetic token facts (S17, ADD-A128): the touch delay pending with nothing beneath but under high
+# contrast, where the preset's rule states it; the long press reads it.
+
+[[fact]]
+key = "token.focus.width"
+value = "2px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Pending: the preset lists the path and states it under high contrast alone.
+[[fact]]
+key = "token.behavior.touch.delay"
+when = { not_conditions = ["contrast_high"] }
+pending = "U5"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.delay"
+when = { conditions = ["contrast_high"] }
+value = "100ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Reads the listed path: skipped where it reaches the synthetic value.
+[[fact]]
+key = "token.behavior.long_press"
+value = "= token.behavior.touch.delay"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

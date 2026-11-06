@@ -1,0 +1,28 @@
+# A synthetic preset (S17, ADD-A128): its touch delay listed, and its drag time, which no fact leaves pending.
+# base without: delay_ms = "absent"
+# base without: drag_time_ms = "absent"
+[pending]
+"tokens.behavior.touch.delay_ms" = "U5"
+"tokens.behavior.drag_time_ms" = "U6"
+
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+when = { conditions = ["contrast_high"] }
+target = "tokens"
+set = { behavior.touch.delay_ms = 100 }
+
+[[rules]]
+target = "tokens"
+set = { behavior.long_press_ms = "= token.behavior.touch.delay" }

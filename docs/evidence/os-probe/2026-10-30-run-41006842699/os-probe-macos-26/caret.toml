@@ -1,0 +1,37 @@
+# Output of analysis/measure_button_layers.py (its docstring is the method), file caret.toml.
+# input_image: every file this part reads (layers, captures, and the probe.toml files whose frames,
+# cell rects and colours it takes).
+input_image = [
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/aqua/caret/caret-1.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/darkAqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass/darkAqua/caret/caret-1.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/aqua/caret/caret-1.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/darkAqua/caret/caret-0.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-accent-red/darkAqua/caret/caret-1.png",
+]
+
+[caret.key.aqua]
+bounds_px_xywh = [45, 52, 4, 14]
+changed_pixels = 42
+width = "2px"
+colors_seen = ["#007aff"]
+
+[caret.key.darkAqua]
+bounds_px_xywh = [45, 52, 4, 14]
+changed_pixels = 42
+width = "1px"
+colors_seen = ["#0863c6"]
+
+[caret.accent_red.aqua]
+bounds_px_xywh = [45, 52, 4, 14]
+changed_pixels = 42
+width = "2px"
+colors_seen = ["#e0383e"]
+
+[caret.accent_red.darkAqua]
+bounds_px_xywh = [45, 52, 4, 14]
+changed_pixels = 42
+width = "2px"
+colors_seen = ["#8f383b", "#ff5257"]

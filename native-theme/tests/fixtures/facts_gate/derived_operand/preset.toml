@@ -1,0 +1,12 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+# The fill follows `accent_standalone`, which the base derives from the accent, as the facts do.
+[[rules]]
+target = "button.body"
+set = { fill = "= role.global.accent_standalone" }

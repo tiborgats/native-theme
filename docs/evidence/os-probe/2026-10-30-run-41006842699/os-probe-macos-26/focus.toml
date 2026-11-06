@@ -1,0 +1,468 @@
+# Output of analysis/measure_button_layers.py (its docstring is the method), file focus.toml.
+# input_image: every file this part reads (layers, captures, and the probe.toml files whose frames,
+# cell rects and colours it takes).
+input_image = [
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/probe.toml",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/unfocused-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-mini-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-mini-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-mini-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-mini-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-small-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-small-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-small-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-small-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-regular-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-regular-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-regular-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-regular-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-large-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-large-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-large-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-large-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-extraLarge-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-extraLarge-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-extraLarge-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/aqua/focused-extraLarge-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/unfocused-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-mini-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-mini-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-mini-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-mini-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-small-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-small-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-small-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-small-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-regular-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-regular-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-regular-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-regular-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-large-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-large-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-large-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-large-toggle_on-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-extraLarge-plain-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-extraLarge-default-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-extraLarge-toggle_off-layer.png",
+    "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-26/button-pass-focus/darkAqua/focused-extraLarge-toggle_on-layer.png",
+]
+
+[focus.aqua.mini-plain]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.0
+outer_radius_px = 7.5
+outer_rms_px = 0.131
+radius = "follow_part"
+
+[focus.aqua.mini-default]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 3.5
+outer_radius_px = 8.0
+outer_rms_px = 0.562
+radius = "other"
+
+[focus.aqua.mini-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.0
+outer_radius_px = 7.5
+outer_rms_px = 0.131
+radius = "follow_part"
+
+[focus.aqua.mini-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 3.25
+outer_radius_px = 8.0
+outer_rms_px = 0.559
+radius = "other"
+
+[focus.aqua.small-plain]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.25
+outer_radius_px = 8.5
+outer_rms_px = 0.114
+radius = "follow_part"
+
+[focus.aqua.small-default]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.5
+outer_radius_px = 9.5
+outer_rms_px = 0.613
+radius = "other"
+
+[focus.aqua.small-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.25
+outer_radius_px = 8.5
+outer_rms_px = 0.114
+radius = "follow_part"
+
+[focus.aqua.small-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.5
+outer_radius_px = 9.25
+outer_rms_px = 0.542
+radius = "other"
+
+[focus.aqua.regular-plain]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 6.25
+outer_radius_px = 9.5
+outer_rms_px = 0.075
+radius = "follow_part"
+
+[focus.aqua.regular-default]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.5
+outer_radius_px = 10.25
+outer_rms_px = 0.512
+radius = "other"
+
+[focus.aqua.regular-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 6.25
+outer_radius_px = 9.5
+outer_rms_px = 0.075
+radius = "follow_part"
+
+[focus.aqua.regular-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.5
+outer_radius_px = 10.25
+outer_rms_px = 0.509
+radius = "other"
+
+[focus.aqua.large-plain]
+outside_px = 3
+inside_px = "uneven"
+ring = "#0066f57f"
+kind = "ring"
+
+[focus.aqua.large-default]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 13.75
+outer_radius_px = 18.5
+outer_rms_px = 0.763
+radius = "other"
+
+[focus.aqua.large-toggle_off]
+outside_px = 3
+inside_px = "uneven"
+ring = "#0066f57f"
+kind = "ring"
+
+[focus.aqua.large-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 13.5
+outer_radius_px = 18.5
+outer_rms_px = 0.758
+radius = "other"
+
+[focus.aqua.extraLarge-plain]
+outside_px = 3
+inside_px = "uneven"
+ring = "#0066f57f"
+kind = "ring"
+
+[focus.aqua.extraLarge-default]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 17.75
+outer_radius_px = 23.0
+outer_rms_px = 0.797
+radius = "other"
+
+[focus.aqua.extraLarge-toggle_off]
+outside_px = 3
+inside_px = "uneven"
+ring = "#0066f57f"
+kind = "ring"
+
+[focus.aqua.extraLarge-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#0066f57f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 17.75
+outer_radius_px = 22.75
+outer_rms_px = 0.779
+radius = "other"
+
+[focus.darkAqua.mini-plain]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.0
+outer_radius_px = 7.5
+outer_rms_px = 0.129
+radius = "follow_part"
+
+[focus.darkAqua.mini-default]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 3.5
+outer_radius_px = 8.0
+outer_rms_px = 0.562
+radius = "other"
+
+[focus.darkAqua.mini-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.0
+outer_radius_px = 7.5
+outer_rms_px = 0.129
+radius = "follow_part"
+
+[focus.darkAqua.mini-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 3.25
+outer_radius_px = 8.0
+outer_rms_px = 0.558
+radius = "other"
+
+[focus.darkAqua.small-plain]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.25
+outer_radius_px = 8.5
+outer_rms_px = 0.113
+radius = "follow_part"
+
+[focus.darkAqua.small-default]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.5
+outer_radius_px = 9.5
+outer_rms_px = 0.612
+radius = "other"
+
+[focus.darkAqua.small-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.25
+outer_radius_px = 8.5
+outer_rms_px = 0.113
+radius = "follow_part"
+
+[focus.darkAqua.small-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 4.5
+outer_radius_px = 9.5
+outer_rms_px = 0.608
+radius = "other"
+
+[focus.darkAqua.regular-plain]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 6.25
+outer_radius_px = 9.5
+outer_rms_px = 0.073
+radius = "follow_part"
+
+[focus.darkAqua.regular-default]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.5
+outer_radius_px = 10.5
+outer_rms_px = 0.601
+radius = "other"
+
+[focus.darkAqua.regular-toggle_off]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 6.25
+outer_radius_px = 9.5
+outer_rms_px = 0.073
+radius = "follow_part"
+
+[focus.darkAqua.regular-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 5.5
+outer_radius_px = 10.5
+outer_rms_px = 0.599
+radius = "other"
+
+[focus.darkAqua.large-plain]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"
+
+[focus.darkAqua.large-default]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 13.75
+outer_radius_px = 19.0
+outer_rms_px = 0.8
+radius = "other"
+
+[focus.darkAqua.large-toggle_off]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"
+
+[focus.darkAqua.large-toggle_on]
+outside_px = 3
+inside_px = 1
+ring = "#1aabff7f"
+kind = "ring"
+width = "4px"
+offset = "-1px"
+button_radius_px = 13.5
+outer_radius_px = 19.0
+outer_rms_px = 0.793
+radius = "other"
+
+[focus.darkAqua.extraLarge-plain]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"
+
+[focus.darkAqua.extraLarge-default]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"
+
+[focus.darkAqua.extraLarge-toggle_off]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"
+
+[focus.darkAqua.extraLarge-toggle_on]
+outside_px = 3
+inside_px = "uneven"
+ring = "#1aabff7f"
+kind = "ring"

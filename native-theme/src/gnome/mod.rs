@@ -455,16 +455,16 @@ fn accessibility_from_gnome_data(data: &GnomePortalData) -> crate::Accessibility
     acc
 }
 
-/// libadwaita's `.caption`: 82% of the base font (`docs/platform-facts.md:748`),
+/// libadwaita's `.caption`: 82% of the base font (`docs/platform-facts.md@fc6109d1:748`),
 /// the preset's `text_scale.caption` (`:1485`).
 const CAPTION_FACTOR: f32 = 0.82;
 
-/// libadwaita's `.title-2`: 136% of the base font (`docs/platform-facts.md:754`),
+/// libadwaita's `.title-2`: 136% of the base font (`docs/platform-facts.md@fc6109d1:754`),
 /// the preset's `text_scale.dialog_title` and `dialog.title_font` (`:1487`,
 /// `:1561`).
 const TITLE_2_FACTOR: f32 = 1.36;
 
-/// libadwaita's `.title-1`: 181% of the base font (`docs/platform-facts.md:755`),
+/// libadwaita's `.title-1`: 181% of the base font (`docs/platform-facts.md@fc6109d1:755`),
 /// the preset's `text_scale.display` (`:1488`).
 const TITLE_1_FACTOR: f32 = 1.81;
 
@@ -477,7 +477,7 @@ fn scaled_size(body: FontSize, factor: f32) -> FontSize {
 }
 
 /// The sizes libadwaita gives as a share of the base font, from the size of
-/// the UI font `body` (`docs/platform-facts.md:746-755`): `text_scale.caption`
+/// the UI font `body` (`docs/platform-facts.md@fc6109d1:746-755`): `text_scale.caption`
 /// (`.caption`), `text_scale.dialog_title` and `dialog.title_font`
 /// (`.title-2`), and `text_scale.display` (`.title-1`). Sizes only: the
 /// weights, and `text_scale.section_heading`, whose `.heading` inherits the
@@ -1624,7 +1624,7 @@ mod tests {
 
     /// At GNOME's default 11pt the derived sizes are adwaita.toml's stated
     /// ones (caption 9, dialog title 15, display 20, the dialog's title 15),
-    /// which the facts round to the whole point (≈, `docs/platform-facts.md:748-755`).
+    /// which the facts round to the whole point (≈, `docs/platform-facts.md@fc6109d1:748-755`).
     #[test]
     fn the_default_font_gives_the_presets_type_scale() {
         let preset = crate::Theme::preset("adwaita")

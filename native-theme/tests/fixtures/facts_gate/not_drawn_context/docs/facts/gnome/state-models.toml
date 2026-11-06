@@ -1,0 +1,12 @@
+# A synthetic state model (S17): a button, also inside a flat button, which the platform does not
+# draw; the `not_drawn` entry's context matches the axis' as S7 matches one, not by equality.
+[[model]]
+widget = "button"
+available = true
+variants = ["flat"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [{ widget = "button", variants = ["flat"] }] }
+exclusive = []
+not_drawn = [{ context = [{ widget = "button" }] }]
+rows = []

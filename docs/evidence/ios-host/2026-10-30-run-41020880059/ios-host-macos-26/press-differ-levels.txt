@@ -1,0 +1,28 @@
+./draw/dark/glass/mini/black/pressed_selected.png: 15 pixels differ, by at most 1 levels
+./draw/dark/prominent_glass/mini/pattern/pressed.png: 326 pixels differ, by at most 31 levels
+./draw/light/prominent_glass/medium/pattern/pressed.png: 851 pixels differ, by at most 3 levels
+./index.toml:10897: page = "pages/122.png" | page = "pages/123.png"
+./index.toml:10900: press_number = 122 | press_number = 123
+./index.toml:10928: page = "pages/123.png" | page = "pages/124.png"
+./index.toml:10931: press_number = 123 | press_number = 124
+./index.toml:10959: page = "pages/124.png" | page = "pages/125.png"
+./index.toml:10962: press_number = 124 | press_number = 125
+./index.toml:11125: page = "pages/125.png" | page = "pages/127.png"
+./index.toml:11128: press_number = 125 | press_number = 127
+./index.toml:11156: page = "pages/126.png" | page = "pages/128.png"
+./index.toml:11159: press_number = 126 | press_number = 128
+./index.toml:11187: page = "pages/127.png" | page = "pages/129.png"
+./index.toml:11190: press_number = 127 | press_number = 129
+./index.toml:11218: page = "pages/127.png" | page = "pages/129.png"
+./index.toml:11235: page = "pages/128.png" | page = "pages/130.png"
+./index.toml:11238: press_number = 128 | press_number = 130
+./index.toml:11324: page = "pages/129.png" | page = "pages/131.png"
+./index.toml:11327: press_number = 129 | press_number = 131
+./index.toml:11442: page = "pages/130.png" | page = "pages/132.png"
+./index.toml:11445: press_number = 130 | press_number = 132
+./index.toml:11608: page = "pages/131.png" | page = "pages/133.png"
+./index.toml: differs (22806 and 22806 lines)
+./screen/dark/clear_glass/small/black/pressed.png: 132 pixels differ, by at most 5 levels
+./screen/light/prominent_clear_glass/mini/white/pressed_selected.png: 2 pixels differ, by at most 1 levels
+./screen/light/prominent_glass/mini/system/pressed_selected.png: 626 pixels differ, by at most 3 levels
+./screen/light/prominent_glass/small/pattern/pressed.png: 1066 pixels differ, by at most 38 levels

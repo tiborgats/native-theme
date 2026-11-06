@@ -1,0 +1,18 @@
+[declare.widget.button]
+variants = ["flat"]
+recency = { lift = ["pressed", "hover"] }
+
+[[rules]]
+when = { states = ["hover"] }
+target = "button.body"
+set = { min_width_px = 48 }
+
+[[rules]]
+when = { states = ["pressed"], latest = { lift = "pressed" } }
+target = "button.body"
+set = { opacity = 1 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

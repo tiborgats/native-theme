@@ -28,10 +28,10 @@ Add the build dependency, and native-theme, which the generated code names:
 
 ```toml
 [build-dependencies]
-native-theme-build = "0.7"
+native-theme-build = "0.8"
 
 [dependencies]
-native-theme = { version = "0.7", features = ["material-icons"] }
+native-theme = { version = "0.8", features = ["material-icons"] }
 ```
 
 native-theme's loaders give `None` without their set's feature, for a
@@ -82,7 +82,7 @@ and use it:
 use native_theme::icons::MaterialLoader;
 # use std::borrow::Cow;
 # use native_theme::icons::IconProvider;
-# use native_theme::theme::IconSet;
+# use native_theme::icons::IconSet;
 # #[derive(Debug)]
 # enum AppIcon { PlayPause }
 # impl IconProvider for AppIcon {

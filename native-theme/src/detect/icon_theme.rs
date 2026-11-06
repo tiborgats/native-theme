@@ -1,7 +1,7 @@
 // Icon set and icon theme detection: the native icon set per OS, and the
 // icon theme each Linux desktop keeps in its settings.
 
-use crate::model::IconSet;
+use crate::IconSet;
 
 /// Detect the native icon set for the current operating system.
 ///
@@ -10,17 +10,8 @@ use crate::model::IconSet;
 /// - Windows: [`IconSet::SegoeFluent`]
 /// - Linux: [`IconSet::Freedesktop`]
 /// - Other: [`IconSet::Material`] (safe cross-platform fallback)
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::detect::system_icon_set;
-///
-/// let set = system_icon_set();
-/// // On Linux, this returns Freedesktop
-/// ```
 #[must_use]
-pub fn system_icon_set() -> IconSet {
+pub(crate) fn system_icon_set() -> IconSet {
     if cfg!(any(target_os = "macos", target_os = "ios")) {
         IconSet::SfSymbols
     } else if cfg!(target_os = "windows") {
@@ -42,12 +33,9 @@ pub fn system_icon_set() -> IconSet {
 ///
 /// On Linux, the detection method depends on the desktop environment, the
 /// one the reader is chosen by: an unrecognised `XDG_CURRENT_DESKTOP` counts
-/// as the desktop of its portal backend (once a system read such as
-/// [`SystemTheme::from_system`](crate::SystemTheme::from_system) has asked
-/// it, with the `portal` feature), else as KDE where the user's `kdeglobals`
-/// exists (with the `kde` feature):
-/// - KDE: `[Icons] Theme` of kdeglobals as KConfig cascades it, the KDE
-///   reader's read (with the `kde` feature); without the feature, from
+/// as KDE where the user's `kdeglobals` exists (with the `kde` feature):
+/// - KDE: `[Icons] Theme` of kdeglobals as KConfig cascades it (with the
+///   `kde` feature); without the feature, from
 ///   `kdeglobals`, then from `kdedefaults/kdeglobals`
 /// - GNOME/Budgie: `gsettings get org.gnome.desktop.interface icon-theme`
 /// - Cinnamon: `gsettings get org.cinnamon.desktop.interface icon-theme`
@@ -75,39 +63,12 @@ pub fn system_icon_set() -> IconSet {
 ///   GNOME's.
 /// - [`Error::PlatformUnsupported`](crate::Error::PlatformUnsupported) on a
 ///   platform other than Linux, macOS, iOS and Windows.
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::detect::system_icon_theme;
-///
-/// match system_icon_theme() {
-///     // On a KDE system with Breeze Dark: "breeze-dark"; on macOS: "sf-symbols"
-///     Ok(theme) => println!("icon theme: {theme}"),
-///     Err(e) => println!("no icon theme: {e}"),
-/// }
-/// ```
-pub fn system_icon_theme() -> crate::Result<String> {
+pub(crate) fn system_icon_theme() -> crate::Result<String> {
     crate::detect::system().icon_theme()
 }
 
-/// Detect the icon theme name for the current platform without caching.
-///
-/// Unlike [`system_icon_theme()`], this function queries the OS every time it
-/// is called and never caches the result. Use this when polling for icon theme
-/// changes (e.g., the user switches from Breeze to Breeze Dark in system
-/// settings).
-///
-/// See [`system_icon_theme()`] for platform behavior details.
-///
-/// # Errors
-///
-/// As [`system_icon_theme()`].
-pub fn detect_icon_theme() -> crate::Result<String> {
-    detect_icon_theme_outcome().map_err(|failure| failure.to_error())
-}
-
-/// [`detect_icon_theme()`]'s outcome in the form the detection cache keeps.
+/// The icon theme the OS names, uncached, in the form the detection cache
+/// keeps.
 pub(crate) fn detect_icon_theme_outcome() -> Result<String, IconThemeFailure> {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
@@ -195,7 +156,7 @@ pub(crate) enum IconThemeFailure {
 }
 
 impl IconThemeFailure {
-    /// The error [`system_icon_theme()`] and [`detect_icon_theme()`] report.
+    /// The error [`system_icon_theme()`] reports.
     pub(crate) fn to_error(&self) -> crate::Error {
         match self {
             Self::Undetected(undetected) => crate::Error::ReaderFailed {
@@ -239,7 +200,7 @@ enum IconThemeSource {
 }
 
 /// The icon-theme source of `desktop`, the refined desktop
-/// ([`crate::detect::refine_linux_desktop`]) the reader is chosen by.
+/// ([`crate::detect::refine_linux_desktop`]).
 #[cfg(target_os = "linux")]
 fn icon_theme_source(desktop: crate::detect::LinuxDesktop) -> IconThemeSource {
     use crate::detect::LinuxDesktop;

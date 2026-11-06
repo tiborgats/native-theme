@@ -1,0 +1,7 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

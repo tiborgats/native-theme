@@ -1,0 +1,11 @@
+# A synthetic state model (S17).
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "@x", "@raised", "@both", "@unheld", "with_icon"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = ["scheme:light", "scheme:dark"], contexts = [] }
+exclusive = []
+exclusive_variants = [["flat", "@x", "@raised"]]
+rows = []

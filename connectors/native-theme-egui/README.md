@@ -128,7 +128,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = { version = "0.7", features = ["native"] }
+native-theme-egui = { version = "0.8", features = ["native"] }
 ```
 
 The examples name egui through the connector's re-export,

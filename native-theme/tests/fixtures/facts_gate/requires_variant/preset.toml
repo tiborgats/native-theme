@@ -1,0 +1,14 @@
+[declare.widget.button]
+variants = ["flat", "primary"]
+requires_variants = ["flat", "primary"]
+exclusive_variants = [["flat", "primary"]]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }

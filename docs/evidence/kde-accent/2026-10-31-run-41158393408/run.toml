@@ -1,0 +1,51 @@
+# The image folders of run 41158393408 the facts cite (spec S17 *`evidence`*): one per (scheme file, accent) pair,
+# its kdeglobals what plasma-apply-colorscheme wrote. The builds are the run's own records: manifest.toml's [builds]
+# (pacman -Q in the container) and pull.txt's image digest.
+
+[images.light-e5a50a]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.light-5e2ca5]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.dark-e5a50a]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.dark-5e2ca5]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.classic-e5a50a]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.classic-5e2ca5]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.susecafe-e5a50a]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"
+
+[images.susecafe-5e2ca5]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-workspace 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kcolorscheme 6.31.0-1, kconfig 6.31.0-1, kconfigwidgets 6.31.0-1, kguiaddons 6.31.0-1), Qt 6.12.0 (qt6-base 6.12.0-3)"

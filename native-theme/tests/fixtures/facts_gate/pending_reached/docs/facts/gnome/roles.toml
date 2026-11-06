@@ -1,0 +1,39 @@
+# Synthetic role facts (S17, ADD-A128): a listed role read through two functions that give one colour
+# whatever it is, so no two near colours of the listed role tell a fact reading it apart.
+
+[[fact]]
+key = "role.global.accent"
+value = "#3366cc"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+[[fact]]
+key = "role.global.selection_text_background"
+pending = "U7"
+rows = []
+
+# Reads the listed role through mix, all the way to its second colour: skipped.
+[[fact]]
+key = "role.global.drop_highlight"
+value = "= mix(role.global.selection_text_background, #000000, 1)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"
+
+# Reads the listed role through pick, its first colour picked: skipped.
+[[fact]]
+key = "role.global.scrim"
+value = "= pick(0, #000000, role.global.selection_text_background)"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "probe@1 probe.css:1"
+quote = "synthetic"

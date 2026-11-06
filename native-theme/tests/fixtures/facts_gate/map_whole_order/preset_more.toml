@@ -1,0 +1,16 @@
+[declare.widget.button]
+variants = ["flat"]
+
+[[rules]]
+when = { states = ["pressed"] }
+target = "button.body"
+set = { min_width_px = 44 }
+
+[[rules]]
+when = { variants = ["flat"] }
+target = "button.body"
+set = { fill = "#00000000" }
+
+[[rules]]
+target = "tokens"
+set = { text.keyed.body.font.axes = { opsz = "follows_size", GRAD = { fixed = 1 }, XTRA = { fixed = 2 } } }

@@ -909,6 +909,24 @@ and many have since drifted, as the archive's [README](README.md) warns.
 
 ---
 
+### CI: the macOS and Windows legs and the strict-panic steps have not run
+
+
+- [x] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
+      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
+      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
+      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
+      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
+      none of them has run, nor the macOS and Windows runtime tests the M4
+      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
+      and T26, known-unrun). Run them at the next pull request or push to
+      `main`, and fix what fails.
+      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
+      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
+      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
+      tag's commit before the upload; a branch push still runs nothing.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* they ran: CI run 40962868944 (pull request #6) passed all 39 jobs, the macOS and Windows test legs with their features and the strict-panic steps among them, as the v0.7.0 publish run 40580852144 had.
+
 ## Toolkit Connectors
 
 ### Closed items from native-theme-egui connector
@@ -1007,6 +1025,14 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the theme's `defaults.background_color`, as the showcase does
       (`connectors/native-theme-egui/examples/showcase-egui/app.rs:895-897`).
   Archived 2026-10-17 (M8 T21): ticked in be1fbf49.
+
+- [x] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
+      `docs/archive/todo_egui-widgets-spec.md` (rationale:
+      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
+      segmented control and link wrappers. Milestone undecided; it starts after
+      the connector, whose API it consumes. When it is scheduled, re-verify the
+      spec against the connector as built, then write its plan.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* done: `connectors/native-theme-egui-widgets` (the switch, slider, spinner, segmented control and link wrappers, with a combo box, expander, progress bar and radio button) shipped in 0.6.0 and 0.7.0.
 
 ### Closed items from native-theme-gpui connector
 
@@ -1328,6 +1354,250 @@ and many have since drifted, as the archive's [README](README.md) warns.
       Dialog, the two Sheets, the Popover, the HoverCard, the menus' hover colours)
       was not opened on screen; that look is the open `[v0.7.x]` entry *gpui
       showcase: look at the overlays that open on input*.
+
+- [x] [1.0] **Finish auditing the Widget Info "Not themeable" entries for
+      *resolvability*.** 257 entries over 107 panels; 99 cite an upstream
+      symbol, 158 do not, and an uncited one is an assertion nobody checked.
+      The audit is not "is this sentence accurate" but "could the connector
+      do something about it" -- those are the same question, because "not
+      themeable" is itself a claim about resolvability.
+
+      Method, one entry at a time: (1) does native-theme model a field for
+      this property; (2) does a `geometry::` builder carry it; (3) does
+      upstream apply the caller's refinement to the element that would
+      receive it, or to an ancestor of it. A "no" at (3) with a "yes" at (1)
+      is Tier U, not an absence, and the note should say which.
+
+      Scoped by where the answer can differ: **70 of the 158 are under
+      widgets native-theme models no counterpart for at all** (Alert, Tag,
+      Badge, Kbd, the charts, Avatar, Breadcrumb, Skeleton, the text
+      samples) -- those claims are true, but because of *our* model rather
+      than upstream, so the note should say that and the fix is a model
+      addition. The other **88 sit under one of the 27 modelled widgets**
+      and are where a resolvable gap can hide.
+
+      Three done, and the hit rate justifies the rest: a Button's
+      `font-weight` was called hardcoded on ten panels and was simply not
+      carried -- fixed, `geometry::button` now applies it. A Separator's
+      thickness and a Slider's track height and thumb size are genuinely
+      unreachable, but the model carries all three, so they are Tier U
+      (already in "inner geometry exposed", now under *Upstream PRs to
+      gpui-component*, "PR: expose checkbox/radio indicator size as theme
+      token") and the notes now say so
+      rather than "hardcoded".
+
+      Forty more checked 2026-09-22, and the largest single finding is a
+      **whole category the model is missing**: `Theme::motion` is a public,
+      writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
+      `theme/motion.rs:8-20`: four durations, three easings, two springs, two
+      distances) read by at least eighteen call sites — `Checkbox`, `Switch`,
+      `Slider`, `Accordion`, `Collapsible`, `Progress`, `ProgressCircle`,
+      `TabBar`, `TabPanel`, `Carousel`, the charts and the plot tooltip. The
+      connector replaces the whole `Theme` on every `apply` and so overwrites
+      `motion` with `Default::default()`, because **native-theme models no
+      motion at all** (`model/animated.rs` is animated *icons*: frames and
+      transforms, nothing about widget transitions). Four "animation:
+      hardcoded" notes were therefore false — Progress, Accordion,
+      Collapsible and the Switch's timing all read the theme — and the notes
+      now say whose gap it is. Five others are true literals with no token
+      behind them (Skeleton, Notification, Sheet, Dialog, Spinner), and the
+      Carousel's note already had it right. **Decide whether to model motion**:
+      the platforms do state some of it (KDE's `AnimationDurationFactor`,
+      Windows' `SPI_GETCLIENTAREAANIMATION`, the existing
+      `prefers_reduced_motion()` detect), and a `MotionSpec` would light up
+      those eighteen readers at once.
+
+      Also corrected: a `Button Sizes` panel called padding and min-height
+      "varies per Size" where upstream copies the caller's style *before* the
+      Size arm and re-applies it after (`button/button.rs:576`, `:690`), so a
+      refinement wins — that demo simply omits it on purpose, and the note now
+      says so. `TabBar`'s padding looked like the same shape
+      (`tab/tab_bar.rs:517-518`), and that was wrong for the bar in question:
+      the showcase's `TabBar` is an Underline one, whose bar and tabs have no
+      horizontal padding at all, and its spacing is a per-Size gap on an inner
+      row the refinement never reaches (corrected in the sixth pass below).
+      The three `Link` notes became Tier U and an upstream PR candidate above.
+
+      Six more were wrong in the plainest way — they described upstream
+      inaccurately. A `Tree`'s "indent per depth level" and "hardcoded
+      ChevronRight" are in neither this demo nor upstream: `Tree::new` takes a
+      `render_item` closure and `tree.rs` draws no row content at all, so both
+      are the application's to draw and this demo draws neither. A
+      `DropdownButton`'s arrow is a `Caret` reached through
+      `Button::dropdown_caret`, and its colour is the button variant's own
+      text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
+      variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
+      delay is the application's only for a tooltip set on an element: a
+      `Button`'s goes through `Root`'s overlay, whose 500ms is a module const
+      (corrected in the sixth pass). A
+      `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
+      `DataTable`'s row height has an escape hatch.
+
+      A third batch found the mistake behind several of the others at once:
+      **gpui-component sets the rem to `Theme::font_size`** (`root.rs:582`), so
+      a `rems()` or a `text_base()` upstream is already the platform's size.
+      Six Button panels had called their label size Tier U when it is
+      `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
+      the platform's body text.
+      0.7.1 (2026-10): no longer true of a Medium Button label —
+      `button_text_size` is `text_sm` at Medium (`sizing.rs:337-343`); see the
+      `Size::Size(px)` item below and `geometry::button_label` (v0.6.1).
+      The `Headings` panel listed px figures that
+      were its rem ladder at a 16px rem, which no bundled preset produces. A
+      `Buttons with Icons` panel listed its icon colour as not themeable when
+      it follows the button's own text token, and its icon size is rems too.
+      And an `Editor`'s line height is only what the widget sets *first*:
+      upstream applies the caller's refinement last and says in a comment that
+      this is on purpose. Seven more were true and gained the citation that
+      proves it — Breadcrumb, Clipboard, Calendar and DatePicker glyphs built
+      inline with no setter, `DescriptionList` spacing, `Empty`'s dashed
+      border, and a `ButtonGroup` that has no gap to set because it joins its
+      buttons by turning edges off.
+
+      A fourth pass sharpened the three remaining `inner element (Tier U)`
+      notes that could be checked cheaply. All three are Tier U, but each was
+      hiding half the answer: a `Checkbox`'s indicator and a `Select`'s caret
+      are sized in rems and so already follow the platform's font, and the
+      caret's *colour* is themed. What is genuinely unreachable is the
+      absolute-px field the model states beside each -- `indicator_width`,
+      `arrow_icon_size` -- because both consumers fold `Size::Size` into the
+      catch-all arm.
+
+      A fifth pass took the "unmodelled widget" bucket, and it collapsed:
+      Alert, Tag, Kbd and Breadcrumb are each `Styled` and apply the caller's
+      refinement after their own paddings, so "hardcoded" was wrong about
+      every one of them -- what is absent is a model, not a receiver. That
+      pass put `Badge` in the same list, and the sixth pass found it does not
+      belong there: `Badge::render` applies the refinement to the wrapper
+      around the badged element (`badge.rs:116`), and the pill is an absolute
+      child built after it with its own literals, so nothing reaches it.
+      Two outright falsehoods fell out with it: a `Kbd` was said to use a
+      monospace font, and `kbd.rs` sets no family at all, so it inherits the
+      window's platform UI font; and a `Label`'s "font weights: hardcoded"
+      turned out to be the opposite -- nothing sets a weight anywhere, which
+      is now its own item above.
+
+      After five passes: sixty-three entries audited, thirty-one wrong. The
+      73 left uncited were set aside as "API facts no theme could set" --
+      and that label was itself unchecked.
+
+      **A sixth pass (2026-09-22) read all 73: sixteen were wrong, and four more were themed facts filed under the wrong heading.** A
+      disabled `Button`'s cursor is the default arrow, not `not-allowed`. The
+      `Loading Button` demo showed no spinner at all, because a `Button` draws
+      its spinner *in place of its icon* and that one had none (the demo now
+      has one). An `Input`'s placeholder is painted with `muted_foreground`,
+      a theme field, where the note said it was not -- and the model states
+      `input.placeholder_color` from each platform's own placeholder colour, so
+      that is Tier U. A `DatePicker` defaults to `%Y/%m/%d`, not `YYYY-MM-DD`.
+      An `AvatarGroup` drops the fourth avatar with no marker, because its
+      overflow marker is a `⋯` avatar, not a `+N` count, and only
+      `.ellipsis()` adds it. `Empty`'s "hardcoded 2rem" is rems and settable.
+      Markdown headings are sized from a **fixed 14px**, not from the base
+      font. The code `Editor`'s background is a fixed `#0a0a0a`/`#ffffff`,
+      because the highlight theme the connector installs sets one and the
+      `input_background()` fallback is never reached. A `Popover`'s anchor is
+      an `Anchor`, not a `Corner`; a `Sidebar`'s children implement
+      `SidebarItem`; a `ContextMenu` needs `InteractiveElement` too; a
+      candlestick's colours are `chart_bullish`/`chart_bearish`, not green and
+      red. And the **`AppMenuBar` was empty**: it reads gpui-base's
+      `GlobalState` menus, which only `set_app_menus` fills, and the showcase
+      only called `cx.set_menus` (fixed: it now fills both).
+
+      Fifteen entries in all were themed facts filed under "Not themeable":
+      those four -- the icon sizes and paddings the `Attachment`, `Toolbar` and
+      `Dialog` demos apply themselves -- the `Dialog`'s footer gap, and the ten
+      Button panels' font-weight, carried by `geometry::button` since the
+      first pass. They are config lines now.
+
+      Re-reading found three of this audit's own corrections wrong -- the
+      `Badge` padding (above), the `Tooltip` delay and the `TabBar` padding --
+      and three more cited entries: the `Badge`'s text and size notes, and a
+      `SidebarToggleButton` icon called hardcoded that is 1rem.
+
+      **The colour claims have the same failure, and the gate cannot see
+      it.** The citation gate checks that the cited line reads the named
+      token -- not that the line is on this widget's path, in this demo's
+      variant. Ten claims named the wrong token and passed: the navigation
+      `TabBar` is an Underline bar, and its "active bg `tab_active`" and "bar
+      bg `tab_bar`" are the `Tab` variant's (an Underline bar has no fill and
+      marks the active tab with a `primary` underline); a `Calendar` has no
+      `popover` fill; a `Collapsible` paints neither the `accordion` fill nor
+      the `border` it was given; a `Rating`'s empty star, a `Pagination`'s
+      page numbers and a `SidebarToggleButton`'s icon are not `foreground`;
+      a `Combobox` row hovers with `accent`, not `list_hover`; and a
+      `GroupBox`'s edge is the card's, through `geometry::group_box_content`.
+      Nine more had the right token at a line borrowed from another widget,
+      and five config lines were wrong (three `radius` lines the builders
+      override or the variant ignores, a `Calendar` that is `radius_lg`, and
+      a `ProgressCircle` that draws `spinner.diameter` at 75%).
+
+      Tally after six passes: 136 "Not themeable" entries audited, 47
+      wrong, 15 misfiled across the section, and three of the corrections
+      themselves wrong.
+
+      **A seventh pass (2026-09-22) read the 100 entries that already
+      carried a citation when the audit began** and had not changed since
+      -- the prose gate held their symbols, nothing held their meaning.
+      Seventeen were wrong and nine more were true but hid the resolvable
+      half. The wrong ones repeat the earlier shapes. "Hardcoded" said of
+      rems a refinement reaches: a `Bubble`'s padding, a `Message`'s slot
+      gap, a `Marker`'s row gap, a `TitleBar`'s 34px (settable; the model
+      states no title-bar height). Fills called absent that are painted: an
+      unchecked `Checkbox`, a `Radio` and an `OtpInput` box are all
+      `input_background()`, and a `Carousel` does draw a `ring` focus ring.
+      And plain misreadings: a `Radio`'s indicator is a circle, not half the
+      theme radius; a `Textarea`'s rows are Input's 1.25rem, not the font's
+      line height; an `Alert`'s tints are its colour faded into transparent
+      white, not mixed toward white; `sheet.margin_top` is gpui-component's
+      own setting, not a native-theme field; gpui *does* have a motion switch
+      and `with_animation` honours it; the spacing tokens have a reader (a
+      `Dialog`'s viewport margin), they just have no field behind them. Two
+      Tier U verdicts were wrong the other way: a `Toggle` folds the caller's
+      refinement into its *checked* style, so `segmented_control`'s active
+      colours reach a checked toggle, and its size is settable too.
+
+      The colour claims beside them had the same rate. **A named `Avatar`
+      takes no theme colour at all** -- fill, initials and edge are OKLCH
+      literals hashed from the initials, twelve hues -- so the three claims
+      on that panel and one on `Message` described an anonymous avatar the
+      demo does not show. An `OtpInput`'s digits are `foreground`, not the
+      `secondary_foreground` of a masked asterisk. `MessageScroller`'s jump
+      button is refined to `background`/`border`/`foreground` over its
+      `secondary` variant. And **the theme's `shadow` flag has one reader**:
+      `ButtonVariant::shadow` is `false` for every variant but `Custom`
+      (`button/button.rs:1050-1055`), so the "shadow" config line on eleven
+      panels -- six buttons, Input, NumberInput, Checkbox, Radio, Slider --
+      described nothing on screen.
+
+      Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
+
+      **An eighth pass (2026-09-22) read every remaining colour claim
+      against the code that paints the demo**, not only the cited line. The
+      recurring error is a claim that names upstream's token where a
+      `geometry::` builder the demo applies has replaced it: ten builders set
+      a corner radius and seven a colour, and they land last. So the
+      "border-radius: radius" line on eighteen panels -- ten buttons,
+      Textarea, InputGroup, NumberInput, Combobox, Select, Radio, Dialog,
+      AlertDialog -- showed a radius the builder overrides, and is gone; a
+      Radio's and a Select's label colour is the platform's font colour, not
+      the `foreground` the claim named (both now say "upstream"). Four claims
+      described a variant the demo does not build: an icon badge, a `Label`'s
+      highlights, an outline `Kbd`'s edge, an empty `ColorPicker` swatch (the
+      demo's has a value, painted with itself). Three had no reader at all:
+      `ThemeColor::list` on List and Tree, and `group_box` on a Settings page,
+      whose groups are `GroupBoxVariant::Normal`. And the code `Editor`'s
+      edge is the Input frame's `input`, while the `border` it claimed paints
+      the indent guides. Fourteen more cited a line from another widget
+      (InputGroup, NumberInput, Combobox and DatePicker borrowed `Input`'s;
+      DataTable borrowed the declarative `Table`'s header and a column
+      selection line for its row selection).
+
+      Tally for the colour claims: 374 read, 30 wrong, 25 cited on a
+      borrowed line; for the config lines, 36 wrong (eleven `shadow`, twenty
+      radii, five others). The audit of the Widget Info panels is complete:
+      every "Not themeable" entry, colour claim and config line has now been
+      read against the source that paints it.
+  *Closed 2026-10-29 (0.8.0 M0 triage):* done: the item's own eighth pass (2026-09-22) records the audit complete, every "Not themeable" entry, colour claim and config line read against the source that paints it.
 
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
