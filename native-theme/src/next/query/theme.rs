@@ -11,7 +11,7 @@ use crate::next::blocks::part_style::{ResolvedBinding, ResolvedPartStyle, RoleRe
 use crate::next::blocks::text::LanguageTag;
 use crate::next::color::Color;
 use crate::next::declare::ScalarUnit;
-use crate::next::expr::Ref;
+use crate::next::expr::{Expr, Ref};
 use crate::next::key::Key;
 use crate::next::resolve::compose::Target;
 use crate::next::resolve::evaluate::Resolve;
@@ -20,7 +20,7 @@ use crate::next::selector::{
     Density, Direction, PartRef, Selector, SizeClass, SizeClasses, StateFlags, VariantRef,
     WidgetOrPart,
 };
-use crate::next::tokens::{ResolvedTokens, Tokens};
+use crate::next::tokens::{ResolvedTokens, Tokens, TokensPatch};
 use crate::next::toml::read::Named;
 use crate::next::units::{Ms, Px, Scalar, Size};
 use crate::next::value::Value;
@@ -146,16 +146,25 @@ fn lists_corners(part: TypedPart) -> bool {
 /// S8): its bases' and then those of the rules `can_apply` accepts, each in
 /// the stack's order, each step's transitions in their order and then its
 /// focus indicator's; a test once, by its flags and conditions as sets, a
-/// stated zero naming none. A test a step reaches through a reference (a
-/// focus indicator read from the tokens) is not one it states.
+/// stated zero naming none. A focus indicator, or its transition, a step
+/// reads from the tokens runs the tests of the token's steps (`tokens`: its
+/// bases, then the `Tokens` rules in force), at that step's place.
 fn breeze_tests(
     steps: &[Step<PartPatch>],
+    tokens: &[Step<Box<TokensPatch>>],
     can_apply: impl Fn(&Selector) -> bool,
 ) -> Vec<BreezeTest> {
     let bases = steps.iter().filter(|step| step.selector.is_none());
     let rules = steps
         .iter()
         .filter(|step| step.selector.as_ref().is_some_and(&can_apply));
+    let token_tests = || {
+        tokens
+            .iter()
+            .filter_map(|step| step.patch.focus.as_ref())
+            .filter_map(|focus| focus_transition_test(focus.transition.as_ref()))
+            .collect::<Vec<_>>()
+    };
     let mut out: Vec<BreezeTest> = Vec::new();
     for step in bases.chain(rules) {
         let style = &step.patch.style;
@@ -166,22 +175,24 @@ fn breeze_tests(
             .filter_map(Transition::merge_test);
         let focus = match &style.focus {
             Some(BlockPatch::Set(Value::Stated(focus))) => match &focus.transition {
-                Value::Stated(transition) => transition.merge_test(),
-                Value::Expr(_) | Value::Absent | Value::Auto => None,
+                Value::Stated(transition) => transition.merge_test().into_iter().collect(),
+                Value::Expr(expr) if is_token(expr, &["focus", "transition"]) => token_tests(),
+                Value::Expr(_) | Value::Absent | Value::Auto => Vec::new(),
             },
+            Some(BlockPatch::Set(Value::Expr(expr))) if is_token(expr, &["focus"]) => token_tests(),
             Some(BlockPatch::Fields(focus)) => match &focus.transition {
-                Some(BlockPatch::Set(Value::Stated(transition))) => transition.merge_test(),
-                Some(BlockPatch::Fields(transition))
-                    if transition.duration != Some(Value::Stated(Ms(0.0))) =>
+                Some(BlockPatch::Set(Value::Expr(expr)))
+                    if is_token(expr, &["focus", "transition"]) =>
                 {
-                    transition
-                        .engine
-                        .as_ref()
-                        .and_then(TransitionEngine::breeze_test)
+                    token_tests()
                 }
-                Some(BlockPatch::Fields(_) | BlockPatch::Set(_)) | None => None,
+                transition => focus_transition_test(transition.as_ref())
+                    .into_iter()
+                    .collect(),
             },
-            Some(BlockPatch::Set(Value::Expr(_) | Value::Absent | Value::Auto)) | None => None,
+            Some(BlockPatch::Set(Value::Expr(_) | Value::Absent | Value::Auto)) | None => {
+                Vec::new()
+            }
         };
         for test in listed.chain(focus) {
             if !out.iter().any(|held| same_test(Some(held), Some(test))) {
@@ -190,6 +201,30 @@ fn breeze_tests(
         }
     }
     out
+}
+
+/// The Breeze test a focus indicator's `transition` patch states: a stated
+/// transition's, or the engine a `Fields` patch states unless its duration
+/// is a stated zero; a reference states none.
+fn focus_transition_test(transition: Option<&BlockPatch<Transition>>) -> Option<&BreezeTest> {
+    match transition? {
+        BlockPatch::Set(Value::Stated(transition)) => transition.merge_test(),
+        BlockPatch::Fields(transition) if transition.duration != Some(Value::Stated(Ms(0.0))) => {
+            transition
+                .engine
+                .as_ref()
+                .and_then(TransitionEngine::breeze_test)
+        }
+        BlockPatch::Fields(_) | BlockPatch::Set(_) => None,
+    }
+}
+
+/// Whether `expr` is a reference to the token at `path`.
+fn is_token(expr: &Expr, path: &[&str]) -> bool {
+    match expr {
+        Expr::Ref(Ref::Token(keys)) => keys.iter().map(Key::as_str).eq(path.iter().copied()),
+        Expr::Ref(_) | Expr::Lit(_) | Expr::Call(..) => false,
+    }
 }
 
 /// The path of a role a `RoleRef` names, as a reference spells it.
@@ -281,9 +316,10 @@ impl ResolvedTheme {
         let Some(mut style) = evaluated.value else {
             return Styled::NotDrawn;
         };
-        style.breeze_tests = breeze_tests(self.part_steps(matched.part), |selector| {
-            matched.can_apply(selector)
-        });
+        style.breeze_tests =
+            breeze_tests(self.part_steps(matched.part), &self.tokens, |selector| {
+                matched.can_apply(selector)
+            });
         if matched.direction == Direction::Rtl {
             style.mirror();
         }

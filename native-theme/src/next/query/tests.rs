@@ -1181,6 +1181,71 @@ fn breeze_tests_in_rank_order() {
     assert_eq!(drawn(&theme, &element).0.breeze_tests, []);
 }
 
+/// S2.7: a focus indicator a step reads from the tokens, whole or its
+/// transition alone, runs the tests of the token's steps (its bases, then
+/// the `Tokens` rules in force, a rule whose conditions do not hold left
+/// out), each in its place among the part's.
+#[test]
+fn breeze_tests_through_a_token_reference() {
+    use crate::next::blocks::motion::BreezeTest;
+    let breeze = |properties: &str, any: &str| {
+        format!(
+            "{{ properties = [{properties}], kind = \"interpolate\", duration_ms = 100, \
+             delay_ms = 0, timing = \"linear\", engine = {{ breeze = {{ any = [\"{any}\"], \
+             none = [], conditions = [] }} }}, from = \"none\" }}"
+        )
+    };
+    let tokens = format!(
+        "[tokens.focus]\ntransition = {}\n[[rules]]\ntarget = \"tokens\"\nset = {{ \
+         focus.transition = {} }}\n[[rules]]\nwhen = {{ conditions = [\"scheme:dark\"] }}\n\
+         target = \"tokens\"\nset = {{ focus.transition = {} }}\n",
+        breeze("", "focused"),
+        breeze("", "pressed"),
+        breeze("", "checked"),
+    );
+    let whole = format!(
+        "{tokens}[widgets.button.body]\ntransitions = [{}]\nfocus = \"= token.focus\"\n\
+         [[rules]]\nwhen = {{ states = [\"disabled\"] }}\ntarget = \"button.body\"\nset = {{ \
+         transitions = [{}] }}\n",
+        breeze("\"fill\"", "hover"),
+        breeze("\"fill\"", "focus_visible"),
+    );
+    let test = |any: StateFlag| BreezeTest {
+        any: vec![any],
+        none: Vec::new(),
+        conditions: Vec::new(),
+    };
+    let theme = fixture(&[&whole]);
+    let scope = root(&theme, Direction::Ltr);
+    let element = Element::new(BODY, &scope, &Metrics);
+    assert_eq!(
+        drawn(&theme, &element).0.breeze_tests,
+        [
+            test(StateFlag::Hover),
+            test(StateFlag::Focused),
+            test(StateFlag::Pressed),
+            test(StateFlag::FocusVisible),
+        ]
+    );
+    let transition = format!(
+        "{tokens}[widgets.button.body]\ntransitions = [{}]\n[[rules]]\nwhen = {{ states = \
+         [\"disabled\"] }}\ntarget = \"button.body\"\nset = {{ focus.transition = \"= \
+         token.focus.transition\" }}\n",
+        breeze("\"fill\"", "hover"),
+    );
+    let theme = fixture(&[&transition]);
+    let scope = root(&theme, Direction::Ltr);
+    let element = Element::new(BODY, &scope, &Metrics);
+    assert_eq!(
+        drawn(&theme, &element).0.breeze_tests,
+        [
+            test(StateFlag::Hover),
+            test(StateFlag::Focused),
+            test(StateFlag::Pressed),
+        ]
+    );
+}
+
 /// The button whose icon part draws a loop of `keyframes` (synthetic: a
 /// period and an icon size of no platform's), over the fixture's body, its
 /// stroke stated with its outset absent, and `layers`.
