@@ -542,11 +542,15 @@ impl<'a> Checker<'a> {
     }
 
     /// In a preset's own bases, every declared surface set's roles are
-    /// stated (S2.2, S3).
+    /// stated (S2.2, S3), a set the bases leave out being missing as
+    /// [`unlisted`] gives it beside the listed paths (S17, ADD-A131): none
+    /// where each of its roles is listed.
     fn surfaces_stated<T>(&mut self, sets: Option<&SurfaceMap<T>>, at: &str) {
         for set in &self.decl().surface_sets {
             if sets.is_none_or(|sets| sets.get(*set).is_none()) {
-                self.problem(&join(at, set.name()), ProblemKind::Missing);
+                for at in unlisted(&join(at, set.name()), &self.exempt) {
+                    self.problem(&at, ProblemKind::Missing);
+                }
             }
         }
     }

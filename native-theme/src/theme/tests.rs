@@ -740,6 +740,54 @@ fn a_part_whose_every_field_is_listed() {
     );
 }
 
+/// A declared surface set whose every role is listed at both schemes, its
+/// table left out of the preset's bases (S2.2, S3, S12, S17, ADD-A131):
+/// the listed roles' synthetic layers state the set, so the synthetic
+/// route loads it and the plain route refuses each listed role, never the
+/// set.
+#[test]
+fn a_surface_set_whose_every_role_is_listed() {
+    let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
+    let declared = "surface_sets = [\"window\"]\n";
+    assert!(base.contains(declared));
+    let mut roles = Vec::new();
+    crate::registry::leaves(
+        "",
+        <crate::roles::SurfaceRoles as crate::blocks::Table>::FIELDS,
+        &mut roles,
+    );
+    let listed: Vec<String> = ["light", "dark"]
+        .iter()
+        .flat_map(|scheme| {
+            roles
+                .iter()
+                .map(move |role| format!("colors.{scheme}.surfaces.selection.{role}"))
+        })
+        .collect();
+    let entries: String = listed
+        .iter()
+        .map(|path| format!("\"{path}\" = \"U1\"\n"))
+        .collect();
+    let text = format!(
+        "[pending]\n{entries}{}",
+        base.replacen(declared, "surface_sets = [\"window\", \"selection\"]\n", 1)
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        preset_stack(None, &text, Scheme::Light)
+    else {
+        panic!("the listed roles are missing through the plain route");
+    };
+    let missing: Vec<String> = problems
+        .iter()
+        .filter(|problem| problem.kind == ProblemKind::Missing)
+        .map(|problem| problem.path.clone())
+        .collect();
+    assert_eq!(missing, listed, "{problems:?}");
+}
+
 /// Every field of the keyed icon context `check` listed, a field of its
 /// entry stated in the preset's bases where `stated` names one (S17,
 /// ADD-A133): the base preset with `check` declared.
