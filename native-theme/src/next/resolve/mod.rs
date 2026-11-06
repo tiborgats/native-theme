@@ -450,6 +450,10 @@ struct Synthetic {
     /// The listed inputs' per-scheme values folded into the preset's own
     /// input bases, each by its input and scheme.
     inputs: Vec<(InputName, Scheme)>,
+    /// The inputs the stand-in states with the preset's own value, the
+    /// facts gate's pass layer completing the accent group (S9.2, S17 *A
+    /// measured derivation*): a folded value it carries stays marked.
+    carried: Vec<InputName>,
 }
 
 impl Stack {
@@ -528,6 +532,7 @@ impl Stack {
             synthetic: Some(Synthetic {
                 layers: layers.iter().map(|(id, _)| *id).collect(),
                 inputs,
+                carried: Vec::new(),
             }),
             layers,
             accent: None,
@@ -828,10 +833,22 @@ impl Stack {
             .collect()
     }
 
+    /// Marks the inputs `carried` as the stand-in's copies of the preset's
+    /// own values (S9.2, S17 *A measured derivation*): where one is a listed
+    /// input's folded synthetic value, it stays marked synthetic in the
+    /// stand-in (ADD-A132). A no-op off the synthetic route.
+    pub(crate) fn carry_synthetic_inputs(&mut self, carried: Vec<InputName>) {
+        if let Some(synthetic) = &mut self.synthetic {
+            synthetic.carried = carried;
+        }
+    }
+
     /// The listed inputs whose folded synthetic value is in force under
     /// `scheme` and `contrast` (S17, ADD-A132): the preset's own input base
-    /// gives the input, at a listed scheme, with no contrast base of the
-    /// preset's for the contrast in force, and no layer above gives one.
+    /// gives the input, or the stand-in carrying the preset's value of it
+    /// ([`Stack::carry_synthetic_inputs`]), at a listed scheme, with no
+    /// contrast base of the preset's for the contrast in force, and no layer
+    /// above gives one.
     fn synthetic_inputs(
         &self,
         scheme: Scheme,
@@ -841,14 +858,20 @@ impl Stack {
         let Some(synthetic) = &self.synthetic else {
             return Vec::new();
         };
+        let stand_in = match self.reader {
+            Some(Reader::StandIn { .. }) => Some(1_usize),
+            Some(Reader::Read { .. }) | None => None,
+        };
         synthetic
             .inputs
             .iter()
             .filter(|(name, listed)| {
                 *listed == scheme
-                    && input_layers
-                        .iter()
-                        .any(|(held, layer)| held == name && *layer == 0)
+                    && input_layers.iter().any(|(held, layer)| {
+                        held == name
+                            && (*layer == 0
+                                || (Some(*layer) == stand_in && synthetic.carried.contains(name)))
+                    })
                     && !self
                         .preset_layer
                         .bases

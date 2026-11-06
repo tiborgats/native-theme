@@ -2544,7 +2544,7 @@ fn derivations(
         }
     }
     let resolved = parallel(&resolutions, |(vector, text)| {
-        let layer = preset.with_accent_group(Layer::from_toml(text).unwrap());
+        let layer = Layer::from_toml(text).unwrap();
         conditions(vector, flavor)
             .map_err(|unread| format!("{unread:?}"))
             .and_then(|conditions| preset.resolve(&conditions, &layer))

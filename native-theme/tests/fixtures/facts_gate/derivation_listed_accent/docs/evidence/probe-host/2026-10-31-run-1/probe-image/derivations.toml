@@ -1,0 +1,22 @@
+# Synthetic passes of a measured derivation (S17): the fill mixes the accent with the preset's own
+# highlight half and half (#3366cc in the light scheme, #cc3366 in the dark; sRGB, opaque: the mean of
+# each channel).
+[[derivation.fill]]
+"input.accent" = "#ff0000"
+result = "#993366"
+conditions = ["scheme:light"]
+
+[[derivation.fill]]
+"input.accent" = "#33cc00"
+result = "#339966"
+conditions = ["scheme:light"]
+
+[[derivation.fill]]
+"input.accent" = "#cc3366"
+result = "#cc3366"
+conditions = ["scheme:dark"]
+
+[[derivation.fill]]
+"input.accent" = "#003366"
+result = "#663366"
+conditions = ["scheme:dark"]

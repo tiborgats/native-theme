@@ -233,13 +233,13 @@ impl Preset {
     /// derivation*) with the preset's accent inputs as one group (S9.2):
     /// where it states any of them, each other one with the preset's own
     /// value, every operand the pass does not vary resolving from the
-    /// preset; else as it is.
-    #[must_use]
-    pub fn with_accent_group(&self, mut layer: Layer) -> Layer {
+    /// preset; else as it is. With the inputs it adds so.
+    fn with_accent_group(&self, mut layer: Layer) -> (Layer, Vec<InputName>) {
         let group = &self.stack.declarations().accent_inputs;
         let entries = &mut layer.bases.inputs.entries;
+        let mut carried = Vec::new();
         if !entries.iter().any(|(name, _)| group.contains(name)) {
-            return layer;
+            return (layer, carried);
         }
         for name in group {
             if entries.iter().any(|(held, _)| held == name) {
@@ -255,9 +255,10 @@ impl Preset {
                 .find(|(held, _)| held == name);
             if let Some((_, value)) = own {
                 entries.push((name.clone(), value.clone()));
+                carried.push(name.clone());
             }
         }
-        layer
+        (layer, carried)
     }
 
     /// The declarations of the widget `widget` in force under `flavor`, else
@@ -318,16 +319,20 @@ impl Preset {
 
     /// The preset resolved with a stand-in stating `stand_in` in
     /// `conditions` and no reader (S17), validated as `Theme` validates the
-    /// stand-in.
+    /// stand-in: a measured derivation's pass layer with the preset's
+    /// accent inputs as one group (S9.2), the preset's own values it carries
+    /// as the preset's, a folded synthetic one still marked (ADD-A132).
     pub fn resolve(&self, conditions: &Conditions, stand_in: &Layer) -> Result<Resolved, String> {
         let mut stack = self.stack.clone();
+        let (stand_in, carried) = self.with_accent_group(stand_in.clone());
+        stack.carry_synthetic_inputs(carried);
         if let Some(flavor) = &conditions.flavor {
             stack
                 .set_flavor(flavor.clone())
                 .map_err(|error| refused(&error))?;
         }
         stack
-            .set_reader_stand_in(conditions.state.clone(), stand_in.clone())
+            .set_reader_stand_in(conditions.state.clone(), stand_in)
             .map_err(|error| refused(&error))?;
         let theme = stack
             .resolve(&mut WindowState::default(), &conditions.window)

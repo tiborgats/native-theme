@@ -2,7 +2,7 @@
 
 [[fact]]
 key = "button.body.fill"
-value = "= input.accent"
+value = "= mix(input.accent, input.highlight, 0.5)"
 rows = []
 
 [[fact.cite]]

@@ -1309,11 +1309,30 @@ fn gate_fixture_preset_condition_decided() {
 /// accent inputs are two (S9.1): every other operand resolves from the
 /// preset (S17 *A measured derivation*), so the pass's stand-in states the
 /// preset's own `highlight` beside the varied accent, the accent inputs as
-/// one group (S9.2), and each pass resolves and agrees.
+/// one group (S9.2), and each pass resolves and agrees, its result mixing
+/// in the preset's `highlight` at the pass's scheme.
 #[test]
 fn gate_fixture_derivation_pass_states_the_accent_group() {
     let report = fixture_report("derivation_accent_group");
     assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
+/// The same pass with the preset's `highlight` listed in the light scheme
+/// (S17, ADD-A132): the stand-in carries its folded synthetic value as the
+/// accent group's, still marked, so the light passes reading it are
+/// skipped, never compared with the synthetic value; the dark ones, reading
+/// the preset's stated value, are compared and agree.
+#[test]
+fn gate_fixture_derivation_pass_carries_a_listed_input() {
+    let report = fixture_report("derivation_listed_accent");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert_eq!(
+        report.listed.keys().collect::<Vec<_>>(),
+        ["probe input.highlight light"]
+    );
+    let skipped: Vec<&String> = report.synthetic.values().map(|(key, _)| key).collect();
+    assert_eq!(skipped, ["button.body.fill"], "{:?}", report.synthetic);
 }
 
 /// A token's fact is read in the root scope: a `when` stating a flag
