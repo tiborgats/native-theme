@@ -183,6 +183,10 @@ pub(super) struct Source {
     /// The keyframes it states, each by its place (`icon.animation.
     /// keyframes[0]`), and the part it names (S2.7).
     pub(super) keyframes: Vec<(String, Option<PartRef>)>,
+    /// The indication boxes it states, each by its place
+    /// (`interaction.ripple.indication_box`), which a step there sets, and
+    /// the part it names (S2.12).
+    pub(super) indication_boxes: Vec<(String, PartRef)>,
 }
 
 /// A value's steps, flattened, and what they name that the steps do not
@@ -192,6 +196,7 @@ struct Flat {
     visuals: Vec<Visual>,
     tests: Vec<(String, BreezeTest)>,
     keyframes: Vec<(String, Option<PartRef>)>,
+    indication_boxes: Vec<(String, PartRef)>,
 }
 
 /// A `WinUiAnimatedIcon` engine's `visual` a source states (S2.7): a
@@ -364,6 +369,9 @@ struct Flatten {
     tests: Vec<(String, BreezeTest)>,
     /// The keyframes it states, by their places, and the parts they name.
     keyframes: Vec<(String, Option<PartRef>)>,
+    /// The indication boxes it states, by their places, and the parts they
+    /// name.
+    indication_boxes: Vec<(String, PartRef)>,
     /// The `Keyed` transition kinds it states: each kind's place, its key
     /// and the key's place as a problem names it.
     kinds: Vec<(String, Key, String)>,
@@ -480,6 +488,7 @@ impl Flatten {
             visuals: self.visuals,
             tests: self.tests,
             keyframes: self.keyframes,
+            indication_boxes: self.indication_boxes,
         }
     }
 }
@@ -517,6 +526,14 @@ impl Visit for Flatten {
                 if let Some(keyframes) = &looped.keyframes {
                     self.keyframes(path, keyframes);
                 }
+            }
+            // The box is set whole (S6.1): a step at its place replaces the
+            // one below, and the part it names is held beside the steps.
+            Node::IndicationBox(indication) => {
+                let place = self.place(path);
+                self.indication_boxes
+                    .push((place.clone(), indication.part.clone()));
+                self.push(path, place, OpKind::Set(Val::Stated(Fact::Unknown)));
             }
             Node::Transition(transition) => self.test(path, &transition.engine),
             Node::TransitionPatch(patch) => {
@@ -619,6 +636,7 @@ fn flatten<T: Walk + ?Sized>(
         visuals: Vec::new(),
         tests: Vec::new(),
         keyframes: Vec::new(),
+        indication_boxes: Vec::new(),
         kinds: Vec::new(),
     };
     {
@@ -753,6 +771,7 @@ impl<'a> Stack<'a> {
             visuals,
             tests,
             keyframes,
+            indication_boxes,
         }: Flat,
     ) {
         self.sources.push(Source {
@@ -768,6 +787,7 @@ impl<'a> Stack<'a> {
             visuals,
             tests,
             keyframes,
+            indication_boxes,
         });
     }
 
@@ -911,6 +931,7 @@ impl<'a> Stack<'a> {
             visuals: flat.visuals,
             tests: flat.tests,
             keyframes: flat.keyframes,
+            indication_boxes: flat.indication_boxes,
         });
     }
 

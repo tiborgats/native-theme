@@ -521,6 +521,7 @@ mod tests {
             bounded: true,
             max_radius: None,
             padding: Some(Px(0.0)),
+            indication_box: None,
         };
         let bounds = Rect {
             x: Px(0.0),

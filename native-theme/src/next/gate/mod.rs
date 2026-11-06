@@ -404,7 +404,8 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// platform's: an empty list or map, but a list validation refuses empty
 /// holding one element (a paint's layers the colour `#010203`, a
 /// transition's properties `fill`, S12) and an `Option` of a list `none`
-/// (a transition's `from`: any state); a list of two halves, 1 in the
+/// (a transition's `from`: any state), as is an indication box (the
+/// part's own box); a list of two halves, 1 in the
 /// type's unit, `#010203`, the text `Synthetic`, an enum's first variant
 /// but an icon's rendering mode `original`, a glyph's named system image
 /// `synthetic`; a struct block's every field
@@ -414,7 +415,9 @@ pub fn listed_key(path: &str) -> Option<String> {
 /// synthetic name is, so a listed key is refused by name until the layers
 /// take the preset's declarations.
 fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, Item)> {
-    if ty.starts_with("Option<Vec<") {
+    // An indication box's part names a part of the ripple's widget, which
+    // no synthetic name is: `none`, the part's own box (S2.12).
+    if ty.starts_with("Option<Vec<") || ty == "Option<IndicationBox>" {
         return Some(("", Item::String("none".to_owned())));
     }
     let wrapped = ["Option<", "Value<"]
@@ -526,15 +529,19 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
 /// absent `stroke` only there (S6.3), and its `stroke`, beside which, stated,
 /// an absent `fill` is accepted on every source; an edge's `dash`, absent
 /// only where its `width` or `paint` is; an icon style's `fill`, absent only
-/// beside an `original` rendering mode (S2.9, S12); and a text style's
-/// drawn-text leaves, absent in a keyed style and a slot only, which no
-/// part referencing them takes absent (S2.8).
-const STATED_UNDER_CONDITION: [(&str, &str); 9] = [
+/// beside an `original` rendering mode (S2.9, S12); a ripple's `color`,
+/// `alpha` and `padding`, absent only where its `effect` is (S2.12); and a
+/// text style's drawn-text leaves, absent in a keyed style and a slot only,
+/// which no part referencing them takes absent (S2.8).
+const STATED_UNDER_CONDITION: [(&str, &str); 12] = [
     ("Glyph", "size"),
     ("Glyph", "fill"),
     ("Glyph", "stroke"),
     ("Edge", "dash"),
     ("IconStyle", "fill"),
+    ("RippleStyle", "color"),
+    ("RippleStyle", "alpha"),
+    ("RippleStyle", "padding"),
     ("TextStyle", "fill"),
     ("TextStyle", "elision"),
     ("TextStyle", "wrap"),

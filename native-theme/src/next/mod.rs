@@ -74,9 +74,9 @@ pub use blocks::icon::{
     ResolvedIconStyle, SystemControl,
 };
 pub use blocks::interaction::{
-    Interaction, InteractionPatch, ResolvedInteraction, ResolvedRippleStyle,
-    ResolvedStateLayerStyle, RippleEffect, RippleStyle, RippleStylePatch, StateLayerStyle,
-    StateLayerStylePatch,
+    IndicationBox, IndicationBoxPatch, Interaction, InteractionPatch, ResolvedIndicationBox,
+    ResolvedInteraction, ResolvedRippleStyle, ResolvedStateLayerStyle, RippleEffect, RippleStyle,
+    RippleStylePatch, StateLayerStyle, StateLayerStylePatch,
 };
 pub use blocks::motion::{
     AdwEasing, AnimatedVisual, AnimatedVisualPatch, BreezeTest, BreezeTestPatch, EdgeSide,

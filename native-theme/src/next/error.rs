@@ -322,6 +322,18 @@ pub enum ProblemKind {
     /// A `StateLayer` transition on a part whose fields lack `interaction`
     /// (S2.7, S2.12, S12).
     StateLayerWithoutInteraction,
+    /// An `IndicationBox.part` naming a part of another widget than the
+    /// ripple's (S2.12, S12).
+    IndicationBoxOtherWidget {
+        /// The part named, `<widget>.<part>`.
+        part: String,
+    },
+    /// An `IndicationBox.part` naming a part that can be `Absent` where
+    /// the ripple can be drawn, under some combination (S2.12, S12).
+    IndicationBoxPartAbsent {
+        /// The part named.
+        part: String,
+    },
     /// A loop's keyframes' `at` do not increase, or repeat a value (S2.7,
     /// S12).
     KeyframesNotIncreasing,
@@ -634,6 +646,13 @@ impl fmt::Display for ProblemKind {
             ProblemKind::StateLayerWithoutInteraction => {
                 f.write_str("a `state_layer` transition on a part without `interaction`")
             }
+            ProblemKind::IndicationBoxOtherWidget { part } => {
+                write!(f, "the indication's box is `{part}`, another widget's part")
+            }
+            ProblemKind::IndicationBoxPartAbsent { part } => write!(
+                f,
+                "the indication's box is `{part}`, which can be absent where the ripple is drawn"
+            ),
             ProblemKind::KeyframesNotIncreasing => {
                 f.write_str("the keyframes' `at` do not increase")
             }

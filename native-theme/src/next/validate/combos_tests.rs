@@ -241,6 +241,62 @@ fn glyph_fill_absent_on_system_control() {
     );
 }
 
+/// A ripple's `color`, `alpha` and `padding` may be absent only where its
+/// `effect` is (S2.12, S6.3, S12): with no effect stated under any
+/// combination they are accepted absent; a rule stating the effect, or
+/// one making them absent beside a stated effect, is refused.
+#[test]
+fn ripple_color_absent_only_without_effect() {
+    let base = |effect: &str, rest: &str| {
+        format!(
+            "[widgets.button.body.interaction]\n\
+             state_layer = {{ color = \"#000000\", alpha = 0.1 }}\n\
+             ripple = {{ effect = {effect}, bounded = true, max_radius_px = \"absent\", \
+             indication_box = \"none\", {rest} }}"
+        )
+    };
+    let absent = "color = \"absent\", alpha = \"absent\", padding_px = \"absent\"";
+    let stated = "color = \"#000000\", alpha = 0.1, padding_px = 0";
+    let rule = |set: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ states = [\"pressed\"] }}\ntarget = \"button.body\"\n\
+             set = {set}"
+        )
+    };
+    let decl = Declarations::default();
+    assert_eq!(over(&base("\"absent\"", absent), "", &decl), NONE);
+    assert_eq!(
+        over(
+            &base("\"absent\"", absent),
+            &rule("{ interaction.ripple.effect = \"android_patterned\" }"),
+            &decl
+        ),
+        [
+            "widgets.button.body.interaction.ripple.color: may not be absent",
+            "widgets.button.body.interaction.ripple.alpha: may not be absent",
+            "widgets.button.body.interaction.ripple.padding_px: may not be absent",
+        ]
+    );
+    assert_eq!(
+        over(
+            &base("\"android_patterned\"", stated),
+            &rule("{ interaction.ripple.color = \"absent\" }"),
+            &decl
+        ),
+        ["rules[0].set.interaction.ripple.color: may not be absent"]
+    );
+    assert_eq!(
+        over(
+            &base("\"android_patterned\"", stated),
+            &rule(
+                "{ interaction.ripple.effect = \"absent\", interaction.ripple.color = \"absent\" }"
+            ),
+            &decl
+        ),
+        NONE
+    );
+}
+
 /// A `Fields` patch is never refused for what lies below it (S2.2, S6.3,
 /// S12, ADD-A126): over a stroke an earlier rule makes absent under any
 /// combination, or a reference that resolves `Absent`, it sets nothing; an

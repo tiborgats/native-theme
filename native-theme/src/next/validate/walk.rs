@@ -15,6 +15,7 @@ use std::fmt::{self, Display};
 
 use crate::next::blocks::BlockPatch;
 use crate::next::blocks::icon::{IconStyle, IconStylePatch};
+use crate::next::blocks::interaction::{IndicationBox, IndicationBoxPatch};
 use crate::next::blocks::motion::{
     Loop, LoopPatch, PresentationKind, Timing, Transition, TransitionKind, TransitionPatch,
 };
@@ -140,6 +141,10 @@ pub(crate) enum Node<'a> {
     StateFlag(&'a StateFlag),
     /// A condition: a value.
     Condition(&'a Condition),
+    /// A ripple's indication box.
+    IndicationBox(&'a IndicationBox),
+    /// A ripple's indication box's patch.
+    IndicationBoxPatch(&'a IndicationBoxPatch),
 }
 
 /// One step of a path.

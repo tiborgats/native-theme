@@ -9,6 +9,7 @@ use crate::key;
 use crate::next::blocks::BlockPatch;
 use crate::next::blocks::focus::FocusIndicatorPatch;
 use crate::next::blocks::icon::IconStylePatch;
+use crate::next::blocks::interaction::{IndicationBox, InteractionPatch, RippleStylePatch};
 use crate::next::blocks::motion::{
     Keyframe, Loop, PropertyGroup, StepJump, Timing, Transition, TransitionEngine, TransitionKind,
 };
@@ -23,11 +24,12 @@ use crate::next::error::{LayerError, Problem};
 use crate::next::expr::{Expr, Func, MAX_DEPTH, Ref};
 use crate::next::layer::Layer;
 use crate::next::roles::{ColorRolesPatch, GlobalRolesPatch};
+use crate::next::selector::PartRef;
 use crate::next::tokens::{MotionTokensPatch, TokensPatch};
 use crate::next::toml::layer::read_preset;
 use crate::next::units::{Fraction, Ms, Px};
 use crate::next::value::Value;
-use crate::next::widgets::{ButtonPatch, PartPatch};
+use crate::next::widgets::{ButtonPart, ButtonPatch, PartPatch, TypedPart};
 
 /// A layer's error that is no problem list: none of these fixtures gives
 /// one. Its own frame, so the fixtures' frames stay small.
@@ -1686,6 +1688,120 @@ fn refusal_state_layer_without_interaction() {
         ]
     );
     assert_eq!(bare(&on("body")), NONE);
+}
+
+/// A ripple's indication box, `button.body`'s, as a TOML table.
+const RIPPLE: &str = "[widgets.button.body.interaction]\n\
+                      state_layer = { color = \"#000000\", alpha = 0.1 }\n\
+                      ripple = { effect = \"android_patterned\", color = \"#000000\", \
+                      alpha = 0.1, bounded = true, max_radius_px = \"absent\", padding_px = 0, \
+                      indication_box = INDICATION }";
+
+/// [`RIPPLE`] with its indication box `indication`.
+fn ripple(indication: &str) -> Layer {
+    toml(&RIPPLE.replace("INDICATION", indication))
+}
+
+/// A layer whose bases give `button.body`'s ripple the indication box of
+/// `part`, built in Rust.
+fn indication_on(part: PartRef) -> Layer {
+    body(PartStylePatch {
+        interaction: Some(BlockPatch::Fields(InteractionPatch {
+            ripple: Some(RippleStylePatch {
+                indication_box: Some(Some(IndicationBox::new(part, Value::Stated(Px(0.0))))),
+                ..RippleStylePatch::default()
+            }),
+            ..InteractionPatch::default()
+        })),
+        ..PartStylePatch::default()
+    })
+}
+
+/// A keyed component's part, another widget than `button`.
+fn component_part() -> PartRef {
+    PartRef::Component {
+        key: key!("probe"),
+        part: key!("thumb"),
+    }
+}
+
+/// An indication box names a part of the ripple's own widget (S2.12, S12):
+/// another widget's part is refused. `button` is the one typed widget, so
+/// the other is a keyed component's part, built in Rust as no TOML names
+/// one while no unit enables a component.
+#[test]
+fn refusal_indication_box_other_widget() {
+    let indication = indication_on;
+    assert_eq!(
+        bare(&indication(component_part())),
+        [
+            "widgets.button.body.interaction.ripple.indication_box.part: the indication's box is \
+             `component.probe.thumb`, another widget's part"
+        ]
+    );
+    let own = PartRef::Typed(TypedPart::Button(ButtonPart::Icon));
+    assert_eq!(bare(&indication(own)), NONE);
+    assert_eq!(
+        bare(&ripple("{ part = \"button.icon\", outset_px = 2 }")),
+        NONE
+    );
+    assert_eq!(bare(&ripple("{ part = \"icon\", outset_px = 2 }")), NONE);
+    assert_eq!(bare(&ripple("\"none\"")), NONE);
+}
+
+/// An indication box's `outset` is never negative (S2.12, S12).
+#[test]
+fn refusal_indication_box_outset_negative() {
+    assert_eq!(
+        bare(&ripple("{ part = \"icon\", outset_px = -1 }")),
+        [
+            "widgets.button.body.interaction.ripple.indication_box.outset_px: out of range: at least zero"
+        ]
+    );
+    assert_eq!(bare(&ripple("{ part = \"icon\", outset_px = 0 }")), NONE);
+}
+
+/// An indication box names no part that can be `Absent` where the ripple
+/// can be drawn (S2.12, S12): the part made absent under a state while the
+/// ripple's effect is stated is refused; where another box is in effect
+/// there, or the ripple has no effect, it is not.
+#[test]
+fn refusal_indication_box_part_absent() {
+    let icon_box = ripple("{ part = \"icon\", outset_px = 2 }");
+    let no_effect = toml(
+        "[widgets.button.body.interaction]\n\
+         state_layer = { color = \"#000000\", alpha = 0.1 }\n\
+         ripple = { effect = \"absent\", color = \"absent\", alpha = \"absent\", \
+         bounded = true, max_radius_px = \"absent\", padding_px = \"absent\", \
+         indication_box = { part = \"icon\", outset_px = 2 } }",
+    );
+    let rule = |target: &str, set: &str| {
+        toml(&format!(
+            "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.{target}\"\n\
+             set = {set}"
+        ))
+    };
+    let icon_absent = rule("icon", "{ absent = true }");
+    assert_eq!(
+        found_over(&icon_absent, &Declarations::default(), &icon_box),
+        [
+            "widgets.button.body.interaction.ripple.indication_box.part: the indication's box \
+             is `icon`, which can be absent where the ripple is drawn"
+        ]
+    );
+    assert_eq!(
+        found_over(&icon_absent, &Declarations::default(), &no_effect),
+        NONE
+    );
+    let mut other_box = rule(
+        "body",
+        "{ interaction.ripple.indication_box = { part = \"body\", outset_px = 0 } }",
+    );
+    other_box.rules.extend(icon_absent.rules.iter().cloned());
+    assert_eq!(
+        found_over(&other_box, &Declarations::default(), &icon_box),
+        NONE
+    );
 }
 
 #[test]
@@ -4193,6 +4309,8 @@ kinds! {
     RecencyOrder { .. },
     NotInRecencySet { .. },
     StateLayerWithoutInteraction,
+    IndicationBoxOtherWidget { .. },
+    IndicationBoxPartAbsent { .. },
     KeyframesNotIncreasing,
     KeyframeWithoutPart,
     FollowPartOutsideFocus,
@@ -4873,6 +4991,20 @@ fn layer_error_every_variant_triggers() {
                 ),
                 &Declarations::default(),
                 &[],
+            ),
+        ),
+        (
+            V::IndicationBoxOtherWidget,
+            over(&indication_on(component_part()), &none, &[]),
+        ),
+        (
+            V::IndicationBoxPartAbsent,
+            over(
+                &toml(
+                    "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.icon\"\nset = { absent = true }",
+                ),
+                &Declarations::default(),
+                &[ripple("{ part = \"icon\", outset_px = 0 }")],
             ),
         ),
         (

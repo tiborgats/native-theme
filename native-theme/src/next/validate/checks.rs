@@ -1651,6 +1651,25 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// An indication box names a part of the ripple's own widget (S2.12,
+    /// S12): a `<widget>.<part>` naming another is refused.
+    fn indication_box(&mut self, part: Option<&PartRef>, path: &Path) {
+        let (Region::Part(widget, ..), Some(part)) = (self.region, part) else {
+            return;
+        };
+        let own = match part {
+            PartRef::Typed(typed) => widget_of(*typed) == widget,
+            PartRef::Component { .. } => false,
+        };
+        if !own {
+            let part = part_ref_name(part);
+            self.problem(
+                &path.join("part"),
+                ProblemKind::IndicationBoxOtherWidget { part },
+            );
+        }
+    }
+
     /// S12's checks of a transition's engine against the transition (S2.7;
     /// ADD-A126; [`takes`], [`test_holds`]), on a whole transition of a
     /// keyed list; and its Breeze test's own ([`Checker::breeze_test`]),
@@ -1896,6 +1915,8 @@ impl Visit for Checker<'_> {
             Node::Key(key) => self.declared_leaf(path, key),
             Node::Condition(condition) => self.condition(condition, &at),
             Node::SurfaceSet(set) => self.surface_set(set, &at),
+            Node::IndicationBox(indication) => self.indication_box(Some(&indication.part), path),
+            Node::IndicationBoxPatch(patch) => self.indication_box(patch.part.as_ref(), path),
         }
     }
 
@@ -3236,6 +3257,15 @@ pub(super) fn widget_name(widget: WidgetKind) -> &'static str {
         .iter()
         .find(|info| info.kind == widget)
         .map_or("", |info| info.name)
+}
+
+/// A part as S11 writes it with its widget: `<widget>.<part>`, a keyed
+/// component's `component.<key>.<part>`.
+pub(super) fn part_ref_name(part: &PartRef) -> String {
+    match part {
+        PartRef::Typed(part) => format!("{}.{}", widget_name(part.widget()), part.name()),
+        PartRef::Component { key, part } => format!("component.{key}.{part}"),
+    }
 }
 
 /// The typed widget a context's or a sibling's target names.

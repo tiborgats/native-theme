@@ -470,6 +470,7 @@ pub(super) fn check(stack: &Stack<'_>, reused: Option<&Reused>) -> Vec<(usize, P
     };
     out.expressions(reused);
     out.marks();
+    out.indication_boxes();
     out.drawn_as_cycles();
     out.redrawn();
     out.text_roles();
@@ -2826,8 +2827,9 @@ impl Checks<'_, '_> {
     /// `fill` absent, outside an icon-size context, where its
     /// `rendering_mode` is not `Original`; a glyph's `fill` absent where its
     /// `stroke` is absent too and its `source` is not `SystemControl`, and
-    /// its `size` absent where its `source` is not `SystemControl`; each
-    /// under one world, references followed.
+    /// its `size` absent where its `source` is not `SystemControl`; a
+    /// ripple's `color`, `alpha` and `padding` absent where its `effect` is
+    /// stated (S2.12); each under one world, references followed.
     fn marks(&mut self) {
         let stack = self.stack;
         let mut places: Vec<(Target, String, &'static str)> = Vec::new();
@@ -2840,11 +2842,14 @@ impl Checks<'_, '_> {
             for op in &source.ops {
                 if let (
                     OpKind::Set(Val::Absent),
-                    Some((owner @ ("Edge" | "IconStyle" | "Glyph"), name)),
+                    Some((owner @ ("Edge" | "IconStyle" | "Glyph" | "RippleStyle"), name)),
                 ) = (&op.kind, op.field)
                     && matches!(
                         (owner, name),
-                        ("Edge", "dash") | ("IconStyle" | "Glyph", "fill") | ("Glyph", "size")
+                        ("Edge", "dash")
+                            | ("IconStyle" | "Glyph", "fill")
+                            | ("Glyph", "size")
+                            | ("RippleStyle", "color" | "alpha" | "padding")
                     )
                 {
                     let parent = op.path.rsplit_once('.').map_or("", |(parent, _)| parent);
@@ -2863,6 +2868,13 @@ impl Checks<'_, '_> {
                         }
                         "icon" => add(source.target, "icon".to_owned(), "IconStyle"),
                         "glyph" => add(source.target, "glyph".to_owned(), "Glyph"),
+                        "interaction" => {
+                            add(
+                                source.target,
+                                "interaction.ripple".to_owned(),
+                                "RippleStyle",
+                            );
+                        }
                         _ => {}
                     }
                 }
@@ -2875,6 +2887,11 @@ impl Checks<'_, '_> {
             let marks: &[(&str, &[&str])] = match owner {
                 "Edge" => &[("dash", &["width", "paint"])],
                 "IconStyle" => &[("fill", &["rendering_mode"])],
+                "RippleStyle" => &[
+                    ("color", &["effect"]),
+                    ("alpha", &["effect"]),
+                    ("padding", &["effect"]),
+                ],
                 _ => &[("fill", &["stroke", "source"]), ("size", &["source"])],
             };
             for (absent, others) in marks {
@@ -2939,6 +2956,9 @@ impl Checks<'_, '_> {
                 ("IconStyle", _) => other("rendering_mode")
                     .iter()
                     .any(|f| variant(f) != Some("original") && !matches!(f.got, Got::Absent)),
+                ("RippleStyle", _) => other("effect")
+                    .iter()
+                    .any(|f| !matches!(f.got, Got::Absent)),
                 (_, "size") => not_system_control(),
                 _ => {
                     other("stroke").iter().any(|f| matches!(f.got, Got::Absent))
@@ -2948,6 +2968,89 @@ impl Checks<'_, '_> {
             if refused {
                 for found in absents {
                     self.problem(found.layer, found.at, ProblemKind::AbsentNotAllowed);
+                }
+            }
+        }
+    }
+
+    /// An indication box naming a part that can be `Absent` where the
+    /// ripple can be drawn (S2.12, S12): under a world in which the
+    /// ripple's part is drawn and its `effect` stated, the box in effect,
+    /// references followed, names a part of the widget that resolves
+    /// `Absent` there.
+    fn indication_boxes(&mut self) {
+        let stack = self.stack;
+        let mut places: Vec<(TypedPart, &str, Vec<TypedPart>)> = Vec::new();
+        for source in &stack.sources {
+            let Target::Part(part) = source.target else {
+                continue;
+            };
+            for (place, named) in &source.indication_boxes {
+                let index = match places
+                    .iter()
+                    .position(|(held, at, _)| *held == part && *at == place.as_str())
+                {
+                    Some(index) => index,
+                    None => {
+                        places.push((part, place, Vec::new()));
+                        places.len().saturating_sub(1)
+                    }
+                };
+                if let (PartRef::Typed(named), Some((.., parts))) = (named, places.get_mut(index))
+                    && !parts.contains(named)
+                {
+                    parts.push(*named);
+                }
+            }
+        }
+        for (part, place, named) in places {
+            let target = Target::Part(part);
+            let ripple = place.strip_suffix(".indication_box").unwrap_or(place);
+            let effect = below(ripple, "effect");
+            let mut seeds = vec![
+                Seed::Field(target, place.to_owned(), true),
+                Seed::Field(target, effect.clone(), false),
+                Seed::Shown(part),
+            ];
+            seeds.extend(named.iter().map(|named| Seed::Shown(*named)));
+            let worlds = stack.worlds(seeds);
+            for world in worlds.iter() {
+                if !matches!(stack.shown(world, part).0, Shown::Drawn)
+                    || !stack
+                        .effective(world, target, &effect)
+                        .iter()
+                        .any(|found| !matches!(found.got, Got::Absent))
+                {
+                    continue;
+                }
+                for found in stack.effective(world, target, place) {
+                    let named = found
+                        .id
+                        .and_then(|(number, index)| {
+                            let source = stack.sources.get(number)?;
+                            let op = source.ops.get(index)?;
+                            source
+                                .indication_boxes
+                                .iter()
+                                .find(|(held, _)| *held == op.path)
+                        })
+                        .and_then(|(_, named)| match named {
+                            PartRef::Typed(named) if widget_of(*named) == widget_of(part) => {
+                                Some(*named)
+                            }
+                            PartRef::Typed(_) | PartRef::Component { .. } => None,
+                        });
+                    if let Some(named) = named
+                        && matches!(stack.shown(world, named).0, Shown::Absent)
+                    {
+                        let at = format!("{}.part", found.at);
+                        let part = named.name().to_owned();
+                        self.problem(
+                            found.layer,
+                            &at,
+                            ProblemKind::IndicationBoxPartAbsent { part },
+                        );
+                    }
                 }
             }
         }

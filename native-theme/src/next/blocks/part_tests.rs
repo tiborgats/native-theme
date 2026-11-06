@@ -281,6 +281,8 @@ fn part_style_paths() -> Vec<String> {
             "ripple.bounded",
             "ripple.max_radius",
             "ripple.padding",
+            "ripple.indication_box.part",
+            "ripple.indication_box.outset",
         ],
     ));
     out.extend(under(
@@ -443,8 +445,11 @@ fn interaction_marks() {
     assert!(marked("RippleStyle", "effect"));
     assert!(marked("RippleStyle", "max_radius"));
     for path in ["color", "alpha", "padding"] {
-        assert!(!marked("RippleStyle", path), "{path}");
+        assert!(marked("RippleStyle", path), "{path}");
     }
+    assert!(!marked("RippleStyle", "indication_box"));
+    assert!(!marked("IndicationBox", "part"));
+    assert!(!marked("IndicationBox", "outset"));
     assert!(!marked("StateLayerStyle", "color"));
     assert!(!marked("StateLayerStyle", "alpha"));
 }
@@ -598,6 +603,9 @@ fn no_other_field_may_be_absent_or_auto() {
         "PartStyle.interaction",
         "RippleStyle.effect",
         "RippleStyle.max_radius",
+        "RippleStyle.color",
+        "RippleStyle.alpha",
+        "RippleStyle.padding",
     ];
     expected_absent.sort_unstable();
     assert_eq!(absent, expected_absent);
