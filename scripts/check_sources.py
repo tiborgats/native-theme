@@ -38,10 +38,11 @@ COMMON = {"id", "kind", "release", "generations", "researched", "proof"}
 KINDS = {
     # kind: (required beyond COMMON, optional)
     "git": ({"repository", "tag", "commit"}, {"project", "site", "tag_object", "arch", "sparse", "note"}),
-    # An sdk entry is an Xcode on a runner image (its header citations checked by os-probe.yml's macOS job) or a
-    # system image another harness measures (the Android emulator's); SDK_SHAPES holds each one's fields.
+    # An sdk entry is an Xcode on a runner image (its header citations checked by os-probe.yml's macOS job), a
+    # Windows runner image the OS probe measures, or a system image another harness measures (the Android
+    # emulator's); SDK_SHAPES holds each one's fields.
     "sdk": (set(), {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit",
-                    "ios_simulator", "package", "revision", "archive", "sha256", "fingerprint", "note"}),
+                    "ios_simulator", "windows", "package", "revision", "archive", "sha256", "fingerprint", "note"}),
     "distribution": ({"url", "lastupdate", "extra_db_sha256", "core_db_sha256"}, {"note"}),
     # A snapshot entry is one page of a snapshot [[site]], saved as `file` in its cache folder (S17's `<id> #<JSON
     # pointer>` citations read it), with the release it `describes` (an unversioned page serves only that release).
@@ -49,6 +50,7 @@ KINDS = {
 }
 SDK_SHAPES = {
     "xcode": {"runner", "image_version", "macos", "xcode", "xcode_build", "readme", "readme_commit"},
+    "windows image": {"runner", "image_version", "windows", "readme", "readme_commit"},
     "system image": {"package", "revision", "archive", "sha256", "fingerprint"},
 }
 SITE_FIELDS = ({"project", "url", "method"}, {"sources", "note"})
@@ -150,14 +152,18 @@ def source_problems(e):
         if "project" not in e and "site" not in e and "note" not in e:
             out.append(f"{where}: neither a project, a site nor a note saying why it is pinned")
     if kind == "sdk":
-        shape = "xcode" if "xcode" in e else "system image"
+        shape = "xcode" if "xcode" in e else "windows image" if "windows" in e else "system image"
         for f in sorted(SDK_SHAPES[shape] - set(e)):
             out.append(f"{where}: the {shape} sdk entry lacks {f}")
-        if shape == "xcode":
+        if shape in ("xcode", "windows image"):
             if not SHA_RX.fullmatch(str(e.get("readme_commit", ""))):
                 out.append(f"{where}: readme_commit is not a 40-hex SHA")
+        if shape == "xcode":
             if m and m.group(2) != str(e.get("xcode")):
                 out.append(f"{where}: the id's version is not the Xcode version")
+        elif shape == "windows image":
+            if m and m.group(2) != str(e.get("image_version")):
+                out.append(f"{where}: the id's version is not the image version")
         else:
             if not SHA256_RX.fullmatch(str(e.get("sha256", ""))):
                 out.append(f"{where}: sha256 is not a 64-hex SHA-256")
@@ -421,6 +427,27 @@ proof = "spike A"
            ["source android-system-image@37.1-r8: a system image's id does not end in -r<revision>"])
     expect("system image fields", edit(image, 'fingerprint = "google', 'note = "google'),
            ["source android-system-image@37.1-r9: the system image sdk entry lacks fingerprint"])
+    win = good + """
+[[source]]
+id = "win11-vs2026-arm64@20261022.194.1"
+kind = "sdk"
+runner = "windows-11-arm"
+image_version = "20261022.194.1"
+windows = "Windows 11 Enterprise 25H2, 10.0.26200 Build 9711"
+readme = "images/windows/Windows11-VS2026-Arm64-Readme.md"
+readme_commit = "7b2820c777293d63940eece0b880f6883bb9ec6b"
+release = "Windows 11 25H2"
+generations = ["windows-11"]
+researched = "2026-11-06"
+proof = "the run's Set up job"
+"""
+    expect("windows image sdk", win, [])
+    expect("windows image version", edit(win, '"win11-vs2026-arm64@20261022.194.1"', '"win11-vs2026-arm64@20261022.194.2"'),
+           ["source win11-vs2026-arm64@20261022.194.2: the id's version is not the image version"])
+    expect("windows image fields", edit(win, 'readme = "images/windows', 'note = "images/windows'),
+           ["source win11-vs2026-arm64@20261022.194.1: the windows image sdk entry lacks readme"])
+    expect("windows image readme commit", edit(win, 'readme_commit = "7b2820c7', 'readme_commit = "7b2820c'),
+           ["source win11-vs2026-arm64@20261022.194.1: readme_commit is not a 40-hex SHA"])
     expect("sdk version", edit(good, 'id = "xcode@26.6"', 'id = "xcode@26.5"'),
            ["source xcode@26.5: the id's version is not the Xcode version"])
     expect("bad method", edit(good, 'method = "snapshot"', 'method = "archive"'),
