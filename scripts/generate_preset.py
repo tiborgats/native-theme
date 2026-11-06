@@ -2197,9 +2197,10 @@ def unstated_fields(model: Model, text: str) -> list:
     tokens and of each typed widget's parts (the fields its `#[part]` lists) and values, with no value at its path
     and no `[pending]` path at or above it. A table there is walked below: a struct block's fields, a map's entries
     whose values are structs (S11: a block stated per leaf, an entry stated whole); any other value states the field
-    whole. A part stated `absent = true` or `drawn_as` states its fields (S6.3). An unstated field is listed alone,
-    not its fields below. The rules are not read: the reader needs a base for every field (S11). Not checked: the
-    inputs (S9) and the entries `[declare]`'s keyed namespaces declare."""
+    whole. A part stated `absent = true` or `drawn_as` states its fields (S6.3); a part with no table but a `[pending]`
+    path below it has its other fields walked. An unstated field is listed alone, not its fields below. The rules are
+    not read: the reader needs a base for every field (S11). Not checked: the inputs (S9) and the entries
+    `[declare]`'s keyed namespaces declare."""
     data = tomllib.loads(text)
     pending = {unsuffixed(tuple(k.split("."))) for k in data.get("pending", {})}
     out = []
@@ -2249,9 +2250,13 @@ def unstated_fields(model: Model, text: str) -> list:
         node = widgets.get(w, {}) if isinstance(widgets.get(w), dict) else {}
         for part, fields in parts.items():
             here = node.get(part)
-            if here is None:
-                walk(("widgets", w, part), "", None)
+            at = ("widgets", w, part)
+            if here is None and any(at[:len(q)] == q for q in pending):
                 continue
+            if here is None and not any(len(q) > len(at) and q[:len(at)] == at for q in pending):
+                out.append(at)
+                continue
+            here = {} if here is None else here
             if not isinstance(here, dict) or here.get("absent") is True or "drawn_as" in here:
                 continue
             for name in fields:
@@ -2975,6 +2980,7 @@ FIELDS_CASES = [
     ('"widgets.button.icon.icon.size_px" = "U2"', [("widgets", "button", "icon", "icon", "size")]),
     ('"tokens.text.keyed.title.weight" = "U1"', [("tokens", "text", "keyed", "title", "weight")]),
     ("absent = true", [("widgets", "button", "mark", "fill")]),
+    ("[widgets.button.icon]\nicon.weight = 400", [("widgets", "button", "icon", "icon", "weight")]),
     ("accent_ramp = {}", [("colors", "light", "global", "accent_ramp"), ("colors", "dark", "global", "accent_ramp")]),
     ('surface_sets = ["window", "view"]', [("colors", "light", "surfaces", "selection"),
                                           ("colors", "dark", "surfaces", "selection")]),
