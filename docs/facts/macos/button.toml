@@ -43623,11 +43623,39 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/fonts.toml#fonts.button_pass.push.extraLarge-plain.features"
 tolerance = 0
 
+# `font.width` (U177, S2.8 *Width*): the font's `wdth` axis runs 30 to 150, default 100 (`CTFontCopyVariationAxes`),
+# and its variation (`CTFontCopyVariation`) holds no `wdth` coordinate, so the axis's default is in force: 100, a
+# percent of the normal width as the axis is written; each width fact below cites that default per font read
 [[fact]]
 key = "button.label.text.font.width"
 when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
-pending = "U177"
+value = 100
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-31-run-41195846264/os-probe-macos-26/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.extraLarge-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.line_height"
@@ -44100,37 +44128,238 @@ absent = []
 # macos-monterey: ADD-A125-ADD-A130 alignment (the facts lane, 2026-11-02). The label states the drawn-text leaves
 # itself (S2.8, ADD-A130): its elision, wrapping and line limit the push button's title cell's, unread (U178);
 # its `scaling_role` none (the system font at the control size, systemFontOfSize:, no text style).
-# Its font's descriptor and line height were read on macOS 26 only: pending (U236).
+# Its font's descriptor and line height: run 42215651196's button pass on macOS 15 (fonts.toml), as macOS 26's.
 
 [[fact]]
 key = "button.label.text.font.style"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+value = "normal"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-plain.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-plain.style"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.font.axes"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+value = { opsz = "follows_size" }
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-plain.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-plain.axes"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.font.features"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+value = {}
 rows = ["MAC-X18"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-plain.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-plain.features"
+tolerance = 0
+
+# `font.width` (U177, S2.8 *Width*): the font's `wdth` axis runs 30 to 150, default 100 (`CTFontCopyVariationAxes`),
+# and its variation (`CTFontCopyVariation`) holds no `wdth` coordinate, so the axis's default is in force: 100, a
+# percent of the normal width as the axis is written; each width fact below cites that default per font read
 [[fact]]
 key = "button.label.text.font.width"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U177"
+value = 100
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.mini-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.small-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.regular-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/button-pass/probe.toml#macos.button_pass.sheets.push.buttons.large-plain.font.descriptor.CTFontCopyVariationAxes.0.NSCTVariationAxisDefaultValue"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.line_height"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey"], sizes = ["mini"] }
+value = "11px"
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.mini-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.mini.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "13px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.small-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.small.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "16px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.regular-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.regular.line_height"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.line_height"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "16px"
+rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-plain.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-default.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-toggle_off.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.button_pass.push.large-toggle_on.line_height"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/fonts.toml#fonts.main.systemFontOfSize_systemFontSizeForControlSize.large.line_height"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.elision"
@@ -44188,12 +44417,238 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:27"
 quote = "In left-to-right localizations, the image is displayed to the left of the title. In right-to-left localizations, it is displayed to the right."
 
-# the symbol's size AppKit gives a button's image per control size (U102: the pass reads the image it set)
+# the symbol's size AppKit gives a button's image per control size: the button has no symbol configuration
+# (`symbolConfiguration` nil) and its drawn glyph matches the reference grid's 9, 11 and 13 pt at score 0 (run
+# 42272240639's symbols pass, `best` [score, point size, weight, scale], plain push and borderless buttons)
 [[fact]]
 key = "button.icon.icon.size"
-when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
-pending = "U102"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"], sizes = ["mini"] }
+value = "9px"
 rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"], sizes = ["small"] }
+value = "11px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"], sizes = ["regular"] }
+value = "13px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"], sizes = ["large"] }
+value = "13px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"], sizes = ["extra_large"] }
+value = "13px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
 
 # an image-only push button's padding (its image rect differs from a titled button's; U313)
 [[fact]]
@@ -44481,9 +44936,159 @@ when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
 pending = "U323"
 rows = ["MAC-P3-9†"]
 
+# the route button's glyph colour per state, `routePickerButtonColorForState:` (`AVRoutePickerView.h:99-104`, xcode@26.6)
+# read per appearance on the bordered view (the default, `routePickerButtonBordered` YES) in the reads pass of run
+# 42272240639 and of its red-accent pass, which reads the same; the borderless view (its image view laid out 1 x 1 pt
+# offscreen), the inactive and not-main windows and Increase Contrast were not read (U323)
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:macos-tahoe"], variants = ["route"] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], variants = ["route", "@bordered"] }
+value = "#000000d8"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.normal"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.normal"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], variants = ["route", "@bordered"], states = ["pressed"] }
+value = "#000000d8"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.normalHighlighted"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.normalHighlighted"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], variants = ["route", "@bordered"], states = ["route_active"] }
+value = "#5db4ff"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.active"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.active"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:light"], variants = ["route", "@bordered"], states = ["route_active", "pressed"] }
+value = "#5db4ff"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.activeHighlighted"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState.activeHighlighted"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["route", "@bordered"] }
+value = "#ffffffd8"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.normal"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.normal"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["route", "@bordered"], states = ["pressed"] }
+value = "#ffffffd8"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.normalHighlighted"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.normalHighlighted"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["route", "@bordered"], states = ["route_active"] }
+value = "#5db4ff"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.active"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.active"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"], variants = ["route", "@bordered"], states = ["route_active", "pressed"] }
+value = "#5db4ff"
+rows = ["MAC-P3-9†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.activeHighlighted"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/reads-accent-red/probe.toml#macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState.activeHighlighted"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe"], variants = ["route"], not_variants = ["@bordered"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "window_inactive"], variants = ["route", "@bordered"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "not_main"], not_conditions = ["window_inactive"], variants = ["route", "@bordered"] }
+pending = "U323"
+rows = ["MAC-P3-9†"]
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased"], not_conditions = ["window_inactive", "not_main"], variants = ["route", "@bordered"] }
 pending = "U323"
 rows = ["MAC-P3-9†"]
 
@@ -44953,8 +45558,108 @@ rows = []
 [[fact]]
 key = "button.icon.icon.scale"
 when = { conditions = ["preset:macos-tahoe"], not_variants = ["route"] }
-pending = "U324"
+value = "medium"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.aqua.controls.extraLarge.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/symbols/probe.toml#macos.symbols.darkAqua.controls.extraLarge.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.axes"
@@ -47560,12 +48265,192 @@ kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:26"
 quote = "In left-to-right localizations, the image is displayed to the left of the title. In right-to-left localizations, it is displayed to the right."
 
-# the symbol's size AppKit gives a button's image per control size (U102: the pass reads the image it set)
+# the symbol's size AppKit gives a button's image per control size: the button has no symbol configuration
+# (`symbolConfiguration` nil) and its drawn glyph matches the reference grid's 9, 11 and 13 pt at score 0 (run
+# 42272240639's symbols pass, `best` [score, point size, weight, scale], plain push and borderless buttons)
 [[fact]]
 key = "button.icon.icon.size"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U102"
+when = { conditions = ["preset:macos-monterey"], sizes = ["mini"] }
+value = "9px"
 rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-monterey"], sizes = ["small"] }
+value = "11px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-monterey"], sizes = ["regular"] }
+value = "13px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.size"
+when = { conditions = ["preset:macos-monterey"], sizes = ["large"] }
+value = "13px"
+rows = ["MAC-B09"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.2x.best.0.1"
+tolerance = 0
 
 # the help bezel's question mark (U614, as macos-tahoe's U314: AppKit names no image for it)
 [[fact]]
@@ -47962,8 +48847,88 @@ rows = []
 [[fact]]
 key = "button.icon.icon.scale"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U613"
+value = "medium"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.aqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.mini.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.small.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.regular.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.push.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/symbols/probe.toml#macos.symbols.darkAqua.controls.large.borderless.normal.size_symbol_renders.1x.best.0.3"
+tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.axes"

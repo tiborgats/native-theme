@@ -12594,7 +12594,9 @@ tolerance = 0
 # colours are absent (ADD-A130: they would reference `role.global.status.*`, which AppKit has none of, NSColor.h's
 # class and categories declaring no status colour), and the Selection set's `border` is absent (no outline colour
 # of a selection is declared: NSColor.h's selection colours are backgrounds and the text on them).
-# The Selection set's secondary text, link and disabled text were read on macOS 26 only (P4): pending (U236).
+# The Selection set's secondary text, link and disabled text: run 42215651196's P4 on macOS 15 (analysis/measure_selection.py's
+# solve over the image's and the red accent's selections), as macos-tahoe's; under Increase Contrast, read over one
+# selection colour only, still pending (U236).
 
 [[fact]]
 key = "role.window.negative"
@@ -12838,21 +12840,127 @@ absent = []
 
 [[fact]]
 key = "role.selection.foreground_inactive"
-when = { conditions = ["preset:macos-monterey"] }
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffffb3"
+rows = ["MAC-X15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffffb3"
+rows = ["MAC-X15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.foreground_inactive"
+tolerance = 1
+
+# the unemphasized selection (`window_inactive`): the row view is not emphasized, so the label colours draw as
+# outside the selection (run 42215651196's `unemphasized` captures, as macos-tahoe's)
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.window.foreground_inactive"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "contrast_increased"] }
 pending = "U236"
-rows = []
+rows = ["MAC-X22"]
 
 [[fact]]
 key = "role.selection.link"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0068da"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.link"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.selection.aqua.emphasized.samples.r1_linkColor_glyph.raw"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.link"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#419cff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.link"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.selection.darkAqua.emphasized.samples.r1_linkColor_glyph.raw"
+tolerance = 0
 
 [[fact]]
 key = "role.selection.disabled.foreground"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff59"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.disabled_foreground"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff59"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.disabled_foreground"
+tolerance = 1
+
+# the unemphasized selection (`window_inactive`): the row view is not emphasized, so the label colours draw as
+# outside the selection (run 42215651196's `unemphasized` captures, as macos-tahoe's)
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.window.disabled.foreground"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "contrast_increased"] }
+pending = "U236"
+rows = ["MAC-X22"]
 
 # --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
 
