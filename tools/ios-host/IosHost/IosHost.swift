@@ -32,8 +32,8 @@
 // for the state, its title font and its view tree.
 //
 // `press<N>` (launched by the UI test, IosHostUITests/PressTests.swift): the
-// glass styles at each size and, at medium, the other styles and the system
-// type, pressed by a real touch (`XCUIElement.press(forDuration:)`). The app
+// glass styles at each size and, at medium, the other styles, the system
+// type and the bar button items in their toolbar, pressed by a real touch (`XCUIElement.press(forDuration:)`). The app
 // arms one button at a time (accessibilityIdentifier `press-<k>`); once the
 // touch has been down for `pressSettleSeconds` it requests the screenshot, and
 // keeps the capture only if the touch was still down when the screenshot
@@ -965,7 +965,17 @@ final class HostViewController: UIViewController {
                             slots: grid([.normal, .focused], [solveBackdrops[0]]), columns: 1, rows: 0, part: "focus"))
                 } else if press {
                     guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system"
+                        || specimen.kind == "bar_button_item"
                     else { continue }
+                    if specimen.kind == "bar_button_item" {
+                        // A bar item has no touch-down event: a long press
+                        // recognizer of no minimum duration on its toolbar
+                        // reports the touch (armNext).
+                        if quickRun && specimen.name != "bar_plain" { continue }
+                        pages += roomyPages(
+                            appearance, specimen, noSize, grid([.pressed], [solveBackdrops[0]]), columns: 1, rows: 2)
+                        continue
+                    }
                     if glass {
                         for size in specimen.sizes {
                             let slots = grid([.pressed, .pressedSelected], solveBackdrops) + grid([.pressed], patternBackdrops)
@@ -1126,7 +1136,7 @@ final class HostViewController: UIViewController {
         DispatchQueue.main.asyncAfter(deadline: .now() + settleSeconds) { [weak self] in
             guard let self, !self.finished else { return }
             if self.pressMode {
-                self.pressQueue = self.cells.filter { $0.sample?.button != nil }
+                self.pressQueue = self.cells.filter { $0.sample?.button != nil || $0.sample?.barItem != nil }
                 self.aloneWritten = false
                 self.armNext()
             } else {
@@ -1161,7 +1171,7 @@ final class HostViewController: UIViewController {
     private func apply(_ state: ButtonState, to sample: Sample) -> Bool {
         if let item = sample.barItem {
             switch state {
-            case .normal: return true
+            case .normal, .pressed: return true
             case .disabled: item.isEnabled = false
             case .toggleOff: item.changesSelectionAsPrimaryAction = true
             case .selected:
@@ -1404,8 +1414,9 @@ final class HostViewController: UIViewController {
     private func armNext() {
         guard !finished else { return }
         armed?.sample?.button?.accessibilityIdentifier = nil
+        armed?.sample?.barItem?.accessibilityIdentifier = nil
         armed = nil
-        guard let cell = pressQueue.first, let button = cell.sample?.button else {
+        guard let cell = pressQueue.first, let sample = cell.sample else {
             if pageIndex + 1 < pages.count {
                 show(page: pageIndex + 1)
             } else {
@@ -1414,26 +1425,43 @@ final class HostViewController: UIViewController {
             return
         }
         armed = cell
-        // A press releases into the toggle's other selection: a retake
-        // presses the button in its state again.
-        if cell.state == .pressedSelected { button.isSelected = true }
-        if cell.state == .pressed { button.isSelected = false }
         touchDown = false
         captured = false
         rearm = false
-        button.removeTarget(self, action: nil, for: .allEvents)
-        button.addTarget(self, action: #selector(pressBegan(_:)), for: .touchDown)
-        button.addTarget(self, action: #selector(pressEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         armedNumber = pressNumber
-        recordMotion(button, phase: "rest", times: [0])
-        button.accessibilityIdentifier = "press-\(armedNumber)"
+        if let button = sample.button {
+            // A press releases into the toggle's other selection: a retake
+            // presses the button in its state again.
+            if cell.state == .pressedSelected { button.isSelected = true }
+            if cell.state == .pressed { button.isSelected = false }
+            button.removeTarget(self, action: nil, for: .allEvents)
+            button.addTarget(self, action: #selector(pressBegan(_:)), for: .touchDown)
+            button.addTarget(
+                self, action: #selector(pressEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+            recordMotion(button, phase: "rest", times: [0])
+            button.accessibilityIdentifier = "press-\(armedNumber)"
+        } else if let item = sample.barItem {
+            for old in sample.view.gestureRecognizers ?? [] where old.name == "press" {
+                sample.view.removeGestureRecognizer(old)
+            }
+            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(barPress(_:)))
+            recognizer.name = "press"
+            recognizer.minimumPressDuration = 0
+            recognizer.cancelsTouchesInView = false
+            recognizer.delaysTouchesBegan = false
+            recognizer.delaysTouchesEnded = false
+            recognizer.delegate = self
+            sample.view.addGestureRecognizer(recognizer)
+            recordMotion(sample.view, phase: "rest", times: [0])
+            item.accessibilityIdentifier = "press-\(armedNumber)"
+        }
         pressNumber += 1
     }
 
     /// Records a button's layers at `phase` (rest, press, release): their
     /// animations and their presentation transforms and opacities, at each of
     /// `motionTimes` seconds after the call, as one [[motion]] table.
-    private func recordMotion(_ button: UIButton, phase: String, times: [Double]) {
+    private func recordMotion(_ button: UIView, phase: String, times: [Double]) {
         let page = pages[pageIndex].path
         let cellName = armed?.name ?? "none"
         let number = armedNumber
@@ -1444,7 +1472,7 @@ final class HostViewController: UIViewController {
                 guard let self else { return }
                 let now = CACurrentMediaTime() - start
                 samples.append(
-                    "{ t = \(precise(now)), highlighted = \(button.isHighlighted), "
+                    "{ t = \(precise(now)), highlighted = \((button as? UIControl)?.isHighlighted ?? false), "
                         + "animations = [\(layerAnimations(button.layer, path: "0").joined(separator: ", "))], "
                         + "layers = [\(layerStates(button.layer, path: "0").joined(separator: ", "))] }")
                 guard index == times.count - 1 else { return }
@@ -1463,7 +1491,27 @@ final class HostViewController: UIViewController {
     }
 
     @objc private func pressBegan(_ sender: UIButton) {
-        guard let cell = armed, sender === cell.sample?.button, !touchDown else { return }
+        guard let cell = armed, sender === cell.sample?.button else { return }
+        touchBegan(sender)
+    }
+
+    @objc private func pressEnded(_ sender: UIButton) {
+        guard let cell = armed, sender === cell.sample?.button else { return }
+        touchEnded(sender)
+    }
+
+    @objc private func barPress(_ recognizer: UILongPressGestureRecognizer) {
+        guard let cell = armed, let view = recognizer.view, view === cell.sample?.view, cell.sample?.barItem != nil
+        else { return }
+        switch recognizer.state {
+        case .began: touchBegan(view)
+        case .ended, .cancelled, .failed: touchEnded(view)
+        default: break
+        }
+    }
+
+    private func touchBegan(_ sender: UIView) {
+        guard !touchDown else { return }
         recordMotion(sender, phase: "press", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 1.0])
         touchDown = true
         DispatchQueue.main.asyncAfter(deadline: .now() + pressSettleSeconds) { [weak self] in
@@ -1471,8 +1519,8 @@ final class HostViewController: UIViewController {
         }
     }
 
-    @objc private func pressEnded(_ sender: UIButton) {
-        guard let cell = armed, sender === cell.sample?.button, touchDown else { return }
+    private func touchEnded(_ sender: UIView) {
+        guard touchDown else { return }
         touchDown = false
         if captured {
             recordMotion(sender, phase: "release", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.45])
@@ -1486,17 +1534,18 @@ final class HostViewController: UIViewController {
 
     private func scheduleArm() {
         armed?.sample?.button?.accessibilityIdentifier = nil
+        armed?.sample?.barItem?.accessibilityIdentifier = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + pressRearmSeconds) { [weak self] in self?.armNext() }
     }
 
     private func capturePress() {
-        guard !finished, let cell = armed, let button = cell.sample?.button else { return }
+        guard !finished, let cell = armed, let sample = cell.sample else { return }
         guard touchDown else {
             retakePress("the touch ended before the capture")
             return
         }
-        highlightedAtCapture = button.isHighlighted
-        trackingAtCapture = button.isTracking
+        highlightedAtCapture = sample.button?.isHighlighted ?? false
+        trackingAtCapture = sample.button?.isTracking ?? false
         _ = drawCell(cell, to: "draw/\(pages[pageIndex].path)/\(cell.name).png")
         requestScreenshot(sequence: shots, attempt: 0)
         shots += 1
@@ -1522,7 +1571,7 @@ final class HostViewController: UIViewController {
 
     private func pressScreenshot(_ screenshot: URL) {
         let page = pages[pageIndex]
-        guard let cell = armed, let button = cell.sample?.button else { return }
+        guard let cell = armed, let sample = cell.sample else { return }
         let heldThrough = touchDown
         guard let source = loadScreenshot(screenshot) else {
             finish()
@@ -1556,7 +1605,7 @@ final class HostViewController: UIViewController {
                 screenshot: "pages/\(sequence).png", frame: frame,
                 press: "press_number = \(armedNumber)\nhighlighted_at_capture = \(highlightedAtCapture)\n"
                     + "tracking_at_capture = \(trackingAtCapture)\nheld_until_screenshot = \(heldThrough)\n"
-                    + "selected_at_screenshot = \(button.isSelected)\n"))
+                    + "selected_at_screenshot = \(sample.button?.isSelected ?? sample.barItem?.isSelected ?? false)\n"))
         if !aloneWritten {
             aloneWritten = true
             for alone in cells where !alone.backdrop.holdsSpecimen {
@@ -2099,4 +2148,11 @@ final class HostViewController: UIViewController {
         view.addSubview(label)
         doneLabel = label
     }
+}
+
+/// The press mode's toolbar recognizer runs beside the bar item's own.
+extension HostViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+    ) -> Bool { true }
 }
