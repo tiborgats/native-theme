@@ -1,0 +1,38 @@
+# AllHostsTest: the frames Compose's frame clock delivered (withFrameNanos) and the events logged
+# (lifecycle, window focus, the button's interactions) at each step, in uptime milliseconds.
+
+[[step]]
+name = "0-running"
+elapsed_ms = 1500
+frames = 90
+events = ["258148 onCreate", "258201 onStart", "258206 onResume", "258806 onWindowFocusChanged true"]
+
+[[step]]
+name = "1-tab"
+elapsed_ms = 1500
+frames = 90
+events = ["260650 interaction Focus"]
+
+[[step]]
+name = "2-notification-shade-open"
+elapsed_ms = 2001
+frames = 45
+events = ["262511 onWindowFocusChanged false"]
+
+[[step]]
+name = "3-notification-shade-closed"
+elapsed_ms = 2000
+frames = 94
+events = ["264817 onWindowFocusChanged true"]
+
+[[step]]
+name = "4-home"
+elapsed_ms = 2501
+frames = 44
+events = ["266187 onPause", "266218 onWindowFocusChanged false", "267363 onStop"]
+
+[[step]]
+name = "5-brought-back"
+elapsed_ms = 2500
+frames = 134
+events = ["268687 onStart", "268688 onNewIntent", "268688 onResume", "268800 onWindowFocusChanged true"]
