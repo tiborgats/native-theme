@@ -169,6 +169,19 @@ RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --no-deps
 
 CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 
+The facts gate (`native-theme/tests/facts_gate.rs`) gates every bundled preset
+in one run, minutes per preset. While you work on some presets, limit it to
+them:
+
+```bash
+NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme --test facts_gate
+```
+
+An id no bundled preset has, an empty name or an id named twice fails the
+test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
+gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
+every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+
 ## Project structure
 
 | Crate | Path | Description |

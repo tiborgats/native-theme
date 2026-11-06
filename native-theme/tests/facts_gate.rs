@@ -5,6 +5,15 @@
 //! declarations run. `facts_gate` runs it over `docs/facts` and the bundled
 //! presets, the `gate_fixture_*` tests over fixtures, where every value is
 //! synthetic.
+//!
+//! During development `facts_gate` can be limited to some presets:
+//! `NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme
+//! --test facts_gate` gates those two alone, its report saying it ran a
+//! subset. An id no bundled preset has, an empty name or an id named twice
+//! fails the test; unset, every bundled preset runs. A subset is no gate:
+//! `scripts/check_release.sh` never sets the variable, so every mode of it
+//! gates every preset, and the release's run (`FACTS_GATE_RELEASE=1`)
+//! refuses a subset.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -33,6 +42,57 @@ const DIRECTORIES: [(&str, &str); 8] = [
     ("windows-11", "windows"),
     ("material-3", "material"),
 ];
+
+/// The environment variable that limits `facts_gate` to the presets it
+/// names, comma-separated (the module's docs).
+const PRESETS_VARIABLE: &str = "NT_FACTS_GATE_PRESETS";
+
+/// The presets `facts_gate` runs, in [`PresetId::all`]'s order: every
+/// bundled preset where `value`, [`PRESETS_VARIABLE`]'s value, is `None`,
+/// else those its comma-separated list names. An id no bundled preset has,
+/// an empty name or an id named twice is an error, never an empty run.
+fn selected_presets(value: Option<&str>) -> Result<Vec<PresetId>, String> {
+    let Some(value) = value else {
+        return Ok(PresetId::all().to_vec());
+    };
+    let mut named = Vec::new();
+    for name in value.split(',').map(str::trim) {
+        let known = || {
+            PresetId::all()
+                .iter()
+                .map(|id| id.key())
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        let id = PresetId::from_key(name).ok_or_else(|| {
+            format!(
+                "`{name}` is no bundled preset's id (the bundled: {})",
+                known()
+            )
+        })?;
+        if named.contains(&id) {
+            return Err(format!("`{name}` is named twice"));
+        }
+        named.push(id);
+    }
+    Ok(PresetId::all()
+        .iter()
+        .copied()
+        .filter(|id| named.contains(id))
+        .collect())
+}
+
+/// [`PRESETS_VARIABLE`]'s value; `None` where it is unset. A value that is
+/// not Unicode fails.
+fn presets_variable() -> Option<String> {
+    match std::env::var(PRESETS_VARIABLE) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(value)) => {
+            panic!("{PRESETS_VARIABLE} is not Unicode: {value:?}")
+        }
+    }
+}
 
 /// A fixture's facts root and its preset (the fixtures' base with the
 /// case's declarations and rules, its `file`, appended), checked against
@@ -2020,10 +2080,50 @@ fn perturbed_colours_are_distinct() {
 /// against its platform's directory: every fact file and state model
 /// read, each entry's combinations counted, and each preset's normal,
 /// perturbed and declarations runs.
+/// [`PRESETS_VARIABLE`] unset: `facts_gate` runs every bundled preset.
+#[test]
+fn facts_gate_presets_unset_runs_all() {
+    assert_eq!(selected_presets(None), Ok(PresetId::all().to_vec()));
+}
+
+/// [`PRESETS_VARIABLE`] set: `facts_gate` runs the presets it names alone,
+/// in [`PresetId::all`]'s order, spaces around a name ignored.
+#[test]
+fn facts_gate_presets_filter() {
+    assert_eq!(
+        selected_presets(Some("macos-tahoe, adwaita")),
+        Ok(vec![PresetId::Adwaita, PresetId::MacosTahoe])
+    );
+    assert_eq!(selected_presets(Some("ios-13")), Ok(vec![PresetId::Ios13]));
+}
+
+/// [`PRESETS_VARIABLE`] naming an unknown id, nothing or an id twice fails,
+/// never runs an empty or silently narrowed gate.
+#[test]
+fn facts_gate_presets_unknown_id_fails() {
+    let unknown = selected_presets(Some("adwaita,no-such-preset")).unwrap_err();
+    assert!(
+        unknown.contains("`no-such-preset` is no bundled preset's id"),
+        "{unknown}"
+    );
+    assert!(selected_presets(Some("")).is_err());
+    assert!(selected_presets(Some("adwaita,")).is_err());
+    let twice = selected_presets(Some("adwaita,adwaita")).unwrap_err();
+    assert!(twice.contains("named twice"), "{twice}");
+}
+
 #[test]
 fn facts_gate() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts");
-    let presets: Vec<(String, Preset)> = PresetId::all()
+    let variable = presets_variable();
+    let ids = selected_presets(variable.as_deref())
+        .unwrap_or_else(|error| panic!("{PRESETS_VARIABLE}: {error}"));
+    let subset = ids.len() < PresetId::all().len();
+    assert!(
+        !(subset && std::env::var_os("FACTS_GATE_RELEASE").is_some()),
+        "the release's gate runs every bundled preset: unset {PRESETS_VARIABLE}"
+    );
+    let presets: Vec<(String, Preset)> = ids
         .iter()
         .map(|id| {
             let directory = DIRECTORIES
@@ -2035,13 +2135,23 @@ fn facts_gate() {
         })
         .collect();
     let report = run::run(&root, &presets);
+    let scope = if subset {
+        format!(
+            "a subset, {} of {} bundled presets ({}) as {PRESETS_VARIABLE} names (unset it to \
+             gate every preset)",
+            ids.len(),
+            PresetId::all().len(),
+            ids.iter().map(|id| id.key()).collect::<Vec<_>>().join(", "),
+        )
+    } else {
+        format!("{} presets", presets.len())
+    };
     eprintln!(
-        "facts gate: {} presets, {} keys compared over {} distinct combinations in {:?}; \
+        "facts gate: {scope}, {} keys compared over {} distinct combinations in {:?}; \
          {} pending facts; skipped: {} facts of {} keys the model does not hold, {} facts of a unit \
          not enabled, {} whens, \
          {} accent-run facts, {} facts naming a preset not bundled, {} combinations, \
          {} state-model variants only skipped facts name",
-        presets.len(),
         report.compared,
         report.queried,
         report.elapsed,
@@ -2116,7 +2226,7 @@ fn facts_gate() {
     }
     assert!(
         report.failures.is_empty(),
-        "{} failures in {} groups (listed above)",
+        "{} failures in {} groups (listed above); gated: {scope}",
         report.failures.len(),
         report.groups.len()
     );

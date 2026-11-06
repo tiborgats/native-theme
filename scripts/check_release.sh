@@ -116,6 +116,11 @@ fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
+# The facts gate limited to some presets is a development aid, no gate
+# (native-theme/tests/facts_gate.rs): every mode gates every preset, even
+# where the caller's environment names a subset.
+unset NT_FACTS_GATE_PRESETS
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
 # ─────────────────────────────────────────────────────────────────────────────
