@@ -1,0 +1,8 @@
+# The image folder of run 42307873328 the facts cite (spec S17 *`evidence`*). The build is the run's own record:
+# os-probe-windows-11-arm/probe.toml `[os]` (the registry's CurrentVersion key) and `[probe]`.
+
+[images.os-probe-windows-11-arm]
+preset = "windows-11"
+source = "win11-vs2026-arm64@20261101.203.1"
+os = "Windows 11 Enterprise 25H2 (10.0.26200, UBR 9725), runner image win11-vs2026-arm64 20261101.203.1"
+toolkit = "user32 (GetSystemMetricsForDpi, SystemParametersInfoW), the registry and WinRT UISettings of that build; the probe built for aarch64"
