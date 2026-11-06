@@ -1389,6 +1389,58 @@ fn keyframe_icon_resolves_without_its_loop() {
     assert_eq!(icon.and_then(|icon| icon.animation), None);
 }
 
+/// S2.7: a keyframe naming no part resolves over the part the loop is on:
+/// the icon part's loop's `base` is the icon part's own icon size (the
+/// body, which the fixture's other keyframes name, lists no icon).
+#[test]
+fn keyframe_without_part_resolves_over_the_loops_part() {
+    let theme = looping(
+        "{ at = 0, timing = \"absent\", patch = { icon.size_px = \"= add(base, 4px)\" } }",
+        &[],
+    );
+    let size = keyframes(&theme)
+        .into_iter()
+        .next()
+        .and_then(|keyframe| keyframe.patch.icon)
+        .flatten()
+        .and_then(|icon| icon.size);
+    assert_eq!(size, Some(Px(20.0)), "the icon part's 16 px");
+}
+
+/// S2.7: a keyframe over a part field set by a reference applies after
+/// every rule that patches the referenced value: its step sorts after
+/// every step of the theme where the reference's steps are composed with
+/// the patches after it (R2.4).
+#[test]
+fn keyframe_over_a_referenced_field_follows_every_rule() {
+    let tokens = "[tokens.focus]\nkind = \"ring\"\nwidth_px = 2\npaint = \"#3584e4\"\ndash = \
+                  \"solid\"\noffset = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }\n\
+                  corners = { top_left = \"follow_part\", top_right = \"follow_part\", \
+                  bottom_right = \"follow_part\", bottom_left = \"follow_part\", curve = \
+                  \"circular\" }\nshadow = \"absent\"\ntransition = \"absent\"\n\
+                  [widgets.button.body]\nfocus = \"= token.focus\"\n[[rules]]\ntarget = \
+                  \"button.body\"\nset = { focus.width_px = 3 }";
+    let theme = looping(
+        "{ at = 0, part = \"body\", timing = \"absent\", patch = { focus.width_px = \"= \
+         add(base, 1px)\" } }",
+        &[tokens],
+    );
+    let scope = root(&theme, Direction::Ltr);
+    let focus = drawn(&theme, &Element::new(BODY, &scope, &Metrics)).0.focus;
+    assert_eq!(
+        focus.and_then(|focus| focus.width),
+        Some(Px(3.0)),
+        "the rule's"
+    );
+    let width = keyframes(&theme)
+        .into_iter()
+        .next()
+        .and_then(|keyframe| keyframe.patch.focus)
+        .flatten()
+        .and_then(|focus| focus.width);
+    assert_eq!(width, Some(Px(4.0)), "over the rule's 3 px");
+}
+
 /// S2.7: a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to
 /// a patch with every field `None`, its `at` and `timing` kept.
 #[test]
