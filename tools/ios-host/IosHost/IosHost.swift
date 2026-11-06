@@ -37,7 +37,11 @@
 // arms one button at a time (accessibilityIdentifier `press-<k>`); once the
 // touch has been down for `pressSettleSeconds` it requests the screenshot, and
 // keeps the capture only if the touch was still down when the screenshot
-// arrived. UIKit's animations stay enabled: the press is one.
+// arrived. UIKit's animations stay enabled: the press is one. Each button's
+// layers (their animations, and the presentation transform and opacity of
+// those animated, moved or not opaque) are recorded at rest, over the first
+// second of the touch and over the half second after its release, as
+// [[motion]] tables.
 //
 // `focus<N>` (run.sh, `simctl launch` on an iPad): the styles at medium and the
 // system type, normal and focused, as the `run` mode draws them: whether
@@ -917,6 +921,8 @@ final class HostViewController: UIViewController {
     private var aloneWritten = false
     private var highlightedAtCapture = false
     private var trackingAtCapture = false
+    /// The press mode's [[motion]] tables (IP-motion).
+    private var motions: [String] = []
 
     init() {
         let arguments = Array(CommandLine.arguments.dropFirst())
@@ -1419,12 +1425,46 @@ final class HostViewController: UIViewController {
         button.addTarget(self, action: #selector(pressBegan(_:)), for: .touchDown)
         button.addTarget(self, action: #selector(pressEnded(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         armedNumber = pressNumber
+        recordMotion(button, phase: "rest", times: [0])
         button.accessibilityIdentifier = "press-\(armedNumber)"
         pressNumber += 1
     }
 
+    /// Records a button's layers at `phase` (rest, press, release): their
+    /// animations and their presentation transforms and opacities, at each of
+    /// `motionTimes` seconds after the call, as one [[motion]] table.
+    private func recordMotion(_ button: UIButton, phase: String, times: [Double]) {
+        let page = pages[pageIndex].path
+        let cellName = armed?.name ?? "none"
+        let number = armedNumber
+        let start = CACurrentMediaTime()
+        var samples: [String] = []
+        for (index, time) in times.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + time) { [weak self] in
+                guard let self else { return }
+                let now = CACurrentMediaTime() - start
+                samples.append(
+                    "{ t = \(precise(now)), highlighted = \(button.isHighlighted), "
+                        + "animations = [\(layerAnimations(button.layer, path: "0").joined(separator: ", "))], "
+                        + "layers = [\(layerStates(button.layer, path: "0").joined(separator: ", "))] }")
+                guard index == times.count - 1 else { return }
+                self.motions.append(
+                    """
+                    [[motion]]
+                    page = \(quoted(page))
+                    cell = \(quoted(cellName))
+                    press_number = \(number)
+                    phase = \(quoted(phase))
+                    samples = [\(samples.joined(separator: ", "))]
+
+                    """)
+            }
+        }
+    }
+
     @objc private func pressBegan(_ sender: UIButton) {
         guard let cell = armed, sender === cell.sample?.button, !touchDown else { return }
+        recordMotion(sender, phase: "press", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.5, 1.0])
         touchDown = true
         DispatchQueue.main.asyncAfter(deadline: .now() + pressSettleSeconds) { [weak self] in
             self?.capturePress()
@@ -1435,6 +1475,7 @@ final class HostViewController: UIViewController {
         guard let cell = armed, sender === cell.sample?.button, touchDown else { return }
         touchDown = false
         if captured {
+            recordMotion(sender, phase: "release", times: [0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.45])
             if !pressQueue.isEmpty { pressQueue.removeFirst() }
             pressRetakes = 0
             scheduleArm()
@@ -2040,7 +2081,7 @@ final class HostViewController: UIViewController {
     private func finish() {
         guard !finished else { return }
         finished = true
-        let index = ([environmentEntry()] + reads + entries).joined(separator: "\n")
+        let index = ([environmentEntry()] + reads + entries + motions).joined(separator: "\n")
         do {
             try index.write(to: out.appendingPathComponent("index.toml"), atomically: true, encoding: .utf8)
         } catch {

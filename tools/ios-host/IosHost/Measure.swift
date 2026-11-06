@@ -178,6 +178,78 @@ func fontDetail(_ font: UIFont, features: Bool) -> String {
     return parts.joined(separator: "\n")
 }
 
+/// The Core Animation animations on a layer and its sublayers (springs with
+/// their parameters).
+func layerAnimations(_ layer: CALayer, path: String) -> [String] {
+    var lines: [String] = []
+    for key in layer.animationKeys() ?? [] {
+        guard let animation = layer.animation(forKey: key) else { continue }
+        var parts = [
+            "layer = \(quoted(path))", "key = \(quoted(key))",
+            "class = \(quoted(String(describing: type(of: animation))))",
+            "duration_s = \(precise(animation.duration))", "repeat_count = \(precise(Double(animation.repeatCount)))",
+            "autoreverses = \(animation.autoreverses)", "begin_time = \(precise(animation.beginTime))",
+            "speed = \(precise(Double(animation.speed)))",
+            "timing_function = \(animation.timingFunction.map { described($0) } ?? absent)",
+        ]
+        if let property = animation as? CAPropertyAnimation {
+            parts.append("key_path = \(property.keyPath.map(quoted) ?? absent)")
+        }
+        if let basic = animation as? CABasicAnimation {
+            parts.append("from = \(plist(basic.fromValue))")
+            parts.append("to = \(plist(basic.toValue))")
+        }
+        if let keyframes = animation as? CAKeyframeAnimation {
+            parts.append("values = \(plist(keyframes.values))")
+            parts.append("key_times = \(plist(keyframes.keyTimes))")
+            parts.append("calculation_mode = \(quoted(keyframes.calculationMode.rawValue))")
+        }
+        if let spring = animation as? CASpringAnimation {
+            parts.append("mass = \(precise(Double(spring.mass)))")
+            parts.append("stiffness = \(precise(Double(spring.stiffness)))")
+            parts.append("damping = \(precise(Double(spring.damping)))")
+            parts.append("initial_velocity = \(precise(Double(spring.initialVelocity)))")
+            parts.append("settling_duration_s = \(precise(spring.settlingDuration))")
+            parts.append("perceptual_duration_s = \(precise(spring.perceptualDuration))")
+            parts.append("bounce = \(precise(Double(spring.bounce)))")
+        }
+        if let group = animation as? CAAnimationGroup {
+            parts.append("group = \(plist((group.animations ?? []).map { described($0) }))")
+        }
+        lines.append("{ " + parts.joined(separator: ", ") + " }")
+    }
+    for (index, sublayer) in (layer.sublayers ?? []).enumerated() {
+        lines += layerAnimations(sublayer, path: "\(path).\(index)")
+    }
+    return lines
+}
+
+/// The layers of a subtree, depth first (at most 60), that are animated, moved
+/// by a transform or not opaque: their presentation transform (m11, m12, m21,
+/// m22, m41, m42, m43), opacity, bounds and position.
+func layerStates(_ root: CALayer, path: String) -> [String] {
+    var lines: [String] = []
+    func visit(_ layer: CALayer, path: String) {
+        guard lines.count < 60 else { return }
+        let shown = layer.presentation() ?? layer
+        let t = shown.transform
+        let moved = !CATransform3DIsIdentity(t)
+        let animated = !(layer.animationKeys() ?? []).isEmpty
+        if moved || animated || shown.opacity < 1 {
+            let transform = [t.m11, t.m12, t.m21, t.m22, t.m41, t.m42, t.m43].map { precise(Double($0)) }
+            lines.append(
+                "{ layer = \(quoted(path)), class = \(quoted(String(describing: type(of: layer)))), "
+                    + "delegate = \(layer.delegate.map { quoted(String(describing: type(of: $0))) } ?? absent), "
+                    + "transform = [\(transform.joined(separator: ", "))], opacity = \(precise(Double(shown.opacity))), "
+                    + "bounds_pt = \(rectangle(shown.bounds)), position_pt = [\(number(shown.position.x)), \(number(shown.position.y))], "
+                    + "animation_keys = [\((layer.animationKeys() ?? []).map(quoted).joined(separator: ", "))] }")
+        }
+        for (index, sublayer) in (layer.sublayers ?? []).enumerated() { visit(sublayer, path: "\(path).\(index)") }
+    }
+    visit(root, path: path)
+    return lines
+}
+
 /// A list cell whose configuration state can be forced disabled.
 final class MeasureListCell: UICollectionViewListCell {
     var forcedDisabled = false
@@ -1845,40 +1917,7 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
     }
 
     /// The Core Animation animations on a layer and its sublayers.
-    func animations(_ layer: CALayer, path: String) -> [String] {
-        var lines: [String] = []
-        for key in layer.animationKeys() ?? [] {
-            guard let animation = layer.animation(forKey: key) else { continue }
-            var parts = [
-                "layer = \(quoted(path))", "key = \(quoted(key))",
-                "class = \(quoted(String(describing: type(of: animation))))",
-                "duration_s = \(precise(animation.duration))", "repeat_count = \(precise(Double(animation.repeatCount)))",
-                "autoreverses = \(animation.autoreverses)", "begin_time = \(precise(animation.beginTime))",
-                "speed = \(precise(Double(animation.speed)))",
-                "timing_function = \(animation.timingFunction.map { described($0) } ?? absent)",
-            ]
-            if let property = animation as? CAPropertyAnimation {
-                parts.append("key_path = \(property.keyPath.map(quoted) ?? absent)")
-            }
-            if let basic = animation as? CABasicAnimation {
-                parts.append("from = \(plist(basic.fromValue))")
-                parts.append("to = \(plist(basic.toValue))")
-            }
-            if let keyframes = animation as? CAKeyframeAnimation {
-                parts.append("values = \(plist(keyframes.values))")
-                parts.append("key_times = \(plist(keyframes.keyTimes))")
-                parts.append("calculation_mode = \(quoted(keyframes.calculationMode.rawValue))")
-            }
-            if let group = animation as? CAAnimationGroup {
-                parts.append("group = \(plist((group.animations ?? []).map { described($0) }))")
-            }
-            lines.append("{ " + parts.joined(separator: ", ") + " }")
-        }
-        for (index, sublayer) in (layer.sublayers ?? []).enumerated() {
-            lines += animations(sublayer, path: "\(path).\(index)")
-        }
-        return lines
-    }
+    func animations(_ layer: CALayer, path: String) -> [String] { layerAnimations(layer, path: path) }
 
     /// Samples the cursor views' visibility every 50 ms for `seconds`, typing
     /// a character into `input` at `typeAt`; stores them in notes[key].
