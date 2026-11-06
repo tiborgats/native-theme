@@ -21,7 +21,12 @@
 #                     Gradle's output; accel-check.txt, the emulator's KVM check
 #   run<N>/capture/   the PNGs and index.toml (device.toml and each test's
 #                     fragment, merged)
-#   run<N>/           emulator.txt, instrument.txt, getprop.txt, logcat.txt
+#   run<N>/measure/   AH-pass: MeasureTest's fonts.toml, popup-menu.toml, focus.toml
+#                     and focus-*.png; RippleTest's ripple-*.png and ripple.toml
+#   run<N>/system-fonts/  the device's fonts.xml, font_fallback.xml,
+#                     fonts_customization.xml and /system/fonts listing
+#   run<N>/           emulator.txt, instrument.txt, instrument-measure.txt,
+#                     getprop.txt, logcat.txt
 #   run.txt           each step's exit status, the comparison
 #   sha256.txt        every PNG's SHA-256 (run 1)
 set -u
@@ -186,6 +191,29 @@ EOF
     failed=1
   fi
   "$adb" exec-out run-as dev.nativetheme.androidhost tar -cf - -C files capture | tar -xf - -C "$dir"
+  # AH-pass (the 0.8.0 measurement plan): MeasureTest's fonts, popup-menu
+  # attributes and focus steps and RippleTest's repeated presses, into
+  # files/measure; the system's font configuration files and font list.
+  timeout 1200 "$adb" shell am instrument -w -r \
+    -e class dev.nativetheme.androidhost.MeasureTest,dev.nativetheme.androidhost.RippleTest \
+    dev.nativetheme.androidhost.test/androidx.test.runner.AndroidJUnitRunner >"$dir/instrument-measure.txt" 2>&1
+  if grep -q '^OK (18 tests)' "$dir/instrument-measure.txt"; then
+    note "run $run: MeasureTest and RippleTest OK"
+  else
+    note "run $run: MeasureTest or RippleTest failed"
+    tail -n 60 "$dir/instrument-measure.txt"
+    failed=1
+  fi
+  "$adb" exec-out run-as dev.nativetheme.androidhost tar -cf - -C files measure | tar -xf - -C "$dir"
+  if [ -d "$dir/measure" ]; then
+    (cd "$dir/measure" && cat $(find . -name 'ripple-*.toml' | sort) >ripple.toml 2>/dev/null && find . -name 'ripple-*.toml' -delete)
+  fi
+  mkdir -p "$dir/system-fonts"
+  for file in /system/etc/fonts.xml /system/etc/font_fallback.xml /system/etc/fonts_customization.xml; do
+    "$adb" shell cat "$file" >"$dir/system-fonts/$(basename "$file")" 2>&1
+  done
+  "$adb" shell ls -l /system/fonts >"$dir/system-fonts/system-fonts-ls.txt" 2>&1
+  note "run $run: $(find "$dir/measure" -name '*.png' 2>/dev/null | wc -l) measure PNGs"
   note "run $run: $(find "$dir/capture" -name '*.png' | wc -l) PNGs"
   (cd "$dir/capture" && cat device.toml $(find . -name '*.toml' ! -name device.toml ! -name index.toml | sort) \
     >index.toml && find . -name '*.toml' ! -name index.toml -delete)
