@@ -92,6 +92,27 @@ fn build_test_names_a_refused_synthetic_value() {
     );
 }
 
+/// A listed `token.behavior.focus_visible_when` a widget's own value
+/// references: its synthetic value is stated, not `absent`, as the
+/// widget's `focus_visible_when` may not be absent (S17, ADD-A131: never
+/// `Absent` where a check refuses it there), so the build test loads it.
+#[test]
+fn a_listed_focus_visible_token_a_widget_reads_loads() {
+    let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
+    let token = "\nfocus_visible_when = \"absent\"\n";
+    let value = "\nfocus_visible_when = \"any_focus\"\n";
+    assert!(base.contains(token) && base.contains(value));
+    let text = format!(
+        "[pending]\n\"tokens.behavior.focus_visible_when\" = \"U1\"\n{}",
+        base.replacen(token, "\n", 1).replacen(
+            value,
+            "\nfocus_visible_when = \"= token.behavior.focus_visible_when\"\n",
+            1
+        )
+    );
+    validates(None, &text).unwrap();
+}
+
 /// `adwaita` while its `[pending]` table lists paths (S17, ADD-A128):
 /// `Theme::from_preset` refuses it with S12's missing field at each listed
 /// path no layer states, and `Theme::from_preset_synthetic` loads it with

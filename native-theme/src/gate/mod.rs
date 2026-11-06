@@ -532,8 +532,10 @@ fn synthetic_of(ty: &str, info: &registry::FieldInfo) -> Option<(&'static str, I
 /// beside an `original` rendering mode (S2.9, S12); a ripple's `color`,
 /// `alpha` and `padding`, absent only where its `effect` is (S2.12); and a
 /// text style's drawn-text leaves, absent in a keyed style and a slot only,
-/// which no part referencing them takes absent (S2.8).
-const STATED_UNDER_CONDITION: [(&str, &str); 12] = [
+/// which no part referencing them takes absent (S2.8); and the behaviour
+/// token's `focus_visible_when`, which a widget's own `focus_visible_when`,
+/// never absent, references.
+const STATED_UNDER_CONDITION: [(&str, &str); 13] = [
     ("Glyph", "size"),
     ("Glyph", "fill"),
     ("Glyph", "stroke"),
@@ -546,6 +548,7 @@ const STATED_UNDER_CONDITION: [(&str, &str); 12] = [
     ("TextStyle", "elision"),
     ("TextStyle", "wrap"),
     ("TextStyle", "max_lines"),
+    ("Behavior", "focus_visible_when"),
 ];
 
 /// Whether a synthetic value states `absent` at the field `field` of the
