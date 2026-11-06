@@ -2547,7 +2547,7 @@ fn derivations(
         let layer = Layer::from_toml(text).unwrap();
         conditions(vector, flavor)
             .map_err(|unread| format!("{unread:?}"))
-            .and_then(|conditions| preset.resolve(&conditions, &layer))
+            .and_then(|conditions| preset.resolve_pass(&conditions, &layer))
     });
     for check in checks {
         let PassCheck {

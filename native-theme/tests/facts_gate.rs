@@ -1318,6 +1318,31 @@ fn gate_fixture_derivation_pass_states_the_accent_group() {
     assert!(report.compared > 0, "{report:?}");
 }
 
+/// Only a measured derivation's pass completes the accent group with the
+/// preset's own values, as every other operand of its fact resolves from
+/// the preset (S17 *A measured derivation*); any other stand-in, the
+/// perturbed run's among them, is validated as `Theme` validates it, one
+/// stating some of the group at a scheme refused (S9.2): a stand-in stating
+/// the accent alone, where `highlight` is an accent input too, is refused
+/// by `resolve` and resolved by `resolve_pass` with the preset's own
+/// `highlight`.
+#[test]
+fn gate_accent_group_completed_for_a_pass_alone() {
+    let (_, presets) = fixture("derivation_accent_group", "preset.toml");
+    let preset = &presets[0].1;
+    let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
+    let stand_in = native_theme::next::Layer::from_toml(
+        "[inputs.accent]\nlight = \"#ff0000\"\ndark = \"#ff0000\"",
+    )
+    .unwrap();
+    let refused = preset
+        .resolve(&conditions, &stand_in)
+        .err()
+        .unwrap_or_default();
+    assert!(refused.contains("highlight"), "{refused:?}");
+    assert!(preset.resolve_pass(&conditions, &stand_in).is_ok());
+}
+
 /// The same pass with the preset's `highlight` listed in the light scheme
 /// (S17, ADD-A132): the stand-in carries its folded synthetic value as the
 /// accent group's, still marked, so the light passes reading it are

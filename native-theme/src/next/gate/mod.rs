@@ -319,12 +319,33 @@ impl Preset {
 
     /// The preset resolved with a stand-in stating `stand_in` in
     /// `conditions` and no reader (S17), validated as `Theme` validates the
-    /// stand-in: a measured derivation's pass layer with the preset's
-    /// accent inputs as one group (S9.2), the preset's own values it carries
-    /// as the preset's, a folded synthetic one still marked (ADD-A132).
+    /// stand-in: one stating some of the preset's accent inputs at a scheme
+    /// is refused, naming those it lacks (S9.2).
     pub fn resolve(&self, conditions: &Conditions, stand_in: &Layer) -> Result<Resolved, String> {
+        self.resolve_carrying(conditions, stand_in.clone(), Vec::new())
+    }
+
+    /// [`Preset::resolve`] with a measured derivation's pass layer `pass`
+    /// as the stand-in (S17 *A measured derivation*): where it states any
+    /// of the preset's accent inputs, each other one with the preset's own
+    /// value, the group stated as one (S9.2) and every operand the pass does
+    /// not vary resolving from the preset; the preset's own values it
+    /// carries are the preset's, a folded synthetic one still marked
+    /// (ADD-A132). Only a pass's layer is completed so.
+    pub fn resolve_pass(&self, conditions: &Conditions, pass: &Layer) -> Result<Resolved, String> {
+        let (pass, carried) = self.with_accent_group(pass.clone());
+        self.resolve_carrying(conditions, pass, carried)
+    }
+
+    /// The preset resolved with the stand-in `stand_in` in `conditions`,
+    /// carrying the preset's own values of the inputs `carried`.
+    fn resolve_carrying(
+        &self,
+        conditions: &Conditions,
+        stand_in: Layer,
+        carried: Vec<InputName>,
+    ) -> Result<Resolved, String> {
         let mut stack = self.stack.clone();
-        let (stand_in, carried) = self.with_accent_group(stand_in.clone());
         stack.carry_synthetic_inputs(carried);
         if let Some(flavor) = &conditions.flavor {
             stack
