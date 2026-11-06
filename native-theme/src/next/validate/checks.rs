@@ -1576,8 +1576,10 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// A loop's keyframes' `at` increase (S2.7), and, in a widget's values,
-    /// each keyframe names its part.
+    /// A loop's keyframes' `at` increase (S2.7), in a widget's values each
+    /// keyframe names its part, and each keyframe's patch sets only fields
+    /// the catalogue entry of the part it names lists, or of the part the
+    /// loop is on where it names none (S2.7, S2.11).
     fn keyframes(&mut self, keyframes: &[Keyframe], path: &Path) {
         let increasing = keyframes
             .iter()
@@ -1587,12 +1589,26 @@ impl<'a> Checker<'a> {
         if !increasing {
             self.problem(&at, ProblemKind::KeyframesNotIncreasing);
         }
-        if matches!(self.region, Region::Values(_)) {
-            for (index, keyframe) in keyframes.iter().enumerate() {
-                if keyframe.part.is_none() {
-                    let at = format!("{at}[{index}].part");
-                    self.problem(&at, ProblemKind::KeyframeWithoutPart);
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            if keyframe.part.is_none() && matches!(self.region, Region::Values(_)) {
+                let at = format!("{at}[{index}].part");
+                self.problem(&at, ProblemKind::KeyframeWithoutPart);
+            }
+            let part = match (&keyframe.part, &self.region) {
+                (Some(PartRef::Typed(part)), _) => {
+                    part_info(*part).map(|info| (widget_of(*part), info))
                 }
+                (None, Region::Part(widget, _, info, _)) => Some((*widget, *info)),
+                (Some(PartRef::Component { .. }), _)
+                | (None, Region::Roles | Region::Tokens | Region::Values(_)) => None,
+            };
+            if let Some((widget, info)) = part {
+                self.part_fields(
+                    &keyframe.patch,
+                    widget,
+                    info,
+                    &format!("{at}[{index}].patch"),
+                );
             }
         }
     }

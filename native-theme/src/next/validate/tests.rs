@@ -1892,6 +1892,32 @@ fn refusal_keyframes_not_increasing() {
     assert_eq!(bare(&animated([0.0, 0.5])), NONE);
 }
 
+/// A keyframe's patch sets only fields its part's catalogue entry lists
+/// (S2.7, S2.11): the part it names, or the part the loop is on where it
+/// names none; `shown` on no part that does not list it.
+#[test]
+fn refusal_keyframe_field_its_part_does_not_list() {
+    let looped = |part: &str, patch: &str| {
+        toml(&format!(
+            "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\n\
+             keyframes = [{{ at = 0, {part}timing = \"absent\", patch = {{ {patch} }} }}]"
+        ))
+    };
+    let at = "widgets.button.icon.icon.animation.keyframes[0].patch";
+    assert_eq!(
+        bare(&looped("", "shown = false")),
+        [format!("{at}.shown: a field `button.icon` does not have")]
+    );
+    assert_eq!(
+        bare(&looped("part = \"label\", ", "opacity = 0.5")),
+        [format!(
+            "{at}.opacity: a field `button.label` does not have"
+        )]
+    );
+    assert_eq!(bare(&looped("part = \"body\", ", "opacity = 0.5")), NONE);
+    assert_eq!(bare(&looped("", "glyph = \"absent\"")), NONE);
+}
+
 #[test]
 fn refusal_follow_part_outside_focus() {
     let corner = |focus: bool| {
