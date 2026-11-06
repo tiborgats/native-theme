@@ -110,7 +110,9 @@ func plist(_ value: Any?) -> String {
     guard let value else { return absent }
     if let number = value as? NSNumber {
         if CFGetTypeID(number) == CFBooleanGetTypeID() { return number.boolValue ? "true" : "false" }
-        return String(format: "%.6g", number.doubleValue)
+        // NSNumber's own decimal form: an integer stays whole (a variation
+        // axis identifier is a four-character code), a fraction keeps its digits.
+        return number.stringValue
     }
     if let string = value as? String { return quoted(string) }
     if let font = value as? UIFont { return fontValue(font) }

@@ -59,3 +59,8 @@ The two runs' indexes are identical on iOS 18 and differ on iOS 26 only in the c
 `run.sh`'s wait on the app's process found the process ended once the app had written `done` (`ok`) and the first
 run's output was kept whole; `run.sh` checks `done` before that failure since. The facts read no crop that differs
 between the runs by more than a level.
+
+A limit of this run: `Measure.swift` at `3fc2d9bf` wrote the numbers inside dictionaries and arrays (the variation
+axes, the variations, the feature settings and features, the attributed text's attributes) with six significant
+digits, so the axis identifiers (four-character codes, `wdth` = 2003072104) are rounded there (2003070000); the axes'
+names, minimums, defaults and maximums are whole. The next fonts run writes NSNumber's own decimal form.
