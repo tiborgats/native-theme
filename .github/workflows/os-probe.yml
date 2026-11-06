@@ -31,7 +31,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, probe-not-key, app-bundle); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -70,7 +70,8 @@ jobs:
                    "button-key-not-main", "button-main-not-key", "button-inactive-contrast",
                    "probe-rt-off", "probe-contrast", "probe-tinting-off", "probe-rt-tinting-off",
                    "probe-accent", "probe-contrast-accent", "button-focus-accent", "reads",
-                   "reads-accent", "reads-rtl", "probe-not-key", "app-bundle"]
+                   "reads-accent", "reads-rtl", "events", "motion", "motion-reduce-motion-off",
+                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle"]
           asked = [p for p in os.environ["PASSES"].split(",") if p] or every
           unknown = [p for p in asked if p not in every]
           if unknown:
@@ -393,6 +394,141 @@ jobs:
             done
           } > "$log" 2>&1
           cat "$log"
+      # The motion pass (--button-pass --motion; MP-record of the 0.8.0
+      # measurement plan: U103, U160, U181, U182, U302, U328, U332, U606,
+      # U612): scripted screen recordings of a window of controls per
+      # appearance, presses (and macOS 26's glass button), radio buttons, a
+      # search field's cancel button, interrupted focus rings and carets,
+      # with keyboard navigation on (AppleKeyboardUIMode 2, so a button takes
+      # the focus); `motion` with the image's Reduce Motion, and
+      # `motion-reduce-motion-off` with it off; then each recording cut by
+      # ffmpeg to its <stem>.crop, frame by frame, into <stem>-frames/ with
+      # the frames' times in <stem>-frames.csv (ffprobe). settings.txt
+      # records each write, read-back and restore, ffmpeg.txt the tool and
+      # each cut.
+      - name: Run the motion pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'motion' || matrix.pass == 'motion-reduce-motion-off')
+        continue-on-error: true
+        run: |
+          set +e
+          restore() {
+            image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write "$1" "$2" -bool true ;;
+              0) defaults write "$1" "$2" -bool false ;;
+              absent) defaults delete "$1" "$2" ;;
+              -[0-9]*|[0-9]*) defaults write "$1" "$2" -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore $2 to the image's ($image): exit $?"
+            echo "read back: $(defaults read "$1" "$2" 2>&1)"
+          }
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          mkdir -p "$out"
+          {
+            echo "image's AppleKeyboardUIMode: $(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+            echo "image's reduceMotion: $(cat "$RUNNER_TEMP/universalaccess/reduceMotion" 2>/dev/null || echo 'not recorded')"
+            if [ "${{ matrix.pass }}" = motion-reduce-motion-off ]; then
+              defaults write com.apple.universalaccess reduceMotion -bool false
+              echo "write reduceMotion false: exit $?"
+            fi
+            echo "read back: $(defaults read com.apple.universalaccess reduceMotion 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --motion
+          {
+            restore -g AppleKeyboardUIMode
+            restore com.apple.universalaccess reduceMotion
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The events pass (--button-pass --events; MP-events: U320-U322, U329
+      # and their macos-monterey twins U600, U607-U609): posted clicks at
+      # stepped distances and gaps, drags of selected text after stepped
+      # holds and distances, the tool tip's appearance, and per appearance
+      # two recordings, typing with the cursor drawn and a drag over a
+      # table, a text view and a spring-loaded button, with the image's
+      # settings; then the recordings cut as the motion pass's are.
+      - name: Run the events pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'events'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-events
+          mkdir -p "$out"
+          echo "no setting changed" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --events
+      - name: Cut the motion and events recordings into frames (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'motion' || matrix.pass == 'motion-reduce-motion-off' || matrix.pass == 'events')
+        continue-on-error: true
+        run: |
+          set +e
+          out="os-probe-out/button-pass-${{ matrix.pass }}"
+          log="$out/ffmpeg.txt"
+          {
+            if ! command -v ffmpeg >/dev/null; then
+              HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_COLOR=1 HOMEBREW_NO_EMOJI=1 brew install ffmpeg
+              echo "brew install ffmpeg: exit $?"
+            fi
+            ffmpeg -hide_banner -version | head -n 1
+            for mov in "$out"/*/*.mov; do
+              stem="${mov%.mov}"
+              if [ ! -f "$stem.crop" ]; then echo "$mov: no $stem.crop"; continue; fi
+              mkdir -p "$stem-frames"
+              ffmpeg -hide_banner -nostdin -loglevel error -i "$mov" -vf "crop=$(cat "$stem.crop")" \
+                -fps_mode passthrough "$stem-frames/%05d.png"
+              echo "ffmpeg $mov crop=$(cat "$stem.crop"): exit $?, $(ls "$stem-frames" | wc -l) frames"
+              ffprobe -v error -select_streams v:0 -show_entries frame=pts_time -of csv=p=0 "$mov" > "$stem-frames.csv"
+              echo "ffprobe $mov: exit $?"
+            done
+          } > "$log" 2>&1
+          cat "$log"
+      # The colours pass (--colors; MP-highlight U163 and MP-colorspace
+      # U158): every NSColor per appearance with the highlight and accent
+      # defaults, and Core Animation's colour interpolation captured paused
+      # mid-animation; `colors` with the image's settings, and
+      # `colors-highlight-red` with AppleHighlightColor written as the
+      # string "1.000000 0.733333 0.721569 Red" (red, green and blue
+      # components, then a name), restored after; settings.txt records the
+      # write and the read-back, probe.toml what AppKit then reports.
+      - name: Run the colours pass (macOS)
+        if: runner.os == 'macOS' && (matrix.pass == 'colors' || matrix.pass == 'colors-highlight-red')
+        continue-on-error: true
+        run: |
+          set +e
+          out="os-probe-out/${{ matrix.pass }}"
+          mkdir -p "$out"
+          highlight="$(defaults read -g AppleHighlightColor 2>&1)"
+          if [ $? -ne 0 ]; then
+            case "$highlight" in
+              *"does not exist"*|*"Could not find key"*) highlight=absent ;;
+              *) highlight="unreadable: $highlight" ;;
+            esac
+          fi
+          {
+            echo "image's AppleHighlightColor: $highlight"
+            if [ "${{ matrix.pass }}" = colors-highlight-red ]; then
+              defaults write -g AppleHighlightColor -string "1.000000 0.733333 0.721569 Red"
+              echo "write AppleHighlightColor \"1.000000 0.733333 0.721569 Red\": exit $?"
+            fi
+            echo "read back: $(defaults read -g AppleHighlightColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --colors
+          if [ "${{ matrix.pass }}" = colors-highlight-red ]; then
+            {
+              case "$highlight" in
+                absent) defaults delete -g AppleHighlightColor ;;
+                unreadable*) false ;;
+                *) defaults write -g AppleHighlightColor -string "$highlight" ;;
+              esac
+              echo "restore AppleHighlightColor to the image's ($highlight): exit $?"
+              echo "read back: $(defaults read -g AppleHighlightColor 2>&1)"
+            } >> "$out/settings.txt" 2>&1
+            tail -n 2 "$out/settings.txt"
+          fi
       - name: Run the button pass with Increase Contrast on (macOS)
         if: runner.os == 'macOS' && matrix.pass == 'button-contrast'
         continue-on-error: true

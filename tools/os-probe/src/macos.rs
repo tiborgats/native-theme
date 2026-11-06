@@ -12,6 +12,7 @@
 //! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
 
 mod buttons;
+mod colors;
 mod ffi;
 mod layer;
 mod reads;
@@ -188,6 +189,14 @@ pub(crate) fn symbols_probe(doc: &mut Table, out_dir: &Path) {
 pub(crate) fn reads_probe(doc: &mut Table, out_dir: &Path) {
     single_pass(doc, "reads", |mtm, app, _| {
         reads::reads_table(mtm, app, out_dir)
+    });
+}
+
+/// `--colors`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// colours pass only; its captures go under `out_dir/color_space`.
+pub(crate) fn colors_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "colors", |mtm, app, _| {
+        colors::colors_pass_table(mtm, app, out_dir)
     });
 }
 

@@ -17,7 +17,10 @@
 //! (`--focus`), a second window of the probe key (`--not-key`), and another
 //! application active (`--inactive`).
 
+mod events;
 mod extras;
+mod motion;
+mod timeline;
 mod transition;
 
 use std::cell::Cell;
@@ -150,6 +153,13 @@ pub(crate) enum Mode {
     KeyNotMain,
     /// Each sheet's window main but not key: a panel of the probe key.
     MainNotKey,
+    /// No sheet: scripted screen recordings of presses, a radio button, a
+    /// search field's cancel button, interrupted focus rings and carets
+    /// ([`motion`]).
+    Motion,
+    /// No sheet: posted clicks, drags, hovers and typing, read and recorded
+    /// ([`events`]).
+    Events,
 }
 
 impl Mode {
@@ -162,6 +172,8 @@ impl Mode {
             Mode::FocusTransition => "focus_transition",
             Mode::KeyNotMain => "key_not_main",
             Mode::MainNotKey => "main_not_key",
+            Mode::Motion => "motion",
+            Mode::Events => "events",
         }
     }
 
@@ -187,6 +199,12 @@ impl Mode {
             }
             Mode::MainNotKey => {
                 "each sheet's window made key and main, then a small titled NSPanel of the probe made key and front (the main_not_key table): the sheet's window main but not key, the application active; the states normal, pressed, disabled and disabled_pressed over every backdrop; no toolbar"
+            }
+            Mode::Motion => {
+                "no sheet is captured; a window of its own made key, the application active, and scripted screen recordings of its controls (motion)"
+            }
+            Mode::Events => {
+                "no sheet is captured; a window of its own made key, the application active, and posted clicks, drags, hovers and typing read and recorded (events)"
             }
         }
     }
@@ -936,12 +954,16 @@ pub(super) fn button_pass_table(
         any_key: Cell::new(false),
     };
 
-    if mode == Mode::FocusTransition {
-        out::put_table(
-            &mut t,
-            "focus_transition",
-            transition::transition_table(&pass, version),
-        );
+    if matches!(mode, Mode::FocusTransition | Mode::Motion | Mode::Events) {
+        let (key, table) = match mode {
+            Mode::Motion => ("motion", motion::motion_table(&pass, version)),
+            Mode::Events => ("events", events::events_table(&pass)),
+            _ => (
+                "focus_transition",
+                transition::transition_table(&pass, version),
+            ),
+        };
+        out::put_table(&mut t, key, table);
         out::put(&mut t, "all_captures_key", out::boolean(pass.all_key.get()));
         out::put(&mut t, "any_capture_key", out::boolean(pass.any_key.get()));
         return t;
@@ -1171,7 +1193,9 @@ impl Pass<'_> {
                 }
                 main
             }
-            Mode::Key | Mode::Focus | Mode::FocusTransition => None,
+            Mode::Key | Mode::Focus | Mode::FocusTransition | Mode::Motion | Mode::Events => {
+                None
+            }
         };
         out::put(&mut *t, "isKeyWindow", out::boolean(window.isKeyWindow()));
         out::put(&mut *t, "isMainWindow", out::boolean(window.isMainWindow()));

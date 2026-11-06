@@ -845,3 +845,273 @@ pub(super) fn default_cascade(font: &NSFont, languages: &[&str]) -> Option<Retai
     let object: &AnyObject = cf.as_ref();
     object.downcast_ref::<NSArray>().map(Message::retain)
 }
+
+// ── Timers, layers and the drag pasteboard (the motion and events passes) ──
+
+/// A repeating NSTimer calling `tick` every `interval` seconds, added to the
+/// current (main) run loop in its common modes, so it fires in the default
+/// mode the probe pumps and in the event-tracking mode a button's or a drag's
+/// mouse tracking runs; the caller invalidates it.
+pub(super) fn common_modes_timer(
+    _mtm: MainThreadMarker,
+    interval: f64,
+    tick: impl Fn() + 'static,
+) -> Retained<objc2_foundation::NSTimer> {
+    let block = block2::RcBlock::new(move |_timer: NonNull<objc2_foundation::NSTimer>| tick());
+    // SAFETY: the block is called only on the run loop the timer is added to
+    // below, the main thread's (the MainThreadMarker proves this is it), so
+    // it never runs on another thread although it is not `Send`; the timer
+    // retains the block.
+    let timer = unsafe {
+        objc2_foundation::NSTimer::timerWithTimeInterval_repeats_block(interval, true, &block)
+    };
+    // SAFETY: a valid timer and Foundation's `NSRunLoopCommonModes` constant;
+    // the run loop retains the timer until it is invalidated.
+    unsafe {
+        objc2_foundation::NSRunLoop::currentRunLoop()
+            .addTimer_forMode(&timer, objc2_foundation::NSRunLoopCommonModes);
+    }
+    timer
+}
+
+/// The presentation layer tree under `view`'s layer, to `depth` levels and
+/// at most `limit` layers: per layer its path (`0.1.2`), class, opacity,
+/// bounds size and affine transform (`a b c d tx ty`), and whether its 3D
+/// transform is affine; the model layer's where it has no presentation layer.
+pub(super) fn presentation_tree(view: &NSView, depth: usize, limit: usize) -> Vec<String> {
+    let mut rows = Vec::new();
+    if let Some(layer) = view.layer() {
+        walk_layer(&layer, "0", depth, limit, &mut rows);
+    }
+    rows
+}
+
+fn walk_layer(
+    layer: &objc2_quartz_core::CALayer,
+    path: &str,
+    depth: usize,
+    limit: usize,
+    rows: &mut Vec<String>,
+) {
+    if rows.len() >= limit {
+        return;
+    }
+    // SAFETY: a getter that only reads; the copy it returns is owned by the
+    // `Retained` (nil where the layer was never committed).
+    let shown = unsafe { layer.presentationLayer() };
+    let read: &objc2_quartz_core::CALayer = shown.as_deref().unwrap_or(layer);
+    let a = read.affineTransform();
+    let t3 = read.transform();
+    let size = read.bounds().size;
+    let any: &AnyObject = layer;
+    rows.push(format!(
+        "{path} {} opacity {:.4} size {:.2}x{:.2} affine {:.4} {:.4} {:.4} {:.4} {:.2} {:.2} m33 {:.4} m34 {:.5} m43 {:.2}{}",
+        any.class().name().to_string_lossy(),
+        read.opacity(),
+        size.width,
+        size.height,
+        a.a,
+        a.b,
+        a.c,
+        a.d,
+        a.tx,
+        a.ty,
+        t3.m33,
+        t3.m34,
+        t3.m43,
+        if shown.is_some() { "" } else { " (model)" },
+    ));
+    if depth == 0 {
+        return;
+    }
+    // SAFETY: a getter that only reads; the array it returns is a copy
+    // owned by the `Retained`.
+    let Some(subs) = (unsafe { layer.sublayers() }) else {
+        return;
+    };
+    for (i, sub) in subs.iter().enumerate() {
+        walk_layer(&sub, &format!("{path}.{i}"), depth.saturating_sub(1), limit, rows);
+    }
+}
+
+/// A layer filled with an animation of its background colour from `from` to
+/// `to` over `duration` seconds (linear), paused at `at` seconds into it: the
+/// layer's speed 0 and time offset `at`, the animation beginning a
+/// microsecond into the layer's local time (an explicit begin time, which
+/// Core Animation keeps) and filling both ways, so the layer shows the
+/// animation's value at `at` (less a microsecond) for as long as it lives.
+pub(super) fn paused_color_layer(
+    frame: objc2_core_foundation::CGRect,
+    from: &objc2_core_graphics::CGColor,
+    to: &objc2_core_graphics::CGColor,
+    duration: f64,
+    at: f64,
+) -> Retained<objc2_quartz_core::CALayer> {
+    use objc2_quartz_core::CAMediaTiming;
+    let layer = objc2_quartz_core::CALayer::new();
+    layer.setFrame(frame);
+    layer.setBackgroundColor(Some(to));
+    layer.setSpeed(0.0);
+    layer.setTimeOffset(at);
+    let animation = objc2_quartz_core::CABasicAnimation::animationWithKeyPath(Some(
+        &NSString::from_str("backgroundColor"),
+    ));
+    let from_cf: &CFType = from;
+    let to_cf: &CFType = to;
+    let from_object: &AnyObject = from_cf.as_ref();
+    let to_object: &AnyObject = to_cf.as_ref();
+    // SAFETY: a `backgroundColor` animation's values are CGColors
+    // (CAAnimation.h's fromValue/toValue are ids: a CGColorRef is a CF
+    // object); the animation retains them.
+    unsafe {
+        animation.setFromValue(Some(from_object));
+        animation.setToValue(Some(to_object));
+    }
+    animation.setDuration(duration);
+    animation.setBeginTime(1e-6);
+    // SAFETY: reads QuartzCore's `extern` constants.
+    let (linear, both) = unsafe {
+        (
+            objc2_quartz_core::kCAMediaTimingFunctionLinear,
+            objc2_quartz_core::kCAFillModeBoth,
+        )
+    };
+    animation.setTimingFunction(Some(&objc2_quartz_core::CAMediaTimingFunction::functionWithName(
+        linear,
+    )));
+    animation.setFillMode(both);
+    animation.setRemovedOnCompletion(false);
+    layer.addAnimation_forKey(&animation, Some(&NSString::from_str("probe")));
+    layer
+}
+
+/// The drag pasteboard's change count (`NSPasteboardNameDrag`), which a
+/// drag session that starts writes to.
+pub(super) fn drag_pasteboard_change_count() -> NSInteger {
+    // SAFETY: reads AppKit's `extern` NSString constant.
+    let name = unsafe { objc2_app_kit::NSPasteboardNameDrag };
+    objc2_app_kit::NSPasteboard::pasteboardWithName(name).changeCount()
+}
+
+/// `NSPasteboardTypeString`.
+pub(super) fn string_pasteboard_type() -> &'static NSString {
+    // SAFETY: reads AppKit's `extern` NSString constant.
+    unsafe { objc2_app_kit::NSPasteboardTypeString }
+}
+
+/// Point `control`'s action at `-[NSApplication updateWindows]`, a method
+/// that only redraws windows that need it: radio buttons sharing an action
+/// form one group, and a spring-loaded button needs an action to perform.
+pub(super) fn set_harmless_action(control: &objc2_app_kit::NSControl, app: &objc2_app_kit::NSApplication) {
+    let target: &AnyObject = app;
+    // SAFETY: the target is the application object, which outlives every
+    // control; `updateWindows` takes no argument (the sender AppKit passes is
+    // an extra register argument the method never reads) and returns void.
+    unsafe {
+        control.setTarget(Some(target));
+        control.setAction(Some(sel!(updateWindows)));
+    }
+}
+
+/// What the drop table hands its table and what it saw.
+pub(super) struct DropRows {
+    rows: Vec<Retained<NSView>>,
+    /// How often AppKit asked the table to validate a drop.
+    pub(super) validated: std::cell::Cell<u32>,
+    /// The last proposed row and drop operation (0 on, 1 above).
+    pub(super) last: std::cell::Cell<(NSInteger, usize)>,
+}
+
+define_class!(
+    // SAFETY: NSObject has no subclassing requirements, and `DropTable`
+    // does not implement `Drop`.
+    #[unsafe(super(NSObject))]
+    #[thread_kind = MainThreadOnly]
+    #[name = "NativeThemeOsProbeDropTable"]
+    #[ivars = DropRows]
+    pub(super) struct DropTable;
+
+    // SAFETY: NSObjectProtocol has no requirements beyond NSObject's.
+    unsafe impl NSObjectProtocol for DropTable {}
+
+    // SAFETY: every method of the protocol is optional; none is implemented.
+    unsafe impl NSControlTextEditingDelegate for DropTable {}
+
+    // SAFETY: each method's selector, argument and return types are
+    // NSTableViewDataSource's (objc2-app-kit's `NSTableViewDataSource`).
+    unsafe impl NSTableViewDataSource for DropTable {
+        #[unsafe(method(numberOfRowsInTableView:))]
+        fn number_of_rows(&self, _table: &NSTableView) -> NSInteger {
+            NSInteger::try_from(self.ivars().rows.len()).unwrap_or(NSInteger::MAX)
+        }
+
+        #[unsafe(method(tableView:validateDrop:proposedRow:proposedDropOperation:))]
+        fn validate_drop(
+            &self,
+            _table: &NSTableView,
+            _info: &objc2::runtime::ProtocolObject<dyn objc2_app_kit::NSDraggingInfo>,
+            row: NSInteger,
+            operation: objc2_app_kit::NSTableViewDropOperation,
+        ) -> objc2_app_kit::NSDragOperation {
+            let ivars = self.ivars();
+            ivars.validated.set(ivars.validated.get().saturating_add(1));
+            ivars.last.set((row, operation.0));
+            objc2_app_kit::NSDragOperation::Copy
+        }
+
+        #[unsafe(method(tableView:acceptDrop:row:dropOperation:))]
+        fn accept_drop(
+            &self,
+            _table: &NSTableView,
+            _info: &objc2::runtime::ProtocolObject<dyn objc2_app_kit::NSDraggingInfo>,
+            _row: NSInteger,
+            _operation: objc2_app_kit::NSTableViewDropOperation,
+        ) -> bool {
+            false
+        }
+    }
+
+    // SAFETY: the method's selector, argument and return types are
+    // NSTableViewDelegate's (objc2-app-kit's `NSTableViewDelegate`).
+    unsafe impl NSTableViewDelegate for DropTable {
+        #[unsafe(method_id(tableView:viewForTableColumn:row:))]
+        fn view_for(
+            &self,
+            _table: &NSTableView,
+            _column: Option<&NSTableColumn>,
+            row: NSInteger,
+        ) -> Option<Retained<NSView>> {
+            let row = usize::try_from(row).ok()?;
+            self.ivars().rows.get(row).cloned()
+        }
+    }
+);
+
+impl DropTable {
+    /// A one-column table's data source and delegate that hands out `rows`
+    /// and accepts a copy dropped on or between them (validating, then
+    /// refusing the drop itself, so nothing changes).
+    pub(super) fn new(mtm: MainThreadMarker, rows: Vec<Retained<NSView>>) -> Retained<Self> {
+        let this = Self::alloc(mtm).set_ivars(DropRows {
+            rows,
+            validated: std::cell::Cell::new(0),
+            last: std::cell::Cell::new((-1, 0)),
+        });
+        // SAFETY: NSObject's `init` on an allocated instance whose ivars are
+        // set, as objc2's `define_class!` documents.
+        unsafe { msg_send![super(this), init] }
+    }
+}
+
+/// Make `source` the data source and delegate of `table`, or, with `None`,
+/// clear both.
+pub(super) fn set_drop_table(table: &NSTableView, source: Option<&DropTable>) {
+    let data_source = source.map(objc2::runtime::ProtocolObject::from_ref);
+    let delegate = source.map(objc2::runtime::ProtocolObject::from_ref);
+    // SAFETY: both properties are weak; the caller keeps `source` alive
+    // while the table can call it and clears both before dropping it.
+    unsafe {
+        table.setDataSource(data_source);
+        table.setDelegate(delegate);
+    }
+}
