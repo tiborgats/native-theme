@@ -156,6 +156,33 @@ fn transition(properties: Vec<PropertyGroup>, timing: Timing) -> Transition {
     }
 }
 
+/// A `WinUiAnimatedIcon` transition of the icon, the one engine that runs a
+/// `Keyed` kind (S2.7, S12): its visual `accept` times it, so it states no
+/// duration, timing or delay.
+fn keyed_icon(kind: TransitionKind) -> Transition {
+    Transition {
+        properties: vec![PropertyGroup::Icon],
+        kind,
+        duration: Value::Absent,
+        delay: Value::Stated(Ms(0.0)),
+        timing: Value::Absent,
+        engine: TransitionEngine::WinUiAnimatedIcon {
+            visual: key!("accept"),
+        },
+        from: None,
+    }
+}
+
+/// `layer` with the visual [`keyed_icon`] names in its bases, its one
+/// marker `Bounce`, the state of the `bounce` kind.
+fn with_visual(mut layer: Layer) -> Layer {
+    let visual = toml(
+        "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\nmarkers = { Bounce = 0.0 }",
+    );
+    layer.bases.tokens = visual.bases.tokens;
+    layer
+}
+
 fn transitions(items: Vec<Transition>) -> Layer {
     body(PartStylePatch {
         transitions: Some(items),
@@ -237,11 +264,11 @@ fn refusal_out_of_range() {
         bare(&transitions(vec![
             transition(vec![PropertyGroup::Fill], spring(0.0)),
             transition(
-                vec![PropertyGroup::Opacity],
+                vec![PropertyGroup::Shadow],
                 Timing::CubicBezier(1.5, 0.0, 0.5, 1.0)
             ),
             transition(
-                vec![PropertyGroup::Stroke],
+                vec![PropertyGroup::Corners],
                 Timing::Steps {
                     count: 1,
                     jump: StepJump::JumpNone
@@ -527,6 +554,18 @@ fn timed(duration: &str, timing: &str, engine: &str) -> Layer {
     ))
 }
 
+/// A stated zero of `fill` on `button.body`, its `timing` and `engine` as
+/// written, after a 100 ms fade it overrides (S12: a zero overriding
+/// nothing is refused), so it is the list's second item.
+fn zeroed(timing: &str, engine: &str) -> Layer {
+    toml(&format!(
+        "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+         \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \
+         \"gtk_css\", from = [\"hover\"] }}, {{ properties = [\"fill\"], kind = \"interpolate\", \
+         duration_ms = 0, delay_ms = 0, timing = {timing}, engine = {engine} }}]"
+    ))
+}
+
 /// A focus indicator's transition on `button.body` stated `focus` in the
 /// bases, and a rule under `hover` patching it by `rule`.
 fn focus_timed(duration: &str, timing: &str, rule: &str) -> Layer {
@@ -561,7 +600,7 @@ fn refusal_timing_absent() {
             "widgets.button.body.transitions[0].timing: {refusal}"
         )]
     );
-    assert_eq!(bare(&timed("0", "\"absent\"", "\"gtk_css\"")), NONE);
+    assert_eq!(bare(&zeroed("\"absent\"", "\"gtk_css\"")), NONE);
     let quick = declare("durations = [\"quick\"]");
     let referenced = toml(&format!(
         "[tokens.motion]\ndurations.quick_ms = 0\n{}",
@@ -577,19 +616,17 @@ fn refusal_timing_absent() {
     );
     assert_eq!(
         bare(&focus_timed(
-            "0",
-            "\"absent\"",
-            "focus.transition.duration_ms = 100"
+            "100",
+            "\"linear\"",
+            "focus.transition.timing = \"absent\""
         )),
-        [format!(
-            "widgets.button.body.focus.transition.timing: {refusal}"
-        )]
+        [format!("rules[0].set.focus.transition.timing: {refusal}")]
     );
     assert_eq!(
         bare(&focus_timed(
-            "0",
-            "\"absent\"",
-            "focus.transition.delay_ms = 10"
+            "100",
+            "\"linear\"",
+            "focus.transition.timing = \"absent\", focus.transition.duration_ms = 0"
         )),
         NONE
     );
@@ -608,9 +645,9 @@ fn refusal_timing_absent() {
 fn refusal_timing_on_zero() {
     let refusal = "a timing stated where the duration is a stated zero";
     assert_eq!(
-        bare(&timed("0", "\"linear\"", "\"gtk_css\"")),
+        bare(&zeroed("\"linear\"", "\"gtk_css\"")),
         [format!(
-            "widgets.button.body.transitions[0].timing: {refusal}"
+            "widgets.button.body.transitions[1].timing: {refusal}"
         )]
     );
     assert_eq!(bare(&timed("100", "\"linear\"", "\"gtk_css\"")), NONE);
@@ -743,9 +780,9 @@ fn refusal_timing_not_computed() {
         NONE
     );
     assert_eq!(
-        bare(&timed("0", spring, "\"gtk_css\"")),
+        bare(&zeroed(spring, "\"gtk_css\"")),
         [
-            "widgets.button.body.transitions[0].timing: a timing stated where the duration is a \
+            "widgets.button.body.transitions[1].timing: a timing stated where the duration is a \
           stated zero"
         ]
     );
@@ -780,10 +817,16 @@ fn refusal_timing_not_computed() {
         NONE
     );
     assert_eq!(
-        found(&referenced("\"linear\"", "\"compose_held\""), &curve),
+        found(
+            &referenced(
+                "{ platform = { qt = \"out_cubic\" } }",
+                "\"compose_transition\""
+            ),
+            &curve
+        ),
         [
-            "widgets.button.body.transitions[0].timing: a timing the `compose_held` engine does \
-          not compute"
+            "widgets.button.body.transitions[0].timing: a timing the `compose_transition` engine \
+          does not compute"
         ]
     );
     // A tokens rule can change the referenced curve where the transition
@@ -802,6 +845,388 @@ fn refusal_timing_not_computed() {
           compute"
         ]
     );
+}
+
+/// A transition its engine does not run (S2.7, S12; ADD-A126):
+/// `WinUiAnimatedIcon` takes a `Keyed` transition with no duration, timing
+/// or delay; a Breeze engine an `Interpolate` one with a duration and no
+/// delay; `GtkSwitch` the switch thumb's `Geometry` transition and
+/// `ComposeHeld` a segmented control's segment's, none of the catalogue's
+/// parts yet; and no value engine a `Keyed` one.
+#[test]
+fn refusal_engine_mismatch() {
+    let kinds = declare("transition_kinds = { normal_off = {} }");
+    let keyed = "{ keyed = { key = \"normal_off\", params = {} } }";
+    let icon = |kind: &str, duration: &str, delay: &str, timing: &str| {
+        toml(&format!(
+            "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\nmarkers = {{ \
+             NormalOff = 0.0 }}\n[widgets.button.body]\ntransitions = [{{ properties = \
+             [\"icon\"], kind = {kind}, duration_ms = {duration}, delay_ms = {delay}, timing = \
+             {timing}, engine = {{ win_ui_animated_icon = {{ visual = \"accept\" }} }} }}]"
+        ))
+    };
+    let at = "widgets.button.body.transitions[0]";
+    let icon_takes = "the `win_ui_animated_icon` engine takes";
+    assert_eq!(
+        found(&icon(keyed, "\"absent\"", "0", "\"absent\""), &kinds),
+        NONE
+    );
+    assert_eq!(
+        found(&icon(keyed, "100", "10", "\"linear\""), &kinds),
+        [
+            format!("{at}.duration_ms: {icon_takes} no duration: its visual times it"),
+            format!("{at}.timing: {icon_takes} no timing: its visual times it"),
+            format!("{at}.delay_ms: {icon_takes} no delay"),
+        ]
+    );
+    assert_eq!(
+        found(
+            &icon("\"interpolate\"", "\"absent\"", "0", "\"absent\""),
+            &kinds
+        ),
+        [format!("{at}.kind: {icon_takes} a `keyed` transition only")]
+    );
+    let breeze = |kind: &str, duration: &str, delay: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = {kind}, \
+             duration_ms = {duration}, delay_ms = {delay}, timing = \"linear\", engine = {{ \
+             breeze = {{ any = [\"hover\"], none = [], conditions = [] }} }} }}]"
+        ))
+    };
+    assert_eq!(found(&breeze("\"interpolate\"", "100", "0"), &kinds), NONE);
+    let breeze_takes = "the `breeze` engine takes";
+    assert_eq!(
+        found(&breeze(keyed, "\"absent\"", "10"), &kinds),
+        [
+            format!("{at}.duration_ms: {breeze_takes} a duration, on which its time runs"),
+            format!("{at}.delay_ms: {breeze_takes} no delay"),
+            format!("{at}.kind: {breeze_takes} an `interpolate` transition only"),
+        ]
+    );
+    assert_eq!(
+        bare(&timed(
+            "100",
+            "{ platform = { adw = \"ease_out_cubic\" } }",
+            "\"gtk_switch\""
+        )),
+        [format!(
+            "{at}.engine: the `gtk_switch` engine takes the switch thumb's `geometry` \
+             transition only"
+        )]
+    );
+    let spring = "{ spring = { mass = 1, stiffness = 100, damping_ratio = 1, initial_velocity \
+                  = 0, rest_epsilon = 0.001, clamp = false, time_scale = 1 } }";
+    assert_eq!(
+        bare(&timed("\"absent\"", spring, "\"compose_held\"")),
+        [format!(
+            "{at}.engine: the `compose_held` engine takes a segmented control's segment's \
+             `geometry` transition only"
+        )]
+    );
+    let css_keyed = toml(&format!(
+        "[widgets.button.body]\ntransitions = [{{ properties = [\"icon\"], kind = {keyed}, \
+         duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }}]"
+    ));
+    assert_eq!(
+        found(&css_keyed, &kinds),
+        [format!(
+            "{at}.kind: the `gtk_css` engine takes no `keyed` transition"
+        )]
+    );
+}
+
+/// A Breeze test holds somewhere and reads what the engine can (S2.7,
+/// S12; ADD-A126): a flag in `any` or a condition on a transition that is
+/// no stated zero, every list empty on a stated zero, no flag twice or in
+/// both `any` and `none`, the window's conditions only, and a focus
+/// indicator's `focus_visible` in `any`.
+#[test]
+fn refusal_breeze_test_invalid() {
+    let fade = "{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+                0, timing = \"linear\", engine = { breeze = { any = [\"pressed\"], none = [], \
+                conditions = [] } } }";
+    let breeze = |duration: &str, timing: &str, test: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{fade}, {{ properties = [\"fill\"], kind = \
+             \"interpolate\", duration_ms = {duration}, delay_ms = 0, timing = {timing}, \
+             engine = {{ breeze = {{ {test} }} }} }}]"
+        ))
+    };
+    let at = "widgets.button.body.transitions[1].engine.breeze";
+    let empty = "any = [], none = [], conditions = []";
+    assert_eq!(
+        bare(&breeze("100", "\"linear\"", empty)),
+        [format!(
+            "{at}: a Breeze test names a flag in `any` or a condition: it holds nowhere"
+        )]
+    );
+    assert_eq!(
+        bare(&breeze(
+            "100",
+            "\"linear\"",
+            "any = [], none = [], conditions = [\"window_inactive\"]"
+        )),
+        NONE
+    );
+    assert_eq!(bare(&breeze("0", "\"absent\"", empty)), NONE);
+    assert_eq!(
+        bare(&breeze(
+            "0",
+            "\"absent\"",
+            "any = [\"hover\"], none = [], conditions = []"
+        )),
+        [format!(
+            "{at}.any: a Breeze test of a stated zero is empty: a zero reads none"
+        )]
+    );
+    assert_eq!(
+        bare(&breeze(
+            "100",
+            "\"linear\"",
+            "any = [\"hover\", \"hover\"], none = [\"hover\"], conditions = [\"reduced_motion\"]"
+        )),
+        [
+            format!("{at}.any[1]: `hover` listed twice"),
+            format!("{at}.none[0]: a Breeze test names no flag in both `any` and `none`"),
+            format!("{at}.conditions[0]: a Breeze test names the window's conditions only"),
+        ]
+    );
+    let focus = |any: &str| {
+        toml(&format!(
+            "[widgets.button.body.focus]\ntransition = {{ properties = [], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = {{ \
+             breeze = {{ any = [{any}], none = [], conditions = [] }} }}, from = \"none\" }}"
+        ))
+    };
+    assert_eq!(
+        bare(&focus("\"hover\"")),
+        [
+            "widgets.button.body.focus.transition.engine.breeze.any: a Breeze test of a focus \
+          indicator names `focus_visible` in `any`"
+        ]
+    );
+    assert_eq!(bare(&focus("\"focus_visible\"")), NONE);
+}
+
+/// A `FocusMove` transition is refused: no engine runs one yet, as an
+/// engine runs per element part and the move crosses two (S2.7, S2.10,
+/// S12; ADD-A126).
+#[test]
+fn refusal_focus_move_not_run() {
+    let kind = |kind: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{{ properties = [\"fill\"], kind = \
+             \"{kind}\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \
+             \"gtk_css\" }}]"
+        ))
+    };
+    assert_eq!(
+        bare(&kind("focus_move")),
+        [
+            "widgets.button.body.transitions[0].kind: a `focus_move` transition, which no engine \
+          runs yet"
+        ]
+    );
+    assert_eq!(bare(&kind("interpolate")), NONE);
+}
+
+/// A `WinUiAnimatedIcon` transition's `Keyed` key names a state, its
+/// UpperCamelCase form, some marker of its visual holds: the state's own
+/// marker or a segment's from or to it, under every combination in which
+/// the transition is in effect (S2.7, S12).
+#[test]
+fn refusal_unknown_state() {
+    let kinds = declare("transition_kinds = { normal_off = {}, pressed_on = {} }");
+    let icon = |state: &str, rules: &str| {
+        toml(&format!(
+            "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\nmarkers = {{ \
+             NormalOnToNormalOff_Start = 0.0, NormalOnToNormalOff_End = 0.5 }}\n\
+             [widgets.button.body]\ntransitions = [{{ properties = [\"icon\"], kind = {{ keyed \
+             = {{ key = \"{state}\", params = {{}} }} }}, duration_ms = \"absent\", delay_ms = \
+             0, timing = \"absent\", engine = {{ win_ui_animated_icon = {{ visual = \"accept\" \
+             }} }} }}]\n{rules}"
+        ))
+    };
+    assert_eq!(found(&icon("normal_off", ""), &kinds), NONE);
+    let refused = [
+        "widgets.button.body.transitions[0].kind.keyed.key: `pressed_on` names a \
+                    state no marker of the visual `accept` holds",
+    ];
+    assert_eq!(found(&icon("pressed_on", ""), &kinds), refused);
+    // A marker a tokens rule adds holds the state only where it applies.
+    let marker = |when: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ {when} }}\ntarget = \"tokens\"\nset = {{ \
+             icons.animated_visuals.accept.markers.NormalOffToPressedOn_End = 1.0 }}"
+        )
+    };
+    assert_eq!(
+        found(
+            &icon("pressed_on", &marker("conditions = [\"reduced_motion\"]")),
+            &kinds
+        ),
+        refused
+    );
+    assert_eq!(found(&icon("pressed_on", &marker("")), &kinds), NONE);
+}
+
+/// A `GtkCss` part's transitions that can apply together name one curve,
+/// followed through references, but on `Shadow` and `Corners`, the groups
+/// GTK's engine takes a curve for by property id (S2.7, S12; ADD-A131).
+#[test]
+fn refusal_several_curves() {
+    let css = |groups: &str, timing: &str| {
+        format!(
+            "{{ properties = [{groups}], kind = \"interpolate\", duration_ms = 100, delay_ms = \
+             0, timing = {timing}, engine = \"gtk_css\" }}"
+        )
+    };
+    let list = |items: &[String]| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{}]",
+            items.join(", ")
+        ))
+    };
+    let ease = "{ cubic_bezier = [0.25, 0.1, 0.25, 1] }";
+    let refusal = "a `gtk_css` style's transitions name several curves on a group other than \
+                   `shadow` and `corners`";
+    assert_eq!(
+        bare(&list(&[
+            css("\"fill\"", "\"linear\""),
+            css("\"shadow\"", ease)
+        ])),
+        [format!(
+            "widgets.button.body.transitions[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&list(&[
+            css("\"shadow\"", "\"linear\""),
+            css("\"corners\"", ease)
+        ])),
+        NONE
+    );
+    assert_eq!(
+        bare(&list(&[css("\"fill\"", ease), css("\"stroke\"", ease)])),
+        NONE
+    );
+    // One curve through references; another a rule adds where it applies.
+    let curve = declare("timings = [\"ease\"]");
+    let referenced = format!(
+        "[tokens.motion]\ntimings.ease = {ease}\n[widgets.button.body]\ntransitions = [{}, {}]\n\
+         [[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\nset = {{ \
+         transitions = [{}] }}",
+        css("\"fill\"", "\"= token.motion.timings.ease\""),
+        css("\"stroke\"", ease),
+        css("\"opacity\"", "\"linear\""),
+    );
+    assert_eq!(
+        found(&toml(&referenced), &curve),
+        [
+            format!("widgets.button.body.transitions[0].timing: {refusal}"),
+            format!("widgets.button.body.transitions[1].timing: {refusal}"),
+            format!("rules[0].set.transitions[0].timing: {refusal}"),
+        ]
+    );
+}
+
+/// A stated zero with no delay overrides a transition of one of its groups
+/// that can apply before it, earlier in its list, in the base or an
+/// earlier rule of its part; where none can, no transition is stated
+/// (S2.7, S12; ADD-A126). A focus indicator's zero overrides the
+/// indicator's transition below it.
+#[test]
+fn refusal_overrides_nothing() {
+    let item = |groups: &str, duration: &str, delay: &str, timing: &str| {
+        format!(
+            "{{ properties = [{groups}], kind = \"interpolate\", duration_ms = {duration}, \
+             delay_ms = {delay}, timing = {timing}, engine = \"gtk_css\" }}"
+        )
+    };
+    let zero = |groups: &str| item(groups, "0", "0", "\"absent\"");
+    let fade = |groups: &str| item(groups, "100", "0", "\"linear\"");
+    let refusal = "a stated zero with no delay that overrides no transition";
+    let base = |items: &[String], rules: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{}]\n{rules}",
+            items.join(", ")
+        ))
+    };
+    assert_eq!(
+        bare(&base(&[zero("\"fill\"")], "")),
+        [format!(
+            "widgets.button.body.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&base(&[item("\"fill\"", "0", "50", "\"absent\"")], "")),
+        NONE
+    );
+    assert_eq!(bare(&base(&[fade("\"fill\""), zero("\"fill\"")], "")), NONE);
+    assert_eq!(
+        bare(&base(&[fade("\"stroke\""), zero("\"stroke_width\"")], "")),
+        NONE
+    );
+    let disabled = |groups: &str| {
+        format!(
+            "[[rules]]\nwhen = {{ states = [\"disabled\"] }}\ntarget = \"button.body\"\nset = \
+             {{ transitions = [{}] }}",
+            zero(groups)
+        )
+    };
+    assert_eq!(
+        bare(&base(&[fade("\"fill\"")], &disabled("\"fill\""))),
+        NONE
+    );
+    assert_eq!(
+        bare(&base(&[fade("\"fill\"")], &disabled("\"stroke\""))),
+        [format!(
+            "rules[0].set.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    // A rule's transition the zero's rule cannot apply beside.
+    let hovered = format!(
+        "[[rules]]\nwhen = {{ states = [\"hover\"] }}\ntarget = \"button.body\"\nset = {{ \
+         transitions = [{}] }}\n[[rules]]\nwhen = {{ not_states = [\"hover\"] }}\ntarget = \
+         \"button.body\"\nset = {{ transitions = [{}] }}",
+        fade("\"opacity\""),
+        zero("\"opacity\"")
+    );
+    assert_eq!(
+        bare(&toml(&hovered)),
+        [format!(
+            "rules[1].set.transitions[0].duration_ms: {refusal}"
+        )]
+    );
+    let focus = |rules: &str| {
+        toml(&format!(
+            "[widgets.button.body.focus]\ntransition = {{ properties = [], kind = \
+             \"interpolate\", duration_ms = 0, delay_ms = 0, timing = \"absent\", engine = \
+             \"gtk_css\", from = \"none\" }}\n{rules}"
+        ))
+    };
+    assert_eq!(
+        bare(&focus("")),
+        [format!(
+            "widgets.button.body.focus.transition.duration_ms: {refusal}"
+        )]
+    );
+    assert_eq!(
+        bare(&focus(
+            "[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\nset = { \
+             focus.transition.delay_ms = 10, focus.transition.duration_ms = 0 }"
+        )),
+        [format!(
+            "widgets.button.body.focus.transition.duration_ms: {refusal}"
+        )]
+    );
+    let over = toml(
+        "[widgets.button.body.focus]\ntransition = { properties = [], kind = \"interpolate\", \
+         duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\", from = \
+         \"none\" }\n[[rules]]\nwhen = { states = [\"hover\"] }\ntarget = \"button.body\"\nset \
+         = { focus.transition.duration_ms = 0, focus.transition.timing = \"absent\" }",
+    );
+    assert_eq!(bare(&over), NONE);
 }
 
 /// A Breeze test's flags and conditions are read as a `when` writes them
@@ -831,18 +1256,22 @@ fn breeze_test_reads_and_walks() {
         "any = [\"@spin\"], none = [\"disabled\"], conditions = [\"system_setting:glow\", \
          \"window_inactive\"]",
     ));
+    // A system setting is no window's condition, which a Breeze test names
+    // alone (S12): declared, it is that one problem.
+    let window = format!("{at}.conditions[0]: a Breeze test names the window's conditions only");
     assert_eq!(
         bare(&keyed),
         [
+            window.clone(),
             format!("{at}.any[0]: `@spin` is not declared in `widget.button.flags`"),
             format!("{at}.conditions[0]: `glow` is not declared in `conditions`"),
         ]
     );
     let declared =
         declare("conditions = [\"@glow\"]\n[declare.widget.button]\nflags = [\"@spin\"]");
-    assert_eq!(found(&keyed, &declared), NONE);
+    assert_eq!(found(&keyed, &declared), [window]);
     let tab_bar = toml(
-        &breeze("any = [], none = [\"@spin\"], conditions = []")
+        &breeze("any = [\"hover\"], none = [\"@spin\"], conditions = []")
             .replace("{ breeze =", "{ breeze_tab_bar ="),
     );
     assert_eq!(
@@ -2913,12 +3342,10 @@ fn presenting(
 fn keyed_kind_params_are_typed() {
     let expr = |text: &str| Value::Expr(Expr::parse(text).unwrap());
     let keyed = |value: Value<crate::next::units::Scalar>| {
-        let mut item = transition(vec![PropertyGroup::Fill], Timing::Linear);
-        item.kind = TransitionKind::Keyed {
+        with_visual(transitions(vec![keyed_icon(TransitionKind::Keyed {
             key: key!("bounce"),
             params: vec![(key!("amplitude"), value)],
-        };
-        transitions(vec![item])
+        })]))
     };
     let decl = declare("transition_kinds = { bounce = { amplitude = \"px\" } }");
     assert_eq!(
@@ -2978,13 +3405,10 @@ fn refusal_undeclared_every_kind() {
         fallback: Value::Stated(color()),
         params: Vec::new(),
     };
-    let keyed_transition = Transition {
-        kind: TransitionKind::Keyed {
-            key: key!("bounce"),
-            params: Vec::new(),
-        },
-        ..transition(vec![PropertyGroup::Icon], Timing::Linear)
-    };
+    let keyed_transition = keyed_icon(TransitionKind::Keyed {
+        key: key!("bounce"),
+        params: Vec::new(),
+    });
     let rows: Vec<(Layer, &str, &str)> = vec![
         (
             rule("{ states = [\"@spin\"] }"),
@@ -3083,7 +3507,7 @@ fn refusal_undeclared_every_kind() {
             "focus_kinds = [\"reveal\"]",
         ),
         (
-            transitions(vec![keyed_transition]),
+            with_visual(transitions(vec![keyed_transition])),
             "widgets.button.body.transitions[0].kind.keyed.key: `@bounce` is not declared in \
              `transition_kinds`",
             "transition_kinds = { bounce = {} }",
@@ -3436,6 +3860,12 @@ kinds! {
     InstantNotZero,
     ZeroNotInstant,
     TimingNotComputed { .. },
+    EngineMismatch { .. },
+    BreezeTestInvalid { .. },
+    FocusMoveNotRun,
+    UnknownState { .. },
+    SeveralCurves,
+    OverridesNothing,
     RecencyTooSmall,
     RecencyOrder { .. },
     NotInRecencySet { .. },
@@ -4041,6 +4471,46 @@ fn layer_error_every_variant_triggers() {
             V::ZeroNotInstant,
             read(
                 "[widgets.button.values]\npresentations = [{ event = \"appear\", steps = [{ kind = \"fade\", duration_ms = 0, delay_ms = 0, timing = \"absent\", stagger_ms = 0 }] }]",
+            ),
+        ),
+        (
+            V::EngineMismatch,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 10, timing = \"linear\", engine = { breeze = { any = [\"hover\"], none = [], conditions = [] } } }]",
+            ),
+        ),
+        (
+            V::BreezeTestInvalid,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = { breeze = { any = [], none = [], conditions = [] } } }]",
+            ),
+        ),
+        (
+            V::FocusMoveNotRun,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"focus_move\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::SeveralCurves,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = \"linear\", engine = \"gtk_css\" }, { properties = [\"stroke\"], kind = \"interpolate\", duration_ms = 100, delay_ms = 0, timing = { cubic_bezier = [0.25, 0.1, 0.25, 1] }, engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::OverridesNothing,
+            read(
+                "[widgets.button.body]\ntransitions = [{ properties = [\"fill\"], kind = \"interpolate\", duration_ms = 0, delay_ms = 0, timing = \"absent\", engine = \"gtk_css\" }]",
+            ),
+        ),
+        (
+            V::UnknownState,
+            over(
+                &toml(
+                    "[tokens.icons.animated_visuals.accept]\nduration_ms = 2000\nmarkers = { NormalOn = 0.0 }\n[widgets.button.body]\ntransitions = [{ properties = [\"icon\"], kind = { keyed = { key = \"normal_off\", params = {} } }, duration_ms = \"absent\", delay_ms = 0, timing = \"absent\", engine = { win_ui_animated_icon = { visual = \"accept\" } } }]",
+                ),
+                &declare("transition_kinds = { normal_off = {} }"),
+                &[],
             ),
         ),
         (

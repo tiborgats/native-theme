@@ -256,6 +256,53 @@ pub enum ProblemKind {
         /// The engine, as S11 spells it.
         engine: &'static str,
     },
+    /// A transition its engine does not run: a `WinUiAnimatedIcon` one
+    /// stating a duration, a timing or a delay, or of another kind than
+    /// `Keyed`; a `Breeze` or `BreezeTabBar` one with no duration, a delay
+    /// or another kind than `Interpolate`; a `GtkSwitch` one not the switch
+    /// thumb's `Geometry` one, `Interpolate`, with no delay; a
+    /// `ComposeHeld` one not the `Geometry` one of a segmented control's
+    /// segment; a `Keyed` one under a value engine (S2.7, S12; ADD-A126).
+    EngineMismatch {
+        /// The engine, as S11 spells it.
+        engine: &'static str,
+        /// What the engine takes.
+        takes: &'static str,
+    },
+    /// A Breeze engine's test that holds nowhere or reads what the engine
+    /// cannot: empty on a transition that is not a stated zero, not empty
+    /// on a stated zero, a flag in both `any` and `none`, a condition that
+    /// is not the window's, or a focus indicator's test naming no
+    /// `focus_visible` in `any` (S2.7, S12; ADD-A126).
+    BreezeTestInvalid {
+        /// What the test is to name.
+        expected: &'static str,
+    },
+    /// A `FocusMove` transition: no engine runs one yet, as an engine runs
+    /// per element part and the move crosses two (S2.7, S2.10, S12;
+    /// ADD-A126).
+    FocusMoveNotRun,
+    /// A `WinUiAnimatedIcon` transition's `Keyed` key whose state name, its
+    /// UpperCamelCase form, no marker of its visual holds, under some
+    /// combination (S2.7, S12).
+    UnknownState {
+        /// The key as written.
+        state: String,
+        /// The visual.
+        visual: String,
+    },
+    /// A `GtkCss` part's transitions in effect together under some
+    /// combination naming several curves, followed through references,
+    /// while one of them lists a group other than `Shadow` and `Corners`,
+    /// the groups GTK's engine takes a curve for by property id (S2.7, S12;
+    /// ADD-A131).
+    SeveralCurves,
+    /// A stated zero with no delay that overrides nothing: no other
+    /// transition of one of its groups (the focus indicator's, for a
+    /// `FocusIndicator.transition`), earlier in its list, in the base or in
+    /// an earlier rule of its part, can apply where its rule does (S2.7,
+    /// S12; ADD-A126).
+    OverridesNothing,
     /// A recency set with fewer than two flags (S10, S12).
     RecencyTooSmall,
     /// A recency set ordering two flags oppositely to another of the
@@ -551,6 +598,24 @@ impl fmt::Display for ProblemKind {
             }
             ProblemKind::TimingNotComputed { engine } => {
                 write!(f, "a timing the `{engine}` engine does not compute")
+            }
+            ProblemKind::EngineMismatch { engine, takes } => {
+                write!(f, "the `{engine}` engine takes {takes}")
+            }
+            ProblemKind::BreezeTestInvalid { expected } => write!(f, "a Breeze test {expected}"),
+            ProblemKind::FocusMoveNotRun => {
+                f.write_str("a `focus_move` transition, which no engine runs yet")
+            }
+            ProblemKind::UnknownState { state, visual } => write!(
+                f,
+                "`{state}` names a state no marker of the visual `{visual}` holds"
+            ),
+            ProblemKind::SeveralCurves => f.write_str(
+                "a `gtk_css` style's transitions name several curves on a group other than \
+                 `shadow` and `corners`",
+            ),
+            ProblemKind::OverridesNothing => {
+                f.write_str("a stated zero with no delay that overrides no transition")
             }
             ProblemKind::RecencyTooSmall => f.write_str("a recency set of fewer than two flags"),
             ProblemKind::RecencyOrder { set } => {

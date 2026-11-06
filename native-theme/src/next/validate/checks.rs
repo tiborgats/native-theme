@@ -8,7 +8,8 @@ use super::walk::{ExprForm, Form, KEY_OF_PLACE, Node, Number, Path, Visit, Walk,
 use super::{Context, LayerKind};
 use crate::next::blocks::Table;
 use crate::next::blocks::motion::{
-    Keyframe, PresentationKind, PropertyGroup, StepJump, Timing, TransitionKind,
+    BreezeTest, Keyframe, PresentationKind, PropertyGroup, StepJump, Timing, Transition,
+    TransitionEngine, TransitionKind, TransitionPatch,
 };
 use crate::next::blocks::outline::Radius;
 use crate::next::blocks::paint::{BlendMode, PaintKind, PaintPatch};
@@ -34,7 +35,7 @@ use crate::next::selector::{
 };
 use crate::next::tokens::ABSENT_PARAM_GROUPS;
 use crate::next::toml::read::{Named, listed_path, toml_key};
-use crate::next::units::Scalar;
+use crate::next::units::{Ms, Scalar};
 use crate::next::value::{SchemeMap, SurfaceMap, Value};
 use crate::next::widgets::{
     ButtonPatch, PartPatch, PartPresence, TypedPart, WidgetKind, WidgetValuesPatch, WidgetsPatch,
@@ -1645,6 +1646,165 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// S12's checks of a transition's engine against what the transition
+    /// or its patch states, each where it states the fields the check reads
+    /// (S2.7; ADD-A126): `WinUiAnimatedIcon` takes a `Keyed` transition with
+    /// no duration, timing or delay, its visual timing it; `Breeze` and
+    /// `BreezeTabBar` an `Interpolate` one with a duration and no delay, and
+    /// a test that holds somewhere ([`Checker::breeze_test`]); `GtkSwitch`
+    /// the switch thumb's `Geometry` transition alone, `Interpolate`, with
+    /// no delay; `ComposeHeld` a segmented control's segment's `Geometry`
+    /// transition alone; and no value engine a `Keyed` one. A `FocusMove`
+    /// kind is refused on its own.
+    fn engine(&mut self, stated: &TransitionFields<'_>, path: &Path) {
+        let Some(engine) = stated.engine else {
+            return;
+        };
+        let toml = self.toml;
+        let field = |key: &str, suffix: &str| path.join(&spelled_key(key, suffix, toml));
+        let stated_zero = |value: Option<&Value<Ms>>| value.map(|v| *v == Value::Stated(Ms(0.0)));
+        let delayed = stated_zero(stated.delay) == Some(false);
+        let kind = stated
+            .kind
+            .filter(|kind| **kind != TransitionKind::FocusMove);
+        let interpolates = kind.map(|kind| *kind == TransitionKind::Interpolate);
+        let keyed = kind.map(|kind| matches!(kind, TransitionKind::Keyed { .. }));
+        let geometry = stated
+            .properties
+            .is_none_or(|properties| properties == [PropertyGroup::Geometry]);
+        let part = match self.region {
+            Region::Part(_, part, ..) => Some(part),
+            Region::Roles | Region::Tokens | Region::Values(_) => None,
+        };
+        let name = engine_name(engine);
+        let mut refused: Vec<(String, &'static str)> = Vec::new();
+        match engine {
+            TransitionEngine::WinUiAnimatedIcon { .. } => {
+                if stated.duration.is_some_and(|value| *value != Value::Absent) {
+                    refused.push((field("duration", "_ms"), "no duration: its visual times it"));
+                }
+                if stated.timing.is_some_and(|value| *value != Value::Absent) {
+                    refused.push((field("timing", ""), "no timing: its visual times it"));
+                }
+                if delayed {
+                    refused.push((field("delay", "_ms"), "no delay"));
+                }
+                if keyed == Some(false) {
+                    refused.push((field("kind", ""), "a `keyed` transition only"));
+                }
+            }
+            TransitionEngine::Breeze(test) | TransitionEngine::BreezeTabBar(test) => {
+                if stated.duration == Some(&Value::Absent) {
+                    refused.push((
+                        field("duration", "_ms"),
+                        "a duration, on which its time runs",
+                    ));
+                }
+                if delayed {
+                    refused.push((field("delay", "_ms"), "no delay"));
+                }
+                if interpolates == Some(false) {
+                    refused.push((field("kind", ""), "an `interpolate` transition only"));
+                }
+                let at = format!("{}.{name}", field("engine", ""));
+                let focus = path.last_field() == Some(("FocusIndicator", "transition"));
+                self.breeze_test(test, stated_zero(stated.duration), focus, &at);
+            }
+            TransitionEngine::GtkSwitch => {
+                if !(geometry && part.is_some_and(switch_thumb)) {
+                    let takes = "the switch thumb's `geometry` transition only";
+                    refused.push((field("engine", ""), takes));
+                }
+                if interpolates == Some(false) {
+                    refused.push((field("kind", ""), "an `interpolate` transition only"));
+                }
+                if delayed {
+                    refused.push((field("delay", "_ms"), "no delay"));
+                }
+            }
+            TransitionEngine::ComposeHeld => {
+                if !(geometry && part.is_some_and(segment)) {
+                    let takes = "a segmented control's segment's `geometry` transition only";
+                    refused.push((field("engine", ""), takes));
+                }
+                if keyed == Some(true) {
+                    refused.push((field("kind", ""), "no `keyed` transition"));
+                }
+            }
+            TransitionEngine::GtkCss
+            | TransitionEngine::AdwAnimation { .. }
+            | TransitionEngine::QtQuick
+            | TransitionEngine::ComposeAnimatable
+            | TransitionEngine::ComposeTransition
+            | TransitionEngine::WinUi => {
+                if keyed == Some(true) {
+                    refused.push((field("kind", ""), "no `keyed` transition"));
+                }
+            }
+        }
+        for (at, takes) in refused {
+            let kind = ProblemKind::EngineMismatch {
+                engine: name,
+                takes,
+            };
+            self.problem(&at, kind);
+        }
+    }
+
+    /// A Breeze engine's test at `at` (S2.7, S12; ADD-A126): one of `any`
+    /// or `conditions` named on a transition that is not a stated zero, and
+    /// all three lists empty on a stated zero, which reads none (`zero`:
+    /// whether the duration is one, where stated); no flag twice in a
+    /// list, none in both `any` and `none`; only the window's conditions
+    /// (S7.1's group by the connector, whose toggled style the connector can
+    /// resolve); and a focus indicator's (`focus`) `focus_visible` in `any`
+    /// where it is no stated zero's. A keyed flag or condition is checked
+    /// against the declarations as the walk reaches it.
+    fn breeze_test(&mut self, test: &BreezeTest, zero: Option<bool>, focus: bool, at: &str) {
+        let invalid = |expected| ProblemKind::BreezeTestInvalid { expected };
+        if zero == Some(false) && test.any.is_empty() && test.conditions.is_empty() {
+            let expected = "names a flag in `any` or a condition: it holds nowhere";
+            self.problem(at, invalid(expected));
+        }
+        if zero == Some(true) {
+            for (list, empty) in [
+                ("any", test.any.is_empty()),
+                ("none", test.none.is_empty()),
+                ("conditions", test.conditions.is_empty()),
+            ] {
+                if !empty {
+                    let expected = "of a stated zero is empty: a zero reads none";
+                    self.problem(&format!("{at}.{list}"), invalid(expected));
+                }
+            }
+        }
+        for (list, flags) in [("any", &test.any), ("none", &test.none)] {
+            for (index, flag) in flags.iter().enumerate() {
+                if flags.iter().take(index).any(|earlier| earlier == flag) {
+                    let name = flag.name();
+                    let at = format!("{at}.{list}[{index}]");
+                    self.problem(&at, ProblemKind::ListedTwice { name });
+                }
+            }
+        }
+        for (index, flag) in test.none.iter().enumerate() {
+            if test.any.contains(flag) {
+                let expected = "names no flag in both `any` and `none`";
+                self.problem(&format!("{at}.none[{index}]"), invalid(expected));
+            }
+        }
+        for (index, condition) in test.conditions.iter().enumerate() {
+            if !window_condition(condition) {
+                let expected = "names the window's conditions only";
+                self.problem(&format!("{at}.conditions[{index}]"), invalid(expected));
+            }
+        }
+        if focus && zero == Some(false) && !test.any.contains(&StateFlag::FocusVisible) {
+            let expected = "of a focus indicator names `focus_visible` in `any`";
+            self.problem(&format!("{at}.any"), invalid(expected));
+        }
+    }
+
     /// A font's stated weight, the CSS and OpenType weight, 1 to 1000
     /// (S2.8).
     fn weight(&mut self, weight: Option<&Value<u16>>, path: &Path) {
@@ -1709,6 +1869,7 @@ impl Visit for Checker<'_> {
                 self.properties(Some(&transition.properties), path);
                 self.from(transition.from.as_deref(), path);
                 self.state_layer(&transition.properties, path);
+                self.engine(&TransitionFields::of(transition), path);
             }
             Node::StateFlag(flag) => match self.region {
                 Region::Part(widget, ..) | Region::Values(widget) => self.flag(widget, flag, &at),
@@ -1728,13 +1889,16 @@ impl Visit for Checker<'_> {
                 if let Some(properties) = &transition.properties {
                     self.state_layer(properties, path);
                 }
+                self.engine(&TransitionFields::of_patch(transition), path);
             }
-            Node::TransitionKind(kind) => {
-                if let TransitionKind::Keyed { key, params } = kind {
+            Node::TransitionKind(kind) => match kind {
+                TransitionKind::Keyed { key, params } => {
                     let kinds = &decl.transition_kinds;
                     self.keyed_params(path, kinds, "transition_kinds", key, params);
                 }
-            }
+                TransitionKind::FocusMove => self.problem(&at, ProblemKind::FocusMoveNotRun),
+                TransitionKind::Interpolate => {}
+            },
             Node::PresentationKind(kind) => {
                 if let PresentationKind::Keyed { key, params } = kind {
                     let kinds = &decl.presentation_kinds;
@@ -2874,6 +3038,120 @@ fn spelled_key(key: &str, suffix: &str, toml: bool) -> String {
         format!("{}{suffix}", toml_key(key))
     } else {
         toml_key(key)
+    }
+}
+
+/// What a transition or a transition's patch states, as S12's engine
+/// checks read it; `None` where a patch leaves the field.
+struct TransitionFields<'t> {
+    properties: Option<&'t [PropertyGroup]>,
+    kind: Option<&'t TransitionKind>,
+    duration: Option<&'t Value<Ms>>,
+    delay: Option<&'t Value<Ms>>,
+    timing: Option<&'t Value<Timing>>,
+    engine: Option<&'t TransitionEngine>,
+}
+
+impl<'t> TransitionFields<'t> {
+    fn of(transition: &'t Transition) -> TransitionFields<'t> {
+        TransitionFields {
+            properties: Some(&transition.properties),
+            kind: Some(&transition.kind),
+            duration: Some(&transition.duration),
+            delay: Some(&transition.delay),
+            timing: Some(&transition.timing),
+            engine: Some(&transition.engine),
+        }
+    }
+
+    fn of_patch(patch: &'t TransitionPatch) -> TransitionFields<'t> {
+        TransitionFields {
+            properties: patch.properties.as_deref(),
+            kind: patch.kind.as_ref(),
+            duration: patch.duration.as_ref(),
+            delay: patch.delay.as_ref(),
+            timing: patch.timing.as_ref(),
+            engine: patch.engine.as_ref(),
+        }
+    }
+}
+
+/// A transition engine as S11 spells it.
+fn engine_name(engine: &TransitionEngine) -> &'static str {
+    match engine {
+        TransitionEngine::GtkCss => "gtk_css",
+        TransitionEngine::AdwAnimation { .. } => "adw_animation",
+        TransitionEngine::QtQuick => "qt_quick",
+        TransitionEngine::Breeze(_) => "breeze",
+        TransitionEngine::BreezeTabBar(_) => "breeze_tab_bar",
+        TransitionEngine::ComposeAnimatable => "compose_animatable",
+        TransitionEngine::ComposeTransition => "compose_transition",
+        TransitionEngine::ComposeHeld => "compose_held",
+        TransitionEngine::WinUi => "win_ui",
+        TransitionEngine::WinUiAnimatedIcon { .. } => "win_ui_animated_icon",
+        TransitionEngine::GtkSwitch => "gtk_switch",
+    }
+}
+
+/// Whether a part is the switch's thumb, the one part `GtkSwitch` slides
+/// (S2.7): none of the catalogue's parts yet.
+fn switch_thumb(part: TypedPart) -> bool {
+    match part {
+        TypedPart::Button(_) => false,
+    }
+}
+
+/// Whether a part is a segmented control's segment, whose layout the
+/// connector draws from `ComposeHeld`'s fraction (S2.7): none of the
+/// catalogue's parts yet.
+fn segment(part: TypedPart) -> bool {
+    match part {
+        TypedPart::Button(_) => false,
+    }
+}
+
+/// Whether a condition is the window's, S7.1's group set by the connector.
+fn window_condition(condition: &Condition) -> bool {
+    match condition {
+        Condition::WindowInactive
+        | Condition::NotMain
+        | Condition::AppInactive
+        | Condition::Maximized
+        | Condition::FullScreen
+        | Condition::Tiled(_)
+        | Condition::Elevated
+        | Condition::Input(_)
+        | Condition::NotComposited
+        | Condition::Shaded
+        | Condition::AttentionFlash
+        | Condition::TintDimmed
+        | Condition::MnemonicsVisible
+        | Condition::Freeform
+        | Condition::Posture(_)
+        | Condition::UnitScale => true,
+        Condition::Scheme(_)
+        | Condition::ContrastIncreased
+        | Condition::ContrastHigh
+        | Condition::ReducedTransparency
+        | Condition::ReducedMotion
+        | Condition::AnimationsOff
+        | Condition::BoldText
+        | Condition::ButtonShapes
+        | Condition::DifferentiateWithoutColor
+        | Condition::TabletMode
+        | Condition::MobileFormFactor
+        | Condition::BatterySaver
+        | Condition::ContainerSize { .. }
+        | Condition::OverlayScrollbars
+        | Condition::OnOffLabels
+        | Condition::FullKeyboardAccess
+        | Condition::PreferCrossFade
+        | Condition::AccessibilityTextSize
+        | Condition::Idiom(_)
+        | Condition::SystemSetting(_)
+        | Condition::DeviceModel(_)
+        | Condition::Flavor(_)
+        | Condition::Preset(_) => false,
     }
 }
 

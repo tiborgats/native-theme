@@ -12,8 +12,8 @@ use super::combos::{Expanded, Query, Reads, Seed, Stating, World};
 use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
-    BreezeTest, PresentationEvent, PresentationTransition, PropertyGroup, Transition, same_flags,
-    same_test,
+    BreezeTest, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
+    TransitionKind, same_flags, same_test,
 };
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
@@ -188,6 +188,9 @@ pub(super) struct Visual {
     pub(super) at: String,
     /// The entry it names.
     pub(super) key: Key,
+    /// The `Keyed` key of its transition's kind, where the source states
+    /// it, and that key's place as a problem names it.
+    pub(super) state: Option<(Key, String)>,
 }
 
 /// A rule of the stack.
@@ -341,6 +344,9 @@ struct Flatten {
     appended: Vec<String>,
     /// The visuals its engines name.
     visuals: Vec<Visual>,
+    /// The `Keyed` transition kinds it states: each kind's place, its key
+    /// and the key's place as a problem names it.
+    kinds: Vec<(String, Key, String)>,
 }
 
 impl Flatten {
@@ -462,12 +468,27 @@ impl Visit for Flatten {
                 let entry = path.map_entry().is_some();
                 self.push(path, place, OpKind::Append { entry });
             }
+            Node::TransitionKind(TransitionKind::Keyed { key, .. }) => {
+                let place = self.place(path);
+                self.kinds
+                    .push((place, key.clone(), path.join("keyed.key")));
+            }
             Node::Key(key) if path.slot() == Some(("TransitionEngine", "visual")) => {
                 let place = self.place(path);
+                let kind = place
+                    .strip_suffix(".engine.win_ui_animated_icon.visual")
+                    .map(|transition| below(transition, "kind"));
+                let state = self
+                    .kinds
+                    .iter()
+                    .rev()
+                    .find(|(held, ..)| Some(held) == kind.as_ref())
+                    .map(|(_, key, at)| (key.clone(), at.clone()));
                 self.visuals.push(Visual {
                     place,
                     at: path.to_string(),
                     key: key.clone(),
+                    state,
                 });
             }
             _ => {}
@@ -540,6 +561,7 @@ fn flatten<T: Walk + ?Sized>(
         cleared: Vec::new(),
         appended: Vec::new(),
         visuals: Vec::new(),
+        kinds: Vec::new(),
     };
     {
         let mut walker = Walker::new(root, toml, &mut flat);
@@ -653,6 +675,9 @@ impl<'a> Stack<'a> {
                 }
                 for visual in &mut source.visuals {
                     visual.at = shorthands.written(&visual.at, &stacked.layer.rules);
+                    if let Some((_, at)) = &mut visual.state {
+                        *at = shorthands.written(at, &stacked.layer.rules);
+                    }
                 }
             }
         }

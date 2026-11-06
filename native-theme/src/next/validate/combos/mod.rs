@@ -26,7 +26,7 @@ use std::rc::Rc;
 use super::LayerKind;
 use super::outcomes::{Item, Space, scheme_and_flavors};
 use super::stack::{
-    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Target, Val, below, is_above,
+    BindingOp, Fact, ItemKey, Op, OpKind, Pos, Source, Stack, Target, Val, Visual, below, is_above,
     part_info, tail, widget_of,
 };
 use crate::next::blocks::part_style::RoleRef;
@@ -480,6 +480,8 @@ pub(super) fn check(stack: &Stack<'_>, reused: Option<&Reused>) -> Vec<(usize, P
     out.entries();
     out.visuals();
     out.motions();
+    out.css_curves();
+    out.zeros();
     out.input_cycles();
     out.problems
 }
@@ -3482,9 +3484,93 @@ impl Checks<'_, '_> {
                     };
                     self.problem(source.layer, &visual.at, kind);
                 }
+                self.states(number, source, visual);
             }
         }
     }
+
+    /// A `WinUiAnimatedIcon` transition's `Keyed` key whose state name, its
+    /// UpperCamelCase form, no marker of its visual holds under some world
+    /// in which the transition is in effect and the visual held (S2.7,
+    /// S12): the markers those of every source of the tokens applying, as
+    /// the map's entries merge (S6.1). A key the transition's own source
+    /// does not state (a patch of the engine alone) is not read.
+    fn states(&mut self, number: usize, source: &Source, visual: &Visual) {
+        let stack = self.stack;
+        let Some((state, at)) = &visual.state else {
+            return;
+        };
+        let name = camel_case(state.as_str());
+        let entry = format!("icons.animated_visuals.{}", visual.key);
+        let markers = format!("{entry}.markers.");
+        let seeds = vec![
+            Seed::Field(source.target, visual.place.clone(), true),
+            Seed::Field(Target::Tokens, entry.clone(), true),
+        ];
+        let worlds = stack.worlds(seeds);
+        let unknown = worlds.iter().any(|world| {
+            let replaced = stack
+                .replaced(world, number, source)
+                .iter()
+                .any(|item| is_above(item, &visual.place));
+            if !stack.applies(world, source) || replaced {
+                return false;
+            }
+            let mut held = false;
+            let mut holds = false;
+            for (_, tokens) in stack.of(Target::Tokens) {
+                if !stack.applies(world, tokens) {
+                    continue;
+                }
+                for op in &tokens.ops {
+                    held |= op.path == entry || is_above(&entry, &op.path);
+                    holds |= op
+                        .path
+                        .strip_prefix(&markers)
+                        .is_some_and(|marker| marker_holds(marker, &name));
+                }
+            }
+            held && !holds
+        });
+        if unknown {
+            let kind = ProblemKind::UnknownState {
+                state: state.to_string(),
+                visual: visual.key.to_string(),
+            };
+            self.problem(source.layer, at, kind);
+        }
+    }
+}
+
+/// A `Keyed` key's state name as `WinUiAnimatedIcon` forms it (S2.7): each
+/// `_`-separated word capitalised and joined (`pointer_over_on` is
+/// `PointerOverOn`).
+fn camel_case(key: &str) -> String {
+    key.split('_')
+        .map(|word| {
+            let mut chars = word.chars();
+            chars.next().map_or_else(String::new, |first| {
+                first.to_uppercase().chain(chars).collect::<String>()
+            })
+        })
+        .collect()
+}
+
+/// Whether the marker `marker`, named as its source names it, holds the
+/// state `state` (S2.7): the state's own marker, or a segment's from or to
+/// it (`<from>To<to>`, with `_Start` or `_End` or neither).
+fn marker_holds(marker: &str, state: &str) -> bool {
+    let segment = marker
+        .strip_suffix("_Start")
+        .or_else(|| marker.strip_suffix("_End"))
+        .unwrap_or(marker);
+    segment == state
+        || segment
+            .strip_prefix(state)
+            .is_some_and(|rest| rest.starts_with("To"))
+        || segment
+            .strip_suffix(state)
+            .is_some_and(|rest| rest.ends_with("To"))
 }
 
 /// S4.4's owner order of the text slots.

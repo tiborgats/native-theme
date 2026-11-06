@@ -3,9 +3,11 @@
 //! effect in, its timing followed through references.
 
 use super::super::stack::{
-    Fact, OpKind, Source, Stack, Target, Val, below, is_above, part_info, tail,
+    Fact, Item as Listed, ItemKey, Op, OpKind, Source, Stack, Target, Val, below, is_above,
+    part_info, tail,
 };
 use super::{Bound, Checks, Found, Got, Seed, World, all_parts, variant};
+use crate::next::blocks::motion::PropertyGroup;
 use crate::next::error::ProblemKind;
 
 /// A place a transition or a presentation step is stated at, as the
@@ -24,17 +26,66 @@ struct Motion<'s> {
 }
 
 impl Motion<'_> {
-    /// Whether it is in effect under `world`: its source applies and no
-    /// later item replaces it (S6.1); a field's always is.
+    /// Whether it is in effect under `world`: its item is ([`in_effect`]);
+    /// a field's always is.
     fn in_effect(&self, stack: &Stack<'_>, world: &World) -> bool {
-        self.item.as_ref().is_none_or(|(number, source, item)| {
-            stack.applies(world, source)
-                && !stack
-                    .replaced(world, *number, source)
-                    .iter()
-                    .any(|replaced| replaced == item)
-        })
+        self.item
+            .as_ref()
+            .is_none_or(|(number, source, item)| in_effect(stack, world, *number, source, item))
     }
+}
+
+/// Whether the keyed item at `item` the source `number` states is in effect
+/// under `world`: its source applies and no later item replaces it (S6.1).
+fn in_effect(stack: &Stack<'_>, world: &World, number: usize, source: &Source, item: &str) -> bool {
+    stack.applies(world, source) && !stack.replaced(world, number, source).contains(&item)
+}
+
+/// The property groups a transition's item is keyed by: the groups it
+/// lists (S6.1).
+fn groups(item: &Listed) -> Vec<PropertyGroup> {
+    item.keys
+        .iter()
+        .filter_map(|key| match key {
+            ItemKey::Group(group, ..) => Some(*group),
+            ItemKey::Event(_) | ItemKey::Role(_) | ItemKey::Surface => None,
+        })
+        .collect()
+}
+
+/// The groups a transition of `group` overrides where it governs (S2.7):
+/// its own, and the stroke's or the glyph's whole transition for the
+/// group that times their widths or their path in its place.
+fn overridden(group: PropertyGroup) -> Vec<PropertyGroup> {
+    match group {
+        PropertyGroup::StrokeWidth => vec![group, PropertyGroup::Stroke],
+        PropertyGroup::GlyphDraw => vec![group, PropertyGroup::Glyph],
+        PropertyGroup::Fill
+        | PropertyGroup::Stroke
+        | PropertyGroup::Corners
+        | PropertyGroup::Shape
+        | PropertyGroup::Shadow
+        | PropertyGroup::Opacity
+        | PropertyGroup::Transform
+        | PropertyGroup::Text
+        | PropertyGroup::Icon
+        | PropertyGroup::Glyph
+        | PropertyGroup::Geometry
+        | PropertyGroup::StateLayer => vec![group],
+    }
+}
+
+/// Whether the source states a zero at `place` (a stated zero's duration,
+/// a delay of none), and the step stating it.
+fn zero_at<'s>(source: &'s Source, place: &str) -> Option<&'s Op> {
+    source.ops.iter().find(|op| {
+        op.path == place && matches!(op.kind, OpKind::Set(Val::Stated(Fact::Number(n))) if n == 0.0)
+    })
+}
+
+/// Whether the source states a value at `place`.
+fn states_at(source: &Source, place: &str) -> bool {
+    source.ops.iter().any(|op| op.path == place)
 }
 
 /// Every transition and presentation step the stack states: each keyed
@@ -280,6 +331,178 @@ impl Checks<'_, '_> {
                     }
                 }
             }
+        }
+    }
+}
+
+impl Checks<'_, '_> {
+    /// A `GtkCss` part's transitions in effect together under one world
+    /// naming several curves, followed through references, while one of
+    /// them lists a group other than `Shadow` and `Corners`, the groups GTK's
+    /// engine takes a curve for by property id (S2.7, S12; ADD-A131):
+    /// refused at the timing of each transition listing another group. A
+    /// curve is its timing's facts; a timing the check cannot read, and a
+    /// stated zero's, names none. That such a list follows the stylesheet's one CSS list is
+    /// `check_fact_citations.py`'s check of the facts.
+    pub(super) fn css_curves(&mut self) {
+        let stack = self.stack;
+        for part in all_parts() {
+            let target = Target::Part(part);
+            let items: Vec<(usize, &Source, &Listed)> = stack
+                .of(target)
+                .flat_map(|(number, source)| {
+                    source
+                        .items
+                        .iter()
+                        .filter(|item| item.place.starts_with("transitions["))
+                        .map(move |item| (number, source, item))
+                })
+                .collect();
+            if items.len() < 2 {
+                continue;
+            }
+            let worlds = stack.worlds(vec![Seed::Field(target, "transitions".to_owned(), true)]);
+            for world in worlds.iter() {
+                let mut curves: Vec<Vec<(String, Fact)>> = Vec::new();
+                let mut wide: Vec<Found<'_>> = Vec::new();
+                for (number, source, item) in &items {
+                    if !in_effect(stack, world, *number, source, &item.place) {
+                        continue;
+                    }
+                    let at = |field: &str| {
+                        stack.value_at(world, target, &below(&item.place, field), Bound::ALL, 0)
+                    };
+                    // A stated zero runs no curve: its stated timing is
+                    // refused on its own.
+                    if !at("engine")
+                        .iter()
+                        .any(|found| variant(found) == Some("gtk_css"))
+                        || at("duration").iter().any(stated_zero)
+                    {
+                        continue;
+                    }
+                    let timings: Vec<Found<'_>> = at("timing")
+                        .into_iter()
+                        .filter(|found| !matches!(found.got, Got::Absent))
+                        .collect();
+                    for found in &timings {
+                        for end in stack.follow(world, *found).0 {
+                            if let Some(facts) = stack.timing_facts(&end)
+                                && !curves.contains(&facts)
+                            {
+                                curves.push(facts);
+                            }
+                        }
+                    }
+                    let other = groups(item).iter().any(|group| {
+                        !matches!(group, PropertyGroup::Shadow | PropertyGroup::Corners)
+                    });
+                    if other {
+                        wide.extend(timings);
+                    }
+                }
+                if curves.len() > 1 {
+                    for found in wide {
+                        self.problem(found.layer, found.at, ProblemKind::SeveralCurves);
+                    }
+                }
+            }
+        }
+    }
+
+    /// A stated zero with no delay that overrides nothing (S2.7, S12;
+    /// ADD-A126; one with a delay holds its start): no other transition of
+    /// one of its groups (a group timing the stroke's widths or the glyph's
+    /// path also overriding the stroke's or the glyph's whole transition),
+    /// earlier in its own list, in the base or in an earlier rule of its
+    /// part, can apply under some world where its own source does; for a
+    /// `FocusIndicator.transition`, no transition of the indicator below
+    /// it. Where none can, no transition is stated. The states the
+    /// transitions apply from are not read: any two can apply from one
+    /// update's flags.
+    pub(super) fn zeros(&mut self) {
+        let stack = self.stack;
+        for (number, source) in stack.sources.iter().enumerate() {
+            for (index, item) in source.items.iter().enumerate() {
+                if !item.place.starts_with("transitions[")
+                    || zero_at(source, &below(&item.place, "delay")).is_none()
+                {
+                    continue;
+                }
+                let Some(duration) = zero_at(source, &below(&item.place, "duration")) else {
+                    continue;
+                };
+                let overriding: Vec<PropertyGroup> =
+                    groups(item).into_iter().flat_map(overridden).collect();
+                let overrides = stack.of(source.target).any(|(other_number, other)| {
+                    other
+                        .items
+                        .iter()
+                        .enumerate()
+                        .any(|(other_index, other_item)| {
+                            let earlier = other.pos < source.pos
+                                || (other_number == number && other_index < index);
+                            let shared = groups(other_item)
+                                .iter()
+                                .any(|group| overriding.contains(group));
+                            if !earlier || !shared || !other_item.place.starts_with("transitions[")
+                            {
+                                return false;
+                            }
+                            let seeds = vec![
+                                Seed::Field(source.target, item.place.clone(), true),
+                                Seed::Field(source.target, other_item.place.clone(), true),
+                            ];
+                            stack.worlds(seeds).iter().any(|world| {
+                                stack.applies(world, source) && stack.applies(world, other)
+                            })
+                        })
+                });
+                if !overrides {
+                    self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
+                }
+            }
+            self.focus_zero(source);
+        }
+    }
+
+    /// [`Checks::zeros`] for a focus indicator's transition stated a zero
+    /// by `source`: refused where no transition of the indicator lies below
+    /// it under any world where the source applies. A delay the source
+    /// leaves unstated is the one below it.
+    fn focus_zero(&mut self, source: &Source) {
+        let stack = self.stack;
+        let place = "focus.transition";
+        let Some(duration) = zero_at(source, &below(place, "duration")) else {
+            return;
+        };
+        let delay = below(place, "delay");
+        let below_it = Bound {
+            before: Some(source.pos),
+            bases_only: false,
+        };
+        let seeds = vec![Seed::Field(source.target, place.to_owned(), true)];
+        let worlds = stack.worlds(seeds);
+        let mut delayed = false;
+        let mut overrides = false;
+        for world in worlds.iter() {
+            if !stack.applies(world, source) {
+                continue;
+            }
+            if !states_at(source, &delay) {
+                delayed |= stack
+                    .value_at(world, source.target, &delay, below_it, 0)
+                    .iter()
+                    .any(|found| !matches!(found.got, Got::Stated(Fact::Number(n)) if n == 0.0));
+            }
+            overrides |= stack
+                .value_at(world, source.target, &below(place, "engine"), below_it, 0)
+                .iter()
+                .any(|found| !matches!(found.got, Got::Absent | Got::Auto));
+        }
+        let zero_delay = !states_at(source, &delay) || zero_at(source, &delay).is_some();
+        if zero_delay && !delayed && !overrides && worlds.iter().any(|w| stack.applies(w, source)) {
+            self.problem(source.layer, &duration.at, ProblemKind::OverridesNothing);
         }
     }
 }
