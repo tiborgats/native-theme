@@ -1360,7 +1360,11 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         ]
         for language in languages {
             let list = CTFontCopyDefaultCascadeListForLanguages(bodyFont, language as CFArray)
-            let elements: [Any] = list.map { ($0 as NSArray) as [Any] } ?? []
+            var elements: [Any] = []
+            if let list {
+                let array = list as NSArray
+                for index in 0..<array.count { elements.append(array.object(at: index)) }
+            }
             let names = elements.map { element -> String in
                 guard let descriptor = element as? UIFontDescriptor,
                     let name = descriptor.object(forKey: .name) as? String
