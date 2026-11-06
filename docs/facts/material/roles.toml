@@ -2482,3 +2482,27 @@ rows = ["MAT-X18"]
 kind = "published"
 source = "material-color-utilities@bd811e4c kotlin/dynamiccolor/ContrastCurve.kt:29"
 quote = "* @property high Value for contrast level 1.0"
+
+# ----------------------------------------------------------------------------------------------------
+# M1b: the seed (S9.1, MAT-X17): with no dynamic colour, Compose draws its baseline scheme from fixed tokens
+# (lightColorScheme(), ColorLightTokens), which no pinned source states as a seed `m3_role` reads: U550
+[[fact]]
+key = "input.accent"
+pending = "U550"
+rows = ["MAT-X17"]
+
+# the platform popup-menu style's colours Compose's text context menu resolves (MAT-P3-11†): Widget_PopupMenu's
+# colorBackground and TextAppearance_Widget_PopupMenu_Large's textColorPrimary (foundation
+# ContextMenuUi.android.kt:32-36), which neither style sets (core/res/res/values/styles.xml:1362-1382), so they
+# resolve through the hosting activity's theme or fall back to Compose's white and black
+# (ContextMenuUi.kt:319-326): which applies depends on attribute resolution in libs/androidfw and the theme, not
+# pinned: U564
+[[fact]]
+key = "role.@popup_menu_background"
+pending = "U564"
+rows = ["MAT-P3-11†"]
+
+[[fact]]
+key = "role.@popup_menu_text"
+pending = "U564"
+rows = ["MAT-P3-11†"]

@@ -9320,3 +9320,991 @@ quote = "<integer name=\"config_tapTimeoutMillis\">100</integer>"
 kind = "published"
 source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:133"
 quote = "private static final int TAP_TIMEOUT = 100;"
+
+# ----------------------------------------------------------------------------------------------------
+# S4.4 the slots Compose's components assign (M1b): a slot owns the keyed style a component draws text of that use
+# in, by its token (the catalogue's Material column, S4.4); the slots sharing a style reference its owner. Hero text:
+# the time picker's selector and the time input's field, the large flexible app bar's title; a section title: the
+# small top app bar's title; the smallest readable text: a text field's supporting text and a plain tooltip's text;
+# the smallest: a badge's label; the line under a heading: the rich tooltip's subhead. `headline`, `body_emphasized`
+# and `caption_emphasized` no component assigns (U562, below)
+
+[[fact]]
+key = "token.text.roles.display_large"
+value = "= token.text.keyed.display_large"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TimePickerTokens.kt:144-145"
+quote = "inline val TimeSelectorLabelTextFont: TypographyToken get() = TypographyKeyTokens.DisplayLarge"
+
+[[fact]]
+key = "token.text.roles.display_medium"
+value = "= token.text.keyed.display_medium"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/TimeInputTokens.kt:117-118"
+quote = "inline val TimeFieldLabelTextFont: TypographyToken get() = TypographyKeyTokens.DisplayMedium"
+
+[[fact]]
+key = "token.text.roles.display_small"
+value = "= token.text.keyed.display_small"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/AppBarLargeFlexibleTokens.kt:31-32"
+quote = "inline val TitleFont: TypographyToken get() = TypographyKeyTokens.DisplaySmall"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt:834"
+quote = "titleTextStyle = AppBarLargeFlexibleTokens.TitleFont.value,"
+
+[[fact]]
+key = "token.text.roles.title2"
+value = "= token.text.keyed.title_large"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/AppBarSmallTokens.kt:31-32"
+quote = "inline val TitleFont: TypographyToken get() = TypographyKeyTokens.TitleLarge"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt:249"
+quote = "titleTextStyle = AppBarSmallTokens.TitleFont.value,"
+
+[[fact]]
+key = "token.text.roles.title3"
+value = "= token.text.roles.title2"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/AppBarSmallTokens.kt:31-32"
+quote = "inline val TitleFont: TypographyToken get() = TypographyKeyTokens.TitleLarge"
+
+[[fact]]
+key = "token.text.roles.subheadline"
+value = "= token.text.keyed.title_small"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/RichTooltipTokens.kt:49-50"
+quote = "inline val SubheadFont: TypographyToken get() = TypographyKeyTokens.TitleSmall"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Tooltip.kt:475"
+quote = "val subheadTextStyle = RichTooltipTokens.SubheadFont.value"
+
+[[fact]]
+key = "token.text.roles.caption"
+value = "= token.text.keyed.body_small"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/FilledTextFieldTokens.kt:199-200"
+quote = "inline val SupportingFont: TypographyToken get() = TypographyKeyTokens.BodySmall"
+
+[[fact]]
+key = "token.text.roles.footnote"
+value = "= token.text.roles.caption"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/PlainTooltipTokens.kt:29-30"
+quote = "inline val SupportingTextFont: TypographyToken get() = TypographyKeyTokens.BodySmall"
+
+[[fact]]
+key = "token.text.roles.caption2"
+value = "= token.text.keyed.label_small"
+rows = ["MAT-TS1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/BadgeTokens.kt:33-34"
+quote = "inline val LargeLabelTextFont: TypographyToken get() = TypographyKeyTokens.LabelSmall"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Badge.kt:181"
+quote = "val style = BadgeTokens.LargeLabelTextFont.value"
+
+# no component's token assigns a section heading's style, nor an emphasised body or caption (Compose's emphasized
+# styles are Typography's, used by no baseline component): pending a decision (U562)
+
+[[fact]]
+key = "token.text.roles.headline"
+pending = "U562"
+rows = ["MAT-TS1"]
+
+[[fact]]
+key = "token.text.roles.body_emphasized"
+pending = "U562"
+rows = ["MAT-TS4"]
+
+[[fact]]
+key = "token.text.roles.caption_emphasized"
+pending = "U562"
+rows = ["MAT-TS4"]
+
+# ----------------------------------------------------------------------------------------------------
+# S9.4 text scaling: Android 14's non-linear font scaling, which Compose's sp conversion applies above a font scale
+# of 1.05 (MAT-X19)
+
+[[fact]]
+key = "token.text.scaling"
+value = "android_non_linear"
+rows = ["MAT-X19"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/platform/extensions/SpannableExtensions.android.kt:250"
+quote = "private fun isNonLinearFontScalingActive(density: Density) = density.fontScale > 1.05"
+
+# the bold-text weight adjustment (MAT-X19): Compose adds Configuration.fontWeightAdjustment to every resolved weight,
+# clamped to 1..1000 (ui-text AndroidFontResolveInterceptor.android.kt:37-52), the adjustment the system sets for
+# its bold-text setting, which no pinned source states (frameworks-base's sparse checkout lacks the settings code):
+# pending per keyed style (U563); `monospace` references body_large's weight, so it follows
+
+[[fact]]
+key = "token.text.keyed.display_large.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.display_large_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.display_medium.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.display_medium_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.display_small.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.display_small_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_large.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_large_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_medium.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_medium_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_small.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.headline_small_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_large.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_large_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_medium.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_medium_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_small.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.title_small_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_large.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_large_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_medium.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_medium_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_small.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.body_small_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_large.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_large_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_medium.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_medium_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_small.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+[[fact]]
+key = "token.text.keyed.label_small_emphasized.font.weight"
+when = { conditions = ["bold_text"] }
+pending = "U563"
+rows = ["MAT-X19"]
+
+# ----------------------------------------------------------------------------------------------------
+# S4.4 font fallbacks (MAT-FM01†, MAT-FM02†): Android's fallback families are the unnamed, language-tagged families
+# of fonts.xml and fallback_order.json (the emoji family `lang="und-Zsye"`), whose family names the model's lists
+# hold are each font file's own; pending (U557)
+
+[[fact]]
+key = "token.text.fallbacks.families"
+pending = "U557"
+rows = ["MAT-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+pending = "U557"
+rows = ["MAT-FM01†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_language"
+pending = "U557"
+rows = ["MAT-FM02†"]
+
+[[fact]]
+key = "token.text.fallbacks.per_family"
+pending = "U557"
+rows = ["MAT-FM02†"]
+
+# text rendering: Compose's text paint is anti-aliased (ANTI_ALIAS_FLAG, ParagraphIntrinsics.android.kt:68) with
+# hinting on for static text (TextMotion.Static, FontHinting); how hwui maps them to Skia's antialiasing, hinting
+# level, subpixel order, gamma and contrast is in frameworks/base libs/hwui, outside the pinned sparse checkout:
+# pending (U558)
+
+[[fact]]
+key = "token.text.rendering.engine"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.hinting"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.gamma"
+pending = "U558"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.contrast"
+pending = "U558"
+rows = []
+
+# ----------------------------------------------------------------------------------------------------
+# S4.2 behaviour (M1b): Compose's ViewConfiguration on Android, AndroidViewConfiguration, reads the platform's
+# android.view.ViewConfiguration (ui AndroidViewConfiguration.android.kt), whose defaults are frameworks/base's
+# resources and constants
+
+[[fact]]
+key = "token.behavior.double_click_time"
+value = "300ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidViewConfiguration.android.kt:34-35"
+quote = "override val doubleTapTimeoutMillis: Long get() = android.view.ViewConfiguration.getDoubleTapTimeout().toLong()"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:846-848"
+quote = "public static int getDoubleTapTimeout() { return sResourceCache.getDoubleTapTimeout(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:1640-1645"
+quote = "mDoubleTapTimeout = resources != null ? resources.getInteger(R.integer.config_doubleTapTimeoutMillis) : DOUBLE_TAP_TIMEOUT;"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:3238"
+quote = "<integer name=\"config_doubleTapTimeoutMillis\">300</integer>"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:147"
+quote = "private static final int DOUBLE_TAP_TIMEOUT = 300;"
+
+# one timeout for every pointer: Compose's tap detector waits doubleTapTimeoutMillis for a second press of any kind
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+value = "= token.behavior.double_click_time"
+rows = ["MAT-X25"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/TapGestureDetector.kt:246-249"
+quote = "private suspend fun AwaitPointerEventScope.awaitSecondDown( firstUp: PointerInputChange ): PointerInputChange? = withTimeoutOrNull(viewConfiguration.doubleTapTimeoutMillis) {"
+
+# the second press counts wherever on the element it lands: no distance bounds a double click or tap
+[[fact]]
+key = "token.behavior.double_click_distance"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/TapGestureDetector.kt:246-257"
+quote = "private suspend fun AwaitPointerEventScope.awaitSecondDown("
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/platform/ViewConfiguration.kt:25-72"
+quote = "public interface ViewConfiguration {"
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+[[fact]]
+key = "token.behavior.double_click_height"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/TapGestureDetector.kt:246-257"
+quote = "private suspend fun AwaitPointerEventScope.awaitSecondDown("
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/platform/ViewConfiguration.kt:25-72"
+quote = "public interface ViewConfiguration {"
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+value = "absent"
+rows = ["MAT-X32†"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/TapGestureDetector.kt:246-257"
+quote = "private suspend fun AwaitPointerEventScope.awaitSecondDown("
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/platform/ViewConfiguration.kt:25-72"
+quote = "public interface ViewConfiguration {"
+absent = ["DoubleTapSlop", "doubleTapSlop"]
+
+# the touch slop: the distance before a press becomes a scroll, and before a drag starts (Compose's drag detectors
+# await it, DragGestureDetector.kt)
+[[fact]]
+key = "token.behavior.touch.slop"
+value = "8px"
+rows = ["MAT-X32†"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidViewConfiguration.android.kt:40-41"
+quote = "override val touchSlop: Float get() = viewConfiguration.scaledTouchSlop.toFloat()"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:926-928"
+quote = "public int getScaledTouchSlop() { return mTouchSlop; }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:550"
+quote = "mTouchSlop = res.getDimensionPixelSize(R.dimen.config_viewConfigurationTouchSlop);"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:3166"
+quote = "<dimen name=\"config_viewConfigurationTouchSlop\">8dp</dimen>"
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+value = "= token.behavior.touch.slop"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:76-86"
+quote = "public suspend fun AwaitPointerEventScope.awaitTouchSlopOrCancellation( pointerId: PointerId, onTouchSlopReached: (change: PointerInputChange, overSlop: Offset) -> Unit, ): PointerInputChange? {"
+
+# Compose's paging (Pager) and Android's paging slop (twice the touch slop, getScaledPagingTouchSlop): which Compose
+# uses is unread (U556)
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+pending = "U556"
+rows = ["MAT-X32†"]
+
+[[fact]]
+key = "token.behavior.long_press"
+value = "400ms"
+rows = ["MAT-X25"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidViewConfiguration.android.kt:31-32"
+quote = "override val longPressTimeoutMillis: Long get() = android.view.ViewConfiguration.getLongPressTimeout().toLong()"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:735-738"
+quote = "public static int getLongPressTimeout() { return AppGlobals.getIntCoreSetting(Settings.Secure.LONG_PRESS_TIMEOUT, DEFAULT_LONG_PRESS_TIMEOUT); }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:83"
+quote = "public static final int DEFAULT_LONG_PRESS_TIMEOUT = 400;"
+
+# key repeat (MAT-P3-14†): its own settings, whose defaults Android sets to the long-press default and 50 ms
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+value = "400ms"
+rows = ["MAT-P3-14†"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:770-773"
+quote = "public static int getKeyRepeatTimeout() { return AppGlobals.getIntCoreSetting(Settings.Secure.KEY_REPEAT_TIMEOUT_MS, DEFAULT_KEY_REPEAT_TIMEOUT_MS); }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:96"
+quote = "private static final int DEFAULT_KEY_REPEAT_TIMEOUT_MS = DEFAULT_LONG_PRESS_TIMEOUT;"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:83"
+quote = "public static final int DEFAULT_LONG_PRESS_TIMEOUT = 400;"
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+value = "50ms"
+rows = ["MAT-P3-14†"]
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:778-781"
+quote = "public static int getKeyRepeatDelay() { return AppGlobals.getIntCoreSetting(Settings.Secure.KEY_REPEAT_DELAY_MS, DEFAULT_KEY_REPEAT_DELAY_MS); }"
+
+[[fact.cite]]
+kind = "published"
+source = "frameworks-base@android-17.0.0_r1 core/java/android/view/ViewConfiguration.java:101"
+quote = "private static final int DEFAULT_KEY_REPEAT_DELAY_MS = 50;"
+
+# no system hover time: Compose's ViewConfiguration has none, each widget states its own delay (S4.2 *Hover time*)
+[[fact]]
+key = "token.behavior.hover_time"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/platform/ViewConfiguration.kt:25-72"
+quote = "public interface ViewConfiguration {"
+absent = []
+
+# a drag and drop starts, from a mouse, once the pointer passes the touch slop, at once; from a touch, on a long
+# press (Compose's default start detector on Android)
+[[fact]]
+key = "token.behavior.drag_time"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/draganddrop/AndroidDragAndDropSource.android.kt:49-58"
+quote = "if (initialDown.type == PointerType.Mouse) {"
+absent = []
+
+[[fact]]
+key = "token.behavior.drag_time"
+when = { conditions = ["input:touch"] }
+value = "= token.behavior.long_press"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/draganddrop/AndroidDragAndDropSource.android.kt:59-69"
+quote = "} else { // Process tap gesture internally doesn't use the initial pass in the initial // suspending code, so we don't need to forward the initialDown on to it. processTapGesture( scope = this@coroutineScope, pressScope = pressScope, onDoubleTap = null, onLongPress = { offset -> requestDragAndDropTransfer(offset) },"
+
+[[fact]]
+key = "token.behavior.drag_min_delay"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/draganddrop/AndroidDragAndDropSource.android.kt:49-58"
+quote = "if (initialDown.type == PointerType.Mouse) {"
+absent = []
+
+[[fact]]
+key = "token.behavior.drag_min_delay"
+when = { conditions = ["input:touch"] }
+value = "= token.behavior.long_press"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/draganddrop/AndroidDragAndDropSource.android.kt:59-69"
+quote = "onLongPress = { offset -> requestDragAndDropTransfer(offset) },"
+
+# no spring-loading: a drop target's callbacks have no hover timeout
+[[fact]]
+key = "token.behavior.spring_loading"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draganddrop/DragAndDrop.kt:60-98"
+quote = "public interface DragAndDropTarget {"
+absent = []
+
+# no mnemonics: Material's Text draws none, and so none on a disabled element
+[[fact]]
+key = "token.behavior.mnemonics"
+value = "never"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:104-149"
+quote = "public fun Text("
+absent = ["mnemonic", "Mnemonic"]
+
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Text.kt:104-149"
+quote = "public fun Text("
+absent = ["mnemonic", "Mnemonic"]
+
+# whether a tap or a click activates a list's item (Compose's lists have no activation of their own): U555
+[[fact]]
+key = "token.behavior.single_click_activates"
+pending = "U555"
+rows = []
+
+# when Compose shows focus indication (MAT-X34†): U554
+[[fact]]
+key = "token.behavior.focus_visible_when"
+pending = "U554"
+rows = ["MAT-X34†"]
+
+# the pointer hidden while typing (MAT-P3-15†): frameworks/native's PointerChoreographer, not pinned: U553
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+pending = "U553"
+rows = ["MAT-P3-15†"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+pending = "U553"
+rows = ["MAT-P3-15†"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+pending = "U553"
+rows = ["MAT-P3-15†"]
+
+# ----------------------------------------------------------------------------------------------------
+# the focus ring's entrance (S2.10): md-focus-ring grows its outline from 0 to the active width over a quarter of its
+# duration and shrinks it to the ring's width over the rest, two keyframe animations on the emphasized curve
+# (focus/internal/_focus-ring.scss:44-46, :59, :78-91), which one `FocusIndicator.transition` timing the whole
+# indicator does not express (the lane report): U552
+[[fact]]
+key = "token.focus.transition"
+pending = "U552"
+rows = []
+
+# ----------------------------------------------------------------------------------------------------
+# S4.5 icons (M1b)
+
+# no icon theme: Material's icons are the Material Symbols font's glyphs (token.icons.set), with no named theme or
+# fallback chain an icon lookup walks: U559
+[[fact]]
+key = "token.icons.theme"
+pending = "U559"
+rows = []
+
+[[fact]]
+key = "token.icons.theme_fallback"
+pending = "U559"
+rows = []
+
+# the icons mirrored in a right-to-left layout (MAT-FM04†): Compose's Icons.AutoMirrored set, whose source and
+# Google's list are not pinned: U560
+[[fact]]
+key = "token.icons.mirroring"
+pending = "U560"
+rows = ["MAT-FM04†"]
+
+# the contexts md-icon draws: its glyph in the inherited colour, weight 400, no font variation settings of its own
+# (icon/internal/_icon.scss:31-66); no symbol variants, symbolic palette, rendering mode, scale, state effect or
+# animation
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:35"
+quote = "color: inherit;"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:37"
+quote = "font-weight: 400;"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:36"
+quote = "font-variation-settings: inherit;"
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbolic_colors"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.fill"
+value = "= surface.foreground"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:35"
+quote = "color: inherit;"
+
+[[fact]]
+key = "token.icons.sizes.dialog.weight"
+value = 400
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:37"
+quote = "font-weight: 400;"
+
+[[fact]]
+key = "token.icons.sizes.dialog.axes"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:36"
+quote = "font-variation-settings: inherit;"
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbol_variants"
+value = []
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.symbolic_colors"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.rendering_mode"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.scale"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.state_effect"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+[[fact]]
+key = "token.icons.sizes.dialog.animation"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 icon/internal/_icon.scss:31-66"
+quote = ":host {"
+absent = []
+
+# the small, large and panel contexts: no material-web or Compose token names an icon size for them (md-icon's one
+# size is 24px): U561
+[[fact]]
+key = "token.icons.sizes.small"
+pending = "U561"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large"
+pending = "U561"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel"
+pending = "U561"
+rows = []
+
+# ----------------------------------------------------------------------------------------------------
+# window size classes (MAT-LA1): Compose Material 3's WindowWidthSizeClass and WindowHeightSizeClass breakpoints, each
+# a class's inclusive lower bound (a window takes the largest class whose bound its size reaches, fromWidth,
+# fromHeight)
+[[fact]]
+key = "token.size_classes"
+value = { compact = { horizontal_px = 0, vertical_px = 0 }, medium = { horizontal_px = 600, vertical_px = 480 }, expanded = { horizontal_px = 840, vertical_px = 900 } }
+rows = ["MAT-LA1"]
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-window-size-class/src/commonMain/kotlin/androidx/compose/material3/windowsizeclass/WindowSizeClass.kt:165-172"
+quote = "private fun WindowWidthSizeClass.breakpoint(): Dp { return when { this == Expanded -> 840.dp this == Medium -> 600.dp else -> 0.dp } }"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-window-size-class/src/commonMain/kotlin/androidx/compose/material3/windowsizeclass/WindowSizeClass.kt:266-273"
+quote = "private fun WindowHeightSizeClass.breakpoint(): Dp { return when { this == Expanded -> 900.dp this == Medium -> 480.dp else -> 0.dp } }"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3-window-size-class/src/commonMain/kotlin/androidx/compose/material3/windowsizeclass/WindowSizeClass.kt:177-194"
+quote = "if (width >= it.breakpoint()) { return it }"

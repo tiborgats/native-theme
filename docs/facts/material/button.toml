@@ -438,6 +438,17 @@ kind = "published"
 source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Border.kt:177-178"
 quote = "val topLeft = Offset(halfStroke, halfStroke) val borderSize = Size(size.width - strokeWidthPx, size.height - strokeWidthPx)"
 
+# the fill under the stroke: Compose's surface fills the whole shape and draws the border over it
+[[fact]]
+key = "button.body.stroke.fill_clip"
+value = "box"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Surface.kt:562-563"
+quote = ".then(if (border != null) Modifier.border(border, shape) else Modifier) .background(color = backgroundColor, shape = shape)"
+
 [[fact]]
 key = "button.body.stroke.outset"
 value = "absent"
@@ -759,6 +770,98 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "Modifier.graphicsLayer( shadowElevation = shadowElevation, shape = shape, clip = false, )"
 
 [[fact]]
+key = "button.body.transform.origin"
+value = [0.5, 0.5]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt:100"
+quote = "transformOrigin: TransformOrigin = TransformOrigin.Center,"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/TransformOrigin.kt:76-77"
+quote = "public val Center: TransformOrigin get() = TransformOrigin(0.5f, 0.5f)"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Surface.kt:553-557"
+quote = "Modifier.graphicsLayer( shadowElevation = shadowElevation, shape = shape, clip = false, )"
+
+# the label takes no padding of its own (a zero stated by omission, S17): Compose's button places its content in a
+# row padded by the body's contentPadding, the label the application's Text in it; material-web's label span sets
+# none either
+
+[[fact]]
+key = "button.label.padding.top"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:167-181"
+quote = "ProvideContentColorTextStyle("
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:131-133"
+quote = ".label {"
+absent = ["padding"]
+
+[[fact]]
+key = "button.label.padding.right"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:167-181"
+quote = "ProvideContentColorTextStyle("
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:131-133"
+quote = ".label {"
+absent = ["padding"]
+
+[[fact]]
+key = "button.label.padding.bottom"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:167-181"
+quote = "ProvideContentColorTextStyle("
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:131-133"
+quote = ".label {"
+absent = ["padding"]
+
+[[fact]]
+key = "button.label.padding.left"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:167-181"
+quote = "ProvideContentColorTextStyle("
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/_shared.scss:131-133"
+quote = ".label {"
+absent = ["padding"]
+
+[[fact]]
 key = "button.body.focus.kind"
 value = "ring"
 rows = ["MAT-X10"]
@@ -908,6 +1011,12 @@ kind = "published"
 source = "material-web@2.5.0 focus/internal/_focus-ring.scss:43-76"
 quote = ":host {"
 absent = ["box-shadow"]
+
+# the ring's entrance, md-focus-ring's grow and shrink keyframes (token.focus.transition's note): U552
+[[fact]]
+key = "button.body.focus.transition"
+pending = "U552"
+rows = []
 
 [[fact]]
 key = "button.body.cursor"
@@ -1379,26 +1488,51 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public fun Button("
 absent = []
 
+# the indicator's place and gap where no indicator is drawn (ledger queue #157; the catalogue lists neither value
+# among those a platform may leave absent): material-web's button lays its trailing icon out in its content row,
+# 8px after the label, a row every md button shares (button.ts:166-168, _shared.scss:22-23); `menu` states them
+# again below, where the indicator is drawn
 [[fact]]
 key = "button.values.menu_indicator_anchor"
-value = "absent"
+value = "inline"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
-quote = "public fun Button("
-absent = []
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
+
 [[fact]]
 key = "button.values.menu_indicator_gap"
-value = "absent"
+value = "8px"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:139-184"
-quote = "public fun Button("
-absent = []
+source = "material-web@2.5.0 button/internal/_shared.scss:22-23"
+quote = "display: inline-flex; gap: 8px;"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
+
+# the icon before the label: Compose's extended FAB draws its icon, then the text; material-web's button its leading
+# icon before the label (button.ts:166-168)
+[[fact]]
+key = "button.values.icon_placement"
+value = "leading"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:915-923"
+quote = "icon() AnimatedVisibility( visible = expanded, enter = extendedFabExpandAnimation(), exit = extendedFabCollapseAnimation(), ) { Row(Modifier.clearAndSetSemantics {}) { Spacer(Modifier.width(ExtendedFabEndIconPadding)) text()"
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 button/internal/button.ts:166-168"
+quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
 
 [[fact]]
 key = "button.values.shows_icon"
@@ -6337,6 +6471,93 @@ rows = ["MAT-N8"]
 kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:85"
 quote = "$trailing-icon-color: md-sys-color.$on-surface-variant;"
+
+# the menu button's trailing icon is an icon the application slots into material-web's button (button.ts:166-168),
+# which no token or component names, sizes beyond its 18px, places or animates: its other fields pending (U551)
+
+[[fact]]
+key = "button.menu_indicator.glyph.source"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.axes"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_extent"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.draw_start"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.mirroring"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.min_width"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.min_height"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.transform"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
+
+[[fact]]
+key = "button.menu_indicator.transitions"
+when = { variants = ["menu"] }
+pending = "U551"
+rows = ["MAT-N8"]
 
 [[fact]]
 key = "button.body.bindings"
