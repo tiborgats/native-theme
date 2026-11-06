@@ -10129,17 +10129,53 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:289-290"
 quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
 
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
 [[fact]]
 key = "role.selection.foreground_inactive"
-when = { conditions = ["preset:macos-tahoe", "contrast_increased"] }
-pending = "U235"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffffcd"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffffb3"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.darkAqua.foreground_inactive"
+tolerance = 1
+
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.aqua.disabled_foreground"
+tolerance = 1
 
 [[fact]]
 key = "role.selection.disabled.foreground"
-when = { conditions = ["preset:macos-tahoe", "contrast_increased"] }
-pending = "U235"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.darkAqua.disabled_foreground"
+tolerance = 1
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -12878,11 +12914,29 @@ kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
 quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
 
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
 [[fact]]
 key = "role.selection.foreground_inactive"
-when = { conditions = ["preset:macos-monterey", "contrast_increased"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffffcd"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffffb3"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.darkAqua.foreground_inactive"
+tolerance = 1
 
 [[fact]]
 key = "role.selection.link"
@@ -12956,11 +13010,29 @@ kind = "published"
 source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
 quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
 
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
 [[fact]]
 key = "role.selection.disabled.foreground"
-when = { conditions = ["preset:macos-monterey", "contrast_increased"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.aqua.disabled_foreground"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.darkAqua.disabled_foreground"
+tolerance = 1
 
 # --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
 

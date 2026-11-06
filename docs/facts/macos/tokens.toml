@@ -32015,20 +32015,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.large_title_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_tight.font.width"
@@ -32529,20 +32559,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.large_title_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.largeTitle.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.largeTitle.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.large_title_loose.font.width"
@@ -33011,20 +33071,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_1_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_tight.font.width"
@@ -33525,20 +33615,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_1_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title1.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title1.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_1_loose.font.width"
@@ -34007,20 +34127,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_2_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_tight.font.width"
@@ -34521,20 +34671,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_2_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title2.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title2.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_2_loose.font.width"
@@ -35003,20 +35183,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_3_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_tight.font.width"
@@ -35485,20 +35695,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.title_3_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.title3.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.title3.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.title_3_loose.font.width"
@@ -35956,20 +36196,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.headline_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_tight.font.width"
@@ -36459,20 +36729,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.headline_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.headline.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.headline.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.headline_loose.font.width"
@@ -36941,20 +37241,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.subheadline_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_tight.font.width"
@@ -37455,20 +37785,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.subheadline_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.subheadline.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.subheadline.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.subheadline_loose.font.width"
@@ -37937,20 +38297,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.body_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_tight.font.width"
@@ -38451,20 +38841,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.body_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.body.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.body.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.body_loose.font.width"
@@ -38933,20 +39353,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.callout_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_tight.font.width"
@@ -39447,20 +39897,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.callout_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.callout.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.callout.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.callout_loose.font.width"
@@ -39929,20 +40409,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.footnote_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_tight.font.width"
@@ -40443,20 +40953,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.footnote_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.footnote.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.footnote.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.footnote_loose.font.width"
@@ -40925,20 +41465,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.caption_1_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_tight.font.width"
@@ -41439,20 +42009,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.caption_1_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption1.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption1.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_1_loose.font.width"
@@ -41910,20 +42510,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.caption_2_tight.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.tightLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.tightLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_tight.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.tightLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.tightLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_tight.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.tightLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.tightLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_tight.font.width"
@@ -42413,20 +43043,50 @@ absent = []
 [[fact]]
 key = "token.text.keyed.caption_2_loose.font.style"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = "normal"
 rows = ["MAC-TS03†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.looseLeading.style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.looseLeading.style"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_loose.font.axes"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = { opsz = "follows_size" }
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.looseLeading.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.looseLeading.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_loose.font.features"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U311"
+value = {}
 rows = ["MAC-TS03†", "MAC-X18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.main.line_height.preferredFontForTextStyle.caption2.looseLeading.features"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/fonts.toml#fonts.increase_contrast_on_accent_red.line_height.preferredFontForTextStyle.caption2.looseLeading.features"
+tolerance = 0
 
 [[fact]]
 key = "token.text.keyed.caption_2_loose.font.width"
