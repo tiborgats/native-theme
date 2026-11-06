@@ -64,17 +64,41 @@ pub(crate) struct Context<'a> {
     pub(crate) reader_accent_left_out: bool,
 }
 
-/// Every structural problem `layer` has against `cx` (S12), the checks
-/// over combinations taking from `reused` what the check of the layer below
-/// found that `layer` leaves as it was.
-pub(crate) fn check(layer: &Layer, cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
-    let mut problems = checks::layer(layer, cx);
+/// Every structural problem the layers `added`, each of the kind
+/// `cx.kind`, have against `cx` (S12), as each one's check over the layers
+/// below it finds them, in their order: its structural checks, then the
+/// checks over combinations, with what they find below it. The checks over
+/// combinations run once, over `cx.below` and all of `added`, each problem
+/// the layer's stating the place it names: layers stating disjoint paths,
+/// the synthetic route's (S17, ADD-A131), validated at once. They take
+/// from `reused` what the check of the layers below found that the layers
+/// leave as it was.
+pub(crate) fn check(added: &[&Layer], cx: &Context<'_>, reused: &Reused) -> Result<(), LayerError> {
     let mut layers = cx.below.to_vec();
-    layers.push(Stacked {
+    let first = layers.len();
+    layers.extend(added.iter().map(|layer| Stacked {
         layer,
         kind: cx.kind,
-    });
-    add(&mut problems, combinations(&layers, *cx, reused));
+    }));
+    let found = combinations(&layers, *cx, reused);
+    let mut problems: Vec<Problem> = Vec::new();
+    for (offset, layer) in added.iter().enumerate() {
+        let at = first.saturating_add(offset);
+        let mut own = checks::layer(layer, cx);
+        add(
+            &mut own,
+            found
+                .iter()
+                .filter(|(stating, _)| *stating <= at)
+                .map(|(stating, problem)| (*stating == at, problem.clone()))
+                .collect(),
+        );
+        for problem in own {
+            if !problems.contains(&problem) {
+                problems.push(problem);
+            }
+        }
+    }
     if problems.is_empty() {
         Ok(())
     } else {
@@ -83,19 +107,16 @@ pub(crate) fn check(layer: &Layer, cx: &Context<'_>, reused: &Reused) -> Result<
 }
 
 /// Every problem the checks over combinations find in `layers`, the last
-/// the layer `cx` adds (S12), each with whether it names a place of that
-/// layer; what the check of the layers below found is taken from `reused`
+/// the layer `cx` adds (S12), each with the layer stating the place it
+/// names; what the check of the layers below found is taken from `reused`
 /// where the added layer leaves it as it was.
-fn combinations(layers: &[Stacked<'_>], cx: Context<'_>, reused: &Reused) -> Vec<(bool, Problem)> {
+fn combinations(layers: &[Stacked<'_>], cx: Context<'_>, reused: &Reused) -> Vec<(usize, Problem)> {
     let stack = stack::Stack::new(layers, cx);
     let added = layers.len().saturating_sub(1);
-    let mut problems: Vec<(bool, Problem)> = combos::check(&stack, Some(reused))
-        .into_iter()
-        .map(|(layer, problem)| (layer == added, problem))
-        .collect();
+    let mut problems = combos::check(&stack, Some(reused));
     if cx.kind == LayerKind::Palette && combos::on_kde_breeze(cx.preset) {
         let palette = combos::mapping_palette(&stack, added);
-        problems.extend(palette.into_iter().map(|problem| (true, problem)));
+        problems.extend(palette.into_iter().map(|problem| (added, problem)));
     }
     problems
 }
@@ -166,6 +187,7 @@ pub(crate) fn check_preset(
     // too (S6.3, S17).
     let found = combinations(&layers, cx, reused)
         .into_iter()
+        .map(|(stating, problem)| (stating == 0, problem))
         .flat_map(|(own, problem)| {
             if problem.kind == ProblemKind::Missing {
                 checks::unlisted(&problem.path, &exempt)

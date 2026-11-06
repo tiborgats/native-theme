@@ -63,7 +63,7 @@ fn found_as(layer: &Layer, decl: &Declarations, kind: LayerKind) -> Vec<String> 
         reader_accent_left_out: false,
         below: &[],
     };
-    strings(check(layer, &cx, &Reused::default()))
+    strings(check(&[layer], &cx, &Reused::default()))
 }
 
 /// The problems of an application layer over `decl`, `below` the preset's
@@ -80,7 +80,7 @@ fn found_over(layer: &Layer, decl: &Declarations, below: &Layer) -> Vec<String> 
         reader_accent_left_out: false,
         below: &below,
     };
-    strings(check(layer, &cx, &Reused::default()))
+    strings(check(&[layer], &cx, &Reused::default()))
 }
 
 /// The problems of an application layer over `decl`.
@@ -3215,7 +3215,7 @@ fn layer_error_every_variant_triggers() {
             reader_accent_left_out: false,
             below: &below,
         };
-        problems(check(layer, &cx, &Reused::default()))
+        problems(check(&[layer], &cx, &Reused::default()))
     };
     let none = Declarations::default();
     // S11's reader: text it refuses.
@@ -3801,7 +3801,7 @@ fn layer_error_every_variant_triggers() {
 fn every_layer_error() {
     let none = Declarations::default();
     let invalid = check(
-        &bare_layer_with_a_problem(),
+        &[&bare_layer_with_a_problem()],
         &Context {
             declarations: &none,
             preset: None,

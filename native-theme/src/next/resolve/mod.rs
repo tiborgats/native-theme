@@ -901,7 +901,22 @@ impl Stack {
             .reader_state()
             .map(validate::reader_state)
             .unwrap_or_default();
-        for (index, layer) in stacked.iter().enumerate().skip(1) {
+        // The synthetic route's layers state disjoint paths: checked at once.
+        let synthetic = self.synthetic_places();
+        let mut index = 1_usize;
+        while let Some(layer) = stacked.get(index) {
+            let mut end = index.saturating_add(1);
+            if synthetic.contains(&index) {
+                while synthetic.contains(&end) {
+                    end = end.saturating_add(1);
+                }
+            }
+            let added: Vec<&Layer> = stacked
+                .get(index..end)
+                .unwrap_or_default()
+                .iter()
+                .map(|stacked| stacked.layer)
+                .collect();
             let cx = Context {
                 declarations: &self.declarations,
                 preset: self.preset,
@@ -909,7 +924,8 @@ impl Stack {
                 reader_accent_left_out: self.reader_accent_left_out(),
                 below: stacked.get(..index).unwrap_or_default(),
             };
-            add_problems(&mut problems, validate::check(layer.layer, &cx, reused))?;
+            add_problems(&mut problems, validate::check(&added, &cx, reused))?;
+            index = end;
         }
         let listed = validate::listed_unstated(
             &self.pending,

@@ -2125,12 +2125,19 @@ impl Checks<'_, '_> {
     /// per world.
     fn expressions(&mut self, reused: Option<&Reused>) {
         let stack = self.stack;
-        let added = stack.layers.len().saturating_sub(1);
+        // The layers the check adds: those above the layers its context
+        // names below it, several at once on the synthetic route (S17), else
+        // the last.
+        let added = stack
+            .cx
+            .below
+            .len()
+            .min(stack.layers.len().saturating_sub(1));
         let below = stack.layers.get(..added).unwrap_or_default();
         let mut memory = reused.map(|reused| reused.memory.borrow_mut());
         // What an earlier layer's check kept holds only over the same layers
-        // below the added one, preset and declarations; the added layer is
-        // kept for the check of the layer above it.
+        // below the added ones, preset and declarations; the added layers
+        // are kept for the check of the layer above them.
         if let Some(memory) = memory.as_mut() {
             let same = memory.as_ref().is_some_and(|held| {
                 held.preset == stack.preset()
@@ -2155,14 +2162,19 @@ impl Checks<'_, '_> {
                     steps: HashMap::new(),
                 });
             }
-            if let (Some(held), Some(stacked)) = (memory.as_mut(), stack.layers.get(added)) {
-                held.layers.push((stacked.layer.clone(), stacked.kind));
+            if let Some(held) = memory.as_mut() {
+                let above = stack.layers.get(added..).unwrap_or_default();
+                held.layers.extend(
+                    above
+                        .iter()
+                        .map(|stacked| (stacked.layer.clone(), stacked.kind)),
+                );
             }
         }
         let added_sources: Vec<&Source> = stack
             .sources
             .iter()
-            .filter(|source| source.layer == added)
+            .filter(|source| source.layer >= added)
             .collect();
         let mut steps: Vec<Step<'_>> = Vec::new();
         for (number, source) in stack.sources.iter().enumerate() {

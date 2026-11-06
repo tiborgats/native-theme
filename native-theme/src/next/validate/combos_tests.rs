@@ -41,7 +41,7 @@ fn over(below: &str, top: &str, decl: &Declarations) -> Vec<String> {
         reader_accent_left_out: false,
         below: &below,
     };
-    match check(&toml(top), &cx, &Reused::default()) {
+    match check(&[&toml(top)], &cx, &Reused::default()) {
         Ok(()) => Vec::new(),
         Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
         Err(other) => panic!("{other}"),
@@ -1742,7 +1742,7 @@ fn combination_input_cycle_reader_accent_left_out() {
             reader_accent_left_out: left_out,
             below: &below,
         };
-        match check(&reader, &cx, &Reused::default()) {
+        match check(&[&reader], &cx, &Reused::default()) {
             Ok(()) => Vec::new(),
             Err(LayerError::Invalid(problems)) => problems.iter().map(Problem::to_string).collect(),
             Err(other) => panic!("{other}"),
