@@ -1751,7 +1751,7 @@ spaces:
     {glass,@corner_dynamic}` and `@ variants {clear,@corner_dynamic}`, the products building those sets alone;
     ADD-A125); the roles `@cancel` and `@role_primary` (UIKit's `UIButton.Role`, `UIButton.h:37-42`
     in both pinned SDKs: `primary` makes the title heavier in every style, `cells.<scheme>.<style>__role_primary`
-    weight trait 0.3 against 0.0, `ns_font_weight`'s 600, while the typed `primary` is the filled style; the cancel and destructive roles
+    weight trait 0.3 against 0.0, its weight the drawn face's, S2.8's *Weight*, ADD-A136, while the typed `primary` is the filled style; the cancel and destructive roles
     draw as normal on a standalone button and are variants for the hosts that draw them otherwise (above), their
     facts there; iOS 26's further
     bar-item roles are an open item, Open items: added here when the facts state them; ADD-A125); the button types `@info`, `@contact_add`; `@share` the system Action bar item (`UIBarButtonSystemItemAction`,
