@@ -5155,12 +5155,14 @@ backend runs (within the readers' D-Bus deadline), then by the user's `kdeglobal
   unnamed) has no reader of its own and is read under the preset `PresetId::for_system` gives (`adwaita`), in its
   common bases and conditions only, nothing under `for_preset`: the portal's `org.freedesktop.appearance` settings
   first (`color-scheme`, `accent-color`, `contrast`, `reduced-motion`), as the GNOME reader reads them, then, for
-  the scheme and motion the portal does not give, 0.7.0's own chain on these desktops (`detect.rs` at `v0.7.0`,
-  2796b26e): the scheme dark where `GTK_THEME` ends in `:dark` or holds `-dark` (`:768-774`), else gsettings'
+  the scheme and motion the portal does not give, 0.7.0's own chain on these desktops (`detect.rs` at the switch's parent 2796b26e, the file as tagged `v0.7.0`,
+  caeddd6b): the scheme dark where `GTK_THEME`, lowercased, ends in `:dark` or holds `-dark` (`:768-774`), else gsettings'
   `org.gnome.desktop.interface color-scheme` (`:727-742`, "reliable on GNOME and GTK-based desktops", `:744-748`), else
   dark where `gtk-3.0/settings.ini` sets `gtk-application-prefer-dark-theme` (`:797-810`), else light; reduced motion
-  gsettings' `org.gnome.desktop.a11y.interface reduced-motion` and `animations_off` its `enable-animations` false,
-  the key 0.7.0 read for its one motion flag there (`:952-967`, `:976-988`), the model holding the two apart (S7.1).
+  gsettings' `org.gnome.desktop.a11y.interface reduced-motion`, a read 0.7.0 did not make there, and `animations_off`
+  its `enable-animations` false, the key 0.7.0 read there and reported as reduced motion, its one motion flag
+  (`:952-967`, `:976-988`): the model holds the two apart (S7.1), so an application checking reduced motion there
+  sees `enable-animations` as `animations_off` now.
   `kdeglobals`, which 0.7.0 also asked there, stays the KDE reader's. The read cannot fail, a setting none of these
   gives keeping the no-reader state's value (no flag); it needs the `portal` feature as the GNOME reader does
   (`Err(FeatureDisabled)` without it). So these desktops keep what 0.7.0 gave them, the preset in the scheme and

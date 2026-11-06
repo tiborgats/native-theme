@@ -9845,8 +9845,8 @@ holds.
   (`adw-settings-impl-portal.c:124-141`, `adw-accent-color.c:159-199`; `adw_accent_nearest`, S2.2's readers' helpers),
   the accent's colour replacing the raw RGB the reader uses: GN-3.15 (S9.3, ADD-A135).
 - on a Linux desktop no reader of its own reads (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, an
-  unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme and motion
-  (`GTK_THEME`, gsettings' `color-scheme`, `reduced-motion` and `enable-animations`, `gtk-3.0/settings.ini`), under
+  unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme (`GTK_THEME`,
+  gsettings' `color-scheme`, `gtk-3.0/settings.ini`) and its `enable-animations`, with gsettings' `reduced-motion` a new read, under
   `adwaita` (S16's *Which reader*, ADD-A135).
 - accent-color enum, `org.gnome.desktop.interface` (schema lines 314-320), fallback to the portal: GN-3.16.
 - reduced-motion, `org.gnome.desktop.a11y.interface` (schema lines 18-24); `enable-animations` already read: GN-3.25,
