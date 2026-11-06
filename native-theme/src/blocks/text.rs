@@ -532,16 +532,22 @@ pub enum FadeLength {
     Fraction(Value<Fraction>),
 }
 
-/// How text wraps.
+/// Where a line too long for its box breaks (S2.8), as Pango names the
+/// four (`PangoWrapMode`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, ThemeParts)]
 #[parts(toml)]
 pub enum Wrap {
-    /// It does not wrap.
+    /// Nowhere: the line overflows, and `elision` applies.
     None,
-    /// At word boundaries.
+    /// Only at the line-break opportunities of Unicode's line-breaking
+    /// algorithm (UAX #14), a word wider than the line overflowing it.
     Word,
-    /// At any character.
+    /// At any grapheme boundary, words or not.
     Char,
+    /// At the line-break opportunities, and inside a word, at a grapheme
+    /// boundary, only where the word alone does not fit the line (Pango's
+    /// `WORD_CHAR`, Qt's `WrapAtWordBoundaryOrAnywhere`, XAML's `Wrap`).
+    WordChar,
 }
 
 /// What a fade ends under.

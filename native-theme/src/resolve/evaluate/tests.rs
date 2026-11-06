@@ -1779,6 +1779,10 @@ fn text_style_value_leaves_resolve() {
     assert_eq!(referenced.wrap, Some(Wrap::Char));
     assert_eq!(referenced.max_lines, Some(Some(2)));
     assert_eq!(referenced.scaling_role, Some(Some(TextRole::Caption)));
+
+    let word_char = "[tokens.text.roles.body]\nwrap = \"word_char\"";
+    let referenced = label_text(&[BASE, &label, slot, references, word_char]);
+    assert_eq!(referenced.wrap, Some(Wrap::WordChar));
 }
 
 /// `(tag, AxisValue::Fixed(value))` pairs, synthetic.
