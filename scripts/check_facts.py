@@ -1388,6 +1388,8 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
             fields = ctx.structs[e]
             out += [f"{where}.{k}: `{k}` is not a field of {e}" for k in value
                     if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
+        elif e == "ShadowLayer" and "falloff" not in value:
+            out.append(f"{where}: a shadow layer states its `falloff` (S2.5: no default stands in for it)")
         entry = MAP_TYPE.fullmatch(e) if e else None
         if entry and TEXT_MAP.fullmatch(e):
             # a map keyed by text: its keys the text as written, its values the map's value type (S11, ADD-A123)
@@ -3624,8 +3626,10 @@ pub struct RippleStyle { pub effect: Value<RippleEffect>, pub color: Value<Color
                          pub indication_box: Option<IndicationBox> }
 pub struct IndicationBox { pub part: Key, pub outset: Value<Px> }
 pub enum RippleEffect { AndroidPatterned }
+pub enum Shadow { Layers(Vec<ShadowLayer>), Elevation(Key) }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
-                         pub color: Value<Color>, pub inset: bool }
+                         pub color: Value<Color>, pub inset: bool, pub falloff: ShadowFalloff }
+pub enum ShadowFalloff { Gaussian, KirigamiSmoothstep }
 pub struct ElementData { pub progress: f32, pub caret_height: Px }
 pub struct TextRoles { pub body: Value<TextStyle> }
 pub struct TextTokens { pub roles: TextRoles, pub keyed: Vec<(Key, TextStyle)>, pub scaling: X,
@@ -3931,8 +3935,8 @@ quote = '<x:Double x:Key="Button_MinWidth">80</x:Double>'
 
 [[fact]]
 key = "button.body.shadow"
-value = { layers = [ { x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, color = "#00000024", inset = false },
-                     { x_px = 0, y_px = 4, blur_px = 8, spread_px = 0, color = "#0000001a", inset = false } ] }
+value = { layers = [ { x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, color = "#00000024", inset = false, falloff = "gaussian" },
+                     { x_px = 0, y_px = 4, blur_px = 8, spread_px = 0, color = "#0000001a", inset = false, falloff = "gaussian" } ] }
 rows = ["W3-02"]
 
 [[fact.cite]]
@@ -4203,6 +4207,16 @@ SELF_TEST_CASES = [
      ["'80ms' is not a length"]),
     ("WinUI: a shadow leaf with its unit", "docs/facts/windows/buttons.toml", "y_px = 4,", 'y_px = "4px",',
      ["a suffixed key takes a plain number"]),
+    ("WinUI: a shadow layer without its falloff", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }', 'color = "#00000024", inset = false }',
+     ["value.layers[0]: a shadow layer states its `falloff`"]),
+    ("WinUI: a shadow layer's unknown falloff", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "smoothstep" }',
+     ["value.layers[0].falloff: 'smoothstep' is not a unit variant of ShadowFalloff"]),
+    ("WinUI: a shadow layer's Kirigami falloff", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "kirigami_smoothstep" }', []),
     ("WinUI: a negative tolerance", "docs/facts/windows/buttons.toml", '"layers.0.color" = 2', '"layers.0.color" = -2',
      ["tolerance 'layers.0.color' is not a number >= 0"]),
     ("WinUI: a measured citation with a quote", "docs/facts/windows/buttons.toml", "tolerance = { ",
