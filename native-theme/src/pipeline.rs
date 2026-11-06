@@ -544,7 +544,7 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
         #[cfg(not(feature = "macos"))]
         diagnostics.push(DiagnosticEntry::FeatureDisabled {
             feature: "macOS theme detection",
-            impact: "macos feature not enabled, using subprocess fallback",
+            impact: "macos feature not enabled, the OS version is not read",
         });
     }
 

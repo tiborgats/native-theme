@@ -1,4 +1,5 @@
-//! OS detection: the icon theme and set, and the desktop environment.
+//! OS detection: the Linux desktop environment, and the detection caches,
+//! which the icon loaders' icon-theme detection fills too.
 
 use arc_swap::ArcSwapOption;
 use std::sync::Arc;

@@ -200,7 +200,7 @@ enum IconThemeSource {
 }
 
 /// The icon-theme source of `desktop`, the refined desktop
-/// ([`crate::detect::refine_linux_desktop`]) the reader is chosen by.
+/// ([`crate::detect::refine_linux_desktop`]).
 #[cfg(target_os = "linux")]
 fn icon_theme_source(desktop: crate::detect::LinuxDesktop) -> IconThemeSource {
     use crate::detect::LinuxDesktop;

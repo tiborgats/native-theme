@@ -30,8 +30,8 @@
 //!
 //! - The crate root: [`Error`] and [`Result`], and from [`pipeline`]
 //!   [`VersionMatch`] and [`DiagnosticEntry`].
-//! - [`detect`]: OS detection: the icon theme and set, the desktop
-//!   environment.
+//! - [`detect`]: OS detection: the Linux desktop environment, and the
+//!   detection caches.
 //! - [`icons`]: the icon roles and sets, the per-set icon loaders, the icon
 //!   data types and the icon-set choice.
 //! - [`fonts`]: font face matching; the platform's own typeface with the

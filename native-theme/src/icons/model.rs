@@ -765,8 +765,7 @@ fn freedesktop_name(role: IconRole) -> Option<&'static str> {
         // Three-dot ellipsis loading indicator. Adwaita + Breeze both ship
         // `content-loading-symbolic`; it's a strict superset of the older
         // `process-working` name (every theme shipping that ships this too,
-        // plus Adwaita). The animated `process-working` spinner is a
-        // separate code path (see `load_freedesktop_spinner`).
+        // plus Adwaita).
         IconRole::StatusBusy => "content-loading-symbolic",
         IconRole::StatusCheck => "emblem-default",
         IconRole::StatusError => "dialog-error",

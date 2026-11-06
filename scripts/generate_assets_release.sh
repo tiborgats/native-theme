@@ -22,7 +22,6 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ICED_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 EGUI_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
-NT_DIR="$PROJECT_ROOT/native-theme/docs/assets"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -274,7 +273,7 @@ ok "docs/COMPATIBILITY.toml and the connector READMEs refreshed"
 echo ""
 echo "=== Pre-release assets complete ==="
 echo ""
-for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do
+for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR"; do
     [ -d "$dir" ] || continue
     rel=$(realpath --relative-to="$PROJECT_ROOT" "$dir")
     count=$(find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) 2>/dev/null | wc -l)
@@ -285,4 +284,4 @@ for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do
     echo ""
 done
 
-info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml docs/COMPATIBILITY.toml native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ connectors/native-theme-*/README.md && git commit -m 'docs: regenerate visual assets and refresh the compatibility stamp'"
+info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml docs/COMPATIBILITY.toml connectors/native-theme-*/docs/assets/ connectors/native-theme-*/README.md && git commit -m 'docs: regenerate visual assets and refresh the compatibility stamp'"

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Visual-asset provenance stamp: docs/assets/PROVENANCE.toml
 #
-# The screenshots and GIFs under native-theme/docs/assets and
-# connectors/*/docs/assets are captured by scripts/generate_assets_release.sh from a
-# checked-out commit. This script records which sources they came from and
+# The screenshots and GIFs under connectors/*/docs/assets are captured by
+# scripts/generate_assets_release.sh from a checked-out commit. This script records which sources they came from and
 # lets the release gates verify that claim without any git history:
 #
 #   update_provenance.sh write [DIR]   write the stamp for HEAD (generate_assets_release.sh
@@ -128,7 +127,7 @@ cmd_write() {
     mkdir -p "$(dirname "$STAMP")"
     cat > "$STAMP" <<EOF
 # Provenance of the visual assets (screenshots and GIFs under
-# native-theme/docs/assets and connectors/*/docs/assets).
+# connectors/*/docs/assets).
 # Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
 # read by scripts/check_release.sh and the crates.io workflow's release gate.
 # Do not edit by hand.

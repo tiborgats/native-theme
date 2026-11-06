@@ -473,6 +473,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # The widget coverage's `cargo metadata` resolves the workspace with
+      # the toolchain every other job uses.
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install Pillow
         run: sudo apt-get update && sudo apt-get install -y python3-pil
       - run: python3 --version
