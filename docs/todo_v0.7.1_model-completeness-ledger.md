@@ -14,11 +14,14 @@ the triage (every item has a destination) and, from M4, `--final` (the plan's M4
 | M1a slice core | in progress | | [design](todo_v0.7.1_model-completeness-m1a-design.md); code tasks 1–6 done and reviewed (task 6 at bf87f89f, gate 152/152 at dc6c23c4), task 7 running with task 6's review fixes; ADD-A121 converged (b65102cf, eight checks) and ADD-A122 converged (c7d2bcdb, ten checks), the checkers following both (dc7d0451; d3f88cdc..1fce34af); the gnome, kde, windows and material slices reconciled with both and audited at the pins (facts-base 5,888 facts, 31 pending, every checker 0); macos-tahoe's second pass (30f8f129) verified (46.6 % agreement) and in tie-break; the iOS host extension running |
 | M1b slice complete | not started | | |
 | D6 checkpoint | not started | | |
+| D13 0.8.0's scope | decided | 2026-11-07 | the maintainer's (B): 0.8.0 covers what 0.7.0 covers, the rest of the catalogue in the follow-up releases; the plan's D13 and *0.8.0's scope*, the rationale's R21 (amended) |
+| D14 the follow-up releases' version numbers | open | | the plan's D14: an 0.8.N adding a member to an exhaustive enum breaks Cargo's SemVer rules; recommended (a), the number by the semver checks |
 | M2 model core | not started | | |
-| M3 units | not started | | per unit below |
-| M4 facts gate complete | not started | | |
-| M5 showcases | not started | | |
-| M6 release 0.8.0 | not started | | |
+| M3a 0.8.0's units | not started | | tokens and conditions, readers, window and chrome, overlays, buttons and toggles, fields, indicators, containers (30 typed widgets, their 15 `Placement` values deferred to placement); per unit below |
+| M4 facts gate complete for 0.8.0's units | not started | | over the enabled units; the gate's and `check_ledger.py --final`'s enabled-unit checks first |
+| M5 showcases | not started | | what 0.7.0's showcases show |
+| M6 release 0.8.0 | not started | | nothing archived (the later units need the documents and scripts) |
+| M3b later units and the follow-up releases | not started | | placement, the 56 typed widgets in alphabetical batches, the 28 keyed components; a row per follow-up release (its units, branch, version) when its branch is cut |
 
 ## Release set (D1)
 
