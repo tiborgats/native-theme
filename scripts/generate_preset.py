@@ -74,7 +74,8 @@ What is left out, and why (each counted by reason)
   among the parts written by hand.
 - accent run: a fact with `scheme_file` and `accent` (S17 *The accent run*), which the preset's own resolution never
   reaches.
-- two files: a key whose facts lie in two files, whose order S17 *Which fact applies* does not give.
+- two files: a key whose facts lie in two files, whose order S17 *Which fact applies* does not give; the accent
+  run's facts count in no key's files, as they apply in that run alone.
 - an S11 spelling a fact alone does not give (spell()): a `Scalar` entry stated with a unit outside a `token.params`
   group whose literals share one unit (param_units(): S11's "its number in the unit its declaration names", the
   group's one unit, S10, so `token.params.pointer_repeat.delay = "500ms"` is `params.pointer_repeat.delay = 500`, the
@@ -681,6 +682,21 @@ class Draft:
     read_rules: list = field(default_factory=list)   # `read` facts whose `when` is no base (read_tables())
 
 
+def accent_run(d) -> bool:
+    """Whether a fact is the accent run's (S17 *The accent run*: `scheme_file` and `accent`)."""
+    return "scheme_file" in d or "accent" in d
+
+
+def key_files(facts) -> dict:
+    """{key: the files its facts lie in}, the accent run's left out: they apply in the accent run alone (S17 *The
+    accent run*), so no order between files is needed for them in the preset's own resolution."""
+    files = {}
+    for f in facts:
+        if not accent_run(f.item.data):
+            files.setdefault(f.ckey, set()).add(f.item.file)
+    return files
+
+
 def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
     """The preset's facts, classified, and its bases and rules (the docstring's rules)."""
     platform = platform_of(preset)
@@ -694,9 +710,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
         when = without_unheld_negations(preset_when(it.data.get("when"), preset), units)
         facts.append(Fact(it, it.data["key"], check_facts.canonical_key(it.data["key"]), when, info[3], info[2],
                           info[4], info[1]))
-    files = {}
-    for f in facts:
-        files.setdefault(f.ckey, set()).add(f.item.file)
+    files = key_files(facts)
     groups = param_units(facts)
     for f in facts:
         value = f.item.data.get("value")
@@ -714,7 +728,7 @@ def analyse(ctx, items, preset: str, units, staged: int) -> Draft:
             f.status = PENDING
         elif any(c.data.get("kind") == "read" for c in f.item.cites):
             f.status, f.reason = LEFT_OUT, READ
-        elif "scheme_file" in d or "accent" in d:
+        elif accent_run(d):
             f.status, f.reason = LEFT_OUT, ACCENT_RUN
         elif len(files[f.ckey]) > 1:
             f.status, f.reason = LEFT_OUT, TWO_FILES
@@ -2707,6 +2721,22 @@ def self_test() -> int:
     if (delay.header, delay.dotted, delay.value, back_value(delay, delay.value)) != (
             ("params",), ("pointer_repeat", "delay"), 500, "500ms"):
         failures.append(f"a keyed param's unit literal: {delay.header} {delay.dotted} {delay.value!r}")
+    # a key's files (S17 *Which fact applies*): an accent-run fact applies in the accent run alone (S17 *The accent
+    # run*), so its file is none of the key's; two files of the preset's own run are
+    def in_file(key, file, **run):
+        f = param("x", "y", "#ffffff")
+        f.key, f.ckey, f.item.file = key, tuple(key.split(".")), file
+        f.item.data.update(run)
+        return f
+
+    accent = {"scheme_file": "breeze@6.8.2 colors/BreezeLight.colors", "accent": "#e5a50a"}
+    got = key_files([in_file("role.window.background", "roles.toml"),
+                     in_file("role.window.background", "accent.toml", **accent),
+                     in_file("role.view.background", "roles.toml"), in_file("role.view.background", "other.toml")])
+    want = {("role", "window", "background"): {"roles.toml"},
+            ("role", "view", "background"): {"roles.toml", "other.toml"}}
+    if got != want:
+        failures.append(f"key_files: {got}, expected {want}")
     # a set-whole block's leaves: whole in one base, or in one rule; split between a base and a rule, both left out
     def leaf(name, rel):
         return Fact(None, f"token.behavior.key_repeat.{name}", ("token", "behavior", "key_repeat", name), {}, "token",
