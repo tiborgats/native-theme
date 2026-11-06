@@ -1128,6 +1128,23 @@ fn refusal_several_curves() {
             format!("rules[0].set.transitions[0].timing: {refusal}"),
         ]
     );
+    // The focus indicator's transition is one of the node's CSS list
+    // (libadwaita's `transition: $focus_transition, $transition;`).
+    let focused = |timing: &str| {
+        toml(&format!(
+            "[widgets.button.body]\ntransitions = [{}]\n[widgets.button.body.focus]\n\
+             transition = {{ properties = [], kind = \"interpolate\", duration_ms = 100, \
+             delay_ms = 0, timing = {timing}, engine = \"gtk_css\", from = \"none\" }}",
+            css("\"fill\"", ease)
+        ))
+    };
+    assert_eq!(
+        bare(&focused("\"linear\"")),
+        [format!(
+            "widgets.button.body.transitions[0].timing: {refusal}"
+        )]
+    );
+    assert_eq!(bare(&focused(ease)), NONE);
 }
 
 /// A stated zero with no delay overrides a transition of one of its groups

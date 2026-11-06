@@ -88,6 +88,14 @@ fn states_at(source: &Source, place: &str) -> bool {
     source.ops.iter().any(|op| op.path == place)
 }
 
+/// Whether the source states a value at `place`, above it or below it.
+fn states_at_or_near(source: &Source, place: &str) -> bool {
+    source.ops.iter().any(|op| {
+        !matches!(op.kind, OpKind::Shown(_))
+            && (op.path == place || is_above(&op.path, place) || is_above(place, &op.path))
+    })
+}
+
 /// Every transition and presentation step the stack states: each keyed
 /// list's transitions and each presentation's steps, and the focus
 /// indicator's transition of the tokens and of each part with a `focus`,
@@ -139,13 +147,10 @@ fn motions<'s>(stack: &'s Stack<'_>) -> Vec<Motion<'s>> {
             .map(Target::Part),
     );
     for target in targets {
-        let states = stack.of(target).any(|(_, source)| {
-            source.ops.iter().any(|op| {
-                !matches!(op.kind, OpKind::Shown(_))
-                    && (op.path == focus || is_above(&op.path, focus) || is_above(focus, &op.path))
-            })
-        });
-        if states {
+        if stack
+            .of(target)
+            .any(|(_, source)| states_at_or_near(source, focus))
+        {
             out.push(Motion {
                 target,
                 place: focus.to_owned(),
@@ -340,12 +345,15 @@ impl Checks<'_, '_> {
     /// naming several curves, followed through references, while one of
     /// them lists a group other than `Shadow` and `Corners`, the groups GTK's
     /// engine takes a curve for by property id (S2.7, S12; ADD-A131):
-    /// refused at the timing of each transition listing another group. A
-    /// curve is its timing's facts; a timing the check cannot read, and a
-    /// stated zero's, names none. That such a list follows the stylesheet's one CSS list is
+    /// refused at the timing of each transition listing another group. The
+    /// part's focus indicator's transition is one of them, GTK keeping one
+    /// CSS list per node; it lists no group. A curve is its timing's facts;
+    /// a timing the check cannot read, and a stated zero's, names none. That
+    /// such a list follows the stylesheet's one CSS list is
     /// `check_fact_citations.py`'s check of the facts.
     pub(super) fn css_curves(&mut self) {
         let stack = self.stack;
+        let focus = "focus.transition";
         for part in all_parts() {
             let target = Target::Part(part);
             let items: Vec<(usize, &Source, &Listed)> = stack
@@ -358,10 +366,17 @@ impl Checks<'_, '_> {
                         .map(move |item| (number, source, item))
                 })
                 .collect();
-            if items.len() < 2 {
+            let focused = stack
+                .of(target)
+                .any(|(_, source)| states_at_or_near(source, focus));
+            if items.len().saturating_add(usize::from(focused)) < 2 {
                 continue;
             }
-            let worlds = stack.worlds(vec![Seed::Field(target, "transitions".to_owned(), true)]);
+            let mut seeds = vec![Seed::Field(target, "transitions".to_owned(), true)];
+            if focused {
+                seeds.push(Seed::Field(target, focus.to_owned(), true));
+            }
+            let worlds = stack.worlds(seeds);
             for world in worlds.iter() {
                 let mut curves: Vec<Vec<(String, Fact)>> = Vec::new();
                 let mut wide: Vec<Found<'_>> = Vec::new();
@@ -369,37 +384,16 @@ impl Checks<'_, '_> {
                     if !in_effect(stack, world, *number, source, &item.place) {
                         continue;
                     }
-                    let at = |field: &str| {
-                        stack.value_at(world, target, &below(&item.place, field), Bound::ALL, 0)
-                    };
-                    // A stated zero runs no curve: its stated timing is
-                    // refused on its own.
-                    if !at("engine")
-                        .iter()
-                        .any(|found| variant(found) == Some("gtk_css"))
-                        || at("duration").iter().any(stated_zero)
-                    {
-                        continue;
-                    }
-                    let timings: Vec<Found<'_>> = at("timing")
-                        .into_iter()
-                        .filter(|found| !matches!(found.got, Got::Absent))
-                        .collect();
-                    for found in &timings {
-                        for end in stack.follow(world, *found).0 {
-                            if let Some(facts) = stack.timing_facts(&end)
-                                && !curves.contains(&facts)
-                            {
-                                curves.push(facts);
-                            }
-                        }
-                    }
+                    let timings = Self::css_curve(stack, world, target, &item.place, &mut curves);
                     let other = groups(item).iter().any(|group| {
                         !matches!(group, PropertyGroup::Shadow | PropertyGroup::Corners)
                     });
                     if other {
                         wide.extend(timings);
                     }
+                }
+                if focused {
+                    Self::css_curve(stack, world, target, focus, &mut curves);
                 }
                 if curves.len() > 1 {
                     for found in wide {
@@ -408,6 +402,49 @@ impl Checks<'_, '_> {
                 }
             }
         }
+    }
+
+    /// [`Checks::css_curves`]' read of the transition at `place` under
+    /// `world`: where its engine is `GtkCss` and its duration no stated
+    /// zero, its stated timings, each curve they name added to `curves`;
+    /// none elsewhere. A field `Absent` above the place states none of it.
+    fn css_curve<'s>(
+        stack: &'s Stack<'_>,
+        world: &World,
+        target: Target,
+        place: &str,
+        curves: &mut Vec<Vec<(String, Fact)>>,
+    ) -> Vec<Found<'s>> {
+        let at = |field: &str| -> Vec<Found<'_>> {
+            stack
+                .value_at(world, target, &below(place, field), Bound::ALL, 0)
+                .into_iter()
+                .filter(|found| !(found.above && matches!(found.got, Got::Absent | Got::Auto)))
+                .collect()
+        };
+        // A stated zero runs no curve: its stated timing is refused on its
+        // own.
+        if !at("engine")
+            .iter()
+            .any(|found| variant(found) == Some("gtk_css"))
+            || at("duration").iter().any(stated_zero)
+        {
+            return Vec::new();
+        }
+        let timings: Vec<Found<'_>> = at("timing")
+            .into_iter()
+            .filter(|found| !matches!(found.got, Got::Absent))
+            .collect();
+        for found in &timings {
+            for end in stack.follow(world, *found).0 {
+                if let Some(facts) = stack.timing_facts(&end)
+                    && !curves.contains(&facts)
+                {
+                    curves.push(facts);
+                }
+            }
+        }
+        timings
     }
 
     /// A stated zero with no delay that overrides nothing (S2.7, S12;
