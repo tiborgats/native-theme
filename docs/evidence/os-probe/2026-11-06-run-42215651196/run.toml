@@ -1,0 +1,9 @@
+# The image folder of run 42215651196 the facts cite (spec S17 *`evidence`*). The builds are the run's own records:
+# probe.toml `[os]` and `[probe]`, the job's button-pass/environment.txt (sw_vers, xcodebuild -version, xcrun's SDK,
+# the probe binary's LC_BUILD_VERSION, rustc -V) and the job log's runner image line.
+
+[images.os-probe-macos-15]
+preset = "macos-monterey"
+source = "xcode@16.4"
+os = "macOS 15.8.2 (24H232), runner image macos-15-arm64 20261104.0514.1"
+toolkit = "AppKit of macOS 15.8.2; the probe built with Xcode 16.4 (16F6) against the macOS 15.5 SDK (24F74)"

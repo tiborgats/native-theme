@@ -1,0 +1,123 @@
+# Output of analysis/read_controls.py (its docstring is the method), file controls.toml.
+# input_image: every file it reads, as a repository path (spec S17 *`evidence`*).
+input_image = ["docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml"]
+
+[controls.main.aqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.main.aqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.main.aqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.main.aqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0
+
+[controls.main.darkAqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.main.darkAqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.main.darkAqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.main.darkAqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0
+
+[controls.reduce_transparency_off.aqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.reduce_transparency_off.aqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.reduce_transparency_off.aqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.reduce_transparency_off.aqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0
+
+[controls.reduce_transparency_off.darkAqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.reduce_transparency_off.darkAqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.reduce_transparency_off.darkAqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.reduce_transparency_off.darkAqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0
+
+[controls.increase_contrast_on.aqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.increase_contrast_on.aqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.increase_contrast_on.aqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.increase_contrast_on.aqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0
+
+[controls.increase_contrast_on.darkAqua.mini.pop_up_button]
+padding_left = 5.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.increase_contrast_on.darkAqua.small.pop_up_button]
+padding_left = 6.0
+padding_top = 1.0
+padding_bottom = 1.0
+
+[controls.increase_contrast_on.darkAqua.regular.pop_up_button]
+padding_left = 8.0
+padding_top = 1.0
+padding_bottom = 3.0
+
+[controls.increase_contrast_on.darkAqua.large.pop_up_button]
+padding_left = 8.0
+padding_top = 5.0
+padding_bottom = 7.0

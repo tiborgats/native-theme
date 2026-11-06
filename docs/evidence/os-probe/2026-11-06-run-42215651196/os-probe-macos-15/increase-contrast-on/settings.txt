@@ -1,0 +1,5 @@
+restore reduceTransparency to the image's (1): exit 0
+read back: 1
+image's increaseContrast: absent
+write increaseContrast true: exit 0
+read back: 1

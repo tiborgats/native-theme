@@ -1,0 +1,20 @@
+restore reduceTransparency to the image's (1): exit 0
+read back: 1
+2026-11-06 12:39:02.320 defaults[60507:130206] 
+Domain (com.apple.universalaccess) not found.
+Defaults have not been changed.
+restore increaseContrast to the image's (absent): exit 1
+read back: 2026-11-06 12:39:02.331 defaults[60509:130210] 
+The domain/default pair of (com.apple.universalaccess, increaseContrast) does not exist
+2026-11-06 12:39:02.344 defaults[60512:130216] 
+Domain (kCFPreferencesAnyApplication) not found.
+Defaults have not been changed.
+restore AppleReduceDesktopTinting to the image's (absent): exit 1
+read back: 2026-11-06 12:39:02.353 defaults[60514:130220] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleReduceDesktopTinting) does not exist
+image's AppleAccentColor: absent
+write AppleAccentColor 0: exit 0
+read back: 0
+restore AppleAccentColor to the image's (absent): exit 0
+read back: 2026-11-06 12:39:11.218 defaults[60923:131098] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleAccentColor) does not exist

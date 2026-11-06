@@ -1,0 +1,1744 @@
+# Output of analysis/read_fonts.py (its docstring is the method), file fonts.toml.
+# input_image: every file it reads, as a repository path (spec S17 *`evidence`*).
+input_image = ["docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/button-pass/probe.toml"]
+
+[fonts.main.named.systemFontOfSize]
+style = "normal"
+
+[fonts.main.named.systemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.systemFontOfSize.features]
+
+[fonts.main.named.boldSystemFontOfSize]
+style = "normal"
+
+[fonts.main.named.boldSystemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.boldSystemFontOfSize.features]
+
+[fonts.main.named.labelFontOfSize]
+style = "normal"
+line_height = 12.0
+
+[fonts.main.named.labelFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.labelFontOfSize.features]
+
+[fonts.main.named.messageFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.main.named.messageFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.messageFontOfSize.features]
+
+[fonts.main.named.menuFontOfSize]
+style = "normal"
+
+[fonts.main.named.menuFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.menuFontOfSize.features]
+
+[fonts.main.named.menuBarFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.main.named.menuBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.menuBarFontOfSize.features]
+
+[fonts.main.named.toolTipsFontOfSize]
+style = "normal"
+
+[fonts.main.named.toolTipsFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.toolTipsFontOfSize.features]
+
+[fonts.main.named.controlContentFontOfSize]
+style = "normal"
+line_height = 15.0
+
+[fonts.main.named.controlContentFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.controlContentFontOfSize.features]
+
+[fonts.main.named.titleBarFontOfSize]
+style = "normal"
+
+[fonts.main.named.titleBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.titleBarFontOfSize.features]
+
+[fonts.main.named.paletteFontOfSize]
+style = "normal"
+line_height = 13.0
+
+[fonts.main.named.paletteFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.paletteFontOfSize.features]
+
+[fonts.main.named.userFontOfSize]
+style = "normal"
+
+[fonts.main.named.userFontOfSize.features]
+
+[fonts.main.named.userFixedPitchFontOfSize]
+style = "normal"
+
+[fonts.main.named.userFixedPitchFontOfSize.features]
+
+[fonts.main.named.monospacedSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.main.named.monospacedSystemFontOfSize_weight.features]
+
+[fonts.main.named.monospacedDigitSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.main.named.monospacedDigitSystemFontOfSize_weight.axes]
+opsz = "follows_size"
+
+[fonts.main.named.systemFontOfSize_smallSystemFontSize]
+style = "normal"
+
+[fonts.main.named.systemFontOfSize_smallSystemFontSize.axes]
+opsz = "follows_size"
+
+[fonts.main.named.systemFontOfSize_smallSystemFontSize.features]
+
+[fonts.main.preferredFontForTextStyle.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.largeTitle.features]
+
+[fonts.main.preferredFontForTextStyle.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.title1.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.title1.features]
+
+[fonts.main.preferredFontForTextStyle.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.title2.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.title2.features]
+
+[fonts.main.preferredFontForTextStyle.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.title3.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.title3.features]
+
+[fonts.main.preferredFontForTextStyle.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.headline.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.headline.features]
+
+[fonts.main.preferredFontForTextStyle.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.subheadline.features]
+
+[fonts.main.preferredFontForTextStyle.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.body.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.body.features]
+
+[fonts.main.preferredFontForTextStyle.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.callout.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.callout.features]
+
+[fonts.main.preferredFontForTextStyle.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.footnote.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.footnote.features]
+
+[fonts.main.preferredFontForTextStyle.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.caption1.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.caption1.features]
+
+[fonts.main.preferredFontForTextStyle.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle.caption2.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle.caption2.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.largeTitle.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title1.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title1.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title2.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title2.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title3.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.title3.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.headline.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.headline.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.subheadline.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.body.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.body.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.callout.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.callout.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.footnote.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.footnote.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption1.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption1.features]
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption2.axes]
+opsz = "follows_size"
+
+[fonts.main.preferredFontForTextStyle_emphasized.caption2.features]
+
+[fonts.main.systemFontOfSize_smallSystemFontSize]
+line_height = 13.0
+
+[fonts.main.systemFontOfSize_systemFontSizeForControlSize.mini]
+line_height = 11.0
+
+[fonts.main.systemFontOfSize_systemFontSizeForControlSize.small]
+line_height = 13.0
+
+[fonts.main.systemFontOfSize_systemFontSizeForControlSize.regular]
+line_height = 16.0
+
+[fonts.main.systemFontOfSize_systemFontSizeForControlSize.large]
+line_height = 16.0
+
+[fonts.reduce_transparency_off.named.systemFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.systemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.systemFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.boldSystemFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.boldSystemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.boldSystemFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.labelFontOfSize]
+style = "normal"
+line_height = 12.0
+
+[fonts.reduce_transparency_off.named.labelFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.labelFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.messageFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.reduce_transparency_off.named.messageFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.messageFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.menuFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.menuFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.menuFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.menuBarFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.reduce_transparency_off.named.menuBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.menuBarFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.toolTipsFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.toolTipsFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.toolTipsFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.controlContentFontOfSize]
+style = "normal"
+line_height = 15.0
+
+[fonts.reduce_transparency_off.named.controlContentFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.controlContentFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.titleBarFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.titleBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.titleBarFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.paletteFontOfSize]
+style = "normal"
+line_height = 13.0
+
+[fonts.reduce_transparency_off.named.paletteFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.paletteFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.userFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.userFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.userFixedPitchFontOfSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.userFixedPitchFontOfSize.features]
+
+[fonts.reduce_transparency_off.named.monospacedSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.monospacedSystemFontOfSize_weight.features]
+
+[fonts.reduce_transparency_off.named.monospacedDigitSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.monospacedDigitSystemFontOfSize_weight.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.systemFontOfSize_smallSystemFontSize]
+style = "normal"
+
+[fonts.reduce_transparency_off.named.systemFontOfSize_smallSystemFontSize.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.named.systemFontOfSize_smallSystemFontSize.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.largeTitle.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title1.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title1.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title2.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title2.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title3.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.title3.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.headline.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.headline.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.subheadline.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.body.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.body.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.callout.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.callout.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.footnote.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.footnote.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption1.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption1.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption2.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle.caption2.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.largeTitle.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title1.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title1.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title2.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title2.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title3.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.title3.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.headline.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.headline.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.subheadline.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.body.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.body.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.callout.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.callout.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.footnote.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.footnote.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption1.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption1.features]
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption2.axes]
+opsz = "follows_size"
+
+[fonts.reduce_transparency_off.preferredFontForTextStyle_emphasized.caption2.features]
+
+[fonts.reduce_transparency_off.systemFontOfSize_smallSystemFontSize]
+line_height = 13.0
+
+[fonts.reduce_transparency_off.systemFontOfSize_systemFontSizeForControlSize.mini]
+line_height = 11.0
+
+[fonts.reduce_transparency_off.systemFontOfSize_systemFontSizeForControlSize.small]
+line_height = 13.0
+
+[fonts.reduce_transparency_off.systemFontOfSize_systemFontSizeForControlSize.regular]
+line_height = 16.0
+
+[fonts.reduce_transparency_off.systemFontOfSize_systemFontSizeForControlSize.large]
+line_height = 16.0
+
+[fonts.increase_contrast_on.named.systemFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.systemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.systemFontOfSize.features]
+
+[fonts.increase_contrast_on.named.boldSystemFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.boldSystemFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.boldSystemFontOfSize.features]
+
+[fonts.increase_contrast_on.named.labelFontOfSize]
+style = "normal"
+line_height = 12.0
+
+[fonts.increase_contrast_on.named.labelFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.labelFontOfSize.features]
+
+[fonts.increase_contrast_on.named.messageFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.increase_contrast_on.named.messageFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.messageFontOfSize.features]
+
+[fonts.increase_contrast_on.named.menuFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.menuFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.menuFontOfSize.features]
+
+[fonts.increase_contrast_on.named.menuBarFontOfSize]
+style = "normal"
+line_height = 16.0
+
+[fonts.increase_contrast_on.named.menuBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.menuBarFontOfSize.features]
+
+[fonts.increase_contrast_on.named.toolTipsFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.toolTipsFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.toolTipsFontOfSize.features]
+
+[fonts.increase_contrast_on.named.controlContentFontOfSize]
+style = "normal"
+line_height = 15.0
+
+[fonts.increase_contrast_on.named.controlContentFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.controlContentFontOfSize.features]
+
+[fonts.increase_contrast_on.named.titleBarFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.titleBarFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.titleBarFontOfSize.features]
+
+[fonts.increase_contrast_on.named.paletteFontOfSize]
+style = "normal"
+line_height = 13.0
+
+[fonts.increase_contrast_on.named.paletteFontOfSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.paletteFontOfSize.features]
+
+[fonts.increase_contrast_on.named.userFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.userFontOfSize.features]
+
+[fonts.increase_contrast_on.named.userFixedPitchFontOfSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.userFixedPitchFontOfSize.features]
+
+[fonts.increase_contrast_on.named.monospacedSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.increase_contrast_on.named.monospacedSystemFontOfSize_weight.features]
+
+[fonts.increase_contrast_on.named.monospacedDigitSystemFontOfSize_weight]
+style = "normal"
+
+[fonts.increase_contrast_on.named.monospacedDigitSystemFontOfSize_weight.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.systemFontOfSize_smallSystemFontSize]
+style = "normal"
+
+[fonts.increase_contrast_on.named.systemFontOfSize_smallSystemFontSize.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.named.systemFontOfSize_smallSystemFontSize.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.largeTitle.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title1.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title1.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title2.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title2.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title3.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.title3.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.headline.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.headline.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.subheadline.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.body.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.body.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.callout.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.callout.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.footnote.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.footnote.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption1.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption1.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption2.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle.caption2.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.largeTitle]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.largeTitle.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.largeTitle.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title1]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title1.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title1.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title2]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title2.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title2.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title3]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title3.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.title3.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.headline]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.headline.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.headline.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.subheadline]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.subheadline.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.subheadline.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.body]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.body.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.body.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.callout]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.callout.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.callout.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.footnote]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.footnote.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.footnote.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption1]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption1.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption1.features]
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption2]
+style = "normal"
+line_height = "auto"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption2.axes]
+opsz = "follows_size"
+
+[fonts.increase_contrast_on.preferredFontForTextStyle_emphasized.caption2.features]
+
+[fonts.increase_contrast_on.systemFontOfSize_smallSystemFontSize]
+line_height = 13.0
+
+[fonts.increase_contrast_on.systemFontOfSize_systemFontSizeForControlSize.mini]
+line_height = 11.0
+
+[fonts.increase_contrast_on.systemFontOfSize_systemFontSizeForControlSize.small]
+line_height = 13.0
+
+[fonts.increase_contrast_on.systemFontOfSize_systemFontSizeForControlSize.regular]
+line_height = 16.0
+
+[fonts.increase_contrast_on.systemFontOfSize_systemFontSizeForControlSize.large]
+line_height = 16.0
+
+[fonts.button_pass.push.mini-plain]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.push.mini-plain.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.mini-plain.features]
+
+[fonts.button_pass.push.mini-default]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.push.mini-default.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.mini-default.features]
+
+[fonts.button_pass.push.mini-toggle_off]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.push.mini-toggle_off.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.mini-toggle_off.features]
+
+[fonts.button_pass.push.mini-toggle_on]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.push.mini-toggle_on.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.mini-toggle_on.features]
+
+[fonts.button_pass.push.small-plain]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.push.small-plain.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.small-plain.features]
+
+[fonts.button_pass.push.small-default]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.push.small-default.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.small-default.features]
+
+[fonts.button_pass.push.small-toggle_off]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.push.small-toggle_off.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.small-toggle_off.features]
+
+[fonts.button_pass.push.small-toggle_on]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.push.small-toggle_on.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.small-toggle_on.features]
+
+[fonts.button_pass.push.regular-plain]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.regular-plain.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.regular-plain.features]
+
+[fonts.button_pass.push.regular-default]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.regular-default.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.regular-default.features]
+
+[fonts.button_pass.push.regular-toggle_off]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.regular-toggle_off.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.regular-toggle_off.features]
+
+[fonts.button_pass.push.regular-toggle_on]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.regular-toggle_on.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.regular-toggle_on.features]
+
+[fonts.button_pass.push.large-plain]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.large-plain.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.large-plain.features]
+
+[fonts.button_pass.push.large-default]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.large-default.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.large-default.features]
+
+[fonts.button_pass.push.large-toggle_off]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.large-toggle_off.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.large-toggle_off.features]
+
+[fonts.button_pass.push.large-toggle_on]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.push.large-toggle_on.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.push.large-toggle_on.features]
+
+[fonts.button_pass.styles_a.mini-flexible_push]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-flexible_push.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-flexible_push.features]
+
+[fonts.button_pass.styles_a.small-flexible_push]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-flexible_push.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-flexible_push.features]
+
+[fonts.button_pass.styles_a.regular-flexible_push]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-flexible_push.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-flexible_push.features]
+
+[fonts.button_pass.styles_a.large-flexible_push]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-flexible_push.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-flexible_push.features]
+
+[fonts.button_pass.styles_a.mini-small_square]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-small_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-small_square.features]
+
+[fonts.button_pass.styles_a.small-small_square]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-small_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-small_square.features]
+
+[fonts.button_pass.styles_a.regular-small_square]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-small_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-small_square.features]
+
+[fonts.button_pass.styles_a.large-small_square]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-small_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-small_square.features]
+
+[fonts.button_pass.styles_a.mini-shadowless_square]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-shadowless_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-shadowless_square.features]
+
+[fonts.button_pass.styles_a.small-shadowless_square]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-shadowless_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-shadowless_square.features]
+
+[fonts.button_pass.styles_a.regular-shadowless_square]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-shadowless_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-shadowless_square.features]
+
+[fonts.button_pass.styles_a.large-shadowless_square]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-shadowless_square.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-shadowless_square.features]
+
+[fonts.button_pass.styles_a.mini-accessory_bar]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-accessory_bar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-accessory_bar.features]
+
+[fonts.button_pass.styles_a.small-accessory_bar]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-accessory_bar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-accessory_bar.features]
+
+[fonts.button_pass.styles_a.regular-accessory_bar]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-accessory_bar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-accessory_bar.features]
+
+[fonts.button_pass.styles_a.large-accessory_bar]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-accessory_bar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-accessory_bar.features]
+
+[fonts.button_pass.styles_a.mini-accessory_bar_action]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-accessory_bar_action.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-accessory_bar_action.features]
+
+[fonts.button_pass.styles_a.small-accessory_bar_action]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-accessory_bar_action.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-accessory_bar_action.features]
+
+[fonts.button_pass.styles_a.regular-accessory_bar_action]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-accessory_bar_action.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-accessory_bar_action.features]
+
+[fonts.button_pass.styles_a.large-accessory_bar_action]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-accessory_bar_action.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-accessory_bar_action.features]
+
+[fonts.button_pass.styles_a.mini-badge]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-badge.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-badge.features]
+
+[fonts.button_pass.styles_a.small-badge]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-badge.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-badge.features]
+
+[fonts.button_pass.styles_a.regular-badge]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-badge.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-badge.features]
+
+[fonts.button_pass.styles_a.large-badge]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-badge.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-badge.features]
+
+[fonts.button_pass.styles_a.mini-circular]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_a.mini-circular.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.mini-circular.features]
+
+[fonts.button_pass.styles_a.small-circular]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_a.small-circular.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.small-circular.features]
+
+[fonts.button_pass.styles_a.regular-circular]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.regular-circular.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.regular-circular.features]
+
+[fonts.button_pass.styles_a.large-circular]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_a.large-circular.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_a.large-circular.features]
+
+[fonts.button_pass.styles_b.mini-help]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_b.mini-help.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.mini-help.features]
+
+[fonts.button_pass.styles_b.small-help]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_b.small-help.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.small-help.features]
+
+[fonts.button_pass.styles_b.regular-help]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.regular-help.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.regular-help.features]
+
+[fonts.button_pass.styles_b.large-help]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.large-help.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.large-help.features]
+
+[fonts.button_pass.styles_b.mini-toolbar]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_b.mini-toolbar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.mini-toolbar.features]
+
+[fonts.button_pass.styles_b.small-toolbar]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_b.small-toolbar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.small-toolbar.features]
+
+[fonts.button_pass.styles_b.regular-toolbar]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.regular-toolbar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.regular-toolbar.features]
+
+[fonts.button_pass.styles_b.large-toolbar]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.large-toolbar.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.large-toolbar.features]
+
+[fonts.button_pass.styles_b.mini-flat]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_b.mini-flat.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.mini-flat.features]
+
+[fonts.button_pass.styles_b.small-flat]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_b.small-flat.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.small-flat.features]
+
+[fonts.button_pass.styles_b.regular-flat]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.regular-flat.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.regular-flat.features]
+
+[fonts.button_pass.styles_b.large-flat]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.large-flat.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.large-flat.features]
+
+[fonts.button_pass.styles_b.mini-destructive]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_b.mini-destructive.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.mini-destructive.features]
+
+[fonts.button_pass.styles_b.small-destructive]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_b.small-destructive.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.small-destructive.features]
+
+[fonts.button_pass.styles_b.regular-destructive]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.regular-destructive.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.regular-destructive.features]
+
+[fonts.button_pass.styles_b.large-destructive]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_b.large-destructive.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_b.large-destructive.features]
+
+[fonts.button_pass.styles_c.mini-combo_split]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_c.mini-combo_split.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.mini-combo_split.features]
+
+[fonts.button_pass.styles_c.small-combo_split]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_c.small-combo_split.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.small-combo_split.features]
+
+[fonts.button_pass.styles_c.regular-combo_split]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.regular-combo_split.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.regular-combo_split.features]
+
+[fonts.button_pass.styles_c.large-combo_split]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.large-combo_split.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.large-combo_split.features]
+
+[fonts.button_pass.styles_c.mini-combo_unified]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_c.mini-combo_unified.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.mini-combo_unified.features]
+
+[fonts.button_pass.styles_c.small-combo_unified]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_c.small-combo_unified.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.small-combo_unified.features]
+
+[fonts.button_pass.styles_c.regular-combo_unified]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.regular-combo_unified.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.regular-combo_unified.features]
+
+[fonts.button_pass.styles_c.large-combo_unified]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.large-combo_unified.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.large-combo_unified.features]
+
+[fonts.button_pass.styles_c.mini-icon_only]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_c.mini-icon_only.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.mini-icon_only.features]
+
+[fonts.button_pass.styles_c.small-icon_only]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_c.small-icon_only.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.small-icon_only.features]
+
+[fonts.button_pass.styles_c.regular-icon_only]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.regular-icon_only.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.regular-icon_only.features]
+
+[fonts.button_pass.styles_c.large-icon_only]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.large-icon_only.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.large-icon_only.features]
+
+[fonts.button_pass.styles_c.mini-with_icon]
+style = "normal"
+line_height = 11.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.mini"
+
+[fonts.button_pass.styles_c.mini-with_icon.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.mini-with_icon.features]
+
+[fonts.button_pass.styles_c.small-with_icon]
+style = "normal"
+line_height = 13.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.small"
+
+[fonts.button_pass.styles_c.small-with_icon.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.small-with_icon.features]
+
+[fonts.button_pass.styles_c.regular-with_icon]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.regular-with_icon.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.regular-with_icon.features]
+
+[fonts.button_pass.styles_c.large-with_icon]
+style = "normal"
+line_height = 16.0
+line_height_from = "main.systemFontOfSize_systemFontSizeForControlSize.large"
+
+[fonts.button_pass.styles_c.large-with_icon.axes]
+opsz = "follows_size"
+
+[fonts.button_pass.styles_c.large-with_icon.features]

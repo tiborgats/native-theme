@@ -1,0 +1,194 @@
+# Output of analysis/measure_selection.py (its docstring is the method), file selection.toml.
+# input_image: every file it reads, as a repository path (spec S17 *`evidence`*).
+input_image = ["docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/accent-red/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/renders/selection/aqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/renders/selection/aqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/renders/selection/darkAqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/renders/selection/darkAqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/accent-red/renders/selection/aqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/accent-red/renders/selection/aqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/accent-red/renders/selection/darkAqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/accent-red/renders/selection/darkAqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/renders/selection/aqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/renders/selection/aqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/renders/selection/darkAqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/reduce-transparency-off/renders/selection/darkAqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/renders/selection/aqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/renders/selection/aqua-unemphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/renders/selection/darkAqua-emphasized.png", "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/renders/selection/darkAqua-unemphasized.png"]
+
+[selection.check.main.aqua.emphasized]
+samples_match = true
+
+[selection.check.main.aqua.unemphasized]
+samples_match = true
+
+[selection.check.main.darkAqua.emphasized]
+samples_match = true
+
+[selection.check.main.darkAqua.unemphasized]
+samples_match = true
+
+[selection.check.accent_red.aqua.emphasized]
+samples_match = true
+
+[selection.check.accent_red.aqua.unemphasized]
+samples_match = true
+
+[selection.check.accent_red.darkAqua.emphasized]
+samples_match = true
+
+[selection.check.accent_red.darkAqua.unemphasized]
+samples_match = true
+
+[selection.check.reduce_transparency_off.aqua.emphasized]
+samples_match = true
+
+[selection.check.reduce_transparency_off.aqua.unemphasized]
+samples_match = true
+
+[selection.check.reduce_transparency_off.darkAqua.emphasized]
+samples_match = true
+
+[selection.check.reduce_transparency_off.darkAqua.unemphasized]
+samples_match = true
+
+[selection.check.increase_contrast_on.aqua.emphasized]
+samples_match = true
+
+[selection.check.increase_contrast_on.aqua.unemphasized]
+samples_match = true
+
+[selection.check.increase_contrast_on.darkAqua.emphasized]
+samples_match = true
+
+[selection.check.increase_contrast_on.darkAqua.unemphasized]
+samples_match = true
+
+[selection.edges.main.aqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.49
+outside = "#ffffffff"
+selection = "#0064e1ff"
+
+[selection.edges.main.aqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#ffffffff"
+selection = "#dcdcdcff"
+
+[selection.edges.main.darkAqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.43
+outside = "#1e1e1eff"
+selection = "#0059d1ff"
+
+[selection.edges.main.darkAqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#1e1e1eff"
+selection = "#464646ff"
+
+[selection.edges.accent_red.aqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.39
+outside = "#ffffffff"
+selection = "#c4262bff"
+
+[selection.edges.accent_red.aqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#ffffffff"
+selection = "#dcdcdcff"
+
+[selection.edges.accent_red.darkAqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.49
+outside = "#1e1e1eff"
+selection = "#d13539ff"
+
+[selection.edges.accent_red.darkAqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#1e1e1eff"
+selection = "#464646ff"
+
+[selection.edges.reduce_transparency_off.aqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.49
+outside = "#ffffffff"
+selection = "#0064e1ff"
+
+[selection.edges.reduce_transparency_off.aqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#ffffffff"
+selection = "#dcdcdcff"
+
+[selection.edges.reduce_transparency_off.darkAqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.51
+outside = "#1b1b1bff"
+selection = "#0059d1ff"
+
+[selection.edges.reduce_transparency_off.darkAqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#1b1b1bff"
+selection = "#464646ff"
+
+[selection.edges.increase_contrast_on.aqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.5
+outside = "#ffffffff"
+selection = "#0040ddff"
+
+[selection.edges.increase_contrast_on.aqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#ffffffff"
+selection = "#dcdcdcff"
+
+[selection.edges.increase_contrast_on.darkAqua.emphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.59
+outside = "#1e1e1eff"
+selection = "#1774daff"
+
+[selection.edges.increase_contrast_on.darkAqua.unemphasized]
+pixels = 11748
+stroke_pixels = 0
+max_off_segment = 0.0
+outside = "#1e1e1eff"
+selection = "#464646ff"
+
+[selection.aqua]
+foreground_inactive = "#feffffb3"
+disabled_foreground = "#fffffe59"
+link = "#0068daff"
+
+[selection.aqua.solve.secondaryLabelColor]
+channel_alphas = [0.7041, 0.7033]
+
+[selection.aqua.solve.tertiaryLabelColor]
+channel_alphas = [0.3469, 0.3516]
+
+[selection.aqua.solve.linkColor]
+channel_alphas = [1.0, 1.0]
+
+[selection.darkAqua]
+foreground_inactive = "#fefffeb3"
+disabled_foreground = "#ffffff59"
+link = "#419cffff"
+
+[selection.darkAqua.solve.secondaryLabelColor]
+channel_alphas = [0.7033, 0.7039]
+
+[selection.darkAqua.solve.tertiaryLabelColor]
+channel_alphas = [0.3493, 0.3487]
+
+[selection.darkAqua.solve.linkColor]
+channel_alphas = [1.0, 1.0]
+
+[selection.border]
+border = "absent"
