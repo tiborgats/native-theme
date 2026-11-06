@@ -12925,3 +12925,76 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:455-457"
 quote = "@interface NSColor (NSQuartzCoreAdditions)"
 absent = []
+
+# --- macos-monterey: facts lane m1b (the fields generate_preset.py listed with no fact; U600; the headers at xcode@16.4)
+
+# The drop target's highlight (MAC-X21; U600, as macos-tahoe's U322): NSColor.h (Xcode 16.4) declares no drop-target
+# colour, and no macOS 15 pass drags over a drop target
+[[fact]]
+key = "role.global.drop_highlight"
+when = { conditions = ["preset:macos-monterey"] }
+pending = "U600"
+rows = ["MAC-X21"]
+
+# AppKit has one accent colour, controlAccentColor, for fills and for text and icons alike: no standalone accent of its
+# own (the catalogue's `accent_standalone`: elsewhere `= role.global.accent`). NSColor declares no accent ramp and no
+# modal scrim colour (`scrim` may be absent on macos-*, a sheet's dimming being `dialog.scrim @ variant @sheet`,
+# MAC-D03). As macos-tahoe's, from the Xcode 16.4 SDK's NSColor.h
+[[fact]]
+key = "role.global.accent_standalone"
+when = { conditions = ["preset:macos-monterey"] }
+value = "= role.global.accent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:268"
+quote = "NSColor *controlAccentColor"
+
+[[fact]]
+key = "role.global.accent_ramp"
+when = { conditions = ["preset:macos-monterey"] }
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-387"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:389-438"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:441-443"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
+
+[[fact]]
+key = "role.global.scrim"
+when = { conditions = ["preset:macos-monterey"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:77-387"
+quote = "@interface NSColor : NSObject <NSCopying, NSSecureCoding, NSPasteboardReading, NSPasteboardWriting>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:389-438"
+quote = "@interface NSColor (NSDeprecated)"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSColor.h:441-443"
+quote = "@interface NSColor (NSQuartzCoreAdditions)"
+absent = []
