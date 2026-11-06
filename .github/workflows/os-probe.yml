@@ -283,7 +283,8 @@ jobs:
       # navigation on, the push sheet's regular plain and default buttons
       # focused and unfocused per appearance while `screencapture -v` records
       # the screen, once with the image's Reduce Motion (on) and once with it
-      # off, each into its own folder; then each recording cut by ffmpeg
+      # off, each into its own folder, and after the buttons a text view's
+      # caret the same way (transition-caret, U316); then each recording cut by ffmpeg
       # (installed with brew where the image has none) to the button's
       # <stem>.crop, frame by frame, into <stem>-frames/ with the frames'
       # times in <stem>-frames.csv (ffprobe). settings.txt records each

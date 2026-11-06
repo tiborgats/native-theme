@@ -179,6 +179,97 @@ pub(super) fn transition_table(pass: &Pass<'_>, version: &NSOperatingSystemVersi
         other.orderOut(None);
         other.close();
     }
+    out::put_table(&mut t, "caret", caret_recording(pass, scale));
+    t
+}
+
+/// The caret window's content frame on the screen, and the text view's
+/// frame in it, in points.
+const CARET_WINDOW_FRAME: NSRect =
+    NSRect::new(NSPoint::new(200.0, 300.0), NSSize::new(200.0, 80.0));
+const CARET_TEXT_FRAME: NSRect = NSRect::new(NSPoint::new(20.0, 20.0), NSSize::new(80.0, 30.0));
+
+/// A text view's caret recorded as the buttons' rings are: the text view
+/// made first responder at `FOCUS_AT` and resigned at `UNFOCUS_AT`, so the
+/// recording holds the caret blinking between (U316, the caret's on and off
+/// times), per appearance, to `<appearance>/transition-caret.mov` and its
+/// crop.
+fn caret_recording(pass: &Pass<'_>, scale: Option<f64>) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "after the buttons: a titled window (empty title, content {} from {}) holding an NSTextView (initWithFrame: {}, string \"Ag\", the insertion point at its end) and a ticker as the push sheet's, presented as the sheet was; per appearance recorded as a button is (the text view in the button's place, transition-caret.mov and .crop under <appearance>/), the caret blinking while the text view is first responder",
+            crate::macos::rect_text(NSRect::new(NSPoint::new(0.0, 0.0), CARET_WINDOW_FRAME.size)),
+            crate::macos::point_text(CARET_WINDOW_FRAME.origin),
+            crate::macos::rect_text(CARET_TEXT_FRAME),
+        )),
+    );
+    let window = match ffi::titled_window(pass.mtm, CARET_WINDOW_FRAME) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    window.setTitle(&ns(""));
+    let Some(content) = window.contentView() else {
+        out::put(&mut t, "error", out::unavailable("no content view"));
+        return t;
+    };
+    let text = objc2_app_kit::NSTextView::initWithFrame(
+        objc2_app_kit::NSTextView::alloc(pass.mtm),
+        CARET_TEXT_FRAME,
+    );
+    text.setString(&ns("Ag"));
+    text.setSelectedRange(objc2_foundation::NSRange::new(2, 0));
+    content.addSubview(&text);
+    let ticker = Ticker::new(pass, &content);
+    let other = pass.present(&window, &mut t);
+    out::put(&mut t, "window_frame_xywh", rect(window.frame()));
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        window.setAppearance(Some(&appearance));
+        content.setNeedsDisplay(true);
+        pass.settle(&window, SETTLE_STEPS);
+        let dir = pass.out_dir.join(key);
+        if let Err(e) = std::fs::create_dir_all(&dir) {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("cannot create {}: {e}", dir.display())),
+            );
+            continue;
+        }
+        let responder: &NSResponder = &text;
+        let frame = window.convertRectToScreen(text.convertRect_toView(text.bounds(), None));
+        let r = record(
+            pass,
+            &window,
+            &ticker,
+            responder,
+            frame,
+            scale,
+            &dir,
+            &format!("{key}/transition-caret"),
+        );
+        out::put_table(&mut t, key, r);
+    }
+    window.setAppearance(None);
+    window.orderOut(None);
+    window.close();
+    if let Some(other) = other {
+        other.orderOut(None);
+        other.close();
+    }
     t
 }
 
