@@ -1558,7 +1558,7 @@ spaces:
     queue #166 (1), ADD-A135).
   - `shows_icon: Value<bool>` — whether push buttons show icons (K1.28, read from `kdeglobals`).
   - `focus_visible_when` (S2.11's `FocusVisibleWhen`) — when focus becomes visible (K1.21, R17). On `macos-*` a
-    button draws its focus ring only under Full Keyboard Access: `keyboard` by a rule
+    button draws its focus ring only under Keyboard navigation: `keyboard` by a rule
     `@ cond full_keyboard_access` and `never` without it, the reader's condition (S7.1's `FullKeyboardAccess`, S8's
     `ReaderState`; on macOS the Keyboard navigation setting `isFullKeyboardAccessEnabled` reports, not the
     accessibility setting of that name, ADD-A135), its values pending until a source or a committed `canBecomeKeyView`
@@ -2010,7 +2010,7 @@ spaces:
   - `icon` — the external-link icon after the text (Kirigami `UrlButton`, Q1.136): `icon` (its size `= kirigami_label_icon_size(body_font_height)` under `cond flavor:kirigami`, the part declaring `data = { icon = ["body_font_height"] }` (Kirigami's `sizeForLabels`, which follows the user's font, Q1.1, ADD-A100)).
 - **Widget values:** `icon_text_gap_px: Value<Px>` (Q1.136); `shows_url_tooltip: Value<bool>` (Q1.136; the tooltip's
   look and delay are the `tooltip` widget's); `focus_visible_when` (S2.11's `FocusVisibleWhen`; macOS's ring under
-  Full Keyboard Access is a rule `@ cond full_keyboard_access`, MAC-LK03).
+  Keyboard navigation is a rule `@ cond full_keyboard_access`, S7.1, MAC-LK03).
 - **Variants:** typed `inline` — a link inside running text (GNOME label links, WinUI `Hyperlink`, AppKit
   `NSTextView` links and data detectors TA-5, iOS text-view links, KDE rich-text labels, SwiftUI Markdown links
   MAC-SF04† and SF-4†, Compose's HTML links MAT-P3-20†); the base is a standalone link control (GtkLinkButton, WinUI
@@ -9845,8 +9845,9 @@ holds.
   (`adw-settings-impl-portal.c:124-141`, `adw-accent-color.c:159-199`; `adw_accent_nearest`, S2.2's readers' helpers),
   the accent's colour replacing the raw RGB the reader uses: GN-3.15 (S9.3, ADD-A135).
 - on a Linux desktop no reader of its own reads (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, an
-  unnamed one), the portal's `org.freedesktop.appearance` settings alone, under `adwaita` (S16's *Which reader*,
-  ADD-A135).
+  unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme and motion
+  (`GTK_THEME`, gsettings' `color-scheme`, `reduced-motion` and `enable-animations`, `gtk-3.0/settings.ini`), under
+  `adwaita` (S16's *Which reader*, ADD-A135).
 - accent-color enum, `org.gnome.desktop.interface` (schema lines 314-320), fallback to the portal: GN-3.16.
 - reduced-motion, `org.gnome.desktop.a11y.interface` (schema lines 18-24); `enable-animations` already read: GN-3.25,
   GN-3.26.
