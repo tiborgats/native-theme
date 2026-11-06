@@ -176,7 +176,8 @@ its fact's citation in a comment"; the fact holds the citations).
 preset (one naming `preset:<id>` replaces the shared one; a `flavor:` entry is `[declare.flavor.<f>.widget.<w>]`),
 the S10 declarations it states: `available` (alone where false), `variants`, `sizes`, `default_size`,
 `densities`, `flags`, `exclusive`, `exclusive_variants`, `recency`, `requires_variants`, `sizes_by_variant`,
-`sizes_by_context` (each entry with its `default_size`), and `data`, per part (`values` for the widget's values),
+`sizes_by_context` (each entry with its `default_size`; an entry whose context names a widget the model does not
+hold left out, held_contexts()), and `data`, per part (`values` for the widget's values),
 the element data the expressions of its transcribed facts read (S8, S10: an `element.` operand but the root's inputs,
 `body_font_height`, another part's font metric `widget.<part>.<metric>`), those facts' citations above it, on the
 widget's own declaration, in force under each flavour (element_data()); a pending default size (`default_size = {
@@ -1302,6 +1303,7 @@ def declarations(items, platform, preset, units, facts, content):
             if off:
                 kvs = [(k, without_variants(k, v, off)) for k, v in kvs]
                 dropped.append((widget, sorted(off)))
+            kvs = held_contexts(kvs, units)
             kvs, waiting = pending_defaults(header, kvs, it)
             listed += waiting
             data, read_by = element_data(widget, facts) if flavor is None else ({}, [])
@@ -1365,6 +1367,20 @@ def data_names(text: str) -> list:
 class DeclaredAt:
     """A state model's place, as a fact's `where` names its own: the citation of a listed declaration."""
     where: str
+
+
+def held_contexts(kvs: list, units) -> list:
+    """A declaration's `sizes_by_context` without its entries whose `context` names a widget the model does not hold
+    (its `widget` or its `nearest` scope's, entry_widgets()): S12 refuses a declaration naming an undeclared widget,
+    and no element has an ancestor the model does not hold, so the entry leaves no element's sizes out (S10); the
+    entry comes back when its unit is enabled and the preset is regenerated, as a fact's `when` naming it does."""
+    out = []
+    for k, v in kvs:
+        if k == "sizes_by_context" and isinstance(v, list):
+            v = [e for e in v if not (isinstance(e, dict) and any(
+                not held(units, w, "widget") for w in entry_widgets(e.get("context"))))]
+        out.append((k, v))
+    return out
 
 
 def pending_defaults(header: tuple, kvs: list, it) -> tuple:
@@ -3200,6 +3216,18 @@ def self_test() -> int:
             failures.append(f"element_size({when}) under not_drawn: {got}, expected {want}")
     if element_size({}, {"sizes": []}) != ([], []):
         failures.append(f"element_size of an unsized element: {element_size({}, {'sizes': []})}")
+    # held_contexts: a `sizes_by_context` entry naming a widget the model does not hold is left out, the others kept
+    contexts = [("sizes", ["regular"]), ("sizes_by_context", [
+        {"context": {"widget": "toolbar"}, "sizes": ["regular"]},
+        {"context": {"scope": {"nearest": ["toolbar"]}, "widget": "button"}, "sizes": ["regular"]},
+        {"context": {"widget": "button"}, "sizes": ["small"]}])]
+    slice_units = {"slice": check_facts_trace.Unit("slice", ("button",))}
+    try:
+        got = held_contexts(contexts, slice_units)
+    except (KeyError, TypeError) as err:
+        got = repr(err)
+    if got != [("sizes", ["regular"]), ("sizes_by_context", [{"context": {"widget": "button"}, "sizes": ["small"]}])]:
+        failures.append(f"held_contexts: {got}")
     # pending_defaults: each pending default size taken out of [declare] and listed by its declaration's path
     kvs = [("sizes", ["regular"]), ("default_size", {"pending": "U1"}),
            ("sizes_by_variant", [{"variant": "@gray", "sizes": ["mini"], "default_size": {"pending": "U2"}},
