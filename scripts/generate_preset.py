@@ -3131,12 +3131,19 @@ def self_test() -> int:
         if (pending_trip.mismatches or '"declare.widget.button.default_size" = "U9"' not in pending_text
                 or "default_size" in declared):
             failures.append(f"a pending default size: {pending_trip}, [declare.widget.button] {declared!r}")
-        # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here), and the
-        # preset where it finds none
+        # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here) and says so,
+        # over a committed preset the new text differs from; it writes the preset where it finds none
         root = Path(tmp) / "mismatch"
-        write(root, SELF_TEST_FILES)
+        button = SELF_TEST_FILES["docs/facts/gnome/button.toml"]
+        write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": button.replace('"16px"', '"18px"', 1)})
         written = root / PRESETS / "adwaita.toml"
         written.parent.mkdir(parents=True)
+        with contextlib.redirect_stderr(io.StringIO()):
+            code = run(fixture_context(root), "adwaita", "--write", None)
+        stale = written.read_text(encoding="utf-8") if written.exists() else None
+        if code != 0 or stale is None:
+            failures.append(f"--write of the committed preset: exit {code}, written {stale is not None}")
+        write(root, SELF_TEST_FILES)
         honest = round_trip
 
         def mismatched(draft, text):
@@ -3144,16 +3151,20 @@ def self_test() -> int:
 
         globals()["round_trip"] = mismatched
         try:
-            with contextlib.redirect_stderr(io.StringIO()):
+            with contextlib.redirect_stderr(io.StringIO()) as err:
                 code = run(fixture_context(root), "adwaita", "--write", None)
         finally:
             globals()["round_trip"] = honest
-        if code != 1 or written.exists():
-            failures.append(f"--write over a mismatched round trip: exit {code}, written {written.exists()}")
+        said = err.getvalue()
+        if (code != 1 or written.read_text(encoding="utf-8") != stale or "round trip: forced" not in said
+                or "adwaita.toml not written: the round trip finds a mismatch" not in said or "--write`" in said):
+            failures.append(f"--write over a mismatched round trip: exit {code}, rewritten "
+                            f"{written.read_text(encoding='utf-8') != stale}, said {said!r}")
         with contextlib.redirect_stderr(io.StringIO()):
             code = run(fixture_context(root), "adwaita", "--write", None)
-        if code != 0 or not written.exists():
-            failures.append(f"--write over an exact round trip: exit {code}, written {written.exists()}")
+        if code != 0 or written.read_text(encoding="utf-8") == stale:
+            failures.append(f"--write over an exact round trip: exit {code}, "
+                            f"written {written.read_text(encoding='utf-8') != stale}")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
@@ -3213,8 +3224,9 @@ def run(ctx, preset: str, mode, out) -> int:
         sys.stdout.write(text)
     elif mode == "out":
         out.write_text(text, encoding="utf-8")
-    elif mode == "--write" and not trip.mismatches:
-        path.write_text(text, encoding="utf-8")
+    elif mode == "--write":
+        if not trip.mismatches:
+            path.write_text(text, encoding="utf-8")
     elif text != committed:
         print(f"{PRESETS / preset}.toml is not what --write writes from the facts: run "
               f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
