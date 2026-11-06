@@ -76,7 +76,17 @@ comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `--self-test`, which needs Pillow), the data-document checks
 (`scripts/check_platform_facts_rows.py`,
 `scripts/check_section_refs.py`, `scripts/check_todo_citations.py` and
-`scripts/check_preset_citations.py`, each with its `--self-test`), per-crate
+`scripts/check_preset_citations.py`, each with its `--self-test`), the 0.8.0
+plan's data checks, each with its `--self-test` (the plan's ledger,
+`scripts/check_ledger.py`; the pinned platform sources,
+`scripts/check_sources.py`, and their cache, `scripts/update_sources.sh
+--verify`; the facts' form and citations, `scripts/check_facts.py` and
+`scripts/check_fact_citations.py`; the generated widget declarations,
+bundled presets, `sf_tracking` tables and `docs/platform-facts.md`, each
+generator's `--check`; the platform functions' vector tables,
+`scripts/check_function_vectors.py`; the enabled units' trace lines,
+`scripts/check_facts_trace.py --enabled`; the line citations of today's
+`platform-facts.md` at their commit, `scripts/check_pinned_citations.py`), per-crate
 `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`,
 so the private items' docs are held too (`native-theme` with its Linux
 features, plus its public API with no features; and `native-theme-iced`,
@@ -99,8 +109,8 @@ command.
 connector's tests on GPUI Fast (the runner-environment leg on GPUI Fast among
 them), `native-theme`'s ignored stem-index test and the release-only sections:
 the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
-`cargo semver-checks`, `cargo outdated`, and the PROVENANCE and
-compatibility stamp checks. Each of
+`cargo semver-checks`, `cargo outdated`, the 0.8.0 ledger's triage and
+source-cache checks, and the PROVENANCE and compatibility stamp checks. Each of
 them prints `skipped (--commit mode)`, and the summary names them as skipped,
 not passed. `cargo audit` runs in both modes, as CI audits every pull request and every push to `main`; where
 the advisory database cannot be fetched, the full run fails, and `--commit`
@@ -116,6 +126,17 @@ builds code no local leg builds (the reader choice's `kde`-without-`portal`
 arm, for one), and the macOS and Windows test legs: the script checks and
 lints those targets where they are installed, but cannot run their tests.
 Both are left to CI.
+
+While the 0.8.0 model replaces today's (`docs/todo_v0.7.1_model-completeness-plan.md`),
+`PLAN_EXCLUDED`, a list near the top of `scripts/check_release.sh`, names
+each step the transition breaks with the milestone that brings it back: the
+connectors and the showcases, which build against the 0.7.0 API until they
+are ported, and three data-document checks. `--commit` skips each listed
+step; the full run runs it and reports it as a warning; `ci.yml` marks the
+same steps with `# PLAN_EXCLUDED: <step>`, and the script checks that both
+name the same set. So on the work branch `cargo test --workspace` fails in
+the connectors and the showcases' shared crate: test the crates the list
+does not name, `cargo test -p native-theme` among them. The list is empty when 0.8.0 is released.
 
 A scheduled workflow, `dependency-canary.yml`, runs nightly at 18:10 UTC
 (and on demand from the Actions tab) with every dependency updated on a
@@ -152,7 +173,7 @@ CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 
 | Crate | Path | Description |
 |-------|------|-------------|
-| `native-theme` | `native-theme/` | Core theme model, presets, platform readers, icons, animations |
+| `native-theme` | `native-theme/` | Core theme model (layers, resolution, the queries), its presets, icons and fonts; the platform readers, unlinked until the 0.8.0 plan's M1b |
 | `native-theme-build` | `native-theme-build/` | Build-time code generation for custom icon roles |
 | `native-theme-derive` | `native-theme-derive/` | Proc-macro crate (internal; used by `native-theme`, not re-exported) |
 | `native-theme-gpui` | `connectors/native-theme-gpui/` | gpui toolkit connector |
@@ -164,9 +185,9 @@ CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 
 The core `native-theme` crate has several feature flags:
 
-- **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all); `linux-kde` and `linux-portal` are aliases of `kde` and `portal`
+- **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all); `linux-kde` and `linux-portal` are aliases of `kde` and `portal`. The readers are unlinked until the 0.8.0 plan's M1b: until then `kde` reads the KDE icon theme, `windows` and `macos` the OS version, and `portal` nothing
 - **Icons:** `system-icons`, `material-icons`, `lucide-icons`
-- **Watching:** `watch` (runtime theme change notifications)
+- **Watching:** `watch` (runtime theme change notifications; nothing until M1b)
 - **Rendering:** `svg-rasterize` (resvg-backed SVG→RGBA rasterisation)
 - **Fonts:** `system-fonts` (face matching against the installed fonts, `fonts::system_face`, and the platform's substitute for a family the system lacks, `fonts::substitute_family`)
 
@@ -214,8 +235,9 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 
 Design-level choices are captured in files under `docs/`:
 
-- [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS 12–15 and 26, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
-- [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
+- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence under [`docs/evidence/`](docs/evidence/); the bundled presets are generated from them (`scripts/generate_preset.py`)
+- [`docs/platform-facts.md`](docs/platform-facts.md) — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py`; never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
+- [`docs/property-registry.toml`](docs/property-registry.toml) — the registry of 0.7.0's theme fields, generated from the 0.8.0 model at its plan's M2.6
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)
 
 A change too large for one entry there gets a plan: `docs/todo_<topic>-plan.md`,
@@ -233,8 +255,15 @@ digits. It holds the facts checked, the options weighed, the decision and the
 reply as posted, and it stays in `docs/issues/`: it is the issue's record, not a
 plan, so it is not archived. A plan the issue leads to follows the rule above.
 
-Do not invent platform-native values. When the authoritative reference is
-silent, flag it explicitly rather than guessing.
+Do not invent platform-native values. A platform value enters the model only
+as a fact (specification S17,
+`docs/todo_v0.7.1_model-completeness-spec.md`): published by a source pinned
+to the platform's release, read from an API the reader calls, or measured,
+with the method, the evidence and the exact OS and toolkit builds recorded.
+When no source gives a value, it stays a pending fact naming its entry in the
+ledger's unmeasured register, never a guess.
+[`docs/new-os-version-guide.md`](docs/new-os-version-guide.md) walks through
+the process for a new OS version.
 
 ## Regenerating visual assets
 
