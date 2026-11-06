@@ -33891,51 +33891,9 @@ when = { conditions = ["preset:ios-13", "idiom:pad"] }
 pending = "U114"
 rows = ["B-18†"]
 
-[[fact]]
-key = "button.label"
-when = { conditions = ["preset:ios-13"], variants = ["icon_only"] }
-value = "absent"
-rows = ["B-9"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.filled__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.gray__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.plain__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.dark.tinted__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.filled__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.gray__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.plain__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#cells.light.tinted__image_star__title_none.medium.normal.label"
-tolerance = 0
+# an icon-only button (no title) draws no title label (run 41020880059, ios-host-macos-15's `title_none` cells):
+# that is its content, not an absent part (the catalogue's button entry lists no `label` absence, S6.3): the
+# element holds no text, the connector setting the content variant `icon_only` (S8, ADD-A61) and building no label
 
 [[fact]]
 key = "button.label"
@@ -74953,91 +74911,9 @@ when = { conditions = ["preset:ios-26", "idiom:pad"] }
 pending = "U114"
 rows = ["B-18†"]
 
-[[fact]]
-key = "button.label"
-when = { conditions = ["preset:ios-26"], variants = ["icon_only"] }
-value = "absent"
-rows = ["B-9"]
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.clear_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.filled__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.gray__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.plain__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_clear_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.prominent_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.dark.tinted__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.clear_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.filled__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.gray__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.plain__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_clear_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.prominent_glass__image_star__title_none.medium.normal.label"
-tolerance = 0
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#cells.light.tinted__image_star__title_none.medium.normal.label"
-tolerance = 0
+# an icon-only button (no title) draws no title label (run 41020880059, ios-host-macos-26's `title_none` cells):
+# that is its content, not an absent part (the catalogue's button entry lists no `label` absence, S6.3): the
+# element holds no text, the connector setting the content variant `icon_only` (S8, ADD-A61) and building no label
 
 [[fact]]
 key = "button.label"

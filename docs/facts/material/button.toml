@@ -3503,6 +3503,9 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-outlined.scss:86"
 quote = "$selected-icon-color: md-sys-color.$inverse-on-surface;"
 
+# the checked outlined toggle draws no border (a null BorderStroke): each edge's width and paint absent; its dash
+# is left as the outlined button's (S2.4, S12: a dash may be absent only on an edge not drawn, and a later fact
+# drawing the edge again, the outlined menu button's, states no dash of its own)
 [[fact]]
 key = "button.body.stroke.top.width"
 when = { variants = ["toggle", "@outlined"], states = ["checked"] }
@@ -3516,17 +3519,6 @@ quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { 
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["toggle", "@outlined"], states = ["checked"] }
-value = "absent"
-rows = ["MAT-B12"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
-quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
-
-[[fact]]
-key = "button.body.stroke.top.dash"
 when = { variants = ["toggle", "@outlined"], states = ["checked"] }
 value = "absent"
 rows = ["MAT-B12"]
@@ -3559,17 +3551,6 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
 
 [[fact]]
-key = "button.body.stroke.right.dash"
-when = { variants = ["toggle", "@outlined"], states = ["checked"] }
-value = "absent"
-rows = ["MAT-B12"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
-quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
-
-[[fact]]
 key = "button.body.stroke.bottom.width"
 when = { variants = ["toggle", "@outlined"], states = ["checked"] }
 value = "absent"
@@ -3592,17 +3573,6 @@ source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/an
 quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
 
 [[fact]]
-key = "button.body.stroke.bottom.dash"
-when = { variants = ["toggle", "@outlined"], states = ["checked"] }
-value = "absent"
-rows = ["MAT-B12"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
-quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
-
-[[fact]]
 key = "button.body.stroke.left.width"
 when = { variants = ["toggle", "@outlined"], states = ["checked"] }
 value = "absent"
@@ -3615,17 +3585,6 @@ quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { 
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["toggle", "@outlined"], states = ["checked"] }
-value = "absent"
-rows = ["MAT-B12"]
-
-[[fact.cite]]
-kind = "published"
-source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:1382-1385"
-quote = "public fun border(enabled: Boolean, checked: Boolean): BorderStroke? { return if (checked) { null"
-
-[[fact]]
-key = "button.body.stroke.left.dash"
 when = { variants = ["toggle", "@outlined"], states = ["checked"] }
 value = "absent"
 rows = ["MAT-B12"]
@@ -6450,9 +6409,11 @@ kind = "published"
 source = "material-web@2.5.0 button/internal/button.ts:166-168"
 quote = "${this.trailingIcon ? nothing : icon} <span class=\"label\"><slot></slot></span> ${this.trailingIcon ? icon : nothing}"
 
+# the base's menu indicator (the catalogue's button entry: stated in the base, absent by the fact outside `menu`
+# above, which a field's fact does not undo, S6.3): the standard menu button's trailing icon, which the variants'
+# facts after these restate
 [[fact]]
 key = "button.menu_indicator.glyph.size"
-when = { variants = ["menu"] }
 value = "18px"
 rows = ["MAT-N8"]
 
@@ -6463,7 +6424,6 @@ quote = "$trailing-icon-size: 18px;"
 
 [[fact]]
 key = "button.menu_indicator.glyph.fill"
-when = { variants = ["menu"] }
 value = "= role.@on_surface_variant"
 rows = ["MAT-N8"]
 
@@ -12778,7 +12738,7 @@ quote = "$focused-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@secondary_container"] }
 value = "= role.@secondary_container"
 rows = ["MAT-N1"]
 
@@ -12789,7 +12749,7 @@ quote = "$container-color: md-sys-color.$secondary-container;"
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { variants = ["@fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@secondary_container"] }
 value = "= role.@on_secondary_container"
 rows = ["MAT-N1"]
 
@@ -12800,7 +12760,7 @@ quote = "$icon-color: md-sys-color.$on-secondary-container;"
 
 [[fact]]
 key = "button.body.bindings"
-when = { variants = ["@fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@secondary_container"] }
 value = [{ role = { role = { surface = "foreground" }, value = "= role.@on_secondary_container" } }]
 rows = []
 
@@ -12821,7 +12781,7 @@ quote = "LocalContentColor provides contentColor,"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@secondary_container"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@secondary_container"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N1"]
 
@@ -12832,7 +12792,7 @@ quote = "$hovered-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@secondary_container"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@secondary_container"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N1"]
 
@@ -12843,7 +12803,7 @@ quote = "$focused-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@tertiary_container"] }
 value = "= role.@tertiary_container"
 rows = ["MAT-N1"]
 
@@ -12854,7 +12814,7 @@ quote = "$container-color: md-sys-color.$tertiary-container;"
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { variants = ["@fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@tertiary_container"] }
 value = "= role.@on_tertiary_container"
 rows = ["MAT-N1"]
 
@@ -12865,7 +12825,7 @@ quote = "$icon-color: md-sys-color.$on-tertiary-container;"
 
 [[fact]]
 key = "button.body.bindings"
-when = { variants = ["@fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@tertiary_container"] }
 value = [{ role = { role = { surface = "foreground" }, value = "= role.@on_tertiary_container" } }]
 rows = []
 
@@ -12886,7 +12846,7 @@ quote = "LocalContentColor provides contentColor,"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@tertiary_container"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@tertiary_container"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N1"]
 
@@ -12897,7 +12857,7 @@ quote = "$hovered-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@tertiary_container"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@tertiary_container"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N1"]
 
@@ -12973,7 +12933,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.icon.icon.size"
-when = { variants = ["@fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"] }
 value = "36px"
 rows = ["MAT-N1"]
 
@@ -12986,7 +12946,7 @@ quote = "$icon-size: 36px;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.color"
-when = { variants = ["@fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N1", "MAT-X8"]
 
@@ -12997,7 +12957,7 @@ quote = "$focus-state-layer-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.body.interaction.ripple.color"
-when = { variants = ["@fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N1", "MAT-X8"]
 
@@ -13008,7 +12968,7 @@ quote = "$pressed-state-layer-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"] }
 value = "= role.@surface_container_high"
 rows = ["MAT-N1"]
 
@@ -13019,7 +12979,7 @@ quote = "$container-color: md-sys-color.$surface-container-high;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@branded"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N1"]
 
@@ -13030,7 +12990,7 @@ quote = "$hover-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@branded"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N1"]
 
@@ -13138,7 +13098,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@fab", "@branded", "@lowered"] }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded", "@lowered"] }
 value = "= role.@surface_container_low"
 rows = ["MAT-N1", "MAT-X4"]
 
@@ -13149,7 +13109,7 @@ quote = "$lowered-container-color: md-sys-color.$surface-container-low;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@branded", "@lowered"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded", "@lowered"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N1", "MAT-X4"]
 
@@ -13160,7 +13120,7 @@ quote = "$hover-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@fab", "@branded", "@lowered"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@fab", "@branded", "@lowered"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N1", "MAT-X4"]
 
@@ -15058,7 +15018,7 @@ quote = "$focused-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@extended_fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"] }
 value = "= role.@secondary_container"
 rows = ["MAT-N2"]
 
@@ -15069,7 +15029,7 @@ quote = "$container-color: md-sys-color.$secondary-container;"
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { variants = ["@extended_fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"] }
 value = "= role.@on_secondary_container"
 rows = ["MAT-N2"]
 
@@ -15080,7 +15040,7 @@ quote = "$icon-color: md-sys-color.$on-secondary-container;"
 
 [[fact]]
 key = "button.body.bindings"
-when = { variants = ["@extended_fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"] }
 value = [{ role = { role = { surface = "foreground" }, value = "= role.@on_secondary_container" } }]
 rows = []
 
@@ -15101,7 +15061,7 @@ quote = "LocalContentColor provides contentColor,"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { variants = ["@extended_fab", "@secondary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"] }
 value = "= role.@on_secondary_container"
 rows = ["MAT-N2"]
 
@@ -15112,7 +15072,7 @@ quote = "$label-text-color: md-sys-color.$on-secondary-container;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@secondary_container"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N2"]
 
@@ -15123,7 +15083,7 @@ quote = "$hovered-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@secondary_container"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@secondary_container"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N2"]
 
@@ -15134,7 +15094,7 @@ quote = "$focused-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@extended_fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"] }
 value = "= role.@tertiary_container"
 rows = ["MAT-N2"]
 
@@ -15145,7 +15105,7 @@ quote = "$container-color: md-sys-color.$tertiary-container;"
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { variants = ["@extended_fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"] }
 value = "= role.@on_tertiary_container"
 rows = ["MAT-N2"]
 
@@ -15156,7 +15116,7 @@ quote = "$icon-color: md-sys-color.$on-tertiary-container;"
 
 [[fact]]
 key = "button.body.bindings"
-when = { variants = ["@extended_fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"] }
 value = [{ role = { role = { surface = "foreground" }, value = "= role.@on_tertiary_container" } }]
 rows = []
 
@@ -15177,7 +15137,7 @@ quote = "LocalContentColor provides contentColor,"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { variants = ["@extended_fab", "@tertiary_container"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"] }
 value = "= role.@on_tertiary_container"
 rows = ["MAT-N2"]
 
@@ -15188,7 +15148,7 @@ quote = "$label-text-color: md-sys-color.$on-tertiary-container;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@tertiary_container"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N2"]
 
@@ -15199,7 +15159,7 @@ quote = "$hovered-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@tertiary_container"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@tertiary_container"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N2"]
 
@@ -15286,7 +15246,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.icon.icon.size"
-when = { variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"] }
 value = "36px"
 rows = ["MAT-N2"]
 
@@ -15299,7 +15259,7 @@ quote = "$icon-size: 36px;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.color"
-when = { variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N1", "MAT-X8"]
 
@@ -15310,7 +15270,7 @@ quote = "$focus-state-layer-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.body.interaction.ripple.color"
-when = { variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N1", "MAT-X8"]
 
@@ -15321,7 +15281,7 @@ quote = "$pressed-state-layer-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@surface_container_high"
 rows = ["MAT-N2"]
 
@@ -15332,7 +15292,7 @@ quote = "$container-color: md-sys-color.$surface-container-high;"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@on_surface"
 rows = ["MAT-N2"]
 
@@ -15343,7 +15303,7 @@ quote = "$label-text-color: md-sys-color.$on-surface;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@branded"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N2"]
 
@@ -15354,7 +15314,7 @@ quote = "$hover-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@branded"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N2"]
 
@@ -15369,7 +15329,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { states = ["hover"], variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], states = ["hover"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N2"]
 
@@ -15380,7 +15340,7 @@ quote = "$hover-label-text-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { states = ["focus_visible"], variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], states = ["focus_visible"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N2"]
 
@@ -15391,7 +15351,7 @@ quote = "$focus-label-text-color: md-sys-color.$primary;"
 
 [[fact]]
 key = "button.label.text.fill"
-when = { states = ["pressed"], variants = ["@extended_fab", "@branded"] }
+when = { conditions = ["flavor:expressive"], states = ["pressed"], variants = ["@extended_fab", "@branded"] }
 value = "= role.@primary"
 rows = ["MAT-N2"]
 
@@ -15499,7 +15459,7 @@ quote = "$focus-state-layer-opacity: md-sys-state.$focus-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@extended_fab", "@branded", "@lowered"] }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded", "@lowered"] }
 value = "= role.@surface_container_low"
 rows = ["MAT-N2", "MAT-X4"]
 
@@ -15510,7 +15470,7 @@ quote = "$lowered-container-color: md-sys-color.$surface-container-low;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@branded", "@lowered"], latest = { state_layer = "hover" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded", "@lowered"], latest = { state_layer = "hover" } }
 value = "= token.params.opacity.hover"
 rows = ["MAT-N2", "MAT-X4"]
 
@@ -15521,7 +15481,7 @@ quote = "$hover-state-layer-opacity: md-sys-state.$hover-state-layer-opacity;"
 
 [[fact]]
 key = "button.body.interaction.state_layer.alpha"
-when = { variants = ["@extended_fab", "@branded", "@lowered"], latest = { state_layer = "focus_visible" } }
+when = { conditions = ["flavor:expressive"], variants = ["@extended_fab", "@branded", "@lowered"], latest = { state_layer = "focus_visible" } }
 value = "= token.params.opacity.focus"
 rows = ["MAT-N2", "MAT-X4"]
 
