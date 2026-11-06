@@ -324,7 +324,7 @@ for run in 1 2; do
   status=$?
   note "simctl launch measure $run: exit $status, $launched"
   if [ $status -ne 0 ]; then failed=1; continue; fi
-  serve "measure $run" "measure$run" "${launched##*: }" || failed=1
+  serve "measure $run" "measure$run" "${launched##*: }" || { failed=1; note "measure $run: last scene $(cat "$sync/progress" 2>/dev/null)"; }
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
   [ -n "$sync" ] && { keep "measure $run" "measure$run" || failed=1; }
 done
@@ -445,4 +445,8 @@ for folder in run1 press1 measure1; do
   [ "$status" -eq 0 ] || failed=1
 done
 (cd "$out" && find . -name '*.png' ! -path './solved/*' -print | LC_ALL=C sort | xargs shasum -a 256) >"$out/sha256.txt"
+# The app's crash reports, if any (the host keeps the simulator's).
+mkdir -p "$out/crashes"
+find "$HOME/Library/Logs/DiagnosticReports" -name 'IosHost*' -exec cp {} "$out/crashes/" \; 2>/dev/null
+note "crash reports: $(find "$out/crashes" -type f | wc -l | tr -d ' ')"
 exit $failed

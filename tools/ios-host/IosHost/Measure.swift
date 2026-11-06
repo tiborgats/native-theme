@@ -260,17 +260,23 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         for pass in passes {
             switch pass {
             case "roles":
+                mark("read inactive colours")
                 readInactiveColors()
+                mark("read list configurations")
                 readListConfigurations()
                 scenes += roleScenes()
             case "fonts":
+                mark("read fonts")
                 readFonts()
                 scenes += fontScenes()
             case "symbols":
+                mark("read configuration defaults")
                 readConfigurationDefaults()
+                mark("read button symbols")
                 readButtonSymbols()
                 scenes += symbolScenes()
             case "behavior":
+                mark("read button behavior")
                 readButtonBehavior()
                 scenes += behaviorScenes()
             default:
@@ -282,6 +288,13 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
             return
         }
         show(0)
+    }
+
+    /// Writes what the app is doing to sync/progress (run.sh reports it when
+    /// the app ends before sync/done) and to the standard error.
+    func mark(_ step: String) {
+        try? (step + "\n").write(to: out.appendingPathComponent("sync/progress"), atomically: true, encoding: .utf8)
+        FileHandle.standardError.write(Data(("measure: " + step + "\n").utf8))
     }
 
     // MARK: the page code
@@ -421,6 +434,7 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         view.backgroundColor = .systemBackground
         view.window?.overrideUserInterfaceStyle = scene.appearance.style
         setCode(index)
+        mark("scene \(index) \(scene.page)")
         regions = scene.setup(self)
         view.layoutIfNeeded()
         DispatchQueue.main.asyncAfter(deadline: .now() + scene.settle) { [weak self] in
@@ -481,6 +495,7 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
 
     private func received(_ screenshot: URL) {
         let scene = scenes[sceneIndex]
+        mark("scene \(sceneIndex) screenshot \(attempt)")
         let manager = FileManager.default
         guard let image = UIImage(contentsOfFile: screenshot.path), let source = image.cgImage,
             let bytes = samples(source)
