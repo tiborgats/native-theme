@@ -14,14 +14,18 @@ slice = ["button"]
 # S8's query read (the M1a design, decision 9), the S4.6 parameter groups
 # the button and the roles use, `pointer_repeat`, `color` and `opacity` (the
 # plan's M1a scope), S4.8's scheme tokens, `token.kde` and `token.material`,
-# which the KDE functions and `m3_role` read (M1b), and the groups `shadow`
+# which the KDE functions and `m3_role` read (M1b), the groups `shadow`
 # (Breeze's shadow strength, K3.1) and `shape` (WinUI's and Material's corner
-# radii) the slice's facts read (ledger queue #161 (3), #162 (1)).
+# radii) the slice's facts read (ledger queue #161 (3), #162 (1)), and
+# `motion` and `layout`, which KDE's facts read: the decoration's speed
+# factor in `tokens.motion` (ADD-A125) and Kirigami's grid unit in the
+# button's sizes (M1b).
 [prefixes]
 slice = ["role", "token.motion", "token.caret", "token.behavior", "token.text", "token.icons",
          "token.focus", "token.elevation", "token.size_classes", "token.kde", "token.material",
          "token.params.pointer_repeat", "token.params.color", "token.params.opacity",
-         "token.params.shadow", "token.params.shape"]
+         "token.params.shadow", "token.params.shape", "token.params.motion",
+         "token.params.layout"]
 
 # Paths an enabled unit's prefixes hold that it stages to a later unit, each
 # lying in no unit until that unit is enabled: the scroll behaviour to the
