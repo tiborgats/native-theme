@@ -26,8 +26,10 @@
 # comma-separated list, default none) is set on that simulator after its boot,
 # before the passes: increase_contrast (`simctl ui increase_contrast`),
 # content_size=<category> (`simctl ui content_size`), bold_text and
-# button_shapes (com.apple.Accessibility's EnhancedTextLegibilityEnabled and
-# ButtonShapesEnabled, written with `simctl spawn defaults`; the app's index
+# button_shapes and full_keyboard_access (com.apple.Accessibility's
+# EnhancedTextLegibilityEnabled, ButtonShapesEnabled and
+# FullKeyboardAccessEnabled, written with `simctl spawn defaults`; also on
+# the focus pass's iPad; the app's index
 # records what UIAccessibility then reports, [motion] in run<N>/index.toml,
 # [environment] in measure<N>/index.toml). Writes into $1:
 #   run<N>/, press<N>/, focus1/ (the iPad's focus pass, once), measure<N>/
@@ -200,16 +202,22 @@ xcrun simctl install "$udid" "$app"
 status=$?
 note "simctl install: exit $status"
 if [ $status -ne 0 ]; then xcrun simctl delete "$udid"; exit 1; fi
-for setting in ${settings//,/ }; do
-  case "$setting" in
-    increase_contrast) xcrun simctl ui "$udid" increase_contrast enabled ;;
-    content_size=*) xcrun simctl ui "$udid" content_size "${setting#content_size=}" ;;
-    bold_text) xcrun simctl spawn "$udid" defaults write com.apple.Accessibility EnhancedTextLegibilityEnabled -bool YES ;;
-    button_shapes) xcrun simctl spawn "$udid" defaults write com.apple.Accessibility ButtonShapesEnabled -bool YES ;;
-    *) false ;;
-  esac
-  note "setting $setting: exit $?"
-done
+# apply_settings <udid>: IOS_HOST_SETTINGS on a booted simulator.
+apply_settings() {
+  local setting
+  for setting in ${settings//,/ }; do
+    case "$setting" in
+      increase_contrast) xcrun simctl ui "$1" increase_contrast enabled ;;
+      content_size=*) xcrun simctl ui "$1" content_size "${setting#content_size=}" ;;
+      bold_text) xcrun simctl spawn "$1" defaults write com.apple.Accessibility EnhancedTextLegibilityEnabled -bool YES ;;
+      button_shapes) xcrun simctl spawn "$1" defaults write com.apple.Accessibility ButtonShapesEnabled -bool YES ;;
+      full_keyboard_access) xcrun simctl spawn "$1" defaults write com.apple.Accessibility FullKeyboardAccessEnabled -bool YES ;;
+      *) false ;;
+    esac
+    note "setting $setting on $1: exit $?"
+  done
+}
+apply_settings "$udid"
 # The first screenshots after a boot can take over a minute (macos-26):
 # one is taken before the runs.
 shot=$(date +%s)
@@ -217,7 +225,7 @@ xcrun simctl io "$udid" screenshot --type=png "$out/warm-up.png" >/dev/null 2>&1
 note "warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"
 
 # serve <label> <documents folder> [<pid>]: takes the screenshots the app asks
-# for until it writes sync/done (or <pid>, the UI test, ends first); sets
+# for until it writes sync/done (or <pid>, the UI test or the app, ends first); sets
 # $container and $sync; 1 where it failed.
 serve() {
   local label=$1 folder=$2 pid=${3:-}
@@ -229,7 +237,7 @@ serve() {
     if [ -n "$container" ] && [ -d "$container/Documents/$folder/sync" ]; then
       sync="$container/Documents/$folder/sync"
     elif [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-      note "$label: the test ended before the app wrote $folder/sync"
+      note "$label: the process (the UI test, or the app) ended before the app wrote $folder/sync"
       return 1
     elif [ $(($(date +%s) - start)) -gt 900 ]; then
       note "$label: no $folder/sync within 900 s"
@@ -254,7 +262,7 @@ serve() {
       page=$((page + 1))
       attempt=0
     elif [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-      note "$label: the test ended before sync/done"
+      note "$label: the process (the UI test, or the app) ended before sync/done"
       return 1
     elif [ $(($(date +%s) - start)) -gt 10800 ]; then
       note "$label: no sync/done within 10800 s"
@@ -309,12 +317,14 @@ for run in 1 2; do
 done
 for run in 1 2; do
   has measure || break
-  xcrun simctl launch --terminate-running-process --stdout="$out/measure$run-stdout.log" \
-    --stderr="$out/measure$run-stderr.log" "$udid" "$bundle" "measure$run" "passes=$measure" "colors=$colors"
+  # simctl launch prints "<bundle>: <pid>", the app's process on the host:
+  # serve stops waiting once it has ended.
+  launched=$(xcrun simctl launch --terminate-running-process --stdout="$out/measure$run-stdout.log" \
+    --stderr="$out/measure$run-stderr.log" "$udid" "$bundle" "measure$run" "passes=$measure" "colors=$colors")
   status=$?
-  note "simctl launch measure $run: exit $status"
+  note "simctl launch measure $run: exit $status, $launched"
   if [ $status -ne 0 ]; then failed=1; continue; fi
-  serve "measure $run" "measure$run" || failed=1
+  serve "measure $run" "measure$run" "${launched##*: }" || failed=1
   xcrun simctl terminate "$udid" "$bundle" >/dev/null 2>&1
   [ -n "$sync" ] && { keep "measure $run" "measure$run" || failed=1; }
 done
@@ -347,6 +357,7 @@ else
   note "simctl bootstatus -b iPad: exit $?"
   xcrun simctl install "$udid" "$app"
   note "simctl install iPad: exit $?"
+  apply_settings "$udid"
   shot=$(date +%s)
   xcrun simctl io "$udid" screenshot --type=png "$out/warm-up-ipad.png" >/dev/null 2>&1
   note "iPad warm-up screenshot: exit $?, $(($(date +%s) - shot)) s"

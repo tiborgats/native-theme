@@ -485,6 +485,44 @@ func specimens(quick: Bool) -> [Specimen] {
     }
 }
 
+/// A button that can take focus whatever the focus system's rules (the focus
+/// pass's `+focusable_subclass` specimens): run 41020880059 found
+/// `canBecomeFocused` false for every button on the iPad, so UIKit drew no
+/// focused state; on this subclass the focus system can focus it, and what it
+/// draws is UIKit's own focus effect.
+final class FocusableButton: UIButton {
+    override var canBecomeFocused: Bool { true }
+}
+
+/// The focus pass's focusable specimens: each configuration style and the
+/// system type as a FocusableButton.
+@MainActor
+func focusableSpecimens(quick: Bool) -> [Specimen] {
+    let names: Set<String> = ["filled", "gray", "glass", "plain"]
+    var list = configurationStyles().filter { !quick || names.contains($0.name) }.map { style in
+        Specimen(
+            name: "\(style.name)+focusable_subclass", kind: "configuration", style: style.name,
+            variant: [("focusable", "subclass")], sizes: [medium], states: [.normal, .focused],
+            make: { size in
+                var configuration = style.make()
+                configuration.title = "Button"
+                configuration.buttonSize = size
+                let button = FocusableButton(configuration: configuration)
+                return Sample(view: button, control: button, button: button)
+            })
+    }
+    list.append(
+        Specimen(
+            name: "system+focusable_subclass", kind: "button_type", style: "system", variant: [("focusable", "subclass")],
+            sizes: [noSize], states: [.normal, .focused],
+            make: { _ in
+                let button = FocusableButton(type: .system)
+                button.setTitle("Button", for: .normal)
+                return Sample(view: button, control: button, button: button)
+            }))
+    return list
+}
+
 /// The campaign set (`set=campaign`, run.sh's IOS_HOST_SET): the variants the
 /// base set draws at medium only, at the other sizes (the corner styles on
 /// filled, gray and glass, `dynamic` on the other glass styles at every size,
@@ -900,7 +938,8 @@ final class HostViewController: UIViewController {
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         out = documents.appendingPathComponent(runName, isDirectory: true)
         var pages: [Page] = []
-        let list = set == "campaign" ? campaignSpecimens() : specimens(quick: quickRun)
+        var list = set == "campaign" ? campaignSpecimens() : specimens(quick: quickRun)
+        if focus { list += focusableSpecimens(quick: quickRun) }
         for appearance in appearances {
             for specimen in list {
                 // A glass style's shadow and its press's halo reach far past
@@ -909,7 +948,9 @@ final class HostViewController: UIViewController {
                 let glass = specimen.kind == "configuration" && specimen.variant.isEmpty
                     && glassStyles.contains(specimen.name)
                 if focus {
-                    guard specimen.kind == "configuration" && specimen.variant.isEmpty || specimen.name == "system",
+                    let focusable = specimen.variant.contains { $0.key == "focusable" }
+                    guard specimen.kind == "configuration" && (specimen.variant.isEmpty || focusable)
+                        || specimen.name == "system" || specimen.name == "system+focusable_subclass",
                         let size = specimen.sizes.first(where: { $0.name == "medium" || $0.name == "default" })
                     else { continue }
                     pages.append(

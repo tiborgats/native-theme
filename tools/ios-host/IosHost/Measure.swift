@@ -42,6 +42,16 @@
 //   configuration and frame); a scene of the controls that place a symbol of
 //   their own (a toolbar, a navigation bar, a tab bar, a segmented control, a
 //   search bar, list cells) with their image views read.
+// - `behavior`: the buttons' interaction and layout values (pointer, hover,
+//   tool tip, spring loading, menus, behavioral style, layout margins, content
+//   size category limits, the touch area as `point(inside:with:)` answers it
+//   past each edge); the stepper's autorepeat; a navigation bar's back button
+//   under a previous title too long for it; a navigation push with UIKit's
+//   animations on (the transition coordinator's duration and curve); the
+//   caret of a text view, a text field and a read-only text view (the cursor
+//   view's class, colour, frame and Core Animation animations, and its
+//   presentation opacity sampled every 50 ms for 12 s, a character typed at
+//   6 s), with UIKit's animations on for these scenes.
 //
 // Writes into Documents/<run>/ of its data container: index.toml (the
 // environment, the reads, a [[scene_read]] per scene and a [[capture]] per
@@ -202,6 +212,8 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
     var named: [String: UIView] = [:]
     var kept: [AnyObject] = []
     var presentedForScene: UIViewController?
+    /// What a scene recorded while it ran, for its read.
+    var notes: [String: String] = [:]
 
     init() {
         let arguments = Array(CommandLine.arguments.dropFirst())
@@ -258,6 +270,9 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
                 readConfigurationDefaults()
                 readButtonSymbols()
                 scenes += symbolScenes()
+            case "behavior":
+                readButtonBehavior()
+                scenes += behaviorScenes()
             default:
                 failures.append("unknown pass \(pass)")
             }
@@ -398,6 +413,7 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         for subview in view.subviews { subview.removeFromSuperview() }
         named = [:]
         kept = []
+        notes = [:]
         presentedForScene = nil
         codeRetakes = 0
         settleShots = 0
@@ -1696,4 +1712,367 @@ final class MeasureController: UIViewController, UIPopoverPresentationController
         add("list", collection, height: 120)
         return regions
     }
+
+    // MARK: the `behavior` pass
+
+    /// How far past each edge (top, left, bottom, right) `point(inside:with:)`
+    /// still answers true, in whole points up to 60.
+    private func touchReach(_ control: UIView) -> String {
+        let bounds = control.bounds
+        func reach(_ point: (CGFloat) -> CGPoint) -> Int {
+            var last = -1
+            for distance in 0...60 where control.point(inside: point(CGFloat(distance) + 0.5), with: nil) {
+                last = distance
+            }
+            return last
+        }
+        let top = reach { CGPoint(x: bounds.midX, y: bounds.minY - $0) }
+        let left = reach { CGPoint(x: bounds.minX - $0, y: bounds.midY) }
+        let bottom = reach { CGPoint(x: bounds.midX, y: bounds.maxY + $0) }
+        let right = reach { CGPoint(x: bounds.maxX + $0, y: bounds.midY) }
+        return "{ top = \(top), left = \(left), bottom = \(bottom), right = \(right), bounds_pt = \(rectangle(bounds)) }"
+    }
+
+    private func readButtonBehavior() {
+        let holder = UIView(frame: CGRect(x: 0, y: 200, width: view.bounds.width, height: 300))
+        holder.alpha = 0
+        view.addSubview(holder)
+        var buttons: [(String, UIButton)] = []
+        for style in configurationStyles() {
+            var configuration = style.make()
+            configuration.title = "Button"
+            buttons.append((style.name, UIButton(configuration: configuration)))
+        }
+        let system = UIButton(type: .system)
+        system.setTitle("Button", for: .normal)
+        buttons.append(("system", system))
+        buttons.append(("close", UIButton(type: .close)))
+        buttons.append(("info_light", UIButton(type: .infoLight)))
+        for (_, button) in buttons {
+            holder.addSubview(button)
+            button.sizeToFit()
+            button.center = CGPoint(x: holder.bounds.midX, y: holder.bounds.midY)
+        }
+        holder.layoutIfNeeded()
+        for (name, button) in buttons {
+            reads.append(
+                """
+                [[button_behavior]]
+                style = \(quoted(name))
+                pointer_interaction_enabled = \(button.isPointerInteractionEnabled)
+                pointer_style_provider = \(button.pointerStyleProvider != nil)
+                hover_style = \(button.hoverStyle.map { described($0) } ?? absent)
+                interactions = [\(button.interactions.map { quoted(String(describing: type(of: $0))) }.joined(separator: ", "))]
+                tool_tip = \(button.toolTip.map(quoted) ?? absent)
+                tool_tip_interaction = \(button.toolTipInteraction != nil)
+                spring_loaded = \(button.isSpringLoaded)
+                behavioral_style = \(button.behavioralStyle.rawValue)
+                preferred_behavioral_style = \(button.preferredBehavioralStyle.rawValue)
+                role = \(button.role.rawValue)
+                menu = \(button.menu != nil)
+                shows_menu_as_primary_action = \(button.showsMenuAsPrimaryAction)
+                changes_selection_as_primary_action = \(button.changesSelectionAsPrimaryAction)
+                preferred_menu_element_order = \(button.preferredMenuElementOrder.rawValue)
+                context_menu_interaction_enabled = \(button.isContextMenuInteractionEnabled)
+                layout_margins_pt = \(edgeInsets(button.layoutMargins))
+                directional_layout_margins_pt = \(insets(button.directionalLayoutMargins))
+                insets_layout_margins_from_safe_area = \(button.insetsLayoutMarginsFromSafeArea)
+                content_horizontal_alignment = \(button.contentHorizontalAlignment.rawValue)
+                content_vertical_alignment = \(button.contentVerticalAlignment.rawValue)
+                exclusive_touch = \(button.isExclusiveTouch)
+                multiple_touch_enabled = \(button.isMultipleTouchEnabled)
+                minimum_content_size_category = \(button.minimumContentSizeCategory.map { quoted($0.rawValue) } ?? absent)
+                maximum_content_size_category = \(button.maximumContentSizeCategory.map { quoted($0.rawValue) } ?? absent)
+                shows_large_content_viewer = \(button.showsLargeContentViewer)
+                accessibility_traits = \(button.accessibilityTraits.rawValue)
+                intrinsic_size_pt = \(pair(button.intrinsicContentSize))
+                touch_reach_pt = \(touchReach(button))
+
+                """)
+        }
+        holder.removeFromSuperview()
+        let stepper = UIStepper()
+        let item = UINavigationItem(title: "Title")
+        reads.append(
+            """
+            [behavior_defaults]
+            stepper_autorepeat = \(stepper.autorepeat)
+            stepper_continuous = \(stepper.isContinuous)
+            stepper_wraps = \(stepper.wraps)
+            navigation_item_back_button_display_mode = \(item.backButtonDisplayMode.rawValue)
+            navigation_item_back_button_title = \(item.backButtonTitle.map(quoted) ?? absent)
+            window_layer_speed = \(precise(Double(view.window?.layer.speed ?? -1)))
+            layer_speed_source = "the key window's layer.speed (a speed factor of the whole window's animations)"
+            inherited_animation_duration_outside_animations_s = \(precise(UIView.inheritedAnimationDuration))
+
+            """)
+    }
+
+    /// The cursor views of a text input's subtree (a class name holding
+    /// `Cursor` or `Caret`), and its selection display interactions' cursor
+    /// views.
+    func cursorViews(_ root: UIView) -> [UIView] {
+        var found: [UIView] = []
+        for interaction in root.interactions {
+            if let display = interaction as? UITextSelectionDisplayInteraction { found.append(display.cursorView) }
+        }
+        func visit(_ view: UIView) {
+            let name = String(describing: type(of: view))
+            if (name.contains("Cursor") || name.contains("Caret")) && !found.contains(where: { $0 === view }) {
+                found.append(view)
+            }
+            for child in view.subviews { visit(child) }
+        }
+        visit(root)
+        return found
+    }
+
+    /// The Core Animation animations on a layer and its sublayers.
+    func animations(_ layer: CALayer, path: String) -> [String] {
+        var lines: [String] = []
+        for key in layer.animationKeys() ?? [] {
+            guard let animation = layer.animation(forKey: key) else { continue }
+            var parts = [
+                "layer = \(quoted(path))", "key = \(quoted(key))",
+                "class = \(quoted(String(describing: type(of: animation))))",
+                "duration_s = \(precise(animation.duration))", "repeat_count = \(precise(Double(animation.repeatCount)))",
+                "autoreverses = \(animation.autoreverses)", "begin_time = \(precise(animation.beginTime))",
+                "speed = \(precise(Double(animation.speed)))",
+                "timing_function = \(animation.timingFunction.map { described($0) } ?? absent)",
+            ]
+            if let property = animation as? CAPropertyAnimation {
+                parts.append("key_path = \(property.keyPath.map(quoted) ?? absent)")
+            }
+            if let basic = animation as? CABasicAnimation {
+                parts.append("from = \(plist(basic.fromValue))")
+                parts.append("to = \(plist(basic.toValue))")
+            }
+            if let keyframes = animation as? CAKeyframeAnimation {
+                parts.append("values = \(plist(keyframes.values))")
+                parts.append("key_times = \(plist(keyframes.keyTimes))")
+                parts.append("calculation_mode = \(quoted(keyframes.calculationMode.rawValue))")
+            }
+            if let group = animation as? CAAnimationGroup {
+                parts.append("group = \(plist((group.animations ?? []).map { described($0) }))")
+            }
+            lines.append("{ " + parts.joined(separator: ", ") + " }")
+        }
+        for (index, sublayer) in (layer.sublayers ?? []).enumerated() {
+            lines += animations(sublayer, path: "\(path).\(index)")
+        }
+        return lines
+    }
+
+    /// Samples the cursor views' visibility every 50 ms for `seconds`, typing
+    /// a character into `input` at `typeAt`; stores them in notes[key].
+    func sampleCaret(_ root: UIView, key: String, seconds: Double, typeAt: Double?, input: UIKeyInput?) {
+        let start = CACurrentMediaTime()
+        var samples: [String] = []
+        var typed = false
+        func tick() {
+            let now = CACurrentMediaTime() - start
+            if let typeAt, !typed, now >= typeAt {
+                typed = true
+                input?.insertText("a")
+                samples.append("{ t = \(precise(now)), typed = true }")
+            }
+            let views = cursorViews(root)
+            let states = views.map { view -> String in
+                let opacity = view.layer.presentation()?.opacity ?? view.layer.opacity
+                let blinking = (view as? UITextCursorView)?.isBlinking
+                return "{ opacity = \(precise(Double(opacity))), hidden = \(view.isHidden), alpha = \(number(view.alpha)), "
+                    + "blinking = \(blinking.map { "\($0)" } ?? absent) }"
+            }
+            samples.append("{ t = \(precise(now)), views = [\(states.joined(separator: ", "))] }")
+            if now < seconds {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { tick() }
+            } else {
+                notes[key] = "[\(samples.joined(separator: ", "))]"
+            }
+        }
+        tick()
+    }
+
+    func caretRead(_ read: SceneRead, root: UIView, key: String) {
+        let views = cursorViews(root)
+        read.set("\(key)_is_first_responder", "\(root.isFirstResponder)")
+        read.set("\(key)_tint", colorValue(root.tintColor, root.traitCollection))
+        read.set("\(key)_cursor_views", "\(views.count)")
+        for (index, cursor) in views.enumerated() {
+            read.set("\(key)_cursor_\(index)_class", quoted(String(describing: type(of: cursor))))
+            read.set("\(key)_cursor_\(index)_frame_pt", rectangle(cursor.convert(cursor.bounds, to: nil)))
+            read.set("\(key)_cursor_\(index)_tint", colorValue(cursor.tintColor, cursor.traitCollection))
+            read.set("\(key)_cursor_\(index)_animations", "[\(animations(cursor.layer, path: "0").joined(separator: ", "))]")
+            read.views += tree(cursor, label: "\(key)_cursor_\(index)", limit: 20)
+        }
+        read.set("\(key)_samples", notes[key] ?? absent)
+    }
+
+    private func behaviorScenes() -> [MeasureScene] {
+        var list: [MeasureScene] = []
+        for appearance in appearances {
+            list.append(
+                MeasureScene(
+                    name: "back_title", part: "default", backdrop: "system", appearance: appearance, settle: settleSeconds,
+                    settles: true,
+                    setup: { c in
+                        var regions: [MeasureRegion] = []
+                        let titles: [(String, String, CGFloat)] = [
+                            ("short", "Back", 320), ("long", "A previous title far too long to fit", 320),
+                            ("long_narrow", "A previous title far too long to fit", 200),
+                        ]
+                        for (index, (name, previousTitle, width)) in titles.enumerated() {
+                            let bar = UINavigationBar(
+                                frame: CGRect(x: margin, y: c.stageTop + CGFloat(index) * 60, width: width, height: 44))
+                            bar.setItems(
+                                [UINavigationItem(title: previousTitle), UINavigationItem(title: "Title")], animated: false)
+                            c.view.addSubview(bar)
+                            c.named[name] = bar
+                            regions.append(
+                                MeasureRegion(name: name, backdrop: "system", rect: { [weak bar] in
+                                    guard let bar else { return .zero }
+                                    return bar.convert(bar.bounds, to: nil)
+                                }))
+                        }
+                        return regions
+                    },
+                    read: { c, read in
+                        for name in ["short", "long", "long_narrow"] {
+                            if let bar = c.named[name] { read.views += c.tree(bar, label: name, limit: 60, depth: 12) }
+                        }
+                    }, teardown: nil))
+        }
+        list.append(
+            MeasureScene(
+                name: "navigation_push", part: "default", backdrop: "system", appearance: appearances[0], settle: 3,
+                settles: true,
+                setup: { c in
+                    let root = UIViewController()
+                    root.view.backgroundColor = .systemBackground
+                    root.title = "Root"
+                    let navigation = UINavigationController(rootViewController: root)
+                    c.addChild(navigation)
+                    navigation.view.frame = CGRect(
+                        x: 0, y: c.stageTop, width: c.view.bounds.width, height: 300)
+                    c.view.addSubview(navigation.view)
+                    navigation.didMove(toParent: c)
+                    c.kept.append(navigation)
+                    c.named["navigation"] = navigation.view
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        UIView.setAnimationsEnabled(true)
+                        let pushed = UIViewController()
+                        pushed.view.backgroundColor = .systemBackground
+                        pushed.title = "Pushed"
+                        let start = CACurrentMediaTime()
+                        navigation.pushViewController(pushed, animated: true)
+                        if let coordinator = navigation.transitionCoordinator {
+                            c.notes["push"] =
+                                "{ animated = \(coordinator.isAnimated), duration_s = \(precise(coordinator.transitionDuration)), "
+                                + "completion_curve = \(coordinator.completionCurve.rawValue), "
+                                + "presentation_style = \(coordinator.presentationStyle.rawValue) }"
+                            _ = coordinator.animate(alongsideTransition: nil) { context in
+                                c.notes["push_completed_after_s"] = precise(CACurrentMediaTime() - start)
+                                c.notes["push_cancelled"] = "\(context.isCancelled)"
+                            }
+                        } else {
+                            c.notes["push"] = quoted("no transition coordinator")
+                        }
+                    }
+                    return [
+                        MeasureRegion(name: "navigation", backdrop: "system", rect: { [weak navigation] in
+                            guard let shown = navigation?.view else { return .zero }
+                            return shown.convert(shown.bounds, to: nil)
+                        })
+                    ]
+                },
+                read: { c, read in
+                    read.set("push", c.notes["push"] ?? absent)
+                    read.set("push_completed_after_s", c.notes["push_completed_after_s"] ?? absent)
+                    read.set("push_cancelled", c.notes["push_cancelled"] ?? absent)
+                    read.set("hide_show_bar_duration_s", precise(Double(UINavigationController.hideShowBarDuration)))
+                },
+                teardown: { c, done in
+                    UIView.setAnimationsEnabled(false)
+                    for child in c.children {
+                        child.willMove(toParent: nil)
+                        child.view.removeFromSuperview()
+                        child.removeFromParent()
+                    }
+                    done()
+                }))
+        for appearance in appearances {
+            list.append(
+                MeasureScene(
+                    name: "caret", part: "default", backdrop: "system", appearance: appearance, settle: 13, settles: false,
+                    setup: { c in
+                        UIView.setAnimationsEnabled(true)
+                        let field = UITextField(frame: CGRect(x: margin, y: c.stageTop, width: c.stageWidth, height: 44))
+                        field.borderStyle = .roundedRect
+                        field.text = "Text"
+                        let textView = UITextView(
+                            frame: CGRect(x: margin, y: c.stageTop + 60, width: c.stageWidth, height: 80))
+                        textView.text = "Text"
+                        textView.font = .preferredFont(forTextStyle: .body)
+                        let readOnly = UITextView(
+                            frame: CGRect(x: margin, y: c.stageTop + 160, width: c.stageWidth, height: 80))
+                        readOnly.text = "Read-only text"
+                        readOnly.font = .preferredFont(forTextStyle: .body)
+                        readOnly.isEditable = false
+                        for made in [field, textView, readOnly] as [UIView] { c.view.addSubview(made) }
+                        c.named["text_field"] = field
+                        c.named["text_view"] = textView
+                        c.named["read_only"] = readOnly
+                        textView.becomeFirstResponder()
+                        c.sampleCaret(textView, key: "text_view", seconds: 12, typeAt: 6, input: textView)
+                        return [
+                            MeasureRegion(name: "text_view", backdrop: "system", rect: { [weak textView] in
+                                guard let textView else { return .zero }
+                                return textView.convert(textView.bounds, to: nil)
+                            })
+                        ]
+                    },
+                    read: { c, read in
+                        if let textView = c.named["text_view"] { c.caretRead(read, root: textView, key: "text_view") }
+                        if let readOnly = c.named["read_only"] { c.caretRead(read, root: readOnly, key: "read_only") }
+                    },
+                    teardown: { c, done in
+                        guard let field = c.named["text_field"] as? UITextField,
+                            let readOnly = c.named["read_only"] as? UITextView
+                        else {
+                            UIView.setAnimationsEnabled(false)
+                            done()
+                            return
+                        }
+                        // The text field, then the read-only text view, first
+                        // responder in turn: their cursor views sampled 6 s each.
+                        field.becomeFirstResponder()
+                        c.sampleCaret(field, key: "text_field", seconds: 6, typeAt: nil, input: nil)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+                            readOnly.becomeFirstResponder()
+                            c.sampleCaret(readOnly, key: "read_only_focused", seconds: 6, typeAt: nil, input: nil)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+                                c.appendCaretNotes(field: field, readOnly: readOnly)
+                                c.view.endEditing(true)
+                                UIView.setAnimationsEnabled(false)
+                                done()
+                            }
+                        }
+                    }))
+        }
+        return list
+    }
+
+    /// The text field's and the focused read-only text view's caret reads,
+    /// made after the scene's capture, as a [[scene_read]] of their own.
+    func appendCaretNotes(field: UITextField, readOnly: UITextView) {
+        let read = SceneRead()
+        read.set("scene", quoted("caret_after"))
+        read.set("appearance", quoted(view.window?.overrideUserInterfaceStyle == .dark ? "dark" : "light"))
+        caretRead(read, root: field, key: "text_field")
+        read.set("read_only_focused_samples", notes["read_only_focused"] ?? absent)
+        read.set("read_only_focused_is_first_responder", "\(readOnly.isFirstResponder)")
+        read.set("read_only_focused_cursor_views", "\(cursorViews(readOnly).count)")
+        reads.append("[[scene_read]]\n" + read.fields.joined(separator: "\n") + "\n\n" + read.views.joined())
+    }
+
 }
