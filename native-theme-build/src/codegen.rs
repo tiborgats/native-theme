@@ -66,8 +66,8 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
 /// on `{crate_path}::detect::system().refined_linux_desktop_sync()`, the desktop
-/// native-theme's platform readers use (`XDG_CURRENT_DESKTOP`, refined by the
-/// portal or `kdeglobals` where it names none), whose cache
+/// native-theme's icon-theme detection uses (`XDG_CURRENT_DESKTOP`, refined by
+/// `kdeglobals` where it names none), whose cache
 /// `detect::invalidate_caches()` clears. On non-Linux, the default value is used.
 pub(crate) fn generate_code(
     config: &MasterConfig,
@@ -274,7 +274,7 @@ fn generate_icon_name(
         // Issue 21: say in the generated code where the desktop comes from
         let _ = writeln!(
             out,
-            "        // the desktop native-theme's readers use; detect::invalidate_caches() clears it"
+            "        // the desktop native-theme's icon-theme detection uses; detect::invalidate_caches() clears it"
         );
         let _ = writeln!(out, "        #[cfg(target_os = \"linux\")]");
         let _ = writeln!(
@@ -295,9 +295,11 @@ fn generate_icon_name(
 /// wildcard after arms covering every pair is unreachable, which the user's
 /// crate would be warned of. Each theme is one `IconSet` variant and is
 /// listed once, and each role one enum variant, so the arms are distinct
-/// pairs.
+/// pairs. An enum without variants always keeps it: `&self` of an empty
+/// enum counts as inhabited, so a match with no arm would not compile.
 fn write_uncovered_arm(out: &mut String, arm_count: usize, role_variants: &[(&str, String)]) {
-    if arm_count < role_variants.len().saturating_mul(THEME_TABLE.len()) {
+    if role_variants.is_empty() || arm_count < role_variants.len().saturating_mul(THEME_TABLE.len())
+    {
         let _ = writeln!(out, "            _ => None,");
     }
 }
@@ -855,7 +857,7 @@ system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
         assert!(
             output
                 .contains("let de = native_theme::detect::system().refined_linux_desktop_sync();"),
-            "DE-aware codegen should read the desktop native-theme's readers use. output:\n{output}"
+            "DE-aware codegen should read the desktop native-theme's icon-theme detection uses. output:\n{output}"
         );
     }
 
@@ -1255,7 +1257,7 @@ system-themes = ["sf-symbols"]
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
             output.contains(
-                "// the desktop native-theme's readers use; detect::invalidate_caches() clears it"
+                "// the desktop native-theme's icon-theme detection uses; detect::invalidate_caches() clears it"
             ),
             "should have the desktop cache comment. output:\n{output}"
         );
