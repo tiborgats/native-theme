@@ -26,13 +26,15 @@ use windows::Win32::UI::WindowsAndMessaging::{
     SM_CXSMICON, SM_CXSMSIZE, SM_CXVSCROLL, SM_CYBORDER, SM_CYCAPTION, SM_CYCURSOR, SM_CYDOUBLECLK,
     SM_CYDRAG, SM_CYEDGE, SM_CYFIXEDFRAME, SM_CYFOCUSBORDER, SM_CYFRAME, SM_CYHSCROLL, SM_CYICON,
     SM_CYICONSPACING, SM_CYMENU, SM_CYMENUCHECK, SM_CYMENUSIZE, SM_CYSCREEN, SM_CYSIZE,
-    SM_CYSMCAPTION, SM_CYSMICON, SM_CYSMSIZE, SM_CYVSCROLL, SM_CYVTHUMB, SPI_GETCARETWIDTH,
-    SPI_GETCLEARTYPE, SPI_GETCLIENTAREAANIMATION, SPI_GETCOMBOBOXANIMATION, SPI_GETDROPSHADOW,
-    SPI_GETFLATMENU, SPI_GETFOCUSBORDERHEIGHT, SPI_GETFOCUSBORDERWIDTH, SPI_GETFONTSMOOTHING,
-    SPI_GETFONTSMOOTHINGCONTRAST, SPI_GETFONTSMOOTHINGTYPE, SPI_GETGRADIENTCAPTIONS,
-    SPI_GETHOTTRACKING, SPI_GETKEYBOARDCUES, SPI_GETLISTBOXSMOOTHSCROLLING, SPI_GETMENUANIMATION,
-    SPI_GETMENUSHOWDELAY, SPI_GETMOUSEHOVERTIME, SPI_GETSELECTIONFADE, SPI_GETTOOLTIPANIMATION,
-    SPI_GETUIEFFECTS, SPI_GETWHEELSCROLLLINES, SYSTEM_METRICS_INDEX, SYSTEM_PARAMETERS_INFO_ACTION,
+    SM_CYSMCAPTION, SM_CYSMICON, SM_CYSMSIZE, SM_CYVSCROLL, SM_CYVTHUMB, SPI_GETCARETTIMEOUT,
+    SPI_GETCARETWIDTH, SPI_GETCLEARTYPE, SPI_GETCLIENTAREAANIMATION, SPI_GETCOMBOBOXANIMATION,
+    SPI_GETDROPSHADOW, SPI_GETFLATMENU, SPI_GETFOCUSBORDERHEIGHT, SPI_GETFOCUSBORDERWIDTH,
+    SPI_GETFONTSMOOTHING, SPI_GETFONTSMOOTHINGCONTRAST, SPI_GETFONTSMOOTHINGTYPE,
+    SPI_GETGRADIENTCAPTIONS, SPI_GETHOTTRACKING, SPI_GETKEYBOARDCUES, SPI_GETKEYBOARDDELAY,
+    SPI_GETKEYBOARDSPEED, SPI_GETLISTBOXSMOOTHSCROLLING, SPI_GETMENUANIMATION,
+    SPI_GETMENUSHOWDELAY, SPI_GETMOUSEHOVERTIME, SPI_GETMOUSEVANISH, SPI_GETSELECTIONFADE,
+    SPI_GETTOOLTIPANIMATION, SPI_GETUIEFFECTS, SPI_GETWHEELSCROLLLINES, SYSTEM_METRICS_INDEX,
+    SYSTEM_PARAMETERS_INFO_ACTION,
 };
 
 use crate::out;
@@ -417,7 +419,7 @@ fn nonclient_metrics_table() -> Table {
     t
 }
 
-fn spi_values() -> [(&'static str, SYSTEM_PARAMETERS_INFO_ACTION); 22] {
+fn spi_values() -> [(&'static str, SYSTEM_PARAMETERS_INFO_ACTION); 26] {
     named![
         SPI_GETCLIENTAREAANIMATION,
         SPI_GETFOCUSBORDERWIDTH,
@@ -441,6 +443,10 @@ fn spi_values() -> [(&'static str, SYSTEM_PARAMETERS_INFO_ACTION); 22] {
         SPI_GETSELECTIONFADE,
         SPI_GETWHEELSCROLLLINES,
         SPI_GETMOUSEHOVERTIME,
+        SPI_GETKEYBOARDDELAY,
+        SPI_GETKEYBOARDSPEED,
+        SPI_GETCARETTIMEOUT,
+        SPI_GETMOUSEVANISH,
     ]
 }
 
@@ -450,7 +456,7 @@ fn system_parameters_table() -> Table {
         &mut t,
         "note",
         out::text(
-            "SPI_GETNONCLIENTMETRICS is under nonclient_metrics; BOOL values are 0 or 1; SPI_GETMENUSHOWDELAY and SPI_GETMOUSEHOVERTIME are in milliseconds",
+            "SPI_GETNONCLIENTMETRICS is under nonclient_metrics; BOOL values are 0 or 1; SPI_GETMENUSHOWDELAY, SPI_GETMOUSEHOVERTIME and SPI_GETCARETTIMEOUT are in milliseconds; SPI_GETKEYBOARDDELAY (0-3) and SPI_GETKEYBOARDSPEED (0-31) are the setting's indices",
         ),
     );
     for (name, action) in spi_values() {
@@ -639,5 +645,47 @@ fn registry_table() -> Table {
         out::put(&mut d, name, reg_value(HKEY_CURRENT_USER, dwm, name));
     }
     out::put_table(&mut t, &format!(r"HKCU\{dwm}"), d);
+    // The values behind GetCaretBlinkTime, the keyboard SPIs, font smoothing,
+    // text scaling and DirectWrite's per-display rendering settings (an absent
+    // value is recorded as unavailable).
+    for (subkey, names) in [
+        (
+            r"Control Panel\Desktop",
+            &[
+                "CursorBlinkRate",
+                "CaretTimeout",
+                "CaretWidth",
+                "FontSmoothing",
+                "FontSmoothingType",
+                "FontSmoothingGamma",
+                "FontSmoothingOrientation",
+            ][..],
+        ),
+        (
+            r"Control Panel\Keyboard",
+            &["KeyboardDelay", "KeyboardSpeed"][..],
+        ),
+        (
+            r"Software\Microsoft\Accessibility",
+            &["TextScaleFactor"][..],
+        ),
+        (
+            r"Software\Microsoft\Avalon.Graphics\DISPLAY1",
+            &[
+                "ClearTypeLevel",
+                "EnhancedContrastLevel",
+                "GammaLevel",
+                "GrayscaleEnhancedContrastLevel",
+                "PixelStructure",
+                "TextContrastLevel",
+            ][..],
+        ),
+    ] {
+        let mut k = Table::new();
+        for name in names {
+            out::put(&mut k, name, reg_value(HKEY_CURRENT_USER, subkey, name));
+        }
+        out::put_table(&mut t, &format!(r"HKCU\{subkey}"), k);
+    }
     t
 }
