@@ -9,7 +9,7 @@ use super::{Context, LayerKind};
 use crate::next::blocks::Table;
 use crate::next::blocks::motion::{
     BreezeTest, Keyframe, PresentationKind, PropertyGroup, StepJump, Timing, Transition,
-    TransitionEngine, TransitionKind, TransitionPatch,
+    TransitionEngine, TransitionKind,
 };
 use crate::next::blocks::outline::Radius;
 use crate::next::blocks::paint::{BlendMode, PaintKind, PaintPatch};
@@ -1646,138 +1646,88 @@ impl<'a> Checker<'a> {
         }
     }
 
-    /// S12's checks of a transition's engine against what the transition
-    /// or its patch states, each where it states the fields the check reads
-    /// (S2.7; ADD-A126): `WinUiAnimatedIcon` takes a `Keyed` transition with
-    /// no duration, timing or delay, its visual timing it; `Breeze` and
-    /// `BreezeTabBar` an `Interpolate` one with a duration and no delay, and
-    /// a test that holds somewhere ([`Checker::breeze_test`]); `GtkSwitch`
-    /// the switch thumb's `Geometry` transition alone, `Interpolate`, with
-    /// no delay; `ComposeHeld` a segmented control's segment's `Geometry`
-    /// transition alone; and no value engine a `Keyed` one. A `FocusMove`
-    /// kind is refused on its own.
-    fn engine(&mut self, stated: &TransitionFields<'_>, path: &Path) {
-        let Some(engine) = stated.engine else {
-            return;
-        };
+    /// S12's checks of a transition's engine against the transition (S2.7;
+    /// ADD-A126; [`takes`], [`test_holds`]), on a whole transition of a
+    /// keyed list; and its Breeze test's own ([`Checker::breeze_test`]),
+    /// wherever an engine is stated. A focus indicator's transition is a
+    /// field a rule patches field by field, so the checks over combinations
+    /// read its merged value. A `FocusMove` kind is refused on its own.
+    fn engine(&mut self, engine: &TransitionEngine, whole: Option<&Transition>, path: &Path) {
         let toml = self.toml;
         let field = |key: &str, suffix: &str| path.join(&spelled_key(key, suffix, toml));
-        let stated_zero = |value: Option<&Value<Ms>>| value.map(|v| *v == Value::Stated(Ms(0.0)));
-        let delayed = stated_zero(stated.delay) == Some(false);
-        let kind = stated
-            .kind
-            .filter(|kind| **kind != TransitionKind::FocusMove);
-        let interpolates = kind.map(|kind| *kind == TransitionKind::Interpolate);
-        let keyed = kind.map(|kind| matches!(kind, TransitionKind::Keyed { .. }));
-        let geometry = stated
-            .properties
-            .is_none_or(|properties| properties == [PropertyGroup::Geometry]);
-        let part = match self.region {
-            Region::Part(_, part, ..) => Some(part),
-            Region::Roles | Region::Tokens | Region::Values(_) => None,
-        };
         let name = engine_name(engine);
-        let mut refused: Vec<(String, &'static str)> = Vec::new();
-        match engine {
-            TransitionEngine::WinUiAnimatedIcon { .. } => {
-                if stated.duration.is_some_and(|value| *value != Value::Absent) {
-                    refused.push((field("duration", "_ms"), "no duration: its visual times it"));
-                }
-                if stated.timing.is_some_and(|value| *value != Value::Absent) {
-                    refused.push((field("timing", ""), "no timing: its visual times it"));
-                }
-                if delayed {
-                    refused.push((field("delay", "_ms"), "no delay"));
-                }
-                if keyed == Some(false) {
-                    refused.push((field("kind", ""), "a `keyed` transition only"));
-                }
-            }
+        let at = format!("{}.{name}", field("engine", ""));
+        let test = match engine {
             TransitionEngine::Breeze(test) | TransitionEngine::BreezeTabBar(test) => {
-                if stated.duration == Some(&Value::Absent) {
-                    refused.push((
-                        field("duration", "_ms"),
-                        "a duration, on which its time runs",
-                    ));
-                }
-                if delayed {
-                    refused.push((field("delay", "_ms"), "no delay"));
-                }
-                if interpolates == Some(false) {
-                    refused.push((field("kind", ""), "an `interpolate` transition only"));
-                }
-                let at = format!("{}.{name}", field("engine", ""));
-                let focus = path.last_field() == Some(("FocusIndicator", "transition"));
-                self.breeze_test(test, stated_zero(stated.duration), focus, &at);
-            }
-            TransitionEngine::GtkSwitch => {
-                if !(geometry && part.is_some_and(switch_thumb)) {
-                    let takes = "the switch thumb's `geometry` transition only";
-                    refused.push((field("engine", ""), takes));
-                }
-                if interpolates == Some(false) {
-                    refused.push((field("kind", ""), "an `interpolate` transition only"));
-                }
-                if delayed {
-                    refused.push((field("delay", "_ms"), "no delay"));
-                }
-            }
-            TransitionEngine::ComposeHeld => {
-                if !(geometry && part.is_some_and(segment)) {
-                    let takes = "a segmented control's segment's `geometry` transition only";
-                    refused.push((field("engine", ""), takes));
-                }
-                if keyed == Some(true) {
-                    refused.push((field("kind", ""), "no `keyed` transition"));
-                }
+                self.breeze_test(test, &at);
+                Some(test)
             }
             TransitionEngine::GtkCss
             | TransitionEngine::AdwAnimation { .. }
             | TransitionEngine::QtQuick
             | TransitionEngine::ComposeAnimatable
             | TransitionEngine::ComposeTransition
-            | TransitionEngine::WinUi => {
-                if keyed == Some(true) {
-                    refused.push((field("kind", ""), "no `keyed` transition"));
-                }
+            | TransitionEngine::ComposeHeld
+            | TransitionEngine::WinUi
+            | TransitionEngine::WinUiAnimatedIcon { .. }
+            | TransitionEngine::GtkSwitch => None,
+        };
+        let Some(transition) = whole else {
+            return;
+        };
+        if path.last_field() == Some(("FocusIndicator", "transition")) {
+            return;
+        }
+        let part = match self.region {
+            Region::Part(_, part, ..) => Some(part),
+            Region::Roles | Region::Tokens | Region::Values(_) => None,
+        };
+        let geometry = transition.properties == [PropertyGroup::Geometry];
+        let mut reads = vec![
+            (field("engine", ""), Read::Place { geometry, part }),
+            (
+                field("duration", "_ms"),
+                Read::Duration {
+                    absent: transition.duration == Value::Absent,
+                },
+            ),
+            (
+                field("timing", ""),
+                Read::Timing {
+                    absent: transition.timing == Value::Absent,
+                },
+            ),
+        ];
+        if transition.delay != Value::Stated(Ms(0.0)) {
+            reads.push((field("delay", "_ms"), Read::Delay));
+        }
+        reads.push((field("kind", ""), Read::Kind(kind_name(&transition.kind))));
+        for (at, read) in reads {
+            if let Some(takes) = takes(name, read) {
+                let kind = ProblemKind::EngineMismatch {
+                    engine: name,
+                    takes,
+                };
+                self.problem(&at, kind);
             }
         }
-        for (at, takes) in refused {
-            let kind = ProblemKind::EngineMismatch {
-                engine: name,
-                takes,
-            };
-            self.problem(&at, kind);
+        if let Some(test) = test {
+            let zero = transition.duration == Value::Stated(Ms(0.0));
+            for (list, expected) in test_holds(test, zero, false) {
+                let at = list.map_or_else(|| at.clone(), |list| format!("{at}.{list}"));
+                self.problem(&at, ProblemKind::BreezeTestInvalid { expected });
+            }
         }
     }
 
-    /// A Breeze engine's test at `at` (S2.7, S12; ADD-A126): one of `any`
-    /// or `conditions` named on a transition that is not a stated zero, and
-    /// all three lists empty on a stated zero, which reads none (`zero`:
-    /// whether the duration is one, where stated); no flag twice in a
-    /// list, none in both `any` and `none`; only the window's conditions
-    /// (S7.1's group by the connector, whose toggled style the connector can
-    /// resolve); and a focus indicator's (`focus`) `focus_visible` in `any`
-    /// where it is no stated zero's. A keyed flag or condition is checked
+    /// A Breeze engine's test at `at`, as it reads alone (S2.7, S12;
+    /// ADD-A126): no flag twice in a list, none in both `any` and `none`;
+    /// only the window's conditions (S7.1's group by the connector, whose
+    /// toggled style the connector can resolve). What it must be against its
+    /// transition is [`test_holds`]'. A keyed flag or condition is checked
     /// against the declarations as the walk reaches it.
-    fn breeze_test(&mut self, test: &BreezeTest, zero: Option<bool>, focus: bool, at: &str) {
+    fn breeze_test(&mut self, test: &BreezeTest, at: &str) {
         let invalid = |expected| ProblemKind::BreezeTestInvalid { expected };
-        if zero == Some(false) && test.any.is_empty() && test.conditions.is_empty() {
-            let expected = "names a flag in `any` or a condition: it holds nowhere";
-            self.problem(at, invalid(expected));
-        }
-        if zero == Some(true) {
-            for (list, empty) in [
-                ("any", test.any.is_empty()),
-                ("none", test.none.is_empty()),
-                ("conditions", test.conditions.is_empty()),
-            ] {
-                if !empty {
-                    let expected = "of a stated zero is empty: a zero reads none";
-                    self.problem(&format!("{at}.{list}"), invalid(expected));
-                }
-            }
-        }
         for (list, flags) in [("any", &test.any), ("none", &test.none)] {
             for (index, flag) in flags.iter().enumerate() {
                 if flags.iter().take(index).any(|earlier| earlier == flag) {
@@ -1798,10 +1748,6 @@ impl<'a> Checker<'a> {
                 let expected = "names the window's conditions only";
                 self.problem(&format!("{at}.conditions[{index}]"), invalid(expected));
             }
-        }
-        if focus && zero == Some(false) && !test.any.contains(&StateFlag::FocusVisible) {
-            let expected = "of a focus indicator names `focus_visible` in `any`";
-            self.problem(&format!("{at}.any"), invalid(expected));
         }
     }
 
@@ -1869,7 +1815,7 @@ impl Visit for Checker<'_> {
                 self.properties(Some(&transition.properties), path);
                 self.from(transition.from.as_deref(), path);
                 self.state_layer(&transition.properties, path);
-                self.engine(&TransitionFields::of(transition), path);
+                self.engine(&transition.engine, Some(transition), path);
             }
             Node::StateFlag(flag) => match self.region {
                 Region::Part(widget, ..) | Region::Values(widget) => self.flag(widget, flag, &at),
@@ -1889,7 +1835,9 @@ impl Visit for Checker<'_> {
                 if let Some(properties) = &transition.properties {
                     self.state_layer(properties, path);
                 }
-                self.engine(&TransitionFields::of_patch(transition), path);
+                if let Some(engine) = &transition.engine {
+                    self.engine(engine, None, path);
+                }
             }
             Node::TransitionKind(kind) => match kind {
                 TransitionKind::Keyed { key, params } => {
@@ -3041,38 +2989,107 @@ fn spelled_key(key: &str, suffix: &str, toml: bool) -> String {
     }
 }
 
-/// What a transition or a transition's patch states, as S12's engine
-/// checks read it; `None` where a patch leaves the field.
-struct TransitionFields<'t> {
-    properties: Option<&'t [PropertyGroup]>,
-    kind: Option<&'t TransitionKind>,
-    duration: Option<&'t Value<Ms>>,
-    delay: Option<&'t Value<Ms>>,
-    timing: Option<&'t Value<Timing>>,
-    engine: Option<&'t TransitionEngine>,
+/// One of a transition's fields, as S12's engine checks read it (S2.7;
+/// ADD-A126).
+#[derive(Clone, Copy, Debug)]
+pub(super) enum Read {
+    /// Its place: whether it is the part's `Geometry` transition alone, and
+    /// the part, where it is one's.
+    Place {
+        geometry: bool,
+        part: Option<TypedPart>,
+    },
+    /// Its duration, `Absent` or not.
+    Duration { absent: bool },
+    /// Its timing, `Absent` or not.
+    Timing { absent: bool },
+    /// A delay other than zero.
+    Delay,
+    /// Its kind, as S11 spells it.
+    Kind(&'static str),
 }
 
-impl<'t> TransitionFields<'t> {
-    fn of(transition: &'t Transition) -> TransitionFields<'t> {
-        TransitionFields {
-            properties: Some(&transition.properties),
-            kind: Some(&transition.kind),
-            duration: Some(&transition.duration),
-            delay: Some(&transition.delay),
-            timing: Some(&transition.timing),
-            engine: Some(&transition.engine),
+/// What the engine S11 spells `engine` takes where the transition's field
+/// `read` refuses it (S2.7, S12; ADD-A126), `None` where the engine takes
+/// the field: `WinUiAnimatedIcon` a `Keyed` transition with no duration,
+/// timing or delay, its visual timing it; `Breeze` and `BreezeTabBar` an
+/// `Interpolate` one with a duration and no delay; `GtkSwitch` the switch
+/// thumb's `Geometry` transition alone, `Interpolate`, with no delay;
+/// `ComposeHeld` a segmented control's segment's `Geometry` transition
+/// alone; and no value engine a `Keyed` one. A `FocusMove` kind is refused
+/// on its own.
+pub(super) fn takes(engine: &str, read: Read) -> Option<&'static str> {
+    let icon = engine == "win_ui_animated_icon";
+    let breeze = matches!(engine, "breeze" | "breeze_tab_bar");
+    let switch = engine == "gtk_switch";
+    match read {
+        Read::Place { geometry, part } => match engine {
+            "gtk_switch" if !(geometry && part.is_some_and(switch_thumb)) => {
+                Some("the switch thumb's `geometry` transition only")
+            }
+            "compose_held" if !(geometry && part.is_some_and(segment)) => {
+                Some("a segmented control's segment's `geometry` transition only")
+            }
+            _ => None,
+        },
+        Read::Duration { absent: false } if icon => Some("no duration: its visual times it"),
+        Read::Duration { absent: true } if breeze => Some("a duration, on which its time runs"),
+        Read::Timing { absent: false } if icon => Some("no timing: its visual times it"),
+        Read::Delay if icon || breeze || switch => Some("no delay"),
+        Read::Kind("focus_move") => None,
+        Read::Kind(kind) if icon && kind != "keyed" => Some("a `keyed` transition only"),
+        Read::Kind(kind) if (breeze || switch) && kind != "interpolate" => {
+            Some("an `interpolate` transition only")
+        }
+        Read::Kind("keyed") if !icon && !breeze && !switch => Some("no `keyed` transition"),
+        Read::Duration { .. } | Read::Timing { .. } | Read::Delay | Read::Kind(_) => None,
+    }
+}
+
+/// What a Breeze test must be against its transition (S2.7, S12;
+/// ADD-A126), each refusal by the list it names (`None`: the test): one
+/// of `any` or `conditions` named on a transition that is not a stated
+/// zero (`zero`), all three lists empty on a stated zero, which reads
+/// none; and a focus indicator's (`focus`) `focus_visible` in `any` where
+/// it is no stated zero's.
+pub(super) fn test_holds(
+    test: &BreezeTest,
+    zero: bool,
+    focus: bool,
+) -> Vec<(Option<&'static str>, &'static str)> {
+    let mut out = Vec::new();
+    if !zero && test.any.is_empty() && test.conditions.is_empty() {
+        out.push((
+            None,
+            "names a flag in `any` or a condition: it holds nowhere",
+        ));
+    }
+    if zero {
+        for (list, empty) in [
+            ("any", test.any.is_empty()),
+            ("none", test.none.is_empty()),
+            ("conditions", test.conditions.is_empty()),
+        ] {
+            if !empty {
+                out.push((Some(list), "of a stated zero is empty: a zero reads none"));
+            }
         }
     }
+    if focus && !zero && !test.any.contains(&StateFlag::FocusVisible) {
+        out.push((
+            Some("any"),
+            "of a focus indicator names `focus_visible` in `any`",
+        ));
+    }
+    out
+}
 
-    fn of_patch(patch: &'t TransitionPatch) -> TransitionFields<'t> {
-        TransitionFields {
-            properties: patch.properties.as_deref(),
-            kind: patch.kind.as_ref(),
-            duration: patch.duration.as_ref(),
-            delay: patch.delay.as_ref(),
-            timing: patch.timing.as_ref(),
-            engine: patch.engine.as_ref(),
-        }
+/// A transition kind as S11 spells it.
+fn kind_name(kind: &TransitionKind) -> &'static str {
+    match kind {
+        TransitionKind::Interpolate => "interpolate",
+        TransitionKind::Keyed { .. } => "keyed",
+        TransitionKind::FocusMove => "focus_move",
     }
 }
 

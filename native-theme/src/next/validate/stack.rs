@@ -13,7 +13,7 @@ use super::walk::{Form, Marks, Node, Path, Segment, Visit, Walk, Walker};
 use super::{Context, LayerKind};
 use crate::next::blocks::motion::{
     BreezeTest, PresentationEvent, PresentationTransition, PropertyGroup, Transition,
-    TransitionKind, same_flags, same_test,
+    TransitionEngine, TransitionKind, same_flags, same_test,
 };
 use crate::next::blocks::paint::PaintPatch;
 use crate::next::blocks::part_style::{Binding, RoleRef};
@@ -176,6 +176,18 @@ pub(super) struct Source {
     pub(super) items: Vec<Item>,
     /// The visuals its `WinUiAnimatedIcon` engines name (S2.7).
     pub(super) visuals: Vec<Visual>,
+    /// The tests its `Breeze` and `BreezeTabBar` engines state, each by
+    /// its engine's place (`focus.transition.engine`), which the stack's
+    /// steps do not hold (S2.7).
+    pub(super) tests: Vec<(String, BreezeTest)>,
+}
+
+/// A value's steps, flattened, and what they name that the steps do not
+/// hold.
+struct Flat {
+    ops: Vec<Op>,
+    visuals: Vec<Visual>,
+    tests: Vec<(String, BreezeTest)>,
 }
 
 /// A `WinUiAnimatedIcon` engine's `visual` a source states (S2.7): a
@@ -344,6 +356,8 @@ struct Flatten {
     appended: Vec<String>,
     /// The visuals its engines name.
     visuals: Vec<Visual>,
+    /// The Breeze tests its engines state, by the engine's place.
+    tests: Vec<(String, BreezeTest)>,
     /// The `Keyed` transition kinds it states: each kind's place, its key
     /// and the key's place as a problem names it.
     kinds: Vec<(String, Key, String)>,
@@ -419,10 +433,19 @@ impl Flatten {
         self.push(path, place, OpKind::Set(Val::Stated(fact)));
     }
 
+    /// A transition's engine at `path`'s `engine`: its Breeze test, where
+    /// it states one.
+    fn test(&mut self, path: &Path, engine: &TransitionEngine) {
+        if let TransitionEngine::Breeze(test) | TransitionEngine::BreezeTabBar(test) = engine {
+            let place = below(&self.place(path), "engine");
+            self.tests.push((place, test.clone()));
+        }
+    }
+
     /// The steps, each `Touch` another step of the source sets below or at
     /// its place dropped: what remains is a field set to nothing; and the
-    /// visuals named.
-    fn finish(self) -> (Vec<Op>, Vec<Visual>) {
+    /// visuals and tests named.
+    fn finish(self) -> Flat {
         let ops = self.ops;
         let kept = ops
             .iter()
@@ -436,7 +459,11 @@ impl Flatten {
             })
             .map(|(_, op)| op.clone())
             .collect();
-        (kept, self.visuals)
+        Flat {
+            ops: kept,
+            visuals: self.visuals,
+            tests: self.tests,
+        }
     }
 }
 
@@ -467,6 +494,12 @@ impl Visit for Flatten {
                 self.appended.push(place.clone());
                 let entry = path.map_entry().is_some();
                 self.push(path, place, OpKind::Append { entry });
+            }
+            Node::Transition(transition) => self.test(path, &transition.engine),
+            Node::TransitionPatch(patch) => {
+                if let Some(engine) = &patch.engine {
+                    self.test(path, engine);
+                }
             }
             Node::TransitionKind(TransitionKind::Keyed { key, .. }) => {
                 let place = self.place(path);
@@ -547,20 +580,21 @@ impl Visit for Flatten {
 
 /// `value`'s steps, walked from `root` (spelled by TOML's keys where
 /// `toml`), as the style of a part whose catalogue entry is `part`, and
-/// the visuals it names.
+/// the visuals and tests it names.
 fn flatten<T: Walk + ?Sized>(
     value: &T,
     root: &str,
     toml: bool,
     source: usize,
     part: Option<&'static [FieldInfo]>,
-) -> (Vec<Op>, Vec<Visual>) {
+) -> Flat {
     let mut flat = Flatten {
         source,
         ops: Vec::new(),
         cleared: Vec::new(),
         appended: Vec::new(),
         visuals: Vec::new(),
+        tests: Vec::new(),
         kinds: Vec::new(),
     };
     {
@@ -690,7 +724,11 @@ impl<'a> Stack<'a> {
         pos: Pos,
         layer: usize,
         rule: Option<usize>,
-        (ops, visuals): (Vec<Op>, Vec<Visual>),
+        Flat {
+            ops,
+            visuals,
+            tests,
+        }: Flat,
     ) {
         self.sources.push(Source {
             target,
@@ -703,6 +741,7 @@ impl<'a> Stack<'a> {
             surfaces: Vec::new(),
             items: Vec::new(),
             visuals,
+            tests,
         });
     }
 
@@ -750,8 +789,9 @@ impl<'a> Stack<'a> {
         let declared = &self.cx.declarations.surface_sets;
         // A surface set the preset does not declare is refused (S10) or, a
         // palette's, skipped (S14): either way no value of it is read.
-        let (ops, visuals) = flatten(roles, root, toml, number, None);
-        let ops = ops
+        let flat = flatten(roles, root, toml, number, None);
+        let ops = flat
+            .ops
             .into_iter()
             .filter(|op| {
                 op.path
@@ -761,7 +801,7 @@ impl<'a> Stack<'a> {
                     .is_none_or(|set| declared.contains(&set))
             })
             .collect();
-        self.push(target, pos, layer, rule, (ops, visuals));
+        self.push(target, pos, layer, rule, Flat { ops, ..flat });
     }
 
     #[expect(clippy::too_many_arguments, reason = "one source's place in the stack")]
@@ -823,8 +863,8 @@ impl<'a> Stack<'a> {
             .iter()
             .map(|presence| shown(Shown::from(presence)))
             .collect();
-        let (flat, visuals) = flatten(style, at, toml, number, Some(info.fields));
-        ops.extend(flat);
+        let flat = flatten(style, at, toml, number, Some(info.fields));
+        ops.extend(flat.ops);
         for binding in &mut bindings {
             let place = format!("bindings[{number}:{}].role.value", binding.index);
             binding.id = ops
@@ -842,7 +882,8 @@ impl<'a> Stack<'a> {
             bindings,
             surfaces,
             items: held,
-            visuals,
+            visuals: flat.visuals,
+            tests: flat.tests,
         });
     }
 

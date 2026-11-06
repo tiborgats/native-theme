@@ -1008,6 +1008,74 @@ fn refusal_breeze_test_invalid() {
     assert_eq!(bare(&focus("\"focus_visible\"")), NONE);
 }
 
+/// A focus indicator's transition is a field a rule patches field by
+/// field, so its engine checks read the merged value under each
+/// combination of the rules (S2.7, S12; ADD-A126): a rule's delay over a
+/// Breeze or `GtkSwitch` transition, a rule's stated zero over a Breeze
+/// test that is not empty, a rule's Breeze engine with an empty test over
+/// a duration that is no stated zero.
+#[test]
+fn focus_transition_engine_checks_read_merged() {
+    let timed = |engine: &str, timing: &str, rule: &str| {
+        toml(&format!(
+            "[widgets.button.body.focus]\ntransition = {{ properties = [], kind = \
+             \"interpolate\", duration_ms = 100, delay_ms = 0, timing = {timing}, engine = \
+             {engine}, from = \"none\" }}\n[[rules]]\nwhen = {{ states = [\"hover\"] }}\n\
+             target = \"button.body\"\nset = {{ {rule} }}"
+        ))
+    };
+    let focus = |engine: &str, rule: &str| timed(engine, "\"linear\"", rule);
+    let breeze = "{ breeze = { any = [\"focus_visible\"], none = [], conditions = [] } }";
+    assert_eq!(bare(&focus(breeze, "focus.transition.delay_ms = 0")), NONE);
+    assert_eq!(
+        bare(&focus(breeze, "focus.transition.delay_ms = 50")),
+        ["rules[0].set.focus.transition.delay_ms: the `breeze` engine takes no delay"]
+    );
+    let switch_takes = "the `gtk_switch` engine takes";
+    assert_eq!(
+        bare(&timed(
+            "\"gtk_switch\"",
+            "{ platform = { adw = \"ease_out_cubic\" } }",
+            "focus.transition.delay_ms = 50"
+        )),
+        [
+            format!(
+                "widgets.button.body.focus.transition.engine: {switch_takes} the switch thumb's \
+                 `geometry` transition only"
+            ),
+            format!("rules[0].set.focus.transition.delay_ms: {switch_takes} no delay"),
+        ]
+    );
+    assert_eq!(
+        bare(&focus(
+            breeze,
+            "focus.transition.duration_ms = 0, focus.transition.timing = \"absent\""
+        )),
+        [
+            "widgets.button.body.focus.transition.engine.breeze.any: a Breeze test of a stated \
+             zero is empty: a zero reads none"
+        ]
+    );
+    let empty = "focus.transition.engine = { breeze = { any = [], none = [], conditions = [] } }";
+    let at = "rules[0].set.focus.transition.engine.breeze";
+    assert_eq!(
+        bare(&focus("\"gtk_css\"", empty)),
+        [
+            format!("{at}: a Breeze test names a flag in `any` or a condition: it holds nowhere"),
+            format!("{at}.any: a Breeze test of a focus indicator names `focus_visible` in `any`"),
+        ]
+    );
+    assert_eq!(
+        bare(&focus(
+            "\"gtk_css\"",
+            &format!(
+                "{empty}, focus.transition.duration_ms = 0, focus.transition.timing = \"absent\""
+            )
+        )),
+        NONE
+    );
+}
+
 /// A `FocusMove` transition is refused: no engine runs one yet, as an
 /// engine runs per element part and the move crosses two (S2.7, S2.10,
 /// S12; ADD-A126).

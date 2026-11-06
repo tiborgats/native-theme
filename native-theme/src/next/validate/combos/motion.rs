@@ -2,12 +2,13 @@
 //! (S2.7): what each one's merged value can be under the worlds it is in
 //! effect in, its timing followed through references.
 
+use super::super::checks::{Read, takes, test_holds};
 use super::super::stack::{
     Fact, Item as Listed, ItemKey, Op, OpKind, Source, Stack, Target, Val, below, is_above,
     part_info, tail,
 };
 use super::{Bound, Checks, Found, Got, Seed, World, all_parts, variant};
-use crate::next::blocks::motion::PropertyGroup;
+use crate::next::blocks::motion::{BreezeTest, PropertyGroup};
 use crate::next::error::ProblemKind;
 
 /// A place a transition or a presentation step is stated at, as the
@@ -208,6 +209,33 @@ fn computes(engine: &str, facts: &[(String, Fact)]) -> bool {
 }
 
 impl Stack<'_> {
+    /// The value of the field `field` of the transition or step at `place`
+    /// of `target` under `world`: a field `Absent` above the place (the
+    /// focus indicator, or its transition) states none of it.
+    fn motion_field(
+        &self,
+        world: &World,
+        target: Target,
+        place: &str,
+        field: &str,
+    ) -> Vec<Found<'_>> {
+        self.value_at(world, target, &below(place, field), Bound::ALL, 0)
+            .into_iter()
+            .filter(|found| !(found.above && matches!(found.got, Got::Absent | Got::Auto)))
+            .collect()
+    }
+
+    /// The Breeze test of a found engine, as its source states it.
+    fn breeze_test(&self, engine: &Found<'_>) -> Option<&BreezeTest> {
+        let (number, _) = engine.id?;
+        let source = self.sources.get(number)?;
+        source
+            .tests
+            .iter()
+            .find(|(place, _)| place == engine.cx.path)
+            .map(|(_, test)| test)
+    }
+
     /// What the source of a stated timing states at and below its place,
     /// each fact by its place below it (`""` the timing's variant,
     /// `platform.adw`, `cubic_bezier[0]`), in order; `None` where the
@@ -257,21 +285,10 @@ impl Checks<'_, '_> {
     /// [`Checks::motions`]' checks of one transition or step under `world`.
     fn motion(&mut self, world: &World, motion: &Motion<'_>) {
         let stack = self.stack;
-        // A field `Absent` above the place (the focus indicator, or its
-        // transition) states none of it.
-        let at = |field: &str| -> Vec<Found<'_>> {
-            stack
-                .value_at(
-                    world,
-                    motion.target,
-                    &below(&motion.place, field),
-                    Bound::ALL,
-                    0,
-                )
-                .into_iter()
-                .filter(|found| !(found.above && matches!(found.got, Got::Absent | Got::Auto)))
-                .collect()
-        };
+        let at = |field: &str| stack.motion_field(world, motion.target, &motion.place, field);
+        if motion.item.is_none() {
+            self.focus_engine(world, motion.target);
+        }
         let durations = at("duration");
         let timings = at("timing");
         let engines: Vec<&'static str> = at("engine").iter().filter_map(variant).collect();
@@ -341,6 +358,86 @@ impl Checks<'_, '_> {
 }
 
 impl Checks<'_, '_> {
+    /// S12's engine checks ([`takes`], [`test_holds`]) of the focus
+    /// indicator's transition of `target`, its merged value read under
+    /// `world`, as a rule patches it field by field (S2.7; ADD-A126): each
+    /// stated engine against each value of the fields it reads, a refusal
+    /// at the field's place, and its Breeze test against each duration. The
+    /// indicator's transition is no part's `Geometry` one: it lists no group
+    /// (S2.10). A value the check cannot read (a listed path's) refuses
+    /// nothing.
+    fn focus_engine(&mut self, world: &World, target: Target) {
+        let stack = self.stack;
+        let at = |field: &str| -> Vec<Found<'_>> {
+            stack
+                .motion_field(world, target, "focus.transition", field)
+                .into_iter()
+                .filter(|found| !matches!(found.got, Got::Stated(Fact::Unknown)))
+                .collect()
+        };
+        let durations = at("duration");
+        let part = match target {
+            Target::Part(part) => Some(part),
+            Target::Roles(_) | Target::Tokens | Target::Values(_) => None,
+        };
+        let mut reads: Vec<(Found<'_>, Read)> = Vec::new();
+        reads.extend(durations.iter().map(|found| {
+            let absent = matches!(found.got, Got::Absent);
+            (*found, Read::Duration { absent })
+        }));
+        reads.extend(at("timing").into_iter().map(|found| {
+            let absent = matches!(found.got, Got::Absent);
+            (found, Read::Timing { absent })
+        }));
+        reads.extend(
+            at("delay")
+                .into_iter()
+                .filter(|found| !matches!(found.got, Got::Stated(Fact::Number(n)) if n == 0.0))
+                .map(|found| (found, Read::Delay)),
+        );
+        reads.extend(
+            at("kind")
+                .iter()
+                .filter_map(|found| variant(found).map(|kind| (*found, Read::Kind(kind)))),
+        );
+        for engine in at("engine") {
+            let Some(name) = variant(&engine) else {
+                continue;
+            };
+            let place = Read::Place {
+                geometry: false,
+                part,
+            };
+            for (found, read) in std::iter::once((engine, place)).chain(reads.iter().copied()) {
+                if let Some(takes) = takes(name, read) {
+                    let kind = ProblemKind::EngineMismatch {
+                        engine: name,
+                        takes,
+                    };
+                    self.problem(found.layer, found.at, kind);
+                }
+            }
+            let Some(test) = stack.breeze_test(&engine) else {
+                continue;
+            };
+            let test_at = format!("{}.{name}", engine.at);
+            for zero in [true, false] {
+                if !durations.iter().any(|found| stated_zero(found) == zero) {
+                    continue;
+                }
+                for (list, expected) in test_holds(test, zero, true) {
+                    let at =
+                        list.map_or_else(|| test_at.clone(), |list| format!("{test_at}.{list}"));
+                    self.problem(
+                        engine.layer,
+                        &at,
+                        ProblemKind::BreezeTestInvalid { expected },
+                    );
+                }
+            }
+        }
+    }
+
     /// A `GtkCss` part's transitions in effect together under one world
     /// naming several curves, followed through references, while one of
     /// them lists a group other than `Shadow` and `Corners`, the groups GTK's
@@ -415,13 +512,7 @@ impl Checks<'_, '_> {
         place: &str,
         curves: &mut Vec<Vec<(String, Fact)>>,
     ) -> Vec<Found<'s>> {
-        let at = |field: &str| -> Vec<Found<'_>> {
-            stack
-                .value_at(world, target, &below(place, field), Bound::ALL, 0)
-                .into_iter()
-                .filter(|found| !(found.above && matches!(found.got, Got::Absent | Got::Auto)))
-                .collect()
-        };
+        let at = |field: &str| stack.motion_field(world, target, place, field);
         // A stated zero runs no curve: its stated timing is refused on its
         // own.
         if !at("engine")
