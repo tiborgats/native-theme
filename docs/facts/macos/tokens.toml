@@ -41677,3 +41677,43 @@ key = "token.icons.sizes.keyed.sidebar.animation"
 when = { conditions = ["preset:macos-monterey"] }
 pending = "U102"
 rows = ["MAC-IC01"]
+
+# S4.8's platform scheme tokens: KDE's (`token.kde`) and Material's (`token.material`) are `kde-breeze`'s and
+# `material-3`'s alone. AppKit's scheme is its appearance, NSAppearance's class (NSAppearance.h:20-58, the same in
+# Xcode 16.4 and 26.6): a name, vibrancy and the best match among named appearances, no colour effects with amounts,
+# tint factor or title-bar option, and no dynamic scheme (variant, spec version, contrast level); AppKit's disabled and
+# hover looks are effects on a part's own colour (NSColorSystemEffect, NSColor.h:68-74, through colorWithSystemEffect:,
+# :290 in 26.6 and :279 in 16.4), which the parts' rules state (roles.toml's macos-tahoe fill)
+[[fact]]
+key = "token.kde"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAppearance.h:20-58"
+quote = "@interface NSAppearance : NSObject <NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAppearance.h:20-58"
+quote = "@interface NSAppearance : NSObject <NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.material"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAppearance.h:20-58"
+quote = "@interface NSAppearance : NSObject <NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSAppearance.h:20-58"
+quote = "@interface NSAppearance : NSObject <NSSecureCoding>"
+absent = []
