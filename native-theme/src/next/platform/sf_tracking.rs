@@ -134,6 +134,49 @@ mod tests {
         ));
     }
 
+    /// The generated tables hold rows copied by hand from the HIG
+    /// (`hig-typography@2026-02-09`'s `typography.json`), each by its JSON
+    /// pointer below `#/primaryContentSections/0/content/` and its cells as
+    /// the page writes them (size, 1/1000 em, points): a check of the
+    /// generator's parse independent of it.
+    #[test]
+    fn hand_copied_rows_are_in_the_tables() {
+        let rows = [
+            // `83/rows/12`: 17 -26 -0.43
+            (TrackingDesign::SfPro, 17.0, -26.0),
+            // `83/rows/15`: 20 -23 -0.45
+            (TrackingDesign::SfPro, 20.0, -23.0),
+            // `83/rows/29`: 34 +12 +0.40
+            (TrackingDesign::SfPro, 34.0, 12.0),
+            // `81/tabs/1/content/1/rows/15`: 20 +18 +0.36
+            (TrackingDesign::SfProRounded, 20.0, 18.0),
+            // `81/tabs/2/content/1/rows/23`: 28 -12 -0.33
+            (TrackingDesign::NewYork, 28.0, -12.0),
+            // `81/tabs/2/content/1/rows/57`: 260 -18 -4.57
+            (TrackingDesign::NewYork, 260.0, -18.0),
+        ];
+        for (design, size, per_mille) in rows {
+            assert!(
+                design.table().contains(&(size, per_mille)),
+                "{design:?} {size} pt"
+            );
+        }
+    }
+
+    /// Two points worked out by hand from the rows above and their
+    /// neighbours. New York at 13.5 pt, 72 DPI: its 13 pt row
+    /// (`81/tabs/2/content/1/rows/8`: 13 +4 +0.05) and 14 pt row
+    /// (`rows/9`: 14 +2 +0.03) give +3/1000 em halfway, so 3 × 13.5 / 1000 =
+    /// 0.0405 px. SF Pro at 30 px, 108 DPI: 30 × 72 / 108 = 20 pt, its row
+    /// -23/1000 em, so -23 × 20 / 1000 = -0.46 pt, × 108 / 72 = -0.69 px.
+    #[test]
+    fn hand_worked_points() {
+        let between = sf_tracking(13.5, TrackingDesign::NewYork, 72.0);
+        assert!(close(between, 0.0405), "{between}");
+        let scaled = sf_tracking(30.0, TrackingDesign::SfPro, 108.0);
+        assert!(close(scaled, -0.69), "{scaled}");
+    }
+
     /// A size or DPI outside the function's domain gives zero.
     #[test]
     fn not_finite_is_zero() {
