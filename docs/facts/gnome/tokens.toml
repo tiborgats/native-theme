@@ -7905,3 +7905,44 @@ rows = []
 kind = "published"
 source = "gtk@4.24.1 gtk/gtkenums.h:216-238"
 quote = "GtkIconSize:"
+
+# S4.8's platform scheme tokens: KDE's (`token.kde`) and Material's (`token.material`) are `kde-breeze`'s and
+# `material-3`'s alone. libadwaita has no scheme file of KDE's kind: its colours are the stylesheet's named colours
+# (`_colors.scss`), its backdrop and disabled looks stated there as colours and opacities of their own (`:43`, `:50`,
+# `:310-328`), and its scheme options the style manager's properties (colour scheme, dark, high contrast, accent
+# colour); no colour effects, tint factor or title-bar option. Its accent is one of AdwAccentColor's nine fixed
+# colours, a portal colour taken to the nearest of them (`adw-settings-impl-portal.c:140`): no dynamic scheme, so no
+# variant, spec version or contrast level
+[[fact]]
+key = "token.kde"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/_colors.scss:1-329"
+quote = "/* GTK NAMED COLORS"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:632-822"
+quote = "adw_style_manager_class_init (AdwStyleManagerClass *klass)"
+absent = []
+
+[[fact]]
+key = "token.material"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-accent-color.c:14-199"
+quote = "Describes the available system accent colors."
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/adw-style-manager.c:632-822"
+quote = "adw_style_manager_class_init (AdwStyleManagerClass *klass)"
+absent = []
