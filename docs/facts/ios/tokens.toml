@@ -5690,3 +5690,41 @@ rows = ["X-MO-3"]
 key = "token.params.opacity.disabled"
 pending = "U486"
 rows = ["D-20"]
+
+# S4.8's platform scheme tokens: KDE's (`token.kde`) and Material's (`token.material`) are `kde-breeze`'s and
+# `material-3`'s alone. UIKit's scheme is the trait collection's (UITraitCollection.h, at Xcode 16.4 for `ios-13` and
+# 26.6 for `ios-26`): the interface style, the contrast and the other traits, no colour effects with amounts, tint
+# factor or title-bar option, and no dynamic scheme (variant, spec version, contrast level)
+[[fact]]
+key = "token.kde"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UITraitCollection.h:23-126"
+quote = "@interface UITraitCollection : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UITraitCollection.h:21-104"
+quote = "@interface UITraitCollection : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact]]
+key = "token.material"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UITraitCollection.h:23-126"
+quote = "@interface UITraitCollection : NSObject <NSCopying, NSSecureCoding>"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UITraitCollection.h:21-104"
+quote = "@interface UITraitCollection : NSObject <NSCopying, NSSecureCoding>"
+absent = []

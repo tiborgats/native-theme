@@ -1,6 +1,8 @@
 # kde-breeze's `button` (the catalogue's entry, S5): Breeze 6.8.2's Helper::renderButtonFrame (breezehelper.cpp:647-740),
 # its Style's push and tool button code, Qt 6.12's defaults where Breeze states nothing; flavour `kirigami`
 # (qqc2-desktop-style 6.31.0, which paints Button and ToolButton through Breeze's QStyle) only where it differs.
+# A fact on a variant flavour kirigami does not declare (`warning`, `@command_link`, `@inline_small`,
+# `@inline_large`; the state models) holds outside it, `not_conditions = ["flavor:kirigami"]`.
 # renderButtonFrame decides by an if / else-if chain (down, checked, default, rest; then the highlighted pen), so
 # the facts run from the weakest branch to the strongest: the last matching fact is the chain's winner.
 # Colours: QPalette's Button/ButtonText are the Button set, Highlight the Selection set, WindowText the Window set
@@ -1211,7 +1213,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["warning"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1237,7 +1239,7 @@ quote = "const char PropertyNames::highlightNeutral[] = \"_kde_highlight_neutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["warning"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1263,7 +1265,7 @@ quote = "const char PropertyNames::highlightNeutral[] = \"_kde_highlight_neutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["warning"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1289,7 +1291,7 @@ quote = "const char PropertyNames::highlightNeutral[] = \"_kde_highlight_neutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["warning"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1567,7 +1569,7 @@ quote = "m_styleoption->palette = m_theme->palette();"
 # DefaultButton, so a default command link keeps the rest look
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@command_link"], states = ["default"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default"] }
 value = "= role.button.background"
 rows = ["K2.7"]
 
@@ -1593,7 +1595,7 @@ quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighl
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["@command_link"], states = ["default"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default"] }
 value = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -1619,7 +1621,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["@command_link"], states = ["default"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default"] }
 value = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -1645,7 +1647,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["@command_link"], states = ["default"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default"] }
 value = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -1671,7 +1673,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["@command_link"], states = ["default"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default"] }
 value = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -1772,7 +1774,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked"] }
 value = "= kcu_mix(role.button.background, role.view.neutral, 0.3)"
 rows = ["K1.25"]
 
@@ -1793,7 +1795,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1809,7 +1811,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1825,7 +1827,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -1841,7 +1843,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -2700,6 +2702,9 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
 quote = "m_styleoption->palette = m_theme->palette();"
 
+# a flat button at rest draws no frame (renderButtonFrame returns early): no fill, each edge's paint absent; the edges'
+# dash is left as the frame's (S2.4, S12: a dash may be absent only on an edge not drawn, and a later fact drawing
+# the edge again without a dash of its own, Kirigami's round flat button, would leave it absent on a drawn edge)
 [[fact]]
 key = "button.body.fill"
 when = { variants = ["flat"] }
@@ -2723,29 +2728,7 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
 [[fact]]
-key = "button.body.stroke.top.dash"
-when = { variants = ["flat"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["flat"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
-key = "button.body.stroke.right.dash"
 when = { variants = ["flat"] }
 value = "absent"
 rows = ["K1.24"]
@@ -2767,29 +2750,7 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
 [[fact]]
-key = "button.body.stroke.bottom.dash"
-when = { variants = ["flat"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["flat"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
-key = "button.body.stroke.left.dash"
 when = { variants = ["flat"] }
 value = "absent"
 rows = ["K1.24"]
@@ -4297,7 +4258,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "= alpha(role.view.neutral, 0.3)"
 rows = ["K1.24", "K1.25"]
 
@@ -4323,7 +4284,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -4339,7 +4300,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.dash"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -4355,7 +4316,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -4371,7 +4332,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.dash"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -4387,7 +4348,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -4403,7 +4364,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.dash"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -4419,7 +4380,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "= role.view.neutral"
 rows = ["K1.25"]
 
@@ -4435,7 +4396,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.dash"
-when = { variants = ["flat", "warning"], states = ["checked"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -5737,7 +5698,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["warning"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -5758,7 +5719,7 @@ quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["warning"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -5779,7 +5740,7 @@ quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["warning"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -5800,7 +5761,7 @@ quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["warning"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -6021,7 +5982,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["@command_link"], states = ["default", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default", "disabled"] }
 value = "= role.button.disabled.background"
 rows = ["K2.7"]
 
@@ -6042,7 +6003,7 @@ quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighl
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["@command_link"], states = ["default", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default", "disabled"] }
 value = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -6068,7 +6029,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["@command_link"], states = ["default", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default", "disabled"] }
 value = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -6094,7 +6055,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["@command_link"], states = ["default", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default", "disabled"] }
 value = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -6120,7 +6081,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["@command_link"], states = ["default", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["default", "disabled"] }
 value = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 rows = ["K2.7"]
 
@@ -6221,7 +6182,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked", "disabled"] }
 value = "= kcu_mix(role.button.disabled.background, role.view.disabled.neutral, 0.3)"
 rows = ["K1.25"]
 
@@ -6242,7 +6203,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -6258,7 +6219,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -6274,7 +6235,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -6290,7 +6251,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -6327,29 +6288,7 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
 [[fact]]
-key = "button.body.stroke.top.dash"
-when = { variants = ["flat"], states = ["disabled"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["flat"], states = ["disabled"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
-key = "button.body.stroke.right.dash"
 when = { variants = ["flat"], states = ["disabled"] }
 value = "absent"
 rows = ["K1.24"]
@@ -6371,17 +6310,6 @@ source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
 [[fact]]
-key = "button.body.stroke.bottom.dash"
-when = { variants = ["flat"], states = ["disabled"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
-
-[[fact]]
 key = "button.body.stroke.left.paint"
 when = { variants = ["flat"], states = ["disabled"] }
 value = "absent"
@@ -6392,16 +6320,6 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
 quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
-[[fact]]
-key = "button.body.stroke.left.dash"
-when = { variants = ["flat"], states = ["disabled"] }
-value = "absent"
-rows = ["K1.24"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezehelper.cpp:665-668"
-quote = "if (flat && !(hovered || down || checked || visualFocus) && bgAnimation == AnimationData::OpacityInvalid && penAnimation == AnimationData::OpacityInvalid) { return; }"
 
 # a disabled flat button under the mouse is drawn: Qt marks a disabled widget hovered (Enter reaches it) and
 # renderButtonFrame returns early only when the flat button is neither hovered, down, checked nor focused
@@ -6627,7 +6545,7 @@ quote = "} else { bgBrush = alphaColor(highlightColor, 0); penBrush = hasNeutral
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["disabled", "hover"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.24", "K1.25"]
 
@@ -6648,7 +6566,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["disabled", "hover"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.24", "K1.25"]
 
@@ -6669,7 +6587,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["disabled", "hover"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.24", "K1.25"]
 
@@ -6690,7 +6608,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["flat", "warning"], states = ["disabled", "hover"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["disabled", "hover"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.24", "K1.25"]
 
@@ -7350,7 +7268,7 @@ quote = "_contrastBias = KColorScheme::frameContrast();"
 
 [[fact]]
 key = "button.body.fill"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "= alpha(role.view.disabled.neutral, 0.3)"
 rows = ["K1.25"]
 
@@ -7376,7 +7294,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.paint"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -7392,7 +7310,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.top.dash"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -7408,7 +7326,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.paint"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -7424,7 +7342,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.right.dash"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -7440,7 +7358,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.paint"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -7456,7 +7374,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.bottom.dash"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -7472,7 +7390,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.paint"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "= role.view.disabled.neutral"
 rows = ["K1.25"]
 
@@ -7488,7 +7406,7 @@ quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutral
 
 [[fact]]
 key = "button.body.stroke.left.dash"
-when = { variants = ["flat", "warning"], states = ["checked", "disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], states = ["checked", "disabled"] }
 value = "solid"
 rows = ["K1.25"]
 
@@ -8515,7 +8433,7 @@ rows = ["Q1.10"]
 # drawn left-aligned with no wrap flag and its mnemonic hidden, in ButtonText
 [[fact]]
 key = "button.label.text.font.family"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.family"
 rows = ["K2.7"]
 
@@ -8526,7 +8444,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.size"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.size"
 rows = ["K2.7"]
 
@@ -8537,7 +8455,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.weight"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.weight"
 rows = ["K2.7"]
 
@@ -8548,7 +8466,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.style"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.style"
 rows = ["K2.7"]
 
@@ -8559,7 +8477,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.width"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.width"
 rows = ["K2.7"]
 
@@ -8570,7 +8488,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.axes"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.axes"
 rows = ["K2.7"]
 
@@ -8581,7 +8499,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.font.features"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.font.features"
 rows = ["K2.7"]
 
@@ -8592,7 +8510,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.scaling_role"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.scaling_role"
 rows = ["K2.7"]
 
@@ -8603,7 +8521,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.letter_spacing"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.letter_spacing"
 rows = ["K2.7"]
 
@@ -8614,7 +8532,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.word_spacing"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.word_spacing"
 rows = ["K2.7"]
 
@@ -8625,7 +8543,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.line_height"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.line_height"
 rows = ["K2.7"]
 
@@ -8636,7 +8554,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.case"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.case"
 rows = ["K2.7"]
 
@@ -8647,7 +8565,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.decoration"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.keyed.command_link_title.decoration"
 rows = ["K2.7"]
 
@@ -8658,7 +8576,7 @@ quote = "if (!button->text().isEmpty()) { QFont font(button->font()); font.setBo
 
 [[fact]]
 key = "button.label.text.elision"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "none"
 rows = ["K2.7"]
 
@@ -8676,7 +8594,7 @@ absent = ["elidedText", "ElideMode"]
 
 [[fact]]
 key = "button.label.text.wrap"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "none"
 rows = ["K2.7"]
 
@@ -8694,7 +8612,7 @@ absent = ["Qt::TextWordWrap", "Qt::TextWrapAnywhere"]
 
 [[fact]]
 key = "button.label.text.max_lines"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "none"
 rows = ["K2.7"]
 
@@ -8706,7 +8624,7 @@ absent = ["maximumLineCount", "setMaximumLineCount"]
 
 [[fact]]
 key = "button.label.text.mnemonic_decoration"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "absent"
 rows = ["K2.7"]
 
@@ -9347,7 +9265,7 @@ quote = "// If we normally inherit but do not do so currently due to an override
 
 [[fact]]
 key = "button.label.text.fill"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= role.button.foreground"
 rows = ["K2.7"]
 
@@ -9368,7 +9286,7 @@ quote = "palette.setBrush(state, QPalette::Button, schemeButton.background()); p
 
 [[fact]]
 key = "button.label.text.fill"
-when = { variants = ["@command_link"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["disabled"] }
 value = "= role.button.disabled.foreground"
 rows = ["K2.7"]
 
@@ -9413,7 +9331,7 @@ absent = []
 
 [[fact]]
 key = "button.subtitle"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "present"
 rows = ["K2.7"]
 
@@ -9424,7 +9342,7 @@ quote = "if (!button->description().isEmpty()) { drawItemText(&painter, textRect
 
 [[fact]]
 key = "button.subtitle.text.font.family"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.family"
 rows = ["K2.7"]
 
@@ -9445,7 +9363,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.size"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.size"
 rows = ["K2.7"]
 
@@ -9466,7 +9384,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.weight"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.weight"
 rows = ["K2.7"]
 
@@ -9487,7 +9405,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.style"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.style"
 rows = ["K2.7"]
 
@@ -9508,7 +9426,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.width"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.width"
 rows = ["K2.7"]
 
@@ -9529,7 +9447,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.axes"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.axes"
 rows = ["K2.7"]
 
@@ -9550,7 +9468,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.font.features"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.font.features"
 rows = ["K2.7"]
 
@@ -9571,7 +9489,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.scaling_role"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.scaling_role"
 rows = ["K2.7"]
 
@@ -9592,7 +9510,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.letter_spacing"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.letter_spacing"
 rows = ["K2.7"]
 
@@ -9613,7 +9531,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.word_spacing"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.word_spacing"
 rows = ["K2.7"]
 
@@ -9634,7 +9552,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.line_height"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.line_height"
 rows = ["K2.7"]
 
@@ -9655,7 +9573,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.case"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.case"
 rows = ["K2.7"]
 
@@ -9676,7 +9594,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.decoration"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= token.text.roles.body.decoration"
 rows = ["K2.7"]
 
@@ -9697,7 +9615,7 @@ quote = "case PushButtonFont:"
 
 [[fact]]
 key = "button.subtitle.text.elision"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "none"
 rows = ["K2.7"]
 
@@ -9715,7 +9633,7 @@ absent = ["elidedText", "ElideMode"]
 
 [[fact]]
 key = "button.subtitle.text.wrap"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "word"
 rows = ["K2.7"]
 
@@ -9726,7 +9644,7 @@ quote = "drawItemText(&painter, textRect, Qt::AlignLeft | Qt::AlignVCenter | Qt:
 
 [[fact]]
 key = "button.subtitle.text.max_lines"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "none"
 rows = ["K2.7"]
 
@@ -9738,7 +9656,7 @@ absent = ["maximumLineCount", "setMaximumLineCount"]
 
 [[fact]]
 key = "button.subtitle.text.mnemonic_decoration"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "absent"
 rows = ["K2.7"]
 
@@ -9750,7 +9668,7 @@ absent = ["Qt::TextShowMnemonic"]
 
 [[fact]]
 key = "button.subtitle.text.fill"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "= role.button.foreground"
 rows = ["K2.7"]
 
@@ -9771,7 +9689,7 @@ quote = "palette.setBrush(state, QPalette::Button, schemeButton.background()); p
 
 [[fact]]
 key = "button.subtitle.text.fill"
-when = { variants = ["@command_link"], states = ["disabled"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], states = ["disabled"] }
 value = "= role.button.disabled.foreground"
 rows = ["K2.7"]
 
@@ -10302,7 +10220,7 @@ quote = "palette.setBrush(state, QPalette::Accent, schemeSelection.background())
 # QCommandLinkButton's icon, 20 px by default, beside its title (K2.7)
 [[fact]]
 key = "button.icon.icon.size"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "20px"
 rows = ["K2.7"]
 
@@ -10344,7 +10262,7 @@ absent = ["fromTheme", "standardIcon"]
 
 [[fact]]
 key = "button.icon.glyph"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = { source = { theme_icon = { name = "go-next-view", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= part.icon.fill", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
 rows = ["K2.7"]
 
@@ -10365,7 +10283,7 @@ quote = "case QStyle::SP_ArrowRight: return QIcon::fromTheme(QStringLiteral(\"go
 
 [[fact]]
 key = "button.icon.glyph"
-when = { variants = ["@command_link"], direction = "rtl" }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], direction = "rtl" }
 value = { source = { theme_icon = { name = "go-previous-view", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= part.icon.fill", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" }
 rows = ["K2.7"]
 
@@ -10409,7 +10327,8 @@ quote = "QPixmap KIconLoader::loadScaledIcon(const QString &_name,"
 absent = ["QPropertyAnimation", "QVariantAnimation"]
 
 # the push button's menu arrow (K1.27) as the indicator's look at rest: where Breeze draws no arrow the part is
-# absent (above) and it never shows; the tool button's inline arrows follow (K1.155)
+# absent (the part's fact below) and it never shows, its minimum size kept beneath that absence (a part's
+# min_width and min_height are never absent, S6.3); the tool button's inline arrows follow (K1.155)
 [[fact]]
 key = "button.menu_indicator.min_width"
 value = "20px"
@@ -10424,17 +10343,6 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
 quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
-
-[[fact]]
-key = "button.menu_indicator.min_width"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
-value = "absent"
-rows = ["K1.27"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
-quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
 
 [[fact]]
 key = "button.menu_indicator.min_width"
@@ -10466,17 +10374,6 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezemetrics.h:84"
 quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
-
-[[fact]]
-key = "button.menu_indicator.min_height"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
-value = "absent"
-rows = ["K1.27"]
-
-[[fact.cite]]
-kind = "published"
-source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
-quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
 
 # the push button's arrow box: MenuButton_IndicatorWidth square, centred in the contents rect's last column
 
@@ -10675,7 +10572,18 @@ quote = "QRect Style::pushButtonContentsRect(const QStyleOption *option, const Q
 
 [[fact]]
 key = "button.menu_indicator.margin.top"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
+quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
+
+[[fact]]
+key = "button.menu_indicator.margin.top"
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10686,7 +10594,18 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.right"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
+quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10697,7 +10616,18 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.bottom"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
+quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10708,7 +10638,18 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.left"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.27"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
+quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorWidth + 1); arrowRect = centerRect(arrowRect, Metrics::MenuButton_IndicatorWidth, Metrics::MenuButton_IndicatorWidth); contentsRect.setRight(arrowRect.left() - Metrics::Button_ItemSpacing - 1);"
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -11951,10 +11892,27 @@ source = "breeze@6.8.2 kstyle/breezetoolsareamanager.cpp:211-216"
 quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background()); _palette.setBrush(QPalette::Active, QPalette::WindowText, active.foreground()); _palette.setBrush(QPalette::Disabled, QPalette::Window, disabled.background()); _palette.setBrush(QPalette::Disabled, QPalette::WindowText, disabled.foreground()); _palette.setBrush(QPalette::Inactive, QPalette::Window, inactive.background()); _palette.setBrush(QPalette::Inactive, QPalette::WindowText, inactive.foreground());"
 
 # Breeze draws an arrow only on a push button with a menu and on a tool button's inline small and large
-# menu styles (K1.27, K1.155; the split style is `split_button`)
+# menu styles (K1.27, K1.155; the split style is `split_button`); flavour kirigami declares no inline style, so
+# there it is the menu alone (the state models)
 [[fact]]
 key = "button.menu_indicator"
-when = { not_variants = ["menu", "@inline_small", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
+value = "absent"
+rows = ["K1.27", "K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:5365-5379"
+quote = "if (buttonOption->features & QStyleOptionButton::HasMenu) {"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact]]
+key = "button.menu_indicator"
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
 value = "absent"
 rows = ["K1.27", "K1.155"]
 
@@ -12340,7 +12298,7 @@ absent = ["description"]
 # the command link centres its description vertically in the rect below the title's line: register U424
 [[fact]]
 key = "button.values.subtitle_gap"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 pending = "U424"
 rows = ["K2.7"]
 
@@ -12368,7 +12326,7 @@ quote = "if (menu && !d->menu) { QObjectPrivate::connect(this, &QPushButton::pre
 
 [[fact]]
 key = "button.values.menu_trigger"
-when = { variants = ["tool", "@inline_large"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
 value = "primary"
 rows = ["K1.155"]
 
@@ -12384,7 +12342,7 @@ quote = "const bool hasPopupMenu(toolButtonOption->features & QStyleOptionToolBu
 
 [[fact]]
 key = "button.values.menu_trigger"
-when = { variants = ["tool", "@inline_small"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_small"] }
 value = "long_press"
 rows = ["K1.155"]
 
@@ -12512,7 +12470,7 @@ absent = []
 # the command link's title starts Button_ItemSpacing after its icon
 [[fact]]
 key = "button.values.icon_text_gap"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 value = "4px"
 rows = ["K2.7"]
 
@@ -12585,7 +12543,7 @@ quote = "implicitWidth: Kirigami.Units.gridUnit + 6 + 6 implicitHeight: Kirigami
 # icon's offset, 41 or 60 px high by whether it has a description: register U423
 [[fact]]
 key = "button.body.min_width"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 pending = "U423"
 rows = ["K2.7"]
 
@@ -12602,7 +12560,7 @@ quote = "implicitWidth: Kirigami.Units.gridUnit + 6 + 6 implicitHeight: Kirigami
 
 [[fact]]
 key = "button.body.min_height"
-when = { variants = ["@command_link"] }
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 pending = "U423"
 rows = ["K2.7"]
 

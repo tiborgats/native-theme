@@ -3352,3 +3352,42 @@ rows = []
 key = "token.text.keyed.display.scaling_role"
 pending = "U518"
 rows = []
+
+# S4.8's platform scheme tokens: KDE's (`token.kde`) and Material's (`token.material`) are `kde-breeze`'s and
+# `material-3`'s alone. WinUI's scheme is FrameworkTheming's theme: a base theme (Light or Dark) and a high-contrast
+# theme over it (Theme.h's Theme), and the accent colour the system gives; its theme dictionaries hold the colours,
+# with no colour effects, tint factor or title-bar option and no dynamic scheme (variant, spec version, contrast
+# level)
+[[fact]]
+key = "token.kde"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/theming/inc/FrameworkTheming.h:24-92"
+quote = "class FrameworkTheming"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/theming/inc/Theme.h:10-40"
+quote = "enum class Theme : uint8_t"
+absent = []
+
+[[fact]]
+key = "token.material"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/theming/inc/FrameworkTheming.h:24-92"
+quote = "class FrameworkTheming"
+absent = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/theming/inc/Theme.h:10-40"
+quote = "enum class Theme : uint8_t"
+absent = []

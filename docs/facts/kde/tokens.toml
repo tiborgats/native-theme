@@ -11202,3 +11202,17 @@ quote = "groupKDEOut.writeEntry(QStringLiteral(\"frameContrast\"), groupKDETheme
 kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:529-539"
 quote = "const qreal default_value = 0.2;"
+
+# S4.8's Material scheme tokens (`token.material`) are `material-3`'s alone. KDE's scheme is KColorScheme's: the
+# colour sets and roles a scheme file states, its effects and the scheme options (`token.kde`); no dynamic scheme, so
+# no variant, spec version or contrast level
+[[fact]]
+key = "token.material"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.h:55-429"
+quote = "class KCOLORSCHEME_EXPORT KColorScheme"
+absent = []

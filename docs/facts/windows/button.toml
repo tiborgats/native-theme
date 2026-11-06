@@ -9358,9 +9358,10 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:379"
 quote = "<Setter Target=\"AppBarToggleButtonInnerBorder.BorderBrush\" Value=\"{ThemeResource AppBarToggleButtonBorderBrushCheckedDisabled}\" />"
 
+# the menu indicator's base (the catalogue's button entry: stated in the base, absent by the fact outside `menu`
+# below): the drop-down button's chevron, which the tool button's facts restate
 [[fact]]
 key = "button.menu_indicator.glyph.fill"
-when = { variants = ["menu"] }
 value = "= role.@text_fill_secondary"
 rows = []
 
@@ -15631,7 +15632,8 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_the
 quote = "<Setter Target=\"SubItemChevron.Foreground\" Value=\"{ThemeResource AppBarButtonSubItemChevronForegroundDisabled}\" />"
 
 
-# The drop-down button's chevron (an AnimatedIcon beside the content).
+# The drop-down button's chevron (an AnimatedIcon beside the content); its size and transitions are the menu
+# indicator's base, as its colour is (above).
 
 [[fact.cite]]
 kind = "published"
@@ -15651,7 +15653,6 @@ quote = "Width=\"12\" Height=\"12\""
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
-when = { variants = ["menu"] }
 value = "12px"
 rows = ["W2-18"]
 
@@ -15694,7 +15695,6 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 # `token.icons.animated_visuals.chevron_down_small` (tokens.toml).
 [[fact]]
 key = "button.menu_indicator.transitions"
-when = { variants = ["menu"], not_variants = ["tool"] }
 value = [{ properties = ["glyph"], kind = { keyed = { key = "normal", params = {} } }, duration_ms = "absent", delay_ms = 0, timing = "absent", engine = { win_ui_animated_icon = { visual = "chevron_down_small" } } }]
 rows = ["W2-18", "W3-28"]
 
@@ -16333,17 +16333,134 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_the
 quote = "<ObjectAnimationUsingKeyFrames Storyboard.TargetName=\"SubItemChevron\" Storyboard.TargetProperty=\"Margin\"> <DiscreteObjectKeyFrame KeyTime=\"0\" Value=\"{ThemeResource AppBarButtonSubItemChevronLabelOnRightMargin}\" />"
 
 
+# the chevron sets no RenderTransform: the identity, stated per leaf (the body's transform's citations; S2.6)
 [[fact]]
-key = "button.menu_indicator.transform"
+key = "button.menu_indicator.transform.scale_x"
 when = { variants = ["menu", "tool"] }
-value = "absent"
+value = 1
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:147-156"
+quote = "case KnownPropertyIndex::ScaleTransform_ScaleX:"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.media/scaletransform_scalex.md:22"
+quote = "The scale factor along the x-axis. The default is 1."
 
 [[fact.cite]]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
 quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
 absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transform.scale_y"
+when = { variants = ["menu", "tool"] }
+value = 1
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:147-156"
+quote = "case KnownPropertyIndex::ScaleTransform_ScaleX:"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml.media/scaletransform_scaley.md:22"
+quote = "The scale factor along the y-axis. The default is 1."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transform.rotate"
+when = { variants = ["menu", "tool"] }
+value = "0deg"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transform.translate_x"
+when = { variants = ["menu", "tool"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transform.translate_y"
+when = { variants = ["menu", "tool"] }
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
+[[fact]]
+key = "button.menu_indicator.transform.origin"
+when = { variants = ["menu", "tool"] }
+value = [0, 0]
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransform.md:30"
+quote = "Describes the specifics of the desired render transform. The default value is null."
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_rendertransformorigin.md:26"
+quote = "The origin point of the render transform. The default value is a [Point](/uwp/api/windows.foundation.point) with value 0,0."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarButton_themeresources.xaml:373"
+quote = "<FontIcon x:Name=\"SubItemChevron\" Glyph=\"{ThemeResource AppBarButtonFlyoutGlyph}\" FontFamily=\"{ThemeResource SymbolThemeFontFamily}\" FontSize=\"{ThemeResource AppBarButtonSubItemChevronFontSize}\" AutomationProperties.AccessibilityView=\"Raw\" Foreground=\"{ThemeResource AppBarButtonSubItemChevronForeground}\" VerticalAlignment=\"Top\" Margin=\"{ThemeResource AppBarButtonSubItemChevronMargin}\" MirroredWhenRightToLeft=\"True\" />"
+absent = ["RenderTransform"]
+
 
 [[fact]]
 key = "button.menu_indicator.transitions"
