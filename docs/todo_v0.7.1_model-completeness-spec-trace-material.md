@@ -321,7 +321,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS1 | `token.text.roles.large_title (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.title1 (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.title2 (= token.text.keyed.<key>)` | token |
-| MAT-TS1 | `token.text.roles.headline (= token.text.keyed.<key>)` | token |
+| MAT-TS1 | `token.text.roles.headline (= token.text.roles.title2, the sub-section title's owner slot where Material has no section-heading style, ADD-A134)` | token |
 | MAT-TS1 | `token.text.roles.subheadline (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.body (= token.text.keyed.<key>)` | token |
 | MAT-TS1 | `token.text.roles.callout (= token.text.roles.body, the slot owning body_large, Compose's default text style, MaterialTheme.kt:113, S4.4; ADD-A122)` | token |
@@ -377,8 +377,8 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-TS4 | `token.text.keyed.label_large_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_medium_emphasized` | token |
 | MAT-TS4 | `token.text.keyed.label_small_emphasized` | token |
-| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_large_emphasized, the emphasised form of body's body_large, unsourced, under cond flavor:expressive; under cond flavor:baseline = token.text.roles.subheadline, the slot owning title_small, S4.4)` | token |
-| MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.body_small_emphasized under cond flavor:expressive; under cond flavor:baseline = token.text.keyed.label_medium, which no other slot takes)` | token |
+| MAT-TS4 | `token.text.roles.body_emphasized (= token.text.keyed.body_large_emphasized, the emphasised form of body's body_large, in both flavours, ADD-A134)` | token |
+| MAT-TS4 | `token.text.roles.caption_emphasized (= token.text.keyed.body_small_emphasized, the emphasised form of caption's body_small, in both flavours, ADD-A134)` | token |
 | MAT-TS5 | `token.text.keyed.display_large.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_medium.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
 | MAT-TS5 | `token.text.keyed.display_small.font.{weight,width,axes}` (weight and width by their own fields, the other axes in `axes`, S2.8) | token |
@@ -642,9 +642,9 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAT-X16 | `TextStyle.{letter_spacing,line_height}, TextStyle.font.{axes,features}` | field |
 | MAT-X16 | `token.text.keyed.<key>.font.family (brand or plain typeface)` | token |
 | MAT-X16 | `token.text.roles.*` | token |
-| MAT-X17 | `input.accent (the seed, S9.1)` | input |
+| MAT-X17 | `input.accent (the baseline's primary in the preset; the seed where a layer above gives it, S9.1, ADD-A134)` | input |
 | MAT-X17 | `token.material.variant (the scheme variant the user chose)` | token |
-| MAT-X17 | `role.@<m3 role> = m3_role(<role>)` (it reads `input.accent`, `token.material.{variant,spec_version,contrast_level}` and the colours' scheme itself, S2.2) | role |
+| MAT-X17 | `role.@<m3 role> = m3_role(<role>)` (in the accent-derivation layer, where a layer above the preset gives the seed, the preset stating Compose's baseline literals, S9.1, S9.2, ADD-A134; it reads `input.accent`, `token.material.{variant,spec_version,contrast_level}` and the colours' scheme itself, S2.2) | role |
 | MAT-X17 | `reader:android:dynamic colour scheme roles and variant` | readers (R18) |
 | MAT-X18 | `cond contrast_increased (medium)` | condition |
 | MAT-X18 | `cond contrast_high (high)` | condition |
