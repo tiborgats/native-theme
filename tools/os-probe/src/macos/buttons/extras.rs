@@ -43,7 +43,7 @@ pub(super) fn toolbar_table(pass: &Pass<'_>) -> Table {
         &mut t,
         "method",
         out::text(format!(
-            "a titled NSWindow ({} x {} pt content from {}, empty title) given an NSToolbar (identifier NativeThemeOsProbeToolbar, its display mode, size mode and the window's toolbarStyle left at their defaults and recorded) whose delegate gives four NSToolbarItems, each with autovalidates NO and enabled YES: bordered (label \"Item\", the symbol image, bordered YES), plain (label \"Item\", the symbol image, bordered NO), view_toolbar (an NSButton view, bezelStyle toolbar, title \"{BUTTON_TITLE}\", sized to fit) and view_push (an NSButton view, bezelStyle push, title \"{BUTTON_TITLE}\", sized to fit); made key and the mode's condition set as a sheet's; per appearance the window captured normal, pressed (highlight: YES on the two view buttons) and disabled (setEnabled: NO on every item and view button) to <appearance>/toolbar/<state>.png; the view items' frames are in the window frame's points from its top left",
+            "a titled NSWindow ({} x {} pt content from {}, empty title) given an NSToolbar (identifier NativeThemeOsProbeToolbar, its display mode, size mode and the window's toolbarStyle left at their defaults and recorded) whose delegate gives four NSToolbarItems, each with autovalidates NO and enabled YES: bordered (label \"Item\", the symbol image, bordered YES), plain (label \"Item\", the symbol image, bordered NO), view_toolbar (an NSButton view, bezelStyle toolbar, title \"{BUTTON_TITLE}\", sized to fit) and view_push (an NSButton view, bezelStyle push, title \"{BUTTON_TITLE}\", sized to fit); made key and the mode's condition set as a sheet's; per appearance the window captured normal, pressed (highlight: YES on the two view buttons) and disabled (setEnabled: NO on every item and view button) to <appearance>/toolbar/<state>.png; the view items' frames are in the window frame's points from its top left; after each capture the two view buttons and the views AppKit made for the image items (each NSToolbarImageView's superview) drawn offscreen with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point over transparency (<state>.renders, <state>-<item>-render-<1x|2x>.png)",
             TOOLBAR_FRAME.size.width,
             TOOLBAR_FRAME.size.height,
             super::point_text(TOOLBAR_FRAME.origin),
@@ -175,6 +175,7 @@ pub(super) fn toolbar_table(pass: &Pass<'_>) -> Table {
         }
         let mut normal = Table::new();
         pass.shot(&window, &mut normal, &dir, &rel, "normal.png");
+        item_renders(&mut normal, &window, &views, &dir, &rel, "normal");
         out::put_table(&mut run, "normal", normal);
 
         for (_, b) in views {
@@ -183,6 +184,7 @@ pub(super) fn toolbar_table(pass: &Pass<'_>) -> Table {
         pass.settle(&window, SETTLE_STEPS);
         let mut pressed = Table::new();
         pass.shot(&window, &mut pressed, &dir, &rel, "pressed.png");
+        item_renders(&mut pressed, &window, &views, &dir, &rel, "pressed");
         for (_, b) in views {
             b.highlight(false);
         }
@@ -197,6 +199,7 @@ pub(super) fn toolbar_table(pass: &Pass<'_>) -> Table {
         pass.settle(&window, SETTLE_STEPS);
         let mut disabled = Table::new();
         pass.shot(&window, &mut disabled, &dir, &rel, "disabled.png");
+        item_renders(&mut disabled, &window, &views, &dir, &rel, "disabled");
         for item in &items {
             item.setEnabled(true);
         }
@@ -216,6 +219,100 @@ pub(super) fn toolbar_table(pass: &Pass<'_>) -> Table {
         other.close();
     }
     t
+}
+
+/// The toolbar's items drawn offscreen (`cacheDisplayInRect:
+/// toBitmapImageRep:`) at 1 and 2 pixels a point over transparency: the
+/// two view buttons, and the views AppKit made for the two image items (the
+/// superview of each `NSToolbarImageView` in the window), to
+/// `<state>-<item>-render-<scale>.png`, with each view's class and frame
+/// from the window frame's top left.
+fn item_renders(
+    t: &mut Table,
+    window: &objc2_app_kit::NSWindow,
+    views: &[(&str, &NSButton)],
+    dir: &std::path::Path,
+    rel: &str,
+    state: &str,
+) {
+    let mut targets: Vec<(String, objc2::rc::Retained<NSView>)> = views
+        .iter()
+        .map(|(name, b)| {
+            (
+                (*name).to_owned(),
+                objc2::rc::Retained::into_super(objc2::rc::Retained::into_super(
+                    objc2::Message::retain(*b),
+                )),
+            )
+        })
+        .collect();
+    let mut found = Vec::new();
+    if let Some(root) = window.contentView().and_then(|c| ffi::superview(&c)) {
+        collect_image_item_views(&root, 0, &mut found);
+    }
+    for (index, view) in found.into_iter().enumerate() {
+        targets.push((format!("image_item_{index}"), view));
+    }
+    let frame = window.frame().size;
+    let mut all = Table::new();
+    for (name, view) in &targets {
+        let mut r = Table::new();
+        out::put(
+            &mut r,
+            "class",
+            out::text(view.class().name().to_string_lossy()),
+        );
+        out::put(
+            &mut r,
+            "frame_from_top_left_xywh",
+            rect(from_top_left(view, frame)),
+        );
+        let bounds = view.bounds();
+        for (scale_name, scale) in [("1x", 1.0), ("2x", 2.0)] {
+            let file = format!("{state}-{name}-render-{scale_name}.png");
+            let value = match crate::macos::bitmap_at_scale(bounds.size, scale) {
+                Ok(rep) => {
+                    view.cacheDisplayInRect_toBitmapImageRep(bounds, &rep);
+                    match ffi::png_data(&rep) {
+                        Ok(data) => match std::fs::write(dir.join(&file), data) {
+                            Ok(()) => out::text(format!("{rel}/{file}")),
+                            Err(e) => out::unavailable(format!("cannot write {file}: {e}")),
+                        },
+                        Err(reason) => out::unavailable(reason),
+                    }
+                }
+                Err(reason) => out::unavailable(reason),
+            };
+            out::put(&mut r, scale_name, value);
+        }
+        out::put_table(&mut all, name, r);
+    }
+    out::put_table(t, "renders", all);
+}
+
+/// The superviews of the `NSToolbarImageView`s below `view`, in walk order.
+fn collect_image_item_views(
+    view: &NSView,
+    depth: u32,
+    found: &mut Vec<objc2::rc::Retained<NSView>>,
+) {
+    if depth > 12 {
+        return;
+    }
+    for sub in view.subviews().iter() {
+        let class = sub.class().name().to_string_lossy().into_owned();
+        if class.ends_with("NSToolbarImageView") {
+            if let Some(parent) = ffi::superview(&sub) {
+                if !found
+                    .iter()
+                    .any(|f| objc2::rc::Retained::as_ptr(f) == objc2::rc::Retained::as_ptr(&parent))
+                {
+                    found.push(parent);
+                }
+            }
+        }
+        collect_image_item_views(&sub, depth.saturating_add(1), found);
+    }
 }
 
 /// The caret: a text view made first responder in a key window, its
