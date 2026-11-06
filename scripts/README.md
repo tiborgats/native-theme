@@ -961,8 +961,10 @@ expression in S2.2's grammar), gap-map row IDs, a `when` as S11's, citations
 with the fields of their kind and a pinned source, `scheme_file` and `accent`
 both or neither in `kde/` only, and the generation rule: without `preset:`,
 its citations together serve each preset of its directory that exists (the
-new model's, `native-theme/src/next/presets/<id>.toml`; today's presets do
-not count, and with none the rule asks nothing). A
+new model's, `native-theme/src/next/presets/<id>.toml` while
+`native-theme/src/next/mod.rs` exists and `native-theme/src/presets/<id>.toml`
+once the switch has moved `next` into place, one folder, never both; until
+then today's presets do not count, and with none the rule asks nothing). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
@@ -1168,7 +1170,8 @@ per measured output), a column header row, and rows whose cells are
 spelled by their column's type, with `cite` and `quote` (published) or
 `evidence` (measured) where the route needs them. Checks that every `pub`
 or `pub(crate)` function of the `platform` module
-(`native-theme/src/next/platform/`, `src/platform/` after the switch), every
+(`native-theme/src/next/platform/`, `src/platform/` after the switch, one
+folder, never both), every
 platform function of S2.2's table that is implemented and, once the
 `placement` module exists, every strategy, and, once
 `transitions::interpolate_color` exists, every `ColorInterpolation` member
@@ -1204,7 +1207,10 @@ and marks; the widget's values struct; the entry's own enums), and
 and the registry's list), each through `rustfmt`. It reads the catalogue
 through `spec_catalogue.py` only, never touches the module's hand-written
 `mod.rs` and `tests.rs`, and leaves out the values a unit defers to a later
-unit (the button's `Placement` values, until M3's placement unit). The units
+unit (the button's `Placement` values, until M3's placement unit). While
+`native-theme/src/next/mod.rs` exists it writes `next/widgets/` and imports
+the model as `crate::next::`; once the switch has moved `next` into place,
+`native-theme/src/widgets/` and `crate::`, never both. The units
 file lists the enabled units, the deferrals with their units, and the
 hand-written units, enabled or not; a deferral to an enabled unit is an
 input error. `--check` writes nothing and exits 1 when a generated file
@@ -1228,7 +1234,8 @@ traceability, S20) is carried by a fact or a state-model entry of its
 platform's `docs/facts/` directory that lists its row in `rows` and whose key
 lies on the line's target (each line of a row separately), or carries a
 verdict, on the platforms
-whose presets exist (the new model's `native-theme/src/next/presets/`).
+whose presets exist (the new model's `native-theme/src/next/presets/`,
+`native-theme/src/presets/` after the switch).
 `--enabled` checks the units of `scripts/widget_units.toml` (the slice:
 `button`, the colour roles and the slice's tokens, with button's `Placement`
 values deferred and `token.behavior.scroll` staged; the same slice while the

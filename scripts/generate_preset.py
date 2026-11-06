@@ -17,6 +17,9 @@ Run from the repository root:
     python3 scripts/generate_preset.py <preset-id> --check        # whether --write would change that file
     python3 scripts/generate_preset.py --self-test
 
+The bundled presets are those of check_facts.preset_dir(): `native-theme/src/next/presets/` while
+`native-theme/src/next/mod.rs` exists, `native-theme/src/presets/` once the switch has moved `next` into place.
+
 On stderr: the transcription share (facts transcribed, shadowed, pending, left out by reason; per widget and per
 unit), the rule and base-value counts, the pending facts' register ids, the facts gaps (a field no fact gives where
 the reader needs it), and the round trip's result. Exit 0, 1 when the round trip finds a mismatch (a generator bug)
@@ -222,7 +225,6 @@ DECLARE_KEYS = ("available", "variants", "sizes", "default_size", "densities", "
                 "exclusive", "exclusive_variants", "recency", "requires_variants", "sizes_by_variant",
                 "sizes_by_context")
 STAGED_BASES = Path("docs/facts/staged/inheritance-bases.toml")
-PRESETS = Path("native-theme/src/next/presets")
 SECTIONS = ("inputs", "colors", "tokens", "widgets", "components")
 LONE = {"first": True, "last": True, "only": True, "parity": "odd"}
 
@@ -3136,7 +3138,8 @@ def self_test() -> int:
         root = Path(tmp) / "mismatch"
         button = SELF_TEST_FILES["docs/facts/gnome/button.toml"]
         write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": button.replace('"16px"', '"18px"', 1)})
-        written = root / PRESETS / "adwaita.toml"
+        write(root, {check_facts.NEXT_MOD: ""})
+        written = root / "native-theme/src/next/presets/adwaita.toml"
         written.parent.mkdir(parents=True)
         with contextlib.redirect_stderr(io.StringIO()):
             code = run(fixture_context(root), "adwaita", "--write", None)
@@ -3165,6 +3168,17 @@ def self_test() -> int:
         if code != 0 or written.read_text(encoding="utf-8") == stale:
             failures.append(f"--write over an exact round trip: exit {code}, "
                             f"written {written.read_text(encoding='utf-8') != stale}")
+        # after the switch (no next/mod.rs) --write and --check take native-theme/src/presets/, never next/'s
+        switched = Path(tmp) / "switched"
+        write(switched, {**SELF_TEST_FILES, "native-theme/src/next/presets/adwaita.toml": stale})
+        (switched / "native-theme/src/presets").mkdir(parents=True)
+        with contextlib.redirect_stderr(io.StringIO()):
+            code = run(fixture_context(switched), "adwaita", "--write", None)
+            checked = run(fixture_context(switched), "adwaita", "--check", None)
+        moved = switched / "native-theme/src/presets/adwaita.toml"
+        if (code, checked) != (0, 0) or not moved.exists() or \
+                (switched / "native-theme/src/next/presets/adwaita.toml").read_text(encoding="utf-8") != stale:
+            failures.append(f"--write after the switch: exit {code}, --check {checked}, written {moved.exists()}")
         bad = Path(tmp) / "bad"
         write(bad, {**SELF_TEST_FILES, "docs/facts/gnome/broken.toml": "[[fact]\n"})
         try:
@@ -3214,7 +3228,7 @@ def run(ctx, preset: str, mode, out) -> int:
     try:
         draft, text, trip, units = generate(ctx, preset)
         if mode in ("--write", "--check"):
-            path = ctx.root / PRESETS / f"{preset}.toml"
+            path = ctx.root / check_facts.preset_dir(ctx.root) / f"{preset}.toml"
             committed = path.read_text(encoding="utf-8") if path.exists() else None
             text = carried(text, committed)
     except (OSError, UnicodeDecodeError, InputError, check_facts.InputError, check_facts_trace.InputError) as err:
@@ -3228,7 +3242,7 @@ def run(ctx, preset: str, mode, out) -> int:
         if not trip.mismatches:
             path.write_text(text, encoding="utf-8")
     elif text != committed:
-        print(f"{PRESETS / preset}.toml is not what --write writes from the facts: run "
+        print(f"{check_facts.preset_dir(ctx.root) / preset}.toml is not what --write writes from the facts: run "
               f"`python3 scripts/generate_preset.py {preset} --write`", file=sys.stderr)
         return 1
     for line in share_lines(draft, units, trip):
@@ -3236,7 +3250,8 @@ def run(ctx, preset: str, mode, out) -> int:
     for m in trip.mismatches:
         print(f"round trip: {m}", file=sys.stderr)
     if mode == "--write" and trip.mismatches:
-        print(f"{PRESETS / preset}.toml not written: the round trip finds a mismatch", file=sys.stderr)
+        print(f"{check_facts.preset_dir(ctx.root) / preset}.toml not written: the round trip finds a mismatch",
+              file=sys.stderr)
     return 1 if trip.mismatches else 0
 
 

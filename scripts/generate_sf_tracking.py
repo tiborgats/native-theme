@@ -5,8 +5,10 @@
 Reads `hig-typography@2026-02-09`'s `typography.json` from the source cache (`NATIVE_THEME_SOURCES`, else
 scripts/citations.py's default; the file's sha256 checked against its `docs/facts/sources.toml` entry) and writes:
 
-- `native-theme/src/next/platform/gen_sf_tracking.rs`: the three designs' tables, `SF_PRO`, `SF_PRO_ROUNDED` and
-  `NEW_YORK`, each row `(size in points, tracking in 1/1000 em)`, each table with its JSON pointer, through `rustfmt`;
+- `native-theme/src/next/platform/gen_sf_tracking.rs` (`native-theme/src/platform/` once the switch has moved `next`
+  into place: rust_path() takes `next`'s folder while `native-theme/src/next/mod.rs` exists, never both): the three
+  designs' tables, `SF_PRO`, `SF_PRO_ROUNDED` and `NEW_YORK`, each row `(size in points, tracking in 1/1000 em)`,
+  each table with its JSON pointer, through `rustfmt`;
 - `native-theme/tests/vectors/sf_tracking.tsv`: every row of the three tables as a vector row in
   scripts/check_function_vectors.py's format, route `published`: the size as `font_size` in px at 72 DPI (S9.4's
   `token.text.font_dpi` on `macos-*`, where a point is a px), the DPI as the operand `font_dpi` the function reads
@@ -46,7 +48,8 @@ import citations
 SOURCE = "hig-typography@2026-02-09"
 FILE = "typography.json"
 SOURCES = Path("docs/facts/sources.toml")
-RUST = Path("native-theme/src/next/platform/gen_sf_tracking.rs")
+NEXT_MOD = Path("native-theme/src/next/mod.rs")
+RUST = "gen_sf_tracking.rs"
 VECTORS = Path("native-theme/tests/vectors/sf_tracking.tsv")
 HEADER = ["Size (points)", "Tracking (1/1000 em)", "Tracking (points)"]
 MACOS = "macOS tracking values"
@@ -59,6 +62,13 @@ DPI = 72
 
 class InputError(Exception):
     pass
+
+
+def rust_path(root: Path) -> Path:
+    """The generated tables' file: in `next`'s platform folder while native-theme/src/next/mod.rs exists, in the crate
+    root's after the switch."""
+    model = Path("native-theme/src/next") if (root / NEXT_MOD).is_file() else Path("native-theme/src")
+    return model / "platform" / RUST
 
 
 def text_of(node) -> str:
@@ -202,9 +212,9 @@ def snapshot(root: Path, cache: Path) -> dict:
         raise InputError(f"{path}: {err}") from err
 
 
-def generate(doc) -> dict:
+def generate(root: Path, doc) -> dict:
     found = tables(doc)
-    return {RUST: rustfmt(rust_file(found)), VECTORS: vectors_file(found)}
+    return {rust_path(root): rustfmt(rust_file(found)), VECTORS: vectors_file(found)}
 
 
 # ------------------------------------------------------------------------------------------------ self-test
@@ -276,6 +286,13 @@ def self_test() -> int:
                                     f'sha256 = "{hashlib.sha256(data).hexdigest()}"\n', encoding="utf-8")
         if snapshot(root, cache) != _page(MAC, MAC, MAC):
             failures.append("reads the snapshot otherwise")
+        # the folder: next's while next/mod.rs exists, the crate root's after the switch
+        if rust_path(root) != Path("native-theme/src/platform/gen_sf_tracking.rs"):
+            failures.append(f"the file after the switch: {rust_path(root)}")
+        (root / NEXT_MOD).parent.mkdir(parents=True)
+        (root / NEXT_MOD).write_text("", encoding="utf-8")
+        if rust_path(root) != Path("native-theme/src/next/platform/gen_sf_tracking.rs"):
+            failures.append(f"the file before the switch: {rust_path(root)}")
     for f in failures:
         print(f"self-test FAIL: {f}", file=sys.stderr)
     if not failures:
@@ -292,7 +309,7 @@ def main(argv) -> int:
         return 2
     root = Path(".")
     try:
-        files = generate(snapshot(root, citations.cache_dir()))
+        files = generate(root, snapshot(root, citations.cache_dir()))
     except InputError as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
