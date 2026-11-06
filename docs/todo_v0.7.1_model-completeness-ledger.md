@@ -77,10 +77,107 @@ part, their callers being the reader's).
 
 ## `PLAN_EXCLUDED`
 
-The expected list before the switch is the plan's (*What cannot build meanwhile*), corrected by the switch's audit (`todo_v0.7.1_model-completeness-switch.md` §2 and its Q1: only the steps that fail at the switch). Current list: empty.
+The expected list before the switch is the plan's (*What cannot build meanwhile*), corrected by the switch's audit (`todo_v0.7.1_model-completeness-switch.md` §2 and its Q1: only the steps that fail at the switch). Current list: 97 steps since M1a task 17c (63 until M2.1, 3 until M2.6, 31 until M5), each marked in `.github/workflows/ci.yml`.
 
 | Step | Until | Since | Reason |
 |---|---|---|---|
+| `check (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `check (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `check (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `check (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `MSRV +1.95.0, -D warnings (the egui crates, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `MSRV +1.95.0, -D warnings (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `MSRV +1.95.0, -D warnings (native-theme-gpui, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `MSRV +1.95.0, -D warnings (native-theme-gpui, gpui-fast, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `feature combinations (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `feature combinations (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `feature combinations (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `feature combinations (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `native-theme-egui, all targets (x86_64-apple-darwin)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-gpui, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-gpui, gpui-fast, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-gpui, no features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `strict-panic (native-theme-iced, iced_aw, watch, native)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `strict-panic (native-theme-gpui, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `strict-panic (native-theme-gpui, gpui-fast, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `strict-panic (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `strict-panic (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-gpui, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-gpui, no features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-gpui, gpui-fast, native, watch)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-iced, no features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-iced, iced_aw, watch, native)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-iced, iced_aw, watch, native)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-iced, the showcase's required features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui, no features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-egui, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui-widgets, no features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `test (native-theme-egui-widgets, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `clippy (native-theme-egui-widgets, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `examples (native-theme-gpui)` | M2.1 | 17c | the connector does not build; M2.1 unlinks its showcase example (`autoexamples = false`), after which the step builds nothing that fails (Q1) |
+| `examples (native-theme-iced)` | M2.1 | 17c | the connector does not build; M2.1 unlinks its showcase example (`autoexamples = false`), after which the step builds nothing that fails (Q1) |
+| `examples (native-theme-egui)` | M2.1 | 17c | the connector does not build; M2.1 unlinks its showcase example (`autoexamples = false`), after which the step builds nothing that fails (Q1) |
+| `connector parity: names and signatures (iced · gpui · egui)` | M2.1 | 17c | parses today's `model/` files, deleted at the switch (`check_connector_parity.py:137-142`) |
+| `docs, private items (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs, private items (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs, private items (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs, private items (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs (native-theme-iced, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs (native-theme-egui, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs (native-theme-egui-widgets, all features)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs.rs (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs.rs (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs.rs (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `docs.rs (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `package (native-theme-iced)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `package (native-theme-gpui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `package (native-theme-egui)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `package (native-theme-egui-widgets)` | M2.1 | 17c | the connector builds against today's API, removed at the switch; M2.1 ports it to the 0.8.0 model |
+| `semver-checks (native-theme-iced)` | M2.1 | 17c | the connector does not build; soft, listed so its warning names its milestone (Q4) |
+| `semver-checks (native-theme-gpui)` | M2.1 | 17c | the connector does not build; soft, listed so its warning names its milestone (Q4) |
+| `semver-checks (native-theme-egui)` | M2.1 | 17c | the connector does not build; soft, listed so its warning names its milestone (Q4) |
+| `semver-checks (native-theme-egui-widgets)` | M2.1 | 17c | the connector does not build; soft, listed so its warning names its milestone (Q4) |
+| `data documents: every registry field has a platform-facts row` | M2.6 | 17c | reads today's `docs/platform-facts.md`, which 17e replaces with the generated one (passes until then); M2.6 rewrites it for the facts |
+| `data documents: § references name platform-facts sections` | M2.6 | 17c | reads the deleted `docs/inheritance-rules.toml` (`check_section_refs.py:41`); M2.6 rewrites it |
+| `data documents: docs/todo.md cites preset values by key path` | M2.6 | 17c | cites today's presets, deleted at the switch; M2.6 rewrites it |
+| `check (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `feature combinations (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `clippy, showcase-support (x86_64-pc-windows-msvc)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `clippy, showcase-support (x86_64-apple-darwin)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `clippy, iced showcase (x86_64-pc-windows-msvc)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `clippy, iced showcase (x86_64-apple-darwin)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `clippy (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `strict-panic (native-theme-showcase-support, x86_64-apple-darwin)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `strict-panic (native-theme-showcase-support, x86_64-pc-windows-msvc)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `strict-panic (showcase-iced, iced_aw, x86_64-apple-darwin)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-iced, iced_aw, x86_64-pc-windows-msvc)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-egui, all features, x86_64-apple-darwin)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-egui, all features, x86_64-pc-windows-msvc)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-iced, iced_aw, watch, native)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-iced, default features)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-gpui, native, watch)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-gpui, gpui-fast, native, watch)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-egui, all features)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (showcase-egui, no features)` | M5 | 17c | the showcase example builds against today's API; M5 ports the showcases |
+| `strict-panic (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `test (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
+| `test (egui showcase, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (egui showcase, no features, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (egui showcase, all features, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (iced showcase, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (iced showcase, iced_aw, watch, native, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (gpui showcase, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (gpui showcase, native, watch, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `test (gpui showcase, gpui-fast, native, watch, runner environment)` | M5 | 17c | the showcase does not build; disables nothing in CI, which tests the showcases in its connector legs on the runner itself |
+| `showcase parity: element list and exceptions` | M5 | 17c | its `[parity]` exceptions name presets the switch deletes (`check_showcase_parity.py:551`) |
+| `docs, private items (native-theme-showcase-support)` | M5 | 17c | `tools/showcase-support` uses today's API (`Rgba`, `theme::*`, `AccessibilityPreferences`, `ResolutionContext`); M5 ports it |
 
 ## Full runs
 
@@ -712,7 +809,7 @@ in the 0.7.x releases* as one item; the two connector plans: a fixed list the sc
 | docs/todo.md | ### native-theme-gpui connector | “**An empty state's icon” · l. 3174 | M5 | An empty-state demo's frame in the gpui showcase, revisited when the showcases are rebuilt. |
 | docs/todo.md | ### native-theme-gpui connector | “**The colour gate cannot” · l. 3186 | M5 | The colour-claim gate is a showcase gate rebuilt with the showcases (S18). |
 | docs/todo.md | ### native-theme-gpui connector | “**Reference — how a” · l. 3211 | M2.1 | A reference for the gpui connector's mapping, used when the connector is rewritten on the query. |
-| docs/todo.md | ### native-theme-gpui connector | “Port `scripts/check_widget_coverage.py` to a” · l. 3233 | M5 | The widget-coverage step is excluded until M5, when the showcases and their gates return (PLAN_EXCLUDED). |
+| docs/todo.md | ### native-theme-gpui connector | “Port `scripts/check_widget_coverage.py` to a” · l. 3233 | M5 | The port waits for M5, when the showcases return; the widget-coverage step itself runs meanwhile, not PLAN_EXCLUDED (the switch's Q1), CI's in the `parity` job. |
 | docs/todo.md | ### native-theme-gpui connector | “Split the showcases into” · l. 3247 | M5 | The iced showcase is rebuilt on the query at M5, where it can be split into modules. |
 | docs/todo.md | ### native-theme-gpui connector | “`scripts/check_widget_coverage.py` still accepts weak” · l. 3252 | M5 | The widget-coverage step returns with the rebuilt showcases at M5. |
 | docs/todo.md | ### native-theme-gpui connector | “The repository's PreToolUse hook” · l. 3261 | M0 | D9 covers the project's hooks and their exemptions; M0 checks them, and the examples' exemption can be aligned with that work. |

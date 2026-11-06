@@ -8,7 +8,7 @@
 // CoreGraphics FFI -- no safe alternative
 #![allow(unsafe_code)]
 
-use crate::IconData;
+use crate::icons::IconData;
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeightRegular, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
@@ -138,7 +138,7 @@ pub(crate) fn load_sf_icon_by_name(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::{IconRole, IconSet, icon_name};
+    use crate::icons::{IconRole, IconSet, icon_name};
 
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the SF Symbols set.

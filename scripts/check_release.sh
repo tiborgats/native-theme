@@ -165,7 +165,114 @@ SCRIPT_START=$SECONDS
 # the YAML on its line), and the "Plan exclusions" section checks that both
 # name the same set. Empty at M0 and again at M5.
 # ─────────────────────────────────────────────────────────────────────────────
-declare -A PLAN_EXCLUDED=()
+declare -A PLAN_EXCLUDED=(
+    # The connectors build against the 0.8.0 model again at M2.1, which also
+    # unlinks their showcase examples (autoexamples = false): their examples
+    # steps pass from then (docs/todo_v0.7.1_model-completeness-switch.md, Q1).
+    # A soft semver check is listed too, so its warning names its milestone (Q4).
+    ["check (native-theme-gpui)"]="M2.1"
+    ["check (native-theme-iced)"]="M2.1"
+    ["check (native-theme-egui)"]="M2.1"
+    ["check (native-theme-egui-widgets)"]="M2.1"
+    ["MSRV +1.95.0, -D warnings (the egui crates, all features)"]="M2.1"
+    ["MSRV +1.95.0, -D warnings (native-theme-gpui)"]="M2.1"
+    ["MSRV +1.95.0, -D warnings (native-theme-gpui, native, watch)"]="M2.1"
+    ["MSRV +1.95.0, -D warnings (native-theme-gpui, gpui-fast, native, watch)"]="M2.1"
+    ["feature combinations (native-theme-gpui)"]="M2.1"
+    ["feature combinations (native-theme-iced)"]="M2.1"
+    ["feature combinations (native-theme-egui)"]="M2.1"
+    ["feature combinations (native-theme-egui-widgets)"]="M2.1"
+    ["native-theme-egui, all targets (x86_64-apple-darwin)"]="M2.1"
+    ["clippy (native-theme-gpui, native, watch)"]="M2.1"
+    ["clippy (native-theme-iced)"]="M2.1"
+    ["clippy (native-theme-egui)"]="M2.1"
+    ["clippy (native-theme-egui-widgets)"]="M2.1"
+    ["clippy (native-theme-gpui, gpui-fast, native, watch)"]="M2.1"
+    ["clippy (native-theme-gpui, no features)"]="M2.1"
+    ["strict-panic (native-theme-iced, iced_aw, watch, native)"]="M2.1"
+    ["strict-panic (native-theme-gpui, native, watch)"]="M2.1"
+    ["strict-panic (native-theme-gpui, gpui-fast, native, watch)"]="M2.1"
+    ["strict-panic (native-theme-egui)"]="M2.1"
+    ["strict-panic (native-theme-egui-widgets)"]="M2.1"
+    ["test (native-theme-gpui, native, watch)"]="M2.1"
+    ["test (native-theme-iced)"]="M2.1"
+    ["test (native-theme-egui)"]="M2.1"
+    ["test (native-theme-egui-widgets)"]="M2.1"
+    ["test (native-theme-gpui, no features)"]="M2.1"
+    ["test (native-theme-gpui, gpui-fast, native, watch)"]="M2.1"
+    ["test (native-theme-iced, no features)"]="M2.1"
+    ["test (native-theme-iced, iced_aw, watch, native)"]="M2.1"
+    ["clippy (native-theme-iced, iced_aw, watch, native)"]="M2.1"
+    ["clippy (native-theme-iced, the showcase's required features)"]="M2.1"
+    ["test (native-theme-egui, no features)"]="M2.1"
+    ["test (native-theme-egui, all features)"]="M2.1"
+    ["clippy (native-theme-egui, all features)"]="M2.1"
+    ["test (native-theme-egui-widgets, no features)"]="M2.1"
+    ["test (native-theme-egui-widgets, all features)"]="M2.1"
+    ["clippy (native-theme-egui-widgets, all features)"]="M2.1"
+    ["examples (native-theme-gpui)"]="M2.1"
+    ["examples (native-theme-iced)"]="M2.1"
+    ["examples (native-theme-egui)"]="M2.1"
+    ["connector parity: names and signatures (iced · gpui · egui)"]="M2.1"
+    ["docs, private items (native-theme-gpui)"]="M2.1"
+    ["docs, private items (native-theme-iced)"]="M2.1"
+    ["docs, private items (native-theme-egui)"]="M2.1"
+    ["docs, private items (native-theme-egui-widgets)"]="M2.1"
+    ["docs (native-theme-iced, all features)"]="M2.1"
+    ["docs (native-theme-egui, all features)"]="M2.1"
+    ["docs (native-theme-egui-widgets, all features)"]="M2.1"
+    ["docs.rs (native-theme-gpui)"]="M2.1"
+    ["docs.rs (native-theme-iced)"]="M2.1"
+    ["docs.rs (native-theme-egui)"]="M2.1"
+    ["docs.rs (native-theme-egui-widgets)"]="M2.1"
+    ["package (native-theme-iced)"]="M2.1"
+    ["package (native-theme-gpui)"]="M2.1"
+    ["package (native-theme-egui)"]="M2.1"
+    ["package (native-theme-egui-widgets)"]="M2.1"
+    ["semver-checks (native-theme-iced)"]="M2.1"
+    ["semver-checks (native-theme-gpui)"]="M2.1"
+    ["semver-checks (native-theme-egui)"]="M2.1"
+    ["semver-checks (native-theme-egui-widgets)"]="M2.1"
+    # Today's platform-facts.md, inheritance rules and presets, which these
+    # read, go at the switch; M2.6 rewrites the checks to read the facts.
+    ["data documents: every registry field has a platform-facts row"]="M2.6"
+    ["data documents: § references name platform-facts sections"]="M2.6"
+    ["data documents: docs/todo.md cites preset values by key path"]="M2.6"
+    # The showcases and their shared crate (tools/showcase-support) build
+    # against the 0.8.0 model again at M5; the cross-target keys exist only
+    # where the target is installed.
+    ["check (native-theme-showcase-support)"]="M5"
+    ["feature combinations (native-theme-showcase-support)"]="M5"
+    ["clippy, showcase-support (x86_64-pc-windows-msvc)"]="M5"
+    ["clippy, showcase-support (x86_64-apple-darwin)"]="M5"
+    ["clippy, iced showcase (x86_64-pc-windows-msvc)"]="M5"
+    ["clippy, iced showcase (x86_64-apple-darwin)"]="M5"
+    ["clippy (native-theme-showcase-support)"]="M5"
+    ["strict-panic (native-theme-showcase-support, x86_64-apple-darwin)"]="M5"
+    ["strict-panic (native-theme-showcase-support, x86_64-pc-windows-msvc)"]="M5"
+    ["strict-panic (showcase-iced, iced_aw, x86_64-apple-darwin)"]="M5"
+    ["strict-panic (showcase-iced, iced_aw, x86_64-pc-windows-msvc)"]="M5"
+    ["strict-panic (showcase-egui, all features, x86_64-apple-darwin)"]="M5"
+    ["strict-panic (showcase-egui, all features, x86_64-pc-windows-msvc)"]="M5"
+    ["strict-panic (showcase-iced, iced_aw, watch, native)"]="M5"
+    ["strict-panic (showcase-iced, default features)"]="M5"
+    ["strict-panic (showcase-gpui, native, watch)"]="M5"
+    ["strict-panic (showcase-gpui, gpui-fast, native, watch)"]="M5"
+    ["strict-panic (showcase-egui, all features)"]="M5"
+    ["strict-panic (showcase-egui, no features)"]="M5"
+    ["strict-panic (native-theme-showcase-support)"]="M5"
+    ["test (native-theme-showcase-support)"]="M5"
+    ["test (egui showcase, runner environment)"]="M5"
+    ["test (egui showcase, no features, runner environment)"]="M5"
+    ["test (egui showcase, all features, runner environment)"]="M5"
+    ["test (iced showcase, runner environment)"]="M5"
+    ["test (iced showcase, iced_aw, watch, native, runner environment)"]="M5"
+    ["test (gpui showcase, runner environment)"]="M5"
+    ["test (gpui showcase, native, watch, runner environment)"]="M5"
+    ["test (gpui showcase, gpui-fast, native, watch, runner environment)"]="M5"
+    ["showcase parity: element list and exceptions"]="M5"
+    ["docs, private items (native-theme-showcase-support)"]="M5"
+)
 declare -A PLAN_USED=()
 PLAN_SKIPPED=()
 
@@ -1148,12 +1255,12 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_preset_citations.py need Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_preset_citations.py need 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
@@ -1190,20 +1297,18 @@ run_check "showcase parity: comparator self-test" \
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: data documents
 #
-# The five original checks of the data documents, under the Python floor above
-# (check_wrong_safety_nets.py, check_todo_citations.py and
-# check_preset_citations.py import `tomllib`), each with its self-test:
-# scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
-# field with no docs/platform-facts.md row; scripts/check_wrong_safety_nets.py
-# on a `# see wrong_safety_nets` mark in docs/inheritance-rules.toml without
-# its [wrong_safety_nets] entry, an entry its [uniform] rule does not mark, or
-# an entry no rule inherits; scripts/check_section_refs.py on a § reference in
-# the registry, the inheritance rules, docs/showcase-elements.toml or
-# docs/new-os-version-guide.md that names no platform-facts section;
-# scripts/check_todo_citations.py on a preset key path in docs/todo.md that
-# names no key of its preset, or a preset line citation no commit dates;
-# scripts/check_preset_citations.py on a preset comment whose
-# `platform-facts.md:N` row is not the value below it. CI runs the same ten.
+# The four original checks of the data documents, under the Python floor above
+# (check_todo_citations.py and check_preset_citations.py import `tomllib`),
+# each with its self-test: scripts/check_platform_facts_rows.py fails on a
+# docs/property-registry.toml field with no docs/platform-facts.md row;
+# scripts/check_section_refs.py on a § reference in the registry,
+# docs/showcase-elements.toml or docs/new-os-version-guide.md that names no
+# platform-facts section; scripts/check_todo_citations.py on a preset key
+# path in docs/todo.md that names no key of its preset, or a preset line
+# citation no commit dates; scripts/check_preset_citations.py on a bundled
+# preset's definition comment (`# S9.4`, `# S4.5`) that is not on the key,
+# the value and the presets its section defines. The first three wait for
+# M2.6 (PLAN_EXCLUDED), their self-tests run. CI runs the same eight.
 # The 0.8.0 plan's checks follow them, each with its note.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Data documents"
@@ -1211,10 +1316,6 @@ run_check "data documents: every registry field has a platform-facts row" \
     python3 scripts/check_platform_facts_rows.py
 run_check "data documents: platform-facts rows self-test" \
     python3 scripts/check_platform_facts_rows.py --self-test
-run_check "data documents: [wrong_safety_nets] and its [uniform] marks" \
-    python3 scripts/check_wrong_safety_nets.py
-run_check "data documents: wrong safety nets self-test" \
-    python3 scripts/check_wrong_safety_nets.py --self-test
 run_check "data documents: § references name platform-facts sections" \
     python3 scripts/check_section_refs.py
 run_check "data documents: § references self-test" \
@@ -1223,9 +1324,9 @@ run_check "data documents: docs/todo.md cites preset values by key path" \
     python3 scripts/check_todo_citations.py
 run_check "data documents: todo citations self-test" \
     python3 scripts/check_todo_citations.py --self-test
-run_check "data documents: preset comments cite their platform-facts rows" \
+run_check "data documents: the bundled presets' definition comments hold" \
     python3 scripts/check_preset_citations.py
-run_check "data documents: preset citations self-test" \
+run_check "data documents: preset definition comments self-test" \
     python3 scripts/check_preset_citations.py --self-test
 # The 0.8.0 ledger's triage: every open item of docs/todo.md, the catalogue's
 # open items, ROADMAP's later work and the two connector plans has one

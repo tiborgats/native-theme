@@ -89,14 +89,6 @@ Windows.
 
 ## Icon sets
 
-**Material spinner**
-
-![Material spinner](native-theme/docs/assets/spinner-material.gif "Material spinner")
-
-**Lucide spinner**
-
-![Lucide spinner](native-theme/docs/assets/spinner-lucide.gif "Lucide spinner")
-
 Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appropriate glyphs:
 
 - **Material Symbols** and **Lucide** bundled for offline use

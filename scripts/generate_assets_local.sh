@@ -2,30 +2,26 @@
 set -euo pipefail
 
 # Master orchestration script for all native-theme visual assets
-# Generates spinner GIFs and showcase screenshots in one command
+# Generates the showcase screenshots and theme-switching GIFs in one command
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=== Generating visual assets for native-theme ==="
 echo ""
 
-echo "--- Step 1: Generating spinner GIFs ---"
-python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
-echo ""
-
-echo "--- Step 2: Generating showcase screenshots ---"
+echo "--- Step 1: Generating showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_screenshots_iced.sh"
 echo ""
 
-echo "--- Step 3: Generating gpui showcase screenshots ---"
+echo "--- Step 2: Generating gpui showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_screenshots_gpui.sh"
 echo ""
 
-echo "--- Step 4: Generating egui showcase screenshots ---"
+echo "--- Step 3: Generating egui showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
 echo ""
 
-echo "--- Step 5: Generating theme-switching GIFs (iced + gpui + egui) ---"
+echo "--- Step 4: Generating theme-switching GIFs (iced + gpui + egui) ---"
 bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 echo ""
 
@@ -33,7 +29,6 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 echo "=== All visual assets generated ==="
 for dir in \
-    "$PROJECT_ROOT/native-theme/docs/assets" \
     "$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets" \
     "$PROJECT_ROOT/connectors/native-theme-iced/docs/assets" \
     "$PROJECT_ROOT/connectors/native-theme-egui/docs/assets" \

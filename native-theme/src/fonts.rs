@@ -12,7 +12,7 @@
 //! one it has no face of — on Linux and the other fontconfig platforms,
 //! fontconfig's best match, which `system_face` then finds by name.
 
-use crate::theme::FontStyle;
+use crate::next::FontStyle;
 
 /// What [`select_face`] knows about one candidate face.
 #[derive(Clone, Copy, Debug)]
@@ -150,6 +150,7 @@ pub fn is_macos_system_mono_family(family: &str) -> bool {
 /// A face [`system_face`] chose: its bytes, and what fontdb records for it.
 #[cfg(feature = "system-fonts")]
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SystemFace {
     /// The face's file, whole: for a face of a collection (`.ttc`), the
     /// collection, addressed by `index`.

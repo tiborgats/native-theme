@@ -1464,7 +1464,8 @@ model, the platform presets and the three connectors
       compute them (`button.hover_background`, `slider.thumb_color`, both
       switch tracks, the toolbar's fill and edge, the popover's and the
       card's edges), in Qt's arithmetic, checked against Qt 6.11.2 test
-      vectors (`scripts/generate_qt_color_vectors.py`); the toolbar fill's
+      vectors (`scripts/generate_qt_color_vectors.py`, deleted with the
+      ports at 0.8.0's switch, D10); the toolbar fill's
       kwinrc condition is the next entry.
       M8 T16c (2026-10-17): the switch's outlines are in the model
       (`switch.*_track_border_color`, `track_border_line_width`,
@@ -2991,9 +2992,6 @@ the gap — closing it is a change, and each wants its own decision.
       tests — it wants splitting per connector or a shared home. It also
       parses TOML, so it needs a `toml` dev-dependency, which the citation
       check did not. It works today, so this is tidying, not a fix.
-      `scripts/generate_gifs_spinners.py` is deliberately **not** included: it is
-      release tooling a human runs, not a gate, and nothing can silently
-      skip it because its output is the screenshots the asset stamp checks.
 - [ ] [1.0] Split the showcases into modules: `showcase-gpui.rs` and
       `showcase-iced.rs` are several thousand lines each after gaining every
       widget and their self-tests. The gpui half is done: the example is

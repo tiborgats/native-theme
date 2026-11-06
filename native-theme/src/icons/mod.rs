@@ -4,16 +4,15 @@ use std::fmt;
 
 use std::borrow::Cow;
 
-use crate::color::Rgba;
+mod bundled;
+mod model;
+
 #[allow(unused_imports)]
 use crate::detect::{system_icon_set, system_icon_theme};
-use crate::model::IconSet;
-pub use crate::model::{
-    AnimatedIcon, EmptyFrameListError, FrameList, FramesData, IconData, IconProvider, IconRole,
-    RgbaData, TransformAnimation, TransformData, icon_name,
-};
+use crate::next::Color;
 #[allow(unused_imports)]
-use crate::model::{bundled_icon_by_name, bundled_icon_svg};
+pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
+pub use model::{IconData, IconProvider, IconRole, IconSet, RgbaData, icon_name};
 
 /// The largest buffer, in bytes, built while decoding an icon from outside
 /// data: a PNG's output buffer, a sprite sheet's frames (`frame_count ×
@@ -86,8 +85,27 @@ pub(crate) fn raster_bytes_in_bound(width: u32, height: u32) -> Option<usize> {
 
 /// The red, green and blue of a loader's foreground colour; the alpha is
 /// dropped, as the loaders draw the glyph's own coverage.
-fn rgb(color: Rgba) -> [u8; 3] {
-    [color.r, color.g, color.b]
+fn rgb(color: Color) -> [u8; 3] {
+    let [r, g, b, _] = color.to_srgb8_clamped();
+    [r, g, b]
+}
+
+/// A colour's `#rrggbb`, its alpha dropped, as an SVG `fill` or `stroke`
+/// attribute takes it.
+fn opaque_hex(color: Color) -> String {
+    let [r, g, b] = rgb(color);
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+/// A test colour from its 8-bit sRGB channels.
+#[cfg(test)]
+pub(crate) const fn srgb8(r: u8, g: u8, b: u8, a: u8) -> Color {
+    Color {
+        r: r as f32 / 255.0,
+        g: g as f32 / 255.0,
+        b: b as f32 / 255.0,
+        a: a as f32 / 255.0,
+    }
 }
 
 /// Identifies what icon to load: a semantic role, a platform-specific name,
@@ -108,7 +126,6 @@ fn rgb(color: Rgba) -> [u8; 3] {
 /// let _: IconId = "edit-copy".into();
 /// ```
 #[derive(Debug)]
-#[non_exhaustive]
 pub enum IconId<'a> {
     /// Load by semantic role (most common).
     Role(IconRole),
@@ -155,9 +172,9 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 // compile error.
 //
 // For runtime-set dispatch (common in connector code), use the free
-// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color, size)`,
-// `load_custom_icon_in(provider, set, icon_theme, color, size)` and
-// `load_icon_indicator(set, theme)` at the bottom of this section.
+// functions `load_icon(id, set)`, `load_custom_icon(provider, set, color, size)`
+// and `load_custom_icon_in(provider, set, icon_theme, color, size)` at the
+// bottom of this section.
 
 /// Loader for freedesktop.org icon themes (GTK / Linux).
 ///
@@ -192,12 +209,13 @@ impl<'a, T: IconProvider> From<&'a T> for IconId<'a> {
 /// let _icon = FreedesktopLoader::new("edit-copy")
 ///     .theme("Adwaita")
 ///     .size(48)
-///     .color(native_theme::Rgba::rgb(0, 0, 0))
+///     .color(native_theme::next::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 })
 ///     .load();
 /// # }
 /// ```
 #[derive(Debug)]
 #[must_use]
+#[non_exhaustive]
 pub struct FreedesktopLoader<'a> {
     // Fields read only in the Linux + system-icons cfg branch of `load`.
     #[allow(dead_code)]
@@ -280,14 +298,14 @@ impl<'a> FreedesktopLoader<'a> {
 
     /// Set the foreground color for GTK symbolic icon colorization; its
     /// alpha is ignored: the icon keeps its own coverage.
-    pub fn color(mut self, color: Rgba) -> Self {
+    pub fn color(mut self, color: Color) -> Self {
         self.fg_color = Some(rgb(color));
         self
     }
 
     /// Set the foreground color if `Some`, leave default if `None`; its
     /// alpha is ignored, as in [`Self::color`].
-    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+    pub fn color_opt(mut self, color: Option<Color>) -> Self {
         self.fg_color = color.map(rgb);
         self
     }
@@ -310,8 +328,7 @@ impl<'a> FreedesktopLoader<'a> {
     /// as none stands in for the undetected one: a role or a name gives
     /// `None`, and a custom [`IconProvider`] gives only its own freedesktop
     /// SVG ([`IconProvider::icon_svg`]), which depends on no theme, where it
-    /// has one. [`system_icon_theme()`](crate::detect::system_icon_theme)
-    /// gives the reason.
+    /// has one.
     ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
@@ -378,30 +395,6 @@ impl<'a> FreedesktopLoader<'a> {
             None
         }
     }
-
-    /// Load the theme's animated process-working spinner.
-    ///
-    /// `theme` of `None` uses the system-detected theme, and gives `None`
-    /// where detection fails — no theme stands in for the undetected one;
-    /// `Some(t)` overrides.
-    /// Associated function (no `self`) — the spinner is a property of the
-    /// theme, not of any particular icon id. Found only where
-    /// [`Self::load`] would find an icon: in the theme or a theme it
-    /// inherits from, never in `hicolor` unless that is the theme.
-    ///
-    /// Requires the `system-icons` feature, and Linux; `None` otherwise.
-    #[must_use]
-    #[allow(unused_variables)]
-    pub fn load_indicator(theme: Option<&str>) -> Option<AnimatedIcon> {
-        #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        {
-            crate::freedesktop::load_freedesktop_spinner(theme)
-        }
-        #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
-        {
-            None
-        }
-    }
 }
 
 /// Loader for Apple SF Symbols (macOS only).
@@ -410,6 +403,7 @@ impl<'a> FreedesktopLoader<'a> {
 /// drawn black unless [`Self::color`] gives it a foreground colour.
 #[derive(Debug)]
 #[must_use]
+#[non_exhaustive]
 pub struct SfSymbolsLoader<'a> {
     #[allow(dead_code)] // read only in the macOS cfg branch of `load`
     id: IconId<'a>,
@@ -441,14 +435,14 @@ impl<'a> SfSymbolsLoader<'a> {
 
     /// Set the foreground color the monochrome symbol is drawn in; its
     /// alpha is ignored: the symbol keeps its own coverage.
-    pub fn color(mut self, color: Rgba) -> Self {
+    pub fn color(mut self, color: Color) -> Self {
         self.fg_color = Some(rgb(color));
         self
     }
 
     /// Set the foreground color if `Some`, leave default if `None`; its
     /// alpha is ignored, as in [`Self::color`].
-    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+    pub fn color_opt(mut self, color: Option<Color>) -> Self {
         self.fg_color = color.map(rgb);
         self
     }
@@ -485,7 +479,6 @@ impl<'a> SfSymbolsLoader<'a> {
             None
         }
     }
-    // No load_indicator: SF Symbols has no animated spinner primitive.
 }
 
 /// Loader for Windows Segoe Fluent Icons (Windows only).
@@ -496,6 +489,7 @@ impl<'a> SfSymbolsLoader<'a> {
 /// own colours.
 #[derive(Debug)]
 #[must_use]
+#[non_exhaustive]
 pub struct SegoeFluentLoader<'a> {
     #[allow(dead_code)] // read only in the Windows cfg branch of `load`
     id: IconId<'a>,
@@ -527,14 +521,14 @@ impl<'a> SegoeFluentLoader<'a> {
     /// Set the foreground color a monochrome glyph is drawn in; its alpha
     /// is ignored: the glyph keeps its own coverage. A full-colour stock
     /// icon is unchanged.
-    pub fn color(mut self, color: Rgba) -> Self {
+    pub fn color(mut self, color: Color) -> Self {
         self.fg_color = Some(rgb(color));
         self
     }
 
     /// Set the foreground color if `Some`, leave default if `None`; its
     /// alpha is ignored, as in [`Self::color`].
-    pub fn color_opt(mut self, color: Option<Rgba>) -> Self {
+    pub fn color_opt(mut self, color: Option<Color>) -> Self {
         self.fg_color = color.map(rgb);
         self
     }
@@ -571,7 +565,6 @@ impl<'a> SegoeFluentLoader<'a> {
             None
         }
     }
-    // No load_indicator: Segoe has no animated spinner primitive.
 }
 
 /// Loader for Google Material Symbols (bundled SVG).
@@ -579,6 +572,7 @@ impl<'a> SegoeFluentLoader<'a> {
 /// Material SVGs are scalable at render time, so no `size` method.
 #[derive(Debug)]
 #[must_use]
+#[non_exhaustive]
 pub struct MaterialLoader<'a> {
     #[allow(dead_code)] // read only in the material-icons feature cfg branch of `load`
     id: IconId<'a>,
@@ -618,26 +612,12 @@ impl<'a> MaterialLoader<'a> {
             None
         }
     }
-
-    /// Load the Material animated spinner. Associated function; no `self`.
-    ///
-    /// Requires the `material-icons` feature; `None` otherwise.
-    #[must_use]
-    pub fn load_indicator() -> Option<AnimatedIcon> {
-        #[cfg(feature = "material-icons")]
-        {
-            Some(crate::spinners::material_spinner())
-        }
-        #[cfg(not(feature = "material-icons"))]
-        {
-            None
-        }
-    }
 }
 
 /// Loader for Lucide Icons (bundled SVG).
 #[derive(Debug)]
 #[must_use]
+#[non_exhaustive]
 pub struct LucideLoader<'a> {
     #[allow(dead_code)] // read only in the lucide-icons feature cfg branch of `load`
     id: IconId<'a>,
@@ -678,21 +658,6 @@ impl<'a> LucideLoader<'a> {
             None
         }
     }
-
-    /// Load the Lucide animated spinner. Associated function; no `self`.
-    ///
-    /// Requires the `lucide-icons` feature; `None` otherwise.
-    #[must_use]
-    pub fn load_indicator() -> Option<AnimatedIcon> {
-        #[cfg(feature = "lucide-icons")]
-        {
-            Some(crate::spinners::lucide_spinner())
-        }
-        #[cfg(not(feature = "lucide-icons"))]
-        {
-            None
-        }
-    }
 }
 
 // =============================================================================
@@ -717,27 +682,6 @@ pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData
     }
 }
 
-/// Load the animated loading indicator for the given set.
-///
-/// `theme` is the freedesktop theme to take the spinner from, as
-/// [`FreedesktopLoader::load_indicator`] takes it: `None` uses the
-/// system-detected theme. It is used only for [`IconSet::Freedesktop`];
-/// for the sets that have no themes (Material, Lucide, SfSymbols,
-/// SegoeFluent), the theme name is not used by the loader.
-///
-/// Returns `None` for sets without an animated spinner (SfSymbols, SegoeFluent).
-///
-/// Each set needs its loader's feature (see the loaders); `None` without it.
-#[must_use]
-pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<AnimatedIcon> {
-    match set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(theme),
-        IconSet::Material => MaterialLoader::load_indicator(),
-        IconSet::Lucide => LucideLoader::load_indicator(),
-        IconSet::SfSymbols | IconSet::SegoeFluent => None,
-    }
-}
-
 /// Load a custom icon from an [`IconProvider`] for a set known only at
 /// runtime, in `color`, at `size`.
 ///
@@ -758,8 +702,7 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 /// the theme as KDE's own icon loader does, and a full-colour icon keeps its
 /// palette. `None` leaves each icon in the colour it loads in. A freedesktop
 /// icon comes from the system's icon theme; [`load_custom_icon_in`] takes
-/// another, and [`SystemTheme::icon`](crate::SystemTheme::icon) the theme's
-/// own. A provider's own SVG is coloured as a monochrome icon, so give a
+/// another. A provider's own SVG is coloured as a monochrome icon, so give a
 /// colour only for monochrome icons; with `None` a full-colour SVG is
 /// returned unchanged.
 ///
@@ -779,7 +722,7 @@ pub fn load_icon_indicator(set: IconSet, theme: Option<&str>) -> Option<Animated
 pub fn load_custom_icon(
     provider: &(impl IconProvider + ?Sized),
     set: IconSet,
-    color: Option<Rgba>,
+    color: Option<Color>,
     size: Option<u32>,
 ) -> Option<IconData> {
     load_custom_icon_in(provider, set, None, color, size)
@@ -790,9 +733,7 @@ pub fn load_custom_icon(
 /// theme where it is `None`. `size` is clamped to `1..=`[`MAX_ICON_SIZE`]
 /// as there.
 ///
-/// For the icon theme the application's theme names
-/// ([`SystemTheme::icon_theme_for`](crate::SystemTheme::icon_theme_for),
-/// [`Resolved::icon_theme`](crate::Resolved::icon_theme)), so a provider's
+/// For the icon theme the application's theme names, so a provider's
 /// icon comes from the same icon theme as the role icons beside it. An
 /// icon the theme and the themes it inherits from lack is the provider's
 /// own SVG, or `None`; no other theme is searched. The other sets have no
@@ -802,27 +743,10 @@ pub fn load_custom_icon_in(
     provider: &(impl IconProvider + ?Sized),
     set: IconSet,
     icon_theme: Option<&str>,
-    color: Option<Rgba>,
+    color: Option<Color>,
     size: Option<u32>,
 ) -> Option<IconData> {
     load_provider_icon(provider, set, icon_theme, color, size)
-}
-
-/// The runtime-set load behind
-/// [`SystemTheme::icon`](crate::SystemTheme::icon): `id` from `set` in
-/// `color` at `size`, a freedesktop icon from `theme` (the system's where
-/// `None`).
-pub(crate) fn load_icon_in<'a>(
-    id: IconId<'a>,
-    set: IconSet,
-    theme: Option<&'a str>,
-    color: Option<Rgba>,
-    size: Option<u32>,
-) -> Option<IconData> {
-    match id {
-        IconId::Custom(provider) => load_provider_icon(provider, set, theme, color, size),
-        id => load_set_icon(id, set, theme, color, size),
-    }
 }
 
 /// A provider's icon: its name for `set` through the set's loader, else its
@@ -831,7 +755,7 @@ fn load_provider_icon(
     provider: &(impl IconProvider + ?Sized),
     set: IconSet,
     theme: Option<&str>,
-    color: Option<Rgba>,
+    color: Option<Color>,
     size: Option<u32>,
 ) -> Option<IconData> {
     if let Some(name) = provider.icon_name(set)
@@ -851,7 +775,7 @@ fn load_set_icon<'a>(
     id: IconId<'a>,
     set: IconSet,
     theme: Option<&'a str>,
-    color: Option<Rgba>,
+    color: Option<Color>,
     size: Option<u32>,
 ) -> Option<IconData> {
     match set {
@@ -895,7 +819,7 @@ fn load_set_icon<'a>(
 
 /// An SVG coloured through [`colorize_monochrome_svg`] where `color` is
 /// given; anything else unchanged.
-fn colorize_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
+fn colorize_svg_data(data: IconData, color: Option<Color>) -> IconData {
     match (data, color) {
         (IconData::Svg(svg), Some(color)) => {
             IconData::Svg(Cow::Owned(colorize_monochrome_svg(&svg, color)))
@@ -909,7 +833,7 @@ fn colorize_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
 /// a rasteriser would otherwise draw it black; an SVG that sets its own (a
 /// Breeze `current-color-scheme` stylesheet), one without `currentColor`, a
 /// raster, or no `color`, unchanged.
-fn fill_freedesktop_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
+fn fill_freedesktop_svg_data(data: IconData, color: Option<Color>) -> IconData {
     match (data, color) {
         (IconData::Svg(svg), Some(color)) => {
             let filled = match fill_current_color(&svg, color) {
@@ -944,8 +868,8 @@ fn fill_freedesktop_svg_data(data: IconData, color: Option<Rgba>) -> IconData {
 /// element when the root tag has another fill. For monochrome icon sets; a
 /// full-colour SVG should not be passed through it.
 #[must_use]
-pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
-    let hex = format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b);
+pub fn colorize_monochrome_svg(svg: &[u8], color: Color) -> Vec<u8> {
+    let hex = opaque_hex(color);
 
     let Ok(svg_str) = std::str::from_utf8(svg) else {
         return svg.to_vec();
@@ -1033,10 +957,10 @@ pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
 /// # Examples
 ///
 /// ```
-/// use native_theme::Rgba;
 /// use native_theme::icons::fill_current_color;
+/// use native_theme::next::Color;
 ///
-/// let text = Rgba::rgb(0x22, 0x22, 0x26);
+/// let text = Color::parse("#222226").ok_or("not a colour")?;
 /// let symbolic = br#"<svg><path fill="currentColor"/></svg>"#;
 /// assert_eq!(
 ///     &*fill_current_color(symbolic, text),
@@ -1045,16 +969,14 @@ pub fn colorize_monochrome_svg(svg: &[u8], color: Rgba) -> Vec<u8> {
 ///
 /// let styled = br#"<svg><style>.a { color: #fcfcfc }</style><path class="a" fill="currentColor"/></svg>"#;
 /// assert_eq!(&*fill_current_color(styled, text), &styled[..]);
+/// # Ok::<(), &str>(())
 /// ```
 #[must_use]
-pub fn fill_current_color(svg: &[u8], color: Rgba) -> Cow<'_, [u8]> {
+pub fn fill_current_color(svg: &[u8], color: Color) -> Cow<'_, [u8]> {
     match std::str::from_utf8(svg) {
         Ok(text) if text.contains("currentColor") && !sets_color(text) => Cow::Owned(
-            text.replace(
-                "currentColor",
-                &format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b),
-            )
-            .into_bytes(),
+            text.replace("currentColor", &opaque_hex(color))
+                .into_bytes(),
         ),
         _ => Cow::Borrowed(svg),
     }
@@ -1310,7 +1232,6 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
 /// All other variants represent an explicit user choice that is preserved
 /// across theme re-applications.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
 pub enum IconSetChoice {
     /// Follow the theme preset's recommendation.
     ///
@@ -1328,14 +1249,13 @@ pub enum IconSetChoice {
 
     /// Use the OS-configured icon theme.
     ///
-    /// Resolved at load time via [`system_icon_set()`](crate::detect::system_icon_set).
-    /// The display label ("system (breeze-dark)") is computed dynamically
-    /// from [`system_icon_theme()`](crate::detect::system_icon_theme),
-    /// so it tracks runtime OS theme changes. Where detection fails the
-    /// label is short, `system (unavailable)`, as a control's label is:
-    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
-    /// reason, for a tooltip or a note where there is room for it. The
-    /// freedesktop loaders then search no theme for this choice.
+    /// Resolved at load time to the platform's own icon set (SF Symbols on
+    /// macOS, Segoe Fluent on Windows, freedesktop on Linux, Material
+    /// elsewhere). The display label ("system (breeze-dark)") is computed
+    /// dynamically from the detected icon theme, so it tracks runtime OS
+    /// theme changes. Where detection fails the label is short,
+    /// `system (unavailable)`, as a control's label is. The freedesktop
+    /// loaders then search no theme for this choice.
     System,
 
     /// User explicitly picked a specific installed freedesktop icon theme.
@@ -1717,7 +1637,7 @@ mod load_icon_tests {
     fn freedesktop_loader_stores_the_size_and_colour() {
         let loader = FreedesktopLoader::new("edit-copy");
         assert_eq!((loader.size, loader.fg_color), (24, None));
-        let loader = loader.size(48).color(Rgba::new(10, 20, 30, 40));
+        let loader = loader.size(48).color(srgb8(10, 20, 30, 40));
         assert_eq!(loader.size, 48);
         assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         assert_eq!(loader.color_opt(None).fg_color, None);
@@ -1776,11 +1696,11 @@ mod load_icon_tests {
 
     #[test]
     fn sf_symbols_loader_stores_the_colour() {
-        let loader = SfSymbolsLoader::new(IconRole::ActionCopy).color(Rgba::new(10, 20, 30, 40));
+        let loader = SfSymbolsLoader::new(IconRole::ActionCopy).color(srgb8(10, 20, 30, 40));
         assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         let loader = loader.color_opt(None);
         assert_eq!(loader.fg_color, None);
-        let loader = loader.color_opt(Some(Rgba::rgb(40, 50, 60)));
+        let loader = loader.color_opt(Some(srgb8(40, 50, 60, 255)));
         assert_eq!(loader.fg_color, Some([40, 50, 60]));
         assert_eq!(SfSymbolsLoader::new(IconRole::ActionCopy).fg_color, None);
     }
@@ -1796,11 +1716,11 @@ mod load_icon_tests {
 
     #[test]
     fn segoe_fluent_loader_stores_the_colour() {
-        let loader = SegoeFluentLoader::new(IconRole::ActionCopy).color(Rgba::new(10, 20, 30, 40));
+        let loader = SegoeFluentLoader::new(IconRole::ActionCopy).color(srgb8(10, 20, 30, 40));
         assert_eq!(loader.fg_color, Some([10, 20, 30]), "the alpha is ignored");
         let loader = loader.color_opt(None);
         assert_eq!(loader.fg_color, None);
-        let loader = loader.color_opt(Some(Rgba::rgb(40, 50, 60)));
+        let loader = loader.color_opt(Some(srgb8(40, 50, 60, 255)));
         assert_eq!(loader.fg_color, Some([40, 50, 60]));
         assert_eq!(SegoeFluentLoader::new(IconRole::ActionCopy).fg_color, None);
     }
@@ -1999,7 +1919,7 @@ mod runtime_set_icon_tests {
     use super::*;
 
     // Test fixture colour, not a theme value.
-    const COLOR: Rgba = Rgba::rgb(0x12, 0x34, 0x56);
+    const COLOR: Color = srgb8(0x12, 0x34, 0x56, 255);
 
     fn svg_text(data: IconData) -> String {
         match data {
@@ -2217,23 +2137,6 @@ mod runtime_set_icon_tests {
     }
 
     #[test]
-    #[cfg(feature = "material-icons")]
-    fn custom_id_in_the_dispatcher_is_coloured() {
-        let provider: &dyn IconProvider = &IconRole::ActionCopy;
-        let svg = svg_text(
-            load_icon_in(
-                IconId::Custom(provider),
-                IconSet::Material,
-                None,
-                Some(COLOR),
-                None,
-            )
-            .unwrap(),
-        );
-        assert!(svg.contains("#123456"), "{svg}");
-    }
-
-    #[test]
     fn provider_with_nothing_is_none() {
         #[derive(Debug)]
         struct NullProvider;
@@ -2288,79 +2191,6 @@ mod runtime_set_icon_tests {
             assert_eq!(svg_of(data), String::from_utf8_lossy(svg));
         }
     }
-
-    #[test]
-    #[cfg(feature = "material-icons")]
-    fn indicator_of_a_themeless_set_ignores_the_theme() {
-        assert_eq!(
-            load_icon_indicator(IconSet::Material, Some("breeze")),
-            load_icon_indicator(IconSet::Material, None)
-        );
-    }
-}
-
-#[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod loading_indicator_tests {
-    use super::*;
-
-    // === Dispatch tests (through per-set loader API) ===
-
-    #[test]
-    #[cfg(feature = "lucide-icons")]
-    fn loading_indicator_lucide_returns_frames() {
-        let anim = LucideLoader::load_indicator();
-        assert!(anim.is_some(), "lucide should return Some");
-        let anim = anim.unwrap();
-        assert!(
-            matches!(anim, AnimatedIcon::Frames(_)),
-            "lucide should be pre-rotated Frames"
-        );
-        if let AnimatedIcon::Frames(data) = &anim {
-            assert_eq!(data.frames().len(), 24);
-            assert_eq!(data.frame_duration_ms().get(), 42);
-        }
-    }
-
-    /// Freedesktop loading_indicator returns Some if the active icon theme
-    /// has a `process-working` sprite sheet (e.g. Breeze), None otherwise.
-    #[test]
-    #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    fn loading_indicator_freedesktop_depends_on_theme() {
-        let anim = FreedesktopLoader::load_indicator(None);
-        // Result depends on installed icon theme -- Some if process-working exists
-        if let Some(anim) = anim {
-            match anim {
-                AnimatedIcon::Frames(data) => {
-                    assert!(
-                        !data.frames().is_empty(),
-                        "Frames variant should have at least one frame"
-                    );
-                }
-                AnimatedIcon::Transform(_) => {
-                    // Single-frame theme icon with Spin -- valid result
-                }
-            }
-        }
-    }
-
-    /// Freedesktop spinner depends on platform and icon theme.
-    #[test]
-    fn loading_indicator_freedesktop_does_not_panic() {
-        let _result = FreedesktopLoader::load_indicator(None);
-    }
-
-    // === Direct spinner construction tests (any platform) ===
-
-    #[test]
-    #[cfg(feature = "lucide-icons")]
-    fn lucide_spinner_is_frames() {
-        let anim = crate::spinners::lucide_spinner();
-        assert!(
-            matches!(anim, AnimatedIcon::Frames(_)),
-            "lucide should be pre-rotated Frames"
-        );
-    }
 }
 
 // === New builder API tests ===
@@ -2400,16 +2230,9 @@ mod icon_loader_tests {
         // system theme having 'document-save' at size 48.
         let _ = FreedesktopLoader::new(IconRole::ActionSave)
             .size(48)
-            .color(Rgba::rgb(0, 0, 0))
+            .color(srgb8(0, 0, 0, 255))
             .theme("Adwaita")
             .load();
-    }
-
-    #[test]
-    #[cfg(feature = "material-icons")]
-    fn icon_loader_load_indicator() {
-        let anim = MaterialLoader::load_indicator();
-        assert!(anim.is_some());
     }
 
     #[test]
@@ -2429,41 +2252,6 @@ mod icon_loader_tests {
             load_icon(role, IconSet::Material),
             load_icon(role, IconSet::Lucide)
         );
-    }
-
-    #[test]
-    fn load_icon_indicator_free_fn_dispatches() {
-        // SfSymbols and SegoeFluent have no spinner primitive.
-        assert!(load_icon_indicator(IconSet::SfSymbols, None).is_none());
-        assert!(load_icon_indicator(IconSet::SegoeFluent, None).is_none());
-    }
-}
-
-#[cfg(all(test, feature = "svg-rasterize", feature = "lucide-icons"))]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-mod spinner_rasterize_tests {
-    use super::*;
-
-    #[test]
-    fn lucide_spinner_icon_rasterizes() {
-        let anim = crate::spinners::lucide_spinner();
-        if let AnimatedIcon::Frames(data) = &anim {
-            let first = data.frames().first();
-            if let IconData::Svg(cow) = first {
-                let result = crate::rasterize::rasterize_svg(cow, 24);
-                assert!(result.is_ok(), "lucide loader should rasterize");
-                if let Ok(IconData::Rgba(rgba)) = &result {
-                    assert!(
-                        rgba.data().iter().any(|&b| b != 0),
-                        "lucide loader rasterized to empty image"
-                    );
-                }
-            } else {
-                panic!("lucide spinner frame should be Svg");
-            }
-        } else {
-            panic!("lucide spinner should be Frames");
-        }
     }
 }
 
@@ -2794,13 +2582,13 @@ mod installed_theme_tests {
     reason = "a test fails by panicking"
 )]
 mod colorize_tests {
-    use super::{colorize_monochrome_svg, fill_current_color, sets_color};
-    use crate::color::Rgba;
+    use super::{colorize_monochrome_svg, fill_current_color, sets_color, srgb8};
+    use crate::next::Color;
     use std::borrow::Cow;
 
-    const BLUE: Rgba = Rgba::new(51, 102, 204, 255);
-    const RED: Rgba = Rgba::new(255, 0, 0, 255);
-    const GREEN: Rgba = Rgba::new(20, 184, 82, 255);
+    const BLUE: Color = srgb8(51, 102, 204, 255);
+    const RED: Color = srgb8(255, 0, 0, 255);
+    const GREEN: Color = srgb8(20, 184, 82, 255);
 
     #[test]
     fn colorize_svg_replaces_fill_black() {
@@ -2956,7 +2744,7 @@ mod colorize_tests {
     #[test]
     fn colorize_svg_discards_alpha() {
         let svg = b"<svg><path fill=\"black\"/></svg>";
-        let translucent = Rgba::new(255, 0, 0, 40);
+        let translucent = srgb8(255, 0, 0, 40);
         assert_eq!(
             colorize_monochrome_svg(svg, translucent),
             colorize_monochrome_svg(svg, RED)
@@ -3015,7 +2803,7 @@ mod colorize_tests {
     #[test]
     fn fill_current_color_fills_an_unset_current_color() {
         let svg = br#"<svg><path fill="currentColor" stroke="currentColor"/></svg>"#;
-        let filled = fill_current_color(svg, Rgba::new(51, 102, 204, 7));
+        let filled = fill_current_color(svg, srgb8(51, 102, 204, 7));
         assert_eq!(
             &*filled,
             br##"<svg><path fill="#3366cc" stroke="#3366cc"/></svg>"##

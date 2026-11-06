@@ -18,7 +18,7 @@
 
 // Win32 GDI FFI -- no safe alternative
 #![allow(unsafe_code)]
-use crate::IconData;
+use crate::icons::IconData;
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -683,7 +683,7 @@ pub(crate) fn load_windows_icon_by_name(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::{IconRole, IconSet, icon_name};
+    use crate::icons::{IconRole, IconSet, icon_name};
 
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the Segoe set.
