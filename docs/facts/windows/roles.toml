@@ -6018,3 +6018,137 @@ quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Common_themeresources_any.xaml:301"
 quote = "<SolidColorBrush x:Key=\"TextOnAccentFillColorSelectedTextBrush\" Color=\"{StaticResource TextOnAccentFillColorSelectedText}\" />"
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# M1b: the preset's completeness (the Windows facts lane's M1b pass).
+# ---------------------------------------------------------------------------------------------------------------
+
+# The unfocused selection: a TextBox's SelectionHighlightColorWhenNotFocused defaults to Transparent, and a
+# transparent colour hides the selection while the box is not focused (W1-032).
+[[fact]]
+key = "role.global.selection_text_background_unfocused"
+value = "absent"
+rows = ["W1-032", "W3-25"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxBase.cpp:4356"
+quote = "value.SetColor(static_cast<UINT32>(KnownColors::Transparent));"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxBase.cpp:4287"
+quote = "IFC_RETURN(HideSelection(SelectionHighlightColorWhenNotFocused == static_cast<UINT32>(KnownColors::Transparent)));"
+
+# The selected text keeps its own foreground outside high contrast (WinUI's text selection, text.h); under a
+# high-contrast theme the system's selected-text colour, which the text box hands RichEdit as COLOR_HIGHLIGHTTEXT.
+[[fact]]
+key = "role.global.selection_text_foreground"
+value = "absent"
+rows = ["W3-25"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/Inc/text.h:170-177"
+quote = "Otherwise, selected text has the same foreground as // regular text, highlight is rendered semi transparent and over text."
+
+[[fact]]
+key = "role.global.selection_text_foreground"
+when = { conditions = ["contrast_high"] }
+value = "= role.@system_highlight_text"
+rows = ["W3-25"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/Inc/text.h:170-172"
+quote = "based on current theme. In high contrast mode theme colors are used for // selected text foreground and selection highlight"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextServicesHost.cpp:555-557"
+quote = "COLORREF sysColor = GetSysColor(index); if (!UseHighContrastSelection(m_pTextBox->GetContext()))"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/common/text.cpp:311"
+quote = "return pCore->GetFrameworkTheming()->HasHighContrastTheme();"
+
+# What the system draws on a drop target during a drag (W3-49†): a capture's (U513).
+[[fact]]
+key = "role.global.drop_highlight"
+pending = "U513"
+rows = ["W3-49†"]
+
+# The accent inputs' values on a default Windows 11 (the read facts above take them from UISettings.GetColorValue,
+# whose call names no theme, SystemThemingInterop.cpp:295): the OS probe's reads on the windows-11-arm image (run
+# 40348854007, win11-vs2026-arm64@20261022.194.1), light theme, high contrast off (ledger #40; U514).
+[[fact]]
+key = "input.accent"
+value = "#0078d4"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.Accent"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.dark1"
+value = "#0067c0"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark1"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.dark2"
+value = "#003e92"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark2"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.dark3"
+value = "#001a68"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark3"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.light1"
+value = "#0091f8"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight1"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.light2"
+value = "#4cc2ff"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight2"
+tolerance = 0
+
+[[fact]]
+key = "input.accent_ramp.light3"
+value = "#99ebff"
+rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight3"
+tolerance = 0

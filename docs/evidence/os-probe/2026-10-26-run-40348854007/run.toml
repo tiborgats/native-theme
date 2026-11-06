@@ -1,0 +1,9 @@
+# The image folder of run 40348854007 the facts cite (spec S17 *`evidence`*; a legacy run, ledger queue #40). The
+# build is the run's own record: os-probe-windows-11-arm/probe.toml `[os]` (the registry's CurrentVersion key) and
+# `[probe]`, and the job's Set up job log (gh run view 40348854007 --job 121663089038 --log).
+
+[images.os-probe-windows-11-arm]
+preset = "windows-11"
+source = "win11-vs2026-arm64@20261022.194.1"
+os = "Windows 11 Enterprise 25H2 (10.0.26200, UBR 9711), runner image win11-vs2026-arm64 20261022.194.1"
+toolkit = "user32 (GetSystemMetricsForDpi, SystemParametersInfoW) and WinRT UISettings of that build; the probe built for aarch64"

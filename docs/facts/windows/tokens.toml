@@ -49,7 +49,7 @@ quote = "<x:String x:Key=\"ControlFastAnimationAfterDuration\">00:00:00.168</x:S
 [[fact]]
 key = "token.motion.durations.control_faster"
 value = "83ms"
-rows = ["W3-30", "W1-023", "W1-123"]
+rows = ["W3-30", "W1-023", "W1-123", "W3-34"]
 
 [[fact.cite]]
 kind = "published"
@@ -2297,7 +2297,7 @@ quote = "When using XAML common controls, the Segoe UI Variable font will be sel
 [[fact]]
 key = "token.text.roles.body"
 value = "= token.text.keyed.body"
-rows = []
+rows = ["W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2307,7 +2307,7 @@ quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"
 [[fact]]
 key = "token.text.roles.caption"
 value = "= token.text.keyed.caption"
-rows = []
+rows = ["W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2317,7 +2317,7 @@ quote = "<Style x:Key=\"CaptionTextBlockStyle\" TargetType=\"TextBlock\" BasedOn
 [[fact]]
 key = "token.text.roles.title1"
 value = "= token.text.keyed.title"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2327,7 +2327,7 @@ quote = "<Style x:Key=\"TitleTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\
 [[fact]]
 key = "token.text.roles.title2"
 value = "= token.text.keyed.subtitle"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2367,7 +2367,7 @@ quote = "<Style x:Key=\"BodyTextBlockStyle\" TargetType=\"TextBlock\" BasedOn=\"
 [[fact]]
 key = "token.text.roles.large_title"
 value = "= token.text.keyed.title_large"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2377,7 +2377,7 @@ quote = "<Style x:Key=\"TitleLargeTextBlockStyle\" TargetType=\"TextBlock\" Base
 [[fact]]
 key = "token.text.roles.display_large"
 value = "= token.text.keyed.display"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2407,7 +2407,7 @@ quote = "<Style x:Key=\"DisplayTextBlockStyle\" TargetType=\"TextBlock\" BasedOn
 [[fact]]
 key = "token.text.roles.body_emphasized"
 value = "= token.text.keyed.body_strong"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2417,7 +2417,7 @@ quote = "<Style x:Key=\"BodyStrongTextBlockStyle\" TargetType=\"TextBlock\" Base
 [[fact]]
 key = "token.text.roles.callout"
 value = "= token.text.keyed.body_large"
-rows = ["W1-147"]
+rows = ["W1-147", "W3-23"]
 
 [[fact.cite]]
 kind = "published"
@@ -2545,3 +2545,801 @@ rows = ["W-FM01†"]
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
 quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# M1b: the preset's completeness (the Windows facts lane's M1b pass). Every key below was a field of `windows-11`
+# that no fact stated; each is sourced, a sourced absence, or pending under the lane's register ids U500–U519.
+# ---------------------------------------------------------------------------------------------------------------
+
+# Animated visuals: the check box's accept mark, AnimatedAcceptVisualSource, its duration (a TimeSpan of 26666666
+# ticks, 2666.6666ms by S17's `ticks_to_ms`) and its marker map as the source states them (W1-039; the visual's
+# frames are the catalogue's Open item, ADD-A126).
+
+[[fact]]
+key = "token.icons.animated_visuals.accept"
+value = { duration_ms = 2666.6666, markers = { NormalOnToNormalOff_Start = 0.0, NormalOnToNormalOff_End = 0.0253125, NormalOnToPointerOverOn_Start = 0.0315625, NormalOnToPointerOverOn_End = 0.0565625, NormalOnToPressedOn_Start = 0.0628125, NormalOnToPressedOn_End = 0.0878125, NormalOffToNormalOn_Start = 0.0940625, NormalOffToNormalOn_End = 0.2128125, NormalOffToPointerOverOff_Start = 0.2190625, NormalOffToPointerOverOff_End = 0.2440625, NormalOffToPressedOff_Start = 0.2503125, NormalOffToPressedOff_End = 0.2753125, PointerOverOnToPointerOverOff_Start = 0.2815625, PointerOverOnToPointerOverOff_End = 0.3065625, PointerOverOnToNormalOn_Start = 0.3128125, PointerOverOnToNormalOn_End = 0.3378125, PointerOverOnToPressedOn_Start = 0.3440625, PointerOverOnToPressedOn_End = 0.3690625, PointerOverOffToPointerOverOn_Start = 0.3753125, PointerOverOffToPointerOverOn_End = 0.4940625, PointerOverOffToNormalOff_Start = 0.5003125, PointerOverOffToNormalOff_End = 0.5253125, PointerOverOffToPressedOff_Start = 0.5315625, PointerOverOffToPressedOff_End = 0.5565625, PressedOnToPressedOff_Start = 0.5628125, PressedOnToPressedOff_End = 0.5878125, PressedOnToPointerOverOff_Start = 0.5940625, PressedOnToPointerOverOff_End = 0.6190625, PressedOnToNormalOff_Start = 0.6253125, PressedOnToNormalOff_End = 0.6503125, PressedOffToPressedOn_Start = 0.6565625, PressedOffToPressedOn_End = 0.7128125, PressedOffToPointerOverOn_Start = 0.7190625, PressedOffToPointerOverOn_End = 0.8378125, PressedOffToNormalOn_Start = 0.8440625, PressedOffToNormalOn_End = 0.9628125, NormalIndeterminate = 0.9690625, PointerOverIndeterminate = 0.9815625, PressedIndeterminate = 0.9940625 } }
+rows = ["W1-039"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:1930-1933"
+quote = "TimeSpan AnimatedAcceptVisualSource::Duration() { return TimeSpan{ 26666666L }; }"
+conversion = ["ticks_to_ms"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/AnimatedIcon/AnimatedVisuals/AnimatedAcceptVisualSource.cpp:1941-1984"
+quote = "{ L\"NormalOnToNormalOff_Start\", 0.0 }, { L\"NormalOnToNormalOff_End\", 0.0253125 }, { L\"NormalOnToPointerOverOn_Start\", 0.0315625 }, { L\"NormalOnToPointerOverOn_End\", 0.0565625 }, { L\"NormalOnToPressedOn_Start\", 0.0628125 }, { L\"NormalOnToPressedOn_End\", 0.0878125 }, { L\"NormalOffToNormalOn_Start\", 0.0940625 }, { L\"NormalOffToNormalOn_End\", 0.2128125 }, { L\"NormalOffToPointerOverOff_Start\", 0.2190625 }, { L\"NormalOffToPointerOverOff_End\", 0.2440625 }, { L\"NormalOffToPressedOff_Start\", 0.2503125 }, { L\"NormalOffToPressedOff_End\", 0.2753125 }, { L\"PointerOverOnToPointerOverOff_Start\", 0.2815625 }, { L\"PointerOverOnToPointerOverOff_End\", 0.3065625 }, { L\"PointerOverOnToNormalOn_Start\", 0.3128125 }, { L\"PointerOverOnToNormalOn_End\", 0.3378125 }, { L\"PointerOverOnToPressedOn_Start\", 0.3440625 }, { L\"PointerOverOnToPressedOn_End\", 0.3690625 }, { L\"PointerOverOffToPointerOverOn_Start\", 0.3753125 }, { L\"PointerOverOffToPointerOverOn_End\", 0.4940625 }, { L\"PointerOverOffToNormalOff_Start\", 0.5003125 }, { L\"PointerOverOffToNormalOff_End\", 0.5253125 }, { L\"PointerOverOffToPressedOff_Start\", 0.5315625 }, { L\"PointerOverOffToPressedOff_End\", 0.5565625 }, { L\"PressedOnToPressedOff_Start\", 0.5628125 }, { L\"PressedOnToPressedOff_End\", 0.5878125 }, { L\"PressedOnToPointerOverOff_Start\", 0.5940625 }, { L\"PressedOnToPointerOverOff_End\", 0.6190625 }, { L\"PressedOnToNormalOff_Start\", 0.6253125 }, { L\"PressedOnToNormalOff_End\", 0.6503125 }, { L\"PressedOffToPressedOn_Start\", 0.6565625 }, { L\"PressedOffToPressedOn_End\", 0.7128125 }, { L\"PressedOffToPointerOverOn_Start\", 0.7190625 }, { L\"PressedOffToPointerOverOn_End\", 0.8378125 }, { L\"PressedOffToNormalOn_Start\", 0.8440625 }, { L\"PressedOffToNormalOn_End\", 0.9628125 }, { L\"NormalIndeterminate\", 0.9690625 }, { L\"PointerOverIndeterminate\", 0.9815625 }, { L\"PressedIndeterminate\", 0.9940625 },"
+
+# The icon set: WinUI's symbol icons are glyphs of SymbolThemeFontFamily, Segoe Fluent Icons.
+[[fact]]
+key = "token.icons.set"
+value = "segoe_fluent"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:20"
+quote = "<FontFamily x:Key=\"SymbolThemeFontFamily\">Segoe Fluent Icons,Segoe MDL2 Assets</FontFamily>"
+
+# Not read yet: whether Windows names an icon theme and its fallback, the per-role mirroring (Segoe Fluent's
+# "Mirrored" code points, W-P4-12†; AnimatedIcon's MirroredWhenRightToLeft, W3-54†), and the icon-size contexts
+# but the app bar's 16px (U516).
+[[fact]]
+key = "token.icons.theme"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.theme_fallback"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.mirroring"
+pending = "U516"
+rows = ["W3-54†", "W-P4-12†"]
+
+[[fact]]
+key = "token.icons.sizes.small"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.large"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.dialog"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.panel"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.rendering_mode"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.scale"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.axes"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.state_effect"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbol_variants"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.symbolic_colors"
+pending = "U516"
+rows = []
+
+[[fact]]
+key = "token.icons.sizes.toolbar.animation"
+pending = "U516"
+rows = []
+
+# The caret (S4.2): WinUI's TextBoxView draws it. Its blink is a storyboard of two discrete key frames over a
+# period of twice GetCaretBlinkTime (TextBoxHelpers.cpp:55-89): opacity 0 from half the period, back at its end,
+# so the caret is on for one blink time and off for one, switching at once (hard).
+[[fact]]
+key = "token.caret.blink_style"
+value = "hard"
+rows = ["W3-24"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:178-192"
+quote = "// Make the ramps durations 0, but add their original durations to the plateaus."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:26-28"
+quote = "//      <DiscreteDoubleKeyFrame Value=\"rValue\" KeyTime=\"{rEndTime}\"/>"
+
+# The blink time is the system's GetCaretBlinkTime, whose default no pinned source states (WinUI falls back to
+# 500ms only where it reads 0); the blink stops after the whole periods that fit in TextSelectionSettings' 5s
+# (CheckCaretBlinkTimeout, TextBoxView.cpp:2742-2763, three periods where none fits): pending (U505), with whether
+# the caret stays solid while the user types (the start timer of 1s, TextSelectionSettings.cpp:40, restarts on each
+# caret move while the storyboard runs on).
+[[fact]]
+key = "token.caret.blink_on"
+pending = "U505"
+rows = ["W3-24"]
+
+[[fact]]
+key = "token.caret.blink_off"
+pending = "U505"
+rows = ["W3-24"]
+
+[[fact]]
+key = "token.caret.blink_timeout"
+pending = "U505"
+rows = ["W3-24"]
+
+[[fact]]
+key = "token.caret.solid_while_typing"
+pending = "U505"
+rows = []
+
+# The caret is a white rectangle composited with ElementCompositeMode::DestInvert (TextBoxView.cpp:2773-2800), the
+# inverse of what lies beneath, which `Caret.color` (a colour) cannot state: pending (U506) with a spec finding.
+[[fact]]
+key = "token.caret.color"
+pending = "U506"
+rows = []
+
+# The caret's size comes from RichEdit's TxCreateCaret call (TextBoxView.cpp:839-868), whose width and whether it
+# draws a secondary caret for mixed-direction text no cached source states (U507).
+[[fact]]
+key = "token.caret.width"
+pending = "U507"
+rows = ["W3-24"]
+
+[[fact]]
+key = "token.caret.secondary"
+pending = "U507"
+rows = []
+
+# No caret in a read-only text box: GetShouldRenderCaret requires the control not to be read-only.
+[[fact]]
+key = "token.caret.shown_in_read_only"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp:3498-3499"
+quote = "bool isCaretRendered = m_canShowCaret && !m_pTextControl->IsReadOnly()"
+
+# Behaviour (S4.2). The double-click rectangle and the drag box are the system metrics SM_CXDOUBLECLK,
+# SM_CYDOUBLECLK and SM_CXDRAG, which the reader reads (W-P3-12†, W3-41); their defaults no pinned source states, so
+# they are the OS probe's reads on the windows-11-arm image (run 40348854007, win11-vs2026-arm64@20261022.194.1) at
+# 96 DPI, 100 %. Each read 4 at every DPI the probe asked (96, 120, 144 and 192). A WinUI
+# UIElement starts a mouse drag only beyond twice SM_CXDRAG and SM_CYDRAG (AutomaticDragHelper.cpp:8-12, :69-83).
+[[fact]]
+key = "token.behavior.double_click_distance"
+value = "4px"
+rows = ["W-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CXDOUBLECLK.ForDpi_96"
+tolerance = 0
+
+[[fact]]
+key = "token.behavior.double_click_height"
+value = "4px"
+rows = ["W-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CYDOUBLECLK.ForDpi_96"
+tolerance = 0
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+value = "4px"
+rows = ["W3-41"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CXDRAG.ForDpi_96"
+tolerance = 0
+
+# A mouse drag starts on the first move outside the drag box, with no timer (S17's zero stated by omission).
+[[fact]]
+key = "token.behavior.drag_min_delay"
+value = "0ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/AutomaticDragHelper.cpp:59-83"
+quote = "bool AutomaticDragHelper::ShouldStartMouseDrag("
+absent = ["Timer", "Delay"]
+
+# Touch and holds: the Holding gesture (a touch drag's start, AutomaticDragHelper.cpp:225-239) and the touch and
+# double-tap tolerances are the input stack's (GestureRecognizer, DirectManipulation), not in the source cache (U501).
+[[fact]]
+key = "token.behavior.drag_time"
+pending = "U501"
+rows = []
+
+[[fact]]
+key = "token.behavior.long_press"
+pending = "U501"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.slop"
+pending = "U501"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.paging_slop"
+pending = "U501"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_time"
+pending = "U501"
+rows = []
+
+[[fact]]
+key = "token.behavior.touch.double_tap_slop"
+pending = "U501"
+rows = ["W-P3-12†"]
+
+[[fact]]
+key = "token.behavior.touch.delay"
+pending = "U501"
+rows = []
+
+# Mouse Vanish is off by default.
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+value = false
+rows = ["W-P3-10†"]
+
+[[fact.cite]]
+kind = "published"
+source = "sdk-api@656e9656 sdk-api-src/content/winuser/nf-winuser-systemparametersinfoa.md:552"
+quote = "Turns the Vanish feature on or off. This feature hides the mouse pointer when the user types; the pointer reappears when the user moves the mouse. The <i>pvParam</i> parameter specifies <b>TRUE</b> for on and <b>FALSE</b> for off. The default is off."
+
+# When Mouse Vanish is on, how soon and how the pointer hides: the window manager's, not in the cache (U502).
+[[fact]]
+key = "token.behavior.hide_pointer_delay"
+pending = "U502"
+rows = ["W-P3-10†"]
+
+[[fact]]
+key = "token.behavior.hide_pointer_fade"
+pending = "U502"
+rows = ["W-P3-10†"]
+
+# The keyboard repeat: SPI_GETKEYBOARDDELAY (0–3, "approximately 250 ms" to "approximately 1 second") and
+# SPI_GETKEYBOARDSPEED (0–31), whose defaults and millisecond values no pinned source states (U503).
+[[fact]]
+key = "token.behavior.key_repeat.delay"
+pending = "U503"
+rows = ["W3-41"]
+
+[[fact]]
+key = "token.behavior.key_repeat.interval"
+pending = "U503"
+rows = ["W3-41"]
+
+# Access keys: Win32 underlines them while Alt is held unless SPI_GETKEYBOARDCUES; WinUI shows KeyTips instead
+# (W2-37). Which the model's `Mnemonics` takes, and on disabled elements, is open (U504).
+[[fact]]
+key = "token.behavior.mnemonics"
+pending = "U504"
+rows = ["W3-48†"]
+
+[[fact]]
+key = "token.behavior.mnemonic_when_disabled"
+pending = "U504"
+rows = ["W3-48†"]
+
+# Whether an item view activates its item on a single click (U504's pass reads ListViewBase's IsItemClickEnabled
+# against the model's sense of the token, K3.73).
+[[fact]]
+key = "token.behavior.single_click_activates"
+pending = "U504"
+rows = []
+
+# A collapsed TreeView node a drag hovers over expands after 1s.
+[[fact]]
+key = "token.behavior.spring_loading"
+value = "1000ms"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/TreeView/TreeViewItem.h:14-15"
+quote = "// When dragging an item over a collapsed folder, we expand the folder after 1s hovering. static int64_t const c_dragOverInterval = 1000 * 10000;"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/TreeView/TreeViewItem.cpp:217-220"
+quote = "const winrt::TimeSpan interval = winrt::TimeSpan::duration(c_dragOverInterval);"
+
+# The pointer repeat: RepeatButton's framework defaults (the button's `@repeat` values, W2-19, ledger #23).
+[[fact]]
+key = "token.params.pointer_repeat.delay"
+value = "500ms"
+rows = ["W2-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:714-715"
+quote = "case KnownPropertyIndex::RepeatButton_Delay: defaultValue->SetSigned(500);"
+
+[[fact]]
+key = "token.params.pointer_repeat.interval"
+value = "33ms"
+rows = ["W2-19"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/DependencyObject/DependencyProperty.cpp:718-719"
+quote = "case KnownPropertyIndex::RepeatButton_Interval: defaultValue->SetSigned(33);"
+
+# Motion's speed factor: WinUI has no global slowdown; with animations off each animation is removed, shortened
+# (acrylic's 1ms, AcrylicBrush.cpp:105) or kept (W3-37), which one factor may not state: pending (U515), with
+# and without animations.
+[[fact]]
+key = "token.motion.speed_factor"
+pending = "U515"
+rows = ["W3-37", "W3-52†"]
+
+# The elevation ramp (Learn's layering page: Window and Dialog 128, Flyout 32, Tooltip 16, Card 8, Control 2,
+# Layer 1) has no pixel recipe in any pinned source; ThemeShadow is the compositor's, its intensity per theme
+# (U511).
+[[fact]]
+key = "token.elevation"
+pending = "U511"
+rows = ["W1-003", "W3-01"]
+
+# Size classes: whether Windows states width classes the toolkit reads (Learn's responsive breakpoints are design
+# guidance; NavigationView's thresholds are its own values) is open (U512).
+[[fact]]
+key = "token.size_classes"
+pending = "U512"
+rows = []
+
+# Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled (U508's pass reads
+# the arithmetic); the rendering settings WinUI's DirectWrite path takes are not read yet (W3-22, U508).
+[[fact]]
+key = "token.text.scaling"
+pending = "U508"
+rows = []
+
+[[fact]]
+key = "token.text.rendering.antialiasing"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.hinting"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.subpixel_order"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.engine"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.lcd_filter"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.gamma"
+pending = "U508"
+rows = ["W3-22"]
+
+[[fact]]
+key = "token.text.rendering.contrast"
+pending = "U508"
+rows = ["W3-22"]
+
+# WinUI states no monospace style (no XAML file of the pin names a fixed-width family); the console's and Windows
+# Terminal's fonts are no WinUI source (W3-47†, U509).
+[[fact]]
+key = "token.text.roles.monospace"
+pending = "U509"
+rows = ["W3-47†"]
+
+# Font fallbacks (S4.4, ADD-A41): Learn's typography page names Segoe UI Symbol the "Fallback font for symbols" every
+# chain ends in and Segoe UI Emoji the "User-interface font for Emoji" (typography.md:232-233, W-FM01†), but in a
+# Markdown table cell, which the quote checker reads as no text value: pending (U520) until the checker gains that
+# notation or another pinned source names them.
+[[fact]]
+key = "token.text.fallbacks.families"
+pending = "U520"
+rows = ["W-FM01†"]
+
+[[fact]]
+key = "token.text.fallbacks.emoji_family"
+pending = "U520"
+rows = ["W-FM01†"]
+
+# Per language: WinUI replaces the default family for ja and ko by the LanguageFontGroup's UITextFont and for a
+# non-Latin locale by Segoe UI (PALFontAndScriptServices.cpp:170-232); the fallback per language is DirectWrite's
+# system fallback, not in the cache (W-FM02†, U510).
+[[fact]]
+key = "token.text.fallbacks.per_language"
+pending = "U510"
+rows = ["W-FM02†"]
+
+# The type ramp's other leaves (S2.8): WinUI's TextBlock has no casing and no word-spacing property, so its text is
+# drawn as written (`mixed`) with no added word spacing (S17's zero stated by omission); its FontStretch, typographic
+# features and a Dynamic-Type role (`scaling_role`) are not read yet (U518).
+
+[[fact]]
+key = "token.text.keyed.caption.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.caption.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.caption.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.caption.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.caption.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.body.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.body.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_strong.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.body_strong.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_strong.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_strong.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.body_large.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.body_large.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.body_large_strong.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.subtitle.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.subtitle.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.subtitle.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.subtitle.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.title.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.title.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_large.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.title_large.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.title_large.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_large.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.title_large.scaling_role"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.display.case"
+value = "mixed"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["CharacterCasing", "TextTransform"]
+
+[[fact]]
+key = "token.text.keyed.display.word_spacing"
+value = "0px"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/winrtgeneratedclasses/TextBlock.g.h:29-146"
+quote = "class __declspec(novtable) TextBlockGenerated:"
+absent = ["WordSpacing"]
+
+[[fact]]
+key = "token.text.keyed.display.font.width"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.display.font.features"
+pending = "U518"
+rows = []
+
+[[fact]]
+key = "token.text.keyed.display.scaling_role"
+pending = "U518"
+rows = []
