@@ -28,3 +28,16 @@ What each GitHub runner image's OS reported to `tools/os-probe`
 A citation links the run directory it reads, with the file and, for
 `probe.toml`, the line (`evidence/os-probe/<run>/<image>/probe.toml#L29-L33`),
 so each cell states which run it cites.
+
+### The 0.8.0 measurement campaign's host runs (`v0.8.0-tools-hosts-m1b`)
+
+The passes of the 0.8.0 measurement plan for the WinUI, Android and KDE hosts and the probe on `windows-11-arm`. Each
+run directory's `README.md` says which register rows its files read, what each file holds and what was left on the
+run's page; its `run.toml` maps its folders to presets.
+
+| Run | Date | Commit | Why |
+|-----|------|--------|-----|
+| [`os-probe/2026-11-06-run-42307873328/`](os-probe/2026-11-06-run-42307873328/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42307873328)) | 2026-11-06 | `a4b2af0a` | WP-reads, the probe's half: the keyboard SPIs, the caret timeout, Mouse Vanish and the registry values behind them (U503, U505, U508) |
+| [`winui-host/2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` | WP-reads' host half, WH-defaults, WH-motion, WH-captures and the all-hosts passes on the WinUI host |
+| [`android-host/2026-11-06-run-42307873328/`](android-host/2026-11-06-run-42307873328/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42307873328)) | 2026-11-06 | `a4b2af0a` | AH-pass: font fallback, popup-menu attributes, focus visibility, the press ripple repeated (U554, U557, U564, U70, U71) |
+| [`kde-host/2026-11-06-run-42307873328/`](kde-host/2026-11-06-run-42307873328/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42307873328)) | 2026-11-06 | `a4b2af0a` | KH-reads: Noto Sans 10's metrics, Kirigami's sizeForLabels, fontconfig's sorted matches (U400, U404) |
