@@ -1,0 +1,157 @@
+# Written by tools/kde-host/fonts.py.
+
+[host]
+qt = "6.12.0"
+pyside6 = "6.12.0"
+platform = "offscreen"
+logical_dpi_y = 96.0
+physical_dpi_y = 100.0
+device_pixel_ratio = 1.0
+application_font = "Noto Sans,10,-1,0,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+
+[[font]]
+name = "system.general"
+requested = "Noto Sans,10,-1,0,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Noto Sans"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 18
+ascent = 14
+descent = 4
+leading = 0
+line_spacing = 18
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 17.6875
+ascent_f = 13.890625
+descent_f = 3.796875
+leading_f = 0.0
+
+[[font]]
+name = "system.fixed"
+requested = "Hack,10,-1,7,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Hack"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 15
+ascent = 12
+descent = 3
+leading = 0
+line_spacing = 15
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 15.125
+ascent_f = 12.0625
+descent_f = 3.0625
+leading_f = 0.0
+
+[[font]]
+name = "system.small"
+requested = "Noto Sans,8,-1,0,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Noto Sans"
+resolved_style = "Regular"
+resolved_point_size_f = 8.25
+resolved_pixel_size = 11
+resolved_weight = 400
+height = 15
+ascent = 12
+descent = 3
+leading = 0
+line_spacing = 15
+x_height = 6
+cap_height = 8
+average_char_width = 6
+height_f = 14.96875
+ascent_f = 11.75
+descent_f = 3.21875
+leading_f = 0.0
+
+[[font]]
+name = "system.title"
+requested = "Noto Sans,10,-1,0,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Noto Sans"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 18
+ascent = 14
+descent = 4
+leading = 0
+line_spacing = 18
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 17.6875
+ascent_f = 13.890625
+descent_f = 3.796875
+leading_f = 0.0
+
+[[font]]
+name = "application"
+requested = "Noto Sans,10,-1,0,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Noto Sans"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 18
+ascent = 14
+descent = 4
+leading = 0
+line_spacing = 18
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 17.6875
+ascent_f = 13.890625
+descent_f = 3.796875
+leading_f = 0.0
+
+[[font]]
+name = "Noto Sans 10"
+requested = "Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Noto Sans"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 18
+ascent = 14
+descent = 4
+leading = 0
+line_spacing = 18
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 17.6875
+ascent_f = 13.890625
+descent_f = 3.796875
+leading_f = 0.0
+
+[[font]]
+name = "Hack 10"
+requested = "Hack,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0"
+resolved_family = "Hack"
+resolved_style = "Regular"
+resolved_point_size_f = 9.75
+resolved_pixel_size = 13
+resolved_weight = 400
+height = 15
+ascent = 12
+descent = 3
+leading = 0
+line_spacing = 15
+x_height = 7
+cap_height = 9
+average_char_width = 8
+height_f = 15.125
+ascent_f = 12.0625
+descent_f = 3.0625
+leading_f = 0.0

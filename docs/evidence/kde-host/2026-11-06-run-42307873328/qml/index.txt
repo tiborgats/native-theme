@@ -1,0 +1,10 @@
+theme window background=#eff0f1 text=#232629 highlight=#3daee9 focus=#3daee9 hover=#3daee9
+theme button background=#fcfcfc text=#232629
+font Noto Sans 10pt; largeSpacing=8; devicePixelRatio=1
+icon sizes sizeForLabels=16 small=16 smallMedium=22 medium=32; label font height=17.6875 ascent=13.890625 descent=3.796875 family=Noto Sans pointSize=10
+cell normal size=100x50 button=8,8,84x34 down=false hovered=false background.hover=false background.sunken=false enabled=true checked=false activeFocus=false
+cell hovered size=100x50 button=8,8,84x34 down=false hovered=false background.hover=true background.sunken=false enabled=true checked=false activeFocus=false
+cell pressed size=100x50 button=8,8,84x34 down=true hovered=false background.hover=false background.sunken=true enabled=true checked=false activeFocus=false
+cell disabled size=100x50 button=8,8,84x34 down=false hovered=false background.hover=false background.sunken=false enabled=false checked=false activeFocus=false
+cell checked size=100x50 button=8,8,84x34 down=false hovered=false background.hover=false background.sunken=false enabled=true checked=true activeFocus=false
+window active=true

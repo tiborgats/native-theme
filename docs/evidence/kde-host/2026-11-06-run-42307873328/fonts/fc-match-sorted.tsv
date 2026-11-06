@@ -1,0 +1,1001 @@
+pattern	rank	family	style	file
+Noto Sans	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+sans-serif	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+sans-serif	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+sans-serif	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+sans-serif	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+sans-serif	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+sans-serif	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+sans-serif	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+sans-serif	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+sans-serif	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+sans-serif	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+sans-serif	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+sans-serif	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+sans-serif	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+sans-serif	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+sans-serif	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+sans-serif	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+sans-serif	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+sans-serif	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+sans-serif	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+sans-serif	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+serif	1	Noto Serif	Regular	/usr/share/fonts/noto/NotoSerif-Regular.ttf
+serif	2	Noto Serif Bengali	Regular	/usr/share/fonts/noto/NotoSerifBengali-Regular.ttf
+serif	3	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+serif	4	Noto Serif Gujarati	Regular	/usr/share/fonts/noto/NotoSerifGujarati-Regular.ttf
+serif	5	Noto Serif Myanmar	Regular	/usr/share/fonts/noto/NotoSerifMyanmar-Regular.ttf
+serif	6	Noto Serif Malayalam	Regular	/usr/share/fonts/noto/NotoSerifMalayalam-Regular.ttf
+serif	7	Noto Serif Tibetan	Regular	/usr/share/fonts/noto/NotoSerifTibetan-Regular.ttf
+serif	8	Noto Serif Ethiopic	Regular	/usr/share/fonts/noto/NotoSerifEthiopic-Regular.ttf
+serif	9	Noto Naskh Arabic	Regular	/usr/share/fonts/noto/NotoNaskhArabic-Regular.ttf
+serif	10	Noto Serif Armenian	Regular	/usr/share/fonts/noto/NotoSerifArmenian-Regular.ttf
+serif	11	Noto Serif Ahom	Regular	/usr/share/fonts/noto/NotoSerifAhom-Regular.ttf
+serif	12	Noto Serif Balinese	Regular	/usr/share/fonts/noto/NotoSerifBalinese-Regular.ttf
+serif	13	Noto Serif Sinhala	Regular	/usr/share/fonts/noto/NotoSerifSinhala-Regular.ttf
+serif	14	Noto Serif Devanagari	Regular	/usr/share/fonts/noto/NotoSerifDevanagari-Regular.ttf
+serif	15	Noto Serif Grantha	Regular	/usr/share/fonts/noto/NotoSerifGrantha-Regular.ttf
+serif	16	Noto Serif Kannada	Regular	/usr/share/fonts/noto/NotoSerifKannada-Regular.ttf
+serif	17	Noto Serif Khojki	Regular	/usr/share/fonts/noto/NotoSerifKhojki-Regular.ttf
+serif	18	Noto Serif Telugu	Regular	/usr/share/fonts/noto/NotoSerifTelugu-Regular.ttf
+serif	19	Noto Serif Gurmukhi	Regular	/usr/share/fonts/noto/NotoSerifGurmukhi-Regular.ttf
+serif	20	Noto Serif Hebrew	Regular	/usr/share/fonts/noto/NotoSerifHebrew-Regular.ttf
+monospace	1	Noto Sans Mono	Regular	/usr/share/fonts/noto/NotoSansMono-Regular.ttf
+monospace	2	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+monospace	3	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+monospace	4	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+monospace	5	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+monospace	6	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+monospace	7	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+monospace	8	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+monospace	9	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+monospace	10	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+monospace	11	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+monospace	12	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+monospace	13	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+monospace	14	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+monospace	15	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+monospace	16	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+monospace	17	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+monospace	18	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+monospace	19	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+monospace	20	Noto Serif Tibetan	Regular	/usr/share/fonts/noto/NotoSerifTibetan-Regular.ttf
+emoji	1	Noto Znamenny Musical Notation	Regular	/usr/share/fonts/noto/NotoZnamennyMusicalNotation-Regular.ttf
+emoji	2	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+emoji	3	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+emoji	4	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+emoji	5	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+emoji	6	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+emoji	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+emoji	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+emoji	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+emoji	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+emoji	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+emoji	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+emoji	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+emoji	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+emoji	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+emoji	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+emoji	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+emoji	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+emoji	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+emoji	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=en	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=en	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=en	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=en	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=en	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=en	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=en	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=en	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=en	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=en	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=en	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=en	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=en	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=en	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=en	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=en	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=en	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=en	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=en	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=en	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=en	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=en	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=en	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=en	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=en	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=en	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=en	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=en	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=en	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=en	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=en	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=en	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=en	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=en	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=en	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=en	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=en	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=en	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=en	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=en	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ja	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ja	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ja	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ja	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ja	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ja	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ja	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ja	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ja	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ja	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ja	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ja	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ja	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ja	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ja	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ja	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ja	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ja	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ja	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=ja	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=ja	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ja	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ja	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ja	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ja	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ja	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ja	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ja	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ja	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ja	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ja	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ja	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ja	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ja	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ja	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ja	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ja	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ja	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ja	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=ja	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ko	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ko	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ko	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ko	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ko	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ko	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ko	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ko	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ko	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ko	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ko	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ko	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ko	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ko	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ko	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ko	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ko	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ko	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ko	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=ko	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=ko	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ko	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ko	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ko	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ko	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ko	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ko	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ko	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ko	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ko	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ko	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ko	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ko	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ko	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ko	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ko	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ko	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ko	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ko	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=ko	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-cn	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=zh-cn	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=zh-cn	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=zh-cn	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=zh-cn	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=zh-cn	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=zh-cn	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=zh-cn	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=zh-cn	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=zh-cn	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=zh-cn	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=zh-cn	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=zh-cn	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=zh-cn	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=zh-cn	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-cn	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=zh-cn	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=zh-cn	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=zh-cn	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=zh-cn	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=zh-cn	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=zh-cn	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=zh-cn	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=zh-cn	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=zh-cn	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=zh-cn	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=zh-cn	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=zh-cn	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=zh-cn	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=zh-cn	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=zh-cn	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=zh-cn	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=zh-cn	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=zh-cn	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=zh-cn	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=zh-cn	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=zh-cn	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=zh-cn	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=zh-cn	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=zh-cn	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-tw	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=zh-tw	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=zh-tw	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=zh-tw	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=zh-tw	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=zh-tw	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=zh-tw	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=zh-tw	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=zh-tw	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=zh-tw	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=zh-tw	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=zh-tw	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=zh-tw	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=zh-tw	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=zh-tw	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-tw	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=zh-tw	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=zh-tw	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=zh-tw	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=zh-tw	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=zh-tw	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=zh-tw	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=zh-tw	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=zh-tw	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=zh-tw	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=zh-tw	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=zh-tw	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=zh-tw	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=zh-tw	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=zh-tw	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=zh-tw	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=zh-tw	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=zh-tw	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=zh-tw	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=zh-tw	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=zh-tw	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=zh-tw	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=zh-tw	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=zh-tw	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=zh-tw	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-hk	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=zh-hk	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=zh-hk	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=zh-hk	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=zh-hk	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=zh-hk	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=zh-hk	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=zh-hk	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=zh-hk	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=zh-hk	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=zh-hk	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=zh-hk	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=zh-hk	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=zh-hk	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=zh-hk	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=zh-hk	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=zh-hk	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=zh-hk	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=zh-hk	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=zh-hk	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=zh-hk	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=zh-hk	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=zh-hk	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=zh-hk	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=zh-hk	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=zh-hk	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=zh-hk	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=zh-hk	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=zh-hk	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=zh-hk	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=zh-hk	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=zh-hk	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=zh-hk	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=zh-hk	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=zh-hk	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=zh-hk	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=zh-hk	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=zh-hk	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=zh-hk	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=zh-hk	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ar	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ar	2	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ar	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ar	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ar	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ar	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ar	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ar	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ar	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ar	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ar	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ar	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ar	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ar	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ar	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ar	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ar	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ar	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ar	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=ar	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=ar	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ar	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ar	3	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ar	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ar	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ar	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ar	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ar	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ar	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ar	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ar	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ar	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ar	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ar	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ar	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ar	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ar	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ar	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ar	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=ar	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=fa	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=fa	2	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=fa	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=fa	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=fa	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=fa	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=fa	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=fa	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=fa	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=fa	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=fa	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=fa	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=fa	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=fa	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=fa	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=fa	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=fa	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=fa	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=fa	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=fa	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=fa	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=fa	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=fa	3	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=fa	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=fa	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=fa	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=fa	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=fa	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=fa	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=fa	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=fa	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=fa	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=fa	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=fa	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=fa	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=fa	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=fa	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=fa	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=fa	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=fa	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=he	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=he	2	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=he	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=he	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=he	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=he	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=he	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=he	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=he	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=he	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=he	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=he	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=he	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=he	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=he	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=he	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=he	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=he	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=he	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=he	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=he	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=he	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=he	3	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=he	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=he	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=he	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=he	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=he	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=he	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=he	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=he	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=he	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=he	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=he	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=he	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=he	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=he	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=he	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=he	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=he	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=hi	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=hi	2	Noto Sans Devanagari	Regular	/usr/share/fonts/noto/NotoSansDevanagari-Regular.ttf
+Noto Sans:lang=hi	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=hi	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=hi	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=hi	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=hi	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=hi	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=hi	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=hi	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=hi	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=hi	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=hi	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=hi	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=hi	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=hi	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=hi	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=hi	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=hi	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=hi	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=hi	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=hi	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=hi	3	Noto Sans Devanagari	Regular	/usr/share/fonts/noto/NotoSansDevanagari-Regular.ttf
+Hack:lang=hi	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=hi	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=hi	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=hi	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=hi	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=hi	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=hi	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=hi	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=hi	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=hi	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=hi	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=hi	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=hi	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=hi	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=hi	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=hi	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=hi	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=bn	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=bn	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=bn	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=bn	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=bn	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=bn	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=bn	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=bn	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=bn	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=bn	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=bn	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=bn	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=bn	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=bn	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=bn	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=bn	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=bn	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=bn	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=bn	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=bn	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=bn	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=bn	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=bn	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=bn	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=bn	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=bn	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=bn	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=bn	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=bn	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=bn	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=bn	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=bn	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=bn	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=bn	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=bn	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=bn	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=bn	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=bn	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=bn	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=bn	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ta	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ta	2	Noto Sans Tamil	Regular	/usr/share/fonts/noto/NotoSansTamil-Regular.ttf
+Noto Sans:lang=ta	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ta	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ta	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ta	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ta	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ta	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ta	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ta	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ta	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ta	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ta	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ta	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ta	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ta	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ta	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ta	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ta	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ta	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=ta	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ta	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ta	3	Noto Sans Tamil	Regular	/usr/share/fonts/noto/NotoSansTamil-Regular.ttf
+Hack:lang=ta	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ta	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ta	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ta	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ta	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ta	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ta	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ta	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ta	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ta	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ta	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ta	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ta	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ta	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ta	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ta	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ta	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=th	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=th	2	Noto Sans Thai	Regular	/usr/share/fonts/noto/NotoSansThai-Regular.ttf
+Noto Sans:lang=th	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=th	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=th	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=th	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=th	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=th	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=th	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=th	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=th	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=th	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=th	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=th	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=th	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=th	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=th	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=th	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=th	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=th	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=th	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=th	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=th	3	Noto Sans Thai	Regular	/usr/share/fonts/noto/NotoSansThai-Regular.ttf
+Hack:lang=th	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=th	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=th	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=th	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=th	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=th	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=th	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=th	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=th	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=th	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=th	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=th	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=th	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=th	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=th	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=th	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=th	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=lo	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=lo	2	Noto Sans Lao	Regular	/usr/share/fonts/noto/NotoSansLao-Regular.ttf
+Noto Sans:lang=lo	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=lo	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=lo	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=lo	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=lo	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=lo	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=lo	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=lo	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=lo	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=lo	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=lo	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=lo	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=lo	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=lo	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=lo	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=lo	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=lo	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=lo	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=lo	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=lo	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=lo	3	Noto Sans Lao	Regular	/usr/share/fonts/noto/NotoSansLao-Regular.ttf
+Hack:lang=lo	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=lo	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=lo	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=lo	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=lo	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=lo	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=lo	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=lo	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=lo	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=lo	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=lo	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=lo	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=lo	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=lo	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=lo	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=lo	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=lo	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=km	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=km	2	Noto Sans Khmer	Regular	/usr/share/fonts/noto/NotoSansKhmer-Regular.ttf
+Noto Sans:lang=km	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=km	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=km	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=km	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=km	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=km	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=km	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=km	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=km	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=km	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=km	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=km	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=km	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=km	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=km	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=km	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=km	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=km	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=km	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=km	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=km	3	Noto Sans Khmer	Regular	/usr/share/fonts/noto/NotoSansKhmer-Regular.ttf
+Hack:lang=km	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=km	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=km	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=km	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=km	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=km	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=km	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=km	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=km	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=km	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=km	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=km	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=km	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=km	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=km	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=km	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=km	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=my	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=my	2	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=my	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=my	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=my	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=my	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=my	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=my	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=my	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=my	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=my	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=my	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=my	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=my	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=my	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=my	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=my	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=my	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=my	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=my	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=my	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=my	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=my	3	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=my	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=my	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=my	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=my	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=my	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=my	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=my	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=my	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=my	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=my	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=my	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=my	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=my	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=my	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=my	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=my	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=my	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=si	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=si	2	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=si	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=si	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=si	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=si	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=si	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=si	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=si	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=si	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=si	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=si	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=si	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=si	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=si	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=si	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=si	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=si	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=si	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=si	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=si	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=si	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=si	3	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=si	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=si	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=si	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=si	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=si	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=si	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=si	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=si	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=si	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=si	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=si	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=si	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=si	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=si	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=si	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=si	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=si	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=hy	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=hy	2	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Noto Sans:lang=hy	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=hy	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=hy	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=hy	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=hy	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=hy	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=hy	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=hy	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=hy	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=hy	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=hy	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=hy	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=hy	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=hy	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=hy	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=hy	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=hy	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=hy	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=hy	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=hy	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=hy	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=hy	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=hy	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=hy	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=hy	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=hy	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=hy	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=hy	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=hy	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=hy	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=hy	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=hy	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=hy	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=hy	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=hy	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=hy	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=hy	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=hy	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ka	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ka	2	Noto Sans Georgian	Regular	/usr/share/fonts/noto/NotoSansGeorgian-Regular.ttf
+Noto Sans:lang=ka	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ka	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ka	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ka	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ka	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ka	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ka	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ka	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ka	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ka	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ka	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ka	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ka	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ka	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ka	17	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ka	18	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ka	19	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ka	20	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Hack:lang=ka	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ka	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ka	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ka	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ka	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ka	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ka	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ka	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ka	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ka	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ka	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ka	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ka	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ka	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ka	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ka	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ka	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ka	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ka	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=ka	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=am	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=am	2	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=am	3	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=am	4	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=am	5	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=am	6	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=am	7	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=am	8	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=am	9	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=am	10	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=am	11	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=am	12	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=am	13	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=am	14	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=am	15	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=am	16	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=am	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=am	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=am	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=am	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=am	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=am	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=am	3	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Hack:lang=am	4	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=am	5	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=am	6	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=am	7	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=am	8	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=am	9	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=am	10	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=am	11	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=am	12	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=am	13	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=am	14	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=am	15	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=am	16	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=am	17	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=am	18	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=am	19	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=am	20	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=el	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=el	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=el	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=el	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=el	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=el	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=el	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=el	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=el	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=el	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=el	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=el	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=el	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=el	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=el	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=el	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=el	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=el	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=el	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=el	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=el	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=el	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=el	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=el	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=el	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=el	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=el	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=el	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=el	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=el	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=el	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=el	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=el	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=el	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=el	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=el	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=el	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=el	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=el	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=el	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ru	1	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Noto Sans:lang=ru	2	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Noto Sans:lang=ru	3	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Noto Sans:lang=ru	4	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Noto Sans:lang=ru	5	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Noto Sans:lang=ru	6	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Noto Sans:lang=ru	7	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Noto Sans:lang=ru	8	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Noto Sans:lang=ru	9	Noto Sans Syriac Western	Regular	/usr/share/fonts/noto/NotoSansSyriacWestern-Regular.ttf
+Noto Sans:lang=ru	10	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Noto Sans:lang=ru	11	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Noto Sans:lang=ru	12	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Noto Sans:lang=ru	13	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Noto Sans:lang=ru	14	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Noto Sans:lang=ru	15	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf
+Noto Sans:lang=ru	16	Noto Sans Ethiopic	Regular	/usr/share/fonts/noto/NotoSansEthiopic-Regular.ttf
+Noto Sans:lang=ru	17	Noto Sans Hanifi Rohingya	Regular	/usr/share/fonts/noto/NotoSansHanifiRohingya-Regular.ttf
+Noto Sans:lang=ru	18	Noto Sans Lisu	Regular	/usr/share/fonts/noto/NotoSansLisu-Regular.ttf
+Noto Sans:lang=ru	19	Noto Sans Sora Sompeng	Regular	/usr/share/fonts/noto/NotoSansSoraSompeng-Regular.ttf
+Noto Sans:lang=ru	20	Noto Sans Armenian	Regular	/usr/share/fonts/noto/NotoSansArmenian-Regular.ttf
+Hack:lang=ru	1	Hack	Regular	/usr/share/fonts/TTF/Hack-Regular.ttf
+Hack:lang=ru	2	Hack	Bold	/usr/share/fonts/TTF/Hack-Bold.ttf
+Hack:lang=ru	3	Noto Sans	Regular	/usr/share/fonts/noto/NotoSans-Regular.ttf
+Hack:lang=ru	4	Adwaita Mono	Regular	/usr/share/fonts/Adwaita/AdwaitaMono-Regular.ttf
+Hack:lang=ru	5	Noto Nastaliq Urdu	Regular	/usr/share/fonts/noto/NotoNastaliqUrdu-Regular.ttf
+Hack:lang=ru	6	Noto Sans Bengali	Regular	/usr/share/fonts/noto/NotoSansBengali-Regular.ttf
+Hack:lang=ru	7	Noto Sans Adlam Unjoined	Regular	/usr/share/fonts/noto/NotoSansAdlamUnjoined-Regular.ttf
+Hack:lang=ru	8	Noto Sans Duployan	Regular	/usr/share/fonts/noto/NotoSansDuployan-Regular.ttf
+Hack:lang=ru	9	Noto Sans Mongolian	Regular	/usr/share/fonts/noto/NotoSansMongolian-Regular.ttf
+Hack:lang=ru	10	Noto Sans Warang Citi	Regular	/usr/share/fonts/noto/NotoSansWarangCiti-Regular.ttf
+Hack:lang=ru	11	Noto Sans Hebrew	Regular	/usr/share/fonts/noto/NotoSansHebrew-Regular.ttf
+Hack:lang=ru	12	Noto Sans Syriac Eastern	Regular	/usr/share/fonts/noto/NotoSansSyriacEastern-Regular.ttf
+Hack:lang=ru	13	Noto Sans Thaana	Regular	/usr/share/fonts/noto/NotoSansThaana-Regular.ttf
+Hack:lang=ru	14	Noto Sans Math	Regular	/usr/share/fonts/noto/NotoSansMath-Regular.ttf
+Hack:lang=ru	15	Noto Sans Sinhala	Regular	/usr/share/fonts/noto/NotoSansSinhala-Regular.ttf
+Hack:lang=ru	16	Noto Serif Tangut	Regular	/usr/share/fonts/noto/NotoSerifTangut-Regular.ttf
+Hack:lang=ru	17	Noto Kufi Arabic	Regular	/usr/share/fonts/noto/NotoKufiArabic-Regular.ttf
+Hack:lang=ru	18	Noto Sans Myanmar	Regular	/usr/share/fonts/noto/NotoSansMyanmar-Regular.ttf
+Hack:lang=ru	19	Noto Sans Gujarati	Regular	/usr/share/fonts/noto/NotoSansGujarati-Regular.ttf
+Hack:lang=ru	20	Noto Sans Malayalam	Regular	/usr/share/fonts/noto/NotoSansMalayalam-Regular.ttf

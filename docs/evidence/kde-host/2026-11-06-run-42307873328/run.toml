@@ -1,0 +1,15 @@
+# The folders of run 42307873328's kde-render job the facts cite (spec S17 *`evidence`*): fonts/ (tools/kde-host/fonts.py
+# and the fontconfig reads of tools/kde-host/run.sh) and qml/ (tools/kde-host/buttons.qml's index, BreezeLight, run 1).
+# The builds are the run's own records: the container's packages.txt (pacman -Q) and pull.txt's image digest.
+
+[images.fonts]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-integration 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "Qt 6.12.0 (qt6-base 6.12.0-3, pyside6 6.12.0), fontconfig 2.18.3-2, noto-fonts 1:2026.10.01-1, ttf-hack 3.003-7"
+
+[images.qml]
+preset = "kde-breeze"
+source = "archlinux@2026-10-29"
+os = "Plasma 6.8.2 (plasma-integration 6.8.2-1, breeze 6.8.2-1) in ghcr.io/tiborgats/native-theme-kde:2026-10-29, digest sha256:ee7ed074bae04f8e963ca3748daaa6da8ba09019b48615305387ae230bf2db00"
+toolkit = "KDE Frameworks 6.31.0 (kirigami 6.31.0-1, qqc2-desktop-style 6.31.0-1), Qt 6.12.0 (qt6-declarative 6.12.0-3)"

@@ -1,0 +1,7 @@
+fc-match: fontconfig version 2.18.3
+file Noto Sans: /usr/share/fonts/noto/NotoSans-Regular.ttf
+file Noto Sans:style=Bold: /usr/share/fonts/noto/NotoSans-Bold.ttf
+file Hack: /usr/share/fonts/TTF/Hack-Regular.ttf
+file sans-serif: /usr/share/fonts/noto/NotoSans-Regular.ttf
+file serif: /usr/share/fonts/noto/NotoSerif-Regular.ttf
+file monospace: /usr/share/fonts/noto/NotoSansMono-Regular.ttf
