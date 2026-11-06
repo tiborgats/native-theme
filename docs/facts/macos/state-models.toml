@@ -380,7 +380,7 @@ tolerance = 0
 
 [[model.cite]]
 kind = "published"
-source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSControl.h:1-155"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSControl.h:1-154"
 quote = "@interface NSControl : NSView"
 absent = ["NSControlBorderShape"]
 
