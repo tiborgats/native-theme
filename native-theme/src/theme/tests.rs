@@ -788,6 +788,29 @@ fn a_surface_set_whose_every_role_is_listed() {
     assert_eq!(missing, listed, "{problems:?}");
 }
 
+/// Two listed entries of one map, each its own synthetic layer (S17,
+/// ADD-A128, ADD-A134): `tokens.elevation.menu` and `.popup`, each an
+/// empty list, state the map's two entries, disjoint places, not the map
+/// whole, so the synthetic route loads them, the declared names used.
+#[test]
+fn listed_entries_of_one_map_do_not_overlap() {
+    let base = include_str!("../../tests/fixtures/facts_gate/base.toml");
+    let declared = "text_styles = [\"body\"]\n";
+    assert!(base.contains(declared));
+    let text = format!(
+        "[pending]\n\"tokens.elevation.menu\" = \"U1\"\n\"tokens.elevation.popup\" = \"U2\"\n{}",
+        base.replacen(
+            declared,
+            "text_styles = [\"body\"]\nelevation = [\"menu\", \"popup\"]\n",
+            1
+        )
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    assert_eq!(layers.len(), 2);
+    synthetic_stack(None, &text, Scheme::Light, layers).unwrap();
+}
+
 /// Every field of the keyed icon context `check` listed, a field of its
 /// entry stated in the preset's bases where `stated` names one (S17,
 /// ADD-A133): the base preset with `check` declared.

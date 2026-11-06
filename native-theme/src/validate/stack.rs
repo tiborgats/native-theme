@@ -26,6 +26,7 @@ use crate::roles::{ColorRolesPatch, SurfaceSet};
 use crate::selector::{
     Condition, PartRef, Rule, RuleBody, Scheme, Selector, StateFlag, ValuesPatch,
 };
+use crate::toml::read::toml_key;
 use crate::value::Value;
 use crate::widgets::{PartPatch, Shown, TypedPart, WidgetKind, WidgetValuesPatch};
 
@@ -358,6 +359,8 @@ pub(super) fn tail<'p>(ancestor: &str, path: &'p str) -> &'p str {
 struct Flatten {
     /// The source's number, which makes a merged list's items its own.
     source: usize,
+    /// Its places as a problem names them spelled by TOML's keys.
+    toml: bool,
     ops: Vec<Op>,
     /// Lists this source replaces, already cleared.
     cleared: Vec<String>,
@@ -591,7 +594,24 @@ impl Visit for Flatten {
 
     fn duplicate(&mut self, _: &Path, _: &str, _: &'static str) {}
 
-    fn map_key(&mut self, _: &Path, _: &str, _: &'static str) {}
+    /// A map's entry is stated at its own place: a value holding nothing
+    /// there (an empty list) is the entry's, not the map's whole (S6.1).
+    fn map_key(&mut self, path: &Path, key: &str, suffix: &'static str) {
+        let place = below(&self.place(path), key);
+        let spelled = if self.toml {
+            format!("{}{suffix}", toml_key(key))
+        } else {
+            toml_key(key)
+        };
+        self.ops.push(Op {
+            path: place,
+            at: path.join(&spelled),
+            kind: OpKind::Touch,
+            marks: Marks::default(),
+            text_style: None,
+            field: None,
+        });
+    }
 
     fn patch(&mut self, path: &Path, all: &'static [&'static str], set: &[&'static str]) {
         let place = self.place(path);
@@ -630,6 +650,7 @@ fn flatten<T: Walk + ?Sized>(
 ) -> Flat {
     let mut flat = Flatten {
         source,
+        toml,
         ops: Vec::new(),
         cleared: Vec::new(),
         appended: Vec::new(),
