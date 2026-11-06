@@ -1361,6 +1361,34 @@ fn keyframe_over_an_absent_field_is_none() {
     );
 }
 
+/// S2.7: a keyframe of the icon part's loop patching that part's `icon`
+/// resolves it over the part's resolved icon without its `animation`: the
+/// keyframe animates the part's style, not the loop it is a frame of, so
+/// resolving it does not reach its own loop again (no cycle).
+#[test]
+fn keyframe_icon_resolves_without_its_loop() {
+    let theme = looping(
+        "{ at = 0, timing = \"absent\", patch = { icon.size_px = 20 } }",
+        &[],
+    );
+    let scope = root(&theme, Direction::Ltr);
+    let element = Element::new(ICON, &scope, &Metrics);
+    let evaluated = theme.evaluate_part(TypedPart::Button(ButtonPart::Icon), &element, &|_| true);
+    assert_eq!(evaluated.refusals, []);
+    let icon = keyframes(&theme)
+        .into_iter()
+        .next()
+        .and_then(|keyframe| keyframe.patch.icon)
+        .flatten();
+    assert_eq!(icon.as_ref().and_then(|icon| icon.size), Some(Px(20.0)));
+    assert_eq!(
+        icon.as_ref().map(|icon| icon.rendering_mode.is_some()),
+        Some(true),
+        "the part's icon beneath"
+    );
+    assert_eq!(icon.and_then(|icon| icon.animation), None);
+}
+
 /// S2.7: a keyframe whose part resolves `NotDrawn` or `DrawnAs` resolves to
 /// a patch with every field `None`, its `at` and `timing` kept.
 #[test]

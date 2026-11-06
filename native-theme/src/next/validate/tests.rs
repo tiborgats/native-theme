@@ -1892,6 +1892,19 @@ fn refusal_keyframes_not_increasing() {
     assert_eq!(bare(&animated([0.0, 0.5])), NONE);
 }
 
+/// A keyframe of the icon part's loop patching that part's `icon` is checked
+/// over the part's icon without its loop (S2.7): no cycle through its own
+/// keyframes.
+#[test]
+fn keyframe_icon_patch_reaches_no_loop() {
+    let looped = toml(
+        "[widgets.button.icon.icon.animation]\nperiod_ms = 100\ntiming = \"linear\"\n\
+         keyframes = [{ at = 0, timing = \"absent\", patch = { icon.size_px = \"= add(base, \
+         2px)\" } }]",
+    );
+    assert_eq!(bare(&looped), NONE);
+}
+
 /// A keyframe's patch sets only fields its part's catalogue entry lists
 /// (S2.7, S2.11): the part it names, or the part the loop is on where it
 /// names none; `shown` on no part that does not list it.
