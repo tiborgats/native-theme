@@ -129,6 +129,10 @@ A `[[fact]]` (S17 *Fields*):
   text as a key (`{ "Segoe Fluent Icons" = ["Segoe MDL2 Assets"] }`; S11, ADD-A123), any other map a snake_case key
   (S1's key grammar), a unit-valued entry with its unit's suffix (`button_ms = <n>`), and each entry's value is
   checked as the map's value type.
+- A shadow layer (`ShadowLayer`, S2.5) states its `falloff`, and its keys are its fields (a one-unit field by its
+  suffixed key, `corner_radius_px`); a `kirigami_smoothstep` layer stating `corner_radius_px` is refused (S12;
+  ADD-A136: Kirigami's shadow follows the item's corners). S2.4's *Growing an outline* is geometry the resolver and
+  the connectors compute; no fact states its result, so this script has nothing of it to check.
 - A compound field (`Sides<…>`, `Axes<…>`, not inside a `Value`) stated whole as `"absent"`, `"auto"` or `"none"`
   is a finding (compound_problems: the key's core type followed into the value, as map_problems follows it): such a
   field is no `Value`, S6.1 patching it per member (spec line 1755, *Compound fields*), and a `may_be_absent` mark
@@ -177,7 +181,9 @@ A `[[fact]]` (S17 *Fields*):
   latest flag is refused by `not_states` (`latest` implies its flag), or where no one order of the flags can make
   every latest flag its set's latest while every flag either names is present (orders_possible: each latest flag set
   after the other present members of its set, those every entry gives it, without a cycle). Anything else
-  may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow).
+  may hold together (`not_drawn` is not read: a shadowing there is a finding to narrow). A later fact that is itself
+  pending is exempt (ADD-A135, ledger queue #164 (3)): the combination stays pending, and once that fact is measured
+  the earlier one is shadowed by a value and its `when` narrowed then.
 - The generation rule (S17 *Generations*): a fact with `preset:<id>` in `when.conditions` has every citation serving
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
@@ -1390,8 +1396,15 @@ def value_problems(ctx, value, dim, where="value", typ=None) -> list:
             fields = ctx.structs[e]
             out += [f"{where}.{k}: `{k}` is not a field of {e}" for k in value
                     if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
-        elif e == "ShadowLayer" and "falloff" not in value:
-            out.append(f"{where}: a shadow layer states its `falloff` (S2.5: no default stands in for it)")
+        elif e == "ShadowLayer":
+            fields = ctx.structs.get(e, {})
+            out += [f"{where}.{k}: `{k}` is not a field of ShadowLayer (S2.5)" for k in value
+                    if k not in fields and re.sub(r"_(px|ms|deg|pt)$", "", k) not in fields]
+            if "falloff" not in value:
+                out.append(f"{where}: a shadow layer states its `falloff` (S2.5: no default stands in for it)")
+            elif value.get("falloff") == "kirigami_smoothstep" and "corner_radius_px" in value:
+                out.append(f"{where}: a `kirigami_smoothstep` layer states `corner_radius_px` (S12; S2.5: Kirigami's "
+                           f"shadow follows the item's corners)")
         entry = MAP_TYPE.fullmatch(e) if e else None
         if entry and TEXT_MAP.fullmatch(e):
             # a map keyed by text: its keys the text as written, its values the map's value type (S11, ADD-A123)
@@ -2899,7 +2912,8 @@ def widget_models(items) -> dict:
 def pending_problems(ctx, items) -> list:
     """S17 *Which fact applies*: a pending fact that a later fact of its key, in its file and of its run (the accent
     run's `scheme_file` and `accent`, or neither), shadows on a combination both `when`s may hold in (whens_overlap)
-    is a finding: the combination would pass with the later fact's value."""
+    is a finding: the combination would pass with the later fact's value. A later pending fact is exempt (ADD-A135):
+    the combination stays pending."""
     models = widget_models(items)
     facts = {}
     for it in items:
@@ -2917,7 +2931,7 @@ def pending_problems(ctx, items) -> list:
             for later in fs[i + 1:]:
                 ld = later.data
                 if canonical_key(ld["key"]) != canonical_key(d["key"]) or (
-                        ld.get("scheme_file"), ld.get("accent")) != run:
+                        ld.get("scheme_file"), ld.get("accent")) != run or "pending" in ld:
                     continue
                 if whens_overlap(d.get("when"), ld.get("when"), model):
                     out.append((file, pend.line, f"pending fact {d['key']!r} ({d['pending']}) is shadowed by the later "
@@ -3636,7 +3650,8 @@ pub struct IndicationBox { pub part: Key, pub outset: Value<Px> }
 pub enum RippleEffect { AndroidPatterned }
 pub enum Shadow { Layers(Vec<ShadowLayer>), Elevation(Key) }
 pub struct ShadowLayer { pub x: Value<Px>, pub y: Value<Px>, pub blur: Value<Px>, pub spread: Value<Px>,
-                         pub color: Value<Color>, pub inset: bool, pub falloff: ShadowFalloff }
+                         pub color: Value<Color>, pub inset: bool, pub falloff: ShadowFalloff,
+                         pub corner_radius: Option<Value<Px>> }
 pub enum ShadowFalloff { Gaussian, KirigamiSmoothstep }
 pub struct ElementData { pub progress: f32, pub caret_height: Px }
 pub struct TextRoles { pub body: Value<TextStyle> }
@@ -4222,6 +4237,23 @@ SELF_TEST_CASES = [
      'color = "#00000024", inset = false, falloff = "gaussian" }',
      'color = "#00000024", inset = false, falloff = "smoothstep" }',
      ["value.layers[0].falloff: 'smoothstep' is not a unit variant of ShadowFalloff"]),
+    # a layer's own corner radius (S2.5, S12; ADD-A136): `corner_radius_px`, refused on a Kirigami layer
+    ("WinUI: a shadow layer's own corner radius", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corner_radius_px = 4.5 }',
+     []),
+    ("WinUI: a shadow layer's corner radius with its unit", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corner_radius_px = "4px" }',
+     ["value.layers[0].corner_radius_px: a suffixed key takes a plain number"]),
+    ("WinUI: a shadow layer's full corners", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "gaussian", corners_px = 4 }',
+     ["value.layers[0].corners_px: `corners_px` is not a field of ShadowLayer"]),
+    ("WinUI: a Kirigami layer's own corner radius", "docs/facts/windows/buttons.toml",
+     'color = "#00000024", inset = false, falloff = "gaussian" }',
+     'color = "#00000024", inset = false, falloff = "kirigami_smoothstep", corner_radius_px = 4 }',
+     ["value.layers[0]: a `kirigami_smoothstep` layer states `corner_radius_px`"]),
     ("WinUI: a shadow layer's Kirigami falloff", "docs/facts/windows/buttons.toml",
      'color = "#00000024", inset = false, falloff = "gaussian" }',
      'color = "#00000024", inset = false, falloff = "kirigami_smoothstep" }', []),
@@ -4503,6 +4535,15 @@ SELF_TEST_CASES = [
      _PENDING + _LATER.replace('when = { states = ["hover"] }\n', ""), ["is shadowed by the later fact at line 8"]),
     ("pending: shadowed where both hold (no exclusive group on gnome/)", "docs/facts/gnome/pending.toml", None,
      _PENDING + _LATER, ["is shadowed by the later fact"]),
+    # a later pending fact is exempt (S17 *Which fact applies*; ADD-A135, ledger queue #164 (3))
+    ("pending: shadowed by a later pending fact", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('states = ["pressed"]', 'states = ["pressed", "hover"]').replace('"U1"', '"U2"'),
+     []),
+    ("pending: shadowed by a later pending fact holding everywhere", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('when = { states = ["pressed"] }\n', ""), []),
+    ("pending: a later pending fact, then a value", "docs/facts/gnome/pending.toml", None,
+     _PENDING + _PENDING.replace('"U1"', '"U2"') + _LATER.replace('when = { states = ["hover"] }\n', ""),
+     ["(U1) is shadowed by the later fact at line 14", "(U2) is shadowed by the later fact at line 14"]),
     ("pending: a later fact refusing its state", "docs/facts/gnome/pending.toml", None,
      _PENDING + _LATER.replace('states = ["hover"]', 'not_states = ["pressed"]'), []),
     ("pending: a later fact under the other scheme", "docs/facts/gnome/pending.toml", None,
