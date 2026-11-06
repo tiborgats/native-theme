@@ -452,7 +452,9 @@ struct Synthetic {
     inputs: Vec<(InputName, Scheme)>,
     /// The inputs the stand-in states with the preset's own value, the
     /// facts gate's pass layer completing the accent group (S9.2, S17 *A
-    /// measured derivation*): a folded value it carries stays marked.
+    /// measured derivation*): a folded value it carries stays marked. Set
+    /// with that stand-in alone ([`Stack::set_reader_stand_in_carrying`]),
+    /// and emptied wherever the reader or stand-in changes.
     carried: Vec<InputName>,
 }
 
@@ -627,7 +629,10 @@ impl Stack {
         own: Option<PresetId>,
     ) -> Result<(), LayerError> {
         let layer = Arc::new(layer);
-        self.change(|stack| stack.reader = Some(Reader::Read { state, layer, own }))
+        self.change(|stack| {
+            stack.reader = Some(Reader::Read { state, layer, own });
+            stack.carry(Vec::new());
+        })
     }
 
     /// Sets the stand-in, or replaces the one set; refused while a reader
@@ -639,12 +644,29 @@ impl Stack {
         state: ReaderState,
         layer: Layer,
     ) -> Result<(), LayerError> {
+        self.set_reader_stand_in_carrying(state, layer, Vec::new())
+    }
+
+    /// [`Stack::set_reader_stand_in`] with a stand-in stating the inputs
+    /// `carried` with the preset's own values (S9.2, S17 *A measured
+    /// derivation*): where one is a listed input's folded synthetic value,
+    /// it stays marked synthetic while this stand-in is set (ADD-A132). A
+    /// no-op for the marks off the synthetic route.
+    pub(crate) fn set_reader_stand_in_carrying(
+        &mut self,
+        state: ReaderState,
+        layer: Layer,
+        carried: Vec<InputName>,
+    ) -> Result<(), LayerError> {
         if matches!(self.reader, Some(Reader::Read { .. })) {
             return Err(LayerError::ReaderPresent);
         }
         accent_inputs_held(&self.declarations, self.preset, None, Some(&layer))?;
         let layer = Arc::new(layer);
-        self.change(|stack| stack.reader = Some(Reader::StandIn { state, layer }))
+        self.change(|stack| {
+            stack.reader = Some(Reader::StandIn { state, layer });
+            stack.carry(carried);
+        })
     }
 
     /// Removes the stand-in, back to the no-reader state (S16); a no-op
@@ -653,7 +675,10 @@ impl Stack {
         if !matches!(self.reader, Some(Reader::StandIn { .. })) {
             return Ok(());
         }
-        self.change(|stack| stack.reader = None)
+        self.change(|stack| {
+            stack.reader = None;
+            stack.carry(Vec::new());
+        })
     }
 
     /// Switches to another preset's declarations, layer and listed paths
@@ -847,10 +872,9 @@ impl Stack {
     }
 
     /// Marks the inputs `carried` as the stand-in's copies of the preset's
-    /// own values (S9.2, S17 *A measured derivation*): where one is a listed
-    /// input's folded synthetic value, it stays marked synthetic in the
-    /// stand-in (ADD-A132). A no-op off the synthetic route.
-    pub(crate) fn carry_synthetic_inputs(&mut self, carried: Vec<InputName>) {
+    /// own values, with the stand-in that carries them; none with any other
+    /// reader or stand-in, or none. A no-op off the synthetic route.
+    fn carry(&mut self, carried: Vec<InputName>) {
         if let Some(synthetic) = &mut self.synthetic {
             synthetic.carried = carried;
         }
@@ -859,7 +883,7 @@ impl Stack {
     /// The listed inputs whose folded synthetic value is in force under
     /// `scheme` and `contrast` (S17, ADD-A132): the preset's own input base
     /// gives the input, or the stand-in carrying the preset's value of it
-    /// ([`Stack::carry_synthetic_inputs`]), at a listed scheme, with no
+    /// ([`Stack::set_reader_stand_in_carrying`]), at a listed scheme, with no
     /// contrast base of the preset's for the contrast in force, and no layer
     /// above gives one.
     fn synthetic_inputs(

@@ -1231,6 +1231,47 @@ fn a_listed_input_is_folded_into_the_preset() {
     assert!(marked(&stack).is_empty());
 }
 
+/// The inputs a stand-in carries with the preset's own value, a listed
+/// one's folded synthetic value staying marked (S17 *A measured
+/// derivation*, ADD-A132), are that stand-in's alone: a stand-in set in its
+/// place stating the input's slot with its own value leaves no mark of the
+/// input.
+#[test]
+fn carried_inputs_end_with_their_stand_in() {
+    let text = format!(
+        "[pending]\n\"inputs.accent.dark\" = \"U1\"\n{}",
+        BASE.replacen(
+            "[inputs.accent]\nlight = \"#3366cc\"\ndark = \"#3366cc\"\n",
+            "[inputs.accent]\nlight = \"#3366cc\"\n",
+            1
+        )
+    );
+    let file = read_preset(&text).unwrap();
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let mut stack = synthetic_stack(None, &text, Scheme::Dark, layers).unwrap();
+    let accent = crate::next::inputs::InputName::new("accent").unwrap();
+    let marked = |stack: &Stack| {
+        stack
+            .resolve(
+                &mut WindowState::default(),
+                &WindowConditions::new(InputKind::Mouse),
+            )
+            .theme
+            .synthetic_inputs
+    };
+    let dark = || crate::next::resolve::ReaderState::new(Scheme::Dark, 1.0);
+    let carrying = Layer::from_toml("[inputs.accent]\ndark = \"#010203\"\n").unwrap();
+    let own = Layer::from_toml("[inputs.accent]\ndark = \"#445566\"\n").unwrap();
+    stack
+        .set_reader_stand_in_carrying(dark(), carrying.clone(), vec![accent.clone()])
+        .unwrap();
+    assert_eq!(marked(&stack), std::slice::from_ref(&accent));
+    stack.set_reader_stand_in(dark(), own).unwrap();
+    assert!(marked(&stack).is_empty());
+    stack.set_reader_stand_in(dark(), carrying).unwrap();
+    assert!(marked(&stack).is_empty());
+}
+
 /// A declared input is missing at a slot no applying layer gives it a value
 /// at (S9, S12, ADD-A132), listed or not, through `from_preset` and
 /// `set_preset` alike: at `inputs.<name>.<scheme>` where the preset states

@@ -346,14 +346,13 @@ impl Preset {
         carried: Vec<InputName>,
     ) -> Result<Resolved, String> {
         let mut stack = self.stack.clone();
-        stack.carry_synthetic_inputs(carried);
         if let Some(flavor) = &conditions.flavor {
             stack
                 .set_flavor(flavor.clone())
                 .map_err(|error| refused(&error))?;
         }
         stack
-            .set_reader_stand_in(conditions.state.clone(), stand_in)
+            .set_reader_stand_in_carrying(conditions.state.clone(), stand_in, carried)
             .map_err(|error| refused(&error))?;
         let theme = stack
             .resolve(&mut WindowState::default(), &conditions.window)
