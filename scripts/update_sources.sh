@@ -3,7 +3,8 @@
 #
 #   update_sources.sh [--seed DIR]... [--jobs N]   fetch each entry missing from the cache or not at its commit
 #   update_sources.sh --verify                     offline: exit 1 unless every entry's checkout is at its commit,
-#                                                  with its sparse folders and no change to a tracked file
+#                                                  with its sparse folders and no change to a tracked file, and every
+#                                                  SDK header copy in the cache matches its xcode.txt
 #
 # sources.toml is checked first with scripts/check_sources.py's form rules (not its citation completeness): on any
 # problem nothing is fetched, verified or removed. Every path the script writes or removes is resolved and must lie
@@ -22,8 +23,12 @@
 # fetched from that checkout instead of its repository (its tracked files only; origin is still the entry's
 # repository). --jobs N: fetches at once (default 4, at least 1).
 #
-# The SDK and distribution entries are not fetched: an SDK exists only on its runner image, a distribution snapshot
-# is installed by the harness that uses it. The documentation snapshots, once sources.toml lists them, are fetched
+# The SDK and distribution entries are not fetched: an SDK exists only on its runner image, a distribution snapshot is
+# installed by the harness that uses it. An SDK entry's folder, <cache>/<id>/, holds the headers os-probe.yml's macOS
+# job copied on that runner (a folder per framework, xcode.txt the job's record with each file's SHA-256, README.txt its
+# provenance), put there by hand and read by scripts/check_fact_citations.py; --verify checks each such folder's files
+# against its xcode.txt and counts it as its entry's, not as a stale folder. A missing one is no problem: the citations
+# of its headers are then listed, not checked. The documentation snapshots, once sources.toml lists them, are fetched
 # and their SHA-256 verified here too.
 #
 # Requires git and python3 (3.11, for tomllib); network access unless --verify.
@@ -51,9 +56,10 @@ while (($#)); do
     shift
 done
 
-# id, repository, commit, tag, sparse folders (space-separated) of every git entry, once the whole file passes
-# check_sources.py's form rules (they keep tabs, newlines and spaces out of every field printed here)
-if ! ENTRIES=$(python3 -I - "$ROOT/scripts" "$SOURCES" <<'EOF'
+# `git`, then the id, repository, commit, tag, sparse folders (space-separated) of every git entry, and `sdk`, then the
+# id of every SDK entry, once the whole file passes check_sources.py's form rules (they keep tabs, newlines and spaces
+# out of every field printed here)
+if ! LISTED=$(python3 -I - "$ROOT/scripts" "$SOURCES" <<'EOF'
 import sys, tomllib
 sys.path.insert(0, sys.argv[1])
 import check_sources
@@ -68,11 +74,15 @@ if problems:
     sys.exit(f"{sys.argv[2]}: {len(problems)} problems (scripts/check_sources.py); nothing done")
 for e in data.get("source", []):
     if e.get("kind") == "git":
-        print("\t".join([e["id"], e["repository"], e["commit"], e["tag"], " ".join(e.get("sparse", []))]))
+        print("\t".join(["git", e["id"], e["repository"], e["commit"], e["tag"], " ".join(e.get("sparse", []))]))
+    elif e.get("kind") == "sdk":
+        print("\t".join(["sdk", e["id"]]))
 EOF
 ); then
     exit 2
 fi
+ENTRIES=$(grep -- $'^git\t' <<<"$LISTED" | cut -f2- || true)
+SDKS=$(grep -- $'^sdk\t' <<<"$LISTED" | cut -f2 || true)
 
 head_of() {
     git -C "$1" rev-parse --verify -q HEAD 2>/dev/null || true
@@ -128,8 +138,27 @@ verify() {
             bad=$((bad + 1))
         fi
     done <<<"$ENTRIES"
+    local copies=0
+    while IFS= read -r id; do
+        [[ -n "$id" ]] || continue
+        dir="$CACHE/$id"
+        [[ -d "$dir" ]] || continue
+        if ! inside_cache "$dir"; then
+            bad=$((bad + 1))
+            continue
+        fi
+        copies=$((copies + 1))
+        if [[ ! -f "$dir/xcode.txt" ]]; then
+            echo "$id: no xcode.txt in $dir"
+            bad=$((bad + 1))
+        elif ! grep -E '^[0-9a-f]{64}  ' "$dir/xcode.txt" | (cd "$dir" && sha256sum -c --quiet >/dev/null 2>&1); then
+            echo "$id: a header in $dir is missing or differs from its SHA-256 in xcode.txt"
+            bad=$((bad + 1))
+        fi
+    done <<<"$SDKS"
     stale
     echo "# $n checkouts verified in $CACHE"
+    echo "# $copies SDK header copies verified against their xcode.txt"
     echo "# $bad problems"
     ((bad == 0))
 }
@@ -139,7 +168,7 @@ stale() {
     for d in "$CACHE"/*/; do
         [[ -d "$d" ]] || continue
         name=$(basename "$d")
-        if ! cut -f1 <<<"$ENTRIES" | grep -qxF -- "$name"; then
+        if ! cut -f1 <<<"$ENTRIES" | grep -qxF -- "$name" && ! grep -qxF -- "$name" <<<"$SDKS"; then
             echo "# not in sources.toml (left in place): $d"
         fi
     done
