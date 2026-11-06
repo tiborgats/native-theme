@@ -155,7 +155,9 @@ A `[[fact]]` (S17 *Fields*):
   `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`, its id a `[[source]]` of sources.toml; `quote` a non-empty
   string; `conversion` a list of check_fact_citations.CONVERSIONS' names; `absent` a list of non-empty names, `[]` where
   the platform has no name for what it lacks (S17 *Absence*, ADD-A120); `tolerance` a number >= 0, or a table from a
-  leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`. A fact
+  leaf path to such a number; `evidence` `docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`, the
+  path in a TOML file a dotted key as TOML writes one (key_segments: a key that is no bare key quoted,
+  `macos.symbols."chevron.forward".size`; ADD-A136; check_fact_citations.py reads the value there). A fact
   with a `read` citation states a plain `= input.…` reference (S17 *`read`*).
 - A pending fact (S17 *A pending measurement*, ADD-A122): `pending = "U<n>"` in place of `value` (exactly one of
   them), no `[[fact.cite]]`; `key`, `pending` and `rows` required, `when`, `scheme_file` and `accent` as a fact's; the
@@ -1658,6 +1660,12 @@ def cite_problems(ctx, item: Item, cite: Cite) -> list:
     if "evidence" in c and (not parse_evidence(c["evidence"]) or ".." in c["evidence"].split("#")[0].split("/")):
         out.append((cite.ln("evidence"), f"evidence {c['evidence']!r} is not "
                                          f"`docs/evidence/<harness>/<date>-run-<id>/<image>/<file>#<path>`"))
+    elif "evidence" in c:
+        file, path = parse_evidence(c["evidence"])[:2]
+        parsed = key_segments(path) if file.endswith(".toml") else None
+        if isinstance(parsed, str):
+            out.append((cite.ln("evidence"), f"evidence path {path!r} is not a TOML dotted key as TOML writes one "
+                                             f"(S17 *`evidence`*): {parsed}"))
     return out
 
 
@@ -4440,6 +4448,17 @@ SELF_TEST_CASES = [
     ("KDE accent: an evidence path out of form", "docs/facts/kde/colors.toml", "2026-11-03-run-2/kde-breeze-light/",
      "2026-11-03/kde-breeze-light/", ["is not `docs/evidence/<harness>/<date>-run-<id>/<image>/<file>#<path>`",
                                       "no citation serves kde-breeze"]),
+    ("evidence: a TOML path with an unterminated quote", "docs/facts/macos/buttons.toml",
+     'macos-26/probe.toml#macos.fonts.sizes.systemFontSize"', 'macos-26/probe.toml#macos.\\"chevron.size"',
+     ["is not a TOML dotted key as TOML writes one (S17 *`evidence`*): key 'macos.\"chevron.size': the quote"]),
+    ("evidence: a TOML path with a quote inside a bare key", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', "evidence = 'docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos."
+                        "symbols.chevron\"forward\".size'", ["is not a TOML dotted key"]),
+    ("evidence: a quoted TOML path", "docs/facts/macos/buttons.toml",
+     'evidence = "docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos.fonts.sizes.'
+     'systemFontSize"', "evidence = 'docs/evidence/os-probe/2026-11-02-run-1/os-probe-macos-26/probe.toml#macos."
+                        "symbols.\"chevron.forward\".size'", []),
     ("KDE accent: an image run.toml maps elsewhere", "docs/evidence/kde-accent/2026-11-03-run-2/run.toml",
      'preset = "kde-breeze"', 'preset = "adwaita"', ["no citation serves kde-breeze"]),
     # accent fields outside kde/
