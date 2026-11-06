@@ -8,6 +8,7 @@ of the iPhone and runs the render pass (the base specimen set, as in run 4102088
 | Folder | Preset | Runner | Xcode, SDK | Simulator |
 |---|---|---|---|---|
 | `ios-host-macos-15/` | `ios-13` | macOS 15.8.2 (24H232) | Xcode 16.4 (16F6), iphonesimulator 18.5 (22F76) | iOS 18.6 (22G86), iPad Pro (12.9-inch) (3rd generation) |
+| `ios-host-macos-26/` | `ios-26` | macOS 26.6.2 (25G83) | Xcode 26.6 (17F113), iphonesimulator 26.5 (23F81a) | iOS 26.5 (23F77), iPad Pro (12.9-inch) (3rd generation) |
 
 Kept here, per image folder: `run1/index.toml` (its `[screen]` records `interface_idiom = 1`, the pad, and
 `focus_system = true`), `solved/run1.toml` and `differ-levels.txt`. The crops, drawings, screenshots and second run stay
@@ -17,5 +18,6 @@ in the run's artifacts. The render pass's focused state was requested without Fu
 What the macos-15 job shows (run.txt): both render runs finished `ok`; they differ in 620 of 10,631 files, 308 outside
 `draw/`, all of them activity indicator captures, and compare.swift accepts them.
 
-The macos-26 job (`ios-26`) was still running when this folder was committed (started 20:52 UTC, still in progress at
-22:43 UTC); its folder is added when it finishes, or the pass is run again for it.
+What the macos-26 job shows (run.txt): both render runs finished `ok`; they differ in 1,225 of 15,871 files, 661
+outside `draw/` (the activity indicator, and Liquid Glass, bar items and back buttons over black, white or the
+pattern), and compare.swift accepts them.
