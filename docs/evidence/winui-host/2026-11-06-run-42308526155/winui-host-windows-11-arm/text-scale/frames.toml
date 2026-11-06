@@ -1,0 +1,171 @@
+[result]
+status = "ok"
+errors = []
+
+[host]
+windows_app_sdk_package = "2.5.1"
+windows_app_sdk_release = "error: The specified module could not be found.\r\n\r\nUnable to load resource dll. Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+windows_app_sdk_runtime = "error: The specified module could not be found.\r\n\r\nUnable to load resource dll. Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+microsoft_ui_xaml_version = "3.2.3.2609 (4DD5BB37B607(ContainerAdministrator)-89b7ad5b68f9f77311e09f3fc5eef5acb5f2460a)"
+microsoft_ui_xaml_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.UI.Xaml.dll"
+microsoft_ui_xaml_controls_version = "3.2.3.2609 (4DD5BB37B607(ContainerAdministrator)-89b7ad5b68f9f77311e09f3fc5eef5acb5f2460a)"
+microsoft_ui_xaml_controls_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.UI.Xaml.Controls.dll"
+microsoft_windowsappruntime_version = "2.0"
+microsoft_windowsappruntime_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.WindowsAppRuntime.dll"
+os_version = "Microsoft Windows NT 10.0.26200.0"
+os_architecture = "Arm64"
+process_architecture = "Arm64"
+dotnet = ".NET 10.0.14"
+application_requested_theme = "Light"
+root_actual_theme = "Light"
+root_background_application_page_background = true
+
+[system]
+GetCaretBlinkTime = 530
+GetDoubleClickTime = 500
+ui_settings_text_scale_factor = 1.5
+
+[[text]]
+pass = "text_scale"
+font_size = 10.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 17.12584114074707
+actual_size = { width = 148.64610290527344, height = 21.10895538330078 }
+desired_size = { width = 149.0, height = 22.0 }
+bounds = { x = 8.0, y = 8.0, width = 148.64610290527344, height = 21.10895538330078 }
+
+[[text]]
+pass = "text_scale"
+font_size = 12.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 19.01664161682129
+actual_size = { width = 161.71888732910156, height = 23.439516067504883 }
+desired_size = { width = 162.0, height = 24.0 }
+bounds = { x = 8.0, y = 30.0, width = 161.71888732910156, height = 23.43951416015625 }
+
+[[text]]
+pass = "text_scale"
+font_size = 14.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 20.948759078979492
+actual_size = { width = 174.47189331054688, height = 25.82100486755371 }
+desired_size = { width = 175.0, height = 26.0 }
+bounds = { x = 8.0, y = 54.0, width = 174.47189331054688, height = 25.821006774902344 }
+
+[[text]]
+pass = "text_scale"
+font_size = 16.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 22.911117553710938
+actual_size = { width = 190.70135498046875, height = 28.23976707458496 }
+desired_size = { width = 191.0, height = 29.0 }
+bounds = { x = 8.0, y = 80.0, width = 190.70135498046875, height = 28.239768981933594 }
+
+[[text]]
+pass = "text_scale"
+font_size = 18.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 24.896574020385742
+actual_size = { width = 207.12600708007812, height = 30.687000274658203 }
+desired_size = { width = 208.0, height = 31.0 }
+bounds = { x = 8.0, y = 109.0, width = 207.12600708007812, height = 30.686996459960938 }
+
+[[text]]
+pass = "text_scale"
+font_size = 20.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 26.900251388549805
+actual_size = { width = 223.5885772705078, height = 33.15668869018555 }
+desired_size = { width = 224.0, height = 34.0 }
+bounds = { x = 8.0, y = 140.0, width = 223.5885772705078, height = 33.15669250488281 }
+
+[[text]]
+pass = "text_scale"
+font_size = 28.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 35.03957748413086
+actual_size = { width = 290.5906677246094, height = 43.18905258178711 }
+desired_size = { width = 291.0, height = 44.0 }
+bounds = { x = 8.0, y = 174.0, width = 290.5906677246094, height = 43.189056396484375 }
+
+[[text]]
+pass = "text_scale"
+font_size = 40.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 47.46567916870117
+actual_size = { width = 392.2684020996094, height = 58.50520706176758 }
+desired_size = { width = 393.0, height = 59.0 }
+bounds = { x = 8.0, y = 218.0, width = 392.2684020996094, height = 58.505218505859375 }
+
+[[text]]
+pass = "text_scale"
+font_size = 68.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 76.90226745605469
+actual_size = { width = 633.9043579101562, height = 94.78813934326172 }
+desired_size = { width = 634.0, height = 95.0 }
+bounds = { x = 8.0, y = 277.0, width = 633.9043579101562, height = 94.78814697265625 }
+
+[[text_capture]]
+pass = "text_scale"
+panel_bounds = { x = 0.0, y = 0.0, width = 650.0, height = 380.0 }
+png = "text-text_scale.png"
+screen_rect = { x = 108, y = 91, width = 650, height = 380 }
+grey_pixels = 24454
+coloured_pixels = 0
+largest_channel_spread = 0
+

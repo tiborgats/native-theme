@@ -1,0 +1,9 @@
+# The image folder of run 42308526155 the facts cite (spec S17 *`evidence`*): the WinUI host's run 1 and its text-scale
+# run. The builds are the run's own records: frames.toml `[host]` (the Windows App SDK package, Microsoft.UI.Xaml.dll's
+# file version, the OS) and the job's Set up job log (runner image windows-11-vs2026-arm64 20261101.203.1).
+
+[images.winui-host-windows-11-arm]
+preset = "windows-11"
+source = "win11-vs2026-arm64@20261101.203.1"
+os = "Windows 11 Enterprise 25H2 (10.0.26200), runner image windows-11-vs2026-arm64 20261101.203.1"
+toolkit = "WinUI 3 of the Windows App SDK 2.5.1 (Microsoft.UI.Xaml.dll 3.2.3.2609), unpackaged and self-contained, .NET 10.0.14, ARM64"
