@@ -2740,23 +2740,39 @@ source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBo
 quote = "bool isCaretRendered = m_canShowCaret && !m_pTextControl->IsReadOnly()"
 
 # Behaviour (S4.2). The double-click rectangle and the drag box are the system metrics SM_CXDOUBLECLK,
-# SM_CYDOUBLECLK and SM_CXDRAG (UIElement's drag box twice SM_CXDRAG, AutomaticDragHelper.cpp:8-11, :69-83), whose
-# defaults no pinned source states (the OS probe read 4, 4 and 4 on windows-11-arm, run 40348854007, which no
-# sources.toml entry serves yet): pending (U500).
+# SM_CYDOUBLECLK and SM_CXDRAG, which the reader reads (W-P3-12†, W3-41); their defaults no pinned source states, so
+# they are the OS probe's reads on the windows-11-arm image (run 40348854007, win11-vs2026-arm64@20261022.194.1) at
+# 96 DPI, 100 %. Each read 4 at every DPI the probe asked (96, 120, 144 and 192). A WinUI
+# UIElement starts a mouse drag only beyond twice SM_CXDRAG and SM_CYDRAG (AutomaticDragHelper.cpp:8-12, :69-83).
 [[fact]]
 key = "token.behavior.double_click_distance"
-pending = "U500"
+value = "4px"
 rows = ["W-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CXDOUBLECLK.ForDpi_96"
+tolerance = 0
 
 [[fact]]
 key = "token.behavior.double_click_height"
-pending = "U500"
+value = "4px"
 rows = ["W-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CYDOUBLECLK.ForDpi_96"
+tolerance = 0
 
 [[fact]]
 key = "token.behavior.drag_threshold"
-pending = "U500"
+value = "4px"
 rows = ["W3-41"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.system_metrics.SM_CXDRAG.ForDpi_96"
+tolerance = 0
 
 # A mouse drag starts on the first move outside the drag box, with no timer (S17's zero stated by omission).
 [[fact]]

@@ -6080,40 +6080,75 @@ key = "role.global.drop_highlight"
 pending = "U513"
 rows = ["W3-49†"]
 
-# The accent inputs' values on a default Windows 11 (the read facts above take them from UISettings): no pinned
-# source states them; the OS probe read Accent #0078d4 and its ramp on windows-11-arm (run 40348854007), which no
-# sources.toml entry serves yet (ledger #40, #150; U514).
+# The accent inputs' values on a default Windows 11 (the read facts above take them from UISettings.GetColorValue,
+# whose call names no theme, SystemThemingInterop.cpp:295): the OS probe's reads on the windows-11-arm image (run
+# 40348854007, win11-vs2026-arm64@20261022.194.1), light theme, high contrast off (ledger #40; U514).
 [[fact]]
 key = "input.accent"
-pending = "U514"
+value = "#0078d4"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.Accent"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.dark1"
-pending = "U514"
+value = "#0067c0"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark1"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.dark2"
-pending = "U514"
+value = "#003e92"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark2"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.dark3"
-pending = "U514"
+value = "#001a68"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentDark3"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.light1"
-pending = "U514"
+value = "#0091f8"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight1"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.light2"
-pending = "U514"
+value = "#4cc2ff"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight2"
+tolerance = 0
 
 [[fact]]
 key = "input.accent_ramp.light3"
-pending = "U514"
+value = "#99ebff"
 rows = ["W3-12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-10-26-run-40348854007/os-probe-windows-11-arm/probe.toml#windows.ui_settings.GetColorValue.AccentLight3"
+tolerance = 0
