@@ -1,0 +1,1692 @@
+# The help bezel's glyph and the circular bezel's circle, read from the button pass's layer readings by
+# analysis/read_help_circle.py (its docstring says how); points from the window's top left, y down.
+input = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass/probe.toml"
+input_layers = ["docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/aqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/aqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/aqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/aqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/darkAqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/darkAqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/darkAqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-key-not-main/darkAqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/aqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/aqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/aqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/aqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/darkAqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/darkAqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/darkAqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-main-not-key/darkAqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/aqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/aqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/aqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/aqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/darkAqua/styles_b/normal-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/darkAqua/styles_b/pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/darkAqua/styles_b/disabled-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-inactive-increase-contrast-on/darkAqua/styles_b/disabled_pressed-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-focus-accent-red/aqua/styles_b/unfocused-layer.png", "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/button-pass-focus-accent-red/darkAqua/styles_b/unfocused-layer.png"]
+
+[help.aqua.normal.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 13]
+glyph_inset_tlbr = [2, 1, 2, 2]
+glyph_pixels = 31
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+fill_mode = "#ffffffff"
+body_alpha = 1.0
+
+[help.aqua.normal.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 16]
+glyph_inset_tlbr = [1, 1, 2, 1]
+glyph_pixels = 43
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+fill_mode = "#ffffffff"
+body_alpha = 1.0
+
+[help.aqua.normal.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 20]
+glyph_inset_tlbr = [1, 3, 4, 2]
+glyph_pixels = 56
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+fill_mode = "#ffffffff"
+body_alpha = 1.0
+
+[help.aqua.normal.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 26]
+glyph_inset_tlbr = [1, 4, 8, 5]
+glyph_pixels = 62
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+fill_mode = "#ffffffff"
+body_alpha = 1.0
+
+[help.aqua.pressed.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 13]
+glyph_inset_tlbr = [2, 1, 2, 2]
+glyph_pixels = 31
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+fill_mode = "#f0f0f0ff"
+body_alpha = 1.0
+
+[help.aqua.pressed.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 16]
+glyph_inset_tlbr = [1, 1, 2, 1]
+glyph_pixels = 43
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+fill_mode = "#f0f0f0ff"
+body_alpha = 1.0
+
+[help.aqua.pressed.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 20]
+glyph_inset_tlbr = [1, 3, 4, 2]
+glyph_pixels = 56
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+fill_mode = "#f0f0f0ff"
+body_alpha = 1.0
+
+[help.aqua.pressed.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 26]
+glyph_inset_tlbr = [1, 4, 8, 5]
+glyph_pixels = 62
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+fill_mode = "#f0f0f0ff"
+body_alpha = 1.0
+
+[help.aqua.disabled.mini]
+frame = [20, 68, 16, 17]
+glyph = [23, 73, 9, 9]
+glyph_inset_tlbr = [5, 3, 3, 4]
+glyph_pixels = 14
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled.small]
+frame = [170, 67, 18, 19]
+glyph = [174, 68, 10, 16]
+glyph_inset_tlbr = [1, 4, 2, 4]
+glyph_pixels = 24
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled.regular]
+frame = [320, 64, 25, 25]
+glyph = [325, 67, 16, 18]
+glyph_inset_tlbr = [3, 5, 4, 4]
+glyph_pixels = 43
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 26]
+glyph_inset_tlbr = [1, 4, 8, 5]
+glyph_pixels = 42
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled_pressed.mini]
+frame = [20, 68, 16, 17]
+glyph = [23, 73, 9, 9]
+glyph_inset_tlbr = [5, 3, 3, 4]
+glyph_pixels = 14
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled_pressed.small]
+frame = [170, 67, 18, 19]
+glyph = [174, 68, 10, 16]
+glyph_inset_tlbr = [1, 4, 2, 4]
+glyph_pixels = 24
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled_pressed.regular]
+frame = [320, 64, 25, 25]
+glyph = [325, 67, 16, 18]
+glyph_inset_tlbr = [3, 5, 4, 4]
+glyph_pixels = 43
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.aqua.disabled_pressed.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 26]
+glyph_inset_tlbr = [1, 4, 8, 5]
+glyph_pixels = 42
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+fill_mode = "#ffffff80"
+body_alpha = 0.502
+
+[help.darkAqua.normal.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 14]
+glyph_inset_tlbr = [2, 1, 1, 2]
+glyph_pixels = 40
+glyph_color = "#00000024"
+fill = "#ffffff40"
+fill_mode = "#ffffff40"
+body_alpha = 0.251
+
+[help.darkAqua.normal.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 17]
+glyph_inset_tlbr = [1, 1, 1, 1]
+glyph_pixels = 57
+glyph_color = "#00000022"
+fill = "#ffffff40"
+fill_mode = "#ffffff40"
+body_alpha = 0.251
+
+[help.darkAqua.normal.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 21]
+glyph_inset_tlbr = [1, 3, 3, 2]
+glyph_pixels = 74
+glyph_color = "#00000024"
+fill = "#ffffff40"
+fill_mode = "#ffffff40"
+body_alpha = 0.251
+
+[help.darkAqua.normal.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 27]
+glyph_inset_tlbr = [1, 4, 7, 5]
+glyph_pixels = 93
+glyph_color = "#00000026"
+fill = "#ffffff40"
+fill_mode = "#ffffff40"
+body_alpha = 0.251
+
+[help.darkAqua.pressed.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 13]
+glyph_inset_tlbr = [2, 1, 2, 2]
+glyph_pixels = 34
+glyph_color = "#5c5c5c3d"
+fill = "#ffffff5c"
+fill_mode = "#ffffff5c"
+body_alpha = 0.361
+
+[help.darkAqua.pressed.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 16]
+glyph_inset_tlbr = [1, 1, 2, 1]
+glyph_pixels = 44
+glyph_color = "#48484839"
+fill = "#ffffff5c"
+fill_mode = "#ffffff5c"
+body_alpha = 0.361
+
+[help.darkAqua.pressed.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 20]
+glyph_inset_tlbr = [1, 3, 4, 2]
+glyph_pixels = 62
+glyph_color = "#70707044"
+fill = "#ffffff5c"
+fill_mode = "#ffffff5c"
+body_alpha = 0.361
+
+[help.darkAqua.pressed.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 26]
+glyph_inset_tlbr = [1, 4, 8, 5]
+glyph_pixels = 65
+glyph_color = "#42424236"
+fill = "#ffffff5c"
+fill_mode = "#ffffff5c"
+body_alpha = 0.361
+
+[help.darkAqua.disabled.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 14]
+glyph_inset_tlbr = [2, 1, 1, 2]
+glyph_pixels = 32
+glyph_color = "#00000012"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 17]
+glyph_inset_tlbr = [1, 1, 1, 1]
+glyph_pixels = 41
+glyph_color = "#00000011"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 21]
+glyph_inset_tlbr = [1, 3, 3, 2]
+glyph_pixels = 46
+glyph_color = "#00000012"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 27]
+glyph_inset_tlbr = [1, 4, 7, 5]
+glyph_pixels = 78
+glyph_color = "#00000010"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled_pressed.mini]
+frame = [20, 68, 16, 17]
+glyph = [21, 70, 13, 14]
+glyph_inset_tlbr = [2, 1, 1, 2]
+glyph_pixels = 32
+glyph_color = "#00000012"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled_pressed.small]
+frame = [170, 67, 18, 19]
+glyph = [171, 68, 16, 17]
+glyph_inset_tlbr = [1, 1, 1, 1]
+glyph_pixels = 41
+glyph_color = "#00000011"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled_pressed.regular]
+frame = [320, 64, 25, 25]
+glyph = [323, 65, 20, 21]
+glyph_inset_tlbr = [1, 3, 3, 2]
+glyph_pixels = 46
+glyph_color = "#00000012"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[help.darkAqua.disabled_pressed.large]
+frame = [470, 59, 35, 35]
+glyph = [474, 60, 26, 27]
+glyph_inset_tlbr = [1, 4, 7, 5]
+glyph_pixels = 78
+glyph_color = "#00000010"
+fill = "#ffffff20"
+fill_mode = "#ffffff20"
+body_alpha = 0.125
+
+[circle.aqua.normal.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 13]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffffff"
+
+[circle.aqua.normal.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 16]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffffff"
+
+[circle.aqua.normal.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 20]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffffff"
+
+[circle.aqua.normal.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 28]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffffff"
+
+[circle.aqua.pressed.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 13]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#f0f0f0ff"
+
+[circle.aqua.pressed.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 16]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#f0f0f0ff"
+
+[circle.aqua.pressed.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 20]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#f0f0f0ff"
+
+[circle.aqua.pressed.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 28]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#f0f0f0ff"
+
+[circle.aqua.disabled.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 13]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 16]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 20]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 28]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled_pressed.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 13]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled_pressed.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 16]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled_pressed.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 20]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.aqua.disabled_pressed.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 28]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff80"
+
+[circle.darkAqua.normal.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 14]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff40"
+
+[circle.darkAqua.normal.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 17]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff40"
+
+[circle.darkAqua.normal.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 21]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff40"
+
+[circle.darkAqua.normal.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 29]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff40"
+
+[circle.darkAqua.pressed.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 13]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff5c"
+
+[circle.darkAqua.pressed.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 16]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff5c"
+
+[circle.darkAqua.pressed.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 20]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff5c"
+
+[circle.darkAqua.pressed.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 28]
+circle_margin_tlbr = [3, 3, 3, 3]
+fill = "#ffffff5c"
+
+[circle.darkAqua.disabled.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 14]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 17]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 21]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 29]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled_pressed.mini]
+frame = [20, 403, 19, 19]
+circle = [23, 406, 13, 14]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled_pressed.small]
+frame = [170, 401, 22, 22]
+circle = [173, 404, 16, 17]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled_pressed.regular]
+frame = [320, 399, 26, 26]
+circle = [323, 402, 20, 21]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[circle.darkAqua.disabled_pressed.large]
+frame = [470, 395, 34, 34]
+circle = [473, 398, 28, 29]
+circle_margin_tlbr = [3, 3, 2, 3]
+fill = "#ffffff20"
+
+[glyph.key_not_main.aqua.normal.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.key_not_main.aqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.key_not_main.aqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.key_not_main.aqua.normal.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.key_not_main.aqua.pressed.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.key_not_main.aqua.pressed.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.key_not_main.aqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.key_not_main.aqua.pressed.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.key_not_main.aqua.disabled.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.key_not_main.aqua.disabled.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.key_not_main.aqua.disabled.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.key_not_main.aqua.disabled.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.key_not_main.aqua.disabled_pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.key_not_main.aqua.disabled_pressed.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.key_not_main.aqua.disabled_pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.key_not_main.aqua.disabled_pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.key_not_main.darkAqua.normal.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 13
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.key_not_main.darkAqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 23
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.key_not_main.darkAqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.key_not_main.darkAqua.normal.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 37
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.key_not_main.darkAqua.pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.key_not_main.darkAqua.pressed.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 22
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.key_not_main.darkAqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 32
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.key_not_main.darkAqua.pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 35
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.key_not_main.darkAqua.disabled.mini]
+glyph_core = [26, 73, 4, 7]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 5
+glyph_extent = [25, 72, 5, 8]
+glyph_extent_inset_tlbr = [4, 5, 5, 6]
+glyph_extent_pixels = 15
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.key_not_main.darkAqua.disabled.small]
+glyph_core = [177, 72, 5, 5]
+glyph_core_inset_tlbr = [5, 7, 9, 6]
+glyph_core_pixels = 7
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 25
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.key_not_main.darkAqua.disabled.regular]
+glyph_core = [330, 70, 6, 6]
+glyph_core_inset_tlbr = [6, 10, 13, 9]
+glyph_core_pixels = 8
+glyph_extent = [330, 69, 7, 12]
+glyph_extent_inset_tlbr = [5, 10, 8, 8]
+glyph_extent_pixels = 36
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.key_not_main.darkAqua.disabled.large]
+glyph_core = [484, 67, 7, 12]
+glyph_core_inset_tlbr = [8, 14, 15, 14]
+glyph_core_pixels = 18
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 41
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.key_not_main.darkAqua.disabled_pressed.mini]
+glyph_core = [26, 73, 4, 7]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 5
+glyph_extent = [25, 72, 5, 8]
+glyph_extent_inset_tlbr = [4, 5, 5, 6]
+glyph_extent_pixels = 15
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.key_not_main.darkAqua.disabled_pressed.small]
+glyph_core = [177, 72, 5, 5]
+glyph_core_inset_tlbr = [5, 7, 9, 6]
+glyph_core_pixels = 7
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 25
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.key_not_main.darkAqua.disabled_pressed.regular]
+glyph_core = [330, 70, 6, 6]
+glyph_core_inset_tlbr = [6, 10, 13, 9]
+glyph_core_pixels = 8
+glyph_extent = [330, 69, 7, 12]
+glyph_extent_inset_tlbr = [5, 10, 8, 8]
+glyph_extent_pixels = 36
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.key_not_main.darkAqua.disabled_pressed.large]
+glyph_core = [484, 67, 7, 12]
+glyph_core_inset_tlbr = [8, 14, 15, 14]
+glyph_core_pixels = 18
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 41
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.main_not_key.aqua.normal.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.main_not_key.aqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.main_not_key.aqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.main_not_key.aqua.normal.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.main_not_key.aqua.pressed.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.main_not_key.aqua.pressed.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.main_not_key.aqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.main_not_key.aqua.pressed.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#242424ff"
+fill = "#f0f0f0ff"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.main_not_key.aqua.disabled.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.main_not_key.aqua.disabled.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.main_not_key.aqua.disabled.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.main_not_key.aqua.disabled.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.main_not_key.aqua.disabled_pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.main_not_key.aqua.disabled_pressed.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.main_not_key.aqua.disabled_pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.main_not_key.aqua.disabled_pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#999999a0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.main_not_key.darkAqua.normal.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 13
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.main_not_key.darkAqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 23
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.main_not_key.darkAqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.main_not_key.darkAqua.normal.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 37
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.main_not_key.darkAqua.pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 13]
+
+[glyph.main_not_key.darkAqua.pressed.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 22
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 16]
+
+[glyph.main_not_key.darkAqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 32
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.main_not_key.darkAqua.pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 35
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#ffffffe7"
+fill = "#ffffff5c"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 26]
+
+[glyph.main_not_key.darkAqua.disabled.mini]
+glyph_core = [26, 73, 4, 7]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 5
+glyph_extent = [25, 72, 5, 8]
+glyph_extent_inset_tlbr = [4, 5, 5, 6]
+glyph_extent_pixels = 15
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.main_not_key.darkAqua.disabled.small]
+glyph_core = [177, 72, 5, 5]
+glyph_core_inset_tlbr = [5, 7, 9, 6]
+glyph_core_pixels = 7
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 25
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.main_not_key.darkAqua.disabled.regular]
+glyph_core = [330, 70, 6, 6]
+glyph_core_inset_tlbr = [6, 10, 13, 9]
+glyph_core_pixels = 8
+glyph_extent = [330, 69, 7, 12]
+glyph_extent_inset_tlbr = [5, 10, 8, 8]
+glyph_extent_pixels = 36
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.main_not_key.darkAqua.disabled.large]
+glyph_core = [484, 67, 7, 12]
+glyph_core_inset_tlbr = [8, 14, 15, 14]
+glyph_core_pixels = 18
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 41
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.main_not_key.darkAqua.disabled_pressed.mini]
+glyph_core = [26, 73, 4, 7]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 5
+glyph_extent = [25, 72, 5, 8]
+glyph_extent_inset_tlbr = [4, 5, 5, 6]
+glyph_extent_pixels = 15
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [21, 70, 13, 14]
+
+[glyph.main_not_key.darkAqua.disabled_pressed.small]
+glyph_core = [177, 72, 5, 5]
+glyph_core_inset_tlbr = [5, 7, 9, 6]
+glyph_core_pixels = 7
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 25
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [171, 68, 16, 17]
+
+[glyph.main_not_key.darkAqua.disabled_pressed.regular]
+glyph_core = [330, 70, 6, 6]
+glyph_core_inset_tlbr = [6, 10, 13, 9]
+glyph_core_pixels = 8
+glyph_extent = [330, 69, 7, 12]
+glyph_extent_inset_tlbr = [5, 10, 8, 8]
+glyph_extent_pixels = 36
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]
+
+[glyph.main_not_key.darkAqua.disabled_pressed.large]
+glyph_core = [484, 67, 7, 12]
+glyph_core_inset_tlbr = [8, 14, 15, 14]
+glyph_core_pixels = 18
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 41
+glyph_color = "#ffffff58"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [474, 60, 26, 27]
+
+[glyph.inactive_increase_contrast_on.aqua.normal.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#000000ff"
+fill = "#ffffffff"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.aqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#000000ff"
+fill = "#ffffffff"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.aqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#000000ff"
+fill = "#ffffffff"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.aqua.normal.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#000000ff"
+fill = "#ffffffff"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.aqua.pressed.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#000000ff"
+fill = "#d9d9d9ff"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.aqua.pressed.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#000000ff"
+fill = "#d9d9d9ff"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.aqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#000000ff"
+fill = "#d9d9d9ff"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.aqua.pressed.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#000000ff"
+fill = "#d9d9d9ff"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled_pressed.mini]
+glyph_core = [25, 72, 5, 8]
+glyph_core_inset_tlbr = [4, 5, 5, 6]
+glyph_core_pixels = 15
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled_pressed.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 25
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled_pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.aqua.disabled_pressed.large]
+glyph_core = [483, 66, 9, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 13]
+glyph_core_pixels = 40
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#555555c0"
+fill = "#ffffff80"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.darkAqua.normal.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 13
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#ffffffff"
+fill = "#ffffff40"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.darkAqua.normal.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 23
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#ffffffff"
+fill = "#ffffff40"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.darkAqua.normal.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#ffffffff"
+fill = "#ffffff40"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.darkAqua.normal.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 37
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#ffffffff"
+fill = "#ffffff40"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.darkAqua.pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 13
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 21
+glyph_color = "#ffffffff"
+fill = "#ffffff5c"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.darkAqua.pressed.small]
+glyph_core = [176, 71, 6, 10]
+glyph_core_inset_tlbr = [4, 6, 5, 6]
+glyph_core_pixels = 23
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 31
+glyph_color = "#ffffffff"
+fill = "#ffffff5c"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.darkAqua.pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#ffffffff"
+fill = "#ffffff5c"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.darkAqua.pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 37
+glyph_extent = [483, 66, 9, 14]
+glyph_extent_inset_tlbr = [7, 13, 14, 13]
+glyph_extent_pixels = 50
+glyph_color = "#ffffffff"
+fill = "#ffffff5c"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled_pressed.mini]
+glyph_core = [25, 73, 5, 7]
+glyph_core_inset_tlbr = [5, 5, 5, 6]
+glyph_core_pixels = 12
+glyph_extent = [25, 72, 5, 9]
+glyph_extent_inset_tlbr = [4, 5, 4, 6]
+glyph_extent_pixels = 18
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [20, 68, 16, 17]
+bezel = [20, 69, 15, 15]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled_pressed.small]
+glyph_core = [176, 72, 6, 9]
+glyph_core_inset_tlbr = [5, 6, 5, 6]
+glyph_core_pixels = 18
+glyph_extent = [176, 71, 6, 10]
+glyph_extent_inset_tlbr = [4, 6, 5, 6]
+glyph_extent_pixels = 27
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [170, 67, 18, 19]
+bezel = [170, 67, 18, 18]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled_pressed.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 31
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 37
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [320, 64, 25, 25]
+bezel = [322, 64, 22, 22]
+
+[glyph.inactive_increase_contrast_on.darkAqua.disabled_pressed.large]
+glyph_core = [483, 66, 8, 13]
+glyph_core_inset_tlbr = [7, 13, 15, 14]
+glyph_core_pixels = 33
+glyph_extent = [483, 66, 9, 13]
+glyph_extent_inset_tlbr = [7, 13, 15, 13]
+glyph_extent_pixels = 44
+glyph_color = "#ffffff90"
+fill = "#ffffff20"
+frame = [470, 59, 35, 35]
+bezel = [473, 59, 28, 28]
+
+[glyph.focus_accent_red.aqua.unfocused.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#262626ff"
+fill = "#ffffffff"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 20]
+
+[glyph.focus_accent_red.darkAqua.unfocused.regular]
+glyph_core = [330, 69, 7, 12]
+glyph_core_inset_tlbr = [5, 10, 8, 8]
+glyph_core_pixels = 36
+glyph_extent = [329, 69, 8, 12]
+glyph_extent_inset_tlbr = [5, 9, 8, 8]
+glyph_extent_pixels = 40
+glyph_color = "#ffffffe3"
+fill = "#ffffff40"
+frame = [320, 64, 25, 25]
+bezel = [323, 65, 20, 21]

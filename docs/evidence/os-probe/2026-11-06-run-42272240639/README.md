@@ -83,3 +83,27 @@ state how it read.
   segmented control holding a SwiftUI hosting view, with no label or indicator view. In the default sheets the window's `defaultButtonCell` is the first default button
   (`mini-flexible_push`). The key-not-main mode's sheets read key and not main, the main-not-key mode's main and not
   key, the inactive mode's neither, the application inactive.
+
+## Analysis: the help glyph and the circular bezel (MB-help, MB-circle; added 2026-11-07)
+
+`analysis/read_help_circle.py` (the standard library only; its docstring says how) reads this run's committed button
+pass readings and writes `os-probe-macos-26/help_circle.toml` and `os-probe-macos-15/help_circle.toml`, for U145,
+U314, U614 (the help bezel's glyph) and U159 (the circular bezel's circle):
+
+- `[help.*]`: the key mode's `button-pass/probe.toml` layer readings of each help button (its `ink` bounds and colour
+  against the frame). On macOS 15 `ink` holds the bezel's shaded rim too (its bounds are the circle's), so it does not
+  give the glyph there.
+- `[glyph.<mode>.*]`: the glyph read per pixel inside the bezel's circle, clear of its rim, from the committed layer
+  PNGs of the key-not-main, main-not-key and inactive-with-Increase-Contrast modes and the red-accent focus mode's
+  unfocused layer (the key mode's PNGs are not committed): `glyph_core` (more than 48 of 255 from the fill),
+  `glyph_extent` (more than 8), their insets from the frame, and `glyph_color`.
+- `[circle.*]`: the circular buttons' bezel bounds against their frames (`circle_margin_tlbr`), from the key mode's
+  layer readings.
+
+What it reads, at the regular size in the aqua appearance, normal state, from the key-not-main mode's layers (on macOS
+26 the key mode's `ink` reads the same): on macOS 26 the glyph's core is 7 × 12 pt,
+7 pt from the frame's top and 8 pt from its left in the 24 × 24 pt frame, `#000000db` (darkAqua `#ffffffdb`), the same
+size from small to extra large (6 × 10 pt at mini); on macOS 15 7 × 12 pt, 5 pt from the top and 10 pt from the left
+of the 25 × 25 pt frame, `#262626ff`. The circular bezel's circle on macOS 26 is 17 × 17 pt, 4 pt in from the left and
+right of the 25 × 17 pt frame and flush with its top and bottom; on macOS 15 3 pt in from every edge. The tables give
+every size, state and appearance.
