@@ -1,0 +1,6 @@
+image's increaseContrast: absent
+write increaseContrast true: exit 0
+read back: 1
+restore increaseContrast to the image's (absent): exit 0
+read back: 2026-11-06 19:24:02.106 defaults[85802:179621] 
+The domain/default pair of (com.apple.universalaccess, increaseContrast) does not exist

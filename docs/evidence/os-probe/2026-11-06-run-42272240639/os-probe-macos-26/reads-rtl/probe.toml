@@ -1,0 +1,3200 @@
+[os]
+platform = "macOS"
+version = "26.7.2"
+major = 26
+minor = 7
+patch = 2
+operatingSystemVersionString = "Version 26.7.2 (Build 25G332)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos26"
+runner_image_version = "20261102.0473.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.reads]
+activationPolicy_regular_set = true
+
+[macos.reads.timing]
+method = "per name QuartzCore exports (CAMediaTimingFunction.h:54-62): the constant's text, looked up with CFBundleGetDataPointerForName in com.apple.QuartzCore; +[CAMediaTimingFunction functionWithName:] of it; getControlPointAtIndex:values: at 0, 1, 2 and 3, each [x, y]; animation_context: +[NSAnimationContext currentContext] outside any grouping and inside +beginGrouping (then +endGrouping): duration, allowsImplicitAnimation, timingFunction (nil, or its control points)"
+
+[macos.reads.timing.functions.kCAMediaTimingFunctionLinear]
+constant = "linear"
+control_points = [[0.0, 0.0], [0.0, 0.0], [1.0, 1.0], [1.0, 1.0]]
+
+[macos.reads.timing.functions.kCAMediaTimingFunctionEaseIn]
+constant = "easeIn"
+control_points = [[0.0, 0.0], [0.41999998688697815, 0.0], [1.0, 1.0], [1.0, 1.0]]
+
+[macos.reads.timing.functions.kCAMediaTimingFunctionEaseOut]
+constant = "easeOut"
+control_points = [[0.0, 0.0], [0.0, 0.0], [0.5799999833106995, 1.0], [1.0, 1.0]]
+
+[macos.reads.timing.functions.kCAMediaTimingFunctionEaseInEaseOut]
+constant = "easeInEaseOut"
+control_points = [[0.0, 0.0], [0.41999998688697815, 0.0], [0.5799999833106995, 1.0], [1.0, 1.0]]
+
+[macos.reads.timing.functions.kCAMediaTimingFunctionDefault]
+constant = "default"
+control_points = [[0.0, 0.0], [0.25, 0.10000000149011612], [0.25, 1.0], [1.0, 1.0]]
+
+[macos.reads.timing.animation_context.outside_grouping]
+duration = 0.25
+allowsImplicitAnimation = false
+timingFunction = "nil"
+
+[macos.reads.timing.animation_context.inside_grouping]
+duration = 0.25
+allowsImplicitAnimation = false
+timingFunction = "nil"
+
+[macos.reads.route_picker]
+method = "AVKit loaded with NSBundle bundleWithPath: /System/Library/Frameworks/AVKit.framework load; an AVRoutePickerView (new) at [20, 20, 40, 40] (x, y, width, height) in an offscreen borderless window; per appearance (the window's appearance set, read inside performAsCurrentDrawingAppearance:) and per bordered (setRoutePickerButtonBordered:, the made view's isRoutePickerButtonBordered recorded first): routePickerButtonColorForState: of each AVRoutePickerViewButtonState in sRGB, intrinsicContentSize, fittingSize, the subviews ([depth, class, frame_xywh in the picker]), and the view rendered with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point to route/<appearance>-<bordered|borderless>-<scale>.png (8-bit RGBA, transparent where nothing draws); the button's own state is the view's, which the probe does not change"
+class = "AVRoutePickerView"
+isRoutePickerButtonBordered_as_made = true
+
+[macos.reads.route_picker.aqua.bordered]
+isRoutePickerButtonBordered = true
+intrinsicContentSize_wh = [34.0, 26.0]
+fittingSize_wh = [34.0, 26.0]
+subviews = [[1, "AVRoutePickerButton", [0.0, 0.0, 40.0, 40.0]], [2, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 40.0, 40.0]]]
+
+[macos.reads.route_picker.aqua.bordered.routePickerButtonColorForState]
+normal = "#000000d8"
+normalHighlighted = "#000000d8"
+active = "#5db4ffff"
+activeHighlighted = "#5db4ffff"
+
+[macos.reads.route_picker.aqua.bordered.renders.1x]
+file = "route/aqua-bordered-1x.png"
+pixels_wh = [40, 40]
+
+[macos.reads.route_picker.aqua.bordered.renders.2x]
+file = "route/aqua-bordered-2x.png"
+pixels_wh = [80, 80]
+
+[macos.reads.route_picker.aqua.borderless]
+isRoutePickerButtonBordered = false
+intrinsicContentSize_wh = [34.0, 26.0]
+fittingSize_wh = [34.0, 26.0]
+subviews = [[1, "AVRoutePickerButton", [0.0, 0.0, 40.0, 40.0]], [2, "NSKVONotifying_NSButtonImageView", [20.0, 19.0, 1.0, 1.0]]]
+
+[macos.reads.route_picker.aqua.borderless.routePickerButtonColorForState]
+normal = "#aaaaaaff"
+normalHighlighted = "#000000d8"
+active = "#5db4ffff"
+activeHighlighted = "#000000d8"
+
+[macos.reads.route_picker.aqua.borderless.renders.1x]
+file = "route/aqua-borderless-1x.png"
+pixels_wh = [40, 40]
+
+[macos.reads.route_picker.aqua.borderless.renders.2x]
+file = "route/aqua-borderless-2x.png"
+pixels_wh = [80, 80]
+
+[macos.reads.route_picker.darkAqua.bordered]
+isRoutePickerButtonBordered = true
+intrinsicContentSize_wh = [34.0, 26.0]
+fittingSize_wh = [34.0, 26.0]
+subviews = [[1, "AVRoutePickerButton", [0.0, 0.0, 40.0, 40.0]], [2, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 40.0, 40.0]]]
+
+[macos.reads.route_picker.darkAqua.bordered.routePickerButtonColorForState]
+normal = "#ffffffd8"
+normalHighlighted = "#ffffffd8"
+active = "#5db4ffff"
+activeHighlighted = "#5db4ffff"
+
+[macos.reads.route_picker.darkAqua.bordered.renders.1x]
+file = "route/darkAqua-bordered-1x.png"
+pixels_wh = [40, 40]
+
+[macos.reads.route_picker.darkAqua.bordered.renders.2x]
+file = "route/darkAqua-bordered-2x.png"
+pixels_wh = [80, 80]
+
+[macos.reads.route_picker.darkAqua.borderless]
+isRoutePickerButtonBordered = false
+intrinsicContentSize_wh = [34.0, 26.0]
+fittingSize_wh = [34.0, 26.0]
+subviews = [[1, "AVRoutePickerButton", [0.0, 0.0, 40.0, 40.0]], [2, "NSKVONotifying_NSButtonImageView", [20.0, 19.0, 1.0, 1.0]]]
+
+[macos.reads.route_picker.darkAqua.borderless.routePickerButtonColorForState]
+normal = "#aaaaaaff"
+normalHighlighted = "#ffffffd8"
+active = "#5db4ffff"
+activeHighlighted = "#ffffffd8"
+
+[macos.reads.route_picker.darkAqua.borderless.renders.1x]
+file = "route/darkAqua-borderless-1x.png"
+pixels_wh = [40, 40]
+
+[macos.reads.route_picker.darkAqua.borderless.renders.2x]
+file = "route/darkAqua-borderless-2x.png"
+pixels_wh = [80, 80]
+
+[macos.reads.focus_view]
+method = "a titled window (empty title, content [0, 0, 240, 120] (x, y, width, height) from [200, 300] (x, y)) holding at [40, 40, 120, 40] (x, y, width, height) an NSView subclass (NativeThemeOsProbeFocusView) that accepts first responder and whose drawFocusRingMask fills its bounds (NSBezierPath fillRect:) and focusRingMaskBounds is its bounds, focusRingType as made; made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to 100 steps); per appearance (the window's appearance set) the window captured with screencapture -x -o -l after makeFirstResponder: nil (unfocused) and with the view (focused), then noteFocusRingMaskChanged and setKeyboardFocusRingNeedsDisplayInRect: of its bounds, display, each after 10 steps, to focus_view/<appearance>-<unfocused|focused>.png; view_frame_from_top_left_xywh in the window frame's points from its top left"
+isFullKeyboardAccessEnabled = false
+focusRingType_raw = 0
+key_wait_steps = 2
+window_frame_xywh = [200.0, 300.0, 240.0, 152.0]
+view_frame_from_top_left_xywh = [40.0, 72.0, 120.0, 40.0]
+
+[macos.reads.focus_view.aqua.unfocused]
+makeFirstResponder = true
+isKeyWindow = true
+firstResponder_is_view = false
+capture = "focus_view/aqua-unfocused.png"
+
+[macos.reads.focus_view.aqua.focused]
+makeFirstResponder = true
+isKeyWindow = true
+firstResponder_is_view = true
+capture = "focus_view/aqua-focused.png"
+
+[macos.reads.focus_view.darkAqua.unfocused]
+makeFirstResponder = true
+isKeyWindow = true
+firstResponder_is_view = false
+capture = "focus_view/darkAqua-unfocused.png"
+
+[macos.reads.focus_view.darkAqua.focused]
+makeFirstResponder = true
+isKeyWindow = true
+firstResponder_is_view = true
+capture = "focus_view/darkAqua-focused.png"
+
+[macos.reads.text_rendering]
+method = 'defaults: -[NSUserDefaults standardUserDefaults] objectForKey: of each key (absent: nil); renders: an NSTextField labelWithString: "Ag Hamburgefonstiv" in systemFontOfSize: 13, drawsBackground YES, backgroundColor white (sRGB 1, 1, 1), textColor black, sized to fit, in an offscreen borderless window under the aqua appearance, rendered with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point to text_rendering/text-<scale>.png; per render the pixels that are not white (ink_pixels), those whose largest and smallest of r, g, b differ by more than 2 (colored_pixels: subpixel antialiasing draws them, greyscale does not) and the distinct grey levels among the rest (grey_levels)'
+
+[macos.reads.text_rendering.defaults]
+AppleFontSmoothing = "absent"
+CGFontRenderingFontSmoothingDisabled = "absent"
+AppleAntiAliasingThreshold = 4.0
+
+[macos.reads.text_rendering.renders.1x]
+file = "text_rendering/text-1x.png"
+ink_pixels = 703
+colored_pixels = 0
+grey_levels = 218
+
+[macos.reads.text_rendering.renders.2x]
+file = "text_rendering/text-2x.png"
+ink_pixels = 2242
+colored_pixels = 0
+grey_levels = 250
+
+[macos.reads.fallbacks]
+method = "font: systemFontOfSize: systemFontSize; substitutes: per string CTFontCreateForString of the font over the whole string, the font it returns as [PostScript name, family name]; cascade: per language CTFontCopyDefaultCascadeListForLanguages of the font with that language alone, each descriptor's fontAttributes in order; preferredLanguages: NSLocale's"
+font = ".AppleSystemUIFont"
+preferredLanguages = ["he"]
+
+[macos.reads.fallbacks.substitutes]
+emoji = [".AppleColorEmojiUI", ".Apple Color Emoji UI"]
+hiragana = [".CJKSymbolsFallbackSC-Regular", ".CJK Symbols Fallback SC"]
+han = [".PingFangUITextSC-Regular", ".PingFang UI SC"]
+hangul = [".AppleSDGothicNeoI-Regular", ".Apple SD Gothic NeoI"]
+arabic = [".SFArabic-Regular", ".SF Arabic"]
+hebrew = [".SFHebrew-Regular", ".SF Hebrew"]
+thai = [".ThonburiUI-Regular", ".ThonburiUI"]
+devanagari = [".SFDevanagari-Regular", ".SF Devanagari"]
+cyrillic = [".SFNS-Regular", ".AppleSystemUIFont"]
+greek = [".SFNS-Regular", ".AppleSystemUIFont"]
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.en]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.ja]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hans]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.zh-Hant]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.ko]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.ar]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.he]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.th]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.hi]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.ru]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleSystemFallback-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".SFGeorgian-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "HelveticaNeue"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleSymbolsFB"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleArabicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleUrduFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleSimplifiedChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleTraditionalChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleHongKongChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleMacaoChineseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleJapaneseFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleKoreanFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "NotoSansMyanmar-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "NotoSansZawgyi-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".SFHebrew-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".ThonburiUI-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleIndicFont-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KohinoorDevanagari-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "Kokonor"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KohinoorBangla-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KohinoorGujarati-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "MuktaMahee-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "NotoSansKannada-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KhmerSangamMN"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "LaoSangamMN"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "MalayalamSangamMN"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "NotoSansOriya"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "SinhalaSangamMN"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".SFArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".LucidaGrandeUI"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "TamilSangamMN"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KohinoorTelugu-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "NotoSansArmenian-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "EuphemiaUCAS"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "Helvetica"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "Menlo-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "AppleSymbols"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "STIXTwoMath-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "Galvji"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = "KefaIII-Regular"
+
+[[macos.reads.fallbacks.cascade.el]]
+NSFontNameAttribute = ".AppleColorEmojiUI"
+
+[macos.reads.controls]
+method = """a titled window (empty title, content [0, 0, 400, 120] (x, y, width, height) from [100, 200] (x, y)) made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow; per appearance (the window's appearance set, read inside performAsCurrentDrawingAppearance:) and control size (setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:) each case is made, sized to fit and put at [20, 40] (x, y) in the content view, laid out and displayed, read, and drawn offscreen with cacheDisplayInRect:toBitmapImageRep: of its frame grown by 8 pt into 8-bit RGBA bitmaps at 1 and 2 pixels a point (controls/<appearance>-<size>-<case>-<scale>.png), then removed; the cases: popup (NSPopUpButton initWithFrame:pullsDown: NO, items "Item" and "A much longer item", the first selected), popup_long_selected (the same with the second selected), popup_wide (popup, then 40 pt wider than fitted), popup_narrow (popup, then 40 pt wide), popup_empty_title (items "" and "A much longer item", the first selected), popup_image (popup with the first item's image the symbol "star"), pulldown (pullsDown: YES, the same items), combobox (NSComboBox, stringValue "Item"), combobox_long (stringValue "A much longer item"), checkbox_mixed (NSButton switch, setAllowsMixedState: YES, state mixed, title "Checkbox"), radio_on (NSButton radio, state on, title "Radio"); per case: intrinsicContentSize, frame, alignmentRectInsets, the cell's drawingRect, titleRect and imageRect for its bounds, a pop-up's altersStateOfSelectedItem, arrowPosition, indexOfSelectedItem and each item's state, and the subviews ([depth, class, frame in the control])"""
+isKeyWindow = true
+
+[macos.reads.controls.aqua.mini.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup.renders]
+1x = "controls/aqua-mini-popup-1x.png"
+2x = "controls/aqua-mini-popup-2x.png"
+
+[macos.reads.controls.aqua.mini.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 86.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup_long_selected.renders]
+1x = "controls/aqua-mini-popup_long_selected-1x.png"
+2x = "controls/aqua-mini-popup_long_selected-2x.png"
+
+[macos.reads.controls.aqua.mini.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 158.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 127.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 158.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 174.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup_wide.renders]
+1x = "controls/aqua-mini-popup_wide-1x.png"
+2x = "controls/aqua-mini-popup_wide-2x.png"
+
+[macos.reads.controls.aqua.mini.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [4.0, 0.0, 17.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 14.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup_narrow.renders]
+1x = "controls/aqua-mini-popup_narrow-1x.png"
+2x = "controls/aqua-mini-popup_narrow-2x.png"
+
+[macos.reads.controls.aqua.mini.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup_empty_title.renders]
+1x = "controls/aqua-mini-popup_empty_title-1x.png"
+2x = "controls/aqua-mini-popup_empty_title-2x.png"
+
+[macos.reads.controls.aqua.mini.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [8.0, 1.0, 12.0, 12.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.aqua.mini.popup_image.renders]
+1x = "controls/aqua-mini-popup_image-1x.png"
+2x = "controls/aqua-mini-popup_image-2x.png"
+
+[macos.reads.controls.aqua.mini.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 52.0, 16.0]
+intrinsicContentSize_wh = [52.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 21.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 52.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 68.0, 32.0]
+
+[macos.reads.controls.aqua.mini.pulldown.renders]
+1x = "controls/aqua-mini-pulldown-1x.png"
+2x = "controls/aqua-mini-pulldown-2x.png"
+
+[macos.reads.controls.aqua.mini.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 48.0, 16.0]
+intrinsicContentSize_wh = [-1.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 2.5, 48.0, 11.0]
+cell_titleRectForBounds_xywh = [4.0, 2.5, 24.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 48.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 48.0, 16.0]], [1, "AppKit.NSSimpleLabel", [4.0, 2.5, 24.0, 11.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 64.0, 32.0]
+
+[macos.reads.controls.aqua.mini.combobox.renders]
+1x = "controls/aqua-mini-combobox-1x.png"
+2x = "controls/aqua-mini-combobox-2x.png"
+
+[macos.reads.controls.aqua.mini.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 114.0, 16.0]
+intrinsicContentSize_wh = [-1.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 2.5, 114.0, 11.0]
+cell_titleRectForBounds_xywh = [4.0, 2.5, 90.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 114.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 114.0, 16.0]], [1, "AppKit.NSSimpleLabel", [4.0, 2.5, 90.0, 11.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 130.0, 32.0]
+
+[macos.reads.controls.aqua.mini.combobox_long.renders]
+1x = "controls/aqua-mini-combobox_long-1x.png"
+2x = "controls/aqua-mini-combobox_long-2x.png"
+
+[macos.reads.controls.aqua.mini.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 60.0, 12.0]
+intrinsicContentSize_wh = [60.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 60.0, 12.0]
+cell_titleRectForBounds_xywh = [16.0, 0.0, 44.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 60.0, 12.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 76.0, 28.0]
+
+[macos.reads.controls.aqua.mini.checkbox_mixed.renders]
+1x = "controls/aqua-mini-checkbox_mixed-1x.png"
+2x = "controls/aqua-mini-checkbox_mixed-2x.png"
+
+[macos.reads.controls.aqua.mini.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 41.0, 12.0]
+intrinsicContentSize_wh = [41.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 41.0, 12.0]
+cell_titleRectForBounds_xywh = [16.0, 0.0, 25.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 41.0, 12.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 57.0, 28.0]
+
+[macos.reads.controls.aqua.mini.radio_on.renders]
+1x = "controls/aqua-mini-radio_on-1x.png"
+2x = "controls/aqua-mini-radio_on-2x.png"
+
+[macos.reads.controls.aqua.small.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup.renders]
+1x = "controls/aqua-small-popup-1x.png"
+2x = "controls/aqua-small-popup-2x.png"
+
+[macos.reads.controls.aqua.small.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 102.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup_long_selected.renders]
+1x = "controls/aqua-small-popup_long_selected-1x.png"
+2x = "controls/aqua-small-popup_long_selected-2x.png"
+
+[macos.reads.controls.aqua.small.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 182.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 143.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 182.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 198.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup_wide.renders]
+1x = "controls/aqua-small-popup_wide-1x.png"
+2x = "controls/aqua-small-popup_wide-2x.png"
+
+[macos.reads.controls.aqua.small.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 11.0, 20.0]
+cell_titleRectForBounds_xywh = [5.0, 3.0, 9.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup_narrow.renders]
+1x = "controls/aqua-small-popup_narrow-1x.png"
+2x = "controls/aqua-small-popup_narrow-2x.png"
+
+[macos.reads.controls.aqua.small.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup_empty_title.renders]
+1x = "controls/aqua-small-popup_empty_title-1x.png"
+2x = "controls/aqua-small-popup_empty_title-2x.png"
+
+[macos.reads.controls.aqua.small.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [27.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [10.0, 3.0, 15.0, 14.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.aqua.small.popup_image.renders]
+1x = "controls/aqua-small-popup_image-1x.png"
+2x = "controls/aqua-small-popup_image-2x.png"
+
+[macos.reads.controls.aqua.small.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 63.0, 20.0]
+intrinsicContentSize_wh = [63.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 24.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 63.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 79.0, 36.0]
+
+[macos.reads.controls.aqua.small.pulldown.renders]
+1x = "controls/aqua-small-pulldown-1x.png"
+2x = "controls/aqua-small-pulldown-2x.png"
+
+[macos.reads.controls.aqua.small.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 55.0, 20.0]
+intrinsicContentSize_wh = [-1.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 3.0, 55.0, 14.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 27.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 55.0, 20.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 55.0, 20.0]], [1, "AppKit.NSSimpleLabel", [4.0, 3.0, 27.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 71.0, 36.0]
+
+[macos.reads.controls.aqua.small.combobox.renders]
+1x = "controls/aqua-small-combobox-1x.png"
+2x = "controls/aqua-small-combobox-2x.png"
+
+[macos.reads.controls.aqua.small.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 134.0, 20.0]
+intrinsicContentSize_wh = [-1.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 3.0, 134.0, 14.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 106.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 134.0, 20.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 134.0, 20.0]], [1, "AppKit.NSSimpleLabel", [4.0, 3.0, 106.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 150.0, 36.0]
+
+[macos.reads.controls.aqua.small.combobox_long.renders]
+1x = "controls/aqua-small-combobox_long-1x.png"
+2x = "controls/aqua-small-combobox_long-2x.png"
+
+[macos.reads.controls.aqua.small.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 71.0, 14.0]
+intrinsicContentSize_wh = [71.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 71.0, 14.0]
+cell_titleRectForBounds_xywh = [18.0, 0.0, 53.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 71.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 87.0, 30.0]
+
+[macos.reads.controls.aqua.small.checkbox_mixed.renders]
+1x = "controls/aqua-small-checkbox_mixed-1x.png"
+2x = "controls/aqua-small-checkbox_mixed-2x.png"
+
+[macos.reads.controls.aqua.small.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 48.0, 14.0]
+intrinsicContentSize_wh = [48.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 48.0, 14.0]
+cell_titleRectForBounds_xywh = [18.0, 0.0, 30.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 48.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 64.0, 30.0]
+
+[macos.reads.controls.aqua.small.radio_on.renders]
+1x = "controls/aqua-small-radio_on-1x.png"
+2x = "controls/aqua-small-radio_on-2x.png"
+
+[macos.reads.controls.aqua.regular.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup.renders]
+1x = "controls/aqua-regular-popup-1x.png"
+2x = "controls/aqua-regular-popup-2x.png"
+
+[macos.reads.controls.aqua.regular.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 118.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup_long_selected.renders]
+1x = "controls/aqua-regular-popup_long_selected-1x.png"
+2x = "controls/aqua-regular-popup_long_selected-2x.png"
+
+[macos.reads.controls.aqua.regular.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 206.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 159.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 206.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 222.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup_wide.renders]
+1x = "controls/aqua-regular-popup_wide-1x.png"
+2x = "controls/aqua-regular-popup_wide-2x.png"
+
+[macos.reads.controls.aqua.regular.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 7.0, 24.0]
+cell_titleRectForBounds_xywh = [5.0, 4.0, 7.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup_narrow.renders]
+1x = "controls/aqua-regular-popup_narrow-1x.png"
+2x = "controls/aqua-regular-popup_narrow-2x.png"
+
+[macos.reads.controls.aqua.regular.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup_empty_title.renders]
+1x = "controls/aqua-regular-popup_empty_title-1x.png"
+2x = "controls/aqua-regular-popup_empty_title-2x.png"
+
+[macos.reads.controls.aqua.regular.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [31.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [12.0, 4.0, 17.0, 16.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.aqua.regular.popup_image.renders]
+1x = "controls/aqua-regular-popup_image-1x.png"
+2x = "controls/aqua-regular-popup_image-2x.png"
+
+[macos.reads.controls.aqua.regular.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 75.0, 24.0]
+intrinsicContentSize_wh = [75.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 28.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 75.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 91.0, 40.0]
+
+[macos.reads.controls.aqua.regular.pulldown.renders]
+1x = "controls/aqua-regular-pulldown-1x.png"
+2x = "controls/aqua-regular-pulldown-2x.png"
+
+[macos.reads.controls.aqua.regular.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 69.0, 24.0]
+intrinsicContentSize_wh = [-1.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 4.0, 69.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 4.0, 31.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 69.0, 24.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 69.0, 24.0]], [1, "AppKit.NSSimpleLabel", [4.0, 4.0, 31.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 85.0, 40.0]
+
+[macos.reads.controls.aqua.regular.combobox.renders]
+1x = "controls/aqua-regular-combobox-1x.png"
+2x = "controls/aqua-regular-combobox-2x.png"
+
+[macos.reads.controls.aqua.regular.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 160.0, 24.0]
+intrinsicContentSize_wh = [-1.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 4.0, 160.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 4.0, 122.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 160.0, 24.0]], [1, "AppKit.NSSimpleLabel", [4.0, 4.0, 122.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 176.0, 40.0]
+
+[macos.reads.controls.aqua.regular.combobox_long.renders]
+1x = "controls/aqua-regular-combobox_long-1x.png"
+2x = "controls/aqua-regular-combobox_long-2x.png"
+
+[macos.reads.controls.aqua.regular.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 83.0, 16.0]
+intrinsicContentSize_wh = [83.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 83.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 0.0, 61.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 83.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 99.0, 32.0]
+
+[macos.reads.controls.aqua.regular.checkbox_mixed.renders]
+1x = "controls/aqua-regular-checkbox_mixed-1x.png"
+2x = "controls/aqua-regular-checkbox_mixed-2x.png"
+
+[macos.reads.controls.aqua.regular.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 57.0, 16.0]
+intrinsicContentSize_wh = [57.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 57.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 0.0, 35.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 57.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 73.0, 32.0]
+
+[macos.reads.controls.aqua.regular.radio_on.renders]
+1x = "controls/aqua-regular-radio_on-1x.png"
+2x = "controls/aqua-regular-radio_on-2x.png"
+
+[macos.reads.controls.aqua.large.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup.renders]
+1x = "controls/aqua-large-popup-1x.png"
+2x = "controls/aqua-large-popup-2x.png"
+
+[macos.reads.controls.aqua.large.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 118.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup_long_selected.renders]
+1x = "controls/aqua-large-popup_long_selected-1x.png"
+2x = "controls/aqua-large-popup_long_selected-2x.png"
+
+[macos.reads.controls.aqua.large.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 214.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 159.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 214.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 230.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup_wide.renders]
+1x = "controls/aqua-large-popup_wide-1x.png"
+2x = "controls/aqua-large-popup_wide-2x.png"
+
+[macos.reads.controls.aqua.large.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 3.0, 28.0]
+cell_titleRectForBounds_xywh = [5.0, 6.0, 3.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup_narrow.renders]
+1x = "controls/aqua-large-popup_narrow-1x.png"
+2x = "controls/aqua-large-popup_narrow-2x.png"
+
+[macos.reads.controls.aqua.large.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup_empty_title.renders]
+1x = "controls/aqua-large-popup_empty_title-1x.png"
+2x = "controls/aqua-large-popup_empty_title-2x.png"
+
+[macos.reads.controls.aqua.large.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [33.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [14.0, 6.0, 17.0, 16.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.aqua.large.popup_image.renders]
+1x = "controls/aqua-large-popup_image-1x.png"
+2x = "controls/aqua-large-popup_image-2x.png"
+
+[macos.reads.controls.aqua.large.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 83.0, 28.0]
+intrinsicContentSize_wh = [83.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 28.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 83.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 99.0, 44.0]
+
+[macos.reads.controls.aqua.large.pulldown.renders]
+1x = "controls/aqua-large-pulldown-1x.png"
+2x = "controls/aqua-large-pulldown-2x.png"
+
+[macos.reads.controls.aqua.large.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 68.0, 28.0]
+intrinsicContentSize_wh = [-1.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 6.0, 68.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 6.0, 31.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 68.0, 28.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 68.0, 28.0]], [1, "AppKit.NSSimpleLabel", [4.0, 6.0, 31.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 84.0, 44.0]
+
+[macos.reads.controls.aqua.large.combobox.renders]
+1x = "controls/aqua-large-combobox-1x.png"
+2x = "controls/aqua-large-combobox-2x.png"
+
+[macos.reads.controls.aqua.large.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 159.0, 28.0]
+intrinsicContentSize_wh = [-1.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 6.0, 159.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 6.0, 122.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 159.0, 28.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 159.0, 28.0]], [1, "AppKit.NSSimpleLabel", [4.0, 6.0, 122.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 175.0, 44.0]
+
+[macos.reads.controls.aqua.large.combobox_long.renders]
+1x = "controls/aqua-large-combobox_long-1x.png"
+2x = "controls/aqua-large-combobox_long-2x.png"
+
+[macos.reads.controls.aqua.large.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 85.0, 18.0]
+intrinsicContentSize_wh = [85.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 85.0, 18.0]
+cell_titleRectForBounds_xywh = [24.0, 1.0, 61.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 85.0, 18.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 101.0, 34.0]
+
+[macos.reads.controls.aqua.large.checkbox_mixed.renders]
+1x = "controls/aqua-large-checkbox_mixed-1x.png"
+2x = "controls/aqua-large-checkbox_mixed-2x.png"
+
+[macos.reads.controls.aqua.large.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 59.0, 18.0]
+intrinsicContentSize_wh = [59.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 59.0, 18.0]
+cell_titleRectForBounds_xywh = [24.0, 1.0, 35.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 59.0, 18.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 75.0, 34.0]
+
+[macos.reads.controls.aqua.large.radio_on.renders]
+1x = "controls/aqua-large-radio_on-1x.png"
+2x = "controls/aqua-large-radio_on-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup.renders]
+1x = "controls/darkAqua-mini-popup-1x.png"
+2x = "controls/darkAqua-mini-popup-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 86.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup_long_selected.renders]
+1x = "controls/darkAqua-mini-popup_long_selected-1x.png"
+2x = "controls/darkAqua-mini-popup_long_selected-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 158.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 127.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 158.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 174.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup_wide.renders]
+1x = "controls/darkAqua-mini-popup_wide-1x.png"
+2x = "controls/darkAqua-mini-popup_wide-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [4.0, 0.0, 17.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 14.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup_narrow.renders]
+1x = "controls/darkAqua-mini-popup_narrow-1x.png"
+2x = "controls/darkAqua-mini-popup_narrow-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup_empty_title.renders]
+1x = "controls/darkAqua-mini-popup_empty_title-1x.png"
+2x = "controls/darkAqua-mini-popup_empty_title-2x.png"
+
+[macos.reads.controls.darkAqua.mini.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 118.0, 16.0]
+intrinsicContentSize_wh = [118.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 87.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [8.0, 1.0, 12.0, 12.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 118.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 134.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.popup_image.renders]
+1x = "controls/darkAqua-mini-popup_image-1x.png"
+2x = "controls/darkAqua-mini-popup_image-2x.png"
+
+[macos.reads.controls.darkAqua.mini.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 52.0, 16.0]
+intrinsicContentSize_wh = [52.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [8.0, 0.0, 21.0, 16.0]
+cell_titleRectForBounds_xywh = [8.0, 3.0, 20.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 52.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 68.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.pulldown.renders]
+1x = "controls/darkAqua-mini-pulldown-1x.png"
+2x = "controls/darkAqua-mini-pulldown-2x.png"
+
+[macos.reads.controls.darkAqua.mini.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 48.0, 16.0]
+intrinsicContentSize_wh = [-1.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 2.5, 48.0, 11.0]
+cell_titleRectForBounds_xywh = [4.0, 2.5, 24.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 48.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 48.0, 16.0]], [1, "AppKit.NSSimpleLabel", [4.0, 2.5, 24.0, 11.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 64.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.combobox.renders]
+1x = "controls/darkAqua-mini-combobox-1x.png"
+2x = "controls/darkAqua-mini-combobox-2x.png"
+
+[macos.reads.controls.darkAqua.mini.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 114.0, 16.0]
+intrinsicContentSize_wh = [-1.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 2.5, 114.0, 11.0]
+cell_titleRectForBounds_xywh = [4.0, 2.5, 90.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 114.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 114.0, 16.0]], [1, "AppKit.NSSimpleLabel", [4.0, 2.5, 90.0, 11.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 130.0, 32.0]
+
+[macos.reads.controls.darkAqua.mini.combobox_long.renders]
+1x = "controls/darkAqua-mini-combobox_long-1x.png"
+2x = "controls/darkAqua-mini-combobox_long-2x.png"
+
+[macos.reads.controls.darkAqua.mini.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 60.0, 12.0]
+intrinsicContentSize_wh = [60.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 60.0, 12.0]
+cell_titleRectForBounds_xywh = [16.0, 0.0, 44.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 60.0, 12.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 76.0, 28.0]
+
+[macos.reads.controls.darkAqua.mini.checkbox_mixed.renders]
+1x = "controls/darkAqua-mini-checkbox_mixed-1x.png"
+2x = "controls/darkAqua-mini-checkbox_mixed-2x.png"
+
+[macos.reads.controls.darkAqua.mini.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 41.0, 12.0]
+intrinsicContentSize_wh = [41.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 41.0, 12.0]
+cell_titleRectForBounds_xywh = [16.0, 0.0, 25.0, 11.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 41.0, 12.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 57.0, 28.0]
+
+[macos.reads.controls.darkAqua.mini.radio_on.renders]
+1x = "controls/darkAqua-mini-radio_on-1x.png"
+2x = "controls/darkAqua-mini-radio_on-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup.renders]
+1x = "controls/darkAqua-small-popup-1x.png"
+2x = "controls/darkAqua-small-popup-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 102.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup_long_selected.renders]
+1x = "controls/darkAqua-small-popup_long_selected-1x.png"
+2x = "controls/darkAqua-small-popup_long_selected-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 182.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 143.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 182.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 198.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup_wide.renders]
+1x = "controls/darkAqua-small-popup_wide-1x.png"
+2x = "controls/darkAqua-small-popup_wide-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 11.0, 20.0]
+cell_titleRectForBounds_xywh = [5.0, 3.0, 9.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup_narrow.renders]
+1x = "controls/darkAqua-small-popup_narrow-1x.png"
+2x = "controls/darkAqua-small-popup_narrow-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup_empty_title.renders]
+1x = "controls/darkAqua-small-popup_empty_title-1x.png"
+2x = "controls/darkAqua-small-popup_empty_title-2x.png"
+
+[macos.reads.controls.darkAqua.small.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 142.0, 20.0]
+intrinsicContentSize_wh = [142.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 103.0, 20.0]
+cell_titleRectForBounds_xywh = [27.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [10.0, 3.0, 15.0, 14.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 142.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 158.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.popup_image.renders]
+1x = "controls/darkAqua-small-popup_image-1x.png"
+2x = "controls/darkAqua-small-popup_image-2x.png"
+
+[macos.reads.controls.darkAqua.small.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 63.0, 20.0]
+intrinsicContentSize_wh = [63.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [10.0, 0.0, 24.0, 20.0]
+cell_titleRectForBounds_xywh = [10.0, 3.0, 23.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 63.0, 20.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 79.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.pulldown.renders]
+1x = "controls/darkAqua-small-pulldown-1x.png"
+2x = "controls/darkAqua-small-pulldown-2x.png"
+
+[macos.reads.controls.darkAqua.small.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 55.0, 20.0]
+intrinsicContentSize_wh = [-1.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 3.0, 55.0, 14.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 27.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 55.0, 20.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 55.0, 20.0]], [1, "AppKit.NSSimpleLabel", [4.0, 3.0, 27.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 71.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.combobox.renders]
+1x = "controls/darkAqua-small-combobox-1x.png"
+2x = "controls/darkAqua-small-combobox-2x.png"
+
+[macos.reads.controls.darkAqua.small.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 134.0, 20.0]
+intrinsicContentSize_wh = [-1.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 3.0, 134.0, 14.0]
+cell_titleRectForBounds_xywh = [4.0, 3.0, 106.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 134.0, 20.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 134.0, 20.0]], [1, "AppKit.NSSimpleLabel", [4.0, 3.0, 106.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 150.0, 36.0]
+
+[macos.reads.controls.darkAqua.small.combobox_long.renders]
+1x = "controls/darkAqua-small-combobox_long-1x.png"
+2x = "controls/darkAqua-small-combobox_long-2x.png"
+
+[macos.reads.controls.darkAqua.small.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 71.0, 14.0]
+intrinsicContentSize_wh = [71.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 71.0, 14.0]
+cell_titleRectForBounds_xywh = [18.0, 0.0, 53.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 71.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 87.0, 30.0]
+
+[macos.reads.controls.darkAqua.small.checkbox_mixed.renders]
+1x = "controls/darkAqua-small-checkbox_mixed-1x.png"
+2x = "controls/darkAqua-small-checkbox_mixed-2x.png"
+
+[macos.reads.controls.darkAqua.small.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 48.0, 14.0]
+intrinsicContentSize_wh = [48.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 48.0, 14.0]
+cell_titleRectForBounds_xywh = [18.0, 0.0, 30.0, 14.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 48.0, 14.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 64.0, 30.0]
+
+[macos.reads.controls.darkAqua.small.radio_on.renders]
+1x = "controls/darkAqua-small-radio_on-1x.png"
+2x = "controls/darkAqua-small-radio_on-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup.renders]
+1x = "controls/darkAqua-regular-popup-1x.png"
+2x = "controls/darkAqua-regular-popup-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 118.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup_long_selected.renders]
+1x = "controls/darkAqua-regular-popup_long_selected-1x.png"
+2x = "controls/darkAqua-regular-popup_long_selected-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 206.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 159.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 206.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 222.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup_wide.renders]
+1x = "controls/darkAqua-regular-popup_wide-1x.png"
+2x = "controls/darkAqua-regular-popup_wide-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 7.0, 24.0]
+cell_titleRectForBounds_xywh = [5.0, 4.0, 7.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup_narrow.renders]
+1x = "controls/darkAqua-regular-popup_narrow-1x.png"
+2x = "controls/darkAqua-regular-popup_narrow-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup_empty_title.renders]
+1x = "controls/darkAqua-regular-popup_empty_title-1x.png"
+2x = "controls/darkAqua-regular-popup_empty_title-2x.png"
+
+[macos.reads.controls.darkAqua.regular.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 166.0, 24.0]
+intrinsicContentSize_wh = [166.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 119.0, 24.0]
+cell_titleRectForBounds_xywh = [31.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [12.0, 4.0, 17.0, 16.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 166.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 182.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.popup_image.renders]
+1x = "controls/darkAqua-regular-popup_image-1x.png"
+2x = "controls/darkAqua-regular-popup_image-2x.png"
+
+[macos.reads.controls.darkAqua.regular.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 75.0, 24.0]
+intrinsicContentSize_wh = [75.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [12.0, 0.0, 28.0, 24.0]
+cell_titleRectForBounds_xywh = [12.0, 4.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 75.0, 24.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 91.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.pulldown.renders]
+1x = "controls/darkAqua-regular-pulldown-1x.png"
+2x = "controls/darkAqua-regular-pulldown-2x.png"
+
+[macos.reads.controls.darkAqua.regular.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 69.0, 24.0]
+intrinsicContentSize_wh = [-1.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 4.0, 69.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 4.0, 31.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 69.0, 24.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 69.0, 24.0]], [1, "AppKit.NSSimpleLabel", [4.0, 4.0, 31.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 85.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.combobox.renders]
+1x = "controls/darkAqua-regular-combobox-1x.png"
+2x = "controls/darkAqua-regular-combobox-2x.png"
+
+[macos.reads.controls.darkAqua.regular.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 160.0, 24.0]
+intrinsicContentSize_wh = [-1.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 4.0, 160.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 4.0, 122.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 160.0, 24.0]], [1, "AppKit.NSSimpleLabel", [4.0, 4.0, 122.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 176.0, 40.0]
+
+[macos.reads.controls.darkAqua.regular.combobox_long.renders]
+1x = "controls/darkAqua-regular-combobox_long-1x.png"
+2x = "controls/darkAqua-regular-combobox_long-2x.png"
+
+[macos.reads.controls.darkAqua.regular.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 83.0, 16.0]
+intrinsicContentSize_wh = [83.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 83.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 0.0, 61.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 83.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 99.0, 32.0]
+
+[macos.reads.controls.darkAqua.regular.checkbox_mixed.renders]
+1x = "controls/darkAqua-regular-checkbox_mixed-1x.png"
+2x = "controls/darkAqua-regular-checkbox_mixed-2x.png"
+
+[macos.reads.controls.darkAqua.regular.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 57.0, 16.0]
+intrinsicContentSize_wh = [57.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 57.0, 16.0]
+cell_titleRectForBounds_xywh = [22.0, 0.0, 35.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 57.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 73.0, 32.0]
+
+[macos.reads.controls.darkAqua.regular.radio_on.renders]
+1x = "controls/darkAqua-regular-radio_on-1x.png"
+2x = "controls/darkAqua-regular-radio_on-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup.renders]
+1x = "controls/darkAqua-large-popup-1x.png"
+2x = "controls/darkAqua-large-popup-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup_long_selected]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 118.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 1
+item_states = [0, 1]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup_long_selected.renders]
+1x = "controls/darkAqua-large-popup_long_selected-1x.png"
+2x = "controls/darkAqua-large-popup_long_selected-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup_wide]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 214.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 159.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 214.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 230.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup_wide.renders]
+1x = "controls/darkAqua-large-popup_wide-1x.png"
+2x = "controls/darkAqua-large-popup_wide-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup_narrow]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 40.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [5.0, 0.0, 3.0, 28.0]
+cell_titleRectForBounds_xywh = [5.0, 6.0, 3.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 40.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 56.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup_narrow.renders]
+1x = "controls/darkAqua-large-popup_narrow-1x.png"
+2x = "controls/darkAqua-large-popup_narrow-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup_empty_title]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup_empty_title.renders]
+1x = "controls/darkAqua-large-popup_empty_title-1x.png"
+2x = "controls/darkAqua-large-popup_empty_title-2x.png"
+
+[macos.reads.controls.darkAqua.large.popup_image]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 174.0, 28.0]
+intrinsicContentSize_wh = [174.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 119.0, 28.0]
+cell_titleRectForBounds_xywh = [33.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [14.0, 6.0, 17.0, 16.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [1, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 174.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 190.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.popup_image.renders]
+1x = "controls/darkAqua-large-popup_image-1x.png"
+2x = "controls/darkAqua-large-popup_image-2x.png"
+
+[macos.reads.controls.darkAqua.large.pulldown]
+class = "NSPopUpButton"
+frame_xywh = [20.0, 40.0, 83.0, 28.0]
+intrinsicContentSize_wh = [83.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [14.0, 0.0, 28.0, 28.0]
+cell_titleRectForBounds_xywh = [14.0, 6.0, 27.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+altersStateOfSelectedItem = true
+arrowPosition_raw = 2
+indexOfSelectedItem = 0
+item_states = [0, 0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_17AppKitPopUpButton_", [0.0, 0.0, 83.0, 28.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 99.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.pulldown.renders]
+1x = "controls/darkAqua-large-pulldown-1x.png"
+2x = "controls/darkAqua-large-pulldown-2x.png"
+
+[macos.reads.controls.darkAqua.large.combobox]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 68.0, 28.0]
+intrinsicContentSize_wh = [-1.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 6.0, 68.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 6.0, 31.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 68.0, 28.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 68.0, 28.0]], [1, "AppKit.NSSimpleLabel", [4.0, 6.0, 31.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 84.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.combobox.renders]
+1x = "controls/darkAqua-large-combobox-1x.png"
+2x = "controls/darkAqua-large-combobox-2x.png"
+
+[macos.reads.controls.darkAqua.large.combobox_long]
+class = "NSComboBox"
+frame_xywh = [20.0, 40.0, 159.0, 28.0]
+intrinsicContentSize_wh = [-1.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 6.0, 159.0, 16.0]
+cell_titleRectForBounds_xywh = [4.0, 6.0, 122.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 159.0, 28.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_P10$186dfe79c14AppKitComboBox_", [0.0, 0.0, 159.0, 28.0]], [1, "AppKit.NSSimpleLabel", [4.0, 6.0, 122.0, 16.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 175.0, 44.0]
+
+[macos.reads.controls.darkAqua.large.combobox_long.renders]
+1x = "controls/darkAqua-large-combobox_long-1x.png"
+2x = "controls/darkAqua-large-combobox_long-2x.png"
+
+[macos.reads.controls.darkAqua.large.checkbox_mixed]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 85.0, 18.0]
+intrinsicContentSize_wh = [85.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 85.0, 18.0]
+cell_titleRectForBounds_xywh = [24.0, 1.0, 61.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 85.0, 18.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 101.0, 34.0]
+
+[macos.reads.controls.darkAqua.large.checkbox_mixed.renders]
+1x = "controls/darkAqua-large-checkbox_mixed-1x.png"
+2x = "controls/darkAqua-large-checkbox_mixed-2x.png"
+
+[macos.reads.controls.darkAqua.large.radio_on]
+class = "NSButton"
+frame_xywh = [20.0, 40.0, 59.0, 18.0]
+intrinsicContentSize_wh = [59.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+cell_drawingRectForBounds_xywh = [0.0, 0.0, 59.0, 18.0]
+cell_titleRectForBounds_xywh = [24.0, 1.0, 35.0, 16.0]
+cell_imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+subviews = [[1, "_TtGC6AppKit18_NSCoreHostingViewVS_12AppKitButton_", [0.0, 0.0, 59.0, 18.0]]]
+render_rect_in_content_xywh = [12.0, 32.0, 75.0, 34.0]
+
+[macos.reads.controls.darkAqua.large.radio_on.renders]
+1x = "controls/darkAqua-large-radio_on-1x.png"
+2x = "controls/darkAqua-large-radio_on-2x.png"
+
+[macos.reads.mirroring]
+method = "NSApp userInterfaceLayoutDirection and NSLocale preferredLanguages; per symbol imageWithSystemSymbolName: in an NSImageView (its defaults, frame frameForAlignmentRect: of its intrinsicContentSize) in an offscreen borderless window under the aqua appearance, its userInterfaceLayoutDirection recorded, drawn with cacheDisplayInRect:toBitmapImageRep: at 1 and 2 pixels a point to mirroring/<symbol>-<scale>.png; the image's alignmentRect and size"
+userInterfaceLayoutDirection_raw = 0
+preferredLanguages = ["he"]
+
+[macos.reads.mirroring.symbols."chevron.forward"]
+size_wh = [10.0, 14.0]
+alignmentRect_xywh = [0.0, 2.0, 10.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols."chevron.forward".renders.1x]
+file = "mirroring/chevron.forward-1x.png"
+pixels_wh = [10, 14]
+
+[macos.reads.mirroring.symbols."chevron.forward".renders.2x]
+file = "mirroring/chevron.forward-2x.png"
+pixels_wh = [20, 28]
+
+[macos.reads.mirroring.symbols."arrow.forward"]
+size_wh = [16.0, 12.0]
+alignmentRect_xywh = [0.0, 1.0, 16.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols."arrow.forward".renders.1x]
+file = "mirroring/arrow.forward-1x.png"
+pixels_wh = [16, 12]
+
+[macos.reads.mirroring.symbols."arrow.forward".renders.2x]
+file = "mirroring/arrow.forward-2x.png"
+pixels_wh = [32, 24]
+
+[macos.reads.mirroring.symbols."arrow.uturn.backward"]
+size_wh = [16.0, 14.0]
+alignmentRect_xywh = [0.0, 2.0, 16.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols."arrow.uturn.backward".renders.1x]
+file = "mirroring/arrow.uturn.backward-1x.png"
+pixels_wh = [16, 14]
+
+[macos.reads.mirroring.symbols."arrow.uturn.backward".renders.2x]
+file = "mirroring/arrow.uturn.backward-2x.png"
+pixels_wh = [32, 28]
+
+[macos.reads.mirroring.symbols."list.bullet"]
+size_wh = [17.0, 12.0]
+alignmentRect_xywh = [0.0, 1.0, 17.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols."list.bullet".renders.1x]
+file = "mirroring/list.bullet-1x.png"
+pixels_wh = [17, 12]
+
+[macos.reads.mirroring.symbols."list.bullet".renders.2x]
+file = "mirroring/list.bullet-2x.png"
+pixels_wh = [34, 24]
+
+[macos.reads.mirroring.symbols."text.alignleft"]
+size_wh = [17.0, 13.0]
+alignmentRect_xywh = [0.0, 2.0, 17.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols."text.alignleft".renders.1x]
+file = "mirroring/text.alignleft-1x.png"
+pixels_wh = [17, 13]
+
+[macos.reads.mirroring.symbols."text.alignleft".renders.2x]
+file = "mirroring/text.alignleft-2x.png"
+pixels_wh = [34, 26]
+
+[macos.reads.mirroring.symbols.star]
+size_wh = [17.0, 16.0]
+alignmentRect_xywh = [0.0, 3.0, 17.0, 9.0]
+view_userInterfaceLayoutDirection_raw = 0
+
+[macos.reads.mirroring.symbols.star.renders.1x]
+file = "mirroring/star-1x.png"
+pixels_wh = [17, 16]
+
+[macos.reads.mirroring.symbols.star.renders.2x]
+file = "mirroring/star-2x.png"
+pixels_wh = [34, 32]

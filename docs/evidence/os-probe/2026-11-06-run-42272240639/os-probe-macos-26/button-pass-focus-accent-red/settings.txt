@@ -1,0 +1,12 @@
+image's AppleKeyboardUIMode: absent
+write AppleKeyboardUIMode 2: exit 0
+read back: 2
+image's AppleAccentColor: absent
+write AppleAccentColor 0: exit 0
+read back: 0
+restore AppleAccentColor to the image's (absent): exit 0
+read back: 2026-11-06 19:39:17.498 defaults[16854:238187] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleAccentColor) does not exist
+restore AppleKeyboardUIMode to the image's (absent): exit 0
+read back: 2026-11-06 19:39:17.563 defaults[16857:238198] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleKeyboardUIMode) does not exist

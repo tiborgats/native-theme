@@ -1,0 +1,12 @@
+image's increaseContrast: absent
+write increaseContrast true: exit 0
+read back: 1
+image's AppleAccentColor: absent
+write AppleAccentColor 0: exit 0
+read back: 0
+restore AppleAccentColor to the image's (absent): exit 0
+read back: 2026-11-06 19:24:15.222 defaults[86247:180698] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleAccentColor) does not exist
+restore increaseContrast to the image's (absent): exit 0
+read back: 2026-11-06 19:24:15.274 defaults[86250:180713] 
+The domain/default pair of (com.apple.universalaccess, increaseContrast) does not exist
