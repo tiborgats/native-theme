@@ -66,6 +66,7 @@ SOURCE_PATHS=(
     scripts/generate_screenshots_egui.sh
     scripts/generate_gifs_theme_switching.sh
     scripts/capture_window.sh
+    scripts/generate_gifs_assemble.py
     scripts/generate_gifs_spinners.py
     .github/workflows/screenshots.yml
 )

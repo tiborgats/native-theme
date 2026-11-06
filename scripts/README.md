@@ -28,20 +28,26 @@ Generates looping spinner GIF animations from the bundled Material and Lucide
 SVG icons into `native-theme/docs/assets/`. Each GIF shows the spinner centered
 on a styled card background (24 rotation frames, 42ms/frame).
 
-Also supports `--theme-switching` mode to assemble pre-captured PNG frames into
-an animated theme-switching GIF, each frame at its captured size (the size of
-the screenshots beside it; frames of differing sizes are refused). Callers pass
-the explicit per-connector output path via `--theme-switching-output`.
-
 Requires: Python 3, Pillow, ImageMagick 7
 
 ```sh
 # Spinner GIFs (default output: native-theme/docs/assets/)
 python3 scripts/generate_gifs_spinners.py
+```
 
-# Theme-switching GIF from captured frames
-python3 scripts/generate_gifs_spinners.py --theme-switching /path/to/frames \
-    --theme-switching-output connectors/native-theme-iced/docs/assets/theme-switching.gif
+## generate_gifs_assemble.py
+
+Assembles pre-captured PNG frames (`frame-*.png`, in name order) into an
+animated, looping theme-switching GIF, each frame at its captured size (the
+size of the screenshots beside it; frames of differing sizes are refused), on
+a white background, two seconds per frame. `generate_gifs_theme_switching.sh`
+calls it with each connector's output path.
+
+Requires: Python 3, Pillow
+
+```sh
+python3 scripts/generate_gifs_assemble.py /path/to/frames \
+    connectors/native-theme-iced/docs/assets/theme-switching.gif
 ```
 
 ## generate_screenshots_iced.sh
@@ -144,7 +150,7 @@ dbus-send (D-Bus), Python 3, Pillow
 
 Captures four preset/variant pairs (kde-breeze dark, material-3 light,
 catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
-each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
+each set into a looping theme-switching GIF via `generate_gifs_assemble.py`.
 Each frame passes `capture_window.sh`'s check. The frames go to temporary
 directories, which the script removes when it ends, fails or is interrupted.
 
