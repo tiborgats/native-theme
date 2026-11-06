@@ -738,12 +738,36 @@ jobs:
       # functions and the animation context's defaults, the output route
       # button's colours and renders, the ring round a plain focusable view,
       # the font-smoothing defaults and text renders, and Core Text's
-      # substitute fonts and cascade lists; once with the
+      # substitute fonts and cascade lists; keyboard navigation on
+      # (AppleKeyboardUIMode 2, as the focus pass sets it), restored after;
+      # once with the
       # image's settings, once under the red accent.
       - name: Run the reads pass (macOS)
         if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads,'))
         continue-on-error: true
-        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out/reads --reads
+        run: |
+          set +e
+          out=os-probe-out/reads
+          mkdir -p "$out"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
       - name: Run the reads pass with a red accent (macOS)
         if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-accent,'))
         continue-on-error: true
@@ -752,7 +776,12 @@ jobs:
           out=os-probe-out/reads-accent-red
           mkdir -p "$out"
           accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
           {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
             echo "image's AppleAccentColor: $accent"
             defaults write -g AppleAccentColor -int 0
             echo "write AppleAccentColor 0: exit $?"
@@ -769,7 +798,16 @@ jobs:
             echo "restore AppleAccentColor to the image's ($accent): exit $?"
             echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
           } >> "$out/settings.txt" 2>&1
-          tail -n 2 "$out/settings.txt"
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
       # A pass with the image's own settings in which the probe's window is
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.

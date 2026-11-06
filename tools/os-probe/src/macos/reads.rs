@@ -536,7 +536,7 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         &mut t,
         "method",
         out::text(format!(
-            "a titled window (empty title, content {} from {}) holding at {} an NSView subclass (NativeThemeOsProbeFocusView) that accepts first responder and whose drawFocusRingMask fills its bounds (NSBezierPath fillRect:) and focusRingMaskBounds is its bounds, focusRingType as made; made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); per appearance (the window's appearance set) the window captured with screencapture -x -o -l after makeFirstResponder: nil (unfocused) and with the view (focused), each after {SETTLE_STEPS} steps, to focus_view/<appearance>-<unfocused|focused>.png; view_frame_from_top_left_xywh in the window frame's points from its top left",
+            "a titled window (empty title, content {} from {}) holding at {} an NSView subclass (NativeThemeOsProbeFocusView) that accepts first responder and whose drawFocusRingMask fills its bounds (NSBezierPath fillRect:) and focusRingMaskBounds is its bounds, focusRingType as made; made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow (up to {KEY_WAIT_STEPS} steps); per appearance (the window's appearance set) the window captured with screencapture -x -o -l after makeFirstResponder: nil (unfocused) and with the view (focused), then noteFocusRingMaskChanged and setKeyboardFocusRingNeedsDisplayInRect: of its bounds, display, each after {SETTLE_STEPS} steps, to focus_view/<appearance>-<unfocused|focused>.png; view_frame_from_top_left_xywh in the window frame's points from its top left",
             super::rect_text(NSRect::new(NSPoint::new(0.0, 0.0), FOCUS_FRAME.size)),
             super::point_text(FOCUS_FRAME.origin),
             super::rect_text(FOCUS_VIEW_FRAME),
@@ -556,6 +556,11 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
     };
     let view = ffi::FocusView::new(mtm, FOCUS_VIEW_FRAME);
     content.addSubview(&view);
+    out::put(
+        &mut t,
+        "isFullKeyboardAccessEnabled",
+        out::boolean(app.isFullKeyboardAccessEnabled()),
+    );
     out::put(
         &mut t,
         "focusRingType_raw",
@@ -608,6 +613,8 @@ fn focus_view_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
                 "makeFirstResponder",
                 out::boolean(window.makeFirstResponder(responder)),
             );
+            view.noteFocusRingMaskChanged();
+            view.setKeyboardFocusRingNeedsDisplayInRect(view.bounds());
             window.display();
             pump(app, SETTLE_STEPS, || false);
             out::put(&mut s, "isKeyWindow", out::boolean(window.isKeyWindow()));
