@@ -6550,7 +6550,7 @@ quote = "palette.setBrush(state, QPalette::Highlight, schemeSelection.background
 [[fact]]
 key = "role.global.accent_standalone"
 value = "= role.window.foreground_active"
-rows = []
+rows = ["Q3.5"]
 
 [[fact.cite]]
 kind = "published"
@@ -6946,6 +6946,25 @@ kind = "published"
 source = "kcolorscheme@6.31.0 src/kcolorscheme.h:138-148"
 quote = "enum BackgroundRole {"
 absent = []
+
+# the colour Breeze names for its shadows: breezerc [Common] ShadowColor, read by the style's popup shadows and the
+# decoration's window shadows alike (each layer withOpacity(color, opacity * strength), breezeshadowhelper.cpp:199,
+# breezedecoration.cpp:833-834); its default
+
+[[fact]]
+key = "role.global.shadow_reference"
+value = "#000000"
+rows = ["K3.1", "K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:30-32"
+quote = "<entry name=\"ShadowColor\" type = \"Color\"> <default>0, 0, 0</default>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:29-31"
+quote = "<entry name=\"ShadowColor\" type = \"Color\"> <default>0, 0, 0</default>"
 
 [[fact]]
 key = "role.global.selection_text_background"
