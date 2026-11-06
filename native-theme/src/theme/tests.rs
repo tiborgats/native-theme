@@ -207,6 +207,45 @@ fn macos_monterey_refused_plain_and_loaded_synthetic() {
     assert_eq!(theme.preset(), PresetId::MacosMonterey);
 }
 
+/// A bundled preset while its `[pending]` table lists paths (S16, S17,
+/// ADD-A128, ADD-A133): `Theme::from_preset` refuses it, each listed path
+/// a field no layer states among the problems (a listed default size and
+/// a listed input by their own problems), and
+/// `Theme::from_preset_synthetic` loads it with its synthetic layers.
+fn refused_plain_and_loaded_synthetic(id: PresetId) {
+    let file = read_preset(id.source()).unwrap();
+    assert!(!file.pending.is_empty());
+    let Err(ThemeError::Preset(LayerError::Invalid(problems))) =
+        super::Theme::from_preset(id, Scheme::Light)
+    else {
+        panic!("{}'s listed paths are missing on the plain route", id.key());
+    };
+    for (path, _) in &file.pending {
+        if crate::toml::read::listed_default(path).is_some()
+            || crate::toml::read::listed_input(path).is_some()
+        {
+            continue;
+        }
+        let listed = crate::toml::read::listed_path(path);
+        assert!(
+            problems
+                .iter()
+                .any(|problem| problem.kind == ProblemKind::Missing && problem.path == listed),
+            "{}: {listed}",
+            id.key()
+        );
+    }
+    let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
+    let theme = super::Theme::from_preset_synthetic(id, Scheme::Light, layers).unwrap();
+    assert_eq!(theme.preset(), id);
+}
+
+/// `material-3` through both routes, as [`refused_plain_and_loaded_synthetic`].
+#[test]
+fn material_3_refused_plain_and_loaded_synthetic() {
+    refused_plain_and_loaded_synthetic(PresetId::Material3);
+}
+
 /// The build test's two routes, over the fixture preset with a listed
 /// path (a small preset, beside `adwaita`'s whole one): the build test takes the
 /// synthetic route for it, whose layers state the listed path, so it

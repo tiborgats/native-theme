@@ -46,6 +46,8 @@ presets! {
     MacosTahoe => "macos-tahoe", "macos-tahoe.toml";
     /// Apple's macOS 12 Monterey to macOS 15, its facts read on macOS 15.
     MacosMonterey => "macos-monterey", "macos-monterey.toml";
+    /// Google's Material 3.
+    Material3 => "material-3", "material-3.toml";
 }
 
 impl PresetId {
