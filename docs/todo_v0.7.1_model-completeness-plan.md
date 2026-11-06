@@ -486,7 +486,8 @@ the 0.7.0 contract tables and connector code at `2796b26e`:
 | Widget | 0.7.0's stand-in | Its catalogue entry |
 |---|---|---|
 | a menu bar | iced: `styles::aw::menu`, `iced_aw`'s `menu_bar::Style`, its bar from `menu.background_color` and `menu.border` (`connectors/native-theme-iced/src/styles/aw.rs:137-162`; contract `contract.rs:1610`); the showcases' `chrome.menu_bar` from `window.background_color` and `layout.container_margin_px`, its titles from `menu.*` (`docs/showcase-elements.toml@v0.7.0`) | `menu_bar` (M3b) |
-| a number input | the showcases' `basic.number_input.field` from `input.*` | `stepper` (M3b), its text `input @ context stepper` |
+| a number input | the showcases' `basic.number_input.field` from `input.*`; gpui's `NumberInput` frame refined by the connector (`geometry.rs:322-324`) | `stepper` (M3b), its text `input @ context stepper` |
+| a code editor | gpui: the code `Editor`'s line height from `defaults.line_height`, its fill from `input.background_color`, its font from `defaults.mono_font` (`geometry.rs:394-408`) | `code_editor` (M3b) |
 | a group box | gpui: `group_box`, `group_box_foreground` from the background, secondary and foreground colours (`connectors/native-theme-gpui/src/colors.rs:530-532`), `group_box_content` from `card.*` (`geometry.rs:767-774`) | `group_box` (M3b) |
 | a loading placeholder | gpui: `skeleton` from `button.background_color` (`colors.rs:582`, contract `contract.rs:627-631`) | `redaction` (M3b) |
 | a chart | gpui: `chart_1`–`chart_5` from the accent (`colors.rs:491-513`), `chart_bullish`, `chart_bearish` from the success and danger colours (`:353-354`), `chart_grid` from `list.grid_color` (`:446`) | `chart` (M3b) |
