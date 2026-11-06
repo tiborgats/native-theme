@@ -1868,6 +1868,20 @@ kind = "published"
 source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-dialog.scss:28-29"
 quote = "/// md.comp.dialog.with-icon.icon.size (Enabled / Icon) $with-icon-icon-size: 24px;"
 
+# no further icon contexts (S4.5's keyed map empty): Material's icon token set, md.comp.icon, holds one font and one
+# size, and every other icon size is a component's own token (md.comp.icon-button.*, md.comp.app-bar.icon.size,
+# md.comp.dialog.with-icon.icon.size), stated on its part (M1b round 2, the mop-up lane)
+[[fact]]
+key = "token.icons.sizes.keyed"
+value = {}
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/_md-comp-icon.scss:13-27"
+quote = "$supported-tokens: ("
+absent = []
+
 # ----------------------------------------------------------------------------------------------------
 # S4.4 text ramp: the fifteen md.sys.typescale styles and the fifteen emphasized ones. Family and weight from
 # material-web's tokens (the styles' mixins apply font-family, font-size, font-weight, letter-spacing and line-height

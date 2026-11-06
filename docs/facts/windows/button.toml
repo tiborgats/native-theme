@@ -511,6 +511,152 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/Button_themeresources.xaml:172"
 quote = "BorderBrush=\"{TemplateBinding BorderBrush}\" BorderThickness=\"{TemplateBinding BorderThickness}\""
 
+# Where the stroke lies: WinUI draws a border inside the element's bounds, its geometry the outer rect (the actual
+# size) less the inner rect (the outer deflated by the thicknesses), as a rounded border's mask; a square one is a
+# hollow nine-grid over the bounds whose insets are the thicknesses (M1b round 2, the mop-up lane).
+[[fact]]
+key = "button.body.stroke.position"
+value = "inside"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3802"
+quote = "XRECTF outerBounds = { 0.0f, 0.0f, GetActualWidth(), GetActualHeight() };"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3869-3874"
+quote = "CBorder::HelperDeflateRect(outerBounds, borderThickness, innerBounds); if (innerBounds.Width != 0.0f && innerBounds.Height != 0.0f) { // Building the border geometry is tricky. This geometry is the // difference between the outer rect and the inner rect."
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/hw/BaseContentRenderer.cpp:977-986"
+quote = "IFC_RETURN(GeneralImageRenderContent( bounds, bounds, borderBrush, emptyBrushParams, pFrameworkElement, &ninegrid /* pNinegrid */, nullptr /* pShapeHwTexture */, TRUE /* fIsHollow */ ));"
+
+# Each edge's width snapped to device pixels: with UseLayoutRounding (true by default) WinUI rounds every
+# BorderThickness side to the nearest device pixel at the rasterization scale (LayoutRound, XcpRound), in layout and
+# in rendering alike (W-P3-13†: WinUI's layout rounding of thin lines).
+[[fact]]
+key = "button.body.stroke.top.snap"
+value = "to_device_pixel"
+rows = ["W-P3-13†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:404-407"
+quote = "roundedThickness.left = pElement->LayoutRound(thickness.left); roundedThickness.right = pElement->LayoutRound(thickness.right); roundedThickness.top = pElement->LayoutRound(thickness.top); roundedThickness.bottom = pElement->LayoutRound(thickness.bottom);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4857"
+quote = "returnValue = (operationFn(returnValue * scaleFactor) / scaleFactor);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4869"
+quote = "return LayoutRoundHelper(value, XcpRound);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3807-3812"
+quote = "if (useLayoutRounding) { outerBounds.Width = LayoutRound(outerBounds.Width); outerBounds.Height = LayoutRound(outerBounds.Height); borderThickness = CBorder::GetLayoutRoundedThickness(this); }"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_uselayoutrounding.md:22"
+quote = "The default is **true**."
+
+[[fact]]
+key = "button.body.stroke.right.snap"
+value = "to_device_pixel"
+rows = ["W-P3-13†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:404-407"
+quote = "roundedThickness.left = pElement->LayoutRound(thickness.left); roundedThickness.right = pElement->LayoutRound(thickness.right); roundedThickness.top = pElement->LayoutRound(thickness.top); roundedThickness.bottom = pElement->LayoutRound(thickness.bottom);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4857"
+quote = "returnValue = (operationFn(returnValue * scaleFactor) / scaleFactor);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4869"
+quote = "return LayoutRoundHelper(value, XcpRound);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3807-3812"
+quote = "if (useLayoutRounding) { outerBounds.Width = LayoutRound(outerBounds.Width); outerBounds.Height = LayoutRound(outerBounds.Height); borderThickness = CBorder::GetLayoutRoundedThickness(this); }"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_uselayoutrounding.md:22"
+quote = "The default is **true**."
+
+[[fact]]
+key = "button.body.stroke.bottom.snap"
+value = "to_device_pixel"
+rows = ["W-P3-13†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:404-407"
+quote = "roundedThickness.left = pElement->LayoutRound(thickness.left); roundedThickness.right = pElement->LayoutRound(thickness.right); roundedThickness.top = pElement->LayoutRound(thickness.top); roundedThickness.bottom = pElement->LayoutRound(thickness.bottom);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4857"
+quote = "returnValue = (operationFn(returnValue * scaleFactor) / scaleFactor);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4869"
+quote = "return LayoutRoundHelper(value, XcpRound);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3807-3812"
+quote = "if (useLayoutRounding) { outerBounds.Width = LayoutRound(outerBounds.Width); outerBounds.Height = LayoutRound(outerBounds.Height); borderThickness = CBorder::GetLayoutRoundedThickness(this); }"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_uselayoutrounding.md:22"
+quote = "The default is **true**."
+
+[[fact]]
+key = "button.body.stroke.left.snap"
+value = "to_device_pixel"
+rows = ["W-P3-13†"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/Border.cpp:404-407"
+quote = "roundedThickness.left = pElement->LayoutRound(thickness.left); roundedThickness.right = pElement->LayoutRound(thickness.right); roundedThickness.top = pElement->LayoutRound(thickness.top); roundedThickness.bottom = pElement->LayoutRound(thickness.bottom);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4857"
+quote = "returnValue = (operationFn(returnValue * scaleFactor) / scaleFactor);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/uielement.cpp:4869"
+quote = "return LayoutRoundHelper(value, XcpRound);"
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/core/elements/framework.cpp:3807-3812"
+quote = "if (useLayoutRounding) { outerBounds.Width = LayoutRound(outerBounds.Width); outerBounds.Height = LayoutRound(outerBounds.Height); borderThickness = CBorder::GetLayoutRoundedThickness(this); }"
+
+[[fact.cite]]
+kind = "published"
+source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_uselayoutrounding.md:22"
+quote = "The default is **true**."
+
 # Pending (S17, ADD-A122; register U1): the accent style (`primary`, and the dialog's default button, which takes
 # it) sets no Padding or BorderThickness; whether DefaultButtonStyle's setters reach it is the WinUI host's
 # measurement. The app-bar styles are their types' own (TargetType AppBarButton, AppBarToggleButton): the
