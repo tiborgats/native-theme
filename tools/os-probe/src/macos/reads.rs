@@ -8,13 +8,15 @@
 //! focused and not per appearance in a key window; the font-smoothing user
 //! defaults and the system font's text rendered at 1 and 2 pixels a point;
 //! and Core Text's substitute fonts for other scripts and its default
-//! cascade list per language.
+//! cascade list per language; and the pop-up button, pull-down, combo box,
+//! mixed checkbox and checked radio per control size and appearance in a
+//! key window, read and drawn offscreen at 1 and 2 pixels a point.
 
 use std::cell::RefCell;
 use std::path::Path;
 
 use block2::RcBlock;
-use objc2::MainThreadMarker;
+use objc2::{MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
     NSAnimationContext, NSAppearance, NSAppearanceCustomization, NSApplication,
     NSApplicationActivationPolicy, NSColorSpace, NSResponder, NSView,
@@ -76,6 +78,308 @@ pub(super) fn reads_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &
     out::put_table(&mut t, "focus_view", focus_view_table(mtm, app, out_dir));
     out::put_table(&mut t, "text_rendering", text_rendering_table(mtm, out_dir));
     out::put_table(&mut t, "fallbacks", fallbacks_table());
+    out::put_table(&mut t, "controls", controls_table(mtm, app, out_dir));
+    t
+}
+
+/// The controls window's content frame on the screen.
+const CONTROLS_FRAME: NSRect = NSRect::new(NSPoint::new(100.0, 200.0), NSSize::new(400.0, 120.0));
+
+/// Where each control is put in the controls window's content view.
+const CONTROL_ORIGIN: NSPoint = NSPoint::new(20.0, 40.0);
+
+/// How much wider than its fitted width the wide pop-up is drawn, and the
+/// narrow pop-up's width, in points.
+const POPUP_WIDER_BY: f64 = 40.0;
+const POPUP_NARROW_WIDTH: f64 = 40.0;
+
+/// The pop-ups' and combo boxes' item titles: a short one, then a long one.
+const ITEM_SHORT: &str = "Item";
+const ITEM_LONG: &str = "A much longer item";
+
+/// The pop-up button, pull-down, combo box, mixed checkbox and checked
+/// radio per control size and appearance, in a key titled window: their
+/// geometry and state reads, and their offscreen renders.
+fn controls_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "a titled window (empty title, content {} from {}) made key with makeKeyAndOrderFront: and the run loop pumped until isKeyWindow; per appearance (the window's appearance set, read inside performAsCurrentDrawingAppearance:) and control size (setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:) each case is made, sized to fit and put at {} in the content view, laid out and displayed, read, and drawn offscreen with cacheDisplayInRect:toBitmapImageRep: of its frame grown by {RENDER_MARGIN} pt into 8-bit RGBA bitmaps at 1 and 2 pixels a point (controls/<appearance>-<size>-<case>-<scale>.png), then removed; the cases: popup (NSPopUpButton initWithFrame:pullsDown: NO, items {ITEM_SHORT:?} and {ITEM_LONG:?}, the first selected), popup_long_selected (the same with the second selected), popup_wide (popup, then {POPUP_WIDER_BY} pt wider than fitted), popup_narrow (popup, then {POPUP_NARROW_WIDTH} pt wide), popup_empty_title (items \"\" and {ITEM_LONG:?}, the first selected), popup_image (popup with the first item's image the symbol \"star\"), pulldown (pullsDown: YES, the same items), combobox (NSComboBox, stringValue {ITEM_SHORT:?}), combobox_long (stringValue {ITEM_LONG:?}), checkbox_mixed (NSButton switch, setAllowsMixedState: YES, state mixed, title \"Checkbox\"), radio_on (NSButton radio, state on, title \"Radio\"); per case: intrinsicContentSize, frame, alignmentRectInsets, the cell's drawingRect, titleRect and imageRect for its bounds, a pop-up's altersStateOfSelectedItem, arrowPosition, indexOfSelectedItem and each item's state, and the subviews ([depth, class, frame in the control])",
+            super::rect_text(NSRect::new(NSPoint::new(0.0, 0.0), CONTROLS_FRAME.size)),
+            super::point_text(CONTROLS_FRAME.origin),
+            super::point_text(CONTROL_ORIGIN),
+        )),
+    );
+    let window = match ffi::titled_window(mtm, CONTROLS_FRAME) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    window.setTitle(&ns(""));
+    let Some(content) = window.contentView() else {
+        out::put(&mut t, "error", out::unavailable("no content view"));
+        return t;
+    };
+    let dir = out_dir.join("controls");
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable(format!("cannot create {}: {e}", dir.display())),
+        );
+        return t;
+    }
+    window.makeKeyAndOrderFront(None);
+    activate_ignoring(app);
+    pump(app, KEY_WAIT_STEPS, || window.isKeyWindow());
+    out::put(&mut t, "isKeyWindow", out::boolean(window.isKeyWindow()));
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        window.setAppearance(Some(&appearance));
+        pump(app, SETTLE_STEPS, || false);
+        let result = RefCell::new(Table::new());
+        {
+            let block = RcBlock::new(|| {
+                let mut a = Table::new();
+                for (size_name, size) in super::CONTROL_SIZES {
+                    let mut per = Table::new();
+                    for case in CASES {
+                        let control = make_control(mtm, case, size);
+                        let stem = format!("{key}-{size_name}-{case}");
+                        out::put_table(
+                            &mut per,
+                            case,
+                            control_case(&content, &control, &dir, &stem),
+                        );
+                    }
+                    out::put_table(&mut a, size_name, per);
+                }
+                *result.borrow_mut() = a;
+            });
+            appearance.performAsCurrentDrawingAppearance(&block);
+        }
+        out::put_table(&mut t, key, result.into_inner());
+    }
+    window.setAppearance(None);
+    window.close();
+    t
+}
+
+/// The cases [`controls_table`] makes.
+const CASES: [&str; 11] = [
+    "popup",
+    "popup_long_selected",
+    "popup_wide",
+    "popup_narrow",
+    "popup_empty_title",
+    "popup_image",
+    "pulldown",
+    "combobox",
+    "combobox_long",
+    "checkbox_mixed",
+    "radio_on",
+];
+
+/// The render margin round a control, in points.
+const RENDER_MARGIN: f64 = 8.0;
+
+/// One case's control at `size`, sized to fit (and widened or narrowed as
+/// the case says).
+fn make_control(
+    mtm: MainThreadMarker,
+    case: &str,
+    size: objc2_app_kit::NSControlSize,
+) -> objc2::rc::Retained<objc2_app_kit::NSControl> {
+    use objc2_app_kit::{NSButton, NSButtonType, NSComboBox, NSPopUpButton};
+    let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(100.0, 24.0));
+    let control: objc2::rc::Retained<objc2_app_kit::NSControl> = match case {
+        "combobox" | "combobox_long" => {
+            let c = NSComboBox::new(mtm);
+            c.setStringValue(&ns(if case == "combobox" {
+                ITEM_SHORT
+            } else {
+                ITEM_LONG
+            }));
+            objc2::rc::Retained::into_super(objc2::rc::Retained::into_super(c))
+        }
+        "checkbox_mixed" | "radio_on" => {
+            let b = NSButton::new(mtm);
+            if case == "checkbox_mixed" {
+                b.setButtonType(NSButtonType::Switch);
+                b.setTitle(&ns("Checkbox"));
+                b.setAllowsMixedState(true);
+                b.setState(objc2_app_kit::NSControlStateValueMixed);
+            } else {
+                b.setButtonType(NSButtonType::Radio);
+                b.setTitle(&ns("Radio"));
+                b.setState(objc2_app_kit::NSControlStateValueOn);
+            }
+            objc2::rc::Retained::into_super(b)
+        }
+        _ => {
+            let p = NSPopUpButton::initWithFrame_pullsDown(
+                NSPopUpButton::alloc(mtm),
+                frame,
+                case == "pulldown",
+            );
+            p.addItemWithTitle(&ns(if case == "popup_empty_title" {
+                ""
+            } else {
+                ITEM_SHORT
+            }));
+            p.addItemWithTitle(&ns(ITEM_LONG));
+            p.selectItemAtIndex(if case == "popup_long_selected" { 1 } else { 0 });
+            if case == "popup_image" {
+                if let (Some(item), Some(image)) = (
+                    p.itemAtIndex(0),
+                    objc2_app_kit::NSImage::imageWithSystemSymbolName_accessibilityDescription(
+                        &ns("star"),
+                        None,
+                    ),
+                ) {
+                    item.setImage(Some(&image));
+                }
+            }
+            objc2::rc::Retained::into_super(objc2::rc::Retained::into_super(p))
+        }
+    };
+    super::control_common(&control, size);
+    control.sizeToFit();
+    let fitted = control.frame().size;
+    match case {
+        "popup_wide" => {
+            control.setFrameSize(NSSize::new(fitted.width + POPUP_WIDER_BY, fitted.height))
+        }
+        "popup_narrow" => control.setFrameSize(NSSize::new(POPUP_NARROW_WIDTH, fitted.height)),
+        _ => {}
+    }
+    control
+}
+
+/// One control's reads and renders.
+fn control_case(
+    content: &NSView,
+    control: &objc2_app_kit::NSControl,
+    dir: &Path,
+    stem: &str,
+) -> Table {
+    let mut t = Table::new();
+    control.setFrameOrigin(CONTROL_ORIGIN);
+    content.addSubview(control);
+    control.layoutSubtreeIfNeeded();
+    content.displayIfNeeded();
+    let view: &NSView = control;
+    out::put(
+        &mut t,
+        "class",
+        out::text(view.class().name().to_string_lossy()),
+    );
+    out::put(&mut t, "frame_xywh", rect(view.frame()));
+    out::put(
+        &mut t,
+        "intrinsicContentSize_wh",
+        size(view.intrinsicContentSize()),
+    );
+    out::put(
+        &mut t,
+        "alignmentRectInsets_tlbr",
+        super::insets(view.alignmentRectInsets()),
+    );
+    let bounds = view.bounds();
+    if let Some(cell) = control.cell() {
+        out::put(
+            &mut t,
+            "cell_drawingRectForBounds_xywh",
+            rect(cell.drawingRectForBounds(bounds)),
+        );
+        out::put(
+            &mut t,
+            "cell_titleRectForBounds_xywh",
+            rect(cell.titleRectForBounds(bounds)),
+        );
+        out::put(
+            &mut t,
+            "cell_imageRectForBounds_xywh",
+            rect(cell.imageRectForBounds(bounds)),
+        );
+        let cell_obj: &objc2::runtime::AnyObject = cell.as_ref();
+        if let Some(popup_cell) = cell_obj.downcast_ref::<objc2_app_kit::NSPopUpButtonCell>() {
+            out::put(
+                &mut t,
+                "altersStateOfSelectedItem",
+                out::boolean(popup_cell.altersStateOfSelectedItem()),
+            );
+            out::put(
+                &mut t,
+                "arrowPosition_raw",
+                i64::try_from(popup_cell.arrowPosition().0)
+                    .map_or_else(|_| out::text("out of range"), Value::Integer),
+            );
+        }
+    }
+    let obj: &objc2::runtime::AnyObject = control.as_ref();
+    if let Some(popup) = obj.downcast_ref::<objc2_app_kit::NSPopUpButton>() {
+        out::put(
+            &mut t,
+            "indexOfSelectedItem",
+            out::int_isize(popup.indexOfSelectedItem()),
+        );
+        out::put(
+            &mut t,
+            "item_states",
+            out::array(
+                popup
+                    .itemArray()
+                    .iter()
+                    .map(|item| out::int_isize(item.state()))
+                    .collect(),
+            ),
+        );
+    }
+    out::put(&mut t, "subviews", subviews_value(view));
+    let frame = view.frame();
+    let around = NSRect::new(
+        NSPoint::new(
+            frame.origin.x - RENDER_MARGIN,
+            frame.origin.y - RENDER_MARGIN,
+        ),
+        NSSize::new(
+            frame.size.width + RENDER_MARGIN + RENDER_MARGIN,
+            frame.size.height + RENDER_MARGIN + RENDER_MARGIN,
+        ),
+    );
+    out::put(&mut t, "render_rect_in_content_xywh", rect(around));
+    let mut renders = Table::new();
+    for (scale_name, scale) in RENDER_SCALES {
+        let file = format!("{stem}-{scale_name}.png");
+        let value = match bitmap_at_scale(around.size, scale) {
+            Ok(rep) => {
+                content.cacheDisplayInRect_toBitmapImageRep(around, &rep);
+                match ffi::png_data(&rep) {
+                    Ok(data) => match std::fs::write(dir.join(&file), data) {
+                        Ok(()) => out::text(format!("controls/{file}")),
+                        Err(e) => out::unavailable(format!("cannot write {file}: {e}")),
+                    },
+                    Err(reason) => out::unavailable(reason),
+                }
+            }
+            Err(reason) => out::unavailable(reason),
+        };
+        out::put(&mut renders, scale_name, value);
+    }
+    out::put_table(&mut t, "renders", renders);
+    view.removeFromSuperview();
     t
 }
 

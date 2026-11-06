@@ -738,7 +738,9 @@ jobs:
       # functions and the animation context's defaults, the output route
       # button's colours and renders, the ring round a plain focusable view,
       # the font-smoothing defaults and text renders, and Core Text's
-      # substitute fonts and cascade lists; keyboard navigation on
+      # substitute fonts and cascade lists, and the pop-up, pull-down, combo
+      # box, mixed checkbox and checked radio per size (MP-controls); keyboard
+      # navigation on
       # (AppleKeyboardUIMode 2, as the focus pass sets it), restored after;
       # once with the
       # image's settings, once under the red accent.
