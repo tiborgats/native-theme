@@ -7,12 +7,14 @@
 //! With `--button-pass`, only the buttons in titled windows per state and
 //! condition ([`buttons`], its pixel work in [`layer`]); with `--symbols`,
 //! only the symbol configuration and image size each place gives an SF
-//! Symbol ([`symbols`]). The calls
+//! Symbol ([`symbols`]); with `--reads`, only the reads that need no control
+//! pass ([`reads`]). The calls
 //! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
 
 mod buttons;
 mod ffi;
 mod layer;
+mod reads;
 mod selection;
 mod symbols;
 mod text;
@@ -31,11 +33,11 @@ use objc2_app_kit::{
     NSApplicationActivationPolicy, NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox,
     NSBoxType, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize,
     NSControlStateValueOff, NSControlStateValueOn, NSEvent, NSEventMask, NSFont,
-    NSFontDescriptorSymbolicTraits, NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton,
-    NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller,
-    NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView,
-    NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle,
-    NSTextField, NSTextView, NSTitlePosition, NSView, NSVisualEffectBlendingMode,
+    NSFontDescriptorSymbolicTraits, NSLineBreakMode, NSMenu, NSMenuItem, NSOutlineView,
+    NSPopUpButton, NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView,
+    NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell,
+    NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView,
+    NSTableViewStyle, NSTextField, NSTextView, NSTitlePosition, NSView, NSVisualEffectBlendingMode,
     NSVisualEffectMaterial, NSVisualEffectState, NSVisualEffectView, NSWindow, NSWorkspace,
 };
 use objc2_foundation::{
@@ -176,6 +178,26 @@ pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path, mode: ButtonMode) {
 /// `--symbols`: fill `doc` with `[os]`, `[probe]`, the environment and the
 /// symbols pass only; its renders go under `out_dir`.
 pub(crate) fn symbols_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "symbols", |mtm, app, version| {
+        symbols::symbols_table(mtm, app, out_dir, version)
+    });
+}
+
+/// `--reads`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// reads pass only; its renders and captures go under `out_dir`.
+pub(crate) fn reads_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "reads", |mtm, app, _| {
+        reads::reads_table(mtm, app, out_dir)
+    });
+}
+
+/// Fill `doc` with `[os]`, `[probe]`, the environment and `[macos.<key>]`
+/// from `pass`.
+fn single_pass(
+    doc: &mut Table,
+    key: &str,
+    pass: impl FnOnce(MainThreadMarker, &NSApplication, &NSOperatingSystemVersion) -> Table,
+) {
     let (os, version) = os_table();
     out::put_table(doc, "os", os);
     out::put_table(doc, "probe", crate::probe_table());
@@ -192,16 +214,12 @@ pub(crate) fn symbols_probe(doc: &mut Table, out_dir: &Path) {
             out::put_table(&mut env, "mainScreen", screen_table(mtm));
             out::put_table(&mut env, "accessibility", accessibility_table());
             out::put_table(&mut mac, "environment", env);
-            out::put_table(
-                &mut mac,
-                "symbols",
-                symbols::symbols_table(mtm, &app, out_dir, &version),
-            );
+            out::put_table(&mut mac, key, pass(mtm, &app, &version));
         }
         None => {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
-            out::put(&mut mac, "symbols", reason);
+            out::put(&mut mac, key, reason);
         }
     }
     out::put_table(doc, "macos", mac);
@@ -1327,7 +1345,7 @@ fn controls_table(
         &mut t,
         "method",
         out::text(format!(
-            "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to {STRETCH_WIDTH} pt after sizeToFit when narrower; cell rects are for the control's bounds after that"
+            "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to {STRETCH_WIDTH} pt after sizeToFit when narrower; cell rects are for the control's bounds after that; each cell's lineBreakMode, wraps, truncatesLastVisibleLine, usesSingleLineMode and isScrollable, and the control's lineBreakMode and usesSingleLineMode, as made (lineBreakMode as [raw, the NSParagraphStyle.h constant's name])"
         )),
     );
     out::put(
@@ -1684,6 +1702,33 @@ fn cell_table(control: &NSControl, view: &NSView) -> Value {
         "imageRectForBounds_xywh",
         rect(cell.imageRectForBounds(bounds)),
     );
+    out::put(
+        &mut c,
+        "lineBreakMode",
+        line_break_mode_value(cell.lineBreakMode()),
+    );
+    out::put(&mut c, "wraps", out::boolean(cell.wraps()));
+    out::put(
+        &mut c,
+        "truncatesLastVisibleLine",
+        out::boolean(cell.truncatesLastVisibleLine()),
+    );
+    out::put(
+        &mut c,
+        "usesSingleLineMode",
+        out::boolean(cell.usesSingleLineMode()),
+    );
+    out::put(&mut c, "isScrollable", out::boolean(cell.isScrollable()));
+    out::put(
+        &mut c,
+        "control_lineBreakMode",
+        line_break_mode_value(control.lineBreakMode()),
+    );
+    out::put(
+        &mut c,
+        "control_usesSingleLineMode",
+        out::boolean(control.usesSingleLineMode()),
+    );
     let cell_obj: &AnyObject = cell.as_ref();
     if let Some(slider_cell) = cell_obj.downcast_ref::<NSSliderCell>() {
         let flipped = view.isFlipped();
@@ -1715,6 +1760,33 @@ fn cell_table(control: &NSControl, view: &NSView) -> Value {
         out::put(&mut c, "rectOfTickMarkAtIndex_0_xywh", tick0);
     }
     Value::Table(c)
+}
+
+/// An `NSLineBreakMode` as `[raw, name]`, the name the SDK's constant has
+/// (`NSParagraphStyle.h`), or the raw value alone where none matches.
+fn line_break_mode_value(mode: NSLineBreakMode) -> Value {
+    let names = [
+        (NSLineBreakMode::ByWordWrapping, "NSLineBreakByWordWrapping"),
+        (NSLineBreakMode::ByCharWrapping, "NSLineBreakByCharWrapping"),
+        (NSLineBreakMode::ByClipping, "NSLineBreakByClipping"),
+        (
+            NSLineBreakMode::ByTruncatingHead,
+            "NSLineBreakByTruncatingHead",
+        ),
+        (
+            NSLineBreakMode::ByTruncatingTail,
+            "NSLineBreakByTruncatingTail",
+        ),
+        (
+            NSLineBreakMode::ByTruncatingMiddle,
+            "NSLineBreakByTruncatingMiddle",
+        ),
+    ];
+    let raw = i64::try_from(mode.0).map_or_else(|_| out::text(mode.0.to_string()), Value::Integer);
+    match names.iter().find(|(m, _)| *m == mode) {
+        Some((_, name)) => out::array(vec![raw, out::text(*name)]),
+        None => out::array(vec![raw]),
+    }
 }
 
 /// Place `view` at the render margin and size its container around it.

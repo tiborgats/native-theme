@@ -7,27 +7,29 @@
 use std::ptr::NonNull;
 
 use objc2::rc::Retained;
-use objc2::runtime::NSObjectProtocol;
-use objc2::{AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send};
+use objc2::runtime::{AnyClass, AnyObject, NSObjectProtocol};
+use objc2::{
+    AnyThread, DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send, sel,
+};
 use objc2_app_kit::{
-    NSBackingStoreType, NSBitmapFormat, NSBitmapImageFileType, NSBitmapImageRep, NSButton, NSCell,
-    NSColorSpace, NSControlTextEditingDelegate, NSDeviceRGBColorSpace, NSFont,
-    NSFontFeatureSettingsAttribute, NSFontSlantTrait, NSFontTextStyle, NSFontTextStyleBody,
-    NSFontTextStyleCallout, NSFontTextStyleCaption1, NSFontTextStyleCaption2,
-    NSFontTextStyleFootnote, NSFontTextStyleHeadline, NSFontTextStyleLargeTitle,
-    NSFontTextStyleSubheadline, NSFontTextStyleTitle1, NSFontTextStyleTitle2,
-    NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontVariationAttribute, NSFontWeightBlack,
-    NSFontWeightBold, NSFontWeightHeavy, NSFontWeightLight, NSFontWeightMedium,
+    NSAnimationContext, NSBackingStoreType, NSBezierPath, NSBitmapFormat, NSBitmapImageFileType,
+    NSBitmapImageRep, NSButton, NSCell, NSColor, NSColorSpace, NSControlTextEditingDelegate,
+    NSDeviceRGBColorSpace, NSFont, NSFontFeatureSettingsAttribute, NSFontSlantTrait,
+    NSFontTextStyle, NSFontTextStyleBody, NSFontTextStyleCallout, NSFontTextStyleCaption1,
+    NSFontTextStyleCaption2, NSFontTextStyleFootnote, NSFontTextStyleHeadline,
+    NSFontTextStyleLargeTitle, NSFontTextStyleSubheadline, NSFontTextStyleTitle1,
+    NSFontTextStyleTitle2, NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontVariationAttribute,
+    NSFontWeightBlack, NSFontWeightBold, NSFontWeightHeavy, NSFontWeightLight, NSFontWeightMedium,
     NSFontWeightRegular, NSFontWeightSemibold, NSFontWeightThin, NSFontWeightTrait,
-    NSFontWeightUltraLight, NSFontWidthTrait, NSImageView, NSLayoutManager, NSTableCellView,
-    NSTableColumn, NSTableView, NSTableViewDataSource, NSTableViewDelegate, NSTextField, NSToolbar,
-    NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
+    NSFontWeightUltraLight, NSFontWidthTrait, NSImageView, NSLayoutManager, NSPanel, NSResponder,
+    NSTableCellView, NSTableColumn, NSTableView, NSTableViewDataSource, NSTableViewDelegate,
+    NSTextField, NSToolbar, NSToolbarDelegate, NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
 use objc2_core_foundation::{CFArray, CFBundle, CFDictionary, CFRetained, CFString, CFType};
 use objc2_core_text::{CTFont, kCTFontOpticalSizeAttribute};
 use objc2_foundation::{
-    NSArray, NSDefaultRunLoopMode, NSDictionary, NSInteger, NSObject, NSRect, NSRunLoopMode,
-    NSString,
+    NSArray, NSBundle, NSDefaultRunLoopMode, NSDictionary, NSInteger, NSObject, NSRect,
+    NSRunLoopMode, NSString,
 };
 
 /// `NSFontWeightRegular`.
@@ -276,6 +278,41 @@ pub(super) fn titled_window(
     // the only one (objc2's documented pattern for NSWindow).
     unsafe { window.setReleasedWhenClosed(false) };
     Ok(window)
+}
+
+/// A titled panel (NSPanel, the titled window's style mask), not released
+/// on close: a window that can be key but never main.
+pub(super) fn titled_panel(
+    mtm: MainThreadMarker,
+    frame: NSRect,
+) -> Result<Retained<NSPanel>, String> {
+    // SAFETY: `initWithContentRect:styleMask:backing:defer:` with a plain
+    // rect, a valid style mask and backing type; the result is owned by the
+    // returned `Retained`.
+    let panel = unsafe {
+        NSPanel::initWithContentRect_styleMask_backing_defer(
+            NSPanel::alloc(mtm),
+            frame,
+            NSWindowStyleMask::Titled
+                | NSWindowStyleMask::Closable
+                | NSWindowStyleMask::Miniaturizable
+                | NSWindowStyleMask::Resizable,
+            NSBackingStoreType::Buffered,
+            false,
+        )
+    };
+    // SAFETY: as for `titled_window`: `Retained` owns the panel and the
+    // probe closes it before dropping it.
+    unsafe { panel.setReleasedWhenClosed(false) };
+    Ok(panel)
+}
+
+/// `-[NSView superview]`.
+pub(super) fn superview(view: &NSView) -> Option<Retained<NSView>> {
+    // SAFETY: a getter that only reads; the superview it returns is
+    // retained by the `Retained`, so it outlives any change to the view
+    // hierarchy the caller makes.
+    unsafe { view.superview() }
 }
 
 /// `NSDefaultRunLoopMode`, the mode the probe pumps its events in.
@@ -602,4 +639,171 @@ pub(super) fn png_data(rep: &NSBitmapImageRep) -> Result<Vec<u8>, String> {
         unsafe { rep.representationUsingType_properties(NSBitmapImageFileType::PNG, &properties) };
     data.map(|d| d.to_vec())
         .ok_or_else(|| "representationUsingType:PNG is nil".to_owned())
+}
+
+// ── Frameworks the probe reads by name ─────────────────────────────────────
+
+/// The text of the `NSString` constant `symbol` that the loaded framework
+/// `bundle_id` exports, looked up with `CFBundleGetDataPointerForName`, or
+/// why it is not there.
+pub(super) fn exported_string(
+    bundle_id: &'static str,
+    symbol: &'static str,
+) -> Result<String, String> {
+    let id = CFString::from_static_str(bundle_id);
+    let bundle = CFBundle::bundle_with_identifier(Some(&id))
+        .ok_or_else(|| format!("CFBundleGetBundleWithIdentifier({bundle_id}) is NULL"))?;
+    let name = CFString::from_static_str(symbol);
+    let pointer = bundle.data_pointer_for_name(Some(&name));
+    if pointer.is_null() {
+        return Err(format!("{bundle_id} exports no {symbol}"));
+    }
+    // SAFETY: the symbol is the framework's exported `const` string
+    // constant (`CA_EXTERN CAMediaTimingFunctionName const`, an NSString *,
+    // toll-free bridged to CFStringRef): a non-null, aligned pointer to one
+    // pointer-sized global of the loaded framework, written before its
+    // initialisers return and never after, so this reads an `extern`
+    // constant.
+    let value: *const CFString = unsafe { *pointer.cast::<*const CFString>() };
+    // SAFETY: a string the framework owns for the life of the process, never
+    // mutated; `as_ref` returns `None` for NULL.
+    let value = unsafe { value.as_ref() }.ok_or_else(|| format!("{symbol} is NULL"))?;
+    Ok(value.to_string())
+}
+
+/// `+[CAMediaTimingFunction functionWithName:]` (QuartzCore, which AppKit
+/// loads), or why there is none.
+pub(super) fn timing_function(name: &NSString) -> Result<Retained<AnyObject>, String> {
+    let class = AnyClass::get(c"CAMediaTimingFunction")
+        .ok_or_else(|| "no class CAMediaTimingFunction".to_owned())?;
+    // SAFETY: `functionWithName:` is a class method taking one NSString and
+    // returning an instance (CAMediaTimingFunction.h:35); the name is one of
+    // the framework's own constants' text; nothing is mutated.
+    let function: Option<Retained<AnyObject>> = unsafe { msg_send![class, functionWithName: name] };
+    function.ok_or_else(|| format!("functionWithName:{name} is nil"))
+}
+
+/// The four control points of a `CAMediaTimingFunction`
+/// (`getControlPointAtIndex:values:`, indices 0 to 3), or why they cannot
+/// be read.
+pub(super) fn control_points(function: &AnyObject) -> Result<[[f32; 2]; 4], String> {
+    if !function
+        .class()
+        .responds_to(sel!(getControlPointAtIndex:values:))
+    {
+        return Err("does not respond to getControlPointAtIndex:values:".to_owned());
+    }
+    let mut points = [[0f32; 2]; 4];
+    for (index, point) in points.iter_mut().enumerate() {
+        // SAFETY: the receiver responds to the selector, whose arguments
+        // are a size_t index in 0..=3 and a pointer to two floats
+        // (CAMediaTimingFunction.h:48): the pointer is to a live, aligned
+        // [f32; 2] the call only writes.
+        let () = unsafe {
+            msg_send![function, getControlPointAtIndex: index, values: point.as_mut_ptr()]
+        };
+    }
+    Ok(points)
+}
+
+/// `-[NSAnimationContext timingFunction]`, read by name: objc2-app-kit
+/// declares it only with its QuartzCore feature.
+pub(super) fn animation_timing_function(
+    context: &NSAnimationContext,
+) -> Option<Retained<AnyObject>> {
+    // SAFETY: a property getter of NSAnimationContext (NSAnimationContext.h)
+    // returning a nullable CAMediaTimingFunction; nothing is mutated.
+    unsafe { msg_send![context, timingFunction] }
+}
+
+/// AVKit loaded from `/System/Library/Frameworks/AVKit.framework`, and an
+/// `AVRoutePickerView` made with `new`, or why there is none.
+pub(super) fn route_picker_view() -> Result<Retained<NSView>, String> {
+    let path = NSString::from_str("/System/Library/Frameworks/AVKit.framework");
+    let bundle =
+        NSBundle::bundleWithPath(&path).ok_or_else(|| "bundleWithPath: AVKit is nil".to_owned())?;
+    // SAFETY: loads the system's AVKit framework, as linking it would;
+    // its initialisers are the OS's own.
+    let loaded = unsafe { bundle.load() };
+    if !loaded {
+        return Err("AVKit's bundle load returned NO".to_owned());
+    }
+    let class = AnyClass::get(c"AVRoutePickerView")
+        .ok_or_else(|| "no class AVRoutePickerView after loading AVKit".to_owned())?;
+    // SAFETY: `new` on an NSView subclass (AVKitPlatformViewClass is NSView
+    // on macOS, AVRoutePickerView.h), on the main thread, which the caller's
+    // MainThreadMarker proves; the result is owned by the `Retained`.
+    let view: Option<Retained<AnyObject>> = unsafe { msg_send![class, new] };
+    let view = view.ok_or_else(|| "AVRoutePickerView new is nil".to_owned())?;
+    view.downcast::<NSView>()
+        .map_err(|_| "AVRoutePickerView is not an NSView".to_owned())
+}
+
+/// `-[AVRoutePickerView routePickerButtonColorForState:]`.
+pub(super) fn route_picker_color(view: &NSView, state: NSInteger) -> Option<Retained<NSColor>> {
+    // SAFETY: `view` is an AVRoutePickerView, whose method takes an
+    // AVRoutePickerViewButtonState (NSInteger, 0 to 3, AVRoutePickerView.h:62-67)
+    // and returns an NSColor (AVKitPlatformColorClass on macOS); nothing is
+    // mutated.
+    let color: Option<Retained<AnyObject>> =
+        unsafe { msg_send![view, routePickerButtonColorForState: state] };
+    color.and_then(|c| c.downcast::<NSColor>().ok())
+}
+
+/// `isRoutePickerButtonBordered` of an `AVRoutePickerView`.
+pub(super) fn route_picker_bordered(view: &NSView) -> bool {
+    // SAFETY: `view` is an AVRoutePickerView; the BOOL property's getter
+    // (AVRoutePickerView.h:118-121) only reads.
+    unsafe { msg_send![view, isRoutePickerButtonBordered] }
+}
+
+/// `setRoutePickerButtonBordered:` of an `AVRoutePickerView`.
+pub(super) fn set_route_picker_bordered(view: &NSView, bordered: bool) {
+    // SAFETY: `view` is an AVRoutePickerView; the BOOL property's setter
+    // (AVRoutePickerView.h:118-121) changes only how the probe's own view
+    // draws.
+    unsafe { msg_send![view, setRoutePickerButtonBordered: bordered] }
+}
+
+// ── A plain focusable view ─────────────────────────────────────────────────
+
+define_class!(
+    // SAFETY: NSView has no subclassing requirements beyond its designated
+    // initialiser, `initWithFrame:`, which `FocusView::new` calls; it has no
+    // ivars and does not implement `Drop`.
+    #[unsafe(super(NSView, NSResponder, NSObject))]
+    #[thread_kind = MainThreadOnly]
+    #[name = "NativeThemeOsProbeFocusView"]
+    pub(super) struct FocusView;
+
+    // SAFETY: each method's selector, argument and return types are
+    // NSResponder's and NSView's (NSResponder.h, NSView.h: the focus ring
+    // API, `drawFocusRingMask` and `focusRingMaskBounds`).
+    impl FocusView {
+        #[unsafe(method(acceptsFirstResponder))]
+        fn accepts_first_responder(&self) -> bool {
+            true
+        }
+
+        #[unsafe(method(drawFocusRingMask))]
+        fn draw_focus_ring_mask(&self) {
+            NSBezierPath::fillRect(self.bounds());
+        }
+
+        #[unsafe(method(focusRingMaskBounds))]
+        fn focus_ring_mask_bounds(&self) -> NSRect {
+            self.bounds()
+        }
+    }
+);
+
+impl FocusView {
+    /// A view that accepts first responder and whose focus ring mask is its
+    /// bounds, NSView.h's way for a view to have AppKit draw its ring.
+    pub(super) fn new(mtm: MainThreadMarker, frame: NSRect) -> Retained<Self> {
+        let this = Self::alloc(mtm).set_ivars(());
+        // SAFETY: NSView's designated initialiser on an allocated instance,
+        // as objc2's `define_class!` documents.
+        unsafe { msg_send![super(this), initWithFrame: frame] }
+    }
 }

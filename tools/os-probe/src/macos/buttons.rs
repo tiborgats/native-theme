@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
-use objc2::{ClassType, MainThreadMarker, MainThreadOnly, sel};
+use objc2::{AnyThread, ClassType, MainThreadMarker, MainThreadOnly, sel};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
     NSBezelStyle, NSBitmapImageRep, NSBox, NSBoxType, NSButton, NSButtonType, NSCellImagePosition,
@@ -106,6 +106,14 @@ const DIFF_MARGIN: f64 = 6.0;
 /// The grey backdrop's sRGB byte, the same in each channel.
 const GREY_BYTE: u8 = 128;
 
+/// The patterned backdrop's image size and square size, in pixels.
+const PATTERN_SIZE: usize = 8;
+const PATTERN_SQUARE: usize = 4;
+
+/// The key-not-main mode's main window and the main-not-key mode's key
+/// panel: their content frame on the screen, clear of the sheets.
+const OTHER_FRAME: NSRect = NSRect::new(NSPoint::new(860.0, 560.0), NSSize::new(140.0, 80.0));
+
 /// How far right of the window's frame the cursor is parked, in points.
 const CURSOR_AWAY_OFFSET: f64 = 100.0;
 
@@ -137,6 +145,11 @@ pub(crate) enum Mode {
     /// The window key, two buttons focused and unfocused while the screen
     /// is recorded ([`transition`]).
     FocusTransition,
+    /// Each sheet a panel, key but not main: a titled window of the probe
+    /// made main first.
+    KeyNotMain,
+    /// Each sheet's window main but not key: a panel of the probe key.
+    MainNotKey,
 }
 
 impl Mode {
@@ -147,6 +160,8 @@ impl Mode {
             Mode::NotKey => "not_key",
             Mode::Inactive => "inactive",
             Mode::FocusTransition => "focus_transition",
+            Mode::KeyNotMain => "key_not_main",
+            Mode::MainNotKey => "main_not_key",
         }
     }
 
@@ -166,6 +181,12 @@ impl Mode {
             }
             Mode::FocusTransition => {
                 "no sheet is captured; the push sheet's window made key, and two of its buttons focused and unfocused while screencapture -v records the screen (focus_transition)"
+            }
+            Mode::KeyNotMain => {
+                "each sheet in an NSPanel (the sheet's style mask; a panel cannot become main), a small titled window of the probe made key and main first, then the panel made key (the key_not_main table): the sheet key but not main, the application active; the states normal, pressed, disabled and disabled_pressed over every backdrop; no toolbar"
+            }
+            Mode::MainNotKey => {
+                "each sheet's window made key and main, then a small titled NSPanel of the probe made key and front (the main_not_key table): the sheet's window main but not key, the application active; the states normal, pressed, disabled and disabled_pressed over every backdrop; no toolbar"
             }
         }
     }
@@ -460,8 +481,14 @@ fn sheet_window(
     mtm: MainThreadMarker,
     origin: NSPoint,
     content_size: NSSize,
+    panel: bool,
 ) -> Result<SheetParts, String> {
-    let window = ffi::titled_window(mtm, NSRect::new(origin, content_size))?;
+    let frame = NSRect::new(origin, content_size);
+    let window = if panel {
+        Retained::into_super(ffi::titled_panel(mtm, frame)?)
+    } else {
+        ffi::titled_window(mtm, frame)?
+    };
     window.setTitle(&ns(""));
     let content = window
         .contentView()
@@ -492,7 +519,17 @@ fn place(control: &NSControl, content: &NSView, x: f64, row: f64, content_height
 
 /// The push sheet: a row per control size, a column per variant.
 fn push_sheet(mtm: MainThreadMarker, version: &NSOperatingSystemVersion) -> Result<Sheet, String> {
-    let (window, content, backdrop) = sheet_window(mtm, BUTTON_WINDOW_ORIGIN, BUTTON_CONTENT_SIZE)?;
+    push_sheet_in(mtm, version, false)
+}
+
+/// The push sheet, in a panel where `panel` is set.
+fn push_sheet_in(
+    mtm: MainThreadMarker,
+    version: &NSOperatingSystemVersion,
+    panel: bool,
+) -> Result<Sheet, String> {
+    let (window, content, backdrop) =
+        sheet_window(mtm, BUTTON_WINDOW_ORIGIN, BUTTON_CONTENT_SIZE, panel)?;
     let mut notes = Table::new();
     let mut cases = Vec::new();
     let mut row = 0.0_f64;
@@ -566,14 +603,45 @@ fn push_sheet(mtm: MainThreadMarker, version: &NSOperatingSystemVersion) -> Resu
     })
 }
 
-/// A style sheet: a row per style of `styles`, a column per control size.
-fn style_sheet(
+/// What a style sheet adds to each style's control.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Extra {
+    /// Nothing: the style as `Style::setup` says.
+    None,
+    /// The Return key equivalent (`setKeyEquivalent: "\r"`) on each
+    /// NSButton: the default button's look on every bezel.
+    Default,
+    /// The symbol image beside the title (imageLeading) on each control
+    /// that shows no image yet: the image's look on every bezel.
+    Image,
+}
+
+impl Extra {
+    fn setup(self) -> &'static str {
+        match self {
+            Extra::None => "",
+            Extra::Default => {
+                "; then keyEquivalent \"\\r\" (Return) on every NSButton (an NSComboButton has no key equivalent: its rows are left out)"
+            }
+            Extra::Image => {
+                "; then, where the style shows no image, setImage: the symbol and imagePosition imageLeading on every NSButton, setImage: the symbol on an NSComboButton"
+            }
+        }
+    }
+}
+
+/// A style sheet: a row per style of `styles`, a column per control size,
+/// `extra` added to each control, in a panel where `panel` is set.
+fn style_sheet_with(
     mtm: MainThreadMarker,
     version: &NSOperatingSystemVersion,
     name: &'static str,
     styles: &[Style],
+    extra: Extra,
+    panel: bool,
 ) -> Result<Sheet, String> {
-    let (window, content, backdrop) = sheet_window(mtm, STYLE_WINDOW_ORIGIN, STYLE_CONTENT_SIZE)?;
+    let (window, content, backdrop) =
+        sheet_window(mtm, STYLE_WINDOW_ORIGIN, STYLE_CONTENT_SIZE, panel)?;
     let mut notes = Table::new();
     let mut cases = Vec::new();
     let mut row = 0.0_f64;
@@ -593,7 +661,9 @@ fn style_sheet(
                 column += 1.0;
                 continue;
             }
-            match style_control(mtm, *style, control_size) {
+            let made = style_control(mtm, *style, control_size)
+                .and_then(|made| add_extra(made, *style, extra));
+            match made {
                 Ok((control, button)) => {
                     place(
                         &control,
@@ -627,10 +697,11 @@ fn style_sheet(
         &mut notes,
         "layout",
         out::text(format!(
-            "content {} x {} pt from {}; a row per style from the top, {BUTTON_ROW_STEP} pt apart, a column per control size (mini, small, regular, large, extraLarge) every {STYLE_COLUMN_STEP} pt from x {BUTTON_MARGIN}; title \"{BUTTON_TITLE}\" unless the style's setup says otherwise; the symbol image is imageWithSystemSymbolName: \"{SYMBOL_NAME}\"",
+            "content {} x {} pt from {}; a row per style from the top, {BUTTON_ROW_STEP} pt apart, a column per control size (mini, small, regular, large, extraLarge) every {STYLE_COLUMN_STEP} pt from x {BUTTON_MARGIN}; title \"{BUTTON_TITLE}\" unless the style's setup says otherwise; the symbol image is imageWithSystemSymbolName: \"{SYMBOL_NAME}\"{}",
             STYLE_CONTENT_SIZE.width,
             STYLE_CONTENT_SIZE.height,
             point_text(STYLE_WINDOW_ORIGIN),
+            extra.setup(),
         )),
     );
     Ok(Sheet {
@@ -642,6 +713,26 @@ fn style_sheet(
         pointer_states: false,
         notes,
     })
+}
+
+/// The patterned backdrop: `colorWithPatternImage:` of an image of
+/// `PATTERN_SIZE` x `PATTERN_SIZE` px, a checkerboard of black and white
+/// squares `PATTERN_SQUARE` px on a side, opaque, tagged sRGB.
+fn pattern_color() -> Result<Retained<NSColor>, String> {
+    let mut pixels = Vec::new();
+    for y in 0..PATTERN_SIZE {
+        for x in 0..PATTERN_SIZE {
+            let square = |v: usize| v.checked_div(PATTERN_SQUARE).unwrap_or_default();
+            let dark = square(x).wrapping_add(square(y)).is_multiple_of(2);
+            let v = if dark { 0 } else { u8::MAX };
+            pixels.extend_from_slice(&[v, v, v, u8::MAX]);
+        }
+    }
+    let png = ffi::rgba_png(PATTERN_SIZE, PATTERN_SIZE, &pixels)?;
+    let data = NSData::with_bytes(&png);
+    let image = NSImage::initWithData(NSImage::alloc(), &data)
+        .ok_or_else(|| "initWithData: of the pattern is nil".to_owned())?;
+    Ok(NSColor::colorWithPatternImage(&image))
 }
 
 /// The SF Symbol the image buttons show.
@@ -735,6 +826,40 @@ fn style_control(
     Ok((Retained::into_super(b.clone()), Some(b)))
 }
 
+/// `extra` added to a style's control, as [`Extra`] says.
+fn add_extra(
+    (control, button): (Retained<NSControl>, Option<Retained<NSButton>>),
+    style: Style,
+    extra: Extra,
+) -> Result<(Retained<NSControl>, Option<Retained<NSButton>>), String> {
+    let shows_image = matches!(
+        style,
+        Style::Circular | Style::Circle | Style::IconOnly | Style::WithIcon
+    );
+    match (extra, &button) {
+        (Extra::None, _) => {}
+        (Extra::Default, Some(b)) => b.setKeyEquivalent(&ns("\r")),
+        (Extra::Default, None) => {
+            return Err("an NSComboButton has no key equivalent".to_owned());
+        }
+        (Extra::Image, _) if shows_image => {}
+        (Extra::Image, Some(b)) => {
+            let image = symbol_image()?;
+            b.setImage(Some(&image));
+            b.setImagePosition(NSCellImagePosition::ImageLeading);
+        }
+        (Extra::Image, None) => {
+            let image = symbol_image()?;
+            let obj: &AnyObject = control.as_ref();
+            let combo = obj
+                .downcast_ref::<NSComboButton>()
+                .ok_or_else(|| "neither an NSButton nor an NSComboButton".to_owned())?;
+            combo.setImage(Some(&image));
+        }
+    }
+    Ok((control, button))
+}
+
 /// What every capture of the pass shares.
 struct Pass<'a> {
     mtm: MainThreadMarker,
@@ -820,14 +945,33 @@ pub(super) fn button_pass_table(
 
     let mut sheets = Table::new();
     let style_groups: Vec<&[Style]> = Style::ALL.chunks(STYLE_ROWS).collect();
-    let mut built: Vec<Result<Sheet, String>> = vec![push_sheet(mtm, version)];
+    let panel = mode == Mode::KeyNotMain;
+    let mut built: Vec<Result<Sheet, String>> = vec![push_sheet_in(mtm, version, panel)];
     for (styles, name) in style_groups
         .iter()
         .zip(["styles_a", "styles_b", "styles_c"])
     {
-        built.push(style_sheet(mtm, version, name, styles));
+        built.push(style_sheet_with(
+            mtm,
+            version,
+            name,
+            styles,
+            Extra::None,
+            panel,
+        ));
     }
-    let names = ["push", "styles_a", "styles_b", "styles_c"];
+    let mut names = vec!["push", "styles_a", "styles_b", "styles_c"];
+    if mode == Mode::Key {
+        for (extra, group) in [
+            (Extra::Default, ["default_a", "default_b", "default_c"]),
+            (Extra::Image, ["image_a", "image_b", "image_c"]),
+        ] {
+            for (styles, name) in style_groups.iter().zip(group) {
+                built.push(style_sheet_with(mtm, version, name, styles, extra, false));
+                names.push(name);
+            }
+        }
+    }
     for (sheet, name) in built.into_iter().zip(names) {
         match sheet {
             Ok(sheet) => out::put_table(&mut sheets, name, pass.sheet(&sheet)),
@@ -836,7 +980,7 @@ pub(super) fn button_pass_table(
     }
     out::put_table(&mut t, "sheets", sheets);
 
-    if mode != Mode::Focus {
+    if matches!(mode, Mode::Key | Mode::NotKey | Mode::Inactive) {
         out::put_table(&mut t, "toolbar", extras::toolbar_table(&pass));
     }
     if mode == Mode::Key {
@@ -868,6 +1012,10 @@ fn states_table() -> Table {
         ),
         ("disabled", "setEnabled: NO on every control"),
         (
+            "disabled_pressed",
+            "setEnabled: NO on every control and -[NSButton highlight:] YES on every NSButton, as pressed; the cells' isHighlighted read back (cells_highlighted); diff_from_disabled compares it with the disabled capture as diff_from_normal does with the normal one",
+        ),
+        (
             "hovered",
             "push sheet, key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)",
         ),
@@ -887,7 +1035,7 @@ fn states_table() -> Table {
 
 fn backdrops_text() -> String {
     format!(
-        "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and {GREY_BYTE} (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin ({} pt in, half the content's height up), as #rrggbbaa",
+        "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and {GREY_BYTE} (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin ({} pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a {PATTERN_SIZE} x {PATTERN_SIZE} px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares {PATTERN_SQUARE} px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png)",
         BUTTON_MARGIN / 2.0
     )
 }
@@ -968,6 +1116,11 @@ impl Pass<'_> {
     /// Make `window` key and set the mode's condition, recorded in `t`; the
     /// second window of the not-key mode, which the caller closes.
     fn present(&self, window: &NSWindow, t: &mut Table) -> Option<Retained<NSWindow>> {
+        let main = if self.mode == Mode::KeyNotMain {
+            self.main_window(t)
+        } else {
+            None
+        };
         if self.mode == Mode::Inactive && !self.app.isActive() {
             activate_ignoring(self.app);
             let steps = pump(self.app, ACTIVATE_WAIT_STEPS, || self.app.isActive());
@@ -998,12 +1151,92 @@ impl Pass<'_> {
                 out::put_table(t, "inactive", self.deactivate());
                 None
             }
+            Mode::MainNotKey => self.key_panel(window, t),
+            Mode::KeyNotMain => {
+                if let Some(main) = &main {
+                    out::put(
+                        &mut *t,
+                        "main_window_isMainWindow",
+                        out::boolean(main.isMainWindow()),
+                    );
+                    out::put(
+                        &mut *t,
+                        "main_window_isKeyWindow",
+                        out::boolean(main.isKeyWindow()),
+                    );
+                }
+                main
+            }
             Mode::Key | Mode::Focus | Mode::FocusTransition => None,
         };
         out::put(&mut *t, "isKeyWindow", out::boolean(window.isKeyWindow()));
         out::put(&mut *t, "isMainWindow", out::boolean(window.isMainWindow()));
         out::put(&mut *t, "NSApp_isActive", out::boolean(self.app.isActive()));
         other
+    }
+
+    /// The key-not-main mode's main window: a small titled window of the
+    /// probe made key and main before the sheet's panel is made key.
+    fn main_window(&self, t: &mut Table) -> Option<Retained<NSWindow>> {
+        let mut m = Table::new();
+        out::put(&mut m, "main_window_frame_xywh", rect(OTHER_FRAME));
+        let other = match ffi::titled_window(self.mtm, OTHER_FRAME) {
+            Ok(other) => other,
+            Err(reason) => {
+                out::put(&mut m, "main_window", out::unavailable(reason));
+                out::put_table(t, "key_not_main", m);
+                return None;
+            }
+        };
+        other.setTitle(&ns("Main"));
+        other.makeKeyAndOrderFront(None);
+        let steps = pump(self.app, KEY_WAIT_STEPS, || {
+            if !self.app.isActive() {
+                activate_ignoring(self.app);
+            }
+            other.isMainWindow()
+        });
+        out::put(&mut m, "wait_steps", out::int(i64::from(steps)));
+        out::put(
+            &mut m,
+            "main_window_isMainWindow",
+            out::boolean(other.isMainWindow()),
+        );
+        out::put_table(t, "key_not_main", m);
+        Some(other)
+    }
+
+    /// The main-not-key mode's key panel: a small titled NSPanel of the
+    /// probe made key and front once the sheet's window is key and main.
+    fn key_panel(&self, window: &NSWindow, t: &mut Table) -> Option<Retained<NSWindow>> {
+        let mut k = Table::new();
+        out::put(&mut k, "panel_frame_xywh", rect(OTHER_FRAME));
+        let panel = match ffi::titled_panel(self.mtm, OTHER_FRAME) {
+            Ok(panel) => panel,
+            Err(reason) => {
+                out::put(&mut k, "panel", out::unavailable(reason));
+                out::put_table(t, "main_not_key", k);
+                return None;
+            }
+        };
+        panel.setTitle(&ns("Panel"));
+        panel.makeKeyAndOrderFront(None);
+        let steps = pump(self.app, KEY_WAIT_STEPS, || {
+            if !self.app.isActive() {
+                activate_ignoring(self.app);
+            }
+            !window.isKeyWindow()
+        });
+        out::put(&mut k, "wait_steps", out::int(i64::from(steps)));
+        out::put(&mut k, "isKeyWindow", out::boolean(window.isKeyWindow()));
+        out::put(&mut k, "isMainWindow", out::boolean(window.isMainWindow()));
+        out::put(
+            &mut k,
+            "panel_isKeyWindow",
+            out::boolean(panel.isKeyWindow()),
+        );
+        out::put_table(t, "main_not_key", k);
+        Some(Retained::into_super(panel))
     }
 
     /// Deactivate the application: `-[NSApplication deactivate]`, then, where
@@ -1070,6 +1303,13 @@ impl Pass<'_> {
             out::put_table(&mut normal, "cursor", self.move_cursor(&sheet.window, away));
         }
         let normal_shots = self.shots(sheet, &mut normal, &dir, &rel, "normal", &all, false, None);
+        if self.mode == Mode::Key {
+            out::put(
+                &mut normal,
+                "over_pattern",
+                self.pattern_shot(sheet, &dir, &rel),
+            );
+        }
         out::put_table(&mut t, "normal", normal);
         let normal_rgba = normal_shots.window;
 
@@ -1140,11 +1380,65 @@ impl Pass<'_> {
             &all,
             &sheet.window,
         );
+        out::put_table(&mut t, "disabled", disabled);
+
+        let mut disabled_pressed = Table::new();
         for case in &sheet.cases {
+            if let Some(b) = &case.button {
+                b.highlight(true);
+            }
+        }
+        self.settle(&sheet.window, SETTLE_STEPS);
+        let highlighted = sheet
+            .cases
+            .iter()
+            .filter(|c| {
+                c.button
+                    .as_ref()
+                    .and_then(|b| b.cell())
+                    .is_some_and(|cell| cell.isHighlighted())
+            })
+            .map(|c| out::text(c.name.clone()))
+            .collect();
+        out::put(
+            &mut disabled_pressed,
+            "cells_highlighted",
+            out::array(highlighted),
+        );
+        let disabled_pressed_shots = self.shots(
+            sheet,
+            &mut disabled_pressed,
+            &dir,
+            &rel,
+            "disabled_pressed",
+            &all,
+            false,
+            None,
+        );
+        diffs(
+            &mut disabled_pressed,
+            "diff_from_normal",
+            normal_rgba.as_ref(),
+            disabled_pressed_shots.window.as_ref(),
+            &all,
+            &sheet.window,
+        );
+        diffs(
+            &mut disabled_pressed,
+            "diff_from_disabled",
+            disabled_shots.window.as_ref(),
+            disabled_pressed_shots.window.as_ref(),
+            &all,
+            &sheet.window,
+        );
+        for case in &sheet.cases {
+            if let Some(b) = &case.button {
+                b.highlight(false);
+            }
             case.control.setEnabled(true);
         }
         self.settle(&sheet.window, SETTLE_STEPS);
-        out::put_table(&mut t, "disabled", disabled);
+        out::put_table(&mut t, "disabled_pressed", disabled_pressed);
 
         if pointer {
             self.pointer_states(
@@ -1523,6 +1817,24 @@ impl Pass<'_> {
     }
 
     /// Display the window and pump the run loop `steps` steps.
+    /// The normal state captured once more over the patterned backdrop
+    /// ([`pattern_color`]), to `normal-over-pattern.png`.
+    fn pattern_shot(&self, sheet: &Sheet, dir: &Path, rel: &str) -> Value {
+        let color = match pattern_color() {
+            Ok(color) => color,
+            Err(reason) => return out::unavailable(reason),
+        };
+        sheet.backdrop.setFillColor(&color);
+        sheet.backdrop.setHidden(false);
+        sheet.content.setNeedsDisplay(true);
+        self.settle(&sheet.window, SETTLE_STEPS);
+        let mut t = Table::new();
+        let _ = self.shot(&sheet.window, &mut t, dir, rel, "normal-over-pattern.png");
+        sheet.show(Backdrop::Window);
+        self.settle(&sheet.window, SETTLE_STEPS);
+        Value::Table(t)
+    }
+
     fn settle(&self, window: &NSWindow, steps: u32) {
         window.displayIfNeeded();
         pump(self.app, steps, || false);

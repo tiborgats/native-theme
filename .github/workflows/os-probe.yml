@@ -29,7 +29,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-not-key, app-bundle); empty runs every pass. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, probe-not-key, app-bundle); empty runs every pass. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -422,6 +422,57 @@ jobs:
           mkdir -p "$out"
           echo "no setting changed: the image's" > "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --inactive
+      # The window states of U93 and U133 (MP-windows of the 0.8.0
+      # measurement plan): each sheet a panel, key while another window of
+      # the probe is main (--key-not-main), and each sheet's window main
+      # while a panel of the probe is key (--main-not-key), with the image's
+      # settings; and the inactive pass with Increase Contrast on, restored
+      # after.
+      - name: Run the button pass key but not main (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-key-not-main,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-key-not-main
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --key-not-main
+      - name: Run the button pass main but not key (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-main-not-key,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-main-not-key
+          mkdir -p "$out"
+          echo "no setting changed: the image's" > "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --main-not-key
+      - name: Run the button pass with another application active and Increase Contrast on (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-inactive-contrast,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-inactive-increase-contrast-on
+          mkdir -p "$out"
+          contrast="$(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's increaseContrast: $contrast"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --inactive
+          {
+            case "$contrast" in
+              1) defaults write com.apple.universalaccess increaseContrast -bool true ;;
+              0) defaults write com.apple.universalaccess increaseContrast -bool false ;;
+              absent) defaults delete com.apple.universalaccess increaseContrast ;;
+              *) false ;;
+            esac
+            echo "restore increaseContrast to the image's ($contrast): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
       # Two more passes, each into its own folder, whatever fails: with Reduce
       # Transparency off, which the runner images turn on (probe.toml's
       # accessibilityDisplayShouldReduceTransparency), so the window section
@@ -591,6 +642,129 @@ jobs:
               *) false ;;
             esac
             echo "restore AppleAccentColor to the image's ($image): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
+      # Increase Contrast on under the red accent (U235 of the 0.8.0
+      # measurement plan, MP-accent): the selected row's colours over a
+      # second selection colour, as the main pass's red accent gives the
+      # image's settings. settings.txt records each write and read-back.
+      - name: Run the probe with Increase Contrast on and a red accent (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',probe-contrast-accent,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/increase-contrast-on-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          contrast="$(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's increaseContrast: $contrast"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          {
+            case "$contrast" in
+              1) defaults write com.apple.universalaccess increaseContrast -bool true ;;
+              0) defaults write com.apple.universalaccess increaseContrast -bool false ;;
+              absent) defaults delete com.apple.universalaccess increaseContrast ;;
+              *) false ;;
+            esac
+            echo "restore increaseContrast to the image's ($contrast): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The focus pass under the red accent (U104, MP-accent): whether the
+      # buttons' focus ring follows the accent. Keyboard navigation on, as in
+      # the focus pass; both restored after.
+      - name: Run the button pass focusing each button with a red accent (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',button-focus-accent,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-focus-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          keyboard="$(cat "$RUNNER_TEMP/universalaccess/AppleKeyboardUIMode" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleKeyboardUIMode: $keyboard"
+            defaults write -g AppleKeyboardUIMode -int 2
+            echo "write AppleKeyboardUIMode 2: exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass --focus
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          {
+            case "$keyboard" in
+              absent) defaults delete -g AppleKeyboardUIMode ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleKeyboardUIMode -int "$keyboard" ;;
+              *) false ;;
+            esac
+            echo "restore AppleKeyboardUIMode to the image's ($keyboard): exit $?"
+            echo "read back: $(defaults read -g AppleKeyboardUIMode 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 4 "$out/settings.txt"
+      # The reads pass (MP-timing U301, MP-route U323, MP-accent U104's plain
+      # view; `--reads`): Core Animation's named timing functions and the
+      # animation context's defaults, the output route button's colours and
+      # renders, and the ring round a plain focusable view; once with the
+      # image's settings, once under the red accent.
+      - name: Run the reads pass (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads,'))
+        continue-on-error: true
+        run: cargo run -p native-theme-os-probe --release -- --out os-probe-out/reads --reads
+      - name: Run the reads pass with a red accent (macOS)
+        if: runner.os == 'macOS' && (inputs.passes == '' || contains(format(',{0},', inputs.passes), ',reads-accent,'))
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/reads-accent-red
+          mkdir -p "$out"
+          accent="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+          {
+            echo "image's AppleAccentColor: $accent"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --reads
+          {
+            case "$accent" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$accent" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($accent): exit $?"
             echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
           } >> "$out/settings.txt" 2>&1
           tail -n 2 "$out/settings.txt"

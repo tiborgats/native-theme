@@ -268,7 +268,7 @@ pub(super) fn line_height_table(mtm: MainThreadMarker) -> Table {
         &mut t,
         "method",
         out::text(format!(
-            "per font, plain and with NSFontDescriptorTraitTightLeading and NSFontDescriptorTraitLooseLeading added to its fontDescriptor's symbolicTraits (fontDescriptorWithSymbolicTraits:, fontWithDescriptor:size: 0; symbolicTraits_set says which traits the font then has): fontName, pointSize, ascender, descender, leading; defaultLineHeightForFont: and defaultBaselineOffsetForFont: of a new NSLayoutManager; laid_out: an NSTextStorage of {two:?} with setFont: the font, an NSLayoutManager and an NSTextContainer {LAYOUT_WIDTH} pt wide (lineFragmentPadding 0), ensureLayoutForTextContainer:, then lineFragmentRectForGlyphAtIndex:effectiveRange: of the first line's first glyph and the second line's (glyphIndexForCharacterAtIndex: 3), their heights and the second's origin y less the first's (line_advance), and usedRectForTextContainer:'s height; NSTextField: labelWithString: of \"Ag\" and of {two:?}, and wrappingLabelWithString: of {two:?} with preferredMaxLayoutWidth {LAYOUT_WIDTH}, each with setFont: the font, their fittingSize; the fonts: preferredFontForTextStyle:options: per text style and its emphasized font (as [macos.fonts]), labelFontOfSize:, messageFontOfSize:, paletteFontOfSize:, menuBarFontOfSize:, controlContentFontOfSize: at size 0, systemFontOfSize: of smallSystemFontSize and of systemFontSizeForControlSize: per control size",
+            "per font, plain and with NSFontDescriptorTraitTightLeading and NSFontDescriptorTraitLooseLeading added to its fontDescriptor's symbolicTraits (fontDescriptorWithSymbolicTraits:, fontWithDescriptor:size: 0; symbolicTraits_set says which traits the font then has): fontName, pointSize, ascender, descender, leading; defaultLineHeightForFont: and defaultBaselineOffsetForFont: of a new NSLayoutManager; laid_out: an NSTextStorage of {two:?} with setFont: the font, an NSLayoutManager and an NSTextContainer {LAYOUT_WIDTH} pt wide (lineFragmentPadding 0), ensureLayoutForTextContainer:, then lineFragmentRectForGlyphAtIndex:effectiveRange: of the first line's first glyph and the second line's (glyphIndexForCharacterAtIndex: 3), their heights and the second's origin y less the first's (line_advance), and usedRectForTextContainer:'s height; NSTextField: labelWithString: of \"Ag\" and of {two:?}, and wrappingLabelWithString: of {two:?} with preferredMaxLayoutWidth {LAYOUT_WIDTH}, each with setFont: the font, their fittingSize; the fonts: preferredFontForTextStyle:options: per text style and its emphasized font (as [macos.fonts]), labelFontOfSize:, messageFontOfSize:, paletteFontOfSize:, menuBarFontOfSize:, controlContentFontOfSize: at size 0, systemFontOfSize: of smallSystemFontSize and of systemFontSizeForControlSize: per control size, userFixedPitchFontOfSize: at size 0, monospacedSystemFontOfSize:weight: and monospacedDigitSystemFontOfSize:weight: at systemFontSize and NSFontWeightRegular (as [macos.fonts]); each leading-trait font also with [macos.fonts]' reads of a font (familyName, weightTrait and its nearest NSFontWeight, capHeight, xHeight and the descriptor table)",
             two = TWO_LINES,
         )),
     );
@@ -304,6 +304,27 @@ pub(super) fn line_height_table(mtm: MainThreadMarker) -> Table {
         "systemFontOfSize_smallSystemFontSize".to_owned(),
         Ok(NSFont::systemFontOfSize(NSFont::smallSystemFontSize())),
     ));
+    fonts.push((
+        "named.userFixedPitchFontOfSize".to_owned(),
+        NSFont::userFixedPitchFontOfSize(0.0)
+            .ok_or_else(|| "userFixedPitchFontOfSize: returned nil".to_owned()),
+    ));
+    let monospaced: [(&str, super::FontOfSizeWeight); 2] = [
+        (
+            "monospacedSystemFontOfSize_weight",
+            NSFont::monospacedSystemFontOfSize_weight,
+        ),
+        (
+            "monospacedDigitSystemFontOfSize_weight",
+            NSFont::monospacedDigitSystemFontOfSize_weight,
+        ),
+    ];
+    for (name, make) in monospaced {
+        fonts.push((
+            format!("named.{name}"),
+            ffi::font_weight_regular().map(|regular| make(NSFont::systemFontSize(), regular)),
+        ));
+    }
     for (name, control_size) in CONTROL_SIZES {
         fonts.push((
             format!("systemFontOfSize_systemFontSizeForControlSize.{name}"),
@@ -358,7 +379,13 @@ fn leadings_table(mtm: MainThreadMarker, font: &NSFont) -> Table {
     ] {
         let with = descriptor.fontDescriptorWithSymbolicTraits(descriptor.symbolicTraits() | bit);
         match NSFont::fontWithDescriptor_size(&with, 0.0) {
-            Some(f) => out::put_table(&mut t, name, line_table(mtm, &f)),
+            Some(f) => {
+                let mut lt = line_table(mtm, &f);
+                for (key, value) in super::font_table(&f) {
+                    lt.entry(key).or_insert(value);
+                }
+                out::put_table(&mut t, name, lt);
+            }
             None => out::put(
                 &mut t,
                 name,

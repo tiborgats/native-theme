@@ -19,7 +19,7 @@ use std::path::Path;
 
 use block2::RcBlock;
 use objc2::rc::Retained;
-use objc2::runtime::{AnyObject, NSObjectProtocol, ProtocolObject};
+use objc2::runtime::{AnyObject, ProtocolObject};
 use objc2::{AnyThread, MainThreadMarker, MainThreadOnly, Message};
 use objc2_app_kit::{
     NSAlert, NSAlertStyle, NSAppearance, NSAppearanceCustomization, NSApplication,
@@ -28,7 +28,7 @@ use objc2_app_kit::{
     NSImageSymbolConfiguration, NSImageSymbolScale, NSImageView, NSScrollView, NSSegmentedControl,
     NSStatusBar, NSTableCellView, NSTableColumn, NSTableView, NSTableViewRowSizeStyle,
     NSTableViewStyle, NSTextField, NSToolbar, NSToolbarDisplayMode, NSToolbarItem,
-    NSToolbarSizeMode, NSVariableStatusItemLength, NSView, NSWindow,
+    NSVariableStatusItemLength, NSView, NSWindow,
 };
 use objc2_foundation::{NSOperatingSystemVersion, NSPoint, NSRect, NSSize};
 use toml::{Table, Value};
@@ -354,7 +354,7 @@ fn image_table(image: &NSImage) -> Table {
     out::put(
         &mut t,
         "symbolConfiguration_description",
-        out::text(image.symbolConfiguration().description().to_string()),
+        out::text(format!("{:?}", image.symbolConfiguration())),
     );
     out::put(
         &mut t,
@@ -368,10 +368,7 @@ fn image_table(image: &NSImage) -> Table {
 
 /// A symbol configuration's description, or that there is none.
 fn configuration_value(config: Option<Retained<NSImageSymbolConfiguration>>) -> Value {
-    config.map_or_else(
-        || out::text("nil"),
-        |c| out::text(c.description().to_string()),
-    )
+    config.map_or_else(|| out::text("nil"), |c| out::text(format!("{c:?}")))
 }
 
 /// The reference grid: the references and their table, one row per
@@ -1187,6 +1184,9 @@ impl Ctx<'_> {
 
     /// Toolbars with a bordered and a plain image item, per size mode and
     /// display mode, in a key titled window.
+    // NSToolbarSizeMode is deprecated (AppKit says it will ignore it), still
+    // set and read.
+    #[allow(deprecated)]
     fn toolbar(&self) -> Table {
         let mut t = Table::new();
         out::put(
@@ -1197,8 +1197,8 @@ impl Ctx<'_> {
             ),
         );
         for (size_name, size_mode) in [
-            ("regular", NSToolbarSizeMode::Regular),
-            ("small", NSToolbarSizeMode::Small),
+            ("regular", objc2_app_kit::NSToolbarSizeMode::Regular),
+            ("small", objc2_app_kit::NSToolbarSizeMode::Small),
         ] {
             for (display_name, display) in [
                 ("iconOnly", NSToolbarDisplayMode::IconOnly),
@@ -1211,10 +1211,11 @@ impl Ctx<'_> {
         t
     }
 
+    #[allow(deprecated)]
     fn toolbar_case(
         &self,
         case: &str,
-        size_mode: NSToolbarSizeMode,
+        size_mode: objc2_app_kit::NSToolbarSizeMode,
         display: NSToolbarDisplayMode,
     ) -> Table {
         let mut t = Table::new();
@@ -1389,7 +1390,7 @@ impl Ctx<'_> {
             let window = alert.window();
             out::put(&mut a, "window_frame_xywh", rect(window.frame()));
             let mut rows = Vec::new();
-            if let Some(root) = window.contentView().and_then(|c| c.superview()) {
+            if let Some(root) = window.contentView().and_then(|c| ffi::superview(&c)) {
                 walk(&root, 0, &mut |view, depth| {
                     let obj: &AnyObject = view.as_ref();
                     if let Some(iv) = obj.downcast_ref::<NSImageView>() {
@@ -1446,7 +1447,7 @@ impl Kind {
 /// image views or buttons whose image has the probe's description.
 fn find_symbol_views(window: &NSWindow) -> Vec<Retained<NSView>> {
     let mut found = Vec::new();
-    let Some(root) = window.contentView().and_then(|c| c.superview()) else {
+    let Some(root) = window.contentView().and_then(|c| ffi::superview(&c)) else {
         return found;
     };
     walk(&root, 0, &mut |view, _| {
@@ -1469,7 +1470,7 @@ fn find_symbol_views(window: &NSWindow) -> Vec<Retained<NSView>> {
 /// and frame in the window.
 fn walk_value(window: &NSWindow) -> Value {
     let mut rows = Vec::new();
-    let Some(root) = window.contentView().and_then(|c| c.superview()) else {
+    let Some(root) = window.contentView().and_then(|c| ffi::superview(&c)) else {
         return out::unavailable("the content view has no superview");
     };
     walk(&root, 0, &mut |view, depth| {
