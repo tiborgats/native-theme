@@ -817,7 +817,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X18 | `Font.family (the system designs rounded, serif and monospaced, by their family names)` | field |
 | MAC-X18 | `token.text.roles.*` | token |
 | MAC-X18 | `token.text.rendering (font smoothing; R25.7)` | token |
-| MAC-X18 | `reader:macos:NSFont and NSFontDescriptor (tracking, width, design, weight per style)` | reader |
+| MAC-X18 | `reader:macos:NSFont and NSFontDescriptor (tracking, width, design, weight per style: the drawn face's wght coordinate, never the weight trait; S2.8 Weight, ADD-A136)` | reader |
 | MAC-X19 | `PartStyle.icon.fill @ {pressed} / {disabled} / {selected} (template images and SF Symbols per state)` | rule |
 | MAC-X19 | `list.leading_icon.icon.fill @ variant sidebar (the accent)` | rule |
 | MAC-X19 | `list.leading_icon.icon.fill @ {selected} context list.view {focus_within} (on an emphasized selection)` | rule |

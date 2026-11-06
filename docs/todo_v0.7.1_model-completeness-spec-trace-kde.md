@@ -1012,11 +1012,11 @@ Each of these rows' drawn-text leaves has a source, so none holds a register id 
 | Q2.58† | `dialog @ variant full_size cond mobile_form_factor (a narrower window: the full-window layer, Q2.15) / variant separate_window (the desktop); dialog.values.natural_size @ variant separate_window` | rule |
 | Q2.58† | `dialog.values.breakpoints @ cond mobile_form_factor` (measured Window, width AtMost the row's grid-unit width, setting `full_size`: the complement of `PageRow`'s "wider than" for the in-window dialog; R16) | rule |
 | K3.1 | `window.frame.shadow (= Shadow::Elevation of the ShadowSize step the reader reads; its box radius follows window.frame.corners)` | field |
-| K3.1 | `token.elevation.<key> (Breeze's window shadow sizes: two layers and a composite offset each, each layer's spread Shadow_Overlap negated and its own corners the window's radius plus half a pixel; S2.5, ADD-A135, ADD-A136)` | token |
+| K3.1 | `token.elevation.<key> (Breeze's window shadow sizes: two layers and a composite offset each, each layer's spread Shadow_Overlap negated and its own corner radius the window's radius plus half a pixel; S2.5, ADD-A135, ADD-A136)` | token |
 | K3.1 | `token.params.shadow.strength (ADD-A44)` | token |
 | K3.1 | `reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor` | reader |
 | K3.2 | `menu.body.shadow, tooltip.body.shadow, popover.body.shadow, toolbar.bar.shadow @ variant floating, menu.body.shadow @ context combo_box` | field |
-| K3.2 | `token.elevation.<key> (Breeze's popup shadow sizes: each layer's spread Shadow_Overlap negated and its own corners the frame radius; S2.5, ADD-A136)` | token |
+| K3.2 | `token.elevation.<key> (Breeze's popup shadow sizes: each layer's spread kstyle's Shadow_Overlap negated and its own corner radius the frame radius; S2.5, ADD-A136)` | token |
 | K3.2 | `reader:kde:breezerc [Common] ShadowSize, ShadowStrength, ShadowColor` | reader |
 | K3.3 | `component.mdi_sub_window.frame.shadow (the K3.2 table round sub-windows)` | component |
 | K3.4 | `button.body.shadow` | field |
