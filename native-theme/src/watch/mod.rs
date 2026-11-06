@@ -5,8 +5,7 @@
 //! This module provides the public API for monitoring OS theme changes at
 //! runtime. Call [`on_theme_change()`](crate::watch::on_theme_change) with a callback to start watching;
 //! the returned [`ThemeSubscription`] keeps the watcher alive via RAII semantics
-//! -- dropping it stops the watcher and joins the background thread (macOS has
-//! no watcher thread: dropping it removes the notification observer).
+//! -- dropping it stops the watcher and joins the background thread.
 //!
 //! # RAII ownership model
 //!
@@ -17,11 +16,10 @@
 //!
 //! # Shutdown mechanism
 //!
-//! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases
-//! (on macOS only the first, which removes the observer):
+//! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases:
 //!
 //! 1. **Platform-specific wakeup** -- where the backend has one, it runs
-//!    first (GNOME closes its D-Bus connection, Windows posts `WM_QUIT`).
+//!    first (GNOME closes its D-Bus connection).
 //!    This wakes the background thread's event loop so it can observe the
 //!    disconnect.
 //! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
@@ -33,11 +31,9 @@
 //! # Signal-only events
 //!
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
-//! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
-//! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme: the detection values the reader uses (the font
-//! DPI, dark mode, the icon theme, the accessibility preferences) stay cached
-//! until the caches are cleared.
+//! call [`Theme::reload_reader()`](crate::Theme::reload_reader), which reads
+//! the system again into the theme's reader layer (clearing the detection
+//! caches it reads through first), and resolve the windows again (S16).
 //!
 //! # Example
 //!
@@ -49,26 +45,16 @@
 //!     let _ = tx.send(event);
 //! })?;
 //!
-//! // On your UI thread:
+//! // On your UI thread, with the theme `Theme::from_system` built:
 //! // if let Ok(event) = rx.try_recv() {
-//! //     native_theme::detect::invalidate_caches();
-//! //     let theme = native_theme::SystemTheme::from_system()?;
-//! //     // re-apply theme ...
+//! //     let status = theme.reload_reader();
+//! //     // resolve the windows again ...
 //! // }
-//! # Ok::<(), native_theme::error::Error>(())
+//! # Ok::<(), native_theme::Error>(())
 //! ```
-
-#[cfg(all(feature = "watch", feature = "kde", target_os = "linux"))]
-mod kde;
 
 #[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
 mod gnome;
-
-#[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
-mod macos;
-
-#[cfg(all(feature = "watch", feature = "windows", target_os = "windows"))]
-mod windows;
 
 use std::sync::mpsc;
 use std::thread::JoinHandle;
@@ -77,23 +63,9 @@ use std::thread::JoinHandle;
 ///
 /// This enum carries no theme data -- it is a notification only.
 /// When you receive an event, call
-/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), then
-/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-/// to read the updated theme; without the first call, the reader's detection
-/// values (the font DPI, dark mode, the icon theme) are the cached ones.
-///
-/// # Non-exhaustive
-///
-/// Future versions may add new variants. Always include a wildcard arm:
-///
-/// ```ignore
-/// match event {
-///     ThemeChangeEvent::Changed => { /* ... */ }
-///     _ => { /* handle future variants */ }
-/// }
-/// ```
+/// [`Theme::reload_reader()`](crate::Theme::reload_reader) to read the
+/// system again.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
 pub enum ThemeChangeEvent {
     /// The OS theme changed.
     Changed,
@@ -103,8 +75,7 @@ pub enum ThemeChangeEvent {
 ///
 /// Holds a background thread and a shutdown channel. When dropped, the
 /// channel sender is dropped (signaling shutdown via disconnection) and
-/// the background thread is joined. On macOS it holds the notification
-/// observer instead, and dropping it removes the observer.
+/// the background thread is joined.
 ///
 /// Note: `ThemeSubscription` is `Send` but not `Sync`. The background thread
 /// handle and shutdown channel are not safe to share across threads, but the
@@ -116,15 +87,10 @@ pub enum ThemeChangeEvent {
 /// starts finishes before the drop returns, and none runs after it. A
 /// callback may drop its own subscription: the drop then runs on the watcher
 /// thread, so it does not join it but detaches it, and the thread exits once
-/// the callback returns. On macOS, where there is no watcher thread,
-/// dropping removes the observer and waits for a callback already queued to
-/// finish; dropped from inside the callback, it returns without waiting, and
-/// a notification already queued can still run the callback once.
+/// the callback returns.
 ///
 /// Because the drop waits for the callback, it deadlocks if a callback waits
-/// on a lock the dropping thread holds, or, on macOS, dispatches
-/// synchronously to the main thread while the main thread drops the
-/// subscription.
+/// on a lock the dropping thread holds.
 ///
 /// # Important
 ///
@@ -169,11 +135,7 @@ impl ThemeSubscription {
     /// backend closes its D-Bus connection here.
     ///
     /// Compiled where a backend exists to call it, and for tests.
-    #[cfg(any(
-        test,
-        all(target_os = "linux", any(feature = "kde", feature = "portal")),
-        all(target_os = "windows", feature = "windows"),
-    ))]
+    #[cfg(any(test, all(target_os = "linux", feature = "portal")))]
     pub(crate) fn new(
         shutdown_tx: mpsc::Sender<()>,
         thread: JoinHandle<()>,
@@ -185,25 +147,13 @@ impl ThemeSubscription {
             platform_shutdown,
         }
     }
-
-    /// Create a `ThemeSubscription` for a watcher without a thread: dropping
-    /// it only runs `platform_shutdown`.
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    pub(crate) fn from_platform_shutdown(platform_shutdown: Box<dyn FnOnce() + Send>) -> Self {
-        Self {
-            shutdown_tx: None,
-            thread: None,
-            platform_shutdown: Some(platform_shutdown),
-        }
-    }
 }
 
 impl Drop for ThemeSubscription {
     fn drop(&mut self) {
-        // Run the platform-specific shutdown action first (PostThreadMessageW
-        // WM_QUIT on Windows, Connection::close on GNOME) to wake the blocked
-        // event loop so it can observe the channel disconnect; on macOS it
-        // removes the notification observer.
+        // Run the platform-specific shutdown action first (Connection::close
+        // on GNOME) to wake the blocked event loop so it can observe the
+        // channel disconnect.
         if let Some(shutdown_fn) = self.platform_shutdown.take() {
             shutdown_fn();
         }
@@ -225,12 +175,7 @@ impl Drop for ThemeSubscription {
 /// a callback that panics loses that one event, and the watcher keeps
 /// running. This holds with the default `panic = "unwind"`; under
 /// `panic = "abort"` a panicking callback aborts the process.
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal")),
-    all(target_os = "macos", feature = "macos"),
-    all(target_os = "windows", feature = "windows"),
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         callback(ThemeChangeEvent::Changed)
@@ -244,30 +189,18 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// and the callback fires once for all of them. The value is T20's KDE
 /// window, reused on every platform to keep one user action one event: a
 /// design value, not a platform fact.
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal")),
-    all(target_os = "macos", feature = "macos"),
-    all(target_os = "windows", feature = "windows"),
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 const DEBOUNCE_MS: u32 = 300;
 
 /// [`DEBOUNCE_MS`] as a [`Duration`](std::time::Duration).
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal")),
-    all(target_os = "macos", feature = "macos"),
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_MS as u64);
 
 /// Fire `callback` once per burst of relevant messages from `events`,
 /// [`DEBOUNCE`] after the last of them; `is_relevant` sorts them. Returns
 /// when `events` disconnects or `shutdown` is signalled or disconnected,
 /// which is checked on every iteration, at least every 200ms.
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal"))
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 fn fire_debounced<T>(
     events: &mpsc::Receiver<T>,
     shutdown: &mpsc::Receiver<()>,
@@ -305,10 +238,7 @@ fn fire_debounced<T>(
 /// fired arrived, and whether its burst is due. Every method takes the time
 /// as an argument, so the tests drive it with made-up instants: what a
 /// burst fires does not depend on how the test machine schedules threads.
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal"))
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 #[derive(Debug, Default)]
 struct Debounce {
     /// When the last relevant message not yet fired arrived; `None` while
@@ -316,10 +246,7 @@ struct Debounce {
     last: Option<std::time::Instant>,
 }
 
-#[cfg(any(
-    test,
-    all(target_os = "linux", any(feature = "kde", feature = "portal"))
-))]
+#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
 impl Debounce {
     /// A relevant message arrived at `now`: the pending burst, or a new
     /// one, is due [`DEBOUNCE`] after it.
@@ -365,43 +292,24 @@ impl Debounce {
 ///     let _ = tx.send(event);
 /// })?;
 ///
-/// // On UI thread:
-/// // match rx.try_recv() {
-/// //     Ok(ThemeChangeEvent::Changed) => {
-/// //         native_theme::detect::invalidate_caches();
-/// //         let theme = native_theme::SystemTheme::from_system()?;
-/// //         // re-apply theme ...
-/// //     }
-/// //     _ => {}
+/// // On UI thread, with the theme `Theme::from_system` built:
+/// // if let Ok(ThemeChangeEvent::Changed) = rx.try_recv() {
+/// //     let status = theme.reload_reader();
+/// //     // resolve the windows again ...
 /// // }
-/// # Ok::<(), native_theme::error::Error>(())
+/// # Ok::<(), native_theme::Error>(())
 /// ```
 ///
-/// Clear the detection caches before the re-read, as above: the reader's
-/// detection values (the font DPI, dark mode, the icon theme, the
-/// accessibility preferences) are cached until
-/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches).
+/// [`Theme::reload_reader`](crate::Theme::reload_reader) clears the
+/// detection caches it reads through before it reads.
 ///
-/// On macOS the change arrives as a distributed notification, which is
-/// delivered through the process's main run loop, so the application must be
-/// running one in a common mode; every GUI toolkit's event loop does
-/// (AppKit's `NSApplication::run`). See Apple's Notification Programming
-/// Topics, ["Notification Centers"](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Notifications/Articles/NotificationCenters.html).
-/// The callback then runs on a private serial queue, never on the main
-/// thread and never twice at once.
-///
-/// The watcher observes what the platform's reader reads (each reader
-/// module lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals`
-/// and `kcmfonts` in the config directory; on GNOME and Budgie the
-/// portal's `SettingChanged` for the `org.freedesktop.appearance` settings
-/// and the `org.gnome.desktop.interface`, `org.gnome.desktop.wm.preferences`
-/// and `org.gnome.desktop.a11y.interface` keys the reader reads; on macOS
-/// the appearance, system-colour, scroller-style and accessibility-display
-/// notifications; on Windows `UISettings::ColorValuesChanged`,
-/// `TextScaleFactorChanged`, `AnimationsEnabledChanged` and
-/// `AdvancedEffectsEnabledChanged` (a change of high contrast is announced to
-/// top-level windows only, and the watcher has none). One change can raise several of them, so the
-/// callback fires once per burst, 300 ms after the last.
+/// The watcher observes what the platform's reader reads (the reader module
+/// lists its sources): on GNOME and Budgie the portal's `SettingChanged`
+/// for the `org.freedesktop.appearance` settings and the
+/// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
+/// keys the reader reads. One change can raise several of them, so the
+/// callback fires once per burst, 300 ms after the last. The KDE, macOS
+/// and Windows watchers return with their readers.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
 /// the watcher keeps running (with the default `panic = "unwind"`; under
@@ -410,11 +318,10 @@ impl Debounce {
 /// for.
 ///
 /// On Linux the backend is the one of the desktop the reader is chosen by:
-/// KDE's for KDE (with the `kde` feature), GNOME's for GNOME and Budgie (with
-/// `portal`). An unrecognised `XDG_CURRENT_DESKTOP` counts as the desktop of
-/// its portal backend once a system read such as
-/// [`SystemTheme::from_system`](crate::SystemTheme::from_system) has asked
-/// it, else as KDE where the user's `kdeglobals` exists.
+/// GNOME's for GNOME and Budgie (with `portal`). An unrecognised
+/// `XDG_CURRENT_DESKTOP` counts as the desktop of its portal backend, which
+/// this asks, as [`Theme::from_system`](crate::Theme::from_system) does,
+/// else as KDE where the user's `kdeglobals` exists.
 ///
 /// # Errors
 ///
@@ -422,27 +329,17 @@ impl Debounce {
 /// platform-specific backend is available for the current desktop
 /// environment or platform, and
 /// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
-/// not start: KDE, the config directory is unresolved (`$XDG_CONFIG_HOME` is
-/// not an absolute path and `$HOME` is unset or empty) or cannot be watched
-/// (it does not exist, or the inotify limits are reached); GNOME and Budgie,
-/// the watcher thread could not connect to the session bus or subscribe to
-/// the portal's `SettingChanged` signal; Windows, the watcher thread did not
-/// start or could not subscribe to `UISettings::ColorValuesChanged` or
-/// `TextScaleFactorChanged`. The KDE backend sets up its watch on the
-/// calling thread, and the GNOME and Windows backends return only once their
-/// thread is subscribed; the macOS backend registers its observer on the
-/// calling thread and does not fail.
+/// not start: the watcher thread could not connect to the session bus or
+/// subscribe to the portal's `SettingChanged` signal. The GNOME backend
+/// returns only once its thread is subscribed.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
     #[cfg(target_os = "linux")]
     {
-        #[cfg(not(any(feature = "kde", feature = "portal")))]
+        #[cfg(not(feature = "portal"))]
         let _ = callback;
-        match linux_backend(crate::detect::system().refined_linux_desktop_sync()) {
-            #[cfg(feature = "kde")]
-            Some(LinuxBackend::Kde) => kde::watch_kde(callback),
-
+        match linux_backend(pollster::block_on(crate::detect::refined_linux_desktop())) {
             #[cfg(feature = "portal")]
             Some(LinuxBackend::Gnome) => gnome::watch_gnome(callback),
 
@@ -452,34 +349,12 @@ pub fn on_theme_change(
         }
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
-        #[cfg(feature = "macos")]
-        {
-            macos::watch_macos(callback)
-        }
-        #[cfg(not(feature = "macos"))]
-        {
-            let _ = callback;
-            Err(crate::Error::WatchUnavailable {
-                reason: "enable the 'macos' feature for macOS theme watching",
-            })
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        #[cfg(feature = "windows")]
-        {
-            windows::watch_windows(callback)
-        }
-        #[cfg(not(feature = "windows"))]
-        {
-            let _ = callback;
-            Err(crate::Error::WatchUnavailable {
-                reason: "enable the 'windows' feature for Windows theme watching",
-            })
-        }
+        let _ = callback;
+        Err(crate::Error::WatchUnavailable {
+            reason: "this platform's watcher returns with its reader",
+        })
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -495,9 +370,6 @@ pub fn on_theme_change(
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LinuxBackend {
-    /// [`kde::watch_kde`].
-    #[cfg(feature = "kde")]
-    Kde,
     /// [`gnome::watch_gnome`].
     #[cfg(feature = "portal")]
     Gnome,
@@ -507,12 +379,12 @@ enum LinuxBackend {
 /// chosen by ([`crate::detect::refine_linux_desktop`]); `None` where there is
 /// none.
 #[cfg(target_os = "linux")]
-fn linux_backend(desktop: crate::LinuxDesktop) -> Option<LinuxBackend> {
+fn linux_backend(desktop: crate::detect::LinuxDesktop) -> Option<LinuxBackend> {
     match desktop {
-        #[cfg(feature = "kde")]
-        crate::LinuxDesktop::Kde => Some(LinuxBackend::Kde),
         #[cfg(feature = "portal")]
-        crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => Some(LinuxBackend::Gnome),
+        crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
+            Some(LinuxBackend::Gnome)
+        }
         _ => None,
     }
 }
@@ -522,29 +394,15 @@ fn linux_backend(desktop: crate::LinuxDesktop) -> Option<LinuxBackend> {
 mod tests {
     use super::*;
 
-    /// The watcher follows the reader on an unrecognised desktop: a KDE
-    /// portal backend gets KDE's watcher (M4-36).
-    #[cfg(all(target_os = "linux", feature = "kde"))]
-    #[test]
-    fn an_unknown_desktop_with_a_kde_portal_is_watched_as_kde() {
-        for kdeglobals in [false, true] {
-            let desktop = crate::detect::refine_linux_desktop(
-                crate::LinuxDesktop::Unknown,
-                Some(crate::LinuxDesktop::Kde),
-                || kdeglobals,
-            );
-            assert_eq!(linux_backend(desktop), Some(LinuxBackend::Kde));
-        }
-    }
-
-    /// A GNOME portal backend gets GNOME's watcher, `kdeglobals` or not.
+    /// The watcher follows the reader on an unrecognised desktop: a GNOME
+    /// portal backend gets GNOME's watcher, `kdeglobals` or not (M4-36).
     #[cfg(all(target_os = "linux", feature = "portal"))]
     #[test]
     fn an_unknown_desktop_with_a_gnome_portal_is_watched_as_gnome() {
         for kdeglobals in [false, true] {
             let desktop = crate::detect::refine_linux_desktop(
-                crate::LinuxDesktop::Unknown,
-                Some(crate::LinuxDesktop::Gnome),
+                crate::detect::LinuxDesktop::Unknown,
+                Some(crate::detect::LinuxDesktop::Gnome),
                 || kdeglobals,
             );
             assert_eq!(linux_backend(desktop), Some(LinuxBackend::Gnome));
@@ -556,26 +414,18 @@ mod tests {
     #[test]
     fn an_unknown_desktop_that_nothing_names_is_not_watched() {
         let desktop =
-            crate::detect::refine_linux_desktop(crate::LinuxDesktop::Unknown, None, || false);
+            crate::detect::refine_linux_desktop(crate::detect::LinuxDesktop::Unknown, None, || {
+                false
+            });
         assert_eq!(linux_backend(desktop), None);
     }
 
-    /// The source-to-notification table (M1-T6-08): for each reader, every
-    /// source its module lists under `# Sources`, and the notification its
-    /// watcher observes for it: a file in the config directory (KDE), a
-    /// `namespace key` of the portal's `SettingChanged` (GNOME), a
-    /// notification name (macOS) or a `UISettings` event (Windows).
+    /// The source-to-notification table (M1-T6-08): for each linked reader,
+    /// every source its module lists under `# Sources`, and the notification
+    /// its watcher observes for it: a `namespace key` of the portal's
+    /// `SettingChanged` (GNOME). The KDE, macOS and Windows rows return with
+    /// their readers.
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
-        ("kde", "kdeglobals", "kdeglobals"),
-        ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
-        ("kde", "kcmfonts", "kcmfonts"),
-        // xdg-desktop-portal-kde's accent is the palette's highlight, which
-        // the colour scheme in kdeglobals sets.
-        (
-            "kde",
-            "org.freedesktop.appearance accent-color",
-            "kdeglobals",
-        ),
         (
             "gnome",
             "org.freedesktop.appearance color-scheme",
@@ -608,16 +458,6 @@ mod tests {
         ),
         (
             "gnome",
-            "org.gnome.desktop.interface font-name",
-            "org.gnome.desktop.interface font-name",
-        ),
-        (
-            "gnome",
-            "org.gnome.desktop.interface monospace-font-name",
-            "org.gnome.desktop.interface monospace-font-name",
-        ),
-        (
-            "gnome",
             "org.gnome.desktop.interface text-scaling-factor",
             "org.gnome.desktop.interface text-scaling-factor",
         ),
@@ -633,58 +473,18 @@ mod tests {
         ),
         (
             "gnome",
-            "org.gnome.desktop.wm.preferences titlebar-font",
-            "org.gnome.desktop.wm.preferences titlebar-font",
+            "org.gnome.desktop.a11y.interface high-contrast",
+            "org.gnome.desktop.a11y.interface high-contrast",
         ),
         (
             "gnome",
-            "org.gnome.desktop.a11y.interface high-contrast",
-            "org.gnome.desktop.a11y.interface high-contrast",
-        ),
-        (
-            "macos",
-            "AppleInterfaceStyle",
-            "AppleInterfaceThemeChangedNotification",
-        ),
-        ("macos", "NSColor", "NSSystemColorsDidChangeNotification"),
-        (
-            "macos",
-            "NSScroller.preferredScrollerStyle",
-            "NSPreferredScrollerStyleDidChangeNotification",
-        ),
-        (
-            "macos",
-            "NSWorkspace.accessibilityDisplayOptions",
-            "NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification",
-        ),
-        ("windows", "UISettings.GetColorValue", "ColorValuesChanged"),
-        (
-            "windows",
-            "UISettings.TextScaleFactor",
-            "TextScaleFactorChanged",
-        ),
-        // `UISettings.AnimationsEnabled` and SPI_GETCLIENTAREAANIMATION read
-        // the same on the three Windows probe images; no page says they are
-        // one setting.
-        (
-            "windows",
-            "SPI_GETCLIENTAREAANIMATION",
-            "AnimationsEnabledChanged",
-        ),
-        (
-            "windows",
-            "UISettings.AdvancedEffectsEnabled",
-            "AdvancedEffectsEnabledChanged",
+            "org.gnome.desktop.a11y.interface reduced-motion",
+            "org.gnome.desktop.a11y.interface reduced-motion",
         ),
     ];
 
     /// Each reader's module source, whose docs list its sources.
-    const READER_MODULES: &[(&str, &str)] = &[
-        ("kde", include_str!("../kde/mod.rs")),
-        ("gnome", include_str!("../gnome/mod.rs")),
-        ("macos", include_str!("../macos.rs")),
-        ("windows", include_str!("../windows.rs")),
-    ];
+    const READER_MODULES: &[(&str, &str)] = &[("gnome", include_str!("../gnome/mod.rs"))];
 
     /// The sources a reader module lists: the first code span of each item
     /// of its `# Sources` doc section.
@@ -700,11 +500,7 @@ mod tests {
     }
 
     /// The notifications the table gives for `reader`'s sources.
-    #[cfg(any(
-        all(target_os = "linux", any(feature = "kde", feature = "portal")),
-        all(target_os = "macos", feature = "macos"),
-        all(target_os = "windows", feature = "windows"),
-    ))]
+    #[cfg(all(target_os = "linux", feature = "portal"))]
     fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
         SOURCE_NOTIFICATIONS
             .iter()
@@ -736,18 +532,6 @@ mod tests {
         }
     }
 
-    /// The KDE watcher observes the file of every KDE row.
-    #[cfg(all(target_os = "linux", feature = "kde"))]
-    #[test]
-    fn the_kde_watcher_observes_every_kde_source() {
-        for file in table_notifications("kde") {
-            assert!(
-                kde::WATCHED_FILES.contains(&file),
-                "the KDE watcher does not observe `{file}`"
-            );
-        }
-    }
-
     /// The GNOME watcher fires on the `SettingChanged` of every GNOME row.
     #[cfg(all(target_os = "linux", feature = "portal"))]
     #[test]
@@ -767,7 +551,7 @@ mod tests {
     fn the_gnome_reader_lists_every_gsetting_it_reads() {
         let sources = listed_sources(include_str!("../gnome/mod.rs"));
         let mut read = Vec::new();
-        let _ = crate::gnome::build_theme(
+        let _ = crate::gnome::build_reading(
             None,
             None,
             ashpd::desktop::settings::Contrast::default(),
@@ -777,37 +561,13 @@ mod tests {
                 read.push(format!("{schema} {key}"));
                 None
             },
+            crate::presets::PresetId::Adwaita,
         );
         assert!(!read.is_empty());
         for setting in &read {
             assert!(
                 sources.contains(&setting.as_str()),
                 "the GNOME reader reads `{setting}`, which its `# Sources` do not list"
-            );
-        }
-    }
-
-    /// The macOS watcher observes the notification of every macOS row.
-    #[cfg(all(target_os = "macos", feature = "macos"))]
-    #[test]
-    fn the_macos_watcher_observes_every_macos_source() {
-        let observed: Vec<&str> = macos::registrations().iter().map(|r| r.name_id).collect();
-        for notification in table_notifications("macos") {
-            assert!(
-                observed.contains(&notification),
-                "the macOS watcher does not observe `{notification}`"
-            );
-        }
-    }
-
-    /// The Windows watcher subscribes to the event of every Windows row.
-    #[cfg(all(target_os = "windows", feature = "windows"))]
-    #[test]
-    fn the_windows_watcher_observes_every_windows_source() {
-        for event in table_notifications("windows") {
-            assert!(
-                windows::SUBSCRIBED_EVENTS.contains(&event),
-                "the Windows watcher does not subscribe to `{event}`"
             );
         }
     }
@@ -1031,7 +791,7 @@ mod tests {
     /// the two, so a drop that hangs fails the test after `per_drop_timeout`
     /// instead of blocking it. A platform or desktop without a watcher
     /// (`WatchUnavailable`) skips the test.
-    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    #[cfg(target_os = "linux")]
     fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
         for round in 0..rounds {
             let (done_tx, done_rx) = mpsc::channel();
@@ -1050,20 +810,7 @@ mod tests {
         }
     }
 
-    #[cfg(all(target_os = "macos", feature = "watch"))]
-    #[test]
-    fn macos_subscribe_and_drop_returns() {
-        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
-    }
-
-    #[cfg(all(target_os = "windows", feature = "watch"))]
-    #[test]
-    fn windows_subscribe_and_drop_returns() {
-        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
-    }
-
-    /// The KDE watcher polls its shutdown channel every 200 ms, so a drop
-    /// takes up to that long: a few rounds keep the test short.
+    /// A few rounds keep the test short.
     #[cfg(all(target_os = "linux", feature = "watch"))]
     #[test]
     fn linux_subscribe_and_drop_returns() {

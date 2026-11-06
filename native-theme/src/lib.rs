@@ -53,7 +53,8 @@
 //! `macos-tahoe`, still list fields whose facts are pending, and
 //! [`Theme::from_preset`] refuses a preset with a pending field
 //! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
-//! widget is the button; the platform readers are not back yet.
+//! widget is the button; of the platform readers GNOME's is back
+//! ([`Theme::from_system`], the `portal` feature).
 //!
 //! # Feature flags
 //!
@@ -65,7 +66,8 @@
 //! |---|---|
 //! | `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
 //! | `macos`, `windows` | The running OS version and its generation, in [`pipeline::diagnose_platform_support`] |
-//! | `portal`, `watch` | Nothing until the platform readers return |
+//! | `portal` | The GNOME and Budgie reader, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
 //! | `native` | `linux`, `macos` and `windows` |
@@ -87,6 +89,7 @@
 //! - [`fonts`]: font face matching; the platform's own typeface with the
 //!   `system-fonts` feature.
 //! - [`pipeline`]: a diagnosis of the platform's theme support.
+//! - `watch` (the `watch` feature): OS theme-change notifications.
 //! - `rasterize` (the `svg-rasterize` feature): SVG icons to RGBA.
 
 #![warn(missing_docs)]
@@ -113,6 +116,7 @@ pub mod placement;
 pub mod platform;
 mod presets;
 mod query;
+mod reader;
 mod registry;
 mod resolve;
 pub mod ripple;
@@ -130,6 +134,9 @@ mod widgets;
 
 pub mod detect;
 pub mod fonts;
+/// The GNOME reader: the XDG Desktop Portal and gsettings (Linux).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+mod gnome;
 /// Icon loading.
 ///
 /// - The semantic roles, [`IconRole`], the icon sets, [`IconSet`], and the
@@ -150,6 +157,8 @@ pub mod icons;
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) mod kde;
 pub mod pipeline;
+#[cfg(feature = "watch")]
+pub mod watch;
 
 /// Freedesktop icon theme lookup (Linux).
 ///
@@ -272,7 +281,9 @@ pub use blocks::transform::{ResolvedTransform, Transform, TransformPatch};
 pub use blocks::{Block, BlockPatch, FieldsBlock};
 pub use color::Color;
 pub use declare::{DataName, FontMetric};
-pub use error::{Error, KeyError, LayerError, Problem, ProblemKind, ThemeError};
+pub use error::{
+    Error, KeyError, LayerError, Problem, ProblemKind, ReaderFailure, ReaderStatus, ThemeError,
+};
 pub use expr::{Expr, ParseError};
 pub use inputs::{Accent, Contrast, InputBases, InputName, InputValue, KdeSchemeKey, KdeWmKey};
 pub use key::Key;

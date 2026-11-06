@@ -5,6 +5,7 @@ use std::fmt;
 use super::expr::ParseError;
 use super::inputs::InputName;
 use super::layer::LayerId;
+use super::presets::PresetId;
 
 /// [`Key::new`](crate::Key::new)'s error: the text, and the first
 /// character outside the key grammar `[a-z0-9][a-z0-9_]*`.
@@ -79,6 +80,22 @@ impl std::error::Error for LayerError {}
 /// A theme could not be built (S1, S16).
 #[derive(Clone, Debug, PartialEq)]
 pub enum ThemeError {
+    /// `Theme::from_system` on a platform or desktop this build has no
+    /// reader and bundled preset for.
+    PlatformUnsupported,
+    /// `Theme::from_system` where the platform's reader feature is off.
+    FeatureDisabled,
+    /// `Theme::from_system(Some(id))` where `id` is not a generation of the
+    /// running platform (R1.5).
+    PresetNotForPlatform(PresetId),
+    /// A failed first read, with the preset `Theme::from_system` chose, for
+    /// `Theme::from_preset` (S16).
+    Reader {
+        /// The preset the system read chose.
+        preset: PresetId,
+        /// Why the read failed.
+        failure: ReaderFailure,
+    },
     /// A bundled preset failing validation, which a build test rules out
     /// (S19.1).
     Preset(LayerError),
@@ -87,6 +104,20 @@ pub enum ThemeError {
 impl fmt::Display for ThemeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            ThemeError::PlatformUnsupported => {
+                f.write_str("no reader reads this platform's theme in this build")
+            }
+            ThemeError::FeatureDisabled => f.write_str("the platform's reader feature is disabled"),
+            ThemeError::PresetNotForPlatform(id) => write!(
+                f,
+                "`{}` is not a generation of the running platform",
+                id.key()
+            ),
+            ThemeError::Reader { preset, failure } => write!(
+                f,
+                "the system read for `{}` failed: {failure}",
+                preset.key()
+            ),
             ThemeError::Preset(error) => write!(f, "the bundled preset is invalid: {error}"),
         }
     }
@@ -95,7 +126,55 @@ impl fmt::Display for ThemeError {
 impl std::error::Error for ThemeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            ThemeError::Reader { failure, .. } => Some(failure),
             ThemeError::Preset(error) => Some(error),
+            ThemeError::PlatformUnsupported
+            | ThemeError::FeatureDisabled
+            | ThemeError::PresetNotForPlatform(_) => None,
+        }
+    }
+}
+
+/// How the theme's reader layer was last read (S1, S16).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ReaderStatus {
+    /// The system was read.
+    Read,
+    /// No reader and no stand-in: S16's no-reader state.
+    NoReader,
+    /// The application's stand-in stands for the reader.
+    StandIn,
+    /// Read, but one source failed and another stood in for it, which the
+    /// failure names (the KDE scheme file, S9.1, or an accent input the
+    /// reader could not read, S9.3; the first failure where several).
+    Fallback(ReaderFailure),
+    /// A re-read failed; the previous reader layer stays (S8, S16).
+    Failed(ReaderFailure),
+}
+
+/// Why a read failed, or what a fallback stood in for (S1).
+#[derive(Clone, Debug, PartialEq)]
+pub enum ReaderFailure {
+    /// The platform's settings could not be read: what failed.
+    Platform(String),
+    /// The reader's layer or state failed validation over the stack.
+    Invalid(LayerError),
+}
+
+impl fmt::Display for ReaderFailure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ReaderFailure::Platform(what) => f.write_str(what),
+            ReaderFailure::Invalid(error) => write!(f, "the reader's layer is invalid: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for ReaderFailure {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ReaderFailure::Platform(_) => None,
+            ReaderFailure::Invalid(error) => Some(error),
         }
     }
 }
@@ -886,6 +965,11 @@ pub(crate) mod reader_names {
         ICON_THEME = "icon-theme";
         #[cfg_attr(not(feature = "svg-rasterize"), allow(dead_code))]
         SVG_RASTERIZER = "svg-rasterizer";
+        #[cfg_attr(
+            not(all(feature = "watch", feature = "portal", target_os = "linux")),
+            allow(dead_code)
+        )]
+        GNOME_WATCHER = "gnome-watcher";
     }
 }
 

@@ -149,6 +149,50 @@ fn kdeglobals_exists() -> bool {
     }
 }
 
+/// The desktop a system read is read by ([`refine_linux_desktop`]): for
+/// `Unknown`, the portal backend is asked first (with the `portal`
+/// feature), then the user's `kdeglobals`. The raw desktop is the cached
+/// one ([`DetectionContext::linux_desktop`]); the portal's answer is not
+/// cached, as each read asks it once.
+#[cfg(target_os = "linux")]
+pub(crate) async fn refined_linux_desktop() -> LinuxDesktop {
+    let raw = system().linux_desktop();
+    #[cfg(feature = "portal")]
+    let portal = match raw {
+        LinuxDesktop::Unknown => crate::gnome::detect_portal_backend().await,
+        _ => None,
+    };
+    #[cfg(not(feature = "portal"))]
+    let portal = None;
+    refine_linux_desktop(raw, portal, kdeglobals_exists)
+}
+
+/// Run `gsettings get <schema> <key>`, waiting up to `timeout`.
+///
+/// Returns the trimmed stdout on success; `None` if the command fails, times
+/// out, or produces empty output. The timeout keeps gsettings from blocking
+/// indefinitely when D-Bus is unresponsive.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+pub(crate) fn gsettings_get(
+    schema: &str,
+    key: &str,
+    timeout: std::time::Duration,
+) -> Option<String> {
+    let out = stdout_with_timeout("gsettings", &["get", schema, key], timeout)?;
+    let trimmed = out.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+/// The session type, `$XDG_SESSION_TYPE` (`x11`, `wayland`, …).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+pub(crate) fn session_type() -> Option<String> {
+    std::env::var("XDG_SESSION_TYPE").ok()
+}
+
 /// Reset the process-wide detection caches, so the next detection of the
 /// icon theme or the desktop environment re-queries the OS; a cached failure
 /// to detect the icon theme is cleared too.

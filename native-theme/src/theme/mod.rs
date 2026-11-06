@@ -2,11 +2,12 @@
 //! application's conditions. Every mutation validates the whole stack and
 //! is refused whole on failure, the theme staying as it was (S8, S12).
 
-use super::error::{LayerError, ThemeError};
+use super::error::{LayerError, ReaderFailure, ReaderStatus, ThemeError};
 use super::inputs::{Accent, Contrast};
 use super::key::Key;
 use super::layer::{Layer, LayerId};
 use super::presets::PresetId;
+use super::reader::{Reading, SystemReader};
 use super::resolve::{ReaderState, Resolution, Stack, WindowConditions, WindowState};
 use super::selector::Scheme;
 use super::toml::layer::read_preset;
@@ -20,15 +21,55 @@ use super::toml::layer::read_preset;
 pub struct Theme {
     preset: PresetId,
     stack: Stack,
+    /// The system's reader and its own preset, the one the theme was built
+    /// with (S9.5); `None` on a theme no system read built.
+    reader: Option<(SystemReader, PresetId)>,
+    /// The reader's last read, while `reader` is set.
+    status: ReaderStatus,
 }
 
 impl Theme {
+    /// Reads the system (S9.3, S16): the reader of the running platform and
+    /// desktop, over its own preset, `generation` where it names one of the
+    /// platform's generations (R1.5), else the one the platform chooses.
+    ///
+    /// Refused with [`ThemeError::PresetNotForPlatform`] for a `generation`
+    /// that is not one of the running platform's, with
+    /// [`ThemeError::FeatureDisabled`] where the platform's reader feature
+    /// is off and [`ThemeError::PlatformUnsupported`] where this build has
+    /// no reader for it; a failed first read is `Err(ThemeError::Reader)`,
+    /// with the preset it chose, for [`Theme::from_preset`]; a bundled
+    /// preset failing validation is `Err(ThemeError::Preset)`. A read where
+    /// one source stood in for another builds the theme, its
+    /// [`Theme::reader_status`] [`ReaderStatus::Fallback`].
+    ///
+    /// The portal's reads are D-Bus calls, on which this blocks; an
+    /// application inside an async executor awaits
+    /// [`Theme::from_system_async`].
+    pub fn from_system(generation: Option<PresetId>) -> Result<Theme, ThemeError> {
+        pollster::block_on(Theme::from_system_async(generation))
+    }
+
+    /// [`Theme::from_system`], awaited.
+    pub async fn from_system_async(generation: Option<PresetId>) -> Result<Theme, ThemeError> {
+        let (reader, preset) = super::reader::select(generation).await?;
+        let failed = |failure| ThemeError::Reader { preset, failure };
+        let reading = reader.read(preset).await.map_err(failed)?;
+        let mut theme = Theme::from_preset(preset, reading.state.scheme)?;
+        let status = theme
+            .take(reading, preset)
+            .map_err(|error| failed(ReaderFailure::Invalid(error)))?;
+        theme.reader = Some((reader, preset));
+        theme.status = status;
+        Ok(theme)
+    }
+
     /// The bundled preset `id` with no reader, under `scheme`: S16's
     /// no-reader state. A preset failing validation is
     /// `Err(ThemeError::Preset)`, which a build test rules out (S19.1).
     pub fn from_preset(id: PresetId, scheme: Scheme) -> Result<Theme, ThemeError> {
         let stack = preset_stack(Some(id), id.source(), scheme)?;
-        Ok(Theme { preset: id, stack })
+        Ok(Theme::over(id, stack))
     }
 
     /// The bundled preset `id` with `layers` over it, under `scheme`: the
@@ -51,7 +92,7 @@ impl Theme {
         layers: Vec<Layer>,
     ) -> Result<Theme, ThemeError> {
         let stack = synthetic_stack(Some(id), id.source(), scheme, layers)?;
-        Ok(Theme { preset: id, stack })
+        Ok(Theme::over(id, stack))
     }
 
     /// Switches to the bundled preset `id`, a theme change (S16): the
@@ -73,6 +114,73 @@ impl Theme {
             .set_preset(Some(id), file.declarations, file.layer, file.pending)?;
         self.preset = id;
         Ok(())
+    }
+
+    /// A theme of `stack`, whose preset is `id`, with no system reader.
+    fn over(id: PresetId, stack: Stack) -> Theme {
+        Theme {
+            preset: id,
+            stack,
+            reader: None,
+            status: ReaderStatus::NoReader,
+        }
+    }
+
+    /// Takes `reading` as the reader layer, its own preset `own`; the
+    /// status it gives, or the stack's refusal, the layer beneath kept.
+    fn take(&mut self, reading: Reading, own: PresetId) -> Result<ReaderStatus, LayerError> {
+        self.stack
+            .set_reader(reading.state, reading.layer, Some(own))?;
+        Ok(match reading.fallback {
+            Some(failure) => ReaderStatus::Fallback(failure),
+            None => ReaderStatus::Read,
+        })
+    }
+
+    /// How the reader layer was last read: [`ReaderStatus::Fallback`] where
+    /// a read succeeded with a source standing in for another (S9.1, S9.3),
+    /// [`ReaderStatus::Failed`] where the last re-read failed and the layer
+    /// before it stays; [`ReaderStatus::StandIn`] with a stand-in, and
+    /// [`ReaderStatus::NoReader`] with neither.
+    #[must_use]
+    pub fn reader_status(&self) -> ReaderStatus {
+        if self.reader.is_some() {
+            self.status.clone()
+        } else if self.stack.reader_state().is_some() {
+            ReaderStatus::StandIn
+        } else {
+            ReaderStatus::NoReader
+        }
+    }
+
+    /// Reads the system again into the reader layer, in place, with the
+    /// reader and own preset [`Theme::from_system`] chose, after clearing
+    /// the detection caches it reads through
+    /// ([`crate::detect::invalidate_caches`]); a failure keeps the layer
+    /// before it, reported as [`ReaderStatus::Failed`] (S8, S16). The
+    /// application calls it from its event loop on the watcher's
+    /// notification. On a theme no system read built it reads nothing and
+    /// returns [`Theme::reader_status`].
+    ///
+    /// Blocks on the portal's D-Bus calls, as [`Theme::from_system`] does;
+    /// [`Theme::reload_reader_async`] awaits them.
+    pub fn reload_reader(&mut self) -> ReaderStatus {
+        pollster::block_on(self.reload_reader_async())
+    }
+
+    /// [`Theme::reload_reader`], awaited.
+    pub async fn reload_reader_async(&mut self) -> ReaderStatus {
+        let Some((reader, own)) = self.reader else {
+            return self.reader_status();
+        };
+        super::detect::invalidate_caches();
+        self.status = match reader.read(own).await {
+            Ok(reading) => self
+                .take(reading, own)
+                .unwrap_or_else(|error| ReaderStatus::Failed(ReaderFailure::Invalid(error))),
+            Err(failure) => ReaderStatus::Failed(failure),
+        };
+        self.status.clone()
     }
 
     /// Sets the reader stand-in, or replaces the one set (S8, R2.6): its
