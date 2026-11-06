@@ -1384,6 +1384,35 @@ fn difference_layer_resolves_with_its_blend() {
     );
 }
 
+/// A shadow layer resolves with its `falloff` kept, each layer its own
+/// (S2.5; ADD-A134): a stack mixing the two falloffs is stated layer by
+/// layer.
+#[test]
+fn shadow_layers_resolve_with_their_falloffs() {
+    use crate::blocks::shadow::ShadowFalloff;
+    let over = "[widgets.button.body]\nshadow = { layers = [{ x_px = 0, y_px = 1, blur_px = 2, \
+                spread_px = 0, color = \"#00000026\", inset = false, falloff = \"gaussian\" }, \
+                { x_px = 0, y_px = 2, blur_px = 8, spread_px = 0, color = \"#00000040\", \
+                inset = false, falloff = \"kirigami_smoothstep\" }] }";
+    let theme = resolved(&[BASE, over], 1.0);
+    let scope = scope();
+    let element = Element::new(PartRef::Typed(BODY), &scope, &Metrics);
+    let body = theme
+        .evaluate_part(BODY, &element, &|_| true)
+        .value
+        .unwrap();
+    let falloffs: Option<Vec<ShadowFalloff>> = body
+        .shadow
+        .map(|layers| layers.iter().map(|layer| layer.falloff).collect());
+    assert_eq!(
+        falloffs,
+        Some(vec![
+            ShadowFalloff::Gaussian,
+            ShadowFalloff::KirigamiSmoothstep
+        ])
+    );
+}
+
 /// A synthetic layer's step decides whether a part is drawn only where it
 /// states a presence that changes what the steps before it make the part
 /// (S6.3, S17, ADD-A128, ADD-A126): a step of fields alone decides

@@ -1853,8 +1853,8 @@ quote = "QColor shadowColor([[maybe_unused]] const QPalette &palette, qreal opac
 input_image = "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/button.png"
 
 [button.rest]
-layers = [ { x_px = 0, y_px = 1.2, blur_px = 2.5, spread_px = 0, color = "#00000025", inset = false },
-           { x_px = 0, y_px = 4, blur_px = 8.6, spread_px = 0, color = "#0000001b", inset = false } ]
+layers = [ { x_px = 0, y_px = 1.2, blur_px = 2.5, spread_px = 0, color = "#00000025", inset = false, falloff = "gaussian" },
+           { x_px = 0, y_px = 4, blur_px = 8.6, spread_px = 0, color = "#0000001b", inset = false, falloff = "gaussian" } ]
 
 [button.disabled]
 opacity_percent = 50
@@ -1987,7 +1987,8 @@ SELF_TEST_CASES = [
     ("shadow: a colour beyond its tolerance", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
      "shadows.toml", '"#0000001b"', '"#0000001e"', ["leaf 'layers.1.color'"]),
     ("shadow: a bool that differs", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/shadows.toml",
-     "inset = false },\n", "inset = true },\n", ["leaf 'layers.0.inset': the evidence holds True"]),
+     'inset = false, falloff = "gaussian" },\n', 'inset = true, falloff = "gaussian" },\n',
+     ["leaf 'layers.0.inset': the evidence holds True"]),
     ("shadow: a leaf without its tolerance", "docs/facts/windows/buttons.toml", ', "layers.1.color" = 2 }', " }",
      ["no tolerance for the leaf 'layers.1.color'"]),
     ("shadow: a tolerance for no leaf", "docs/facts/windows/buttons.toml", '"layers.1.color" = 2 }',
@@ -2055,17 +2056,19 @@ SELF_TEST_CASES = [
     ("libadwaita: an absent name inside an identifier", "docs/facts/gnome/more.toml", 'absent = ["box-shadow"]',
      'absent = ["hover_col"]', []),
     ("shadow: two layers against three", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
-     "shadows.toml", 'inset = false } ]', 'inset = false },\n           { x_px = 0, y_px = 8, blur_px = 16, '
-     'spread_px = 0, color = "#00000010", inset = false } ]', ["'layers': the evidence has 3 items, the fact 2"]),
+     "shadows.toml", 'falloff = "gaussian" } ]', 'falloff = "gaussian" },\n           { x_px = 0, y_px = 8, '
+     'blur_px = 16, spread_px = 0, color = "#00000010", inset = false, falloff = "gaussian" } ]',
+     ["'layers': the evidence has 3 items, the fact 2"]),
     ("shadow: one layer against two", "docs/facts/windows/buttons.toml",
      [(_SHADOW, 'value = { layers = [ { x_px = 0, y_px = 1, blur_px = 2, spread_px = 0, color = "#00000024", '
-                'inset = false } ] }'), (_SHADOW_TOL, "tolerance = 2")],
+                'inset = false, falloff = "gaussian" } ] }'), (_SHADOW_TOL, "tolerance = 2")],
      None, ["'layers': the evidence has 2 items, the fact 1"]),
     ("shadow: no layers against two", "docs/facts/windows/buttons.toml",
      [(_SHADOW, "value = { layers = [] }"), (_SHADOW_TOL, "tolerance = 2")], None,
      ["'layers': the evidence has 2 items, the fact 0"]),
     ("shadow: a key the fact lacks", "docs/evidence/winui-host/2026-11-04-run-3/winui-host-windows-11/"
-     "shadows.toml", "inset = false },\n", "inset = false, offset_px = 1 },\n",
+     "shadows.toml", 'inset = false, falloff = "gaussian" },\n',
+     'inset = false, falloff = "gaussian", offset_px = 1 },\n',
      ["the evidence has 'layers.0.offset_px', the fact does not"]),
     ("WinUI: a margin's sign without negate", "docs/facts/windows/more.toml", 'conversion = ["negate"]\n', "",
      ["3px is in no quote serving windows-11"]),

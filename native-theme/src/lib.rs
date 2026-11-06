@@ -260,7 +260,7 @@ pub use blocks::part_style::{
     ResolvedPartStylePatch, RoleRef,
 };
 pub use blocks::shadow::{
-    ResolvedShadow, ResolvedShadowLayer, Shadow, ShadowLayer, ShadowLayerPatch,
+    ResolvedShadow, ResolvedShadowLayer, Shadow, ShadowFalloff, ShadowLayer, ShadowLayerPatch,
 };
 pub use blocks::text::{
     AxisTag, AxisValue, Decoration, DecorationLine, DecorationPatch, DecorationStyle, Elision,

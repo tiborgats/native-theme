@@ -2127,6 +2127,64 @@ fn refusal_keyframe_animation() {
     );
 }
 
+/// A `KirigamiSmoothstep` shadow layer has no spread and is never inset
+/// (S2.5, S12; ADD-A134): a spread other than a stated zero, an expression
+/// included, and `inset = true` are refused, a part's layer and an
+/// elevation entry's alike; a `Gaussian` layer takes both.
+#[test]
+fn refusal_smoothstep_spread_or_inset() {
+    let layer = |spread: &str, inset: bool, falloff: &str| {
+        format!(
+            "{{ x_px = 0, y_px = 1, blur_px = 8, spread_px = {spread}, color = \"#00000040\", \
+             inset = {inset}, falloff = \"{falloff}\" }}"
+        )
+    };
+    let shadow = |layer: &str| {
+        toml(&format!(
+            "[widgets.button.body]\nshadow = {{ layers = [{layer}] }}"
+        ))
+    };
+    let refused = "a `kirigami_smoothstep` shadow layer's spread or inset";
+    let at = "widgets.button.body.shadow.layers[0]";
+    let smoothstep = "kirigami_smoothstep";
+    assert_eq!(bare(&shadow(&layer("0", false, smoothstep))), NONE);
+    assert_eq!(
+        bare(&shadow(&layer("2", false, smoothstep))),
+        [format!("{at}.spread_px: {refused}")]
+    );
+    assert_eq!(
+        bare(&shadow(&layer(
+            "\"= token.params.layout.gap\"",
+            false,
+            smoothstep
+        )))
+        .iter()
+        .filter(|problem| problem.ends_with(refused))
+        .collect::<Vec<_>>(),
+        [&format!("{at}.spread_px: {refused}")]
+    );
+    assert_eq!(
+        bare(&shadow(&layer("0", true, smoothstep))),
+        [format!("{at}.inset: {refused}")]
+    );
+    assert_eq!(
+        bare(&shadow(&layer("1", true, smoothstep))),
+        [
+            format!("{at}.spread_px: {refused}"),
+            format!("{at}.inset: {refused}")
+        ]
+    );
+    assert_eq!(bare(&shadow(&layer("2", true, "gaussian"))), NONE);
+    let elevation = toml(&format!(
+        "[tokens.elevation]\nraised = [{}]",
+        layer("0", true, smoothstep)
+    ));
+    assert_eq!(
+        found(&elevation, &declare("elevation = [\"raised\"]")),
+        [format!("tokens.elevation.raised[0].inset: {refused}")]
+    );
+}
+
 #[test]
 fn refusal_follow_part_outside_focus() {
     let corner = |focus: bool| {
@@ -4598,6 +4656,7 @@ kinds! {
     KeyframeNamesPart,
     KeyframeOutsideGroups,
     KeyframeAnimation,
+    SmoothstepSpreadOrInset,
     FollowPartOutsideFocus,
     RoundPtMisused,
     RouteDuplicated { .. },
@@ -4980,6 +5039,12 @@ fn layer_error_every_variant_triggers() {
                 ),
                 &none,
                 &[],
+            ),
+        ),
+        (
+            V::SmoothstepSpreadOrInset,
+            read(
+                "[widgets.button.body]\nshadow = { layers = [{ x_px = 0, y_px = 1, blur_px = 8, spread_px = 0, color = \"#00000040\", inset = true, falloff = \"kirigami_smoothstep\" }] }",
             ),
         ),
         (

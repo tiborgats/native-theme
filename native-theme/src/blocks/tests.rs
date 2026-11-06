@@ -12,7 +12,7 @@ use super::paint::{
     BlendMode, Material, MaterialPatch, Paint, PaintKind, PaintLayer, PaintPatch,
     ResolvedPaintKind, ResolvedStop, Stop,
 };
-use super::shadow::{ResolvedShadow, Shadow, ShadowLayer};
+use super::shadow::{ResolvedShadow, Shadow, ShadowFalloff, ShadowLayer};
 use super::transform::Transform;
 use super::{Apply, BlockPatch, Merge, MergeConflict, Table, apply_entries};
 use crate::Key;
@@ -863,6 +863,7 @@ fn shadow_and_transform_are_blocks() {
         spread: Value::Stated(Px(0.0)),
         color: Value::Absent,
         inset: false,
+        falloff: ShadowFalloff::Gaussian,
     };
     let shadow = Shadow::Layers(vec![layer]);
     assert!(matches!(shadow, Shadow::Layers(ref layers) if layers.len() == 1));

@@ -106,6 +106,7 @@ fn shadow(prefix: &str) -> Vec<String> {
             "layers.spread",
             "layers.color",
             "layers.inset",
+            "layers.falloff",
             "elevation",
         ],
     )
