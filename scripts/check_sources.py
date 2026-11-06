@@ -11,9 +11,11 @@ prefix ending in `/`, `_` or `-`), its sparse folders relative paths without spa
 as its `site`; a source's `site` is a listed [[site]]. Every [[not_pinned]] gives its reason. A project is named by
 one list only. scripts/update_sources.sh refuses to act on a sources.toml with any of these problems.
 
-Completeness: every project scripts/citations.py finds cited in the core, the catalogue, the traces, the gap maps and
-docs/platform-facts.md (citations.SOURCES_SCOPE; quotes of other documents' cells left out) is the `project` of a
-[[source]], a [[site]] or a [[not_pinned]]. A citation that names no project is not checked (the re-pin lists those).
+Completeness: every project scripts/citations.py finds cited in the core, the catalogue, the traces and the gap maps
+(citations.SOURCES_SCOPE; quotes of other documents' cells left out) is the `project` of a [[source]], a [[site]] or a
+[[not_pinned]]. A citation that names no project is not checked (the re-pin lists those). The generated
+docs/platform-facts.md is not read: its citations are the facts', whose source ids scripts/check_facts.py checks
+against this file.
 Offline: reads the documents and this repository's file list only, not the source cache.
 
     python3 scripts/check_sources.py [sources.toml]

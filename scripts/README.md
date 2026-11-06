@@ -281,9 +281,13 @@ combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
-data documents' checks (the five on the registry, the inheritance rules, the
-presets and `docs/todo.md`, then the 0.8.0 plan's: the ledger's triage, the
-pinned sources and their cache, the facts and their citations), docs and the archive index, then the docs.rs emulation,
+data documents' checks (the four on the registry, the platform-facts
+sections, `docs/todo.md` and the presets' definition comments, the first
+three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
+triage, the pinned sources and their cache, the facts and their citations,
+the generated widgets, presets, `sf_tracking` tables and
+`docs/platform-facts.md`, the function vectors, the trace lines and the
+pinned line citations), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -608,7 +612,10 @@ per-side paddings under their axis rows; the script's docstring states the
 whole rule. Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (both modes)
-and `ci.yml`'s parity job run it and its self-test.
+and `ci.yml`'s parity job run its self-test; the check itself is
+`PLAN_EXCLUDED` until M2.6, which rewrites it to read the facts: the
+registry names today's (0.7) fields, and the generated
+`docs/platform-facts.md` has none of today's `§2` sections.
 
 Requires Python 3.
 
@@ -628,7 +635,10 @@ document's and is skipped, as the script's docstring states. Prints one line
 per dangling reference (file:line, reference) and exits 0 when there is none,
 1 when there are some, 2 on an input it cannot read. `--self-test` runs the
 rule on a synthetic document and facts file. `check_release.sh` (both modes)
-and `ci.yml`'s parity job run it and its self-test.
+and `ci.yml`'s parity job run its self-test; the check itself is
+`PLAN_EXCLUDED` until M2.6, which rewrites it: `docs/inheritance-rules.toml`
+is deleted, and the generated `docs/platform-facts.md` has no numbered
+sections.
 
 Requires Python 3.
 
@@ -649,8 +659,9 @@ every edit above it. The script's docstring states the whole rule. Prints
 one line per finding (file:line, citation, what is wrong) and exits 0 when
 there is none, 1 when there are some, 2 on an input it cannot read.
 `--self-test` runs the rule on a synthetic document and presets.
-`check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
-self-test.
+`check_release.sh` (both modes) and `ci.yml`'s parity job run its
+self-test; the check itself is `PLAN_EXCLUDED` until M2.6, which rewrites
+it to read the facts, as the presets it reads went at the switch.
 
 Requires Python 3.11+ (for `tomllib`).
 
@@ -855,15 +866,14 @@ python3 scripts/check_ledger.py --final --staged-file <path>
 ## citations.py
 
 Finds every citation in the 0.8.0 planning documents (the core, the
-catalogue, the six traces, the gap maps, `docs/platform-facts.md` and
-`docs/todo.md`) and resolves each to a project and a ref where the documents
+catalogue, the six traces, the gap maps and `docs/todo.md`) and resolves each to a project and a ref where the documents
 let it: Markdown links and bare URLs to code hosts and documentation sites,
 `name@sha path:L`, the abbreviations the gap maps define (`st:5327`,
 `A/w/_buttons.scss:328`, `kwin src/x.cpp:140`, each with the ref its
 definition in the documents states now, read from the document line that
 defines it, so a re-pinned definition is read as it stands), bare `file:L`
 names, `:L` continuations, `platform-facts.md`
-line references, Apple documentation paths and pages named by title. Each
+line references (today's hand-written document, cited at `fc6109d1`), Apple documentation paths and pages named by title. Each
 record gives the document, line, syntax, project, ref, path as written, the
 repository path where the rules give one, the lines and a status (resolved,
 heuristic, ambiguous, unresolved); the seeds file's excerpts of other
@@ -897,8 +907,9 @@ a leading `-`; every `[[site]]` names its pinning method (its git source
 repositories, each naming the site back as its `site`, or snapshots), and a
 source's `site` is a listed site; every `[[not_pinned]]` gives its reason.
 `update_sources.sh` refuses a file with any of these problems. Then, through `citations.py`, every project the core, the catalogue,
-the traces, the gap maps and `docs/platform-facts.md` cite must be a source, a
-site or not pinned. Offline: it reads the documents and the repository's file
+the traces and the gap maps cite must be a source, a site or not pinned (the
+generated `docs/platform-facts.md` is not read: its citations are the facts',
+whose source ids `check_facts.py` checks against `sources.toml`). Offline: it reads the documents and the repository's file
 list, not the source cache. Prints the counts and one line per problem, and
 exits 0 when there is none, 1 when there are some, 2 when the file cannot be
 read. `--self-test` runs each rule on a synthetic file.
@@ -1109,7 +1120,8 @@ catalogue's *Today's fields* (a widget's item, the `defaults.` table) and are
 checked against its parts and fields; where a clause names no one path, the
 source is another widget's or the rule restates the target's own field,
 `target` or `value` is `""` with a note, and `mapping` quotes the clauses
-used. `[wrong_safety_nets]` is not converted (an entry it names says so).
+used. `[wrong_safety_nets]` is not converted (an entry it names says so,
+quoting its text, whose `platform-facts.md:N` it writes at `fc6109d1`).
 Each unit's preset step uses the file and the gate checks it; it is removed
 at M4 (`check_ledger.py --final --staged-file`), with the script. Prints the
 counts per preset. `--check` exits 1 when the file differs from a fresh run;
@@ -1230,16 +1242,17 @@ tokens, the inputs, then the widget catalogue's sections), one table per
 widget, colour-role set or token group, a row per key and combination, and
 per preset the value of the fact that applies there (the last in file
 order) with its citations. Writes `--out PATH`, by default
-`docs/platform-facts.generated.md`, and never today's hand-written
-`docs/platform-facts.md`, which its output replaces at the switch;
-`--check` exits 1 when PATH differs from a fresh run (in `check_release.sh`
-from the switch). Offline. `--self-test` compares a fixture's document with
-the expected one and runs `--check`.
+`docs/platform-facts.md`, which its output has replaced since the switch:
+the document is generated and never edited (the hand-written one, which the
+planning documents cite by line, is the one `fc6109d1` holds). `--check`
+exits 1 when PATH differs from a fresh run; `check_release.sh` (both modes
+and `--quick`) runs it and the self-test. Offline. `--self-test` compares a
+fixture's document with the expected one and runs `--check`.
 
 Requires Python 3.11.
 
 ```sh
-python3 scripts/generate_platform_facts.py --out docs/platform-facts.generated.md
+python3 scripts/generate_platform_facts.py
 python3 scripts/generate_platform_facts.py --check
 python3 scripts/generate_platform_facts.py --self-test
 ```

@@ -13,10 +13,11 @@ Run from the repository root:
     python3 scripts/generate_platform_facts.py [--out PATH] --check   # exit 1 when PATH differs from a fresh run
     python3 scripts/generate_platform_facts.py --self-test
 
-PATH defaults to `docs/platform-facts.generated.md`: until the switch replaces today's hand-written
-`docs/platform-facts.md` with this output (the plan's *The transition*), the script never writes that file. Exit 0 on
-success, 1 when `--check` finds a difference, 2 when a fact file cannot be read (check_facts.py names it) or on a
-wrong command line.
+PATH defaults to `docs/platform-facts.md`, which this output has replaced since the switch (the plan's *The
+transition*): the document is generated, never edited, and `scripts/check_release.sh` runs `--check`. Today's
+hand-written document, which the planning documents cite by line, is the one commit fc6109d1 holds
+(`platform-facts.md@fc6109d1:N`). Exit 0 on success, 1 when `--check` finds a difference, 2 when a fact file cannot
+be read (check_facts.py names it) or on a wrong command line.
 
 The document
 ------------
@@ -48,7 +49,7 @@ from pathlib import Path
 
 import check_facts
 
-OUT = Path("docs/platform-facts.generated.md")
+OUT = Path("docs/platform-facts.md")
 ROLES, TOKENS, INPUTS, OTHER, PALETTES = "Colour roles", "Tokens", "Inputs", "Other", "Palettes"
 BARE_KEY = re.compile(r"^[A-Za-z0-9_-]+$")
 

@@ -47,7 +47,10 @@ holds this repository's files only; Index.of_cache() adds every checkout of the 
     python3 scripts/citations.py [--cache] [--summary] [doc ...]   # records as TSV, or counts per project
     python3 scripts/citations.py --self-test
 
-doc is a key of DOCUMENTS (`spec`, `gap-map-kde`, `platform-facts`, …) or a path; none means every document.
+doc is a key of DOCUMENTS (`spec`, `gap-map-kde`, `todo`, …) or a path; none means every document. Today's
+hand-written `docs/platform-facts.md` was one of them until the 0.8.0 switch replaced it with the document
+scripts/generate_platform_facts.py writes from the facts, whose citations scripts/check_facts.py checks against
+sources.toml; the planning documents cite the hand-written one at fc6109d1 (`platform-facts.md@fc6109d1:N`).
 
 API (run from the repository root):
 
@@ -90,9 +93,9 @@ DOCUMENTS = {"spec": f"docs/{PREFIX}spec.md", "spec-widgets": f"docs/{PREFIX}spe
 DOCUMENTS.update({f"spec-trace-{p}": f"docs/{PREFIX}spec-trace-{p}.md" for p in PLATFORMS})
 DOCUMENTS.update({"gap-map": f"docs/{PREFIX}gap-map.md", "gap-map-seeds": f"docs/{PREFIX}gap-map-seeds.md"})
 DOCUMENTS.update({f"gap-map-{p}": f"docs/{PREFIX}gap-map-{p}.md" for p in PLATFORMS})
-DOCUMENTS.update({"platform-facts": "docs/platform-facts.md", "todo": "docs/todo.md"})
+DOCUMENTS.update({"todo": "docs/todo.md"})
 SOURCES_SCOPE = [k for k in DOCUMENTS if k != "todo"]
-REPIN_SCOPE = [k for k in DOCUMENTS if k not in ("platform-facts", "todo")]
+REPIN_SCOPE = [k for k in DOCUMENTS if k != "todo"]
 
 OWN = "native-theme (own)"
 PF = "native-theme (own): docs/platform-facts.md"

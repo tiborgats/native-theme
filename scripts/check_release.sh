@@ -88,7 +88,8 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  generate_preset.py <id> --check per bundled preset,
                  generate_sf_tracking.py --check,
                  check_function_vectors.py, check_facts.py,
-                 check_fact_citations.py, check_spec_names.py,
+                 check_fact_citations.py,
+                 generate_platform_facts.py --check, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py);
                  like --commit, it skips the steps PLAN_EXCLUDED lists
   -h, --help     print this help and exit
@@ -623,6 +624,8 @@ if [[ $QUICK_MODE ]]; then
     run_check "every platform function has its vectors" python3 scripts/check_function_vectors.py
     run_check "the facts are well formed" python3 scripts/check_facts.py
     run_check "the facts' citations hold at their pins" python3 scripts/check_fact_citations.py
+    run_check "docs/platform-facts.md is generated from the facts" \
+        python3 scripts/generate_platform_facts.py --check
     run_check "the specification's names" python3 scripts/check_spec_names.py
     run_check "the specification's entries" python3 scripts/check_spec_entries.py
     run_check "the specification's traceability" python3 scripts/check_spec_trace.py
@@ -1413,6 +1416,12 @@ run_check "data documents: the enabled units' trace lines are carried" \
     python3 scripts/check_facts_trace.py --enabled
 run_check "data documents: facts trace self-test" \
     python3 scripts/check_facts_trace.py --self-test
+# docs/platform-facts.md (specification S17, S18): generated from the
+# verified facts, never edited.
+run_check "data documents: docs/platform-facts.md is generated from the facts" \
+    python3 scripts/generate_platform_facts.py --check
+run_check "data documents: platform-facts generator self-test" \
+    python3 scripts/generate_platform_facts.py --self-test
 # The citations of today's platform-facts.md and the deleted
 # inheritance-rules.toml by line name the commit they read (`@fc6109d1`, the
 # 0.8.0 plan's *Citations of today's platform-facts.md by line*), outside
