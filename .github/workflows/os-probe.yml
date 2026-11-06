@@ -118,13 +118,19 @@ jobs:
           } > "$out/environment.txt" 2>&1
           cat "$out/environment.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
-      # The AppKit headers the macOS facts quote, copied from the macOS SDK of
-      # the selected Xcode (xcode-select -p) into sdk-headers/, and AVKit's
-      # AVRoutePickerView.h (the route button) from the same SDK into
-      # sdk-headers/AVKit/, for the lane to read and quote exactly (they are
-      # not committed); xcode.txt records the OS, the Xcode and the SDK, each
-      # copy's exit status and SHA-256.
-      - name: Copy the AppKit headers (macOS)
+      # The SDK headers the Apple facts quote, from the selected Xcode
+      # (xcode-select -p), each framework's whole Headers/ folder (so no
+      # header a fact needs is left behind) into sdk-headers/<framework>/:
+      # AppKit, AVKit (AVRoutePickerView.h, the route button) and QuartzCore
+      # (Core Animation's timing) from the macOS SDK, UIKit from the
+      # iPhoneSimulator SDK (the SDK the iOS facts cite and tools/ios-host
+      # builds against). For the lanes to read and quote exactly, and for the
+      # source cache (they are not committed); xcode.txt records the OS, the
+      # Xcode and each SDK's version and build, each copy's exit status and
+      # size, whether each header the facts and the ledger name is there, and
+      # every copied file's SHA-256 (paths relative to sdk-headers/, so
+      # `shasum -a 256 -c` checks them).
+      - name: Copy the SDK headers (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
@@ -132,33 +138,45 @@ jobs:
           out=os-probe-out/sdk-headers
           mkdir -p "$out"
           developer="$(xcode-select -p)"
-          headers="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers"
-          avkit="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers"
+          macosx="$developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+          simulator="$developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk"
           {
             sw_vers; echo "sw_vers: exit $?"
             echo "xcode-select -p: $developer"
             xcodebuild -version; echo "xcodebuild -version: exit $?"
             echo "xcrun SDK: $(xcrun --sdk macosx --show-sdk-version) build $(xcrun --sdk macosx --show-sdk-build-version) at $(xcrun --sdk macosx --show-sdk-path)"
-            echo "headers: $headers"
-            ls -l "$developer/Platforms/MacOSX.platform/Developer/SDKs/"
-            for h in NSButton.h NSButtonCell.h NSColor.h NSFont.h NSEvent.h NSText.h \
-                     NSAnimationContext.h NSScrollView.h NSControl.h NSCell.h \
-                     NSFontDescriptor.h NSComboButton.h NSToolbarItem.h \
-                     NSTextInsertionIndicator.h NSLayoutManager.h NSTableView.h \
-                     NSTableRowView.h NSTableCellView.h; do
-              cp "$headers/$h" "$out/$h"
-              echo "copy $h: exit $?"
-              shasum -a 256 "$out/$h"
+            echo "xcrun iphonesimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version) build $(xcrun --sdk iphonesimulator --show-sdk-build-version) at $(xcrun --sdk iphonesimulator --show-sdk-path)"
+            ls -l "$developer/Platforms/MacOSX.platform/Developer/SDKs/" "$developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/"
+            for copy in "AppKit $macosx" "AVKit $macosx" "QuartzCore $macosx" "UIKit $simulator"; do
+              framework="${copy%% *}"
+              headers="${copy#* }/System/Library/Frameworks/$framework.framework/Headers"
+              echo "$framework headers: $headers"
+              mkdir -p "$out/$framework"
+              cp -RL "$headers/." "$out/$framework"
+              echo "copy $framework: exit $?"
+              echo "$framework: $(find "$out/$framework" -type f | wc -l | tr -d ' ') files, $(du -sk "$out/$framework" | cut -f1) KB"
             done
-            echo "AVKit headers: $avkit"
-            mkdir -p "$out/AVKit"
-            for h in AVRoutePickerView.h; do
-              cp "$avkit/$h" "$out/AVKit/$h"
-              echo "copy AVKit/$h: exit $?"
-              shasum -a 256 "$out/AVKit/$h"
+            for h in AppKit/NSApplication.h AppKit/NSAnimationContext.h AppKit/NSAttributedString.h \
+                     AppKit/NSButton.h AppKit/NSButtonCell.h AppKit/NSCell.h AppKit/NSColor.h \
+                     AppKit/NSComboButton.h AppKit/NSControl.h AppKit/NSCursor.h AppKit/NSEvent.h \
+                     AppKit/NSFont.h AppKit/NSFontDescriptor.h AppKit/NSImage.h AppKit/NSLayoutManager.h \
+                     AppKit/NSMenuItem.h AppKit/NSPopUpButtonCell.h AppKit/NSPressGestureRecognizer.h \
+                     AppKit/NSScrollView.h AppKit/NSShadow.h AppKit/NSTableCellView.h \
+                     AppKit/NSTableRowView.h AppKit/NSTableView.h AppKit/NSText.h AppKit/NSTextField.h \
+                     AppKit/NSTextInsertionIndicator.h AppKit/NSTextView.h AppKit/NSToolbar.h \
+                     AppKit/NSToolbarItem.h AppKit/NSTouch.h AppKit/NSView.h AppKit/NSWindow.h \
+                     AVKit/AVRoutePickerView.h QuartzCore/CAAnimation.h QuartzCore/CAMediaTiming.h \
+                     UIKit/UIBarButtonItem.h UIKit/UIButton.h UIKit/UIButtonConfiguration.h \
+                     UIKit/UIColor.h UIKit/UIFont.h UIKit/UIFontDescriptor.h; do
+              if [ -f "$out/$h" ]; then echo "named $h: present"; else echo "named $h: MISSING"; fi
             done
-          } > "$out/xcode.txt" 2>&1
-          cat "$out/xcode.txt"
+            echo "SHA-256 of every copied file:"
+            (cd "$out" && find AppKit AVKit QuartzCore UIKit -type f -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256)
+            echo "shasum: exit $?"
+          } > "$RUNNER_TEMP/xcode.txt" 2>&1
+          mv "$RUNNER_TEMP/xcode.txt" "$out/xcode.txt"
+          grep -v -E '^[0-9a-f]{64}  ' "$out/xcode.txt"
+          echo "$(grep -c -E '^[0-9a-f]{64}  ' "$out/xcode.txt") SHA-256 lines in xcode.txt"
       # The image's own accessibility settings, wallpaper tinting and accent,
       # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
