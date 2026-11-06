@@ -44,6 +44,8 @@ presets! {
     Adwaita => "adwaita", "adwaita.toml";
     /// Apple's macOS 26 Tahoe.
     MacosTahoe => "macos-tahoe", "macos-tahoe.toml";
+    /// Apple's macOS 12 Monterey to macOS 15, its facts read on macOS 15.
+    MacosMonterey => "macos-monterey", "macos-monterey.toml";
 }
 
 impl PresetId {
