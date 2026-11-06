@@ -46,7 +46,8 @@
 #                  CI's MSRV job's checks, and the 0.8.0 plan's data checks
 #                  (the generated widgets, the function vectors, the facts and
 #                  their citations, the specification's names, entries and
-#                  traceability, the ledger). Nothing else; its summary says
+#                  traceability, the ledger). Nothing else; it skips the
+#                  PLAN_EXCLUDED steps as --commit does, and its summary says
 #                  it is no per-commit or release check.
 #
 # CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
@@ -86,7 +87,8 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  generate_sf_tracking.py --check,
                  check_function_vectors.py, check_facts.py,
                  check_fact_citations.py, check_spec_names.py,
-                 check_spec_entries.py, check_spec_trace.py, check_ledger.py)
+                 check_spec_entries.py, check_spec_trace.py, check_ledger.py);
+                 like --commit, it skips the steps PLAN_EXCLUDED lists
   -h, --help     print this help and exit
 EOF
 }
@@ -143,7 +145,7 @@ SCRIPT_START=$SECONDS
 # PLAN_EXCLUDED: the steps the 0.8.0 plan's transition breaks until a later
 # milestone (docs/todo_v0.7.1_model-completeness-plan.md, "What cannot build
 # meanwhile"), keyed by the step's description, valued by the milestone that
-# brings it back. The --commit run skips them by name. The full run still runs
+# brings it back. The --commit and --quick runs skip them by name. The full run still runs
 # each once, in a subshell: a failure is a warning naming its milestone, a pass
 # a warning to remove the step from this list; a key that names no step the
 # full run reached is a warning too, and while the list is not empty the full
@@ -154,7 +156,9 @@ SCRIPT_START=$SECONDS
 # feature-combination step covers every crate in one script: its crate-level
 # key is `feature combinations (<crate>)`, which runs scripts/check_features.sh
 # for the other crates (`--skip <crate>`) and for that crate as a step of its
-# own (`--only <crate>`).
+# own (`--only <crate>`). The MSRV workspace check (msrv_checks) takes every
+# crate whose `check (<crate>)` key is listed out of its `--workspace` run
+# (`--exclude <crate>`), so native-theme's own check stays in it.
 #
 # .github/workflows/ci.yml marks its matching exclusions with a comment that is
 # exactly `# PLAN_EXCLUDED: <description>` (a whole-line comment or one after
@@ -283,8 +287,8 @@ _run_check_impl() {
 }
 
 # A plan-excluded step ($1 its description, $2... its command): returns 1 for
-# any other step, which then runs as usual. --commit skips it; the full run
-# runs it and reports either outcome as a warning, never a failure.
+# any other step, which then runs as usual. --commit and --quick skip it; the
+# full run runs it and reports either outcome as a warning, never a failure.
 plan_excluded_step() {
     local description="$1"
     shift
@@ -293,7 +297,7 @@ plan_excluded_step() {
     PLAN_USED[$description]=1
     milestone=${PLAN_EXCLUDED[$description]}
     PLAN_SKIPPED+=("$description (until $milestone)")
-    if [[ $COMMIT_MODE ]]; then
+    if [[ $COMMIT_MODE || $QUICK_MODE ]]; then
         printf "${DIM}   %s: skipped (PLAN_EXCLUDED until %s)${NC}\n" "$description" "$milestone"
         return 0
     fi
@@ -444,14 +448,26 @@ NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-raste
 # MSRV and not on stable, so the job denies warnings, and it runs every
 # command below, each on its toolchain: the workspace's rust-version, then
 # the connectors' (the job's second toolchain, read from ci.yml). Every mode
-# runs all of them, exactly as the job does.
+# runs all of them, exactly as the job does. A crate whose `check (<crate>)`
+# key PLAN_EXCLUDED lists leaves the workspace check (`--exclude`), as ci.yml's
+# marked `--exclude`s take it out of the job's: listing the step itself would
+# drop native-theme's all-features check with it.
 MSRV_TOOLCHAIN="+$(grep -E '^rust-version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')"
 CONNECTOR_TOOLCHAIN="+$(sed -n '/^  msrv:/,/^  [a-z-]*:$/p' .github/workflows/ci.yml \
     | grep -oE 'rust-toolchain@[0-9.]+' | sed -n 2p | cut -d@ -f2)"
 msrv_checks() {
-    run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (the workspace but the gpui and egui crates, all features)" \
-        env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check --workspace --exclude native-theme-gpui \
-        --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
+    local crate
+    local excluded=(--exclude native-theme-gpui --exclude native-theme-egui --exclude native-theme-egui-widgets)
+    local scope="the workspace but the gpui and egui crates"
+    for crate in $WORKSPACE_CRATES; do
+        case "$crate" in native-theme-gpui | native-theme-egui | native-theme-egui-widgets) continue ;; esac
+        if [[ -n "${PLAN_EXCLUDED["check ($crate)"]+set}" ]]; then
+            excluded+=(--exclude "$crate")
+            scope="the workspace but the gpui and egui crates and the plan-excluded ones"
+        fi
+    done
+    run_check "MSRV $MSRV_TOOLCHAIN, -D warnings ($scope, all features)" \
+        env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check --workspace "${excluded[@]}" --all-features --locked
     run_check "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
         env RUSTFLAGS=-Dwarnings cargo "$MSRV_TOOLCHAIN" check -p native-theme --locked
     run_check "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (the egui crates, all features)" \
@@ -515,6 +531,12 @@ if [[ $QUICK_MODE ]]; then
     for w in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
         printf "   ${YELLOW}${ICON_WARN}${NC} %s\n" "$w"
     done
+    if [ "${#PLAN_SKIPPED[@]}" -gt 0 ]; then
+        printf "\n${BOLD}PLAN_EXCLUDED (the 0.8.0 plan's transition):${NC}\n"
+        for s in "${PLAN_SKIPPED[@]}"; do
+            printf "   ${DIM}%s${NC}\n" "$s"
+        done
+    fi
     printf "${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
     printf "\n   ${DIM}./scripts/check_release.sh --commit${NC} runs every third task and at a milestone's close.\n\n"
     exit 0
@@ -1276,6 +1298,19 @@ else
 fi
 run_check "data documents: sf_tracking generator self-test" \
     python3 scripts/generate_sf_tracking.py --self-test
+# The platform functions and placement strategies (specification S2.2, S13):
+# each one the facts or a bundled preset calls is implemented and has its
+# vector table, and each table has its test.
+run_check "data documents: every platform function has its vectors" \
+    python3 scripts/check_function_vectors.py
+run_check "data documents: function vectors self-test" \
+    python3 scripts/check_function_vectors.py --self-test
+# The enabled units' trace lines (specification S17, S20): each live row's line
+# of a platform whose preset exists is carried by a fact or carries a verdict.
+run_check "data documents: the enabled units' trace lines are carried" \
+    python3 scripts/check_facts_trace.py --enabled
+run_check "data documents: facts trace self-test" \
+    python3 scripts/check_facts_trace.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

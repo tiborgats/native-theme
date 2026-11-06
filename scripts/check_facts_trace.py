@@ -6,7 +6,7 @@ Reads the traceability (`docs/todo_v0.7.1_model-completeness-spec-trace-<platfor
 |` table, as scripts/check_spec_trace.py reads it), the gap maps (which rows are live: check_spec_trace.py's
 Appendix A rows less the withdrawn ones), the facts and state-model entries (`docs/facts/<platform>/*.toml`, as
 scripts/check_facts.py loads them; `imported/` and `staged/` are no facts), which presets exist
-(check_facts.existing_presets: the new model's `native-theme/src/next/presets/<id>.toml`) and the units
+(check_facts.existing_presets: the new model's `<check_facts.preset_dir()>/<id>.toml`) and the units
 (`scripts/widget_units.toml`, scripts/generate_widgets.py's list, below).
 
 Run from the repository root:
@@ -518,7 +518,8 @@ placement = false
 '''
 
 
-def write_fixture(root: Path, presets=(), units=SELF_TEST_UNITS, extra=None):
+def write_fixture(root: Path, presets=(), units=SELF_TEST_UNITS, extra=None, switched=False):
+    """The fixture tree, laid out as before the switch (`next/mod.rs` there) or, `switched`, after it."""
     files = {f"docs/{check_spec_trace.MAP.name}": SELF_TEST_MAP,
              "docs/todo_v0.7.1_model-completeness-gap-map-gnome.md": SELF_TEST_GNOME_MAP,
              "docs/todo_v0.7.1_model-completeness-spec-trace-gnome.md": SELF_TEST_GNOME_TRACE}
@@ -527,8 +528,10 @@ def write_fixture(root: Path, presets=(), units=SELF_TEST_UNITS, extra=None):
         files[f"docs/todo_v0.7.1_model-completeness-spec-trace-{slug}.md"] = SELF_TEST_OTHER_TRACE.format(row=row)
     files.update(SELF_TEST_FACTS)
     files.update(extra or {})
+    if not switched:
+        files[check_facts.NEXT_MOD.as_posix()] = ""
     for p in presets:
-        files[f"{check_facts.PRESET_DIRS[0].as_posix()}/{p}.toml"] = ""
+        files[f"native-theme/src/{'' if switched else 'next/'}presets/{p}.toml"] = ""
     if units is not None:
         files[UNITS.as_posix()] = units
     for rel, text in files.items():
@@ -550,10 +553,10 @@ def self_test() -> int:
         base = Path(tmp)
         n = [0]
 
-        def run(presets=(), units=SELF_TEST_UNITS, unit=None, extra=None, every=False):
+        def run(presets=(), units=SELF_TEST_UNITS, unit=None, extra=None, every=False, switched=False):
             root = base / f"case{n[0]}"
             n[0] += 1
-            write_fixture(root, presets, units, extra)
+            write_fixture(root, presets, units, extra, switched)
             ctx = fixture_context(root)
             known = read_units(root)
             chosen = None if every else ([known[unit]] if unit else list(known.values()))
@@ -578,6 +581,13 @@ def self_test() -> int:
         want = [("gnome", "GN-1.3"), ("gnome", "GN-1.5"), ("gnome", "GN-1.9†")]
         if rows_of(found) != want or len(found) != 3:
             failures.append(f"adwaita, slice: got {found}, want rows {want}, one finding per line")
+        # after the switch the presets are native-theme/src/presets/'s, and a preset left under next/ is not read
+        found, _, _ = run(presets=("adwaita",), switched=True)
+        if rows_of(found) != want or len(found) != 3:
+            failures.append(f"adwaita after the switch: got {found}, want rows {want}")
+        found, _, _ = run(switched=True, extra={"native-theme/src/next/presets/adwaita.toml": ""})
+        if found:
+            failures.append(f"a preset under next/ after the switch: read, {found}")
         # a fact carrying the row passes it; the imported folder carries nothing
         fact = SELF_TEST_FACTS["docs/facts/gnome/button.toml"]
         extra = {"docs/facts/gnome/tokens.toml": "\n".join(

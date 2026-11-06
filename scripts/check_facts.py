@@ -269,15 +269,17 @@ finding. The generation rule applies as to a fact.
 A palette fact (`docs/facts/palettes/<project>.toml`, S17 *Palette facts*): `key = "<project>.<flavour>.<name>"`
 (`<project>` the file's stem), a colour literal as `value`, at least one citation; no `rows`, `when`,
 `scheme_file` or `accent`; its sources' entries are palette entries (`generations = []`, `palette = true`). Every
-bundled palette (bundled_palettes(): a file of PRESET_DIRS whose `[preset] kind` is `"palette"`) has every
+bundled palette (bundled_palettes(): a file of preset_dir() whose `[preset] kind` is `"palette"`) has every
 `[palette.sources]` value a palette-fact key, every key of `[palette.sources]` and `[palette.picks]` the TOML path of a
 string it states holding a colour literal, and every such string in exactly one of the two (S11, S14). Today no
 bundled palette exists, so this rule checks nothing on the repository; the self-test runs it.
 
 existing_presets() is the one function that says which presets exist: the stems of the new model's presets,
-`native-theme/src/next/presets/<id>.toml` (`presets/` after the switch), that are platform presets, so today's
-presets in `native-theme/src/presets/` do not count (the M1a design's decision 8). The directory may be absent or
-empty: then no preset exists and the generation rule asks nothing of a fact without `preset:`.
+`<preset_dir()>/<id>.toml`, that are platform presets. preset_dir() is `native-theme/src/next/presets/` while
+`native-theme/src/next/mod.rs` exists and `native-theme/src/presets/` once the switch has moved `next` into place
+(model_dir(), the M1a design's task 17), one folder, never both: until the move today's presets in
+`native-theme/src/presets/` do not count (the M1a design's decision 8). The directory may be absent or empty: then no
+preset exists and the generation rule asks nothing of a fact without `preset:`.
 
     python3 scripts/check_facts.py --self-test   # each rule on inline fixtures: a passing and a failing case
 """
@@ -301,7 +303,7 @@ CORE = Path("docs/todo_v0.7.1_model-completeness-spec.md")
 CATALOGUE = Path("docs/todo_v0.7.1_model-completeness-spec-widgets.md")
 GAP_MAPS = [Path(f"docs/todo_v0.7.1_model-completeness-gap-map-{p}.md")
             for p in ("gnome", "ios", "kde", "macos", "material", "windows")]
-PRESET_DIRS = (Path("native-theme/src/next/presets"),)
+NEXT_MOD = Path("native-theme/src/next/mod.rs")
 PLATFORMS = {
     "gnome": ("adwaita",),
     "kde": ("kde-breeze",),
@@ -585,29 +587,39 @@ def gap_map_rows(root: Path) -> set | None:
     return out if found else None
 
 
+def model_dir(root: Path) -> Path:
+    """The new model's source folder: native-theme/src/next while its mod.rs exists, native-theme/src once the switch
+    has moved `next` into place. One folder, never both."""
+    return Path("native-theme/src/next") if (root / NEXT_MOD).is_file() else Path("native-theme/src")
+
+
+def preset_dir(root: Path) -> Path:
+    """The new model's preset folder (model_dir()'s `presets`)."""
+    return model_dir(root) / "presets"
+
+
 def existing_presets(root: Path) -> set:
-    """The platform presets that exist: the stems of the new model's native-theme/src/next/presets/<id>.toml."""
-    out = set()
-    for d in PRESET_DIRS:
-        if (root / d).is_dir():
-            out |= {p.stem for p in (root / d).glob("*.toml") if p.stem in ALL_PRESETS}
-    return out
+    """The platform presets that exist: the stems of the new model's <preset_dir()>/<id>.toml."""
+    d = root / preset_dir(root)
+    if not d.is_dir():
+        return set()
+    return {p.stem for p in d.glob("*.toml") if p.stem in ALL_PRESETS}
 
 
 def bundled_palettes(root: Path) -> list:
-    """(path, text, data) of every file of PRESET_DIRS whose [preset] kind is "palette" (S11, S14)."""
+    """(path, text, data) of every file of preset_dir() whose [preset] kind is "palette" (S11, S14)."""
     out = []
-    for d in PRESET_DIRS:
-        if not (root / d).is_dir():
+    d = root / preset_dir(root)
+    if not d.is_dir():
+        return out
+    for p in sorted(d.glob("*.toml")):
+        text = p.read_text(encoding="utf-8")
+        try:
+            data = tomllib.loads(text)
+        except tomllib.TOMLDecodeError:
             continue
-        for p in sorted((root / d).glob("*.toml")):
-            text = p.read_text(encoding="utf-8")
-            try:
-                data = tomllib.loads(text)
-            except tomllib.TOMLDecodeError:
-                continue
-            if isinstance(data.get("preset"), dict) and data["preset"].get("kind") == "palette":
-                out.append((p.relative_to(root).as_posix(), text, data))
+        if isinstance(data.get("preset"), dict) and data["preset"].get("kind") == "palette":
+            out.append((p.relative_to(root).as_posix(), text, data))
     return out
 
 
@@ -4056,13 +4068,16 @@ foreground = "#cdd6f4"
 
 
 def write_fixture(root: Path, files: dict):
+    """The fixture tree, laid out as before the switch (`next/mod.rs` there)."""
     for rel, text in files.items():
         p = root / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
     (root / FACTS).mkdir(parents=True, exist_ok=True)
     (root / SOURCES).write_text(SELF_TEST_SOURCES, encoding="utf-8")
-    pdir = root / PRESET_DIRS[0]
+    (root / NEXT_MOD).parent.mkdir(parents=True, exist_ok=True)
+    (root / NEXT_MOD).write_text("", encoding="utf-8")
+    pdir = root / preset_dir(root)
     pdir.mkdir(parents=True, exist_ok=True)
     for p in ALL_PRESETS:
         (pdir / f"{p}.toml").write_text("", encoding="utf-8")
@@ -5109,12 +5124,21 @@ def self_test() -> int:
         root = base / "presets"
         if existing_presets(root):
             failures.append(f"existing presets, no directory: got {sorted(existing_presets(root))}")
-        for rel in ("native-theme/src/presets/adwaita.toml", PRESET_DIRS[0] / "macos-tahoe.toml",
-                    PRESET_DIRS[0] / "nord.toml"):
+        for rel in (NEXT_MOD, "native-theme/src/presets/adwaita.toml", "native-theme/src/next/presets/macos-tahoe.toml",
+                    "native-theme/src/next/presets/nord.toml"):
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_text("", encoding="utf-8")
         if existing_presets(root) != {"macos-tahoe"}:
             failures.append(f"existing presets, today's and the new model's: got {sorted(existing_presets(root))}")
+        # after the switch (no next/mod.rs) the new model's presets are native-theme/src/presets/, and next/ is not read
+        root = base / "presets-after-the-switch"
+        for rel in ("native-theme/src/presets/adwaita.toml", "native-theme/src/presets/nord.toml",
+                    "native-theme/src/next/presets/macos-tahoe.toml"):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text("", encoding="utf-8")
+        if (model_dir(root), existing_presets(root)) != (Path("native-theme/src"), {"adwaita"}):
+            failures.append(f"existing presets after the switch: got {model_dir(root)}, "
+                            f"{sorted(existing_presets(root))}")
         types = {k: key_info(ctx, k)[4] for k in ("button.label.text.font.family", "token.text.fallbacks.families",
                                                    "button.mark.glyph.source", "token.icons.theme")}
         if types != {"button.label.text.font.family": "Value<String>", "token.text.fallbacks.families": "Vec<String>",

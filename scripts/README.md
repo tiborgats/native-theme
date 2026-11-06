@@ -28,20 +28,26 @@ Generates looping spinner GIF animations from the bundled Material and Lucide
 SVG icons into `native-theme/docs/assets/`. Each GIF shows the spinner centered
 on a styled card background (24 rotation frames, 42ms/frame).
 
-Also supports `--theme-switching` mode to assemble pre-captured PNG frames into
-an animated theme-switching GIF, each frame at its captured size (the size of
-the screenshots beside it; frames of differing sizes are refused). Callers pass
-the explicit per-connector output path via `--theme-switching-output`.
-
 Requires: Python 3, Pillow, ImageMagick 7
 
 ```sh
 # Spinner GIFs (default output: native-theme/docs/assets/)
 python3 scripts/generate_gifs_spinners.py
+```
 
-# Theme-switching GIF from captured frames
-python3 scripts/generate_gifs_spinners.py --theme-switching /path/to/frames \
-    --theme-switching-output connectors/native-theme-iced/docs/assets/theme-switching.gif
+## generate_gifs_assemble.py
+
+Assembles pre-captured PNG frames (`frame-*.png`, in name order) into an
+animated, looping theme-switching GIF, each frame at its captured size (the
+size of the screenshots beside it; frames of differing sizes are refused), on
+a white background, two seconds per frame. `generate_gifs_theme_switching.sh`
+calls it with each connector's output path.
+
+Requires: Python 3, Pillow
+
+```sh
+python3 scripts/generate_gifs_assemble.py /path/to/frames \
+    connectors/native-theme-iced/docs/assets/theme-switching.gif
 ```
 
 ## generate_screenshots_iced.sh
@@ -144,7 +150,7 @@ dbus-send (D-Bus), Python 3, Pillow
 
 Captures four preset/variant pairs (kde-breeze dark, material-3 light,
 catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
-each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
+each set into a looping theme-switching GIF via `generate_gifs_assemble.py`.
 Each frame passes `capture_window.sh`'s check. The frames go to temporary
 directories, which the script removes when it ends, fails or is interrupted.
 
@@ -961,8 +967,10 @@ expression in S2.2's grammar), gap-map row IDs, a `when` as S11's, citations
 with the fields of their kind and a pinned source, `scheme_file` and `accent`
 both or neither in `kde/` only, and the generation rule: without `preset:`,
 its citations together serve each preset of its directory that exists (the
-new model's, `native-theme/src/next/presets/<id>.toml`; today's presets do
-not count, and with none the rule asks nothing). A
+new model's, `native-theme/src/next/presets/<id>.toml` while
+`native-theme/src/next/mod.rs` exists and `native-theme/src/presets/<id>.toml`
+once the switch has moved `next` into place, one folder, never both; until
+then today's presets do not count, and with none the rule asks nothing). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
@@ -1101,7 +1109,9 @@ python3 scripts/check_fact_citations.py --self-test
 
 ## import_platform_facts.py
 
-Imports today's `docs/platform-facts.md` rows (at `fc6109d1`) into
+Imports today's `docs/platform-facts.md` rows (as `fc6109d1` holds the
+document, read through `git show`, so the switch's generated document does
+not change them) into
 `docs/facts/imported/<platform>.toml`, the 0.8.0 plan's lane input: one
 `[[row]]` per row and platform cell of Chapter 2, and per row of Chapter 1's
 section of that platform, with the property, the line, the cell's text as
@@ -1118,7 +1128,7 @@ exits 1 when the files differ from a fresh run (until a lane removes its
 first entry); `--self-test` runs every rule on a fixture document, gap maps
 and traces. Not in `check_release.sh` (the plan's table of scripts).
 
-Requires Python 3.11.
+Requires Python 3.11 and a git checkout holding `fc6109d1`.
 
 ```sh
 python3 scripts/import_platform_facts.py
@@ -1129,8 +1139,10 @@ python3 scripts/import_platform_facts.py --self-test
 ## convert_inheritance_rules.py
 
 Converts the `[uniform]` and `[per_platform]` rules of
-`docs/inheritance-rules.toml` (at `fc6109d1`) into S19.2's staged file,
-`docs/facts/staged/inheritance-bases.toml`: per preset that exists today
+`docs/inheritance-rules.toml` into S19.2's staged file,
+`docs/facts/staged/inheritance-bases.toml`, the rules and today's presets
+read as `fc6109d1` holds them (through `git show`, so their removal at the
+switch does not change the file): per preset that exists today
 (`ios-26` has none; the community presets become palettes), each field
 today's preset leaves to a rule under a scheme, with the S2.2 reference the
 rule implies over the new model's paths (`= role.window.background`,
@@ -1146,7 +1158,7 @@ counts per preset. `--check` exits 1 when the file differs from a fresh run;
 `--self-test` runs every rule on fixture rules, catalogue and presets. Not
 in `check_release.sh`.
 
-Requires Python 3.11.
+Requires Python 3.11 and a git checkout holding `fc6109d1`.
 
 ```sh
 python3 scripts/convert_inheritance_rules.py
@@ -1168,7 +1180,8 @@ per measured output), a column header row, and rows whose cells are
 spelled by their column's type, with `cite` and `quote` (published) or
 `evidence` (measured) where the route needs them. Checks that every `pub`
 or `pub(crate)` function of the `platform` module
-(`native-theme/src/next/platform/`, `src/platform/` after the switch), every
+(`native-theme/src/next/platform/`, `src/platform/` after the switch, one
+folder, never both), every
 platform function of S2.2's table that is implemented and, once the
 `placement` module exists, every strategy, and, once
 `transitions::interpolate_color` exists, every `ColorInterpolation` member
@@ -1204,7 +1217,10 @@ and marks; the widget's values struct; the entry's own enums), and
 and the registry's list), each through `rustfmt`. It reads the catalogue
 through `spec_catalogue.py` only, never touches the module's hand-written
 `mod.rs` and `tests.rs`, and leaves out the values a unit defers to a later
-unit (the button's `Placement` values, until M3's placement unit). The units
+unit (the button's `Placement` values, until M3's placement unit). While
+`native-theme/src/next/mod.rs` exists it writes `next/widgets/` and imports
+the model as `crate::next::`; once the switch has moved `next` into place,
+`native-theme/src/widgets/` and `crate::`, never both. The units
 file lists the enabled units, the deferrals with their units, and the
 hand-written units, enabled or not; a deferral to an enabled unit is an
 input error. `--check` writes nothing and exits 1 when a generated file
@@ -1228,7 +1244,8 @@ traceability, S20) is carried by a fact or a state-model entry of its
 platform's `docs/facts/` directory that lists its row in `rows` and whose key
 lies on the line's target (each line of a row separately), or carries a
 verdict, on the platforms
-whose presets exist (the new model's `native-theme/src/next/presets/`).
+whose presets exist (the new model's `native-theme/src/next/presets/`,
+`native-theme/src/presets/` after the switch).
 `--enabled` checks the units of `scripts/widget_units.toml` (the slice:
 `button`, the colour roles and the slice's tokens, with button's `Placement`
 values deferred and `token.behavior.scroll` staged; the same slice while the

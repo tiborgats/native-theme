@@ -5,7 +5,7 @@ The output is lane input, not facts: the facts gate and scripts/check_fact_citat
 (specification S17), and scripts/check_facts.py skips it. A lane turns each entry into a verified fact like any other,
 or records it as not a model value, and removes it; the folder is empty at the plan's M4, when this script is deleted.
 
-Run from the repository root:
+Run from the repository root (a git checkout holding SOURCE_PIN, below):
 
     python3 scripts/import_platform_facts.py             # writes docs/facts/imported/<platform>.toml
     python3 scripts/import_platform_facts.py --check     # exit 1 when the files differ from a fresh run
@@ -16,9 +16,9 @@ finds a difference, 2 on an input it cannot read or a wrong command line.
 
 Rows
 ----
-The source is `docs/platform-facts.md` at commit fc6109d1 (SOURCE_PIN; the file there is the file in the tree, which
-the script does not check: a later edit of the document makes the pin wrong, and the document is not edited before
-the switch, the plan's *Re-pin*). Its tables from `## Chapter 1` up to `## Appendix` are read; the conventions before
+The source is `docs/platform-facts.md` as commit fc6109d1 holds it (SOURCE_PIN, read through `git show`), so the
+switch's generated document (the M1a design's task 17) leaves the output as it is; the gap maps, their Appendix A and
+the traces below are read from the tree. Its tables from `## Chapter 1` up to `## Appendix` are read; the conventions before
 Chapter 1 and the verification appendix are not rows. A table is a header line, a separator line and the lines after
 it that start with `|`; cells are split at `|` not written `\\|`, which is a literal bar. A row with another number of
 cells than its header is an input error.
@@ -71,6 +71,7 @@ column), `[[row]]` entries in document order, each with `line` (`platform-facts.
 does not write is a difference; it holds until a lane removes its first entry.
 """
 import re
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -300,10 +301,22 @@ def gap_map_names(platform: str, map_text: str, sections: dict, props: dict, liv
     return named, none_cells, (unresolved, section_only)
 
 
-def build(root: Path) -> tuple[dict, dict]:
-    """({platform: TOML text}, {platform: counts})."""
+def pinned(root: Path, path: Path, rev: str) -> str:
+    """`path` as `rev` holds it in the repository at `root` (`git show <rev>:<path>`)."""
     try:
-        text = (root / FACTS_MD).read_text(encoding="utf-8")
+        run = subprocess.run(["git", "-C", str(root), "show", f"{rev}:{path.as_posix()}"], capture_output=True,
+                             check=False)
+    except OSError as err:
+        raise InputError(f"git: {err}") from err
+    if run.returncode != 0:
+        raise InputError(f"{path} at {rev}: {run.stderr.decode('utf-8', 'replace').strip()}")
+    return run.stdout.decode("utf-8")
+
+
+def build(root: Path, rev: str = SOURCE_PIN) -> tuple[dict, dict]:
+    """({platform: TOML text}, {platform: counts}), docs/platform-facts.md read as `rev` holds it."""
+    try:
+        text = pinned(root, FACTS_MD, rev)
         map_text = (root / MAP).read_text(encoding="utf-8")
     except OSError as err:
         raise InputError(str(err)) from err
@@ -586,6 +599,15 @@ SELF_TEST_WANT = [
 ]
 
 
+def self_tree(root: Path) -> str:
+    """The self-test's inputs as a git tree of the repository at `root` (created if need be), the `rev` build()
+    reads the document at."""
+    for args in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(["git", "-C", str(root), *args], capture_output=True, check=True)
+    return subprocess.run(["git", "-C", str(root), "write-tree"], capture_output=True, check=True,
+                          text=True).stdout.strip()
+
+
 def self_test() -> int:
     failures = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -596,13 +618,16 @@ def self_test() -> int:
             run.n += 1
             (root / DOCS).mkdir(parents=True)
             (root / FACTS_MD).write_text(facts, encoding="utf-8")
+            # the document is read as the tree holds it, not from the folder
+            rev = self_tree(root)
+            (root / FACTS_MD).write_text("", encoding="utf-8")
             (root / MAP).write_text(SELF_TEST_MAP, encoding="utf-8")
             for p in PLATFORMS:
                 gm = (maps or SELF_TEST_GAP_MAPS)[p]
                 (root / DOCS / f"todo_v0.7.1_model-completeness-gap-map-{p}.md").write_text(gm, encoding="utf-8")
                 (root / DOCS / f"todo_v0.7.1_model-completeness-spec-trace-{p}.md").write_text(
                     "| Row | Target | Kind |\n|---|---|---|\n" + SELF_TEST_TRACES[p], encoding="utf-8")
-            return root, build(root)
+            return root, build(root, rev)
         run.n = 0
 
         root, (out, counts) = run()
@@ -652,12 +677,17 @@ def self_test() -> int:
                 failures.append(f"{label}: accepted")
             except InputError:
                 pass
+        try:
+            build(root, "0" * 40)
+            failures.append("a pin the repository lacks: accepted")
+        except InputError:
+            pass
         if toml_string('a"b\\c\u0001') != '"a\\"b\\\\c\\u0001"':
             failures.append(f"toml_string: got {toml_string(chr(97) + chr(34))}")
     for failure in failures:
         print(f"self-test FAIL: {failure}", file=sys.stderr)
     if not failures:
-        print(f"self-test ok ({len(SELF_TEST_WANT)} fields, 4 refusals)")
+        print(f"self-test ok ({len(SELF_TEST_WANT)} fields, 5 refusals)")
     return 1 if failures else 0
 
 

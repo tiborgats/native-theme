@@ -10,7 +10,7 @@ STAGED) that each unit's preset step uses and the gate checks. The `[wrong_safet
 replace them, S19.2), nor `[no_inheritance]` and `[runtime_detection]`, which name no source. The file is removed at
 the plan's M4 (`scripts/check_ledger.py --final --staged-file`), and this script with it.
 
-Run from the repository root:
+Run from the repository root (a git checkout holding SOURCE_PIN, below):
 
     python3 scripts/convert_inheritance_rules.py             # writes the staged file
     python3 scripts/convert_inheritance_rules.py --check     # exit 1 when it differs from a fresh run
@@ -21,7 +21,9 @@ a difference, 2 on an input it cannot read or a wrong command line.
 
 Rules
 -----
-The rules are read at commit fc6109d1 (SOURCE_PIN, the file in the tree; it is not edited before its removal). A
+The rules are read as commit fc6109d1 holds them (SOURCE_PIN, through `git show`), and so are today's presets
+(below), so the switch's removal of both (the M1a design's task 17) leaves the output as it is; the catalogue is read
+from the tree. A
 `[defaults_internal]` or `[uniform]` rule `"<field>" = "<source>"` holds on every preset; a `[per_platform]` rule's
 `fallback` is what today's resolve() fills on every preset, its platform keys (`macos`, `windows`, `kde`, `gnome`)
 documenting each platform's own source: the entry takes the `fallback` and names in its `note` the preset's platform
@@ -36,7 +38,7 @@ font rule). A source that is no path (`defaults.line_height * size`) gives no va
 
 Presets
 -------
-The new model's platform presets that have one today (PRESETS: today's `native-theme/src/presets/<id>.toml`; `ios-26`
+The new model's platform presets that have one today (PRESETS: today's `native-theme/src/presets/<id>.toml` at the pin; `ios-26`
 has none, and the community presets become palettes, which have no bases). A rule's field is inherited on a preset
 when today's preset leaves it unset under a scheme (`[light.<widget>]`, `[dark.<widget>]`, the field's TOML key with or
 without its unit suffix `_px`, `_ms`, `_pt`, `_deg`); `schemes` lists those. A rule whose field the preset states under
@@ -80,6 +82,7 @@ fields in its lists' order, each field's sub-fields in its keys' order): `preset
 where a field is empty or the rule needs a word.
 """
 import re
+import subprocess
 import sys
 import tempfile
 import tomllib
@@ -416,13 +419,25 @@ def stated(preset: dict, scheme: str, field: str) -> bool:
     return isinstance(node, dict) and any(segs[-1] + s in node for s in SUFFIXES)
 
 
-def build(root: Path) -> tuple[str, dict]:
+def pinned(root: Path, path: Path, rev: str) -> str:
+    """`path` as `rev` holds it in the repository at `root` (`git show <rev>:<path>`)."""
     try:
-        rules_text = (root / RULES).read_text(encoding="utf-8")
+        run = subprocess.run(["git", "-C", str(root), "show", f"{rev}:{path.as_posix()}"], capture_output=True,
+                             check=False)
+    except OSError as err:
+        raise InputError(f"git: {err}") from err
+    if run.returncode != 0:
+        raise InputError(f"{path} at {rev}: {run.stderr.decode('utf-8', 'replace').strip()}")
+    return run.stdout.decode("utf-8")
+
+
+def build(root: Path, rev: str = SOURCE_PIN) -> tuple[str, dict]:
+    """The staged file's text and the counts per preset, the rules and today's presets as `rev` holds them."""
+    try:
+        rules_text = pinned(root, RULES, rev)
         rules = tomllib.loads(rules_text)
         cat = Catalogue((root / CATALOGUE).read_text(encoding="utf-8"))
-        presets = {p: tomllib.loads((root / TODAY_PRESETS / f"{p}.toml").read_text(encoding="utf-8"))
-                   for p in PRESETS}
+        presets = {p: tomllib.loads(pinned(root, TODAY_PRESETS / f"{p}.toml", rev)) for p in PRESETS}
     except (OSError, tomllib.TOMLDecodeError) as err:
         raise InputError(str(err)) from err
     lines = rule_lines(rules_text)
@@ -713,6 +728,15 @@ SELF_TEST_WANT = [
 ]
 
 
+def self_tree(root: Path) -> str:
+    """The self-test's inputs as a git tree of the repository at `root` (created if need be), the `rev` build()
+    reads them at."""
+    for args in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(["git", "-C", str(root), *args], capture_output=True, check=True)
+    return subprocess.run(["git", "-C", str(root), "write-tree"], capture_output=True, check=True,
+                          text=True).stdout.strip()
+
+
 def self_test() -> int:
     failures = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -723,7 +747,13 @@ def self_test() -> int:
         (root / TODAY_PRESETS).mkdir(parents=True)
         for p in PRESETS:
             (root / TODAY_PRESETS / f"{p}.toml").write_text(SELF_TEST_PRESETS.get(p, ""), encoding="utf-8")
-        text, counts = build(root)
+        rev = self_tree(root)
+        # the rules and presets are read at the pin, not from the tree
+        (root / RULES).unlink()
+        for p in PRESETS:
+            (root / TODAY_PRESETS / f"{p}.toml").write_text("[light.button]\nbackground_color = \"#000000\"\n",
+                                                           encoding="utf-8")
+        text, counts = build(root, rev)
         entries = {(b["preset"], b["field"]): b for b in tomllib.loads(text)["base"]}
         for preset, field, key, want in SELF_TEST_WANT:
             got = entries.get((preset, field))
@@ -746,6 +776,11 @@ def self_test() -> int:
         if order[:2] != ["defaults.selection_background", "button.border.corner_radius"] or order[-1] != \
                 "text_scale.caption.line_height":
             failures.append(f"order: got {order}")
+        try:
+            build(root, "0" * 40)
+            failures.append("a pin the repository lacks: accepted")
+        except InputError:
+            pass
         if write(root, text, check=False) != [f"{STAGED.as_posix()}: missing"] or write(root, text, check=True):
             failures.append("write, then check: not clean")
         (root / STAGED).write_text(text.replace("role.window.background", "role.view.background"), encoding="utf-8")
@@ -754,7 +789,7 @@ def self_test() -> int:
         (root / RULES).write_text(SELF_TEST_RULES.replace('fallback = "defaults.text_color"\n', ""),
                                   encoding="utf-8")
         try:
-            build(root)
+            build(root, self_tree(root))
             failures.append("a [per_platform] table without fallback: accepted")
         except InputError:
             pass

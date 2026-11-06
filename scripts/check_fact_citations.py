@@ -2341,7 +2341,7 @@ def self_test() -> int:
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
         # the quote check does not depend on the presets that exist: none exist, a wrong literal still fails
         root = base / "case0"
-        for f in (root / check_facts.PRESET_DIRS[0]).glob("*.toml"):
+        for f in (root / check_facts.preset_dir(root)).glob("*.toml"):
             f.unlink()
         buttons = root / "docs/facts/gnome/buttons.toml"
         buttons.write_text(buttons.read_text(encoding="utf-8").replace("0.07)", "0.08)"), encoding="utf-8")
