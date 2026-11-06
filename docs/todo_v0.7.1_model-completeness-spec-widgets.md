@@ -9265,10 +9265,13 @@ tertiary); `background`, `on_background`, `surface`, `on_surface`, `surface_vari
 [MAT-X1]. Beside them, the platform popup-menu style's colours Compose's text context menu resolves,
 `popup_menu_background` (`Widget_PopupMenu`'s `colorBackground`) and `popup_menu_text`
 (`TextAppearance_Widget_PopupMenu_Large`'s `textColorPrimary`) [MAT-P3-11†]. The typed record's fields and the global
-roles reference them (`accent = role.@primary`). The preset states them as Compose's baseline scheme, the fixed
-tokens of `lightColorScheme()` and `darkColorScheme()`; where a layer above the preset gives the seed input, R2.6,
-`input.accent`, the preset's one input and so its `accent_inputs`, the accent-derivation layer states each as the
-scheme function's `m3_role` of that seed (S9.1, S9.2; ADD-A134).
+roles reference them (`accent = role.@primary`). The preset states the `md.sys.color` roles as Compose's baseline
+scheme, the fixed tokens of `lightColorScheme()` and `darkColorScheme()` (`shadow`, which those tokens do not hold,
+as material-web's `md.sys.color` states it); where a layer above the preset gives the seed input, R2.6,
+`input.accent`, the preset's one input and so its `accent_inputs`, the accent-derivation layer states each
+`md.sys.color` role as the scheme function's `m3_role` of that seed (S9.1, S9.2; ADD-A134). The two popup-menu
+colours are neither baseline tokens nor dynamic-scheme roles: the preset states them from their platform styles,
+and the layer states neither.
 
 ### Text ramp
 
