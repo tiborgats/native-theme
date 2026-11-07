@@ -8,10 +8,13 @@
 
 
 # Geometry and text the plain, subtle, toggle, drop-down and repeat buttons' styles set alike. The accent
-# style (`primary`) sets none of them, and the app-bar button (`tool`) its own: both are left out here (the accent
-# style's, measured, follow below). The padding is ButtonPadding plus the border's width on each side (S2.11's box, ADD-A125): the
-# stroke takes no layout space in the model, while WinUI adds BorderThickness to Padding to measure the content and
-# deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and Grid call).
+# style (`primary`, and the dialog's default button, which takes it) sets none of them: the WinUI host read
+# DefaultButtonStyle's setters reaching it (register U1, measured), so the border width and the label's font are
+# stated once for both, with the host's reads beside the setters, and its padding and focus offset below. The app-bar
+# button (`tool`) sets its own, stated after these. The padding is ButtonPadding plus the border's width on each
+# side (S2.11's box, ADD-A125): the stroke takes no layout space in the model, while WinUI adds BorderThickness to
+# Padding to measure the content and deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and
+# Grid call).
 
 [[fact]]
 key = "button.body.padding.top"
@@ -239,7 +242,6 @@ quote = "const XSIZEF combinedThickness = CBorder::HelperGetCombinedThickness(th
 
 [[fact]]
 key = "button.body.stroke.top.width"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "1px"
 rows = []
 
@@ -292,10 +294,19 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorde
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:83"
 quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_top_width_px"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_top_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.right.width"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "1px"
 rows = []
 
@@ -348,10 +359,19 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorde
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:83"
 quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_right_width_px"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_right_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "1px"
 rows = []
 
@@ -404,10 +424,19 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorde
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:83"
 quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_bottom_width_px"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_bottom_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.left.width"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "1px"
 rows = []
 
@@ -460,6 +489,16 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorde
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/RepeatButton_themeresources.xaml:83"
 quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource ButtonBorderThemeThickness}\" />"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_left_width_px"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_left_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.top.dash"
@@ -779,17 +818,6 @@ tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.top.width"
-when = { variants = ["primary"], not_states = ["default"] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_top_width_px"
-tolerance = 0
-
-[[fact]]
-key = "button.body.stroke.top.width"
 when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
 value = "0px"
 rows = []
@@ -836,28 +864,6 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButt
 quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
-key = "button.body.stroke.top.width"
-when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_top_width_px"
-tolerance = 0
-
-[[fact]]
-key = "button.body.stroke.right.width"
-when = { variants = ["primary"], not_states = ["default"] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_right_width_px"
-tolerance = 0
-
-[[fact]]
 key = "button.body.stroke.right.width"
 when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
 value = "0px"
@@ -903,28 +909,6 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggl
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
 quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
-
-[[fact]]
-key = "button.body.stroke.right.width"
-when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_right_width_px"
-tolerance = 0
-
-[[fact]]
-key = "button.body.stroke.bottom.width"
-when = { variants = ["primary"], not_states = ["default"] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_bottom_width_px"
-tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
@@ -974,28 +958,6 @@ source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButt
 quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
 
 [[fact]]
-key = "button.body.stroke.bottom.width"
-when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_bottom_width_px"
-tolerance = 0
-
-[[fact]]
-key = "button.body.stroke.left.width"
-when = { variants = ["primary"], not_states = ["default"] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_left_width_px"
-tolerance = 0
-
-[[fact]]
 key = "button.body.stroke.left.width"
 when = { variants = ["tool"], not_variants = ["toggle"], not_states = ["default"] }
 value = "0px"
@@ -1041,18 +1003,6 @@ quote = "<Setter Property=\"BorderThickness\" Value=\"{ThemeResource AppBarToggl
 kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/AppBarToggleButton_themeresources.xaml:207"
 quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource DefaultAppBarToggleButtonStyle}\" />"
-
-[[fact]]
-key = "button.body.stroke.left.width"
-when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-value = "1px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_left_width_px"
-tolerance = 0
-
 
 # The fill under the stroke (Stroke.fill_clip, ADD-A121): WinUI's BackgroundSizing, InnerBorderEdge in
 # every style but the accent one and the checked toggles, whose OuterBorderEdge is `box`.
@@ -2359,7 +2309,6 @@ tolerance = 0
 # default language's script is Latin (PALFontAndScriptServices.cpp:201-213; Segoe UI otherwise)
 [[fact]]
 key = "button.label.text.font.family"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "Segoe UI Variable"
 rows = []
 
@@ -2383,9 +2332,18 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/RichTextServices/xcp/PALFontAndScriptServices.cpp:203"
 quote = "m_strDefaultFontNameString = XSTRING_PTR_FROM_STORAGE(c_strUltimateFallbackFontNameCobaltStorage);"
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_family"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.label_font_family"
+tolerance = 0
+
 [[fact]]
 key = "button.label.text.font.size"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = "14px"
 rows = []
 
@@ -2419,9 +2377,18 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/themes/generic.xaml:36"
 quote = "<x:Double x:Key=\"ControlContentThemeFontSize\">14</x:Double>"
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_size_px"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.label_font_size_px"
+tolerance = 0
+
 [[fact]]
 key = "button.label.text.font.weight"
-when = { not_variants = ["primary", "tool"], not_states = ["default"] }
 value = 400
 rows = []
 
@@ -2454,6 +2421,16 @@ quote = "<Setter Property=\"FontWeight\" Value=\"Normal\" />"
 kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.text/fontweights_normal.md:14"
 quote = "Specifies a font weight value of 400."
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.label_font_weight"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.font.style"
@@ -18240,41 +18217,6 @@ key = "button.label.text.wrap"
 when = { variants = ["tool"] }
 pending = "U518"
 rows = []
-
-# The accent style (`primary`) sets no font: the WinUI host read DefaultButtonStyle's on its label (U1, measured),
-# Segoe UI Variable 14 px 400, as for its padding, border width and focus margin.
-[[fact]]
-key = "button.label.text.font.family"
-when = { variants = ["primary"] }
-value = "Segoe UI Variable"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_family"
-tolerance = 0
-
-[[fact]]
-key = "button.label.text.font.size"
-when = { variants = ["primary"] }
-value = "14px"
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_size_px"
-tolerance = 0
-
-[[fact]]
-key = "button.label.text.font.weight"
-when = { variants = ["primary"] }
-value = 400
-rows = []
-
-[[fact.cite]]
-kind = "measured"
-evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_weight"
-tolerance = 0
 
 # The label's other text leaves (S2.8): the content presenter's default TextBlock and the app-bar TextLabel have no
 # casing or word-spacing property (the text drawn as written, no added word spacing; S17's zero stated by omission).
