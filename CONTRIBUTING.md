@@ -120,8 +120,11 @@ that the audit did not run where no cached database loads. `--commit` needs
 
 `--commit` and `--quick` are faster than the steps they list: where
 `cargo-nextest` is installed their test steps run through it (the doctests
-through `cargo test --doc`). The full run does not: every step runs, as listed
-above, through `cargo test`.
+through `cargo test --doc`), and a step whose declared inputs, tools,
+environment and command are unchanged since it last passed is skipped, the
+summary naming it `unchanged since <commit>` (`scripts/step_cache.sh`;
+`--no-cache` runs every step). The full run uses neither: every step runs, as
+listed above, through `cargo test`.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.

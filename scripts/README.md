@@ -324,15 +324,47 @@ exclusions with a YAML comment that is exactly
 `# PLAN_EXCLUDED: <description>`, and the first section fails unless the
 marks and the list name the same set.
 
-Where `cargo-nextest` is installed, `--commit` and `--quick` run their test
-steps through `cargo nextest run` (`cargo_tests` in the script), and through
-`cargo test --doc` where `cargo test` would have run doctests too; the full run
-runs every step through `cargo test`.
+Two speed-ups apply to `--commit` and `--quick` alone; the full run runs
+every step through `cargo test`, with no cache. Where `cargo-nextest` is
+installed, the test steps run `cargo nextest run` (`cargo_tests` in the
+script), and `cargo test --doc` where `cargo test` would have run doctests too.
+The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
+unchanged since it last passed; the summary lists each as
+`unchanged since <commit>`, and `--no-cache` runs every step.
 
 ```sh
 ./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
+./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
+```
+
+## step_cache.sh
+
+The step cache of `check_release.sh --commit` and `--quick`, sourced by it.
+A step is skipped only when the SHA-256 key of its run equals the one recorded
+when it last passed: the tool versions (`rustc -vV`, `cargo -vV`, clippy's,
+rustdoc's, rustfmt's, Python's, nextest's), both scripts' own hashes, the
+environment (but `_`, `SHLVL`, `OLDPWD`), the step's description and command,
+and the content of its declared inputs (`CACHE_INPUTS` in `check_release.sh`:
+files, directories and globs by path and content, a missing one by name;
+`__pycache__` folders left out). A cargo step's inputs (`@rust:<crates>`) are
+the workspace manifest, lock and tool configuration, every Cargo configuration
+file Cargo would read, and the directory of each workspace package the crates
+reach on this host with every feature on; where that reach holds a registry
+build helper that probes the host (`pkg-config`, `cc`, …) or a workspace build
+script or procedural macro not reviewed for what it reads, the step is not
+cached. A failed step records nothing, nor does one whose inputs changed while
+it ran; a step with no declaration always runs. The records are in
+`target/check-release-cache/`, one file per step.
+
+`--self-test` shows that a declared file edited, added, renamed or removed, a
+glob's new match, the script edited, the command or the environment changed,
+re-run the step, and that a failure records nothing; `check_release.sh` runs it
+in every mode.
+
+```sh
+bash scripts/step_cache.sh --self-test
 ```
 
 ## preset-check (tools/preset-check)
