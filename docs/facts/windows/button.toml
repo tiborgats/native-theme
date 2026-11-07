@@ -8,8 +8,8 @@
 
 
 # Geometry and text the plain, subtle, toggle, drop-down and repeat buttons' styles set alike. The accent
-# style (`primary`) sets none of them, and the app-bar button (`tool`) its own: both are left out here (see the lane's
-# unmeasured list). The padding is ButtonPadding plus the border's width on each side (S2.11's box, ADD-A125): the
+# style (`primary`) sets none of them, and the app-bar button (`tool`) its own: both are left out here (the accent
+# style's, measured, follow below). The padding is ButtonPadding plus the border's width on each side (S2.11's box, ADD-A125): the
 # stroke takes no layout space in the model, while WinUI adds BorderThickness to Padding to measure the content and
 # deflates by both to arrange it (Border.cpp's helpers, which ContentPresenter and Grid call).
 
@@ -657,16 +657,24 @@ kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/uielement_uselayoutrounding.md:22"
 quote = "The default is **true**."
 
-# Pending (S17, ADD-A122; register U1): the accent style (`primary`, and the dialog's default button, which takes
-# it) sets no Padding or BorderThickness; whether DefaultButtonStyle's setters reach it is the WinUI host's
-# measurement. The app-bar styles are their types' own (TargetType AppBarButton, AppBarToggleButton): the
-# AppBarButton's BorderThickness is the framework's default 0 and the AppBarToggleButton's 1; neither template
-# binds Padding (the content sits by its own margins), so `tool`'s padding stays pending.
+# The accent style (`primary`, and the dialog's default button, which takes it) sets no Padding or BorderThickness;
+# the WinUI host read DefaultButtonStyle's reaching it (register U1, measured): Padding 11,5,11,6 and
+# BorderThickness 1 on an AccentButtonStyle button and on a ContentDialog's default PrimaryButton, which the facts
+# state as the shared facts do, the padding plus the border's width (read_host.py's [button.*]). The app-bar styles
+# are their types' own (TargetType AppBarButton, AppBarToggleButton): the AppBarButton's BorderThickness is the
+# framework's default 0 and the AppBarToggleButton's 1; neither template binds Padding (the content sits by its own
+# margins: the host read Padding 0 and the parts' margins), so how `tool`'s content margins are stated as a padding
+# stays U1's question.
 [[fact]]
 key = "button.body.padding.top"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "6px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.padding_top_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.padding.top"
@@ -677,32 +685,52 @@ rows = []
 [[fact]]
 key = "button.body.padding.top"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
+value = "6px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.padding_top_px"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["primary"], not_states = ["default"] }
+value = "12px"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.padding_right_px"
+tolerance = 0
+
+[[fact]]
+key = "button.body.padding.right"
+when = { variants = ["tool"], not_states = ["default"] }
 pending = "U1"
 rows = []
 
 [[fact]]
 key = "button.body.padding.right"
-when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
-rows = []
-
-[[fact]]
-key = "button.body.padding.right"
-when = { variants = ["tool"], not_states = ["default"] }
-pending = "U1"
-rows = []
-
-[[fact]]
-key = "button.body.padding.right"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "12px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.padding_right_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.padding.bottom"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "7px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.padding_bottom_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.padding.bottom"
@@ -713,14 +741,24 @@ rows = []
 [[fact]]
 key = "button.body.padding.bottom"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "7px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.padding_bottom_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.padding.left"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "12px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.padding_left_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.padding.left"
@@ -731,14 +769,24 @@ rows = []
 [[fact]]
 key = "button.body.padding.left"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "12px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.padding_left_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.top.width"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_top_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.top.width"
@@ -790,14 +838,24 @@ quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource Defa
 [[fact]]
 key = "button.body.stroke.top.width"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_top_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.right.width"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_right_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.right.width"
@@ -849,14 +907,24 @@ quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource Defa
 [[fact]]
 key = "button.body.stroke.right.width"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_right_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_bottom_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.bottom.width"
@@ -908,14 +976,24 @@ quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource Defa
 [[fact]]
 key = "button.body.stroke.bottom.width"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_bottom_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.left.width"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.stroke_left_width_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.stroke.left.width"
@@ -967,8 +1045,13 @@ quote = "<Style TargetType=\"AppBarToggleButton\" BasedOn=\"{StaticResource Defa
 [[fact]]
 key = "button.body.stroke.left.width"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.stroke_left_width_px"
+tolerance = 0
 
 
 # The fill under the stroke (Stroke.fill_clip, ADD-A121): WinUI's BackgroundSizing, InnerBorderEdge in
@@ -2181,54 +2264,95 @@ kind = "published"
 source = "winapps-winrt-api@554b7e3a microsoft.ui.xaml/frameworkelement_focusvisualmargin.md:18"
 quote = "Provides margin values for the focus visual. The default is a [Thickness](thickness.md) with all properties (dimensions) equal to 0. A different runtime default is often provided by individual control templates."
 
-# Pending (S17, ADD-A122; register U1): AccentButtonStyle sets no FocusVisualMargin.
+# AccentButtonStyle sets no FocusVisualMargin; the WinUI host read DefaultButtonStyle's -3 on it and on the dialog's
+# default button (U1, measured), the offset the shared facts derive: the margin negated less the ring's width.
 [[fact]]
 key = "button.body.focus.offset.top"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.focus_offset_top_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.right"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.focus_offset_right_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.bottom"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.focus_offset_bottom_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.left"
 when = { variants = ["primary"], not_states = ["default"] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.focus_offset_left_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.top"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.focus_offset_top_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.right"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.focus_offset_right_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.bottom"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.focus_offset_bottom_px"
+tolerance = 0
 
 [[fact]]
 key = "button.body.focus.offset.left"
 when = { states = ["default"], context = [{ widget = "dialog", part = "action_area" }] }
-pending = "U1"
+value = "1px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.dialog_default.focus_offset_left_px"
+tolerance = 0
 
 
 # ContentControlThemeFontFamily -> XamlAutoFontFamily, which WinUI resolves to Segoe UI Variable where the
@@ -18117,25 +18241,40 @@ when = { variants = ["tool"] }
 pending = "U518"
 rows = []
 
-# The accent style (`primary`) sets no font: whether DefaultButtonStyle's setters reach it is U1's measurement, as
-# for its padding, border width and focus margin.
+# The accent style (`primary`) sets no font: the WinUI host read DefaultButtonStyle's on its label (U1, measured),
+# Segoe UI Variable 14 px 400, as for its padding, border width and focus margin.
 [[fact]]
 key = "button.label.text.font.family"
 when = { variants = ["primary"] }
-pending = "U1"
+value = "Segoe UI Variable"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_family"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.font.size"
 when = { variants = ["primary"] }
-pending = "U1"
+value = "14px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_size_px"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.font.weight"
 when = { variants = ["primary"] }
-pending = "U1"
+value = 400
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#button.primary.label_font_weight"
+tolerance = 0
 
 # The label's other text leaves (S2.8): the content presenter's default TextBlock and the app-bar TextLabel have no
 # casing or word-spacing property (the text drawn as written, no added word spacing; S17's zero stated by omission).

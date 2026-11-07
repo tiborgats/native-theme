@@ -123,10 +123,19 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/animation/ConnectedAnimationService.cpp:300"
 quote = "CreateCubicBezierEasingFunction(renderTarget->GetDCompTreeHost()->GetCompositor(), s_ControlPoint1, s_ControlPoint2, &cubicBezier)"
 
+# The scroll into view (W-P4-3†): a TextBox below a ScrollViewer's view focused by keyboard moves the view to its
+# final offset in one step, with no inertial change (the WinUI host, read_host.py's [scroll_into_view]): a stated
+# zero (U50). Its keyed timing has no curve to state, and `token.motion.timings` entries are no `Value` that a
+# zero duration's `Absent` could take (S2.7's rule for a transition): pending (U50), a spec finding.
 [[fact]]
 key = "token.motion.durations.scroll_into_view"
-pending = "U50"
+value = "0ms"
 rows = ["W-P4-3†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#scroll_into_view.duration_ms"
+tolerance = 0
 
 [[fact]]
 key = "token.motion.timings.scroll_into_view"
@@ -144,11 +153,19 @@ rows = ["W-P3-16†"]
 # The colour space (`token.motion.color_space`, S2.7, ADD-A125): the composition path's, which the brush transitions
 # take (a `ColorKeyFrameAnimation` interpolating in `CompositionColorSpace_Rgb`,
 # microsoft-ui-xaml@2.5.1 src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111), whose arithmetic the
-# compositor holds, not the cache: measured (U157).
+# compositor holds, not the cache: measured (U157). The WinUI host's brush transitions between colours of different
+# alpha over white draw straight interpolation (each channel and the alpha apart, unpremultiplied) within a level,
+# premultiplied and Oklab off by 16 to 51 levels (read_host.py's [color_space]); the model's `straight_srgb8`, whose
+# truncation toward zero lies beneath that precision.
 [[fact]]
 key = "token.motion.color_space"
-pending = "U157"
+value = "straight_srgb8"
 rows = ["W1-023"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#color_space.space"
+tolerance = 0
 
 
 # Behaviour: the system defaults the Win32 reference states (the reader reads the user's).
@@ -2693,20 +2710,33 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:26-28"
 quote = "//      <DiscreteDoubleKeyFrame Value=\"rValue\" KeyTime=\"{rEndTime}\"/>"
 
-# The blink time is the system's GetCaretBlinkTime, whose default no pinned source states (WinUI falls back to
-# 500ms only where it reads 0); the blink stops after the whole periods that fit in TextSelectionSettings' 5s
-# (CheckCaretBlinkTimeout, TextBoxView.cpp:2742-2763, three periods where none fits): pending (U505), with whether
-# the caret stays solid while the user types (the start timer of 1s, TextSelectionSettings.cpp:40, restarts on each
-# caret move while the storyboard runs on).
+# The blink time is the system's GetCaretBlinkTime (TextBoxHelpers.cpp:55-89; WinUI falls back to 500ms only where
+# it reads 0), which the WinUI host read as 530 on the runner image (register U505, measured): on for one blink
+# time, off for one. The blink stops after the whole periods that fit in TextSelectionSettings' 5s, three periods
+# where none fits (CheckCaretBlinkTimeout, TextBoxView.cpp:2742-2763), in S2.2's arithmetic as S4.2 writes it
+# (ADD-A134): `p` the period, add(blink_on, blink_off), `n` floor(div(5000ms, p)), the timeout
+# mul(p, add(n, mul(3, sub(1, min(n, 1))))), which stays pending (U505) until scripts/check_fact_citations.py
+# leaves the zero-fallback form's 1s unchecked (ADD-A134's follow-up; it reads them as literals today). Whether the caret stays solid while the user types (the start timer of
+# 1s, TextSelectionSettings.cpp:40, restarts on each caret move while the storyboard runs on) is still U505's.
 [[fact]]
 key = "token.caret.blink_on"
-pending = "U505"
+value = "530ms"
 rows = ["W3-24"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/frames.toml#system.GetCaretBlinkTime"
+tolerance = 0
 
 [[fact]]
 key = "token.caret.blink_off"
-pending = "U505"
+value = "530ms"
 rows = ["W3-24"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/frames.toml#system.GetCaretBlinkTime"
+tolerance = 0
 
 [[fact]]
 key = "token.caret.blink_timeout"
@@ -2725,17 +2755,28 @@ key = "token.caret.color"
 pending = "U506"
 rows = []
 
-# The caret's size comes from RichEdit's TxCreateCaret call (TextBoxView.cpp:839-868), whose width and whether it
-# draws a secondary caret for mixed-direction text no cached source states (U507).
+# The caret's size comes from RichEdit's TxCreateCaret call (TextBoxView.cpp:839-868), which no cached source states:
+# measured (U507). The WinUI host's recordings of a blinking caret draw it one pixel wide, and one caret where the
+# position has two visual places (the end of `abc אבג`, after its right-to-left run): no secondary caret.
 [[fact]]
 key = "token.caret.width"
-pending = "U507"
+value = "1px"
 rows = ["W3-24"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#caret.width_px"
+tolerance = 0
 
 [[fact]]
 key = "token.caret.secondary"
-pending = "U507"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#caret.secondary"
+tolerance = 0
 
 # No caret in a read-only text box: GetShouldRenderCaret requires the control not to be read-only.
 [[fact]]
@@ -2945,8 +2986,13 @@ key = "token.size_classes"
 pending = "U512"
 rows = []
 
-# Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled (U508's pass reads
-# the arithmetic); the rendering settings WinUI's DirectWrite path takes are not read yet (W3-22, U508).
+# Text: WinUI scales a font size by UISettings.TextScaleFactor where IsTextScaleFactorEnabled. At 150 % the WinUI
+# host's TextBlocks grow by 1.59 at 10 px and 1.05 at 68 px (text-scale/frames.toml), a curve that none of
+# `TextScaling`'s members (linear, Android's, Dynamic Type) states: pending (U508), a spec finding. The rendering
+# settings (W3-22): WinUI draws its text with greyscale antialiasing (no coloured pixel, read_host.py's
+# [text_rendering]); DirectWrite's default and monitor parameters on the runner image are ClearType's: gamma 1.8,
+# enhanced contrast 0.5, pixel geometry RGB. Its grid-fit and rendering modes read DEFAULT, which names no hinting
+# level, and no read names an LCD filter or a render engine: those three stay pending (U508).
 [[fact]]
 key = "token.text.scaling"
 pending = "U508"
@@ -2954,8 +3000,13 @@ rows = []
 
 [[fact]]
 key = "token.text.rendering.antialiasing"
-pending = "U508"
+value = "grayscale"
 rows = ["W3-22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.antialiasing"
+tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.hinting"
@@ -2964,8 +3015,13 @@ rows = ["W3-22"]
 
 [[fact]]
 key = "token.text.rendering.subpixel_order"
-pending = "U508"
+value = "rgb"
 rows = ["W3-22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.subpixel_order"
+tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.engine"
@@ -2979,13 +3035,23 @@ rows = ["W3-22"]
 
 [[fact]]
 key = "token.text.rendering.gamma"
-pending = "U508"
+value = 1.8
 rows = ["W3-22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.gamma"
+tolerance = 0
 
 [[fact]]
 key = "token.text.rendering.contrast"
-pending = "U508"
+value = 0.5
 rows = ["W3-22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#text_rendering.contrast"
+tolerance = 0
 
 # WinUI states no monospace style (no XAML file of the pin names a fixed-width family); the console's and Windows
 # Terminal's fonts are no WinUI source (W3-47†, U509).
@@ -3010,11 +3076,18 @@ rows = ["W-FM01†"]
 
 # Per language: WinUI replaces the default family for ja and ko by the LanguageFontGroup's UITextFont and for a
 # non-Latin locale by Segoe UI (PALFontAndScriptServices.cpp:170-232); the fallback per language is DirectWrite's
-# system fallback, not in the cache (W-FM02†, U510).
+# system fallback, not in the cache (W-FM02†, U510), which the WinUI host read (IDWriteFontFallback::MapCharacters
+# per sample and locale, from Segoe UI Variable, the same as from no base family): Han follows the locale, every
+# other script its own family (read_host.py's [fallbacks]).
 [[fact]]
 key = "token.text.fallbacks.per_language"
-pending = "U510"
+value = { "en-US" = ["Segoe UI"], "el-GR" = ["Segoe UI"], "ru-RU" = ["Segoe UI"], "ar-SA" = ["Segoe UI"], "fa-IR" = ["Segoe UI"], "he-IL" = ["Segoe UI"], "hi-IN" = ["Nirmala UI"], "bn-IN" = ["Nirmala UI"], "ta-IN" = ["Nirmala UI"], "th-TH" = ["Leelawadee UI"], "lo-LA" = ["Leelawadee UI"], "km-KH" = ["Leelawadee UI"], "my-MM" = ["Myanmar Text"], "si-LK" = ["Nirmala UI"], "hy-AM" = ["Segoe UI"], "ka-GE" = ["Segoe UI"], "am-ET" = ["Ebrima"], "ja-JP" = ["Yu Gothic UI"], "zh-CN" = ["Microsoft YaHei UI"], "zh-TW" = ["Microsoft JhengHei UI"], "zh-HK" = ["Microsoft JhengHei UI"], "ko-KR" = ["Malgun Gothic"] }
 rows = ["W-FM02†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/analysis.toml#fallbacks.per_language"
+tolerance = 0
 
 # The type ramp's other leaves (S2.8): WinUI's TextBlock has no casing and no word-spacing property, so its text is
 # drawn as written (`mixed`) with no added word spacing (S17's zero stated by omission); its FontStretch, typographic
