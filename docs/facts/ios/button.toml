@@ -88991,14 +88991,182 @@ rows = ["B-8"]
 
 # ---- M1b (the iOS facts lane): the button keys no fact stated ----
 
-# U482: the body's bindings, cursor, interaction, margin, maximum width and touch target, and the label's padding: never read
+# the body's cursor and touch target: run 42275028573's behavior pass (analysis/behavior_values.py) over the
+# configuration styles, the system type, close and info; the forms and host contexts it did not make, and the
+# body's bindings, interaction, margin and maximum width and the label's padding (U482): never read
 [[fact]]
 key = "button.body.bindings"
 pending = "U482"
 rows = []
 
 [[fact]]
+# no pointer interaction and no pointer style provider (the button sets no pointer of its own); close enables
+# its pointer interaction, whose effect is no reading of a cursor
 key = "button.body.cursor"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#buttons.cursor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#buttons.cursor"
+tolerance = 0
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["@info"] }
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#forms.info_light.cursor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#forms.info_light.cursor"
+tolerance = 0
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["close"], not_variants = ["@contact_add", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["@contact_add"], not_variants = ["close", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["back"], not_variants = ["close", "@contact_add", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["done"], not_variants = ["close", "@contact_add", "back", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["add"], not_variants = ["close", "@contact_add", "back", "done", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["@share"], not_variants = ["close", "@contact_add", "back", "done", "add", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["route"], not_variants = ["close", "@contact_add", "back", "done", "add", "@share", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { variants = ["@paste_control"], not_variants = ["close", "@contact_add", "back", "done", "add", "@share", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "toolbar_editor" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "input" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "calendar", part = "header" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "edit_menu" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "find_bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "media_controls", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "ink_toolbar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "component.document_launch_view" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "status_page", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.cursor"
+when = { context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }] }
 pending = "U482"
 rows = []
 
@@ -89033,7 +89201,163 @@ pending = "U482"
 rows = []
 
 [[fact]]
+# point(inside:with:) false half a point past every edge: the hit area is the bounds; close and info answer
+# true 6 to 11 points past theirs, read to the whole point only, so their size is no reading
 key = "button.body.touch_target"
+value = "absent"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#buttons.touch_target"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#buttons.touch_target"
+tolerance = 0
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["@info"], not_variants = ["close", "@contact_add", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["close"], not_variants = ["@info", "@contact_add", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["@contact_add"], not_variants = ["@info", "close", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["back"], not_variants = ["@info", "close", "@contact_add", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["done"], not_variants = ["@info", "close", "@contact_add", "back", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["add"], not_variants = ["@info", "close", "@contact_add", "back", "done", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["@share"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["route"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "@share", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { variants = ["@paste_control"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "@share", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "toolbar_editor" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "input" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "calendar", part = "header" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "edit_menu" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "find_bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "media_controls", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "ink_toolbar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "component.document_launch_view" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "status_page", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U482"
+rows = []
+
+[[fact]]
+key = "button.body.touch_target"
+when = { context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }] }
 pending = "U482"
 rows = []
 
@@ -93521,16 +93845,51 @@ key = "button.icon.icon.animation"
 pending = "U483"
 rows = []
 
-# U484: the button's values no reading gives (the back button's title fallback and display mode, C-2; the paste control's display mode, C-17; the presentations, P3-11†)
+# the button's values: the back button's display mode (run 42275028573, a new UINavigationItem's) and title
+# fallback (UINavigationItem.h, that mode's), the hit extension and the click tooltip (run 42275028573), the
+# focus rule (UIView.h), no auto-repeat (UIButton's definition); the rest no reading gives (U484: the paste
+# control's display mode, C-17; the presentations, P3-11†; the menu trigger, label position and icon setting)
 [[fact]]
+# the default display mode (back_display_mode, read above) falls back to a generic title, then none
 key = "button.values.back_title_fallback"
-pending = "U484"
+value = true
 rows = ["C-2"]
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UINavigationItem.h:31"
+quote = "/// Default mode, uses an appropriate title, followed by a generic title (typically 'Back'), then no title."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UINavigationItem.h:31"
+quote = "/// Default mode, uses an appropriate title, followed by a generic title (typically 'Back'), then no title."
+
 [[fact]]
+# a new UINavigationItem's backButtonDisplayMode reads 0, UINavigationItemBackButtonDisplayModeDefault
 key = "button.values.back_display_mode"
-pending = "U484"
+value = "default"
 rows = ["C-2"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#navigation.back_display_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#navigation.back_display_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UINavigationItem.h:32"
+quote = "UINavigationItemBackButtonDisplayModeDefault = 0,"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UINavigationItem.h:32"
+quote = "UINavigationItemBackButtonDisplayModeDefault = 0,"
 
 [[fact]]
 key = "button.values.display_mode"
@@ -93538,17 +93897,359 @@ pending = "U484"
 rows = ["C-17"]
 
 [[fact]]
+# the view's focus effect, UIKit's one rule for every focusable view (token.behavior.focus_visible_when)
 key = "button.values.focus_visible_when"
+value = "= token.behavior.focus_visible_when"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:166-167"
+quote = "/// Describes a visual effect to apply when this item is focused. If this property is nil no effect will be applied when this view becomes focused. @property (nonatomic, readwrite, nullable, copy) UIFocusEffect *focusEffect"
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:170-171"
+quote = "/// Describes a visual effect to apply when this item is focused. If this property is nil no effect will be applied when this view becomes focused. @property (nonatomic, readwrite, nullable, copy) UIFocusEffect *focusEffect"
+
+[[fact]]
+# no tool tip and no tool tip interaction
+key = "button.values.help_tooltip_on_click"
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#buttons.help_tooltip_on_click"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#buttons.help_tooltip_on_click"
+tolerance = 0
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["close"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#forms.close.help_tooltip_on_click"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#forms.close.help_tooltip_on_click"
+tolerance = 0
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["@info"] }
+value = false
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#forms.info_light.help_tooltip_on_click"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#forms.info_light.help_tooltip_on_click"
+tolerance = 0
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["@contact_add"], not_variants = ["back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U484"
 rows = []
 
 [[fact]]
 key = "button.values.help_tooltip_on_click"
+when = { variants = ["back"], not_variants = ["@contact_add", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["done"], not_variants = ["@contact_add", "back", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["add"], not_variants = ["@contact_add", "back", "done", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["@share"], not_variants = ["@contact_add", "back", "done", "add", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["route"], not_variants = ["@contact_add", "back", "done", "add", "@share", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { variants = ["@paste_control"], not_variants = ["@contact_add", "back", "done", "add", "@share", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "toolbar_editor" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "input" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "calendar", part = "header" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "edit_menu" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "find_bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "media_controls", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "ink_toolbar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "component.document_launch_view" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "status_page", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.help_tooltip_on_click"
+when = { context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+# no extension: point(inside:with:) false half a point past every edge; close's and info's extensions are read
+# to the whole point only
+key = "button.values.hit_extension"
+value = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#buttons.hit_extension"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#buttons.hit_extension"
+tolerance = 0
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["@info"], not_variants = ["close", "@contact_add", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
 pending = "U484"
 rows = []
 
 [[fact]]
 key = "button.values.hit_extension"
+when = { variants = ["close"], not_variants = ["@info", "@contact_add", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["@contact_add"], not_variants = ["@info", "close", "back", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["back"], not_variants = ["@info", "close", "@contact_add", "done", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["done"], not_variants = ["@info", "close", "@contact_add", "back", "add", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["add"], not_variants = ["@info", "close", "@contact_add", "back", "done", "@share", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["@share"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "route", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["route"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "@share", "@paste_control"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { variants = ["@paste_control"], not_variants = ["@info", "close", "@contact_add", "back", "done", "add", "@share", "route"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "toolbar", part = "bar" }], not_context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "toolbar_editor" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "input" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "calendar", part = "header" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "edit_menu" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "find_bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "media_controls", part = "bar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "ink_toolbar" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "component.document_launch_view" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "status_page", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+pending = "U484"
+rows = []
+
+[[fact]]
+key = "button.values.hit_extension"
+when = { context = [{ scope = "any", widget = "teaching_tip", part = "action_area" }], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "input" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }] }
 pending = "U484"
 rows = []
 
@@ -93568,14 +94269,186 @@ pending = "U484"
 rows = ["P3-11†"]
 
 [[fact]]
+# no auto-repeating button (the catalogue's may_be_absent, ios-*): UIButton's definition and UIControl's
+# name no auto-repeat, UIStepper's `autorepeat`
 key = "button.values.repeat_delay"
-pending = "U484"
+value = "absent"
 rows = []
 
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:76-153"
+quote = "@interface UIControl : UIView"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:160-180"
+quote = "@interface UIControl() <UIContextMenuInteractionDelegate>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:76-153"
+quote = "@interface UIControl : UIView"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:160-180"
+quote = "@interface UIControl() <UIContextMenuInteractionDelegate>"
+absent = ["autorepeat"]
+
 [[fact]]
+# no auto-repeating button (the catalogue's may_be_absent, ios-*): UIButton's definition and UIControl's
+# name no auto-repeat, UIStepper's `autorepeat`
 key = "button.values.repeat_interval"
-pending = "U484"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:76-153"
+quote = "@interface UIControl : UIView"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:160-180"
+quote = "@interface UIControl() <UIContextMenuInteractionDelegate>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:49-153"
+quote = "@interface UIButton : UIControl <NSCoding>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:155-181"
+quote = "@interface UIButton(/*UIButtonDeprecated*/)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:184-185"
+quote = "@interface UIButton (SpringLoading) <UISpringLoadedInteractionSupporting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityContentSizeCategoryImageAdjusting.h:39-41"
+quote = "@interface UIButton (UIAccessibilityContentSizeCategoryImageAdjusting) <UIAccessibilityContentSizeCategoryImageAdjusting>"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBehavioralStyle.h:28-36"
+quote = "@interface UIButton (UIBehavioralStyle)"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:76-153"
+quote = "@interface UIControl : UIView"
+absent = ["autorepeat"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIControl.h:160-180"
+quote = "@interface UIControl() <UIContextMenuInteractionDelegate>"
+absent = ["autorepeat"]
 
 [[fact]]
 key = "button.values.shows_icon"

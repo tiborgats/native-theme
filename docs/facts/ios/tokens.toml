@@ -5216,37 +5216,126 @@ key = "token.text.rendering.contrast"
 pending = "U469"
 rows = []
 
-# U470: the caret's blink: UIKit has no API that reports its timing (run1/index.toml `motion.unexposed`); a capture over time
+# the caret's blink (X-CA-2): the cursor view's blink animation (a CAKeyframeAnimation on its first sublayer's
+# opacity, key `_uitcvba`, 1 s, discrete steps) and 12 s of samples, run 42275028573's behavior pass, read by
+# analysis/behavior_values.py (its docstring is the method)
 [[fact]]
+# the cycle's visible part, shown and then fading out: the first key time at opacity 0 (0.65) of the 1 s cycle
 key = "token.caret.blink_on"
-pending = "U470"
+value = "650ms"
 rows = ["X-CA-2", "X-BT-1"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.blink_on_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.blink_on_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
+# the cycle's hidden part, hidden and then fading in, to the cycle's end
 key = "token.caret.blink_off"
-pending = "U470"
+value = "350ms"
 rows = ["X-CA-2", "X-BT-1"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.blink_off_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.blink_off_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
 [[fact]]
+# the opacity steps through 0.75, 0.5 and 0.25 each way (37.5 ms apart, discrete keyframes)
 key = "token.caret.blink_style"
-pending = "U470"
+value = "fade"
 rows = ["X-CA-2"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.blink_style"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.blink_style"
+tolerance = 0
+
 [[fact]]
+# the blink repeats the float maximum of times (3.4e38 cycles) and still blinks after 12 s
 key = "token.caret.blink_timeout"
-pending = "U470"
+value = "none"
 rows = []
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.blink_timeout"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.blink_timeout"
+tolerance = 0
+
 [[fact]]
+# a key restarts the blink at its opaque start (the animation's begin time moves to the key)
 key = "token.caret.solid_while_typing"
-pending = "U470"
+value = true
 rows = ["X-CA-2"]
 
-# U471: the caret's colour, secondary caret and read-only display: never read
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.solid_while_typing"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.solid_while_typing"
+tolerance = 0
+
+# the caret's colour and read-only display: run 42275028573 (analysis/behavior_values.py); the secondary caret
+# (U471): no pass draws mixed-direction text
 [[fact]]
+# the cursor view's own colour (extended sRGB 0.26, 0.42, 0.95), the same in light and dark and on the text
+# field, not the text view's tint (#007aff, #0088ff); the drawn caret's pixels are that colour
 key = "token.caret.color"
-pending = "U471"
+value = "#426bf2"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.color"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.color"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.color_drawn_light"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.color_drawn_light"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.color_drawn_dark"
+tolerance = 0
 
 [[fact]]
 key = "token.caret.secondary"
@@ -5254,9 +5343,20 @@ pending = "U471"
 rows = []
 
 [[fact]]
+# a read-only text view first responder: its cursor view hidden, empty and not blinking
 key = "token.caret.shown_in_read_only"
-pending = "U471"
+value = false
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#caret.shown_in_read_only"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/behavior_values.toml#caret.shown_in_read_only"
+tolerance = 0
 
 # U472: the pointer's and the click's timings and distances (an iPad pointer): never read
 [[fact]]
@@ -6088,16 +6188,43 @@ key = "token.size_classes"
 pending = "U480"
 rows = []
 
-# U481: the speed factor and the navigation push and pop (X-MO-3): never read
+# the speed factor and the navigation push (X-MO-3): run 42275028573's behavior pass; the push's curve (U481) is
+# UIKit's completion curve 7, which UIViewAnimationCurve does not declare (UIView.h: ease-in-out, ease-in,
+# ease-out, linear, 0 to 3), so no source maps it to a timing
 [[fact]]
+# the key window's layer speed, which scales every animation in the window
 key = "token.motion.speed_factor"
-pending = "U481"
+value = 1
 rows = []
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/measure1/index.toml#behavior_defaults.window_layer_speed"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/measure1/index.toml#behavior_defaults.window_layer_speed"
+tolerance = 0
+
 [[fact]]
+# a navigation controller's animated push: its transition coordinator's transitionDuration, the same in
+# runs 42268160866 and 42275028573 on both images
 key = "token.motion.durations.navigation"
-pending = "U481"
+value = "350ms"
 rows = ["X-MO-3"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/measure1/index.toml#scene_read.2.push.duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-26/measure1/index.toml#scene_read.2.push.duration_s"
+tolerance = 0.001
+conversion = ["seconds_to_ms"]
 
 [[fact]]
 key = "token.motion.timings.navigation"
