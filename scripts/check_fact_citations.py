@@ -196,7 +196,9 @@ The closed lists (S17 leaves them to this script; a member is added as a class 1
   weight: 100 times one more than the number of NS_WEIGHT_THRESHOLDS, −0.6, −0.365, −0.115, 0.130, 0.235, 0.350, 0.5
   and 0.7, at or below it, so 0, 0.3 and 0.4 are 400, 600 and 700, 100 below −0.6 and 900 from 0.7; S17, ADD-A123:
   WebKit's mapping of the system font's weight trait, WebKit@7624.5.1.11.3
-  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739), `rem_to_factor` (S17's class 1 member for GTK's
+  Source/WebCore/rendering/cocoa/RenderThemeCocoa.mm:731-739; withdrawn by ADD-A136, S2.8's *Weight*: the weight is
+  the drawn face's `wght` coordinate, which the trait does not determine, so a citation naming it is a warning
+  (WITHDRAWN), not a finding, until the facts are re-cited to the face, when it leaves this list), `rem_to_factor` (S17's class 1 member for GTK's
   `rem`: under a citation naming it, each `<n>rem` literal of the quote, otherwise no literal, reads as the unitless
   number n, the factor of the default font size that GTK multiplies a rem length by, `gtk@4.24.1
   gtk/gtkcssnumbervalue.c:405-408`, "case GTK_CSS_REM: return gtk_css_dimension_value_new (value *
@@ -264,6 +266,10 @@ UNITS = {"px": ("length", 1), "dp": ("length", 1), "sp": ("length", 1), "pt": ("
          "s": ("duration", 1000), "deg": ("angle", 1), "rem": None, "em": None}
 VALUE_UNITS = {"px": "length", "pt": "pt", "ms": "duration", "deg": "angle"}
 SUFFIX_DIMS = {"_px": "length", "_ms": "duration", "_deg": "angle", "_pt": "pt"}
+# conversions the specification withdrew, each with the change that did (a citation naming one is a warning, not a
+# finding, while the facts are re-cited; the conversion leaves CONVERSIONS once none names it)
+WITHDRAWN = {"ns_font_weight": "ADD-A136: S2.8's weight is the drawn face's `wght` coordinate, never the weight trait; "
+                               "re-cite it to the face"}
 RUN_FIELDS = ({"preset", "source", "os"}, {"toolkit"})
 NUMBER_EQ = 1e-4
 COLOUR_EQ = 1e-3
@@ -1170,6 +1176,7 @@ class Run:
         self._lines = {}      # cited file -> its lines, or None where it cannot be read
         self._sdk = {}        # SDK entry id -> its copies (sdk_copies)
         self.findings = []
+        self.warnings = []    # (file, line, what): citations naming a WITHDRAWN conversion
         self.sdk = []         # the SDK citations with no local copy, listed
         self.counts = {"quotes": 0, "generations": 0, "measured": 0, "evidence": 0, "legacy": 0, "sdk": 0}
 
@@ -1570,6 +1577,10 @@ class Run:
                 for ln, what in gtk_css_list_problems(it, facts.get(it.platform, {})):
                     self.add(it.file, ln, what)
             for cite in it.cites:
+                for name in conversions_of(cite.data):
+                    if name in WITHDRAWN:
+                        self.warnings.append((it.file, cite.ln("conversion"), f"conversion `{name}` is withdrawn "
+                                                                              f"({WITHDRAWN[name]})"))
                 kind = cite.data.get("kind")
                 if kind in ("published", "read"):
                     self.check_published(it, cite)
@@ -1596,7 +1607,8 @@ class Run:
                 f"checked at their pins, {n['generations']} literal checks per generation, {n['measured']} measured "
                 f"citations, {n['sdk']} SDK citations checked at their Xcode's local headers, {len(self.sdk)} "
                 f"listed (no local copy); {n['evidence']} evidence "
-                f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings")
+                f"files ({n['legacy']} more in {len(LEGACY_EVIDENCE)} legacy runs): {len(self.findings)} findings, "
+                f"{len(self.warnings)} warnings")
 
 
 # --------------------------------------------------------------------------------------------- self-test
@@ -2480,6 +2492,13 @@ def self_test() -> int:
             got = [f"{f}:{ln}: {w}" for f, ln, w in run.findings]
             if len(got) != len(want) or not all(any(w in g for g in got) for w in want):
                 failures.append(f"{label}: got {got}, want {want}")
+            warned = [f"{f}:{ln}: {w}" for f, ln, w in run.warnings]
+            if label == "good" and (len(warned) != 2 or not all(
+                    w.startswith("docs/facts/macos/weight.toml:") and "conversion `ns_font_weight` is withdrawn "
+                    "(ADD-A136" in w for w in warned)):
+                failures.append(f"good: the withdrawn ns_font_weight's warnings: got {warned}")
+            if label == "macOS: a weight without its conversion" and warned:
+                failures.append(f"{label}: warned {warned}")
             if label == "good":
                 if (len(run.sdk), run.counts["sdk"], run.counts["legacy"], run.counts["measured"]) != (2, 1, 1, 8):
                     failures.append(f"good: {run.summary(items)}; sdk {run.sdk}")
@@ -2573,6 +2592,8 @@ def main(argv) -> int:
         print(f"{f}:{ln}: {what}")
     for f, ln, src in run.sdk:
         print(f"# sdk: {f}:{ln}: {src} (no local copy of that header: not checked)")
+    for f, ln, what in run.warnings:
+        print(f"# warning: {f}:{ln}: {what}")
     print(run.summary(items), file=sys.stderr)
     return 1 if run.findings else 0
 
