@@ -1135,6 +1135,20 @@ researched = "2026-10-31"
 proof = "the Wayback Machine's capture of 2026-02-09 11:47:06 UTC (the `id_` form, the archived JSON unchanged), in macOS 26's and iOS 26's lifetime (D12); sha256sum of the saved file"
 note = "The HIG's Typography page as its DocC JSON. The macOS tracking table is at #/primaryContentSections/0/content/83 (rows /rows/<n>/1/0/inlineContent/0/text); the captures of 2025-10-01 and 2026-07-07 carry the same macOS table. Its 1/1000 em column equals iOS's SF Pro column at every size; the points column differs at 52 and 53 pt (0.31 and 0.33 swapped)."
 
+[[source]]
+id = "hig-typography@2025-08-15"
+kind = "snapshot"
+site = "developer.apple.com HIG"
+url = "https://web.archive.org/web/20250815132842id_/https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json"
+file = "typography.json"
+sha256 = "6836a0b9dc38b44de037936793579f8f85fcaff0458a2ac66238c44febd9a271"
+describes = ["macOS 15", "iOS 18"]
+release = "macOS 15 and iOS 18 (the HIG has no versions; a capture from their lifetime, D12)"
+generations = ["macos-monterey", "ios-13"]
+researched = "2026-11-07"
+proof = "the Wayback Machine's capture of 2025-08-15 13:28:42 UTC (the `id_` form, the archived JSON unchanged), the last capture of the JSON (the CDX API from 2024 on: 15 rows, 2024-01-24 to 2026-10-06) before macOS 26's and iOS 26's release (2025-09-15) and after macOS 15.6's and iOS 18.6's (2025-07-29), the newest releases when it was taken (D12, spec S17); the archive serves it with `Content-Encoding: gzip` as Apple's server sent it, and `file` is the decoded body (`curl --compressed`); sha256sum of the saved file"
+note = "The same page as hig-typography@2026-02-09 a release earlier; the page names no platform release in any capture. Every table dynamic_type and sf_tracking read equals that snapshot's row by row (the size and leading of the twelve Dynamic Type tabs; all three cells of the four tracking tables); the later capture's Dynamic Type tables add an `Emphasized weight` column (its change log: December 16, 2025), and its content sits one index later (the Dynamic Type navigators at #/primaryContentSections/0/content/65 and 67 here, the iOS tracking navigator at 80, the macOS tracking table at 82). The capture of 2025-05-23, before WWDC 2025, carries the same tables and text but for one link's title."
+
 # Documentation sites the documents cite. `method`: "repository", the site's public source repositories are pinned
 # above (`sources`); "snapshot", each cited page is to be saved with its date and SHA-256 (a later M0 step adds the
 # snapshot entries and update_sources.sh fetches and verifies them). `project` is the name scripts/citations.py
