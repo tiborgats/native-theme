@@ -197745,6 +197745,9 @@ when = { conditions = ["preset:macos-monterey"], variants = ["menu"], not_contex
 pending = "U137"
 rows = ["MAC-B01"]
 
+# U145: run 42272240639's analysis/read_help_circle.py reads the help glyph's drawn bounds per size and state (its
+# `glyph` tables), but the padding needs a rule for a glyph drawn with no cell rect (its ink's bounds or a rect,
+# less the bezel's alignment insets) and the bounds move with the state by 1-5 px; pending
 [[fact]]
 key = "button.body.padding.top"
 when = { conditions = ["preset:macos-monterey"], variants = ["help"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
@@ -206438,27 +206441,775 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "typedef NSString * NSFontTextStyleOptionKey NS_TYPED_ENUM API_AVAILABLE(macos(11.0));"
 
 # the circular bezel's circle is body's box inside a wider frame: its margin unread (U159, ADD-A125)
+# the circular bezel's circle against its frame (U159): run 42272240639's analysis/read_help_circle.py, the circle the
+# bounds of the bezel's pixels of at least half the body's alpha; at `mini` the circle (10 x 9 px) overhangs
+# the 14 x 8 px frame's top by 1 px, a negative margin left pending
 [[fact]]
 key = "button.body.margin.top"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["small"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.small.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["regular"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.regular.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.large.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.extraLarge.circle_margin_tlbr.0"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.top"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["mini"] }
 pending = "U159"
 rows = ["MAC-B08"]
+
+# the circular bezel's circle against its frame (U159): run 42272240639's analysis/read_help_circle.py, the circle the
+# bounds of the bezel's pixels of at least half the body's alpha; at `mini` the circle (10 x 9 px) overhangs
+# the 14 x 8 px frame's top by 1 px, a negative margin left pending
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["small"] }
+value = "3px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.small.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.small.circle_margin_tlbr.3"
+tolerance = 0
 
 [[fact]]
 key = "button.body.margin.right"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["regular"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.regular.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.large.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.extraLarge.circle_margin_tlbr.3"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.right"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["mini"] }
 pending = "U159"
 rows = ["MAC-B08"]
+
+# the circular bezel's circle against its frame (U159): run 42272240639's analysis/read_help_circle.py, the circle the
+# bounds of the bezel's pixels of at least half the body's alpha; at `mini` the circle (10 x 9 px) overhangs
+# the 14 x 8 px frame's top by 1 px, a negative margin left pending
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["small"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.small.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.small.circle_margin_tlbr.2"
+tolerance = 0
 
 [[fact]]
 key = "button.body.margin.bottom"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["regular"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.regular.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.large.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = "0px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.extraLarge.circle_margin_tlbr.2"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.bottom"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["mini"] }
 pending = "U159"
 rows = ["MAC-B08"]
 
+# the circular bezel's circle against its frame (U159): run 42272240639's analysis/read_help_circle.py, the circle the
+# bounds of the bezel's pixels of at least half the body's alpha; at `mini` the circle (10 x 9 px) overhangs
+# the 14 x 8 px frame's top by 1 px, a negative margin left pending
 [[fact]]
 key = "button.body.margin.left"
-when = { conditions = ["preset:macos-tahoe"], variants = ["circular"] }
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["small"] }
+value = "3px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.small.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["regular"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.regular.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["large"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.large.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["extra_large"] }
+value = "4px"
+rows = ["MAC-B08"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.normal.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.pressed.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.aqua.disabled_pressed.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.normal.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.pressed.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/help_circle.toml#circle.darkAqua.disabled_pressed.extraLarge.circle_margin_tlbr.1"
+tolerance = 0
+
+[[fact]]
+key = "button.body.margin.left"
+when = { conditions = ["preset:macos-tahoe"], variants = ["circular"], sizes = ["mini"] }
 pending = "U159"
 rows = ["MAC-B08"]
 
@@ -207267,6 +208018,8 @@ pending = "U313"
 rows = ["MAC-B09"]
 
 # the help bezel's question mark (U314: AppKit names no image for it)
+# U314: the help glyph's drawn bounds and colour are read (help_circle.toml), but its `source` waits on a decision
+# (an S15 rendering member for the help bezel, or a measured path); pending
 [[fact]]
 key = "button.icon.glyph"
 when = { conditions = ["preset:macos-tahoe"], variants = ["help"] }
@@ -211044,6 +211797,7 @@ evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/
 tolerance = 0
 
 # the help bezel's question mark (U614, as macos-tahoe's U314: AppKit names no image for it)
+# U614: as U314 on macos-tahoe; pending
 [[fact]]
 key = "button.icon.glyph"
 when = { conditions = ["preset:macos-monterey"], variants = ["help"] }
