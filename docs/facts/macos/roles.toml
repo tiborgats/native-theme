@@ -3204,6 +3204,8 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "NSColor *selectedControlColor;"
 
 # highlightColor (NSColor.h:284: the colour highlightWithLevel: blends toward; the red accent leaves it unchanged, S9.1)
+# and so does the highlight setting: `AppleHighlightColor` written red (run 42328425189's colors-highlight-red pass,
+# its settings.txt) leaves highlightColor as the colours pass reads it, so the literal holds under it (U163)
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
@@ -3240,6 +3242,16 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.highlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
@@ -3274,6 +3286,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/probe.toml#macos.colors.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/probe.toml#macos.colors.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -6371,6 +6393,8 @@ source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "NSColor *selectedControlColor;"
 
 # highlightColor (NSColor.h:273: the colour all highlights tend toward; the red accent leaves it unchanged, S9.1)
+# and so does the highlight setting: `AppleHighlightColor` written red (run 42328425189's colors-highlight-red pass,
+# its settings.txt) leaves highlightColor as the colours pass reads it, so the literal holds under it (U163)
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
@@ -6397,6 +6421,16 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.aqua.highlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
@@ -6421,6 +6455,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/probe.toml#macos.colors.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/probe.toml#macos.colors.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]

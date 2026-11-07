@@ -1855,11 +1855,34 @@ rows = ["MAC-X13"]
 
 # The colour space (`token.motion.color_space`, S2.7, ADD-A125): Core Animation's colour interpolation has no source in
 # the cache; the probe measures it from a transition's middle frame (U158).
+# Core Animation's colour interpolation (U158): run 42328425189's colours pass pauses colour animations at 0, 0.5
+# and 1 of their run over black and white; premultiplied interpolation in sRGB's encoded values is the one way
+# that gives every captured square within a byte (analysis/read_color_space.py's `decision`); macOS 26.7.2 drew `colors/`, 26.6.2 `colors-highlight-red/`
 [[fact]]
 key = "token.motion.color_space"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U158"
+value = "premultiplied_srgb"
 rows = ["MAC-X11"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/color_space.toml#decision.aqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/color_space.toml#decision.darkAqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/color_space.toml#decision.aqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/color_space.toml#decision.darkAqua.interpolation"
+tolerance = 0
 
 # The speed factor (`token.motion.speed_factor`, S4.1, R9): Core Animation's rate, `speed`, 1 by default, scales an
 # animation's local time, and AppKit has no speed setting (NSAnimationContext declares a duration and a timing
@@ -3849,11 +3872,34 @@ rows = ["MAC-X13"]
 
 # The colour space (`token.motion.color_space`, S2.7, ADD-A125): Core Animation's colour interpolation has no source in
 # the cache; the probe measures it from a transition's middle frame (U158).
+# Core Animation's colour interpolation (U158): run 42328425189's colours pass pauses colour animations at 0, 0.5
+# and 1 of their run over black and white; premultiplied interpolation in sRGB's encoded values is the one way
+# that gives every captured square within a byte (analysis/read_color_space.py's `decision`)
 [[fact]]
 key = "token.motion.color_space"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U158"
+value = "premultiplied_srgb"
 rows = ["MAC-X11"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/color_space.toml#decision.aqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/color_space.toml#decision.darkAqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/color_space.toml#decision.aqua.interpolation"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/color_space.toml#decision.darkAqua.interpolation"
+tolerance = 0
 
 # The speed factor (`token.motion.speed_factor`, S4.1, R9): Core Animation's rate, `speed`, 1 by default, scales an
 # animation's local time, and AppKit has no speed setting (NSAnimationContext declares a duration and a timing
