@@ -13080,6 +13080,10 @@ tolerance = 1
 
 # --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
 
+# The table's drop highlight reads #0064e1 (light) and #0059d1 (dark) in run 42328425189's drag-over captures
+# (scripts/analysis_macos_events.py's `drop_highlight`), the emphasized selection's colour, which follows the accent
+# (`role.selection.background = input.selected_content_background`); no drag pass ran under another accent, so
+# whether the highlight is that input or a literal is not read: pending
 [[fact]]
 key = "role.global.drop_highlight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -13154,6 +13158,10 @@ absent = []
 
 # The drop target's highlight (MAC-X21; U600, as macos-tahoe's U322): NSColor.h (Xcode 16.4) declares no drop-target
 # colour, and no macOS 15 pass drags over a drop target
+# The table's drop highlight reads #0064e1 (light) and #0059d1 (dark) in run 42328425189's drag-over captures
+# (scripts/analysis_macos_events.py's `drop_highlight`), the emphasized selection's colour, which follows the accent
+# (`role.selection.background = input.selected_content_background`); no drag pass ran under another accent, so
+# whether the highlight is that input or a literal is not read: pending
 [[fact]]
 key = "role.global.drop_highlight"
 when = { conditions = ["preset:macos-monterey"] }

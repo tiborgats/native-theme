@@ -43580,6 +43580,9 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U320"
 rows = ["MAC-P3-12†"]
 
+# D6: not measurable by the probe: every posted mouse-down reads `clickCount` 1, the second click of a pair too (run
+# 42328425189's events pass, 0 pt and 100 ms apart included), as the window server gives a posted event the click state
+# its poster sets; so the double-click distance and height wait on a decision (D6), pending
 [[fact]]
 key = "token.behavior.double_click_distance"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -43876,11 +43879,18 @@ rows = []
 
 # Pointer timings and distances (U329), touch (U330), focus visibility (U331)
 
+# the drag threshold (macOS 26.6.2, run 42328425189's events pass, scripts/analysis_macos_events.py): a press held 800 ms on
+# selected text started a drag (the drag pasteboard changed) at 4 pt of movement and not at 1 to 3 pt
 [[fact]]
 key = "token.behavior.drag_threshold"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U329"
+value = "4px"
 rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/events.toml#drag_start.threshold_pt"
+tolerance = 0
 
 [[fact]]
 key = "token.behavior.drag_time"
@@ -43888,17 +43898,31 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U329"
 rows = []
 
+# no earliest drag: moved 12 pt, the press started a drag after every hold read, 0 ms included
 [[fact]]
 key = "token.behavior.drag_min_delay"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U329"
+value = "0ms"
 rows = []
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/events.toml#drag_start.min_delay_ms"
+tolerance = 0
+
+# the tool tip's window shown 1590.4 ms after the cursor's arrival (the mean of the cold and rested readings, 1.6 ms
+# apart; the tolerance covers it); a tip shown again within 300 ms reappears at once (`warm_shown_after_ms`), which
+# the model's one hover time does not state
 [[fact]]
 key = "token.behavior.hover_time"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U329"
+value = "1590ms"
 rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/events.toml#tool_tip.hover_time_ms"
+tolerance = 1
 
 # AppKit's press-and-hold, NSPressGestureRecognizer: its minimum press defaults to the double-click interval
 # (U329's `long_press`, settled by the SDK headers, M1b)
@@ -43913,11 +43937,19 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSPressGestureRecognizer.h:23-24"
 quote = "/* Time in seconds the mouse button must be held down for the gesture to be recognized */ @property NSTimeInterval minimumPressDuration; // Defaults to the user double-click interval"
 
+# the spring-loading delay, the user default `com.apple.springing.delay` (springing enabled), the pass's spring-loaded
+# button turned on by the drag held over it
 [[fact]]
 key = "token.behavior.spring_loading"
 when = { conditions = ["preset:macos-tahoe"] }
-pending = "U329"
+value = "500ms"
 rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/events.toml#springing.delay_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
 
 [[fact]]
 key = "token.behavior.hide_pointer_delay"
@@ -43931,6 +43963,9 @@ when = { conditions = ["preset:macos-tahoe"] }
 pending = "U329"
 rows = []
 
+# D6: not measurable by the probe: every posted mouse-down reads `clickCount` 1, the second click of a pair too (run
+# 42328425189's events pass, 0 pt and 100 ms apart included), as the window server gives a posted event the click state
+# its poster sets; so the double-click distance and height wait on a decision (D6), pending
 [[fact]]
 key = "token.behavior.double_click_height"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -44881,6 +44916,9 @@ when = { conditions = ["preset:macos-monterey"] }
 pending = "U607"
 rows = ["MAC-P3-12†"]
 
+# D6: not measurable by the probe: every posted mouse-down reads `clickCount` 1, the second click of a pair too (run
+# 42328425189's events pass, 0 pt and 100 ms apart included), as the window server gives a posted event the click state
+# its poster sets; so the double-click distance and height wait on a decision (D6), pending
 [[fact]]
 key = "token.behavior.double_click_distance"
 when = { conditions = ["preset:macos-monterey"] }
@@ -44977,11 +45015,18 @@ rows = []
 # Pointer timings and distances (U609, as macos-tahoe's U329 less `long_press`, stated above): no AppKit header (Xcode
 # 16.4) states a drag threshold or time, a tool tip delay, a spring-loading delay, a pointer hiding delay or fade,
 # a double click's height or a single-click activation, and no pass measures them
+# the drag threshold (macOS 15.8.2, run 42328425189's events pass, scripts/analysis_macos_events.py): a press held 800 ms on
+# selected text started a drag (the drag pasteboard changed) at 4 pt of movement and not at 1 to 3 pt
 [[fact]]
 key = "token.behavior.drag_threshold"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U609"
+value = "4px"
 rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/events.toml#drag_start.threshold_pt"
+tolerance = 0
 
 [[fact]]
 key = "token.behavior.drag_time"
@@ -44989,23 +45034,45 @@ when = { conditions = ["preset:macos-monterey"] }
 pending = "U609"
 rows = []
 
+# no earliest drag: moved 12 pt, the press started a drag after every hold read, 0 ms included
 [[fact]]
 key = "token.behavior.drag_min_delay"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U609"
+value = "0ms"
 rows = []
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/events.toml#drag_start.min_delay_ms"
+tolerance = 0
+
+# the tool tip's window shown 1511.1 ms after the cursor's arrival (the mean of the cold and rested readings, 9.3 ms
+# apart; the tolerance covers it); a tip shown again within 300 ms reappears at once (`warm_shown_after_ms`), which
+# the model's one hover time does not state
 [[fact]]
 key = "token.behavior.hover_time"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U609"
+value = "1511ms"
 rows = ["MAC-X12"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/events.toml#tool_tip.hover_time_ms"
+tolerance = 5
+
+# the spring-loading delay, the user default `com.apple.springing.delay` (springing enabled), the pass's spring-loaded
+# button turned on by the drag held over it
 [[fact]]
 key = "token.behavior.spring_loading"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U609"
+value = "500ms"
 rows = ["MAC-X12"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/events.toml#springing.delay_s"
+tolerance = 0
+conversion = ["seconds_to_ms"]
 
 [[fact]]
 key = "token.behavior.hide_pointer_delay"
@@ -45019,6 +45086,9 @@ when = { conditions = ["preset:macos-monterey"] }
 pending = "U609"
 rows = []
 
+# D6: not measurable by the probe: every posted mouse-down reads `clickCount` 1, the second click of a pair too (run
+# 42328425189's events pass, 0 pt and 100 ms apart included), as the window server gives a posted event the click state
+# its poster sets; so the double-click distance and height wait on a decision (D6), pending
 [[fact]]
 key = "token.behavior.double_click_height"
 when = { conditions = ["preset:macos-monterey"] }
