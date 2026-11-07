@@ -324,9 +324,75 @@ exclusions with a YAML comment that is exactly
 `# PLAN_EXCLUDED: <description>`, and the first section fails unless the
 marks and the list name the same set.
 
+Two speed-ups apply to `--commit` and `--quick` alone; the full run runs
+every step through `cargo test`, with no cache. Where `cargo-nextest` is
+installed, the test steps run `cargo nextest run` (`cargo_tests` in the
+script), and `cargo test --doc` where `cargo test` would have run doctests too.
+The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
+unchanged since it last passed; the summary lists each as
+`unchanged since <commit>`, and `--no-cache` runs every step.
+
 ```sh
+./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
+./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
+```
+
+## step_cache.sh
+
+The step cache of `check_release.sh --commit` and `--quick`, sourced by it.
+A step is skipped only when the SHA-256 key of its run equals the one recorded
+when it last passed: the tool versions (`rustc -vV`, `cargo -vV`, clippy's,
+rustdoc's, rustfmt's, Python's, nextest's), both scripts' own hashes, the
+environment (but `_`, `SHLVL`, `OLDPWD`), the step's description and command,
+and the content of its declared inputs (`CACHE_INPUTS` in `check_release.sh`:
+files, directories and globs by path and content, a missing one by name;
+`__pycache__` folders left out). A cargo step's inputs (`@rust:<crates>`) are
+the workspace manifest, lock and tool configuration, every Cargo configuration
+file Cargo would read, and the directory of each workspace package the crates
+reach on this host with every feature on; where that reach holds a registry
+build helper that probes the host (`pkg-config`, `cc`, …) or a workspace build
+script or procedural macro not reviewed for what it reads, the step is not
+cached. A failed step records nothing, nor does one whose inputs changed while
+it ran; a step with no declaration always runs. The records are in
+`target/check-release-cache/`, one file per step.
+
+`--self-test` shows that a declared file edited, added, renamed or removed, a
+glob's new match, the script edited, the command or the environment changed,
+re-run the step, and that a failure records nothing; `check_release.sh` runs it
+in every mode.
+
+```sh
+bash scripts/step_cache.sh --self-test
+```
+
+## preset-check (tools/preset-check)
+
+A dev-only binary, never published, for the facts lanes, which run no cargo:
+it loads a preset as a bundled preset loads (through the synthetic route where
+its `[pending]` table lists paths), under each scheme, and prints every
+problem in the reader's and validation's own words, grouped by class
+(`== Missing: 12`, then one line per problem; one found under a single scheme
+names it). Exit 0 when the preset loads, 1 otherwise. A preset whose `id`
+names a bundled preset loads as that preset, so its `preset:` conditions hold;
+any other loads as a preset no `PresetId` names, and the report says so.
+`-` reads the preset from stdin. `--draft <id>` loads what
+`python3 scripts/generate_preset.py <id>` prints, run in the current directory:
+that draft leaves the hand-written parts' blocks empty, and the reader stops at
+the first of them (`preset.generation: missing`) before validation runs. For a
+bundled preset, `generate_preset.py <id> --write` in the worktree carries its
+hand-written parts into the file, which `preset-check <file>` then loads whole.
+
+Built once in the main checkout, then run by path from any worktree, with no
+cargo:
+
+```sh
+cargo build -p native-theme-preset-check     # in /home/tibi/Rust/native-theme
+cd <worktree>
+python3 scripts/generate_preset.py ios-26 --write
+/home/tibi/Rust/native-theme/target/debug/preset-check native-theme/src/presets/ios-26.toml
+/home/tibi/Rust/native-theme/target/debug/preset-check --draft ios-26
 ```
 
 ## check_panic_patterns.py

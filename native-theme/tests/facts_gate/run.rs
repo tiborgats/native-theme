@@ -1253,8 +1253,88 @@ fn combination_of(point: Point, widget: &str, context: Option<&Value>) -> Combin
     combination
 }
 
-/// The widget combinations of one preset and flavour, by condition vector.
-type Planned = BTreeMap<Vec<String>, Vec<Combination>>;
+/// A widget's state model in force for one preset and flavour: what its
+/// rules and facts tell apart, and its condition vectors.
+struct Planned<'m> {
+    entry: &'m Model,
+    mentioned: Mentioned,
+    vectors: Vec<Vec<String>>,
+}
+
+/// Combinations each held once, in the order first given, told apart by a
+/// hash of all but their context ([`identity`]) and equality.
+#[derive(Default)]
+struct Distinct {
+    held: Vec<Combination>,
+    by_identity: HashMap<u64, Vec<usize>>,
+}
+
+impl Distinct {
+    /// The place of `combination` among those held.
+    fn position(&self, combination: &Combination) -> Option<usize> {
+        self.by_identity
+            .get(&identity(combination))?
+            .iter()
+            .copied()
+            .find(|at| self.held.get(*at) == Some(combination))
+    }
+
+    /// `combination` held, unless it is already.
+    fn insert(&mut self, combination: Combination) {
+        if self.position(&combination).is_none() {
+            self.by_identity
+                .entry(identity(&combination))
+                .or_default()
+                .push(self.held.len());
+            self.held.push(combination);
+        }
+    }
+}
+
+/// A condition vector's combinations, given in turn to the function it is
+/// called with ([`plan_vector`]).
+type Combinations<'c> = dyn Fn(&mut dyn FnMut(Combination)) + 'c;
+
+/// The widget combinations of the condition vector `vector`, each once,
+/// given to `each` as they are enumerated: each state model's of `planned`
+/// whose vectors hold `vector`, in turn (one model per widget, each giving
+/// each of its combinations once, [`model::combinations`]), then each of
+/// `own`, the facts' own `when`s', that none of them gave.
+fn plan_vector(
+    planned: &[Planned<'_>],
+    own: Option<&Distinct>,
+    vector: &[String],
+    each: &mut dyn FnMut(Combination),
+) {
+    let mut given = vec![false; own.map_or(0, |own| own.held.len())];
+    let vectors = [vector.to_vec()];
+    for planned in planned
+        .iter()
+        .filter(|planned| planned.vectors.iter().any(|held| held == vector))
+    {
+        let widget = &planned.entry.widget;
+        model::combinations(
+            planned.entry,
+            &vectors,
+            Some(&planned.mentioned),
+            |point, context| {
+                let combination = combination_of(point, widget, context);
+                if let Some(slot) = own
+                    .and_then(|own| own.position(&combination))
+                    .and_then(|at| given.get_mut(at))
+                {
+                    *slot = true;
+                }
+                each(combination);
+            },
+        );
+    }
+    for (combination, given) in own.iter().flat_map(|own| &own.held).zip(given) {
+        if !given {
+            each(combination.clone());
+        }
+    }
+}
 
 /// Runs the gate over the facts root `root` for `presets`, each with the
 /// platform directory it is checked against (S17 *Generations*).
@@ -1645,7 +1725,10 @@ fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When
 
 /// The normal and the perturbed run of one preset and flavour, each
 /// condition vector resolved for both: the perturbed run's stand-in is
-/// decided by the facts that apply under the vector.
+/// decided by the facts that apply under the vector. The vectors are
+/// resolved as many at once as [`threads`] gives, each checked in turn and
+/// dropped with its combinations, which are enumerated as they are checked
+/// ([`plan_vector`]), never all held: one vector's run to millions.
 fn check(
     platform: &Platform,
     preset: &Preset,
@@ -1657,25 +1740,7 @@ fn check(
     let schemes = preset.schemes();
     let drawing = drawing(&platform.name, flavor);
     let entries = projected(platform, preset, flavor, report);
-    let mut planned: Planned = BTreeMap::new();
-    // Each vector's combinations planned, by a hash of all but their
-    // context, so each is planned once.
-    let mut seen: HashMap<Vec<String>, HashMap<u64, Vec<usize>>> = HashMap::new();
-    let mut plan = |vector: Vec<String>, combination: Combination, planned: &mut Planned| {
-        let bucket = seen
-            .entry(vector.clone())
-            .or_default()
-            .entry(identity(&combination))
-            .or_default();
-        let held = planned.entry(vector).or_default();
-        if !bucket
-            .iter()
-            .any(|index| held.get(*index) == Some(&combination))
-        {
-            bucket.push(held.len());
-            held.push(combination);
-        }
-    };
+    let mut planned: Vec<Planned<'_>> = Vec::new();
     let mut global_vectors: BTreeSet<Vec<String>> = BTreeSet::new();
     let declared_variants = |widget: &str| {
         preset
@@ -1737,16 +1802,14 @@ fn check(
         );
         let vectors = model::condition_vectors(&entry.axis_conditions, &schemes);
         global_vectors.extend(vectors.iter().cloned());
-        model::combinations(entry, &vectors, Some(&mentioned), |point, context| {
-            let vector = point.conditions.clone();
-            plan(
-                vector,
-                combination_of(point, &entry.widget, context),
-                &mut planned,
-            );
+        planned.push(Planned {
+            entry,
+            mentioned,
+            vectors,
         });
     }
-    // Each fact's own `when`.
+    // Each fact's own `when`, by condition vector.
+    let mut own: BTreeMap<Vec<String>, Distinct> = BTreeMap::new();
     for key in keys {
         for prepared in &key.facts {
             let Some(when) = &prepared.written else {
@@ -1772,7 +1835,7 @@ fn check(
             };
             for vector in vectors {
                 match &widget {
-                    Some(_) => plan(vector, combination.clone(), &mut planned),
+                    Some(_) => own.entry(vector).or_default().insert(combination.clone()),
                     None => {
                         global_vectors.insert(vector);
                     }
@@ -1780,75 +1843,86 @@ fn check(
             }
         }
     }
-    for vector in &global_vectors {
-        planned.entry(vector.clone()).or_default();
-    }
+    let mut vectors = global_vectors.clone();
+    vectors.extend(own.keys().cloned());
+    let vectors: Vec<Vec<String>> = vectors.into_iter().collect();
+    let plan = |vector: &[String], each: &mut dyn FnMut(Combination)| {
+        plan_vector(&planned, own.get(vector), vector, each);
+    };
+    let count = |vector: &[String]| {
+        let mut count = 0_u64;
+        plan(vector, &mut |_| count += 1);
+        count
+    };
     let root = root_inputs();
-    // Each vector resolved for both runs, in parallel; what resolving found
-    // recorded before the vector's checks, as one run in turn records it.
-    let planned: Vec<(&Vec<String>, &Vec<Combination>)> = planned.iter().collect();
-    let resolutions = parallel(&planned, |(vector, combinations)| {
-        let mut report = Report::default();
-        let resolved = resolve_vector(preset, keys, vector, combinations, flavor, &mut report);
-        (report, resolved)
-    });
-    for ((vector, combinations), (found, resolved)) in planned.into_iter().zip(resolutions) {
-        report.merge(found);
-        let Some((normal, perturbed)) = resolved else {
-            continue;
-        };
-        let passes = std::iter::once((Pass::Normal, Some(normal)))
-            .chain(std::iter::once((Pass::Perturbed, perturbed)));
-        for (pass, resolved) in passes {
-            let Some(resolved) = resolved else {
+    for batch in vectors.chunks(threads()) {
+        // A batch's vectors resolved for both runs in parallel; what
+        // resolving found recorded before the vector's checks, as one run in
+        // turn records it.
+        let resolutions = parallel(batch, |vector| {
+            let mut report = Report::default();
+            let resolved = resolve_vector(preset, keys, vector, flavor, &count, &mut report);
+            (report, resolved)
+        });
+        for (vector, (found, resolved)) in batch.iter().zip(resolutions) {
+            report.merge(found);
+            let Some((normal, perturbed)) = resolved else {
                 continue;
             };
-            if global_vectors.contains(vector) {
-                check_globals(
-                    preset.id(),
-                    &resolved,
+            let passes = std::iter::once((Pass::Normal, Some(normal)))
+                .chain(std::iter::once((Pass::Perturbed, perturbed)));
+            for (pass, resolved) in passes {
+                let Some(resolved) = resolved else {
+                    continue;
+                };
+                if global_vectors.contains(vector) {
+                    check_globals(
+                        preset.id(),
+                        &resolved,
+                        keys,
+                        vector,
+                        (pass, drawing),
+                        &root,
+                        report,
+                    );
+                    if pass == Pass::Normal {
+                        definitions(preset.id(), &resolved, &root, report, &|| {
+                            format!("{vector:?}")
+                        });
+                    }
+                }
+                let run = Run {
+                    preset: preset.id(),
+                    resolved: &resolved,
                     keys,
                     vector,
-                    (pass, drawing),
-                    &root,
-                    report,
-                );
-                if pass == Pass::Normal {
-                    definitions(preset.id(), &resolved, &root, report, &|| {
-                        format!("{vector:?}")
-                    });
-                }
+                    not_drawn: &not_drawn,
+                    pass,
+                    drawing,
+                    root: &root,
+                };
+                check_widgets(&run, &|each| plan(vector, each), report);
             }
-            let run = Run {
-                preset: preset.id(),
-                resolved: &resolved,
-                keys,
-                vector,
-                not_drawn: &not_drawn,
-                pass,
-                drawing,
-                root: &root,
-            };
-            check_widgets(&run, combinations, report);
         }
     }
 }
 
 /// A condition vector resolved for the normal run and the perturbed run,
 /// whose stand-in the facts that apply under it decide; `None` where its
-/// conditions cannot be set or the normal run does not resolve.
+/// conditions cannot be set, its combinations (`count` of them) skipped,
+/// or the normal run does not resolve.
 fn resolve_vector(
     preset: &Preset,
     keys: &[KeyFacts<'_>],
     vector: &[String],
-    combinations: &[Combination],
     flavor: Option<&str>,
+    count: &dyn Fn(&[String]) -> u64,
     report: &mut Report,
 ) -> Option<(Resolved, Option<Resolved>)> {
     let conditions = match conditions(vector, flavor) {
         Ok(conditions) => conditions,
         Err(Unread::NotHeld(_)) => {
-            report.combinations_skipped += combinations.len() as u64;
+            report.combinations_skipped += count(vector);
             return None;
         }
         Err(Unread::Refused(why)) => {
@@ -2116,7 +2190,7 @@ enum Probe {
     },
 }
 
-/// How many combinations [`check_widgets`] probes at once.
+/// How many combinations [`check_widgets`] probes, or compares, at once.
 const PROBED_AT_ONCE: usize = 1 << 16;
 
 /// A widget's keys for a combination, with the fact that applies to each
@@ -2157,9 +2231,44 @@ fn applying_in<'k, 'f>(
     Applying { keys, held, facts }
 }
 
-/// The threads the gate's parallel steps use.
+/// The environment variable that sets how many threads the gate's parallel
+/// steps use (the module's docs of `facts_gate`).
+pub const THREADS_VARIABLE: &str = "NT_FACTS_GATE_THREADS";
+
+/// The threads the gate's parallel steps use ([`thread_count`] of
+/// [`THREADS_VARIABLE`]); a value it refuses, or one that is not Unicode,
+/// fails.
 fn threads() -> usize {
-    std::thread::available_parallelism().map_or(1, std::num::NonZero::get)
+    let value = match std::env::var(THREADS_VARIABLE) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(value)) => {
+            panic!("{THREADS_VARIABLE} is not Unicode: {value:?}")
+        }
+    };
+    thread_count(value.as_deref()).unwrap_or_else(|error| panic!("{THREADS_VARIABLE}: {error}"))
+}
+
+/// The threads `value`, [`THREADS_VARIABLE`]'s value, sets: its count, or
+/// the machine's parallelism where it is `None`; a value that is no number
+/// above zero is an error, never a silently different run. The count sets
+/// the speed and adds little memory: each thread holds one combination's
+/// session or one resolution at a time, and a batch of condition vectors,
+/// as many as the threads, its two resolutions each (about 11 MB apiece);
+/// the rest of the peak is one vector's chunk of combinations and the
+/// distinct ones it compares ([`check`]). So the default, every thread the
+/// machine has, is safe: about 60 MB a thread, the six presets near 3 GB on
+/// 32 threads.
+pub fn thread_count(value: Option<&str>) -> Result<usize, String> {
+    match value {
+        None => Ok(std::thread::available_parallelism().map_or(1, std::num::NonZero::get)),
+        Some(value) => value
+            .trim()
+            .parse::<usize>()
+            .ok()
+            .filter(|count| *count > 0)
+            .ok_or_else(|| format!("`{value}` is no number above zero")),
+    }
 }
 
 /// `f` over each of `items` on [`threads`] threads, the results in the
@@ -2191,12 +2300,13 @@ pub fn parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Ve
     done.into_iter().map(|(_, result)| result).collect()
 }
 
-/// Every widget key over a condition vector's combinations, each distinct
-/// signature compared once, at its first combination; a combination a
-/// `not_drawn` entry names, as the query matches it, is not queried (S17).
-/// The combinations are probed, and the distinct ones compared, in
-/// parallel, each step's findings recorded in the combinations' order.
-fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut Report) {
+/// Every widget key over a condition vector's combinations, which
+/// `combinations` gives in turn, each distinct signature compared once, at
+/// its first combination; a combination a `not_drawn` entry names, as the
+/// query matches it, is not queried (S17). The combinations are probed, and
+/// the distinct ones compared, in parallel, each step's findings recorded
+/// in the combinations' order.
+fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mut Report) {
     let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
     let metrics = StubMetrics;
     let probe = |combination: &Combination| {
@@ -2244,14 +2354,15 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
             signature: (element, session.signature(), facts),
         }
     };
-    // Probed in chunks, each chunk's findings recorded in order before the
-    // next is probed, so only a chunk's probes are held at once (the
-    // signatures span every chunk).
+    // Probed in chunks as they are given, each chunk's findings recorded in
+    // order before the next is probed, so only a chunk's combinations and
+    // probes are held at once, and the distinct ones kept (the signatures
+    // span every chunk).
     let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
-    let mut queried: Vec<&Combination> = Vec::new();
-    for chunk in combinations.chunks(PROBED_AT_ONCE) {
+    let mut queried: Vec<Combination> = Vec::new();
+    let mut probe_chunk = |chunk: &mut Vec<Combination>, report: &mut Report| {
         let probes = parallel(chunk, probe);
-        for (combination, probe) in chunk.iter().zip(probes) {
+        for (combination, probe) in chunk.drain(..).zip(probes) {
             match probe {
                 Probe::Skipped => report.combinations_skipped += 1,
                 Probe::Failed(failure) => report.fail(failure),
@@ -2269,14 +2380,26 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &[Combination], report: &mut R
                 }
             }
         }
-    }
-    let found = parallel(&queried, |combination| {
-        let mut report = Report::default();
-        compare_widget(run, combination, &mut report);
-        report
+    };
+    let mut chunk: Vec<Combination> = Vec::new();
+    combinations(&mut |combination| {
+        chunk.push(combination);
+        if chunk.len() >= PROBED_AT_ONCE {
+            probe_chunk(&mut chunk, report);
+        }
     });
-    for found in found {
-        report.merge(found);
+    probe_chunk(&mut chunk, report);
+    // The distinct ones compared in chunks too, each chunk's findings
+    // merged in order before the next is compared.
+    for chunk in queried.chunks(PROBED_AT_ONCE) {
+        let found = parallel(chunk, |combination| {
+            let mut report = Report::default();
+            compare_widget(run, combination, &mut report);
+            report
+        });
+        for found in found {
+            report.merge(found);
+        }
     }
 }
 

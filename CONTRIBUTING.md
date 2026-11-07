@@ -118,6 +118,14 @@ audits against the cached database with a warning naming its date, or warns
 that the audit did not run where no cached database loads. `--commit` needs
 `cargo-audit` installed too.
 
+`--commit` and `--quick` are faster than the steps they list: where
+`cargo-nextest` is installed their test steps run through it (the doctests
+through `cargo test --doc`), and a step whose declared inputs, tools,
+environment and command are unchanged since it last passed is skipped, the
+summary naming it `unchanged since <commit>` (`scripts/step_cache.sh`;
+`--no-cache` runs every step). The full run uses neither: every step runs, as
+listed above, through `cargo test`.
+
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
 On Linux it tests `native-theme` with no features and with all its Linux
@@ -168,6 +176,26 @@ RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --no-deps
 ```
 
 CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
+
+The facts gate (`native-theme/tests/facts_gate.rs`) gates every bundled preset
+in one run, minutes per preset. While you work on some presets, limit it to
+them:
+
+```bash
+NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme --test facts_gate
+```
+
+An id no bundled preset has, an empty name or an id named twice fails the
+test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
+gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
+every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+
+The gate runs its parallel steps on as many threads as the machine has;
+`NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
+above zero fails the test. The count sets the speed and adds little memory:
+each condition vector's combinations are enumerated as they are checked, a
+chunk at a time, never all held, so each thread adds about 60 MB and the six
+presets peak near 3 GB on 32 threads.
 
 ## Project structure
 
