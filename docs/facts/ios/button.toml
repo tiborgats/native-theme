@@ -53614,6 +53614,25 @@ when = { conditions = ["preset:ios-13"], variants = ["@indicator_popup"] }
 pending = "U121"
 rows = ["B-18†"]
 
+[[fact]]
+# no image: a button that sets none draws no image view, every configuration style alone and with a variant that adds
+# no image (a role, a corner style, a subtitle, a menu, the pop-up indicator) and the system type, on the iPhone and
+# the iPad (read_icon_presence.py's [no_image]); the forms that draw a glyph keep their own facts
+key = "button.icon"
+when = { conditions = ["preset:ios-13"], not_variants = ["with_icon", "icon_only", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"] }
+value = "absent"
+rows = ["B-9"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/icon_presence.toml#no_image.icon"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-15/icon_presence.toml#no_image.icon"
+tolerance = 0
+
 # the image under `@loading`: UIKit shows the activity indicator in place of the image (B-10; the run drew the
 # indicator on a title only, so this rests on the header)
 [[fact]]
@@ -116779,6 +116798,25 @@ key = "button.menu_indicator.margin.bottom"
 when = { conditions = ["preset:ios-26"], variants = ["@indicator_popup"] }
 pending = "U121"
 rows = ["B-18†"]
+
+[[fact]]
+# no image: a button that sets none draws no image view, every configuration style alone and with a variant that adds
+# no image (a role, a corner style, a subtitle, a menu, the pop-up indicator) and the system type, on the iPhone and
+# the iPad (read_icon_presence.py's [no_image]); the forms that draw a glyph keep their own facts
+key = "button.icon"
+when = { conditions = ["preset:ios-26"], not_variants = ["with_icon", "icon_only", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"] }
+value = "absent"
+rows = ["B-9"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/icon_presence.toml#no_image.icon"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42276668803/ios-host-macos-26/icon_presence.toml#no_image.icon"
+tolerance = 0
 
 # the image under `@loading`: UIKit shows the activity indicator in place of the image (B-10; the run drew the
 # indicator on a title only, so this rests on the header)
