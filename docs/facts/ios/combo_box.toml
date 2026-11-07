@@ -591,26 +591,146 @@ tolerance = 0
 [[fact]]
 key = "combo_box.label.padding.top"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_top"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.right"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_right"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.bottom"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_bottom"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.left"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.label_padding_left"
+tolerance = 0
 
 # the gap from the title's frame to the indicator's
 [[fact]]
@@ -1061,20 +1181,110 @@ rows = ["CB-1"]
 [[fact]]
 key = "combo_box.values.content_width"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U173"
+value = "shown"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.content_width"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.values.content_slack"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U173"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.content_slack"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.text.elision"
 when = { conditions = ["preset:ios-13"], sizes = ["regular"] }
-pending = "U175"
+value = "none"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.dark.plain.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-15/render_pop_up.toml#pop_up.light.plain.elision"
+tolerance = 0
 
 # ---- ios-26 ----
 
@@ -1818,26 +2028,186 @@ tolerance = 0
 [[fact]]
 key = "combo_box.label.padding.top"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_top"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.right"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_right"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.bottom"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_bottom"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.padding.left"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U257"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.label_padding_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.label_padding_left"
+tolerance = 0
 
 # the gap from the title's frame to the indicator's
 [[fact]]
@@ -2408,17 +2778,138 @@ rows = ["CB-1"]
 [[fact]]
 key = "combo_box.values.content_width"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U173"
+value = "shown"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.content_width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.content_width"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.values.content_slack"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U173"
+value = "0px"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.content_slack"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.content_slack"
+tolerance = 0
 
 [[fact]]
 key = "combo_box.label.text.elision"
 when = { conditions = ["preset:ios-26"], sizes = ["regular"] }
-pending = "U175"
+value = "none"
 rows = ["CB-1"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.glass.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.dark.plain.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.filled.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.glass.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.gray.elision"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42305286429/ios-host-macos-26/render_pop_up.toml#pop_up.light.plain.elision"
+tolerance = 0
+
