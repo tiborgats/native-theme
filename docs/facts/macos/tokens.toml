@@ -43574,9 +43574,25 @@ rows = ["MAC-FM02†"]
 
 # --- macos-tahoe: pointer behaviour (MAC-P3-12†, U320; MAC-P4-6†, U321; facts lane t16b)
 
+# typing hides the pointer (run 42328425189's events pass, `typing-pointer.mov`, scripts/analysis_macos_cursor.py):
+# in the light recording the cursor is drawn over the text view until the frame the first typed character is
+# drawn in and gone from then, back after the 1 pt mouse move, gone at the next key (the frames, not
+# `CGCursorIsVisible`, which stays false after the first key); the dark recordings' cursor is not told apart
+# from the view's changes by the analysis (`drawn_before_key` false), so the dark scheme stays pending
 [[fact]]
 key = "token.behavior.hide_pointer_while_typing"
-when = { conditions = ["preset:macos-tahoe"] }
+when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
+value = true
+rows = ["MAC-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/cursor.toml#typing.aqua.hide_pointer_while_typing"
+tolerance = 0
+
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
 pending = "U320"
 rows = ["MAC-P3-12†"]
 
@@ -44910,9 +44926,25 @@ rows = ["MAC-FM02†"]
 # Pointer behaviour (MAC-P3-12†, U607; MAC-P4-6†, U608; as macos-tahoe's U320, U321): NSCursor.h declares
 # setHiddenUntilMouseMoves: for an application to call, not whether AppKit hides the pointer while typing; no AppKit
 # header declares a double-click distance, and no pass types with the cursor captured or clicks at stepped distances
+# typing hides the pointer (run 42328425189's events pass, `typing-pointer.mov`, scripts/analysis_macos_cursor.py):
+# in the light recording the cursor is drawn over the text view until the frame the first typed character is
+# drawn in and gone from then, back after the 1 pt mouse move, gone at the next key (the frames, not
+# `CGCursorIsVisible`, which stays false after the first key); the dark recordings' cursor is not told apart
+# from the view's changes by the analysis (`drawn_before_key` false), so the dark scheme stays pending
 [[fact]]
 key = "token.behavior.hide_pointer_while_typing"
-when = { conditions = ["preset:macos-monterey"] }
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = true
+rows = ["MAC-P3-12†"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/cursor.toml#typing.aqua.hide_pointer_while_typing"
+tolerance = 0
+
+[[fact]]
+key = "token.behavior.hide_pointer_while_typing"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
 pending = "U607"
 rows = ["MAC-P3-12†"]
 
