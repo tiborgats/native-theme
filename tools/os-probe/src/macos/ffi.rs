@@ -1081,11 +1081,18 @@ define_class!(
             _column: Option<&NSTableColumn>,
             row: NSInteger,
         ) -> Option<Retained<NSView>> {
-            let row = usize::try_from(row).ok()?;
-            self.ivars().rows.get(row).cloned()
+            self.ivars().row_view(row)
         }
     }
 );
+
+impl DropRows {
+    /// The view of `row`, `None` outside the table.
+    fn row_view(&self, row: NSInteger) -> Option<Retained<NSView>> {
+        let row = usize::try_from(row).ok()?;
+        self.rows.get(row).cloned()
+    }
+}
 
 impl DropTable {
     /// A one-column table's data source and delegate that hands out `rows`
