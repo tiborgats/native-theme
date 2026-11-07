@@ -54,6 +54,16 @@
 # CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
 # warnings) runs in every mode, so no local gate misses what it checks.
 #
+# Speed in --commit and --quick, never in the full run (whose every step runs
+# as it always has, through `cargo test`, with no cache):
+#   * cargo nextest, where installed, runs their test steps (cargo_tests,
+#     below), each test in a process of its own and every binary's tests in
+#     one pool; `cargo test --doc` keeps the doctests a step would run.
+#   * the step cache (scripts/step_cache.sh) skips a step whose declared
+#     inputs (CACHE_INPUTS, below), tool versions, environment and command
+#     are what they were when it last passed; the summary names each such
+#     step "unchanged since <commit>". --no-cache runs every step.
+#
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
 # and CI's `cargo fmt --all --check` refuses what was committed unformatted.
@@ -63,7 +73,7 @@ set -u  # Exit if an undefined variable is used
 
 usage() {
     cat <<'EOF'
-Usage: scripts/check_release.sh [--commit | --quick]
+Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
@@ -93,16 +103,26 @@ Usage: scripts/check_release.sh [--commit | --quick]
                  generate_platform_facts.py --check, check_spec_names.py,
                  check_spec_entries.py, check_spec_trace.py, check_ledger.py);
                  like --commit, it skips the steps PLAN_EXCLUDED lists
+  --no-cache     with --commit or --quick: run every step, the step cache
+                 neither read nor written (the full run never uses it)
   -h, --help     print this help and exit
+
+With --commit or --quick, cargo nextest runs the test steps where it is
+installed (cargo test --doc the doctests), and a step whose declared inputs,
+tools, environment and command are unchanged since it last passed is skipped,
+named in the summary "unchanged since <commit>". The full run runs every step
+through cargo test, with no cache.
 EOF
 }
 
 COMMIT_MODE=""
 QUICK_MODE=""
+NO_CACHE=""
 for arg in "$@"; do
     case "$arg" in
         --commit) COMMIT_MODE=1 ;;
         --quick) QUICK_MODE=1 ;;
+        --no-cache) NO_CACHE=1 ;;
         -h|--help) usage; exit 0 ;;
         *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
     esac
@@ -115,6 +135,11 @@ if [[ $COMMIT_MODE && $QUICK_MODE ]]; then
 fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
+
+# The facts gate limited to some presets is a development aid, no gate
+# (native-theme/tests/facts_gate.rs): every mode gates every preset, even
+# where the caller's environment names a subset.
+unset NT_FACTS_GATE_PRESETS
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -332,6 +357,16 @@ print_skipped() {
     SKIPPED+=("$1")
 }
 
+# The steps the step cache skipped, each "unchanged since <commit>".
+print_cached() {
+    if [ "${#CACHED[@]}" -gt 0 ]; then
+        printf "\n${BOLD}Skipped, unchanged since their last pass (step cache; --no-cache runs them):${NC}\n"
+        for c in "${CACHED[@]}"; do
+            printf "   ${DIM}%s${NC}\n" "$c"
+        done
+    fi
+}
+
 # Human-friendly elapsed time: "1m 23s" or "5s".
 format_elapsed() {
     local secs="$1"
@@ -372,6 +407,8 @@ _run_check_impl() {
     local mode="$2"
     shift 2
     plan_excluded_step "$description" "$@" && return 0
+    local cache_key=""
+    step_cached "$description" cache_key "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -384,6 +421,7 @@ _run_check_impl() {
 
     if [ "$status" -eq 0 ]; then
         print_ok "$description" "$elapsed"
+        step_passed "$description" "$cache_key" "$@"
     else
         # Failure: dump full output so the user sees what broke.
         printf "%s\n" "$output" >&2
@@ -436,6 +474,8 @@ _run_tests_impl() {
     local min_passed="$2"
     shift 2
     plan_excluded_step "$description" "$@" && return 0
+    local cache_key=""
+    step_cached "$description" cache_key "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -446,25 +486,34 @@ _run_tests_impl() {
     local elapsed
     elapsed=$(format_elapsed "$((SECONDS - start))")
 
+    # cargo test's "test result: ok. N passed" per binary and nextest's
+    # "N tests run: N passed" summary (cargo_tests runs both where nextest is
+    # used: nextest the tests, cargo test --doc the doctests).
     local total_passed=0
     if [ "$status" -eq 0 ]; then
         total_passed=$(printf "%s\n" "$output" \
-            | grep -oE 'test result: ok\. [0-9]+ passed' \
-            | awk '{sum += $4} END {print sum+0}')
+            | grep -oE 'test result: ok\. [0-9]+ passed|[0-9]+ tests? run: [0-9]+ passed' \
+            | awk '{sum += $(NF - 1)} END {print sum+0}')
     fi
 
     if [ "$status" -eq 0 ] && [ "$total_passed" -ge "$min_passed" ]; then
         # Successful run: print compact summary (sum passed across binaries).
-        local total_ignored
+        # nextest counts an ignored test as skipped.
+        local total_ignored total_skipped
         total_ignored=$(printf "%s\n" "$output" \
             | grep -oE '[0-9]+ ignored' \
             | awk '{sum += $1} END {print sum+0}')
+        total_skipped=$(printf "%s\n" "$output" \
+            | grep -oE 'tests? run: [0-9]+ passed.*' | grep -oE '[0-9]+ skipped' \
+            | awk '{sum += $1} END {print sum+0}')
         local detail=""
-        if [ "$total_passed" -gt 0 ] || [ "$total_ignored" -gt 0 ]; then
+        if [ "$total_passed" -gt 0 ] || [ "$total_ignored" -gt 0 ] || [ "$total_skipped" -gt 0 ]; then
+            detail=" ${total_passed} passed"
             if [ "$total_ignored" -gt 0 ]; then
-                detail=" ${total_passed} passed, ${total_ignored} ignored"
-            else
-                detail=" ${total_passed} passed"
+                detail="${detail}, ${total_ignored} ignored"
+            fi
+            if [ "$total_skipped" -gt 0 ]; then
+                detail="${detail}, ${total_skipped} skipped"
             fi
         fi
         if [ -n "$detail" ]; then
@@ -472,9 +521,11 @@ _run_tests_impl() {
                 "$description" "$elapsed" "·$detail"
         else
             print_ok "$description" "$elapsed"
+            step_passed "$description" "$cache_key" "$@"
             return
         fi
         PASS_COUNT=$((PASS_COUNT + 1))
+        step_passed "$description" "$cache_key" "$@"
     else
         # Failure: dump filtered output so the user sees what broke.
         printf "%s\n" "$output" | grep -v -E "$TEST_NOISE_FILTER" >&2 || true
@@ -490,6 +541,167 @@ _run_tests_impl() {
 
 run_tests()      { _run_tests_impl "$1" 1 "${@:2}"; }
 run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
+
+# `cargo test <args>` as a test step runs it. In --commit and --quick where
+# cargo-nextest is installed (HAVE_NEXTEST), `cargo nextest run <args>`
+# instead, then `cargo test <args> --doc` where `cargo test <args>` would run
+# doctests (no target selected, a package with a doctested library), so the
+# step runs the tests it ran before. `--no-tests=pass` leaves a run of no
+# test to run_tests' minimum, as with `cargo test`; `--status-level fail`
+# lists the failures alone, and the summary line is run_tests' count.
+cargo_tests() {
+    if [[ ! $HAVE_NEXTEST ]]; then
+        cargo test "$@"
+        return
+    fi
+    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail "$@" || return
+    if doctests_selected "$@"; then
+        cargo test "$@" --doc
+    fi
+}
+
+# Whether `cargo test <args>` runs doctests: no target selected, and the
+# package `-p` names has a library target with doctests.
+doctests_selected() {
+    local arg package=""
+    local previous=""
+    for arg in "$@"; do
+        case "$arg" in
+            --lib | --bins | --bin | --bin=* | --tests | --test | --test=* | --examples | --example | \
+                --example=* | --benches | --bench | --bench=* | --all-targets | --doc) return 1 ;;
+        esac
+        if [ "$previous" = "-p" ]; then
+            package="$arg"
+        fi
+        previous="$arg"
+    done
+    [ -n "$package" ] || return 1
+    jq -e --arg name "$package" \
+        'any(.packages[] | select(.name == $name) | .targets[]; .doctest and any(.kind[]; . == "lib" or . == "proc-macro"))' \
+        <<<"$WORKSPACE_METADATA" >/dev/null
+}
+
+# A step the cache skips ($1 its description, $2 the name of the caller's
+# variable for its key, $3... its command): returns 0, the step printed as
+# unchanged, where it last passed with the key its run has now; else 1, the
+# key in $2, empty where the cache is off or the step's inputs are not
+# declared (CACHE_INPUTS) or cannot be resolved.
+step_cached() {
+    local step_description="$1"
+    local key_variable="$2"
+    shift 2
+    printf -v "$key_variable" "%s" ""
+    [[ $STEP_CACHE && -n "${CACHE_INPUTS[$step_description]+set}" ]] || return 1
+    local step_inputs=()
+    cache_inputs "$step_description" step_inputs || return 1
+    local step_key step_label
+    step_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")
+    if step_label=$(step_cache_hit "$step_description" "$step_key"); then
+        printf "${DIM}↷  %-47s unchanged since %s${NC}\n" "$step_description" "$step_label"
+        CACHED+=("$step_description: unchanged since $step_label")
+        return 0
+    fi
+    printf -v "$key_variable" "%s" "$step_key"
+    return 1
+}
+
+# Records a step that passed ($1 its description, $2 its key from
+# step_cached, $3... its command), where its inputs still have the key they
+# had before it ran.
+step_passed() {
+    local step_description="$1"
+    local step_key="$2"
+    shift 2
+    [ -n "$step_key" ] || return 0
+    local step_inputs=()
+    cache_inputs "$step_description" step_inputs || return 0
+    if [ "$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@")" = "$step_key" ]; then
+        step_cache_record "$step_description" "$step_key"
+    fi
+}
+
+# The inputs CACHE_INPUTS declares for the step $1, into the array named $2:
+# its paths and globs, each `@rust:<crate>[,<crate>...]` standing for what a
+# cargo step on those crates reads: RUST_CONFIG_INPUTS and the crates' reach
+# (rust_reach). Returns 1 where a reach is refused.
+cache_inputs() {
+    local -n cache_inputs_out="$2"
+    local token tokens crates
+    read -ra tokens <<<"${CACHE_INPUTS[$1]}"
+    cache_inputs_out=()
+    for token in "${tokens[@]}"; do
+        if [[ "$token" == @rust:* ]]; then
+            crates="${token#@rust:}"
+            rust_reach "$crates" || return 1
+            mapfile -t -O "${#cache_inputs_out[@]}" cache_inputs_out <<<"$RUST_CONFIG_INPUTS"
+            mapfile -t -O "${#cache_inputs_out[@]}" cache_inputs_out <<<"${RUST_REACH[$crates]}"
+        else
+            cache_inputs_out+=("$token")
+        fi
+    done
+}
+
+# The directories of the workspace packages a cargo step on the crates $1
+# (comma-separated) builds, into RUST_REACH[$1], once per run: `cargo tree`
+# with every feature of those crates on, their dev-dependencies and the build
+# dependencies, on this host, so a superset of what any feature set of theirs
+# builds. Registry packages are pinned by Cargo.lock and their sources never
+# change. Refused (returns 1, the step runs) where the tree holds a registry
+# package that probes the host (CACHE_HOST_PROBES), a path package outside the
+# workspace, or a workspace package with a build script or a procedural macro
+# that CACHE_TRUSTED_BUILD_CODE does not list: what those read is not known
+# from the sources alone.
+declare -A RUST_REACH=()
+rust_reach() {
+    if [[ -z "${RUST_REACH[$1]+set}" ]]; then
+        RUST_REACH[$1]=$(rust_reach_resolve "$1" || printf "!")
+    fi
+    [ "${RUST_REACH[$1]}" != "!" ]
+}
+
+rust_reach_resolve() {
+    local crates crate tree locals name path
+    local args=()
+    IFS=, read -ra crates <<<"$1"
+    for crate in "${crates[@]}"; do
+        args+=(-p "$crate")
+    done
+    tree=$(cargo tree "${args[@]}" --all-features -e normal,build,dev --prefix none --format '{p}' \
+        --locked 2>/dev/null) || return 1
+    if awk '{print $1}' <<<"$tree" | grep -qxF -f <(tr ' ' '\n' <<<"$CACHE_HOST_PROBES"); then
+        return 1
+    fi
+    locals=$(grep -E ' \(/' <<<"$tree" | sed -E 's/ \(\*\)$//; s/^([^ ]+) .* \((\/[^)]*)\)$/\1 \2/' | sort -u)
+    [ -n "$locals" ] || return 1
+    while read -r name path; do
+        jq -e --arg name "$name" --arg path "$path/Cargo.toml" \
+            'any(.packages[]; .name == $name and .manifest_path == $path)' \
+            <<<"$WORKSPACE_METADATA" >/dev/null || return 1
+        if jq -e --arg name "$name" \
+            'any(.packages[] | select(.name == $name) | .targets[]; any(.kind[]; . == "custom-build" or . == "proc-macro"))' \
+            <<<"$WORKSPACE_METADATA" >/dev/null && [[ " $CACHE_TRUSTED_BUILD_CODE " != *" $name "* ]]; then
+            return 1
+        fi
+        printf "%s\n" "${path#"$PWD"/}"
+    done <<<"$locals"
+}
+
+# What every cargo step reads besides the packages, one per line: the
+# workspace's manifest, lock and tool configuration, and every Cargo
+# configuration file Cargo would read here (each ancestor's .cargo/ and
+# CARGO_HOME's), a missing one hashed as missing.
+rust_config_inputs() {
+    printf "%s\n" Cargo.toml Cargo.lock .cargo rust-toolchain rust-toolchain.toml \
+        rustfmt.toml .rustfmt.toml clippy.toml .clippy.toml
+    local dir
+    dir=$(dirname "$PWD")
+    while :; do
+        printf "%s\n" "$dir/.cargo/config" "$dir/.cargo/config.toml"
+        [ "$dir" = "/" ] && break
+        dir=$(dirname "$dir")
+    done
+    printf "%s\n" "${CARGO_HOME:-$HOME/.cargo}/config" "${CARGO_HOME:-$HOME/.cargo}/config.toml"
+}
 
 # A cargo subcommand the full run needs. A missing one fails with its install
 # command and its section does not run; it is never installed (a check
@@ -596,11 +808,117 @@ msrv_checks() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Speed in --commit and --quick: cargo nextest and the step cache (the header
+# says what each does). The full run sets neither: HAVE_NEXTEST and
+# STEP_CACHE stay empty there, so cargo_tests is `cargo test` and step_cached
+# skips nothing, whatever the environment.
+# ─────────────────────────────────────────────────────────────────────────────
+HAVE_NEXTEST=""
+STEP_CACHE=""
+CACHED=()
+if [[ $COMMIT_MODE || $QUICK_MODE ]]; then
+    if cargo nextest --version >/dev/null 2>&1; then
+        HAVE_NEXTEST=1
+    fi
+    if [[ ! $NO_CACHE ]]; then
+        STEP_CACHE=1
+    fi
+fi
+
+# The step cache's inputs, by step description (scripts/step_cache.sh). A
+# step with no entry always runs; an entry names every file, directory and
+# glob the step's command reads, `@rust:<crates>` standing for what a cargo
+# step on those crates reads (cache_inputs). Only steps whose reads are known
+# are listed:
+#   * a cargo step that compiles and runs nothing (check, clippy, the strict
+#     panic lints, rustdoc) reads what rustc and the build scripts read, as
+#     cache_inputs lists it;
+#   * a test step also reads what its tests read: native-theme-derive's unit
+#     tests read nothing; the facts gate reads docs/ (the facts and their
+#     evidence) and scripts/widget_units.toml, layers and platform_vectors
+#     their fixtures under native-theme/tests. native-theme's library tests
+#     (the desktop they run on), its doctests, native-theme-build's tests (a
+#     `cargo check` of a fresh project, with no lock, against crates.io) and
+#     every connector's are not cached;
+#   * the Python data checks read scripts/ (their modules), docs/,
+#     native-theme/src, native-theme/tests and ROADMAP.md, and run rustfmt,
+#     whose version is in the key; the checks that read the source cache
+#     outside the repository (the citations, sf_tracking, dynamic_type) are
+#     not cached.
+# CACHE_HOST_PROBES are the registry build helpers that read the host's
+# libraries or compilers; CACHE_TRUSTED_BUILD_CODE the workspace packages
+# whose build script or procedural macro reads only its own directory
+# (native-theme's build.rs its icons/, native-theme-derive no file).
+CACHE_HOST_PROBES="pkg-config cc cmake bindgen system-deps vcpkg metadeps"
+CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
+PY_DATA_INPUTS="scripts docs native-theme/src native-theme/tests ROADMAP.md"
+STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
+declare -A CACHE_INPUTS=(
+    ["panic-pattern scan (native-theme, native-theme-derive)"]="scripts/check_panic_patterns.py native-theme/src native-theme-derive/src"
+    ["clippy (native-theme, native-theme-derive, all targets and features)"]="@rust:native-theme,native-theme-derive"
+    ["clippy (native-theme, Linux features)"]="@rust:native-theme"
+    ["strict-panic (native-theme, Linux features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
+    ["strict-panic (native-theme, no features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
+    ["test (native-theme-derive)"]="@rust:native-theme-derive"
+    ["test (native-theme, layers, vectors and facts gate)"]="@rust:native-theme docs scripts/widget_units.toml"
+    ["docs (native-theme)"]="@rust:native-theme"
+    ["docs, private items (native-theme, Linux features)"]="@rust:native-theme"
+)
+for crate in $WORKSPACE_CRATES; do
+    CACHE_INPUTS["check ($crate)"]="@rust:$crate"
+    CACHE_INPUTS["clippy ($crate)"]="@rust:$crate"
+    CACHE_INPUTS["strict-panic ($crate)"]="@rust:$crate $STRICT_PANIC_INPUTS"
+    CACHE_INPUTS["docs, private items ($crate)"]="@rust:$crate"
+done
+for check in "the generated widgets match the catalogue" "every platform function has its vectors" \
+    "the facts are well formed" "docs/platform-facts.md is generated from the facts" \
+    "the specification's names" "the specification's entries" "the specification's traceability" \
+    "the 0.8.0 ledger triages every open item" "the enabled units' trace lines are carried"; do
+    CACHE_INPUTS["$check"]="$PY_DATA_INPUTS"
+    CACHE_INPUTS["data documents: $check"]="$PY_DATA_INPUTS"
+done
+for preset in native-theme/src/presets/*.toml; do
+    preset=$(basename "$preset" .toml)
+    CACHE_INPUTS["the bundled preset $preset is generated from its facts"]="$PY_DATA_INPUTS"
+    CACHE_INPUTS["data documents: the bundled preset $preset is generated from its facts"]="$PY_DATA_INPUTS"
+done
+
+if [[ $STEP_CACHE ]]; then
+    # shellcheck source=scripts/step_cache.sh
+    source scripts/step_cache.sh
+    RUST_CONFIG_INPUTS=$(rust_config_inputs)
+    cache_label=$(git rev-parse --short HEAD 2>/dev/null || printf "an unknown commit")
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        cache_label="$cache_label with uncommitted changes"
+    fi
+    nextest_version=""
+    if [[ $HAVE_NEXTEST ]]; then
+        nextest_version=$(cargo nextest --version 2>&1)
+    fi
+    step_cache_init "target/check-release-cache" "$cache_label" "$(
+        rustc -vV 2>&1
+        cargo -vV 2>&1
+        cargo clippy -V 2>&1
+        rustdoc -V 2>&1
+        rustfmt -V 2>&1
+        python3 -VV 2>&1
+        printf "nextest %s\n" "$nextest_version"
+        sha256sum scripts/check_release.sh scripts/step_cache.sh
+        step_cache_environment
+    )"
+    print_info "step cache: on (target/check-release-cache; --no-cache runs every step)"
+fi
+if [[ $HAVE_NEXTEST ]]; then
+    print_info "test steps: cargo nextest (doctests: cargo test --doc)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # --quick: the per-task gate (the header lists it), then its summary.
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $QUICK_MODE ]]; then
     print_section "Per-task gate (--quick)"
     run_check "cargo fmt (all crates)" cargo fmt --all
+    run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
     run_check "panic-pattern scan (native-theme, native-theme-derive)" \
         python3 scripts/check_panic_patterns.py native-theme/src native-theme-derive/src
     run_check "clippy (native-theme, native-theme-derive, all targets and features)" \
@@ -609,10 +927,10 @@ if [[ $QUICK_MODE ]]; then
         bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
     run_check "strict-panic (native-theme-derive)" \
         bash scripts/check_strict_panic.sh -p native-theme-derive --lib
-    run_tests "test (native-theme-derive)" cargo test -p native-theme-derive
-    run_tests "test (native-theme, library)" cargo test -p native-theme --lib
+    run_tests "test (native-theme-derive)" cargo_tests -p native-theme-derive
+    run_tests "test (native-theme, library)" cargo_tests -p native-theme --lib
     run_tests "test (native-theme, layers, vectors and facts gate)" \
-        cargo test -p native-theme --test layers --test platform_vectors --test facts_gate
+        cargo_tests -p native-theme --test layers --test platform_vectors --test facts_gate
     run_tests "doctests (native-theme)" cargo test -p native-theme --doc
     run_check "docs (native-theme)" env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
     msrv_checks
@@ -639,12 +957,13 @@ if [[ $QUICK_MODE ]]; then
     else
         printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
     fi
-    printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · %s total${NC}\n" \
-        "$((PASS_COUNT + WARN_COUNT))" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" \
-        "$(format_elapsed "$((SECONDS - SCRIPT_START))")"
+    printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · %d unchanged · %s total${NC}\n" \
+        "$((PASS_COUNT + WARN_COUNT + ${#CACHED[@]}))" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" \
+        "${#CACHED[@]}" "$(format_elapsed "$((SECONDS - SCRIPT_START))")"
     for w in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
         printf "   ${YELLOW}${ICON_WARN}${NC} %s\n" "$w"
     done
+    print_cached
     if [ "${#PLAN_SKIPPED[@]}" -gt 0 ]; then
         printf "\n${BOLD}PLAN_EXCLUDED (the 0.8.0 plan's transition):${NC}\n"
         for s in "${PLAN_SKIPPED[@]}"; do
@@ -755,6 +1074,7 @@ else
     exit 1
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
+run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check
@@ -1006,6 +1326,10 @@ run_check "strict-panic (native-theme-egui-widgets)" \
 # Windows code is held by the cross-target clippy runs above.
 run_check "strict-panic (native-theme-os-probe)" \
     bash scripts/check_strict_panic.sh -p native-theme-os-probe --bins
+# The preset check (tools/preset-check, never published) is a binary the facts
+# lanes run; it is held to the library rule.
+run_check "strict-panic (native-theme-preset-check)" \
+    bash scripts/check_strict_panic.sh -p native-theme-preset-check --bins
 # The test fixtures (tools/test-fixtures, never published) return each
 # failure as an error, so a test fails on its own `?`.
 run_check "strict-panic (native-theme-test-fixtures)" \
@@ -1026,15 +1350,15 @@ print_section "Tests"
 # its test list is empty.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_tests "test ($crate, native, watch)" cargo test -p "$crate" --features native,watch
+        run_tests "test ($crate, native, watch)" cargo_tests -p "$crate" --features native,watch
     elif [ "$crate" = "native-theme-os-probe" ]; then
         probe_min=1
         if ! cargo test -p "$crate" -- --list 2>/dev/null | grep -q ': test$'; then
             probe_min=0
         fi
-        run_tests_min "$probe_min" "test ($crate)" cargo test -p "$crate"
+        run_tests_min "$probe_min" "test ($crate)" cargo_tests -p "$crate"
     else
-        run_tests "test ($crate)" cargo test -p "$crate"
+        run_tests "test ($crate)" cargo_tests -p "$crate"
     fi
 done
 # native-theme with its Linux features ($NT_FEATURES): the loop above runs it
@@ -1043,7 +1367,7 @@ done
 # lookup. On a host with Breeze and Adwaita installed the tests that need them
 # run too; elsewhere they skip themselves.
 run_tests "test (native-theme, Linux features)" \
-    cargo test -p native-theme --features "$NT_FEATURES"
+    cargo_tests -p native-theme --features "$NT_FEATURES"
 # The freedesktop stem index against freedesktop-icons' unfiltered lookup over
 # the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
 # (~30-50 s), so the per-commit subset leaves it to the full run. On a host
@@ -1064,7 +1388,7 @@ fi
 # include `svg-rasterize`; its tests for the SVG path without rasterization only
 # compile without it.
 run_tests "test (native-theme-gpui, no features)" \
-    cargo test -p native-theme-gpui --lib --no-default-features
+    cargo_tests -p native-theme-gpui --lib --no-default-features
 # The gpui connector on GPUI Fast, with `native` and `watch` as above: a
 # second GPUI core and platform layer to build, so the per-commit subset
 # leaves it to the full run and CI. Doctests excluded: each is a crate of its
@@ -1074,7 +1398,7 @@ if [[ $COMMIT_MODE ]]; then
     print_skipped "test (native-theme-gpui, gpui-fast, native, watch)"
 else
     run_tests "test (native-theme-gpui, gpui-fast, native, watch)" \
-        cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
+        cargo_tests -p native-theme-gpui --features gpui-fast,native,watch --all-targets
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1096,9 +1420,9 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \
-    cargo test -p native-theme-iced --no-default-features
+    cargo_tests -p native-theme-iced --no-default-features
 run_tests "test (native-theme-iced, iced_aw, watch, native)" \
-    cargo test -p native-theme-iced --features iced_aw,watch,native
+    cargo_tests -p native-theme-iced --features iced_aw,watch,native
 run_check "clippy (native-theme-iced, iced_aw, watch, native)" \
     cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native -- -D warnings
 # The `Spinner` without the bundled icon sets: the showcase's required
@@ -1119,9 +1443,9 @@ run_check "clippy (native-theme-iced, the showcase's required features)" \
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "egui connector configurations"
 run_tests "test (native-theme-egui, no features)" \
-    cargo test -p native-theme-egui --no-default-features
+    cargo_tests -p native-theme-egui --no-default-features
 run_tests "test (native-theme-egui, all features)" \
-    cargo test -p native-theme-egui --all-features
+    cargo_tests -p native-theme-egui --all-features
 run_check "clippy (native-theme-egui, all features)" \
     cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings
 run_check "one skrifa (native-theme-egui)" \
@@ -1129,9 +1453,9 @@ run_check "one skrifa (native-theme-egui)" \
 # The companion widget crate forwards the connector's features one to one, so it
 # has the same two further configurations.
 run_tests "test (native-theme-egui-widgets, no features)" \
-    cargo test -p native-theme-egui-widgets --no-default-features
+    cargo_tests -p native-theme-egui-widgets --no-default-features
 run_tests "test (native-theme-egui-widgets, all features)" \
-    cargo test -p native-theme-egui-widgets --all-features
+    cargo_tests -p native-theme-egui-widgets --all-features
 run_check "clippy (native-theme-egui-widgets, all features)" \
     cargo clippy -p native-theme-egui-widgets --all-targets --all-features -- -D warnings
 
@@ -1818,7 +2142,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
-TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT))
+TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT + ${#CACHED[@]}))
 ELAPSED_TOTAL=$(format_elapsed "$((SECONDS - SCRIPT_START))")
 
 printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
@@ -1844,8 +2168,8 @@ else
     printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s NOT ready for release\n" "$CURRENT_VERSION"
 fi
 
-printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · ${RED}%d %s${NC}${DIM} · %s total${NC}\n" \
-    "$TOTAL" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" "$FAIL_COUNT" "$ICON_FAIL" "$ELAPSED_TOTAL"
+printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · ${RED}%d %s${NC}${DIM} · %d unchanged · %s total${NC}\n" \
+    "$TOTAL" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" "$FAIL_COUNT" "$ICON_FAIL" "${#CACHED[@]}" "$ELAPSED_TOTAL"
 
 if [ "$WARN_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${YELLOW}Warnings (re-summarised):${NC}\n"
@@ -1867,6 +2191,8 @@ if [ "${#PLAN_SKIPPED[@]}" -gt 0 ]; then
         printf "   ${DIM}%s${NC}\n" "$s"
     done
 fi
+
+print_cached
 
 if [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}Skipped (--commit mode):${NC}\n"
