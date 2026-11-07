@@ -7967,7 +7967,10 @@ source = "qtbase@6.12.0 src/gui/text/unix/qfontconfigdatabase.cpp:840-844"
 quote = "if (script == QFontDatabasePrivate::Script_Emoji) { FcPatternAddBool(pattern, FC_COLOR, true); value.u.s = (const FcChar8 *)\"emoji\"; FcPatternAddWeak(pattern, FC_FAMILY, value, FcTrue); }"
 
 # Qt's family fallbacks are fontconfig's sorted match (FcFontSort) for the family and the script's language, so
-# they follow the installed fonts and the distribution's configuration: pending U404 (no committed fc-match run)
+# they follow the installed fonts and the distribution's configuration: pending U404. The KDE render host's
+# `fc-match -s` (run 42307873328, kept on v0.8.0-tools-hosts-m1b) reads a container that installs no CJK and no
+# colour-emoji font, whose CJK and emoji matches fall back to Latin fonts, and keeps each list's first 20 fonts: it
+# states that container's fallbacks, not Plasma's
 
 [[fact]]
 key = "token.text.fallbacks.families"
@@ -10452,12 +10455,28 @@ quote = "IconSizes::IconSizes(Units *units)"
 absent = []
 
 # Kirigami's sizeForLabels: roundedIconSize of the default font's height (QFontMetrics::height, ascent plus
-# descent) stepped down to 16, 22, 32 or 48 (units.cpp:297-327); Noto Sans 10's height at the preset's
-# DPI needs the font's metrics, which no pinned source holds: pending U400
+# descent) stepped down to 16, 22, 32 or 48 (units.cpp:297-327). Noto Sans 10 at 96 DPI is 18 px high (the KDE
+# render host's QFontMetrics, Noto Sans Regular at 13 px), which steps down to 16, and Kirigami answered 16 (U400,
+# measured; read_icon_sizes.py)
 [[fact]]
 key = "token.icons.sizes.keyed.for_labels.size"
-pending = "U400"
+value = "16px"
 rows = ["Q1.1"]
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:303-305"
+quote = "if (size < 22) { return 16; }"
+
+[[fact.cite]]
+kind = "published"
+source = "kirigami@6.31.0 src/platform/units.cpp:322-326"
+quote = "int IconSizes::sizeForLabels() const { // gridUnit is the height of textMetrics return roundedIconSize(m_units->d->fontMetrics.height()); }"
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/kde-host/2026-11-06-run-42307873328/qml/analysis.toml#size_for_labels_px"
+tolerance = 0
 
 [[fact]]
 key = "token.icons.sizes.keyed.for_labels.axes"
