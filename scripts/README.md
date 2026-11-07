@@ -324,7 +324,13 @@ exclusions with a YAML comment that is exactly
 `# PLAN_EXCLUDED: <description>`, and the first section fails unless the
 marks and the list name the same set.
 
+Where `cargo-nextest` is installed, `--commit` and `--quick` run their test
+steps through `cargo nextest run` (`cargo_tests` in the script), and through
+`cargo test --doc` where `cargo test` would have run doctests too; the full run
+runs every step through `cargo test`.
+
 ```sh
+./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh
 ```
