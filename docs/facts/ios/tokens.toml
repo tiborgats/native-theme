@@ -5631,46 +5631,216 @@ kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:170-171"
 quote = "/// Describes a visual effect to apply when this item is focused. If this property is nil no effect will be applied when this view becomes focused. @property (nonatomic, readwrite, nullable, copy) UIFocusEffect *focusEffect"
 
-# U477: the iPad focus halo (UIFocusHaloEffect): never drawn (the focus pass found no focusable button)
+# The iPad focus halo, drawn with Full Keyboard Access on (run 42275053139, analysis/press_focus.py): a solid ring
+# 3 pt wide, 1.5 pt each side of the button's frame edge on the straight sides, no shadow, in the light accent in both
+# appearances; its corners follow the bezel where there is one and are near square without (unread: U477), and its
+# entrance is not recorded (U477).
 [[fact]]
 key = "token.focus.kind"
-pending = "U477"
+value = "ring"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.kind"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.kind"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.kind"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.kind"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.paint"
-pending = "U477"
+when = { conditions = ["preset:ios-13"] }
+value = "#007aff"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.color"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.color"
+tolerance = 1
+
+[[fact]]
+key = "token.focus.paint"
+when = { conditions = ["preset:ios-26"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.color"
+tolerance = 1
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.color"
+tolerance = 1
 
 [[fact]]
 key = "token.focus.width"
-pending = "U477"
+value = "3px"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.width"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.width"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.dash"
-pending = "U477"
+value = "solid"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.dash"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.dash"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.offset.top"
-pending = "U477"
+value = "-1.5px"
 rows = ["D-18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.offset_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.offset_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.offset_top"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.offset_top"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.offset.right"
-pending = "U477"
+value = "-1.5px"
 rows = ["D-18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.offset_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.offset_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.offset_right"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.offset_right"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.offset.bottom"
-pending = "U477"
+value = "-1.5px"
 rows = ["D-18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.offset_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.offset_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.offset_bottom"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.offset_bottom"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.offset.left"
-pending = "U477"
+value = "-1.5px"
 rows = ["D-18"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.offset_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.offset_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.offset_left"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.offset_left"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.corners.top_left"
@@ -5699,8 +5869,28 @@ rows = ["D-18"]
 
 [[fact]]
 key = "token.focus.shadow"
-pending = "U477"
+value = "absent"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.light.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-15/press_focus.toml#token.dark.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.light.shadow"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275053139/ios-host-macos-26/press_focus.toml#token.dark.shadow"
+tolerance = 0
 
 [[fact]]
 key = "token.focus.transition"
