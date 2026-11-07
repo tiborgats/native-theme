@@ -1525,22 +1525,176 @@ pending = "U158"
 rows = ["X-MO-1"]
 
 [[fact]]
-# no context is tied to a symbol configuration in the run
 key = "token.icons.sizes.toolbar.size"
-pending = "U127"
+value = "17px"
 rows = ["D-19"]
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.size"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.size"
+tolerance = 0
+
 [[fact]]
-# no context is tied to a symbol configuration in the run
 key = "token.icons.sizes.toolbar.weight"
+when = { conditions = ["preset:ios-13"] }
+value = "absent"
+rows = ["D-19"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.weight"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.weight"
+tolerance = 0
+
+[[fact]]
+key = "token.icons.sizes.toolbar.weight"
+when = { conditions = ["preset:ios-26"] }
 pending = "U127"
 rows = ["D-19"]
 
 [[fact]]
-# no context is tied to a symbol configuration in the run
 key = "token.icons.sizes.toolbar.scale"
-pending = "U127"
+value = "large"
 rows = ["D-19"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.scale"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.scale"
+tolerance = 0
 
 [[fact]]
 # no context is tied to a symbol configuration in the run
@@ -5477,18 +5631,223 @@ rows = ["X-SV-3", "P3-14†"]
 # U479: the icon contexts' other leaves (beside U127's size, weight and scale): never read
 [[fact]]
 key = "token.icons.sizes.toolbar.rendering_mode"
-pending = "U479"
+value = "template"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.rendering_mode"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.rendering_mode"
+tolerance = 0
 
 [[fact]]
 key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["contrast_increased"] }
+value = "#007aff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.fill"
+tolerance = 0
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["contrast_increased"] }
+value = "#0a84ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.fill"
+tolerance = 0
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:ios-26", "scheme:light"], not_conditions = ["contrast_increased"] }
+value = "#0088ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.fill"
+tolerance = 0
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["preset:ios-26", "scheme:dark"], not_conditions = ["contrast_increased"] }
+value = "#0091ff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.fill"
+tolerance = 0
+
+[[fact]]
+key = "token.icons.sizes.toolbar.fill"
+when = { conditions = ["contrast_increased"] }
 pending = "U479"
 rows = []
 
 [[fact]]
 key = "token.icons.sizes.toolbar.axes"
-pending = "U479"
+value = {}
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.axes"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.axes"
+tolerance = 0
 
 [[fact]]
 key = "token.icons.sizes.toolbar.symbol_variants"
@@ -5497,8 +5856,68 @@ rows = []
 
 [[fact]]
 key = "token.icons.sizes.toolbar.symbolic_colors"
-pending = "U479"
+value = {}
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.star.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.light.toolbar.plus.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.star.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#contexts.dark.toolbar.plus.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.star.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.square_and_arrow_up.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.light.toolbar.plus.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.star.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.square_and_arrow_up.symbolic_colors"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#contexts.dark.toolbar.plus.symbolic_colors"
+tolerance = 0
 
 [[fact]]
 key = "token.icons.sizes.toolbar.state_effect"
