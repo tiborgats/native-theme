@@ -1,0 +1,526 @@
+[os]
+platform = "macOS"
+version = "15.8.2"
+major = 15
+minor = 8
+patch = 2
+operatingSystemVersionString = "Version 15.8.2 (Build 24H232)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos15"
+runner_image_version = "20261104.0514.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.button_pass]
+mode = "events"
+mode_method = "no sheet is captured; a window of its own made key, the application active, and posted clicks, drags, hovers and typing read and recorded (events)"
+method = "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped 10 steps of 50 ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped 10 steps (20 after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by 6 pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked 100 pt right of the push sheet's frame before the normal capture and after the hovered and clicked ones"
+backdrops = "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and 128 (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin (10 pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a 8 x 8 px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares 4 px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png); and in the key mode the normal, pressed and disabled states are also drawn offscreen, the backdrop hidden: the content view with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps of its bounds at 1 and 2 pixels a point (<state>.renders, <state>-render-<1x|2x>.png; content_from_top_left_xywh places the content view in the window frame's points from its top left), so the buttons are drawn over transparency at a backing scale of 2 the runner's screen lacks; what an offscreen draw leaves out of a control (a layer AppKit composites only on screen) the 1x render's comparison with the capture's layer shows"
+layer_method = "layer: per pixel, from the over_black and over_white captures and their backdrop_raw bytes B, alpha a = 1 - (C_white - C_black) / (B_white - B_black) per channel, averaged over r, g, b (alpha_channel_spread_max_bytes: the largest difference of the three, times 255) and clamped to 0..1, and the premultiplied colour P = C_black - (1 - a) B_black clamped to 0..a; the layer is written as a PNG of straight (not premultiplied) colour and alpha, tagged sRGB, to <stem>-layer.png (a focused button's: its region only); check_grey and check_window composite the layer over the over_grey and window captures' backdrop_raw and compare it with those captures' opaque pixels (max_byte_delta, pixels_over_2; not_opaque_pixels, the window's rounded corners, are not compared), for the whole file and per button; per button (buttons), in the frame and the frame grown by 6 pt (region): alpha_max; body_alpha, the median alpha of the frame's middle row's pixels of alpha >= 8/255; fill_mode, the most frequent straight colour and alpha among the frame's pixels whose alpha is within 8/255 of body_alpha; bezel, the bounds of the region's pixels of alpha >= half body_alpha; fill, the straight colour and alpha at fill_point_px_xy, on the bezel's middle row two pixels inside the first pixel from its left edge whose alpha reaches 0.98 of the row's median (clear of the corner and the label; a gradient bezel's colour on that row); corner_top_left and corner_top_right, per row from the bezel's top the missing coverage (1 - alpha / the row's median alpha of its pixels of alpha >= 8/255, clamped to 0..1) summed from the bezel's edge inward to the first pixel at 0.98 coverage, up to two rows under 0.02, half the bezel's height or 40 rows, and the radius of the circle whose insets fit those rows best (least squares, 0.25 px steps; fit_rms_px says how well a circle fits); ink, the bezel's pixels of alpha >= half body_alpha whose straight colour or alpha differs from the fill's by more than 48 of 255 in a channel, their bounds and the one farthest from the fill (farthest_from_fill: the label's colour where a glyph covers a whole pixel); outside_frame, the region's pixels outside the frame with alpha >= 8/255, their bounds and the one of the largest alpha; diff_from_unfocused (focus mode), the region's pixels whose premultiplied colour or alpha differs from the unfocused layer's by more than 2 of 255, their bounds and the straight colour where the alpha grew most"
+activationPolicy_regular_set = true
+CGPreflightPostEventAccess = true
+isFullKeyboardAccessEnabled = false
+all_captures_key = true
+any_capture_key = false
+
+[macos.button_pass.states]
+normal = "nothing set; on the push sheet the cursor parked outside the window"
+pressed = "-[NSButton highlight:] YES on every NSButton (an NSComboButton has no highlight:), as NSButtonCell's mouse tracking does, then the run loop pumped; the cells' isHighlighted read back (cells_highlighted)"
+disabled = "setEnabled: NO on every control"
+disabled_pressed = "setEnabled: NO on every control and -[NSButton highlight:] YES on every NSButton, as pressed; the cells' isHighlighted read back (cells_highlighted); diff_from_disabled compares it with the disabled capture as diff_from_normal does with the normal one"
+hovered = "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)"
+clicked = "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up"
+focused = "focus mode: per button makeFirstResponder: with the button, captured over every backdrop, then makeFirstResponder: nil after the sheet's buttons"
+
+[macos.button_pass.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.button_pass.events]
+method = """a titled window (empty title, content [0, 0, 560, 340] (x, y, width, height) from [200, 200] (x, y)) holding, in its content view (bottom-left origin): an editable NSTextView "drag drag drag drag" [20, 260, 220, 40] (x, y, width, height) (the drag source); a push button "Tip" (regular, sized to fit) from [260, 270] (x, y) with the tool tip "Tip"; a push button "Spring" from [20, 200] (x, y), buttonType pushOnPushOff, state off, springLoaded YES, action updateWindows at NSApp; an editable NSTextView "drop here" [20, 120, 220, 60] (x, y, width, height) (the drop target and the typing target); an NSScrollView [300, 20, 240, 200] (x, y, width, height) holding a view-based NSTableView (one 220 pt column, 6 rows, each a labelWithString: "Row <n>") whose data source registers for NSPasteboardTypeString drags, answers tableView:validateDrop:proposedRow:proposedDropOperation: with NSDragOperationCopy for the row and operation AppKit proposes (counting the calls and keeping the last) and tableView:acceptDrop:row:dropOperation: with NO; a ticker [544, 324, 8, 8] (x, y, width, height). The window presented as the key mode presents it, the cursor parked 100 pt right of it. Every event is a CGEvent posted at the HID event tap (left button). double_click: per trial, a mouse-down and a mouse-up 30 ms later at the empty point [130, 60] (x, y) of the content view, the second pair's mouse-down 100 ms after the first's at a point the distance along x (distance_x) or y (distance_y, Quartz's downwards) away, or at the same point after a gap (gap_same_point); then the run loop pumped 300 ms and doubleClickInterval + 300 ms, dispatching every event, each left mouse-down's NSEvent clickCount noted in order. drag_start: per trial the source's text set and all selected and the source made first responder; a mouse-down at [12, 8] (x, y) pt from its top left, held, then one mouse-dragged event per point to the right every 16 ms, a mouse-up 300 ms after the last (posted from a second thread while the main thread pumps); the drag pasteboard's (NSPasteboardNameDrag) changeCount before and after: a drag session that starts writes to it; distance_after_hold holds 800 ms and moves each distance, hold_before_distance holds each time and moves 12 pt. tool_tip: per trial the cursor warped (CGWarpMouseCursorPosition) and a mouse-moved posted away from the window, the run loop pumped for the trial's rest, then warped and moved onto the Tip button's centre, and NSApp's windows polled every 5 ms (the run loop pumped between) for a visible one whose class name holds ToolTip, for at most 8000 ms; the trials cold, warm (right after the cold one's tip) and rested. Per appearance two recordings as the motion pass makes them (screencapture -v of the main display, events posted from a second thread at planned times, main-thread actions, a common-modes timer flipping the ticker every 5 ms): typing-pointer (screencapture -C, the cursor drawn; the target made first responder at 2 s, the cursor moved onto its centre at 2.2 s, a, s, d typed at 3, 3.2 and 3.4 s, the cursor moved 1 pt at 6 s, a and s typed at 7 and 7.2 s, resigned at 9 s; 10 s; each sample reads CGCursorIsVisible; the crop the text view grown by 40 pt) and drag-over (the source's text selected and the source first responder at 1 s; the cursor moved onto the selection at 1.8 s, a mouse-down at 2 s, dragged 30 pt right from 3 to 3.3 s, onto row 1's centre by 3.8 s, the window captured (screencapture -l, the drag image is a window of its own and not in it) at 4.5 s as drag-over-table-on.png, between rows 2 and 3 by 5.3 s, captured at 6.3 s (drag-over-table-above.png), onto the target text view's centre by 7 s, captured at 8 s (drag-over-text.png), onto the spring-loaded button's centre by 8.6 s, captured at 9 and 11 s (drag-over-spring-early.png, -late.png), to the empty point by 12.9 s, a mouse-up there at 13.5 s; 16 s; the crop the content view), with the drag pasteboard's change count, the table's validation calls and last proposal, the spring-loaded button's state and both texts read after"""
+makeFirstResponder_nil = true
+key_wait_steps = 1
+isKeyWindow_presented = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+mainScreen_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 560.0, 368.0]
+
+[macos.button_pass.events.defaults]
+NSInitialToolTipDelay = "absent (objectForKey: is nil)"
+NSDragAndDropTextDelay = "absent (objectForKey: is nil)"
+"com.apple.springing.enabled" = 1.0
+"com.apple.springing.delay" = 0.5
+"com.apple.mouse.doubleClickThreshold" = "absent (objectForKey: is nil)"
+"com.apple.mouse.scaling" = "absent (objectForKey: is nil)"
+AppleEnableMouseSwipeNavigateWithScrolls = "absent (objectForKey: is nil)"
+NSTextInsertionPointBlinkPeriodOn = "absent (objectForKey: is nil)"
+NSTextInsertionPointBlinkPeriodOff = "absent (objectForKey: is nil)"
+NSUserKeyEquivalents = "absent (objectForKey: is nil)"
+
+[macos.button_pass.events.NSEvent]
+doubleClickInterval_s = 0.5
+keyRepeatDelay_s = 0.5
+
+[macos.button_pass.events.frames_screen_xywh]
+source = [220.0, 460.0, 220.0, 40.0]
+tip = [460.0, 470.0, 54.0, 32.0]
+spring = [220.0, 400.0, 74.0, 32.0]
+target = [220.0, 320.0, 220.0, 60.0]
+table = [500.0, 220.0, 240.0, 172.0]
+
+[macos.button_pass.events.cursor]
+target_screen_xy = [860.0, 384.0]
+target_quartz_xy = [860.0, 384.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [860.0, 384.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.events.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 0
+
+[macos.button_pass.events.double_click]
+first_click_quartz_xy = [330.0, 508.0]
+
+[macos.button_pass.events.double_click.distance_x."0 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."1 pt"]
+events_created = true
+second_click_quartz_xy = [331.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."2 pt"]
+events_created = true
+second_click_quartz_xy = [332.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."3 pt"]
+events_created = true
+second_click_quartz_xy = [333.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."4 pt"]
+events_created = true
+second_click_quartz_xy = [334.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."5 pt"]
+events_created = true
+second_click_quartz_xy = [335.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."6 pt"]
+events_created = true
+second_click_quartz_xy = [336.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."8 pt"]
+events_created = true
+second_click_quartz_xy = [338.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."12 pt"]
+events_created = true
+second_click_quartz_xy = [342.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."16 pt"]
+events_created = true
+second_click_quartz_xy = [346.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_x."24 pt"]
+events_created = true
+second_click_quartz_xy = [354.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."0 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."1 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 509.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."2 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 510.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."3 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 511.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."4 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 512.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."5 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 513.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."6 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 514.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."8 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 516.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."12 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 520.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."16 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 524.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.distance_y."24 pt"]
+events_created = true
+second_click_quartz_xy = [330.0, 532.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."100 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."200 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."300 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."400 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."450 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."500 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."550 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."600 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.double_click.gap_same_point."800 ms"]
+events_created = true
+second_click_quartz_xy = [330.0, 508.0]
+mouseDown_clickCounts = [1, 1]
+
+[macos.button_pass.events.drag_start]
+press_quartz_xy = [232.0, 276.0]
+
+[macos.button_pass.events.drag_start.distance_after_hold."1 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 0
+source_text_after = "drag drag drag drag"
+selectedRange_after = "1 +0"
+
+[macos.button_pass.events.drag_start.distance_after_hold."2 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 0
+source_text_after = "drag drag drag drag"
+selectedRange_after = "1 +1"
+
+[macos.button_pass.events.drag_start.distance_after_hold."3 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 0
+source_text_after = "drag drag drag drag"
+selectedRange_after = "1 +1"
+
+[macos.button_pass.events.drag_start.distance_after_hold."4 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.distance_after_hold."5 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.distance_after_hold."6 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.distance_after_hold."8 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.distance_after_hold."10 pt"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."0 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."50 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."100 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."150 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."200 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."300 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."500 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.drag_start.hold_before_distance."800 ms"]
+makeFirstResponder = true
+events_created = true
+pump_steps = 1
+drag_pasteboard_changes = 1
+source_text_after = "drag drag drag drag"
+selectedRange_after = "0 +19"
+
+[macos.button_pass.events.tool_tip]
+tip_quartz_xy = [487.0, 282.0]
+
+[macos.button_pass.events.tool_tip.cold]
+moved_away = true
+rest_ms = 1000
+visible_before = []
+moved_onto_tip = true
+shown_after_ms = 1515.7175
+windows = ["NSToolTipPanel [487, 449, 28, 18] (x, y, width, height)"]
+
+[macos.button_pass.events.tool_tip.warm]
+moved_away = true
+rest_ms = 300
+visible_before = ["NSToolTipPanel [487, 449, 28, 18] (x, y, width, height)"]
+moved_onto_tip = true
+shown_after_ms = 16.789125
+windows = ["NSToolTipPanel [487, 449, 28, 18] (x, y, width, height)"]
+
+[macos.button_pass.events.tool_tip.rested]
+moved_away = true
+rest_ms = 5000
+visible_before = []
+moved_onto_tip = true
+shown_after_ms = 1506.417083
+windows = ["NSToolTipPanel [487, 449, 28, 18] (x, y, width, height)"]
+
+[macos.button_pass.events.aqua.typing-pointer]
+crop_screen_xywh = [180.0, 280.0, 300.0, 140.0]
+crop_quartz_xywh = [180.0, 348.0, 300.0, 140.0]
+crop_file = "aqua/typing-pointer.crop"
+crop_px_whxy = "300:140:180:348"
+recording = "exit 0"
+ended_ms = 10207.249624999999
+pump_steps = 727
+ticker_flips = 891
+posted = ["2200.2 ms (planned 2200 ms): move onto the text view: posted at (330.0, 418.0)", "3065.0 ms (planned 3000 ms): type a down: posted key 0", "3065.0 ms (planned 3040 ms): type a up: posted key 0", "3240.4 ms (planned 3200 ms): type s down: posted key 1", "3240.4 ms (planned 3240 ms): type s up: posted key 1", "3459.1 ms (planned 3400 ms): type d down: posted key 2", "3459.1 ms (planned 3440 ms): type d up: posted key 2", "6070.9 ms (planned 6000 ms): move by 1 pt: posted at (331.0, 418.0)", "7064.9 ms (planned 7000 ms): type a down: posted key 0", "7064.9 ms (planned 7040 ms): type a up: posted key 0", "7277.3 ms (planned 7200 ms): type s down: posted key 1", "7277.9 ms (planned 7240 ms): type s up: posted key 1"]
+samples = ["32.2 ms:  | CGCursorIsVisible true", "3081.2 ms:  | CGCursorIsVisible false"]
+file = "aqua/typing-pointer.mov"
+file_bytes = 745189
+
+[macos.button_pass.events.aqua.typing-pointer.actions."00 makeFirstResponder the text view"]
+planned_ms = 2000.0
+ran_ms = 2011.784875
+returned_ms = 2013.899959
+result = true
+
+[macos.button_pass.events.aqua.typing-pointer.actions."01 makeFirstResponder nil"]
+planned_ms = 9000.0
+ran_ms = 9012.624125
+returned_ms = 9012.936125
+result = true
+
+[macos.button_pass.events.aqua.drag-over]
+crop_screen_xywh = [200.0, 200.0, 560.0, 340.0]
+crop_quartz_xywh = [200.0, 228.0, 560.0, 340.0]
+crop_file = "aqua/drag-over.crop"
+crop_px_whxy = "560:340:200:228"
+recording = "exit 0"
+ended_ms = 16183.953249999999
+pump_steps = 315
+ticker_flips = 1652
+posted = ["1800.6 ms (planned 1800 ms): move onto the text: posted at (232.0, 276.0)", "2071.4 ms (planned 2000 ms): mouse-down on the selection: posted at (232.0, 276.0)", "3045.3 ms (planned 3016 ms): drag 30 pt 1/18: posted at (233.7, 276.0)", "3045.3 ms (planned 3032 ms): drag 30 pt 2/18: posted at (235.3, 276.0)", "3058.7 ms (planned 3048 ms): drag 30 pt 3/18: posted at (237.0, 276.0)", "3085.4 ms (planned 3064 ms): drag 30 pt 4/18: posted at (238.7, 276.0)", "3085.4 ms (planned 3080 ms): drag 30 pt 5/18: posted at (240.3, 276.0)", "3138.1 ms (planned 3096 ms): drag 30 pt 6/18: posted at (242.0, 276.0)", "3138.2 ms (planned 3112 ms): drag 30 pt 7/18: posted at (243.7, 276.0)", "3138.2 ms (planned 3128 ms): drag 30 pt 8/18: posted at (245.3, 276.0)", "3168.6 ms (planned 3144 ms): drag 30 pt 9/18: posted at (247.0, 276.0)", "3168.6 ms (planned 3160 ms): drag 30 pt 10/18: posted at (248.7, 276.0)", "3196.6 ms (planned 3176 ms): drag 30 pt 11/18: posted at (250.3, 276.0)", "3196.7 ms (planned 3192 ms): drag 30 pt 12/18: posted at (252.0, 276.0)", "3218.2 ms (planned 3208 ms): drag 30 pt 13/18: posted at (253.7, 276.0)", "3231.2 ms (planned 3224 ms): drag 30 pt 14/18: posted at (255.3, 276.0)", "3256.3 ms (planned 3240 ms): drag 30 pt 15/18: posted at (257.0, 276.0)", "3256.4 ms (planned 3256 ms): drag 30 pt 16/18: posted at (258.7, 276.0)", "3320.9 ms (planned 3272 ms): drag 30 pt 17/18: posted at (260.3, 276.0)", "3320.9 ms (planned 3288 ms): drag 30 pt 18/18: posted at (262.0, 276.0)", "3320.9 ms (planned 3316 ms): drag onto row 1 1/31: posted at (273.5, 280.7)", "3362.6 ms (planned 3332 ms): drag onto row 1 2/31: posted at (285.1, 285.4)", "3362.6 ms (planned 3348 ms): drag onto row 1 3/31: posted at (296.6, 290.1)", "3369.7 ms (planned 3364 ms): drag onto row 1 4/31: posted at (308.2, 294.8)", "3420.4 ms (planned 3380 ms): drag onto row 1 5/31: posted at (319.7, 299.5)", "3420.4 ms (planned 3396 ms): drag onto row 1 6/31: posted at (331.3, 304.3)", "3420.4 ms (planned 3412 ms): drag onto row 1 7/31: posted at (342.8, 309.0)", "3452.5 ms (planned 3428 ms): drag onto row 1 8/31: posted at (354.4, 313.7)", "3452.5 ms (planned 3444 ms): drag onto row 1 9/31: posted at (365.9, 318.4)", "3477.7 ms (planned 3460 ms): drag onto row 1 10/31: posted at (377.5, 323.1)", "3477.8 ms (planned 3476 ms): drag onto row 1 11/31: posted at (389.0, 327.8)", "3545.3 ms (planned 3492 ms): drag onto row 1 12/31: posted at (400.6, 332.5)", "3545.4 ms (planned 3508 ms): drag onto row 1 13/31: posted at (412.1, 337.2)", "3545.4 ms (planned 3524 ms): drag onto row 1 14/31: posted at (423.7, 341.9)", "3545.4 ms (planned 3540 ms): drag onto row 1 15/31: posted at (435.2, 346.6)", "3575.7 ms (planned 3556 ms): drag onto row 1 16/31: posted at (446.8, 351.4)", "3575.7 ms (planned 3572 ms): drag onto row 1 17/31: posted at (458.3, 356.1)", "3634.5 ms (planned 3588 ms): drag onto row 1 18/31: posted at (469.9, 360.8)", "3634.5 ms (planned 3604 ms): drag onto row 1 19/31: posted at (481.4, 365.5)", "3634.5 ms (planned 3620 ms): drag onto row 1 20/31: posted at (493.0, 370.2)", "3637.0 ms (planned 3636 ms): drag onto row 1 21/31: posted at (504.5, 374.9)", "3693.1 ms (planned 3652 ms): drag onto row 1 22/31: posted at (516.1, 379.6)", "3693.2 ms (planned 3668 ms): drag onto row 1 23/31: posted at (527.6, 384.3)", "3693.2 ms (planned 3684 ms): drag onto row 1 24/31: posted at (539.2, 389.0)", "3727.2 ms (planned 3700 ms): drag onto row 1 25/31: posted at (550.7, 393.7)", "3727.3 ms (planned 3716 ms): drag onto row 1 26/31: posted at (562.3, 398.5)", "3751.0 ms (planned 3732 ms): drag onto row 1 27/31: posted at (573.8, 403.2)", "3751.0 ms (planned 3748 ms): drag onto row 1 28/31: posted at (585.4, 407.9)", "3816.3 ms (planned 3764 ms): drag onto row 1 29/31: posted at (596.9, 412.6)", "3816.4 ms (planned 3780 ms): drag onto row 1 30/31: posted at (608.5, 417.3)", "3816.4 ms (planned 3796 ms): drag onto row 1 31/31: posted at (620.0, 422.0)", "4537.5 ms (planned 4500 ms): capture drag-over-table-on.png: captured aqua/drag-over-table-on.png", "5044.4 ms (planned 5016 ms): drag between rows 2 and 3 1/18: posted at (620.0, 424.0)", "5045.0 ms (planned 5032 ms): drag between rows 2 and 3 2/18: posted at (620.0, 426.0)", "5059.0 ms (planned 5048 ms): drag between rows 2 and 3 3/18: posted at (620.0, 428.0)", "5081.0 ms (planned 5064 ms): drag between rows 2 and 3 4/18: posted at (620.0, 430.0)", "5081.0 ms (planned 5080 ms): drag between rows 2 and 3 5/18: posted at (620.0, 432.0)", "5139.0 ms (planned 5096 ms): drag between rows 2 and 3 6/18: posted at (620.0, 434.0)", "5139.0 ms (planned 5112 ms): drag between rows 2 and 3 7/18: posted at (620.0, 436.0)", "5139.0 ms (planned 5128 ms): drag between rows 2 and 3 8/18: posted at (620.0, 438.0)", "5156.8 ms (planned 5144 ms): drag between rows 2 and 3 9/18: posted at (620.0, 440.0)", "5170.3 ms (planned 5160 ms): drag between rows 2 and 3 10/18: posted at (620.0, 442.0)", "5197.7 ms (planned 5176 ms): drag between rows 2 and 3 11/18: posted at (620.0, 444.0)", "5197.8 ms (planned 5192 ms): drag between rows 2 and 3 12/18: posted at (620.0, 446.0)", "5226.5 ms (planned 5208 ms): drag between rows 2 and 3 13/18: posted at (620.0, 448.0)", "5226.9 ms (planned 5224 ms): drag between rows 2 and 3 14/18: posted at (620.0, 450.0)", "5292.5 ms (planned 5240 ms): drag between rows 2 and 3 15/18: posted at (620.0, 452.0)", "5292.5 ms (planned 5256 ms): drag between rows 2 and 3 16/18: posted at (620.0, 454.0)", "5292.6 ms (planned 5272 ms): drag between rows 2 and 3 17/18: posted at (620.0, 456.0)", "5292.6 ms (planned 5288 ms): drag between rows 2 and 3 18/18: posted at (620.0, 458.0)", "6320.2 ms (planned 6300 ms): capture drag-over-table-above.png: captured aqua/drag-over-table-above.png", "6690.5 ms (planned 6616 ms): drag onto the text view 1/25: posted at (608.4, 456.4)", "6690.6 ms (planned 6632 ms): drag onto the text view 2/25: posted at (596.8, 454.8)", "6690.6 ms (planned 6648 ms): drag onto the text view 3/25: posted at (585.2, 453.2)", "6690.6 ms (planned 6664 ms): drag onto the text view 4/25: posted at (573.6, 451.6)", "6690.6 ms (planned 6680 ms): drag onto the text view 5/25: posted at (562.0, 450.0)", "6710.6 ms (planned 6696 ms): drag onto the text view 6/25: posted at (550.4, 448.4)", "6717.3 ms (planned 6712 ms): drag onto the text view 7/25: posted at (538.8, 446.8)", "6750.8 ms (planned 6728 ms): drag onto the text view 8/25: posted at (527.2, 445.2)", "6750.9 ms (planned 6744 ms): drag onto the text view 9/25: posted at (515.6, 443.6)", "6777.7 ms (planned 6760 ms): drag onto the text view 10/25: posted at (504.0, 442.0)", "6777.8 ms (planned 6776 ms): drag onto the text view 11/25: posted at (492.4, 440.4)", "6847.7 ms (planned 6792 ms): drag onto the text view 12/25: posted at (480.8, 438.8)", "6848.1 ms (planned 6808 ms): drag onto the text view 13/25: posted at (469.2, 437.2)", "6848.2 ms (planned 6824 ms): drag onto the text view 14/25: posted at (457.6, 435.6)", "6848.2 ms (planned 6840 ms): drag onto the text view 15/25: posted at (446.0, 434.0)", "6865.5 ms (planned 6856 ms): drag onto the text view 16/25: posted at (434.4, 432.4)", "6898.1 ms (planned 6872 ms): drag onto the text view 17/25: posted at (422.8, 430.8)", "6898.1 ms (planned 6888 ms): drag onto the text view 18/25: posted at (411.2, 429.2)", "6925.7 ms (planned 6904 ms): drag onto the text view 19/25: posted at (399.6, 427.6)", "6925.7 ms (planned 6920 ms): drag onto the text view 20/25: posted at (388.0, 426.0)", "6969.7 ms (planned 6936 ms): drag onto the text view 21/25: posted at (376.4, 424.4)", "6969.8 ms (planned 6952 ms): drag onto the text view 22/25: posted at (364.8, 422.8)", "6969.8 ms (planned 6968 ms): drag onto the text view 23/25: posted at (353.2, 421.2)", "6986.8 ms (planned 6984 ms): drag onto the text view 24/25: posted at (341.6, 419.6)", "7046.9 ms (planned 7000 ms): drag onto the text view 25/25: posted at (330.0, 418.0)", "8054.9 ms (planned 8000 ms): capture drag-over-text.png: captured aqua/drag-over-text.png", "8339.4 ms (planned 8316 ms): drag onto the spring-loaded button 1/18: posted at (325.9, 414.3)", "8339.4 ms (planned 8332 ms): drag onto the spring-loaded button 2/18: posted at (321.9, 410.7)", "8372.1 ms (planned 8348 ms): drag onto the spring-loaded button 3/18: posted at (317.8, 407.0)", "8372.1 ms (planned 8364 ms): drag onto the spring-loaded button 4/18: posted at (313.8, 403.3)", "8409.2 ms (planned 8380 ms): drag onto the spring-loaded button 5/18: posted at (309.7, 399.7)", "8409.4 ms (planned 8396 ms): drag onto the spring-loaded button 6/18: posted at (305.7, 396.0)", "8414.8 ms (planned 8412 ms): drag onto the spring-loaded button 7/18: posted at (301.6, 392.3)", "8455.5 ms (planned 8428 ms): drag onto the spring-loaded button 8/18: posted at (297.6, 388.7)", "8455.6 ms (planned 8444 ms): drag onto the spring-loaded button 9/18: posted at (293.5, 385.0)", "8476.5 ms (planned 8460 ms): drag onto the spring-loaded button 10/18: posted at (289.4, 381.3)", "8476.6 ms (planned 8476 ms): drag onto the spring-loaded button 11/18: posted at (285.4, 377.7)", "8553.1 ms (planned 8492 ms): drag onto the spring-loaded button 12/18: posted at (281.3, 374.0)", "8553.2 ms (planned 8508 ms): drag onto the spring-loaded button 13/18: posted at (277.3, 370.3)", "8553.2 ms (planned 8524 ms): drag onto the spring-loaded button 14/18: posted at (273.2, 366.7)", "8553.2 ms (planned 8540 ms): drag onto the spring-loaded button 15/18: posted at (269.2, 363.0)", "8567.2 ms (planned 8556 ms): drag onto the spring-loaded button 16/18: posted at (265.1, 359.3)", "8584.6 ms (planned 8572 ms): drag onto the spring-loaded button 17/18: posted at (261.1, 355.7)", "8593.1 ms (planned 8588 ms): drag onto the spring-loaded button 18/18: posted at (257.0, 352.0)", "9046.5 ms (planned 9000 ms): capture drag-over-spring-early.png: captured aqua/drag-over-spring-early.png", "11051.7 ms (planned 11000 ms): capture drag-over-spring-late.png: captured aqua/drag-over-spring-late.png", "12524.8 ms (planned 12516 ms): drag to the empty point 1/25: posted at (259.9, 358.2)", "12554.3 ms (planned 12532 ms): drag to the empty point 2/25: posted at (262.8, 364.5)", "12554.4 ms (planned 12548 ms): drag to the empty point 3/25: posted at (265.8, 370.7)", "12601.2 ms (planned 12564 ms): drag to the empty point 4/25: posted at (268.7, 377.0)", "12601.3 ms (planned 12580 ms): drag to the empty point 5/25: posted at (271.6, 383.2)", "12601.3 ms (planned 12596 ms): drag to the empty point 6/25: posted at (274.5, 389.4)", "12649.5 ms (planned 12612 ms): drag to the empty point 7/25: posted at (277.4, 395.7)", "12649.5 ms (planned 12628 ms): drag to the empty point 8/25: posted at (280.4, 401.9)", "12649.5 ms (planned 12644 ms): drag to the empty point 9/25: posted at (283.3, 408.2)", "12679.3 ms (planned 12660 ms): drag to the empty point 10/25: posted at (286.2, 414.4)", "12679.5 ms (planned 12676 ms): drag to the empty point 11/25: posted at (289.1, 420.6)", "12723.8 ms (planned 12692 ms): drag to the empty point 12/25: posted at (292.0, 426.9)", "12723.9 ms (planned 12708 ms): drag to the empty point 13/25: posted at (295.0, 433.1)", "12724.6 ms (planned 12724 ms): drag to the empty point 14/25: posted at (297.9, 439.4)", "12740.9 ms (planned 12740 ms): drag to the empty point 15/25: posted at (300.8, 445.6)", "12815.0 ms (planned 12756 ms): drag to the empty point 16/25: posted at (303.7, 451.8)", "12815.0 ms (planned 12772 ms): drag to the empty point 17/25: posted at (306.6, 458.1)", "12815.1 ms (planned 12788 ms): drag to the empty point 18/25: posted at (309.6, 464.3)", "12815.1 ms (planned 12804 ms): drag to the empty point 19/25: posted at (312.5, 470.6)", "12823.5 ms (planned 12820 ms): drag to the empty point 20/25: posted at (315.4, 476.8)", "12844.8 ms (planned 12836 ms): drag to the empty point 21/25: posted at (318.3, 483.0)", "12876.6 ms (planned 12852 ms): drag to the empty point 22/25: posted at (321.2, 489.3)", "12876.7 ms (planned 12868 ms): drag to the empty point 23/25: posted at (324.2, 495.5)", "12909.0 ms (planned 12884 ms): drag to the empty point 24/25: posted at (327.1, 501.8)", "12909.5 ms (planned 12900 ms): drag to the empty point 25/25: posted at (330.0, 508.0)", "13554.3 ms (planned 13500 ms): mouse-up: posted at (330.0, 508.0)"]
+file = "aqua/drag-over.mov"
+file_bytes = 1292772
+drag_pasteboard_changes = 1
+table_validateDrop_calls = 10
+table_last_proposed_row = 2
+table_last_drop_operation = "on"
+spring_state_before = 0
+spring_state_after = 1
+source_text_after = "drag drag drag drag"
+target_text_after = "drop here"
+
+[macos.button_pass.events.aqua.drag-over.actions."00 select the source's text"]
+planned_ms = 1000.0
+ran_ms = 1001.2742089999999
+returned_ms = 1001.655959
+result = true
+
+[macos.button_pass.events.darkAqua.typing-pointer]
+crop_screen_xywh = [180.0, 280.0, 300.0, 140.0]
+crop_quartz_xywh = [180.0, 348.0, 300.0, 140.0]
+crop_file = "darkAqua/typing-pointer.crop"
+crop_px_whxy = "300:140:180:348"
+recording = "exit 0"
+ended_ms = 10167.069707999999
+pump_steps = 729
+ticker_flips = 955
+posted = ["2235.3 ms (planned 2200 ms): move onto the text view: posted at (330.0, 418.0)", "3070.5 ms (planned 3000 ms): type a down: posted key 0", "3070.7 ms (planned 3040 ms): type a up: posted key 0", "3256.7 ms (planned 3200 ms): type s down: posted key 1", "3256.7 ms (planned 3240 ms): type s up: posted key 1", "3412.6 ms (planned 3400 ms): type d down: posted key 2", "3463.5 ms (planned 3440 ms): type d up: posted key 2", "6014.0 ms (planned 6000 ms): move by 1 pt: posted at (331.0, 418.0)", "7013.7 ms (planned 7000 ms): type a down: posted key 0", "7115.8 ms (planned 7040 ms): type a up: posted key 0", "7233.0 ms (planned 7200 ms): type s down: posted key 1", "7246.7 ms (planned 7240 ms): type s up: posted key 1"]
+samples = ["21.7 ms:  | CGCursorIsVisible false"]
+file = "darkAqua/typing-pointer.mov"
+file_bytes = 682288
+
+[macos.button_pass.events.darkAqua.typing-pointer.actions."00 makeFirstResponder the text view"]
+planned_ms = 2000.0
+ran_ms = 2002.0847910000002
+returned_ms = 2003.6970410000001
+result = true
+
+[macos.button_pass.events.darkAqua.typing-pointer.actions."01 makeFirstResponder nil"]
+planned_ms = 9000.0
+ran_ms = 9011.92075
+returned_ms = 9012.142041000001
+result = true
+
+[macos.button_pass.events.darkAqua.drag-over]
+crop_screen_xywh = [200.0, 200.0, 560.0, 340.0]
+crop_quartz_xywh = [200.0, 228.0, 560.0, 340.0]
+crop_file = "darkAqua/drag-over.crop"
+crop_px_whxy = "560:340:200:228"
+recording = "exit 0"
+ended_ms = 16152.282875
+pump_steps = 296
+ticker_flips = 1565
+posted = ["1815.6 ms (planned 1800 ms): move onto the text: posted at (232.0, 276.0)", "2043.9 ms (planned 2000 ms): mouse-down on the selection: posted at (232.0, 276.0)", "3028.1 ms (planned 3016 ms): drag 30 pt 1/18: posted at (233.7, 276.0)", "3044.4 ms (planned 3032 ms): drag 30 pt 2/18: posted at (235.3, 276.0)", "3050.8 ms (planned 3048 ms): drag 30 pt 3/18: posted at (237.0, 276.0)", "3098.1 ms (planned 3064 ms): drag 30 pt 4/18: posted at (238.7, 276.0)", "3098.2 ms (planned 3080 ms): drag 30 pt 5/18: posted at (240.3, 276.0)", "3098.2 ms (planned 3096 ms): drag 30 pt 6/18: posted at (242.0, 276.0)", "3131.0 ms (planned 3112 ms): drag 30 pt 7/18: posted at (243.7, 276.0)", "3131.1 ms (planned 3128 ms): drag 30 pt 8/18: posted at (245.3, 276.0)", "3175.0 ms (planned 3144 ms): drag 30 pt 9/18: posted at (247.0, 276.0)", "3175.1 ms (planned 3160 ms): drag 30 pt 10/18: posted at (248.7, 276.0)", "3179.8 ms (planned 3176 ms): drag 30 pt 11/18: posted at (250.3, 276.0)", "3212.6 ms (planned 3192 ms): drag 30 pt 12/18: posted at (252.0, 276.0)", "3212.6 ms (planned 3208 ms): drag 30 pt 13/18: posted at (253.7, 276.0)", "3265.7 ms (planned 3224 ms): drag 30 pt 14/18: posted at (255.3, 276.0)", "3265.7 ms (planned 3240 ms): drag 30 pt 15/18: posted at (257.0, 276.0)", "3265.7 ms (planned 3256 ms): drag 30 pt 16/18: posted at (258.7, 276.0)", "3286.1 ms (planned 3272 ms): drag 30 pt 17/18: posted at (260.3, 276.0)", "3294.7 ms (planned 3288 ms): drag 30 pt 18/18: posted at (262.0, 276.0)", "3335.5 ms (planned 3316 ms): drag onto row 1 1/31: posted at (273.5, 280.7)", "3335.5 ms (planned 3332 ms): drag onto row 1 2/31: posted at (285.1, 285.4)", "3369.8 ms (planned 3348 ms): drag onto row 1 3/31: posted at (296.6, 290.1)", "3369.8 ms (planned 3364 ms): drag onto row 1 4/31: posted at (308.2, 294.8)", "3402.8 ms (planned 3380 ms): drag onto row 1 5/31: posted at (319.7, 299.5)", "3402.8 ms (planned 3396 ms): drag onto row 1 6/31: posted at (331.3, 304.3)", "3435.6 ms (planned 3412 ms): drag onto row 1 7/31: posted at (342.8, 309.0)", "3435.6 ms (planned 3428 ms): drag onto row 1 8/31: posted at (354.4, 313.7)", "3477.3 ms (planned 3444 ms): drag onto row 1 9/31: posted at (365.9, 318.4)", "3477.4 ms (planned 3460 ms): drag onto row 1 10/31: posted at (377.5, 323.1)", "3477.4 ms (planned 3476 ms): drag onto row 1 11/31: posted at (389.0, 327.8)", "3548.9 ms (planned 3492 ms): drag onto row 1 12/31: posted at (400.6, 332.5)", "3549.0 ms (planned 3508 ms): drag onto row 1 13/31: posted at (412.1, 337.2)", "3549.0 ms (planned 3524 ms): drag onto row 1 14/31: posted at (423.7, 341.9)", "3549.0 ms (planned 3540 ms): drag onto row 1 15/31: posted at (435.2, 346.6)", "3581.5 ms (planned 3556 ms): drag onto row 1 16/31: posted at (446.8, 351.4)", "3581.6 ms (planned 3572 ms): drag onto row 1 17/31: posted at (458.3, 356.1)", "3595.8 ms (planned 3588 ms): drag onto row 1 18/31: posted at (469.9, 360.8)", "3635.8 ms (planned 3604 ms): drag onto row 1 19/31: posted at (481.4, 365.5)", "3635.9 ms (planned 3620 ms): drag onto row 1 20/31: posted at (493.0, 370.2)", "3636.6 ms (planned 3636 ms): drag onto row 1 21/31: posted at (504.5, 374.9)", "3711.0 ms (planned 3652 ms): drag onto row 1 22/31: posted at (516.1, 379.6)", "3711.0 ms (planned 3668 ms): drag onto row 1 23/31: posted at (527.6, 384.3)", "3711.1 ms (planned 3684 ms): drag onto row 1 24/31: posted at (539.2, 389.0)", "3711.1 ms (planned 3700 ms): drag onto row 1 25/31: posted at (550.7, 393.7)", "3719.1 ms (planned 3716 ms): drag onto row 1 26/31: posted at (562.3, 398.5)", "3781.5 ms (planned 3732 ms): drag onto row 1 27/31: posted at (573.8, 403.2)", "3781.6 ms (planned 3748 ms): drag onto row 1 28/31: posted at (585.4, 407.9)", "3781.7 ms (planned 3764 ms): drag onto row 1 29/31: posted at (596.9, 412.6)", "3781.7 ms (planned 3780 ms): drag onto row 1 30/31: posted at (608.5, 417.3)", "3853.2 ms (planned 3796 ms): drag onto row 1 31/31: posted at (620.0, 422.0)", "4512.0 ms (planned 4500 ms): capture drag-over-table-on.png: captured darkAqua/drag-over-table-on.png", "5065.4 ms (planned 5016 ms): drag between rows 2 and 3 1/18: posted at (620.0, 424.0)", "5065.4 ms (planned 5032 ms): drag between rows 2 and 3 2/18: posted at (620.0, 426.0)", "5065.4 ms (planned 5048 ms): drag between rows 2 and 3 3/18: posted at (620.0, 428.0)", "5065.4 ms (planned 5064 ms): drag between rows 2 and 3 4/18: posted at (620.0, 430.0)", "5116.5 ms (planned 5080 ms): drag between rows 2 and 3 5/18: posted at (620.0, 432.0)", "5116.6 ms (planned 5096 ms): drag between rows 2 and 3 6/18: posted at (620.0, 434.0)", "5116.6 ms (planned 5112 ms): drag between rows 2 and 3 7/18: posted at (620.0, 436.0)", "5163.9 ms (planned 5128 ms): drag between rows 2 and 3 8/18: posted at (620.0, 438.0)", "5163.9 ms (planned 5144 ms): drag between rows 2 and 3 9/18: posted at (620.0, 440.0)", "5163.9 ms (planned 5160 ms): drag between rows 2 and 3 10/18: posted at (620.0, 442.0)", "5197.1 ms (planned 5176 ms): drag between rows 2 and 3 11/18: posted at (620.0, 444.0)", "5197.2 ms (planned 5192 ms): drag between rows 2 and 3 12/18: posted at (620.0, 446.0)", "5230.5 ms (planned 5208 ms): drag between rows 2 and 3 13/18: posted at (620.0, 448.0)", "5230.6 ms (planned 5224 ms): drag between rows 2 and 3 14/18: posted at (620.0, 450.0)", "5277.4 ms (planned 5240 ms): drag between rows 2 and 3 15/18: posted at (620.0, 452.0)", "5277.5 ms (planned 5256 ms): drag between rows 2 and 3 16/18: posted at (620.0, 454.0)", "5277.5 ms (planned 5272 ms): drag between rows 2 and 3 17/18: posted at (620.0, 456.0)", "5328.0 ms (planned 5288 ms): drag between rows 2 and 3 18/18: posted at (620.0, 458.0)", "6375.9 ms (planned 6300 ms): capture drag-over-table-above.png: captured darkAqua/drag-over-table-above.png", "6664.1 ms (planned 6616 ms): drag onto the text view 1/25: posted at (608.4, 456.4)", "6664.1 ms (planned 6632 ms): drag onto the text view 2/25: posted at (596.8, 454.8)", "6664.1 ms (planned 6648 ms): drag onto the text view 3/25: posted at (585.2, 453.2)", "6664.1 ms (planned 6664 ms): drag onto the text view 4/25: posted at (573.6, 451.6)", "6695.5 ms (planned 6680 ms): drag onto the text view 5/25: posted at (562.0, 450.0)", "6698.0 ms (planned 6696 ms): drag onto the text view 6/25: posted at (550.4, 448.4)", "6730.4 ms (planned 6712 ms): drag onto the text view 7/25: posted at (538.8, 446.8)", "6730.5 ms (planned 6728 ms): drag onto the text view 8/25: posted at (527.2, 445.2)", "6779.6 ms (planned 6744 ms): drag onto the text view 9/25: posted at (515.6, 443.6)", "6779.7 ms (planned 6760 ms): drag onto the text view 10/25: posted at (504.0, 442.0)", "6779.7 ms (planned 6776 ms): drag onto the text view 11/25: posted at (492.4, 440.4)", "6834.8 ms (planned 6792 ms): drag onto the text view 12/25: posted at (480.8, 438.8)", "6835.4 ms (planned 6808 ms): drag onto the text view 13/25: posted at (469.2, 437.2)", "6835.7 ms (planned 6824 ms): drag onto the text view 14/25: posted at (457.6, 435.6)", "6855.4 ms (planned 6840 ms): drag onto the text view 15/25: posted at (446.0, 434.0)", "6858.7 ms (planned 6856 ms): drag onto the text view 16/25: posted at (434.4, 432.4)", "6902.5 ms (planned 6872 ms): drag onto the text view 17/25: posted at (422.8, 430.8)", "6902.6 ms (planned 6888 ms): drag onto the text view 18/25: posted at (411.2, 429.2)", "6909.7 ms (planned 6904 ms): drag onto the text view 19/25: posted at (399.6, 427.6)", "6953.1 ms (planned 6920 ms): drag onto the text view 20/25: posted at (388.0, 426.0)", "6953.2 ms (planned 6936 ms): drag onto the text view 21/25: posted at (376.4, 424.4)", "6953.2 ms (planned 6952 ms): drag onto the text view 22/25: posted at (364.8, 422.8)", "6980.0 ms (planned 6968 ms): drag onto the text view 23/25: posted at (353.2, 421.2)", "6998.2 ms (planned 6984 ms): drag onto the text view 24/25: posted at (341.6, 419.6)", "7007.1 ms (planned 7000 ms): drag onto the text view 25/25: posted at (330.0, 418.0)", "8069.1 ms (planned 8000 ms): capture drag-over-text.png: captured darkAqua/drag-over-text.png", "8381.4 ms (planned 8316 ms): drag onto the spring-loaded button 1/18: posted at (325.9, 414.3)", "8381.5 ms (planned 8332 ms): drag onto the spring-loaded button 2/18: posted at (321.9, 410.7)", "8381.5 ms (planned 8348 ms): drag onto the spring-loaded button 3/18: posted at (317.8, 407.0)", "8381.5 ms (planned 8364 ms): drag onto the spring-loaded button 4/18: posted at (313.8, 403.3)", "8381.5 ms (planned 8380 ms): drag onto the spring-loaded button 5/18: posted at (309.7, 399.7)", "8398.4 ms (planned 8396 ms): drag onto the spring-loaded button 6/18: posted at (305.7, 396.0)", "8417.1 ms (planned 8412 ms): drag onto the spring-loaded button 7/18: posted at (301.6, 392.3)", "8443.7 ms (planned 8428 ms): drag onto the spring-loaded button 8/18: posted at (297.6, 388.7)", "8445.9 ms (planned 8444 ms): drag onto the spring-loaded button 9/18: posted at (293.5, 385.0)", "8502.1 ms (planned 8460 ms): drag onto the spring-loaded button 10/18: posted at (289.4, 381.3)", "8502.2 ms (planned 8476 ms): drag onto the spring-loaded button 11/18: posted at (285.4, 377.7)", "8502.2 ms (planned 8492 ms): drag onto the spring-loaded button 12/18: posted at (281.3, 374.0)", "8521.1 ms (planned 8508 ms): drag onto the spring-loaded button 13/18: posted at (277.3, 370.3)", "8535.4 ms (planned 8524 ms): drag onto the spring-loaded button 14/18: posted at (273.2, 366.7)", "8547.7 ms (planned 8540 ms): drag onto the spring-loaded button 15/18: posted at (269.2, 363.0)", "8585.5 ms (planned 8556 ms): drag onto the spring-loaded button 16/18: posted at (265.1, 359.3)", "8585.6 ms (planned 8572 ms): drag onto the spring-loaded button 17/18: posted at (261.1, 355.7)", "8597.9 ms (planned 8588 ms): drag onto the spring-loaded button 18/18: posted at (257.0, 352.0)", "9031.4 ms (planned 9000 ms): capture drag-over-spring-early.png: captured darkAqua/drag-over-spring-early.png", "11016.6 ms (planned 11000 ms): capture drag-over-spring-late.png: captured darkAqua/drag-over-spring-late.png", "12555.7 ms (planned 12516 ms): drag to the empty point 1/25: posted at (259.9, 358.2)", "12556.1 ms (planned 12532 ms): drag to the empty point 2/25: posted at (262.8, 364.5)", "12556.2 ms (planned 12548 ms): drag to the empty point 3/25: posted at (265.8, 370.7)", "12594.4 ms (planned 12564 ms): drag to the empty point 4/25: posted at (268.7, 377.0)", "12594.5 ms (planned 12580 ms): drag to the empty point 5/25: posted at (271.6, 383.2)", "12601.1 ms (planned 12596 ms): drag to the empty point 6/25: posted at (274.5, 389.4)", "12633.7 ms (planned 12612 ms): drag to the empty point 7/25: posted at (277.4, 395.7)", "12633.8 ms (planned 12628 ms): drag to the empty point 8/25: posted at (280.4, 401.9)", "12674.8 ms (planned 12644 ms): drag to the empty point 9/25: posted at (283.3, 408.2)", "12674.8 ms (planned 12660 ms): drag to the empty point 10/25: posted at (286.2, 414.4)", "12678.6 ms (planned 12676 ms): drag to the empty point 11/25: posted at (289.1, 420.6)", "12714.2 ms (planned 12692 ms): drag to the empty point 12/25: posted at (292.0, 426.9)", "12714.3 ms (planned 12708 ms): drag to the empty point 13/25: posted at (295.0, 433.1)", "12733.0 ms (planned 12724 ms): drag to the empty point 14/25: posted at (297.9, 439.4)", "12746.5 ms (planned 12740 ms): drag to the empty point 15/25: posted at (300.8, 445.6)", "12769.3 ms (planned 12756 ms): drag to the empty point 16/25: posted at (303.7, 451.8)", "12781.5 ms (planned 12772 ms): drag to the empty point 17/25: posted at (306.6, 458.1)", "12801.7 ms (planned 12788 ms): drag to the empty point 18/25: posted at (309.6, 464.3)", "12812.9 ms (planned 12804 ms): drag to the empty point 19/25: posted at (312.5, 470.6)", "12848.3 ms (planned 12820 ms): drag to the empty point 20/25: posted at (315.4, 476.8)", "12848.4 ms (planned 12836 ms): drag to the empty point 21/25: posted at (318.3, 483.0)", "12855.2 ms (planned 12852 ms): drag to the empty point 22/25: posted at (321.2, 489.3)", "12916.8 ms (planned 12868 ms): drag to the empty point 23/25: posted at (324.2, 495.5)", "12916.8 ms (planned 12884 ms): drag to the empty point 24/25: posted at (327.1, 501.8)", "12916.8 ms (planned 12900 ms): drag to the empty point 25/25: posted at (330.0, 508.0)", "13524.9 ms (planned 13500 ms): mouse-up: posted at (330.0, 508.0)"]
+file = "darkAqua/drag-over.mov"
+file_bytes = 1209308
+drag_pasteboard_changes = 1
+table_validateDrop_calls = 10
+table_last_proposed_row = 2
+table_last_drop_operation = "on"
+spring_state_before = 0
+spring_state_after = 1
+source_text_after = "drag drag drag drag"
+target_text_after = "drop here"
+
+[macos.button_pass.events.darkAqua.drag-over.actions."00 select the source's text"]
+planned_ms = 1000.0
+ran_ms = 1002.8796659999999
+returned_ms = 1003.2829160000001
+result = true

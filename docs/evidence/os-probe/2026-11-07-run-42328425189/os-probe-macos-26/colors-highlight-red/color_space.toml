@@ -1,0 +1,581 @@
+# Core Animation's colour interpolation read from the colours pass's captures by
+# analysis/read_color_space.py (its docstring says how).
+input = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/probe.toml"
+input_aqua = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/color_space/aqua.png"
+
+[color_space.aqua."red_to_blue at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue at 0.5 over_black"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [127.5, 0.0, 127.5]
+premultiplied_srgb = [127.5, 0.0, 127.5]
+straight_linear = [187.5, 0.0, 187.5]
+premultiplied_linear = [187.5, 0.0, 187.5]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_blue at 0.5 over_white"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [127.5, 0.0, 127.5]
+premultiplied_srgb = [127.5, 0.0, 127.5]
+straight_linear = [187.5, 0.0, 187.5]
+premultiplied_linear = [187.5, 0.0, 187.5]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_blue at 1 over_black"]
+captured = [0.0, 0.0, 255.0]
+straight_srgb = [0.0, 0.0, 255.0]
+premultiplied_srgb = [0.0, 0.0, 255.0]
+straight_linear = [0.0, 0.0, 255.0]
+premultiplied_linear = [0.0, 0.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue at 1 over_white"]
+captured = [0.0, 0.0, 255.0]
+straight_srgb = [0.0, 0.0, 255.0]
+premultiplied_srgb = [0.0, 0.0, 255.0]
+straight_linear = [0.0, 0.0, 255.0]
+premultiplied_linear = [0.0, 0.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 0.5 over_black"]
+captured = [128.0, 0.0, 25.0]
+straight_srgb = [76.5, 0.0, 76.5]
+premultiplied_srgb = [127.5, 0.0, 25.5]
+straight_linear = [112.5, 0.0, 112.5]
+premultiplied_linear = [141.2, 0.0, 68.1]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 0.5 over_white"]
+captured = [229.0, 102.0, 128.0]
+straight_srgb = [178.5, 102.0, 178.5]
+premultiplied_srgb = [229.5, 102.0, 127.5]
+straight_linear = [214.5, 102.0, 214.5]
+premultiplied_linear = [243.2, 102.0, 170.1]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 1 over_black"]
+captured = [0.0, 0.0, 51.0]
+straight_srgb = [0.0, 0.0, 51.0]
+premultiplied_srgb = [0.0, 0.0, 51.0]
+straight_linear = [0.0, 0.0, 51.0]
+premultiplied_linear = [0.0, 0.0, 51.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_blue_alpha_0.2 at 1 over_white"]
+captured = [204.0, 204.0, 255.0]
+straight_srgb = [204.0, 204.0, 255.0]
+premultiplied_srgb = [204.0, 204.0, 255.0]
+straight_linear = [204.0, 204.0, 255.0]
+premultiplied_linear = [204.0, 204.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."clear_to_green at 0 over_black"]
+captured = [0.0, 0.0, 0.0]
+straight_srgb = [0.0, 0.0, 0.0]
+premultiplied_srgb = [0.0, 0.0, 0.0]
+straight_linear = [0.0, 0.0, 0.0]
+premultiplied_linear = [0.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."clear_to_green at 0 over_white"]
+captured = [255.0, 255.0, 255.0]
+straight_srgb = [255.0, 255.0, 255.0]
+premultiplied_srgb = [255.0, 255.0, 255.0]
+straight_linear = [255.0, 255.0, 255.0]
+premultiplied_linear = [255.0, 255.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."clear_to_green at 0.5 over_black"]
+captured = [0.0, 128.0, 0.0]
+straight_srgb = [0.0, 63.8, 0.0]
+premultiplied_srgb = [0.0, 127.5, 0.0]
+straight_linear = [0.0, 93.8, 0.0]
+premultiplied_linear = [0.0, 127.5, 0.0]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."clear_to_green at 0.5 over_white"]
+captured = [128.0, 255.0, 128.0]
+straight_srgb = [127.5, 191.2, 127.5]
+premultiplied_srgb = [127.5, 255.0, 127.5]
+straight_linear = [127.5, 221.3, 127.5]
+premultiplied_linear = [127.5, 255.0, 127.5]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."clear_to_green at 1 over_black"]
+captured = [0.0, 255.0, 0.0]
+straight_srgb = [0.0, 255.0, 0.0]
+premultiplied_srgb = [0.0, 255.0, 0.0]
+straight_linear = [0.0, 255.0, 0.0]
+premultiplied_linear = [0.0, 255.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."clear_to_green at 1 over_white"]
+captured = [0.0, 255.0, 0.0]
+straight_srgb = [0.0, 255.0, 0.0]
+premultiplied_srgb = [0.0, 255.0, 0.0]
+straight_linear = [0.0, 255.0, 0.0]
+premultiplied_linear = [0.0, 255.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_clear at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_clear at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_clear at 0.5 over_black"]
+captured = [128.0, 0.0, 0.0]
+straight_srgb = [63.8, 0.0, 0.0]
+premultiplied_srgb = [127.5, 0.0, 0.0]
+straight_linear = [93.8, 0.0, 0.0]
+premultiplied_linear = [127.5, 0.0, 0.0]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_clear at 0.5 over_white"]
+captured = [255.0, 128.0, 128.0]
+straight_srgb = [191.2, 127.5, 127.5]
+premultiplied_srgb = [255.0, 127.5, 127.5]
+straight_linear = [221.3, 127.5, 127.5]
+premultiplied_linear = [255.0, 127.5, 127.5]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.aqua."red_to_clear at 1 over_black"]
+captured = [0.0, 0.0, 0.0]
+straight_srgb = [0.0, 0.0, 0.0]
+premultiplied_srgb = [0.0, 0.0, 0.0]
+straight_linear = [0.0, 0.0, 0.0]
+premultiplied_linear = [0.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."red_to_clear at 1 over_white"]
+captured = [255.0, 255.0, 255.0]
+straight_srgb = [255.0, 255.0, 255.0]
+premultiplied_srgb = [255.0, 255.0, 255.0]
+straight_linear = [255.0, 255.0, 255.0]
+premultiplied_linear = [255.0, 255.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference purple_0.5_opaque over_black"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [128.0, 0.0, 128.0]
+premultiplied_srgb = [128.0, 0.0, 128.0]
+straight_linear = [128.0, 0.0, 128.0]
+premultiplied_linear = [128.0, 0.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference purple_0.5_opaque over_white"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [128.0, 0.0, 128.0]
+premultiplied_srgb = [128.0, 0.0, 128.0]
+straight_linear = [128.0, 0.0, 128.0]
+premultiplied_linear = [128.0, 0.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference grey_0.5_opaque over_black"]
+captured = [128.0, 128.0, 128.0]
+straight_srgb = [128.0, 128.0, 128.0]
+premultiplied_srgb = [128.0, 128.0, 128.0]
+straight_linear = [128.0, 128.0, 128.0]
+premultiplied_linear = [128.0, 128.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference grey_0.5_opaque over_white"]
+captured = [128.0, 128.0, 128.0]
+straight_srgb = [128.0, 128.0, 128.0]
+premultiplied_srgb = [128.0, 128.0, 128.0]
+straight_linear = [128.0, 128.0, 128.0]
+premultiplied_linear = [128.0, 128.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference red_alpha_0.5 over_black"]
+captured = [128.0, 0.0, 0.0]
+straight_srgb = [128.0, 0.0, 0.0]
+premultiplied_srgb = [128.0, 0.0, 0.0]
+straight_linear = [128.0, 0.0, 0.0]
+premultiplied_linear = [128.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.aqua."reference red_alpha_0.5 over_white"]
+captured = [255.0, 128.0, 128.0]
+straight_srgb = [255.0, 127.0, 127.0]
+premultiplied_srgb = [255.0, 127.0, 127.0]
+straight_linear = [255.0, 127.0, 127.0]
+premultiplied_linear = [255.0, 127.0, 127.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 1.0
+
+[color_space.aqua."reference purple_0.5_alpha_0.6 over_black"]
+captured = [77.0, 0.0, 77.0]
+straight_srgb = [76.8, 0.0, 76.8]
+premultiplied_srgb = [76.8, 0.0, 76.8]
+straight_linear = [76.8, 0.0, 76.8]
+premultiplied_linear = [76.8, 0.0, 76.8]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.2
+
+[color_space.aqua."reference purple_0.5_alpha_0.6 over_white"]
+captured = [179.0, 102.0, 179.0]
+straight_srgb = [178.8, 102.0, 178.8]
+premultiplied_srgb = [178.8, 102.0, 178.8]
+straight_linear = [178.8, 102.0, 178.8]
+premultiplied_linear = [178.8, 102.0, 178.8]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.2
+input_darkAqua = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/color_space/darkAqua.png"
+
+[color_space.darkAqua."red_to_blue at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue at 0.5 over_black"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [127.5, 0.0, 127.5]
+premultiplied_srgb = [127.5, 0.0, 127.5]
+straight_linear = [187.5, 0.0, 187.5]
+premultiplied_linear = [187.5, 0.0, 187.5]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_blue at 0.5 over_white"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [127.5, 0.0, 127.5]
+premultiplied_srgb = [127.5, 0.0, 127.5]
+straight_linear = [187.5, 0.0, 187.5]
+premultiplied_linear = [187.5, 0.0, 187.5]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_blue at 1 over_black"]
+captured = [0.0, 0.0, 255.0]
+straight_srgb = [0.0, 0.0, 255.0]
+premultiplied_srgb = [0.0, 0.0, 255.0]
+straight_linear = [0.0, 0.0, 255.0]
+premultiplied_linear = [0.0, 0.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue at 1 over_white"]
+captured = [0.0, 0.0, 255.0]
+straight_srgb = [0.0, 0.0, 255.0]
+premultiplied_srgb = [0.0, 0.0, 255.0]
+straight_linear = [0.0, 0.0, 255.0]
+premultiplied_linear = [0.0, 0.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 0.5 over_black"]
+captured = [128.0, 0.0, 25.0]
+straight_srgb = [76.5, 0.0, 76.5]
+premultiplied_srgb = [127.5, 0.0, 25.5]
+straight_linear = [112.5, 0.0, 112.5]
+premultiplied_linear = [141.2, 0.0, 68.1]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 0.5 over_white"]
+captured = [229.0, 102.0, 128.0]
+straight_srgb = [178.5, 102.0, 178.5]
+premultiplied_srgb = [229.5, 102.0, 127.5]
+straight_linear = [214.5, 102.0, 214.5]
+premultiplied_linear = [243.2, 102.0, 170.1]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 1 over_black"]
+captured = [0.0, 0.0, 51.0]
+straight_srgb = [0.0, 0.0, 51.0]
+premultiplied_srgb = [0.0, 0.0, 51.0]
+straight_linear = [0.0, 0.0, 51.0]
+premultiplied_linear = [0.0, 0.0, 51.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_blue_alpha_0.2 at 1 over_white"]
+captured = [204.0, 204.0, 255.0]
+straight_srgb = [204.0, 204.0, 255.0]
+premultiplied_srgb = [204.0, 204.0, 255.0]
+straight_linear = [204.0, 204.0, 255.0]
+premultiplied_linear = [204.0, 204.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."clear_to_green at 0 over_black"]
+captured = [0.0, 0.0, 0.0]
+straight_srgb = [0.0, 0.0, 0.0]
+premultiplied_srgb = [0.0, 0.0, 0.0]
+straight_linear = [0.0, 0.0, 0.0]
+premultiplied_linear = [0.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."clear_to_green at 0 over_white"]
+captured = [255.0, 255.0, 255.0]
+straight_srgb = [255.0, 255.0, 255.0]
+premultiplied_srgb = [255.0, 255.0, 255.0]
+straight_linear = [255.0, 255.0, 255.0]
+premultiplied_linear = [255.0, 255.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."clear_to_green at 0.5 over_black"]
+captured = [0.0, 128.0, 0.0]
+straight_srgb = [0.0, 63.8, 0.0]
+premultiplied_srgb = [0.0, 127.5, 0.0]
+straight_linear = [0.0, 93.8, 0.0]
+premultiplied_linear = [0.0, 127.5, 0.0]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."clear_to_green at 0.5 over_white"]
+captured = [128.0, 255.0, 128.0]
+straight_srgb = [127.5, 191.2, 127.5]
+premultiplied_srgb = [127.5, 255.0, 127.5]
+straight_linear = [127.5, 221.3, 127.5]
+premultiplied_linear = [127.5, 255.0, 127.5]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."clear_to_green at 1 over_black"]
+captured = [0.0, 255.0, 0.0]
+straight_srgb = [0.0, 255.0, 0.0]
+premultiplied_srgb = [0.0, 255.0, 0.0]
+straight_linear = [0.0, 255.0, 0.0]
+premultiplied_linear = [0.0, 255.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."clear_to_green at 1 over_white"]
+captured = [0.0, 255.0, 0.0]
+straight_srgb = [0.0, 255.0, 0.0]
+premultiplied_srgb = [0.0, 255.0, 0.0]
+straight_linear = [0.0, 255.0, 0.0]
+premultiplied_linear = [0.0, 255.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_clear at 0 over_black"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_clear at 0 over_white"]
+captured = [255.0, 0.0, 0.0]
+straight_srgb = [255.0, 0.0, 0.0]
+premultiplied_srgb = [255.0, 0.0, 0.0]
+straight_linear = [255.0, 0.0, 0.0]
+premultiplied_linear = [255.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_clear at 0.5 over_black"]
+captured = [128.0, 0.0, 0.0]
+straight_srgb = [63.8, 0.0, 0.0]
+premultiplied_srgb = [127.5, 0.0, 0.0]
+straight_linear = [93.8, 0.0, 0.0]
+premultiplied_linear = [127.5, 0.0, 0.0]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_clear at 0.5 over_white"]
+captured = [255.0, 128.0, 128.0]
+straight_srgb = [191.2, 127.5, 127.5]
+premultiplied_srgb = [255.0, 127.5, 127.5]
+straight_linear = [221.3, 127.5, 127.5]
+premultiplied_linear = [255.0, 127.5, 127.5]
+nearest = "premultiplied_srgb"
+nearest_max_byte_difference = 0.5
+
+[color_space.darkAqua."red_to_clear at 1 over_black"]
+captured = [0.0, 0.0, 0.0]
+straight_srgb = [0.0, 0.0, 0.0]
+premultiplied_srgb = [0.0, 0.0, 0.0]
+straight_linear = [0.0, 0.0, 0.0]
+premultiplied_linear = [0.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."red_to_clear at 1 over_white"]
+captured = [255.0, 255.0, 255.0]
+straight_srgb = [255.0, 255.0, 255.0]
+premultiplied_srgb = [255.0, 255.0, 255.0]
+straight_linear = [255.0, 255.0, 255.0]
+premultiplied_linear = [255.0, 255.0, 255.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference purple_0.5_opaque over_black"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [128.0, 0.0, 128.0]
+premultiplied_srgb = [128.0, 0.0, 128.0]
+straight_linear = [128.0, 0.0, 128.0]
+premultiplied_linear = [128.0, 0.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference purple_0.5_opaque over_white"]
+captured = [128.0, 0.0, 128.0]
+straight_srgb = [128.0, 0.0, 128.0]
+premultiplied_srgb = [128.0, 0.0, 128.0]
+straight_linear = [128.0, 0.0, 128.0]
+premultiplied_linear = [128.0, 0.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference grey_0.5_opaque over_black"]
+captured = [128.0, 128.0, 128.0]
+straight_srgb = [128.0, 128.0, 128.0]
+premultiplied_srgb = [128.0, 128.0, 128.0]
+straight_linear = [128.0, 128.0, 128.0]
+premultiplied_linear = [128.0, 128.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference grey_0.5_opaque over_white"]
+captured = [128.0, 128.0, 128.0]
+straight_srgb = [128.0, 128.0, 128.0]
+premultiplied_srgb = [128.0, 128.0, 128.0]
+straight_linear = [128.0, 128.0, 128.0]
+premultiplied_linear = [128.0, 128.0, 128.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference red_alpha_0.5 over_black"]
+captured = [128.0, 0.0, 0.0]
+straight_srgb = [128.0, 0.0, 0.0]
+premultiplied_srgb = [128.0, 0.0, 0.0]
+straight_linear = [128.0, 0.0, 0.0]
+premultiplied_linear = [128.0, 0.0, 0.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.0
+
+[color_space.darkAqua."reference red_alpha_0.5 over_white"]
+captured = [255.0, 128.0, 128.0]
+straight_srgb = [255.0, 127.0, 127.0]
+premultiplied_srgb = [255.0, 127.0, 127.0]
+straight_linear = [255.0, 127.0, 127.0]
+premultiplied_linear = [255.0, 127.0, 127.0]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 1.0
+
+[color_space.darkAqua."reference purple_0.5_alpha_0.6 over_black"]
+captured = [77.0, 0.0, 77.0]
+straight_srgb = [76.8, 0.0, 76.8]
+premultiplied_srgb = [76.8, 0.0, 76.8]
+straight_linear = [76.8, 0.0, 76.8]
+premultiplied_linear = [76.8, 0.0, 76.8]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.2
+
+[color_space.darkAqua."reference purple_0.5_alpha_0.6 over_white"]
+captured = [179.0, 102.0, 179.0]
+straight_srgb = [178.8, 102.0, 178.8]
+premultiplied_srgb = [178.8, 102.0, 178.8]
+straight_linear = [178.8, 102.0, 178.8]
+premultiplied_linear = [178.8, 102.0, 178.8]
+nearest = "straight_srgb"
+nearest_max_byte_difference = 0.2

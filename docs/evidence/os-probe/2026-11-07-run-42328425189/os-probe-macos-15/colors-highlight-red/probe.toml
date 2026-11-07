@@ -1,0 +1,196 @@
+[os]
+platform = "macOS"
+version = "15.8.2"
+major = 15
+minor = 8
+patch = 2
+operatingSystemVersionString = "Version 15.8.2 (Build 24H232)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos15"
+runner_image_version = "20261104.0514.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.colors.user_defaults]
+AppleHighlightColor = "1.000000 0.733333 0.721569 Red"
+AppleAccentColor = "absent (objectForKey: is nil)"
+AppleAquaColorVariant = "absent (objectForKey: is nil)"
+
+[macos.colors.colors]
+format = "#rrggbbaa in sRGB (colorUsingColorSpace: sRGBColorSpace), resolved inside NSAppearance performAsCurrentDrawingAppearance:; each selector checked with respondsToSelector: first"
+
+[macos.colors.colors.aqua]
+labelColor = "#000000d8"
+secondaryLabelColor = "#0000007f"
+tertiaryLabelColor = "#00000042"
+quaternaryLabelColor = "#00000019"
+quinaryLabelColor = "#0000000c"
+linkColor = "#0068daff"
+placeholderTextColor = "#0000003f"
+windowFrameTextColor = "#000000d8"
+selectedMenuItemTextColor = "#ffffffff"
+alternateSelectedControlTextColor = "#ffffffff"
+headerTextColor = "#000000d8"
+separatorColor = "#00000019"
+gridColor = "#e6e6e6ff"
+windowBackgroundColor = "#ecececff"
+underPageBackgroundColor = "#969696e5"
+controlBackgroundColor = "#ffffffff"
+selectedContentBackgroundColor = "#0064e1ff"
+unemphasizedSelectedContentBackgroundColor = "#dcdcdcff"
+findHighlightColor = "#ffff00ff"
+textColor = "#000000ff"
+textBackgroundColor = "#ffffffff"
+textInsertionPointColor = "#e0383eff"
+selectedTextColor = "#000000ff"
+selectedTextBackgroundColor = "#f6c4c5ff"
+unemphasizedSelectedTextBackgroundColor = "#dcdcdcff"
+unemphasizedSelectedTextColor = "#000000ff"
+controlColor = "#ffffffff"
+controlTextColor = "#000000d8"
+selectedControlColor = "#f6c4c5ff"
+selectedControlTextColor = "#000000d8"
+disabledControlTextColor = "#0000003f"
+keyboardFocusIndicatorColor = "#0067f47f"
+scrubberTexturedBackgroundColor = """
+not convertible: NSColorType 1 (Pattern color: <NSImage 0x600001ced400 Size={4, 1} RepProvider=<NSImageArrayRepProvider: 0x600002fe9110, reps:(
+    "NSCustomImageRep 0x600000eef250 Size={4, 1} ColorSpace=Generic RGB colorspace BPS=0 Pixels=0x0 Alpha=NO AppearanceName=(null)"
+)>>)"""
+systemRedColor = "#ff3b30ff"
+systemGreenColor = "#28cd41ff"
+systemBlueColor = "#007affff"
+systemOrangeColor = "#ff9500ff"
+systemYellowColor = "#ffcc00ff"
+systemBrownColor = "#a2845eff"
+systemPinkColor = "#ff2d55ff"
+systemPurpleColor = "#af52deff"
+systemGrayColor = "#8e8e93ff"
+systemTealColor = "#59adc4ff"
+systemIndigoColor = "#5856d6ff"
+systemMintColor = "#00c7beff"
+systemCyanColor = "#55bef0ff"
+systemFillColor = "#00000019"
+secondarySystemFillColor = "#00000014"
+tertiarySystemFillColor = "#0000000c"
+quaternarySystemFillColor = "#00000007"
+quinarySystemFillColor = "#00000002"
+controlAccentColor = "#007affff"
+highlightColor = "#ffffffff"
+shadowColor = "#000000ff"
+controlHighlightColor = "#ffffffff"
+controlLightHighlightColor = "#ffffffff"
+controlShadowColor = "#00000044"
+controlDarkShadowColor = "#000000ff"
+scrollBarColor = "#aaaaaaff"
+knobColor = "#9999bbff"
+selectedKnobColor = "#666699ff"
+windowFrameColor = "#aaaaaaff"
+selectedMenuItemColor = "#4277f4ff"
+headerColor = "#aaaaaaff"
+secondarySelectedControlColor = "#dcdcdcff"
+alternateSelectedControlColor = "#0064e1ff"
+alternatingContentBackgroundColors = ["#ffffffff", "#f4f5f5ff"]
+controlAlternatingRowBackgroundColors = ["#ffffffff", "#f4f5f5ff"]
+NSTextView_insertionPointColor = "#e0383eff"
+
+[macos.colors.colors.darkAqua]
+labelColor = "#ffffffd8"
+secondaryLabelColor = "#ffffff8c"
+tertiaryLabelColor = "#ffffff3f"
+quaternaryLabelColor = "#ffffff19"
+quinaryLabelColor = "#ffffff0c"
+linkColor = "#419cffff"
+placeholderTextColor = "#ffffff3f"
+windowFrameTextColor = "#ffffffd8"
+selectedMenuItemTextColor = "#ffffffff"
+alternateSelectedControlTextColor = "#ffffffff"
+headerTextColor = "#ffffffff"
+separatorColor = "#ffffff19"
+gridColor = "#1a1a1aff"
+windowBackgroundColor = "#323232ff"
+underPageBackgroundColor = "#282828ff"
+controlBackgroundColor = "#1e1e1eff"
+selectedContentBackgroundColor = "#0059d1ff"
+unemphasizedSelectedContentBackgroundColor = "#464646ff"
+findHighlightColor = "#ffff00ff"
+textColor = "#ffffffff"
+textBackgroundColor = "#1e1e1eff"
+textInsertionPointColor = "#ff5257ff"
+selectedTextColor = "#ffffffff"
+selectedTextBackgroundColor = "#8b5759ff"
+unemphasizedSelectedTextBackgroundColor = "#464646ff"
+unemphasizedSelectedTextColor = "#ffffffff"
+controlColor = "#ffffff3f"
+controlTextColor = "#ffffffd8"
+selectedControlColor = "#8b5759ff"
+selectedControlTextColor = "#ffffffd8"
+disabledControlTextColor = "#ffffff3f"
+keyboardFocusIndicatorColor = "#1aa9ff7f"
+scrubberTexturedBackgroundColor = """
+not convertible: NSColorType 1 (Pattern color: <NSImage 0x600001ced400 Size={4, 1} RepProvider=<NSImageArrayRepProvider: 0x600002fe9110, reps:(
+    "NSCustomImageRep 0x600000eef250 Size={4, 1} ColorSpace=Generic RGB colorspace BPS=0 Pixels=0x0 Alpha=NO AppearanceName=(null)"
+)>>)"""
+systemRedColor = "#ff453aff"
+systemGreenColor = "#32d74bff"
+systemBlueColor = "#0a84ffff"
+systemOrangeColor = "#ff9f0aff"
+systemYellowColor = "#ffd60aff"
+systemBrownColor = "#ac8e68ff"
+systemPinkColor = "#ff375fff"
+systemPurpleColor = "#bf5af2ff"
+systemGrayColor = "#98989dff"
+systemTealColor = "#6ac4dcff"
+systemIndigoColor = "#5e5ce6ff"
+systemMintColor = "#63e6e2ff"
+systemCyanColor = "#5ac8f5ff"
+systemFillColor = "#ffffff19"
+secondarySystemFillColor = "#ffffff14"
+tertiarySystemFillColor = "#ffffff0c"
+quaternarySystemFillColor = "#ffffff07"
+quinarySystemFillColor = "#ffffff02"
+controlAccentColor = "#007affff"
+highlightColor = "#b4b4b4ff"
+shadowColor = "#000000ff"
+controlHighlightColor = "#ffffff19"
+controlLightHighlightColor = "#ffffff19"
+controlShadowColor = "#00000044"
+controlDarkShadowColor = "#000000ff"
+scrollBarColor = "#aaaaaaff"
+knobColor = "#9999bbff"
+selectedKnobColor = "#666699ff"
+windowFrameColor = "#aaaaaaff"
+selectedMenuItemColor = "#4277f4ff"
+headerColor = "#ffffffff"
+secondarySelectedControlColor = "#464646ff"
+alternateSelectedControlColor = "#0059d1ff"
+alternatingContentBackgroundColors = ["#1e1e1eff", "#ffffff0c"]
+controlAlternatingRowBackgroundColors = ["#1e1e1eff", "#ffffff0c"]
+NSTextView_insertionPointColor = "#ff5257ff"
+
+[macos.colors.color_space]
+method = "a titled window (empty title, content [0, 0, 520, 140] (x, y, width, height) from [200, 300] (x, y)): its content view's top half an NSBox filled sRGB black, its bottom half one filled sRGB white (custom, no border), and over both an NSView hosting a CALayer (setLayer: then setWantsLayer:); per column, in the hosting layer, one 20 pt square layer over black (y 95) and one over white (y 25), the columns 30 pt apart from x 20: each square a CALayer whose backgroundColor is the case's to colour, its speed 0 and timeOffset the fraction times 1 s, holding a CABasicAnimation of backgroundColor from the case's from colour to its to colour (CGColorCreateSRGB), duration 1 s, the linear timing function, beginTime 1e-6 s (in the layer's local time, which a speed of 0 holds at the time offset), fillMode both, not removed on completion: the layer shows the animation paused at the fraction (less a microsecond); the cases at the fractions [0.0, 0.5, 1.0], then the references, static squares (their from and to the same colour); the window made key, the application activated, and per appearance (the window's appearance set, display, the run loop pumped 10 steps) captured with screencapture -x -o -l to color_space/<appearance>.png; squares_from_window_top_left gives each square's rect in the capture's points from the window frame's top left (the title bar included)"
+squares_from_window_top_left = ["red_to_blue at 0 over_black: from #ff0000ff to #0000ffff, x 20 y 53 w 20 h 20", "red_to_blue at 0 over_white: from #ff0000ff to #0000ffff, x 20 y 123 w 20 h 20", "red_to_blue at 0.5 over_black: from #ff0000ff to #0000ffff, x 50 y 53 w 20 h 20", "red_to_blue at 0.5 over_white: from #ff0000ff to #0000ffff, x 50 y 123 w 20 h 20", "red_to_blue at 1 over_black: from #ff0000ff to #0000ffff, x 80 y 53 w 20 h 20", "red_to_blue at 1 over_white: from #ff0000ff to #0000ffff, x 80 y 123 w 20 h 20", "red_to_blue_alpha_0.2 at 0 over_black: from #ff0000ff to #0000ff33, x 110 y 53 w 20 h 20", "red_to_blue_alpha_0.2 at 0 over_white: from #ff0000ff to #0000ff33, x 110 y 123 w 20 h 20", "red_to_blue_alpha_0.2 at 0.5 over_black: from #ff0000ff to #0000ff33, x 140 y 53 w 20 h 20", "red_to_blue_alpha_0.2 at 0.5 over_white: from #ff0000ff to #0000ff33, x 140 y 123 w 20 h 20", "red_to_blue_alpha_0.2 at 1 over_black: from #ff0000ff to #0000ff33, x 170 y 53 w 20 h 20", "red_to_blue_alpha_0.2 at 1 over_white: from #ff0000ff to #0000ff33, x 170 y 123 w 20 h 20", "clear_to_green at 0 over_black: from #00000000 to #00ff00ff, x 200 y 53 w 20 h 20", "clear_to_green at 0 over_white: from #00000000 to #00ff00ff, x 200 y 123 w 20 h 20", "clear_to_green at 0.5 over_black: from #00000000 to #00ff00ff, x 230 y 53 w 20 h 20", "clear_to_green at 0.5 over_white: from #00000000 to #00ff00ff, x 230 y 123 w 20 h 20", "clear_to_green at 1 over_black: from #00000000 to #00ff00ff, x 260 y 53 w 20 h 20", "clear_to_green at 1 over_white: from #00000000 to #00ff00ff, x 260 y 123 w 20 h 20", "red_to_clear at 0 over_black: from #ff0000ff to #00000000, x 290 y 53 w 20 h 20", "red_to_clear at 0 over_white: from #ff0000ff to #00000000, x 290 y 123 w 20 h 20", "red_to_clear at 0.5 over_black: from #ff0000ff to #00000000, x 320 y 53 w 20 h 20", "red_to_clear at 0.5 over_white: from #ff0000ff to #00000000, x 320 y 123 w 20 h 20", "red_to_clear at 1 over_black: from #ff0000ff to #00000000, x 350 y 53 w 20 h 20", "red_to_clear at 1 over_white: from #ff0000ff to #00000000, x 350 y 123 w 20 h 20", "reference purple_0.5_opaque over_black: from #800080ff to #800080ff, x 380 y 53 w 20 h 20", "reference purple_0.5_opaque over_white: from #800080ff to #800080ff, x 380 y 123 w 20 h 20", "reference grey_0.5_opaque over_black: from #808080ff to #808080ff, x 410 y 53 w 20 h 20", "reference grey_0.5_opaque over_white: from #808080ff to #808080ff, x 410 y 123 w 20 h 20", "reference red_alpha_0.5 over_black: from #ff000080 to #ff000080, x 440 y 53 w 20 h 20", "reference red_alpha_0.5 over_white: from #ff000080 to #ff000080, x 440 y 123 w 20 h 20", "reference purple_0.5_alpha_0.6 over_black: from #80008099 to #80008099, x 470 y 53 w 20 h 20", "reference purple_0.5_alpha_0.6 over_white: from #80008099 to #80008099, x 470 y 123 w 20 h 20"]
+key_wait_steps = 100
+window_frame_xywh = [200.0, 300.0, 520.0, 168.0]
+
+[macos.colors.color_space.aqua]
+capture = "color_space/aqua.png"
+isKeyWindow = false
+
+[macos.colors.color_space.darkAqua]
+capture = "color_space/darkAqua.png"
+isKeyWindow = false

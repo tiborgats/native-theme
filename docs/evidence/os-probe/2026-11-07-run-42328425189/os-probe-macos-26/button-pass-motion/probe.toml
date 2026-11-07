@@ -1,0 +1,621 @@
+[os]
+platform = "macOS"
+version = "26.6.2"
+major = 26
+minor = 6
+patch = 2
+operatingSystemVersionString = "Version 26.6.2 (Build 25G83)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos26"
+runner_image_version = "20261026.0455.2"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.button_pass]
+mode = "motion"
+mode_method = "no sheet is captured; a window of its own made key, the application active, and scripted screen recordings of its controls (motion)"
+method = "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped 10 steps of 50 ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped 10 steps (20 after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by 6 pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked 100 pt right of the push sheet's frame before the normal capture and after the hovered and clicked ones"
+backdrops = "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and 128 (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin (10 pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a 8 x 8 px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares 4 px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png); and in the key mode the normal, pressed and disabled states are also drawn offscreen, the backdrop hidden: the content view with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps of its bounds at 1 and 2 pixels a point (<state>.renders, <state>-render-<1x|2x>.png; content_from_top_left_xywh places the content view in the window frame's points from its top left), so the buttons are drawn over transparency at a backing scale of 2 the runner's screen lacks; what an offscreen draw leaves out of a control (a layer AppKit composites only on screen) the 1x render's comparison with the capture's layer shows"
+layer_method = "layer: per pixel, from the over_black and over_white captures and their backdrop_raw bytes B, alpha a = 1 - (C_white - C_black) / (B_white - B_black) per channel, averaged over r, g, b (alpha_channel_spread_max_bytes: the largest difference of the three, times 255) and clamped to 0..1, and the premultiplied colour P = C_black - (1 - a) B_black clamped to 0..a; the layer is written as a PNG of straight (not premultiplied) colour and alpha, tagged sRGB, to <stem>-layer.png (a focused button's: its region only); check_grey and check_window composite the layer over the over_grey and window captures' backdrop_raw and compare it with those captures' opaque pixels (max_byte_delta, pixels_over_2; not_opaque_pixels, the window's rounded corners, are not compared), for the whole file and per button; per button (buttons), in the frame and the frame grown by 6 pt (region): alpha_max; body_alpha, the median alpha of the frame's middle row's pixels of alpha >= 8/255; fill_mode, the most frequent straight colour and alpha among the frame's pixels whose alpha is within 8/255 of body_alpha; bezel, the bounds of the region's pixels of alpha >= half body_alpha; fill, the straight colour and alpha at fill_point_px_xy, on the bezel's middle row two pixels inside the first pixel from its left edge whose alpha reaches 0.98 of the row's median (clear of the corner and the label; a gradient bezel's colour on that row); corner_top_left and corner_top_right, per row from the bezel's top the missing coverage (1 - alpha / the row's median alpha of its pixels of alpha >= 8/255, clamped to 0..1) summed from the bezel's edge inward to the first pixel at 0.98 coverage, up to two rows under 0.02, half the bezel's height or 40 rows, and the radius of the circle whose insets fit those rows best (least squares, 0.25 px steps; fit_rms_px says how well a circle fits); ink, the bezel's pixels of alpha >= half body_alpha whose straight colour or alpha differs from the fill's by more than 48 of 255 in a channel, their bounds and the one farthest from the fill (farthest_from_fill: the label's colour where a glyph covers a whole pixel); outside_frame, the region's pixels outside the frame with alpha >= 8/255, their bounds and the one of the largest alpha; diff_from_unfocused (focus mode), the region's pixels whose premultiplied colour or alpha differs from the unfocused layer's by more than 2 of 255, their bounds and the straight colour where the alpha grew most"
+activationPolicy_regular_set = true
+CGPreflightPostEventAccess = true
+isFullKeyboardAccessEnabled = true
+all_captures_key = true
+any_capture_key = false
+
+[macos.button_pass.states]
+normal = "nothing set; on the push sheet the cursor parked outside the window"
+pressed = "-[NSButton highlight:] YES on every NSButton (an NSComboButton has no highlight:), as NSButtonCell's mouse tracking does, then the run loop pumped; the cells' isHighlighted read back (cells_highlighted)"
+disabled = "setEnabled: NO on every control"
+disabled_pressed = "setEnabled: NO on every control and -[NSButton highlight:] YES on every NSButton, as pressed; the cells' isHighlighted read back (cells_highlighted); diff_from_disabled compares it with the disabled capture as diff_from_normal does with the normal one"
+hovered = "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)"
+clicked = "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up"
+focused = "focus mode: per button makeFirstResponder: with the button, captured over every backdrop, then makeFirstResponder: nil after the sheet's buttons"
+
+[macos.button_pass.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.button_pass.motion]
+method = """a titled window (empty title, content [0, 0, 520, 300] (x, y, width, height) from [200, 200] (x, y)) holding, in its content view (bottom-left origin): a regular push button (NSButton, momentaryPushIn, bezelStyle push, title "Button", system font of the regular size, sized to fit) from [20, 250] (x, y); on macOS 26 the same with bezelStyle glass from [160, 250] (x, y); two radio buttons (buttonType radio, titles "One" and "Two", state off, both with the action updateWindows at NSApp, so they form one group) from [20, 200] (x, y) and [120, 200] (x, y); an NSSearchField [20, 150, 180, 22] (x, y, width, height); three NSTextViews: editable "Ag" with the insertion point at its end [20, 90, 80, 30] (x, y, width, height), editable "abc אבג" (a left-to-right run, a space and three Hebrew letters) with the insertion point at UTF-16 index 4 (between the space and the first Hebrew letter) [140, 90, 120, 30] (x, y, width, height), and a selectable, non-editable "Ag" with the insertion point at index 1 [300, 90, 80, 30] (x, y, width, height); and a ticker (an NSBox, custom, no border) [504, 284, 8, 8] (x, y, width, height); a second titled window [860, 200, 200, 100] (x, y, width, height) for focus-deactivate. The window presented as the key mode presents (made key, the application active), the cursor parked 100 pt right of it. Per appearance (the window's appearance set, the run loop pumped 10 steps), each recording: makeFirstResponder: nil, then `screencapture -x -v -V<seconds> <appearance>/<name>.mov` (the whole main display) while a worker thread posts CGEvents (mouse moved, left mouse down, up, dragged; key down and up) at the HID event tap at its planned times and the main thread runs its actions at theirs, pumping the run loop in steps of 5 ms between; a repeating NSTimer in the run loop's common modes (so it fires inside AppKit's mouse tracking too) flips the ticker black and white every 5 ms and, where the recording names a view, reads its alphaValue and the presentation layers of its layer tree (3 levels, at most 16 layers: path, class, opacity, bounds size, affine transform, the 3D transform's m33, m34 and m43; the model layer where none is presented), keeping each reading that differs from the one before as a sample, its time counted from starting screencapture; <name>.crop holds ffmpeg's crop=w:h:x:y in pixels for the subject's screen frame grown by 12 pt. After each recording the search field is emptied, the caret text view's text and insertion point restored, both radios set off and the window made key again. The recordings: press-push and press-glass (move in at 2 s; a press held 1 s from 3 s; clicks released 80, 150 and 250 ms after their mouse-down at 5, 6 and 7 s; move away at 8 s, in again at 8.5 s, a press 100 ms later held 600 ms; away at 10 s; 12 s; the button sampled); radio (clicks of 100 ms on One at 3 s, Two at 5 s, One at 7 s; 9 s; One sampled); search-cancel (the field made first responder at 2.5 s, a and s typed at 3 and 3.2 s, Escape at 5 s, d at 6.5 s, the program empties it at 8 s; 10 s); focus-interrupt (the push button made first responder at 3, 4.5 and 6 s and resigned 70, 120 and 170 ms later; made first responder at 7.5 s, the window's appearance set to the other one at 7.6 s and back at 9 s, resigned at 10 s; 12 s; the button sampled); focus-deactivate (the push button first responder at 3 s, the second window made key at 3.1 s, this window key again at 5 s, the second ordered out at 5.1 s, resigned at 7 s; 9 s); caret-long (the editable text view first responder at 2 s, a, s, d typed from 30 s 150 ms apart, resigned at 38 s; 40 s); caret-mixed and caret-read-only (first responder at 2 s, resigned at 7 s; 8 s). Each key is typed as a key-down and a key-up 40 ms later (virtual key codes 0, 1, 2 and 53 of HIToolbox's Events.h); each click as a mouse-down and a mouse-up at the view's centre"""
+makeFirstResponder_nil = true
+key_wait_steps = 1
+isKeyWindow_presented = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+mainScreen_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 520.0, 332.0]
+
+[macos.button_pass.motion.cursor]
+target_screen_xy = [820.0, 366.0]
+target_quartz_xy = [820.0, 402.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [820.0, 366.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.motion.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 3
+
+[macos.button_pass.motion.frames_screen_xywh]
+push = [220.0, 450.0, 65.0, 24.0]
+glass = [360.0, 450.0, 65.0, 24.0]
+radio_a = [220.0, 400.0, 47.0, 16.0]
+radio_b = [320.0, 400.0, 47.0, 16.0]
+search = [220.0, 350.0, 180.0, 22.0]
+caret = [220.0, 290.0, 80.0, 30.0]
+mixed = [340.0, 290.0, 120.0, 30.0]
+read_only = [500.0, 290.0, 80.0, 30.0]
+
+[macos.button_pass.motion.aqua.press-push]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "aqua/press-push.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 12931.337417
+pump_steps = 1024
+ticker_flips = 1151
+posted = ["2002.1 ms (planned 2000 ms): move in: posted at (252.5, 306.0)", "3035.8 ms (planned 3000 ms): held press down: posted at (252.5, 306.0)", "4074.0 ms (planned 4000 ms): held press up: posted at (252.5, 306.0)", "5068.7 ms (planned 5000 ms): release at 80 ms down: posted at (252.5, 306.0)", "5085.6 ms (planned 5080 ms): release at 80 ms up: posted at (252.5, 306.0)", "6071.3 ms (planned 6000 ms): release at 150 ms down: posted at (252.5, 306.0)", "6226.1 ms (planned 6150 ms): release at 150 ms up: posted at (252.5, 306.0)", "7074.0 ms (planned 7000 ms): release at 250 ms down: posted at (252.5, 306.0)", "7319.0 ms (planned 7250 ms): release at 250 ms up: posted at (252.5, 306.0)", "8074.0 ms (planned 8000 ms): move away: posted at (820.0, 402.0)", "8568.6 ms (planned 8500 ms): move in again: posted at (252.5, 306.0)", "8666.0 ms (planned 8600 ms): press 100 ms into the hover down: posted at (252.5, 306.0)", "9295.5 ms (planned 9200 ms): press 100 ms into the hover up: posted at (252.5, 306.0)", "10068.5 ms (planned 10000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["11.8 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3068.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "4081.5 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5083.8 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5090.9 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "6073.5 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "6244.6 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7083.0 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7324.6 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "8683.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "9324.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/press-push.mov"
+file_bytes = 619151
+
+[macos.button_pass.motion.aqua.press-push.actions]
+
+[macos.button_pass.motion.aqua.press-glass]
+crop_screen_xywh = [348.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [348.0, 282.0, 89.0, 48.0]
+crop_file = "aqua/press-glass.crop"
+crop_px_whxy = "89:48:348:282"
+recording = "exit 0"
+ended_ms = 12260.178958
+pump_steps = 837
+ticker_flips = 1003
+posted = ["2046.9 ms (planned 2000 ms): move in: posted at (392.5, 306.0)", "3073.8 ms (planned 3000 ms): held press down: posted at (392.5, 306.0)", "4007.9 ms (planned 4000 ms): held press up: posted at (392.5, 306.0)", "5040.8 ms (planned 5000 ms): release at 80 ms down: posted at (392.5, 306.0)", "5141.8 ms (planned 5080 ms): release at 80 ms up: posted at (392.5, 306.0)", "6025.1 ms (planned 6000 ms): release at 150 ms down: posted at (392.5, 306.0)", "6194.1 ms (planned 6150 ms): release at 150 ms up: posted at (392.5, 306.0)", "7041.7 ms (planned 7000 ms): release at 250 ms down: posted at (392.5, 306.0)", "7270.7 ms (planned 7250 ms): release at 250 ms up: posted at (392.5, 306.0)", "8031.6 ms (planned 8000 ms): move away: posted at (820.0, 402.0)", "8543.4 ms (planned 8500 ms): move in again: posted at (392.5, 306.0)", "8631.8 ms (planned 8600 ms): press 100 ms into the hover down: posted at (392.5, 306.0)", "9208.5 ms (planned 9200 ms): press 100 ms into the hover up: posted at (392.5, 306.0)", "10025.0 ms (planned 10000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["22.5 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0.0 SwiftUI.SDFLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/press-glass.mov"
+file_bytes = 540832
+
+[macos.button_pass.motion.aqua.press-glass.actions]
+
+[macos.button_pass.motion.aqua.radio]
+crop_screen_xywh = [208.0, 388.0, 171.0, 40.0]
+crop_quartz_xywh = [208.0, 340.0, 171.0, 40.0]
+crop_file = "aqua/radio.crop"
+crop_px_whxy = "171:40:208:340"
+recording = "exit 0"
+ended_ms = 9205.586667
+pump_steps = 690
+ticker_flips = 818
+posted = ["3008.3 ms (planned 3000 ms): click One down: posted at (243.5, 360.0)", "3107.1 ms (planned 3100 ms): click One up: posted at (243.5, 360.0)", "5034.6 ms (planned 5000 ms): click Two down: posted at (343.5, 360.0)", "5105.6 ms (planned 5100 ms): click Two up: posted at (343.5, 360.0)", "7045.9 ms (planned 7000 ms): click One down: posted at (243.5, 360.0)", "7149.0 ms (planned 7100 ms): click One up: posted at (243.5, 360.0)", "8033.7 ms (planned 8000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["25.8 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3016.0 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3112.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.4 CALayer opacity 1.0000 size 5.00x5.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.5 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5112.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7055.0 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7152.6 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.4 CALayer opacity 1.0000 size 5.00x5.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.5 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/radio.mov"
+file_bytes = 433920
+
+[macos.button_pass.motion.aqua.radio.actions]
+
+[macos.button_pass.motion.aqua.search-cancel]
+crop_screen_xywh = [208.0, 338.0, 204.0, 46.0]
+crop_quartz_xywh = [208.0, 384.0, 204.0, 46.0]
+crop_file = "aqua/search-cancel.crop"
+crop_px_whxy = "204:46:208:384"
+recording = "exit 0"
+ended_ms = 10332.194125000002
+pump_steps = 729
+ticker_flips = 854
+posted = ["3046.6 ms (planned 3000 ms): type a down: posted key 0", "3047.4 ms (planned 3040 ms): type a up: posted key 0", "3224.0 ms (planned 3200 ms): type s down: posted key 1", "3246.0 ms (planned 3240 ms): type s up: posted key 1", "5010.3 ms (planned 5000 ms): Escape down: posted key 53", "5057.5 ms (planned 5040 ms): Escape up: posted key 53", "6506.0 ms (planned 6500 ms): type d down: posted key 2", "6560.6 ms (planned 6540 ms): type d up: posted key 2"]
+file = "aqua/search-cancel.mov"
+file_bytes = 510254
+
+[macos.button_pass.motion.aqua.search-cancel.actions."00 makeFirstResponder"]
+planned_ms = 2500.0
+ran_ms = 2505.953084
+returned_ms = 2517.112959
+result = true
+
+[macos.button_pass.motion.aqua.search-cancel.actions."01 setStringValue empty"]
+planned_ms = 8000.0
+ran_ms = 8007.456791999999
+returned_ms = 8009.220708999999
+result = "done"
+
+[macos.button_pass.motion.aqua.focus-interrupt]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "aqua/focus-interrupt.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 12339.022083
+pump_steps = 927
+ticker_flips = 1089
+posted = []
+samples = ["23.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/focus-interrupt.mov"
+file_bytes = 601056
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3005.478416
+returned_ms = 3008.716375
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."01 unfocus 70 ms after focus (0)"]
+planned_ms = 3070.0
+ran_ms = 3082.694208
+returned_ms = 3082.762708
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."02 makeFirstResponder"]
+planned_ms = 4500.0
+ran_ms = 4506.871708000001
+returned_ms = 4506.951083
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."03 unfocus 120 ms after focus (1)"]
+planned_ms = 4620.0
+ran_ms = 4623.269332999999
+returned_ms = 4623.312375
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."04 makeFirstResponder"]
+planned_ms = 6000.0
+ran_ms = 6006.118791
+returned_ms = 6006.421875
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."05 unfocus 170 ms after focus (2)"]
+planned_ms = 6170.0
+ran_ms = 6177.258708
+returned_ms = 6177.327832999999
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."06 makeFirstResponder"]
+planned_ms = 7500.0
+ran_ms = 7514.399166
+returned_ms = 7514.446999999999
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."07 window appearance flipped"]
+planned_ms = 7600.0
+ran_ms = 7607.528666
+returned_ms = 7622.60725
+result = "NSAppearanceNameDarkAqua"
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."08 window appearance restored"]
+planned_ms = 9000.0
+ran_ms = 9005.784791
+returned_ms = 9010.166125
+result = "NSAppearanceNameAqua"
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."09 makeFirstResponder nil"]
+planned_ms = 10000.0
+ran_ms = 10007.451958000001
+returned_ms = 10007.632625
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "aqua/focus-deactivate.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 9486.902458999999
+pump_steps = 693
+ticker_flips = 863
+posted = []
+file = "aqua/focus-deactivate.mov"
+file_bytes = 441222
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3016.979792
+returned_ms = 3017.304792
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."01 other window made key"]
+planned_ms = 3100.0
+ran_ms = 3117.846167
+returned_ms = 3128.938792
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."02 window made key again"]
+planned_ms = 5000.0
+ran_ms = 5016.392459000001
+returned_ms = 5024.64975
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."03 other window ordered out"]
+planned_ms = 5100.0
+ran_ms = 5107.390917
+returned_ms = 5107.789959
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."04 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7001.501249999999
+returned_ms = 7001.89675
+result = true
+
+[macos.button_pass.motion.aqua.caret-long]
+crop_screen_xywh = [208.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [208.0, 436.0, 104.0, 54.0]
+crop_file = "aqua/caret-long.crop"
+crop_px_whxy = "104:54:208:436"
+recording = "exit 0"
+ended_ms = 40312.045834000004
+pump_steps = 3062
+ticker_flips = 3580
+posted = ["30068.9 ms (planned 30000 ms): type down: posted key 0", "30071.2 ms (planned 30040 ms): type up: posted key 0", "30198.0 ms (planned 30150 ms): type down: posted key 1", "30198.1 ms (planned 30190 ms): type up: posted key 1", "30361.4 ms (planned 30300 ms): type down: posted key 2", "30361.5 ms (planned 30340 ms): type up: posted key 2"]
+file = "aqua/caret-long.mov"
+file_bytes = 2099157
+
+[macos.button_pass.motion.aqua.caret-long.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2000.07325
+returned_ms = 2008.730167
+result = true
+
+[macos.button_pass.motion.aqua.caret-long.actions."01 makeFirstResponder nil"]
+planned_ms = 38000.0
+ran_ms = 38000.156542
+returned_ms = 38001.925792
+result = true
+
+[macos.button_pass.motion.aqua.caret-mixed]
+crop_screen_xywh = [328.0, 278.0, 144.0, 54.0]
+crop_quartz_xywh = [328.0, 436.0, 144.0, 54.0]
+crop_file = "aqua/caret-mixed.crop"
+crop_px_whxy = "144:54:328:436"
+recording = "exit 0"
+ended_ms = 8275.876208
+pump_steps = 603
+ticker_flips = 691
+posted = []
+file = "aqua/caret-mixed.mov"
+file_bytes = 399866
+
+[macos.button_pass.motion.aqua.caret-mixed.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2004.921458
+returned_ms = 2005.5658329999999
+result = true
+
+[macos.button_pass.motion.aqua.caret-mixed.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7007.424542
+returned_ms = 7009.263208
+result = true
+
+[macos.button_pass.motion.aqua.caret-read-only]
+crop_screen_xywh = [488.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [488.0, 436.0, 104.0, 54.0]
+crop_file = "aqua/caret-read-only.crop"
+crop_px_whxy = "104:54:488:436"
+recording = "exit 0"
+ended_ms = 8227.110207999998
+pump_steps = 624
+ticker_flips = 725
+posted = []
+file = "aqua/caret-read-only.mov"
+file_bytes = 400363
+
+[macos.button_pass.motion.aqua.caret-read-only.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2006.663708
+returned_ms = 2007.0394999999999
+result = true
+
+[macos.button_pass.motion.aqua.caret-read-only.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7010.155333000001
+returned_ms = 7010.344208
+result = true
+
+[macos.button_pass.motion.darkAqua.press-push]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "darkAqua/press-push.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 12275.485458000001
+pump_steps = 947
+ticker_flips = 1057
+posted = ["2040.9 ms (planned 2000 ms): move in: posted at (252.5, 306.0)", "3016.7 ms (planned 3000 ms): held press down: posted at (252.5, 306.0)", "4073.8 ms (planned 4000 ms): held press up: posted at (252.5, 306.0)", "5043.8 ms (planned 5000 ms): release at 80 ms down: posted at (252.5, 306.0)", "5145.8 ms (planned 5080 ms): release at 80 ms up: posted at (252.5, 306.0)", "6057.5 ms (planned 6000 ms): release at 150 ms down: posted at (252.5, 306.0)", "6212.7 ms (planned 6150 ms): release at 150 ms up: posted at (252.5, 306.0)", "7024.7 ms (planned 7000 ms): release at 250 ms down: posted at (252.5, 306.0)", "7307.7 ms (planned 7250 ms): release at 250 ms up: posted at (252.5, 306.0)", "8029.3 ms (planned 8000 ms): move away: posted at (820.0, 402.0)", "8571.4 ms (planned 8500 ms): move in again: posted at (252.5, 306.0)", "8607.6 ms (planned 8600 ms): press 100 ms into the hover down: posted at (252.5, 306.0)", "9245.9 ms (planned 9200 ms): press 100 ms into the hover up: posted at (252.5, 306.0)", "10071.4 ms (planned 10000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["24.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3038.3 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "4081.0 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5046.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5154.9 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "6072.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "6222.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7029.4 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7322.3 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "8621.5 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "9256.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/press-push.mov"
+file_bytes = 550289
+
+[macos.button_pass.motion.darkAqua.press-push.actions]
+
+[macos.button_pass.motion.darkAqua.press-glass]
+crop_screen_xywh = [348.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [348.0, 282.0, 89.0, 48.0]
+crop_file = "darkAqua/press-glass.crop"
+crop_px_whxy = "89:48:348:282"
+recording = "exit 0"
+ended_ms = 12365.849750000001
+pump_steps = 914
+ticker_flips = 1095
+posted = ["2074.1 ms (planned 2000 ms): move in: posted at (392.5, 306.0)", "3041.2 ms (planned 3000 ms): held press down: posted at (392.5, 306.0)", "4015.8 ms (planned 4000 ms): held press up: posted at (392.5, 306.0)", "5059.2 ms (planned 5000 ms): release at 80 ms down: posted at (392.5, 306.0)", "5094.7 ms (planned 5080 ms): release at 80 ms up: posted at (392.5, 306.0)", "6025.0 ms (planned 6000 ms): release at 150 ms down: posted at (392.5, 306.0)", "6170.2 ms (planned 6150 ms): release at 150 ms up: posted at (392.5, 306.0)", "7074.0 ms (planned 7000 ms): release at 250 ms down: posted at (392.5, 306.0)", "7320.8 ms (planned 7250 ms): release at 250 ms up: posted at (392.5, 306.0)", "8004.3 ms (planned 8000 ms): move away: posted at (820.0, 402.0)", "8503.7 ms (planned 8500 ms): move in again: posted at (392.5, 306.0)", "8618.1 ms (planned 8600 ms): press 100 ms into the hover down: posted at (392.5, 306.0)", "9206.7 ms (planned 9200 ms): press 100 ms into the hover up: posted at (392.5, 306.0)", "10073.9 ms (planned 10000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["29.2 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0.0 SwiftUI.SDFLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/press-glass.mov"
+file_bytes = 540367
+
+[macos.button_pass.motion.darkAqua.press-glass.actions]
+
+[macos.button_pass.motion.darkAqua.radio]
+crop_screen_xywh = [208.0, 388.0, 171.0, 40.0]
+crop_quartz_xywh = [208.0, 340.0, 171.0, 40.0]
+crop_file = "darkAqua/radio.crop"
+crop_px_whxy = "171:40:208:340"
+recording = "exit 0"
+ended_ms = 9214.708875
+pump_steps = 702
+ticker_flips = 833
+posted = ["3007.5 ms (planned 3000 ms): click One down: posted at (243.5, 360.0)", "3131.2 ms (planned 3100 ms): click One up: posted at (243.5, 360.0)", "5031.1 ms (planned 5000 ms): click Two down: posted at (343.5, 360.0)", "5148.9 ms (planned 5100 ms): click Two up: posted at (343.5, 360.0)", "7040.0 ms (planned 7000 ms): click One down: posted at (243.5, 360.0)", "7131.6 ms (planned 7100 ms): click One up: posted at (243.5, 360.0)", "8024.0 ms (planned 8000 ms): move away: posted at (820.0, 402.0)"]
+samples = ["29.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3021.7 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "3151.8 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.4 CALayer opacity 1.0000 size 5.00x5.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.5 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "5155.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7050.5 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00", "7148.3 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 47.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.3 CALayer opacity 1.0000 size 16.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.4 CALayer opacity 1.0000 size 5.00x5.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.5 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 25.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/radio.mov"
+file_bytes = 418033
+
+[macos.button_pass.motion.darkAqua.radio.actions]
+
+[macos.button_pass.motion.darkAqua.search-cancel]
+crop_screen_xywh = [208.0, 338.0, 204.0, 46.0]
+crop_quartz_xywh = [208.0, 384.0, 204.0, 46.0]
+crop_file = "darkAqua/search-cancel.crop"
+crop_px_whxy = "204:46:208:384"
+recording = "exit 0"
+ended_ms = 10213.385792000001
+pump_steps = 772
+ticker_flips = 910
+posted = ["3027.9 ms (planned 3000 ms): type a down: posted key 0", "3077.9 ms (planned 3040 ms): type a up: posted key 0", "3270.2 ms (planned 3200 ms): type s down: posted key 1", "3270.3 ms (planned 3240 ms): type s up: posted key 1", "5055.5 ms (planned 5000 ms): Escape down: posted key 53", "5055.7 ms (planned 5040 ms): Escape up: posted key 53", "6539.6 ms (planned 6500 ms): type d down: posted key 2", "6541.4 ms (planned 6540 ms): type d up: posted key 2"]
+file = "darkAqua/search-cancel.mov"
+file_bytes = 480262
+
+[macos.button_pass.motion.darkAqua.search-cancel.actions."00 makeFirstResponder"]
+planned_ms = 2500.0
+ran_ms = 2504.6731250000003
+returned_ms = 2511.0882079999997
+result = true
+
+[macos.button_pass.motion.darkAqua.search-cancel.actions."01 setStringValue empty"]
+planned_ms = 8000.0
+ran_ms = 8005.259583000001
+returned_ms = 8006.171832999999
+result = "done"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "darkAqua/focus-interrupt.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 12303.950041
+pump_steps = 915
+ticker_flips = 1123
+posted = []
+samples = ["25.2 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.0 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.1 CALayer opacity 1.0000 size 65.00x24.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0.2 _TtC7SwiftUIP33_863CCF9D49B535DAEB1C7D61BEE53B5914CGDrawingLayer opacity 1.0000 size 41.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/focus-interrupt.mov"
+file_bytes = 556370
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3000.1897080000003
+returned_ms = 3000.2660410000003
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."01 unfocus 70 ms after focus (0)"]
+planned_ms = 3070.0
+ran_ms = 3075.237708
+returned_ms = 3075.281833
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."02 makeFirstResponder"]
+planned_ms = 4500.0
+ran_ms = 4502.692916
+returned_ms = 4502.75525
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."03 unfocus 120 ms after focus (1)"]
+planned_ms = 4620.0
+ran_ms = 4625.3780830000005
+returned_ms = 4625.415666
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."04 makeFirstResponder"]
+planned_ms = 6000.0
+ran_ms = 6008.838583
+returned_ms = 6008.9995
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."05 unfocus 170 ms after focus (2)"]
+planned_ms = 6170.0
+ran_ms = 6179.454
+returned_ms = 6179.5282910000005
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."06 makeFirstResponder"]
+planned_ms = 7500.0
+ran_ms = 7502.231708
+returned_ms = 7502.343333
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."07 window appearance flipped"]
+planned_ms = 7600.0
+ran_ms = 7601.153333
+returned_ms = 7606.620625
+result = "NSAppearanceNameAqua"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."08 window appearance restored"]
+planned_ms = 9000.0
+ran_ms = 9000.455208
+returned_ms = 9003.986041
+result = "NSAppearanceNameDarkAqua"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."09 makeFirstResponder nil"]
+planned_ms = 10000.0
+ran_ms = 10001.213249999999
+returned_ms = 10001.335333
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate]
+crop_screen_xywh = [208.0, 438.0, 89.0, 48.0]
+crop_quartz_xywh = [208.0, 282.0, 89.0, 48.0]
+crop_file = "darkAqua/focus-deactivate.crop"
+crop_px_whxy = "89:48:208:282"
+recording = "exit 0"
+ended_ms = 9245.734708
+pump_steps = 709
+ticker_flips = 848
+posted = []
+file = "darkAqua/focus-deactivate.mov"
+file_bytes = 418745
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3004.079083
+returned_ms = 3004.2195
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."01 other window made key"]
+planned_ms = 3100.0
+ran_ms = 3104.605958
+returned_ms = 3121.395541
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."02 window made key again"]
+planned_ms = 5000.0
+ran_ms = 5020.468625
+returned_ms = 5023.7901249999995
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."03 other window ordered out"]
+planned_ms = 5100.0
+ran_ms = 5103.2732909999995
+returned_ms = 5103.714291
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."04 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7015.14375
+returned_ms = 7015.328708
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-long]
+crop_screen_xywh = [208.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [208.0, 436.0, 104.0, 54.0]
+crop_file = "darkAqua/caret-long.crop"
+crop_px_whxy = "104:54:208:436"
+recording = "exit 0"
+ended_ms = 40190.92475
+pump_steps = 3051
+ticker_flips = 3667
+posted = ["30005.6 ms (planned 30000 ms): type down: posted key 0", "30113.5 ms (planned 30040 ms): type up: posted key 0", "30180.1 ms (planned 30150 ms): type down: posted key 1", "30229.0 ms (planned 30190 ms): type up: posted key 1", "30300.4 ms (planned 30300 ms): type down: posted key 2", "30413.1 ms (planned 30340 ms): type up: posted key 2"]
+file = "darkAqua/caret-long.mov"
+file_bytes = 1968829
+
+[macos.button_pass.motion.darkAqua.caret-long.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2004.4612919999997
+returned_ms = 2006.2274169999998
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-long.actions."01 makeFirstResponder nil"]
+planned_ms = 38000.0
+ran_ms = 38005.446584
+returned_ms = 38007.193375
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-mixed]
+crop_screen_xywh = [328.0, 278.0, 144.0, 54.0]
+crop_quartz_xywh = [328.0, 436.0, 144.0, 54.0]
+crop_file = "darkAqua/caret-mixed.crop"
+crop_px_whxy = "144:54:328:436"
+recording = "exit 0"
+ended_ms = 8203.282542
+pump_steps = 621
+ticker_flips = 744
+posted = []
+file = "darkAqua/caret-mixed.mov"
+file_bytes = 349199
+
+[macos.button_pass.motion.darkAqua.caret-mixed.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2008.7103339999999
+returned_ms = 2010.8527920000001
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-mixed.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7000.7452920000005
+returned_ms = 7004.888667
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-read-only]
+crop_screen_xywh = [488.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [488.0, 436.0, 104.0, 54.0]
+crop_file = "darkAqua/caret-read-only.crop"
+crop_px_whxy = "104:54:488:436"
+recording = "exit 0"
+ended_ms = 8188.639500000001
+pump_steps = 617
+ticker_flips = 727
+posted = []
+file = "darkAqua/caret-read-only.mov"
+file_bytes = 347136
+
+[macos.button_pass.motion.darkAqua.caret-read-only.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2014.2063339999997
+returned_ms = 2014.7626669999997
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-read-only.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7014.9502919999995
+returned_ms = 7015.112084
+result = true

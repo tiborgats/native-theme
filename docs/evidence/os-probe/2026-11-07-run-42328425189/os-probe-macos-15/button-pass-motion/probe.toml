@@ -1,0 +1,589 @@
+[os]
+platform = "macOS"
+version = "15.8.2"
+major = 15
+minor = 8
+patch = 2
+operatingSystemVersionString = "Version 15.8.2 (Build 24H232)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos15"
+runner_image_version = "20261104.0514.1"
+
+[macos.environment]
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = true
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.button_pass]
+mode = "motion"
+mode_method = "no sheet is captured; a window of its own made key, the application active, and scripted screen recordings of its controls (motion)"
+method = "activation policy set to Regular, finishLaunching and activation as in the key-window section; each sheet is a titled NSWindow (closable, miniaturizable, resizable, empty title) holding a backdrop (an NSBox, custom, no border, no title, over the whole content view, hidden for the window's own background) and a grid of controls, each given setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize: and sized to fit, centred in its row on whole points; the window is made key with makeKeyAndOrderFront: and makeFirstResponder: nil, the run loop pumped until isKeyWindow, then the mode's condition is set (mode_method); per appearance the window's appearance is set and the run loop pumped 10 steps of 50 ms, then each state is set (states) and per backdrop the window displayed, the run loop pumped 10 steps (20 after a cursor move) and the window captured with screencapture -x -o -l <windowNumber> to <appearance>/[<sheet>/]<state>[-<button>][-over-<backdrop>].png (the push sheet's captures in <appearance>/, as spike M wrote them); isKeyWindow and NSApp isActive are read just before and just after each capture (key_at_capture: both reads of isKeyWindow are true); each capture over the window's background is compared with the same appearance's normal one inside each button's frame grown by 6 pt (diff_from_normal: the pixels whose bytes differ and the largest difference of one byte); the cursor is parked 100 pt right of the push sheet's frame before the normal capture and after the hovered and clicked ones"
+backdrops = "every state but hovered and clicked is captured four times: over the window's own background (window: the capture's file is <state>.png, its keys beside these), and with the backdrop box filled with colorWithSRGBRed:green:blue:alpha: of the bytes 0 (over_black), 255 (over_white) and 128 (over_grey) in each channel; backdrop_raw is the capture's pixel at the middle of the content view's left margin (10 pt in, half the content's height up), as #rrggbbaa; in the key mode the normal state is captured once more with the backdrop box filled with colorWithPatternImage: of a 8 x 8 px image (one pixel a point at the runner's backing scale 1), a checkerboard of black (0) and white (255) squares 4 px on a side, the top-left square black, tiled as AppKit tiles a pattern colour (normal.over_pattern, normal-over-pattern.png); and in the key mode the normal, pressed and disabled states are also drawn offscreen, the backdrop hidden: the content view with cacheDisplayInRect:toBitmapImageRep: into 8-bit RGBA bitmaps of its bounds at 1 and 2 pixels a point (<state>.renders, <state>-render-<1x|2x>.png; content_from_top_left_xywh places the content view in the window frame's points from its top left), so the buttons are drawn over transparency at a backing scale of 2 the runner's screen lacks; what an offscreen draw leaves out of a control (a layer AppKit composites only on screen) the 1x render's comparison with the capture's layer shows"
+layer_method = "layer: per pixel, from the over_black and over_white captures and their backdrop_raw bytes B, alpha a = 1 - (C_white - C_black) / (B_white - B_black) per channel, averaged over r, g, b (alpha_channel_spread_max_bytes: the largest difference of the three, times 255) and clamped to 0..1, and the premultiplied colour P = C_black - (1 - a) B_black clamped to 0..a; the layer is written as a PNG of straight (not premultiplied) colour and alpha, tagged sRGB, to <stem>-layer.png (a focused button's: its region only); check_grey and check_window composite the layer over the over_grey and window captures' backdrop_raw and compare it with those captures' opaque pixels (max_byte_delta, pixels_over_2; not_opaque_pixels, the window's rounded corners, are not compared), for the whole file and per button; per button (buttons), in the frame and the frame grown by 6 pt (region): alpha_max; body_alpha, the median alpha of the frame's middle row's pixels of alpha >= 8/255; fill_mode, the most frequent straight colour and alpha among the frame's pixels whose alpha is within 8/255 of body_alpha; bezel, the bounds of the region's pixels of alpha >= half body_alpha; fill, the straight colour and alpha at fill_point_px_xy, on the bezel's middle row two pixels inside the first pixel from its left edge whose alpha reaches 0.98 of the row's median (clear of the corner and the label; a gradient bezel's colour on that row); corner_top_left and corner_top_right, per row from the bezel's top the missing coverage (1 - alpha / the row's median alpha of its pixels of alpha >= 8/255, clamped to 0..1) summed from the bezel's edge inward to the first pixel at 0.98 coverage, up to two rows under 0.02, half the bezel's height or 40 rows, and the radius of the circle whose insets fit those rows best (least squares, 0.25 px steps; fit_rms_px says how well a circle fits); ink, the bezel's pixels of alpha >= half body_alpha whose straight colour or alpha differs from the fill's by more than 48 of 255 in a channel, their bounds and the one farthest from the fill (farthest_from_fill: the label's colour where a glyph covers a whole pixel); outside_frame, the region's pixels outside the frame with alpha >= 8/255, their bounds and the one of the largest alpha; diff_from_unfocused (focus mode), the region's pixels whose premultiplied colour or alpha differs from the unfocused layer's by more than 2 of 255, their bounds and the straight colour where the alpha grew most"
+activationPolicy_regular_set = true
+CGPreflightPostEventAccess = true
+isFullKeyboardAccessEnabled = true
+all_captures_key = true
+any_capture_key = false
+
+[macos.button_pass.states]
+normal = "nothing set; on the push sheet the cursor parked outside the window"
+pressed = "-[NSButton highlight:] YES on every NSButton (an NSComboButton has no highlight:), as NSButtonCell's mouse tracking does, then the run loop pumped; the cells' isHighlighted read back (cells_highlighted)"
+disabled = "setEnabled: NO on every control"
+disabled_pressed = "setEnabled: NO on every control and -[NSButton highlight:] YES on every NSButton, as pressed; the cells' isHighlighted read back (cells_highlighted); diff_from_disabled compares it with the disabled capture as diff_from_normal does with the normal one"
+hovered = "push sheet and the three style sheets (styles_a to styles_c), key mode, over the window's background: per button the cursor warped to the button's centre (CGWarpMouseCursorPosition) and a mouse-moved CGEvent posted there at the HID tap, then the run loop pumped; the mouse events AppKit dispatched meanwhile are counted (cursor.events)"
+clicked = "push sheet and the style sheets' NSComboButtons, key mode, over the window's background: per plain and default push button and per combo button at the regular size the cursor moved there as for hovered, a left mouse-down CGEvent posted at the HID tap, and from a second thread the window captured after the delay and a mouse-up posted after the capture, while the main thread's run loop runs NSButtonCell's tracking; the window's key status is read before the mouse-down and after the mouse-up"
+focused = "focus mode: per button makeFirstResponder: with the button, captured over every backdrop, then makeFirstResponder: nil after the sheet's buttons"
+
+[macos.button_pass.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.button_pass.motion]
+method = """a titled window (empty title, content [0, 0, 520, 300] (x, y, width, height) from [200, 200] (x, y)) holding, in its content view (bottom-left origin): a regular push button (NSButton, momentaryPushIn, bezelStyle push, title "Button", system font of the regular size, sized to fit) from [20, 250] (x, y); on macOS 26 the same with bezelStyle glass from [160, 250] (x, y); two radio buttons (buttonType radio, titles "One" and "Two", state off, both with the action updateWindows at NSApp, so they form one group) from [20, 200] (x, y) and [120, 200] (x, y); an NSSearchField [20, 150, 180, 22] (x, y, width, height); three NSTextViews: editable "Ag" with the insertion point at its end [20, 90, 80, 30] (x, y, width, height), editable "abc אבג" (a left-to-right run, a space and three Hebrew letters) with the insertion point at UTF-16 index 4 (between the space and the first Hebrew letter) [140, 90, 120, 30] (x, y, width, height), and a selectable, non-editable "Ag" with the insertion point at index 1 [300, 90, 80, 30] (x, y, width, height); and a ticker (an NSBox, custom, no border) [504, 284, 8, 8] (x, y, width, height); a second titled window [860, 200, 200, 100] (x, y, width, height) for focus-deactivate. The window presented as the key mode presents (made key, the application active), the cursor parked 100 pt right of it. Per appearance (the window's appearance set, the run loop pumped 10 steps), each recording: makeFirstResponder: nil, then `screencapture -x -v -V<seconds> <appearance>/<name>.mov` (the whole main display) while a worker thread posts CGEvents (mouse moved, left mouse down, up, dragged; key down and up) at the HID event tap at its planned times and the main thread runs its actions at theirs, pumping the run loop in steps of 5 ms between; a repeating NSTimer in the run loop's common modes (so it fires inside AppKit's mouse tracking too) flips the ticker black and white every 5 ms and, where the recording names a view, reads its alphaValue and the presentation layers of its layer tree (3 levels, at most 16 layers: path, class, opacity, bounds size, affine transform, the 3D transform's m33, m34 and m43; the model layer where none is presented), keeping each reading that differs from the one before as a sample, its time counted from starting screencapture; <name>.crop holds ffmpeg's crop=w:h:x:y in pixels for the subject's screen frame grown by 12 pt. After each recording the search field is emptied, the caret text view's text and insertion point restored, both radios set off and the window made key again. The recordings: press-push and press-glass (move in at 2 s; a press held 1 s from 3 s; clicks released 80, 150 and 250 ms after their mouse-down at 5, 6 and 7 s; move away at 8 s, in again at 8.5 s, a press 100 ms later held 600 ms; away at 10 s; 12 s; the button sampled); radio (clicks of 100 ms on One at 3 s, Two at 5 s, One at 7 s; 9 s; One sampled); search-cancel (the field made first responder at 2.5 s, a and s typed at 3 and 3.2 s, Escape at 5 s, d at 6.5 s, the program empties it at 8 s; 10 s); focus-interrupt (the push button made first responder at 3, 4.5 and 6 s and resigned 70, 120 and 170 ms later; made first responder at 7.5 s, the window's appearance set to the other one at 7.6 s and back at 9 s, resigned at 10 s; 12 s; the button sampled); focus-deactivate (the push button first responder at 3 s, the second window made key at 3.1 s, this window key again at 5 s, the second ordered out at 5.1 s, resigned at 7 s; 9 s); caret-long (the editable text view first responder at 2 s, a, s, d typed from 30 s 150 ms apart, resigned at 38 s; 40 s); caret-mixed and caret-read-only (first responder at 2 s, resigned at 7 s; 8 s). Each key is typed as a key-down and a key-up 40 ms later (virtual key codes 0, 1, 2 and 53 of HIToolbox's Events.h); each click as a mouse-down and a mouse-up at the view's centre"""
+glass = "not probed: NSBezelStyleGlass needs macOS 26"
+makeFirstResponder_nil = true
+key_wait_steps = 1
+isKeyWindow_presented = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+mainScreen_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 520.0, 328.0]
+
+[macos.button_pass.motion.cursor]
+target_screen_xy = [820.0, 364.0]
+target_quartz_xy = [820.0, 404.0]
+CGWarpMouseCursorPosition = 0
+mouseMoved_created = true
+mouseLocation_screen_xy = [820.0, 364.0]
+window_under_cursor_is_ours = false
+
+[macos.button_pass.motion.cursor.events]
+mouseMoved = 1
+mouseEntered = 0
+mouseExited = 0
+cursorUpdate = 0
+other = 3
+
+[macos.button_pass.motion.frames_screen_xywh]
+push = [220.0, 450.0, 75.0, 32.0]
+radio_a = [220.0, 400.0, 51.0, 18.0]
+radio_b = [320.0, 400.0, 51.0, 18.0]
+search = [220.0, 350.0, 180.0, 22.0]
+caret = [220.0, 290.0, 80.0, 30.0]
+mixed = [340.0, 290.0, 120.0, 30.0]
+read_only = [500.0, 290.0, 80.0, 30.0]
+
+[macos.button_pass.motion.aqua.press-push]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "aqua/press-push.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 12268.984958000001
+pump_steps = 809
+ticker_flips = 1182
+posted = ["2005.5 ms (planned 2000 ms): move in: posted at (257.5, 302.0)", "3067.1 ms (planned 3000 ms): held press down: posted at (257.5, 302.0)", "4026.9 ms (planned 4000 ms): held press up: posted at (257.5, 302.0)", "5003.2 ms (planned 5000 ms): release at 80 ms down: posted at (257.5, 302.0)", "5114.2 ms (planned 5080 ms): release at 80 ms up: posted at (257.5, 302.0)", "6070.6 ms (planned 6000 ms): release at 150 ms down: posted at (257.5, 302.0)", "6188.2 ms (planned 6150 ms): release at 150 ms up: posted at (257.5, 302.0)", "7072.5 ms (planned 7000 ms): release at 250 ms down: posted at (257.5, 302.0)", "7324.1 ms (planned 7250 ms): release at 250 ms up: posted at (257.5, 302.0)", "8051.0 ms (planned 8000 ms): move away: posted at (820.0, 404.0)", "8555.6 ms (planned 8500 ms): move in again: posted at (257.5, 302.0)", "8622.6 ms (planned 8600 ms): press 100 ms into the hover down: posted at (257.5, 302.0)", "9264.4 ms (planned 9200 ms): press 100 ms into the hover up: posted at (257.5, 302.0)", "10003.0 ms (planned 10000 ms): move away: posted at (820.0, 404.0)"]
+samples = ["26.9 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 53.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/press-push.mov"
+file_bytes = 818778
+
+[macos.button_pass.motion.aqua.press-push.actions]
+
+[macos.button_pass.motion.aqua.radio]
+crop_screen_xywh = [208.0, 388.0, 175.0, 42.0]
+crop_quartz_xywh = [208.0, 338.0, 175.0, 42.0]
+crop_file = "aqua/radio.crop"
+crop_px_whxy = "175:42:208:338"
+recording = "exit 0"
+ended_ms = 9123.09325
+pump_steps = 672
+ticker_flips = 898
+posted = ["3074.4 ms (planned 3000 ms): click One down: posted at (245.5, 359.0)", "3153.8 ms (planned 3100 ms): click One up: posted at (245.5, 359.0)", "5071.9 ms (planned 5000 ms): click Two down: posted at (345.5, 359.0)", "5118.7 ms (planned 5100 ms): click Two up: posted at (345.5, 359.0)", "7071.0 ms (planned 7000 ms): click One down: posted at (245.5, 359.0)", "7172.5 ms (planned 7100 ms): click One up: posted at (245.5, 359.0)", "8042.1 ms (planned 8000 ms): move away: posted at (820.0, 404.0)"]
+samples = ["26.0 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 51.00x18.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 18.00x18.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 33.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/radio.mov"
+file_bytes = 613218
+
+[macos.button_pass.motion.aqua.radio.actions]
+
+[macos.button_pass.motion.aqua.search-cancel]
+crop_screen_xywh = [208.0, 338.0, 204.0, 46.0]
+crop_quartz_xywh = [208.0, 384.0, 204.0, 46.0]
+crop_file = "aqua/search-cancel.crop"
+crop_px_whxy = "204:46:208:384"
+recording = "exit 0"
+ended_ms = 10164.611541999999
+pump_steps = 750
+ticker_flips = 947
+posted = ["3012.8 ms (planned 3000 ms): type a down: posted key 0", "3052.7 ms (planned 3040 ms): type a up: posted key 0", "3274.7 ms (planned 3200 ms): type s down: posted key 1", "3274.8 ms (planned 3240 ms): type s up: posted key 1", "5052.8 ms (planned 5000 ms): Escape down: posted key 53", "5052.9 ms (planned 5040 ms): Escape up: posted key 53", "6546.6 ms (planned 6500 ms): type d down: posted key 2", "6546.8 ms (planned 6540 ms): type d up: posted key 2"]
+file = "aqua/search-cancel.mov"
+file_bytes = 680397
+
+[macos.button_pass.motion.aqua.search-cancel.actions."00 makeFirstResponder"]
+planned_ms = 2500.0
+ran_ms = 2500.128708
+returned_ms = 2506.1670830000003
+result = true
+
+[macos.button_pass.motion.aqua.search-cancel.actions."01 setStringValue empty"]
+planned_ms = 8000.0
+ran_ms = 8008.747458
+returned_ms = 8009.244875
+result = "done"
+
+[macos.button_pass.motion.aqua.focus-interrupt]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "aqua/focus-interrupt.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 12141.64775
+pump_steps = 881
+ticker_flips = 1126
+posted = []
+samples = ["25.8 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 53.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "aqua/focus-interrupt.mov"
+file_bytes = 805320
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3004.285542
+returned_ms = 3004.4204579999996
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."01 unfocus 70 ms after focus (0)"]
+planned_ms = 3070.0
+ran_ms = 3082.717667
+returned_ms = 3082.793792
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."02 makeFirstResponder"]
+planned_ms = 4500.0
+ran_ms = 4511.119
+returned_ms = 4511.243333
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."03 unfocus 120 ms after focus (1)"]
+planned_ms = 4620.0
+ran_ms = 4634.049167
+returned_ms = 4634.079667
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."04 makeFirstResponder"]
+planned_ms = 6000.0
+ran_ms = 6015.607207999999
+returned_ms = 6015.68175
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."05 unfocus 170 ms after focus (2)"]
+planned_ms = 6170.0
+ran_ms = 6170.236
+returned_ms = 6170.288541999999
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."06 makeFirstResponder"]
+planned_ms = 7500.0
+ran_ms = 7509.233832999999
+returned_ms = 7509.294292
+result = true
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."07 window appearance flipped"]
+planned_ms = 7600.0
+ran_ms = 7608.513833
+returned_ms = 7624.128667
+result = "NSAppearanceNameDarkAqua"
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."08 window appearance restored"]
+planned_ms = 9000.0
+ran_ms = 9009.585875
+returned_ms = 9020.834958
+result = "NSAppearanceNameAqua"
+
+[macos.button_pass.motion.aqua.focus-interrupt.actions."09 makeFirstResponder nil"]
+planned_ms = 10000.0
+ran_ms = 10008.206292
+returned_ms = 10008.278083000001
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "aqua/focus-deactivate.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 9137.711709
+pump_steps = 673
+ticker_flips = 873
+posted = []
+file = "aqua/focus-deactivate.mov"
+file_bytes = 597421
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3004.040042
+returned_ms = 3004.1306250000002
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."01 other window made key"]
+planned_ms = 3100.0
+ran_ms = 3111.6968749999996
+returned_ms = 3114.7875
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."02 window made key again"]
+planned_ms = 5000.0
+ran_ms = 5003.887959
+returned_ms = 5005.638459
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."03 other window ordered out"]
+planned_ms = 5100.0
+ran_ms = 5103.924
+returned_ms = 5106.21425
+result = true
+
+[macos.button_pass.motion.aqua.focus-deactivate.actions."04 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7012.662875
+returned_ms = 7012.728542
+result = true
+
+[macos.button_pass.motion.aqua.caret-long]
+crop_screen_xywh = [208.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [208.0, 436.0, 104.0, 54.0]
+crop_file = "aqua/caret-long.crop"
+crop_px_whxy = "104:54:208:436"
+recording = "exit 0"
+ended_ms = 40193.050792
+pump_steps = 2935
+ticker_flips = 3751
+posted = ["30001.8 ms (planned 30000 ms): type down: posted key 0", "30108.3 ms (planned 30040 ms): type up: posted key 0", "30196.1 ms (planned 30150 ms): type down: posted key 1", "30196.1 ms (planned 30190 ms): type up: posted key 1", "30355.0 ms (planned 30300 ms): type down: posted key 2", "30355.1 ms (planned 30340 ms): type up: posted key 2"]
+file = "aqua/caret-long.mov"
+file_bytes = 2717271
+
+[macos.button_pass.motion.aqua.caret-long.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2001.584084
+returned_ms = 2005.6917090000002
+result = true
+
+[macos.button_pass.motion.aqua.caret-long.actions."01 makeFirstResponder nil"]
+planned_ms = 38000.0
+ran_ms = 38002.526959
+returned_ms = 38002.950249999994
+result = true
+
+[macos.button_pass.motion.aqua.caret-mixed]
+crop_screen_xywh = [328.0, 278.0, 144.0, 54.0]
+crop_quartz_xywh = [328.0, 436.0, 144.0, 54.0]
+crop_file = "aqua/caret-mixed.crop"
+crop_px_whxy = "144:54:328:436"
+recording = "exit 0"
+ended_ms = 8178.352333999999
+pump_steps = 596
+ticker_flips = 743
+posted = []
+file = "aqua/caret-mixed.mov"
+file_bytes = 529193
+
+[macos.button_pass.motion.aqua.caret-mixed.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2005.2222089999998
+returned_ms = 2005.876375
+result = true
+
+[macos.button_pass.motion.aqua.caret-mixed.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7005.847167
+returned_ms = 7006.179125
+result = true
+
+[macos.button_pass.motion.aqua.caret-read-only]
+crop_screen_xywh = [488.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [488.0, 436.0, 104.0, 54.0]
+crop_file = "aqua/caret-read-only.crop"
+crop_px_whxy = "104:54:488:436"
+recording = "exit 0"
+ended_ms = 8147.5285
+pump_steps = 613
+ticker_flips = 814
+posted = []
+file = "aqua/caret-read-only.mov"
+file_bytes = 545817
+
+[macos.button_pass.motion.aqua.caret-read-only.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2009.5478340000002
+returned_ms = 2009.783084
+result = true
+
+[macos.button_pass.motion.aqua.caret-read-only.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7009.48875
+returned_ms = 7009.95125
+result = true
+
+[macos.button_pass.motion.darkAqua.press-push]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "darkAqua/press-push.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 12180.820208000001
+pump_steps = 719
+ticker_flips = 1151
+posted = ["2015.4 ms (planned 2000 ms): move in: posted at (257.5, 302.0)", "3001.0 ms (planned 3000 ms): held press down: posted at (257.5, 302.0)", "4017.4 ms (planned 4000 ms): held press up: posted at (257.5, 302.0)", "5026.4 ms (planned 5000 ms): release at 80 ms down: posted at (257.5, 302.0)", "5153.5 ms (planned 5080 ms): release at 80 ms up: posted at (257.5, 302.0)", "6000.7 ms (planned 6000 ms): release at 150 ms down: posted at (257.5, 302.0)", "6167.9 ms (planned 6150 ms): release at 150 ms up: posted at (257.5, 302.0)", "7070.6 ms (planned 7000 ms): release at 250 ms down: posted at (257.5, 302.0)", "7298.0 ms (planned 7250 ms): release at 250 ms up: posted at (257.5, 302.0)", "8032.7 ms (planned 8000 ms): move away: posted at (820.0, 404.0)", "8570.0 ms (planned 8500 ms): move in again: posted at (257.5, 302.0)", "8670.8 ms (planned 8600 ms): press 100 ms into the hover down: posted at (257.5, 302.0)", "9266.3 ms (planned 9200 ms): press 100 ms into the hover up: posted at (257.5, 302.0)", "10069.9 ms (planned 10000 ms): move away: posted at (820.0, 404.0)"]
+samples = ["25.4 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 53.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/press-push.mov"
+file_bytes = 802305
+
+[macos.button_pass.motion.darkAqua.press-push.actions]
+
+[macos.button_pass.motion.darkAqua.radio]
+crop_screen_xywh = [208.0, 388.0, 175.0, 42.0]
+crop_quartz_xywh = [208.0, 338.0, 175.0, 42.0]
+crop_file = "darkAqua/radio.crop"
+crop_px_whxy = "175:42:208:338"
+recording = "exit 0"
+ended_ms = 9106.837875
+pump_steps = 649
+ticker_flips = 800
+posted = ["3075.6 ms (planned 3000 ms): click One down: posted at (245.5, 359.0)", "3124.7 ms (planned 3100 ms): click One up: posted at (245.5, 359.0)", "5076.0 ms (planned 5000 ms): click Two down: posted at (345.5, 359.0)", "5175.5 ms (planned 5100 ms): click Two up: posted at (345.5, 359.0)", "7020.8 ms (planned 7000 ms): click One down: posted at (245.5, 359.0)", "7174.2 ms (planned 7100 ms): click One up: posted at (245.5, 359.0)", "8019.8 ms (planned 8000 ms): move away: posted at (820.0, 404.0)"]
+samples = ["26.1 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 51.00x18.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 18.00x18.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 33.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/radio.mov"
+file_bytes = 612466
+
+[macos.button_pass.motion.darkAqua.radio.actions]
+
+[macos.button_pass.motion.darkAqua.search-cancel]
+crop_screen_xywh = [208.0, 338.0, 204.0, 46.0]
+crop_quartz_xywh = [208.0, 384.0, 204.0, 46.0]
+crop_file = "darkAqua/search-cancel.crop"
+crop_px_whxy = "204:46:208:384"
+recording = "exit 0"
+ended_ms = 10169.670959
+pump_steps = 746
+ticker_flips = 934
+posted = ["3070.2 ms (planned 3000 ms): type a down: posted key 0", "3070.8 ms (planned 3040 ms): type a up: posted key 0", "3203.7 ms (planned 3200 ms): type s down: posted key 1", "3309.3 ms (planned 3240 ms): type s up: posted key 1", "5071.4 ms (planned 5000 ms): Escape down: posted key 53", "5071.4 ms (planned 5040 ms): Escape up: posted key 53", "6575.2 ms (planned 6500 ms): type d down: posted key 2", "6575.3 ms (planned 6540 ms): type d up: posted key 2"]
+file = "darkAqua/search-cancel.mov"
+file_bytes = 678864
+
+[macos.button_pass.motion.darkAqua.search-cancel.actions."00 makeFirstResponder"]
+planned_ms = 2500.0
+ran_ms = 2509.396084
+returned_ms = 2512.037625
+result = true
+
+[macos.button_pass.motion.darkAqua.search-cancel.actions."01 setStringValue empty"]
+planned_ms = 8000.0
+ran_ms = 8001.920709
+returned_ms = 8002.937666999999
+result = "done"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "darkAqua/focus-interrupt.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 12155.95625
+pump_steps = 894
+ticker_flips = 1090
+posted = []
+samples = ["11.2 ms: alpha 1.0000 | 0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.0 NSViewBackingLayer opacity 1.0000 size 75.00x32.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00 | 0.1 NSTextLayer opacity 1.0000 size 53.00x16.00 affine 1.0000 0.0000 0.0000 1.0000 0.00 0.00 m33 1.0000 m34 0.00000 m43 0.00"]
+file = "darkAqua/focus-interrupt.mov"
+file_bytes = 837171
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3009.118125
+returned_ms = 3009.3178749999997
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."01 unfocus 70 ms after focus (0)"]
+planned_ms = 3070.0
+ran_ms = 3090.580416
+returned_ms = 3090.6712079999998
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."02 makeFirstResponder"]
+planned_ms = 4500.0
+ran_ms = 4502.231458
+returned_ms = 4502.3047910000005
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."03 unfocus 120 ms after focus (1)"]
+planned_ms = 4620.0
+ran_ms = 4620.308208
+returned_ms = 4620.368333
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."04 makeFirstResponder"]
+planned_ms = 6000.0
+ran_ms = 6001.680249999999
+returned_ms = 6001.735541
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."05 unfocus 170 ms after focus (2)"]
+planned_ms = 6170.0
+ran_ms = 6174.841541
+returned_ms = 6174.9842499999995
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."06 makeFirstResponder"]
+planned_ms = 7500.0
+ran_ms = 7508.642833
+returned_ms = 7508.67225
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."07 window appearance flipped"]
+planned_ms = 7600.0
+ran_ms = 7606.929625000001
+returned_ms = 7607.7669160000005
+result = "NSAppearanceNameAqua"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."08 window appearance restored"]
+planned_ms = 9000.0
+ran_ms = 9006.642291
+returned_ms = 9007.376166
+result = "NSAppearanceNameDarkAqua"
+
+[macos.button_pass.motion.darkAqua.focus-interrupt.actions."09 makeFirstResponder nil"]
+planned_ms = 10000.0
+ran_ms = 10008.188541000001
+returned_ms = 10008.238708
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate]
+crop_screen_xywh = [208.0, 438.0, 99.0, 56.0]
+crop_quartz_xywh = [208.0, 274.0, 99.0, 56.0]
+crop_file = "darkAqua/focus-deactivate.crop"
+crop_px_whxy = "99:56:208:274"
+recording = "exit 0"
+ended_ms = 9176.216666
+pump_steps = 651
+ticker_flips = 858
+posted = []
+file = "darkAqua/focus-deactivate.mov"
+file_bytes = 595665
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."00 makeFirstResponder"]
+planned_ms = 3000.0
+ran_ms = 3007.5040409999997
+returned_ms = 3007.608833
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."01 other window made key"]
+planned_ms = 3100.0
+ran_ms = 3105.150666
+returned_ms = 3108.311916
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."02 window made key again"]
+planned_ms = 5000.0
+ran_ms = 5011.586333
+returned_ms = 5012.707125000001
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."03 other window ordered out"]
+planned_ms = 5100.0
+ran_ms = 5101.821333
+returned_ms = 5102.135541
+result = true
+
+[macos.button_pass.motion.darkAqua.focus-deactivate.actions."04 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7005.264416
+returned_ms = 7005.302916
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-long]
+crop_screen_xywh = [208.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [208.0, 436.0, 104.0, 54.0]
+crop_file = "darkAqua/caret-long.crop"
+crop_px_whxy = "104:54:208:436"
+recording = "exit 0"
+ended_ms = 40232.094625000005
+pump_steps = 2958
+ticker_flips = 3613
+posted = ["30075.6 ms (planned 30000 ms): type down: posted key 0", "30076.0 ms (planned 30040 ms): type up: posted key 0", "30219.7 ms (planned 30150 ms): type down: posted key 1", "30219.7 ms (planned 30190 ms): type up: posted key 1", "30330.9 ms (planned 30300 ms): type down: posted key 2", "30375.0 ms (planned 30340 ms): type up: posted key 2"]
+file = "darkAqua/caret-long.mov"
+file_bytes = 2720672
+
+[macos.button_pass.motion.darkAqua.caret-long.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2002.919458
+returned_ms = 2003.775375
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-long.actions."01 makeFirstResponder nil"]
+planned_ms = 38000.0
+ran_ms = 38003.726833
+returned_ms = 38004.311708
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-mixed]
+crop_screen_xywh = [328.0, 278.0, 144.0, 54.0]
+crop_quartz_xywh = [328.0, 436.0, 144.0, 54.0]
+crop_file = "darkAqua/caret-mixed.crop"
+crop_px_whxy = "144:54:328:436"
+recording = "exit 0"
+ended_ms = 8179.864291
+pump_steps = 642
+ticker_flips = 830
+posted = []
+file = "darkAqua/caret-mixed.mov"
+file_bytes = 545779
+
+[macos.button_pass.motion.darkAqua.caret-mixed.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2000.9275409999998
+returned_ms = 2002.0469159999998
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-mixed.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7000.130416
+returned_ms = 7000.737040999999
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-read-only]
+crop_screen_xywh = [488.0, 278.0, 104.0, 54.0]
+crop_quartz_xywh = [488.0, 436.0, 104.0, 54.0]
+crop_file = "darkAqua/caret-read-only.crop"
+crop_px_whxy = "104:54:488:436"
+recording = "exit 0"
+ended_ms = 8157.544875
+pump_steps = 581
+ticker_flips = 741
+posted = []
+file = "darkAqua/caret-read-only.mov"
+file_bytes = 529502
+
+[macos.button_pass.motion.darkAqua.caret-read-only.actions."00 makeFirstResponder"]
+planned_ms = 2000.0
+ran_ms = 2004.8236250000002
+returned_ms = 2005.270625
+result = true
+
+[macos.button_pass.motion.darkAqua.caret-read-only.actions."01 makeFirstResponder nil"]
+planned_ms = 7000.0
+ran_ms = 7009.716667000001
+returned_ms = 7009.826834
+result = true

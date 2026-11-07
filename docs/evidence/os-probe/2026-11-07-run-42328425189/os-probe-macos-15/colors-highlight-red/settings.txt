@@ -1,0 +1,6 @@
+image's AppleHighlightColor: absent
+write AppleHighlightColor "1.000000 0.733333 0.721569 Red": exit 0
+read back: 1.000000 0.733333 0.721569 Red
+restore AppleHighlightColor to the image's (absent): exit 0
+read back: 2026-11-07 02:22:11.886 defaults[2932:11906] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleHighlightColor) does not exist

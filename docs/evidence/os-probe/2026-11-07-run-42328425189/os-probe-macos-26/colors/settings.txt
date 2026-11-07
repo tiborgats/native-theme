@@ -1,0 +1,3 @@
+image's AppleHighlightColor: absent
+read back: 2026-11-07 02:17:14.018 defaults[10113:31287] 
+The domain/default pair of (kCFPreferencesAnyApplication, AppleHighlightColor) does not exist
