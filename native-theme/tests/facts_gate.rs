@@ -14,6 +14,13 @@
 //! `scripts/check_release.sh` never sets the variable, so every mode of it
 //! gates every preset, and the release's run (`FACTS_GATE_RELEASE=1`)
 //! refuses a subset.
+//!
+//! The gate's parallel steps run on as many threads as the machine has;
+//! `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no
+//! number above zero fails. The count sets the speed and adds little memory:
+//! each condition vector's combinations are enumerated as they are checked,
+//! a chunk at a time, never all held, so each thread adds about 60 MB and the
+//! six presets peak near 3 GB on 32 threads (`run::thread_count`).
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -2110,6 +2117,22 @@ fn facts_gate_presets_unknown_id_fails() {
     assert!(selected_presets(Some("adwaita,")).is_err());
     let twice = selected_presets(Some("adwaita,adwaita")).unwrap_err();
     assert!(twice.contains("named twice"), "{twice}");
+}
+
+/// [`run::THREADS_VARIABLE`] sets the gate's threads; unset, the machine's
+/// parallelism; a value that is no number above zero fails.
+#[test]
+fn facts_gate_threads_variable() {
+    assert_eq!(run::thread_count(Some("4")), Ok(4));
+    assert_eq!(run::thread_count(Some(" 12 ")), Ok(12));
+    assert_eq!(
+        run::thread_count(None),
+        Ok(std::thread::available_parallelism().map_or(1, std::num::NonZero::get))
+    );
+    for refused in ["0", "", "four", "-2", "1.5"] {
+        let error = run::thread_count(Some(refused)).unwrap_err();
+        assert!(error.contains("no number above zero"), "{error}");
+    }
 }
 
 #[test]
