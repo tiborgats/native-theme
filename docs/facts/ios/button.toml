@@ -11214,8 +11214,18 @@ tolerance = 0
 [[fact]]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], not_variants = ["icon_only", "done", "close", "@share", "add", "back", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+value = 1.0
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_plain.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_plain.opacity"
+tolerance = 0
 
 [[fact]]
 key = "button.body.opacity"
@@ -11226,8 +11236,28 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 [[fact]]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+value = 1.0
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_done.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_done.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_done.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_done.opacity"
+tolerance = 0
 
 [[fact]]
 key = "button.body.opacity"
@@ -11250,14 +11280,34 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 [[fact]]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["@share"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+value = 1.0
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_action.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_action.opacity"
+tolerance = 0
 
 [[fact]]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+value = 1.0
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_add.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_add.opacity"
+tolerance = 0
 
 [[fact]]
 key = "button.body.opacity"
@@ -11274,8 +11324,18 @@ rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
 [[fact]]
 key = "button.body.opacity"
 when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+value = 1.0
 rows = ["B-1", "B-12", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_image.opacity"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_image.opacity"
+tolerance = 0
 
 [[fact]]
 key = "button.body.opacity"
@@ -29050,9 +29110,25 @@ rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
 
 [[fact]]
 key = "button.label.text.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], not_variants = ["done", "back", "icon_only", "close", "@share", "add", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], not_variants = ["done", "back", "icon_only", "close", "@share", "add", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#007aff33"
 rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_plain.fill"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], not_variants = ["done", "back", "icon_only", "close", "@share", "add", "overflow", "pane_toggle"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#0a84ff66"
+rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_plain.fill"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.fill"
@@ -29062,9 +29138,35 @@ rows = ["B-1", "B-14", "B-6", "B-7", "TB-4", "P3-3†"]
 
 [[fact]]
 key = "button.label.text.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#007aff33"
 rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_done.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_done.fill"
+tolerance = 0
+
+[[fact]]
+key = "button.label.text.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["done"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#0a84ff66"
+rows = ["B-1", "B-14", "B-6", "B-7", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_done.fill"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_done.fill"
+tolerance = 0
 
 [[fact]]
 key = "button.label.text.fill"
@@ -41161,15 +41263,47 @@ rows = ["B-12", "B-9", "TB-4", "P3-3†"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["@share"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["@share"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#007aff33"
 rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_action.fill"
+tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["@share"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#0a84ff66"
 rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_action.fill"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#007aff33"
+rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_system_add.fill"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#0a84ff66"
+rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_system_add.fill"
+tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.fill"
@@ -41197,9 +41331,25 @@ rows = ["B-12", "B-9", "TB-4", "P3-3†"]
 
 [[fact]]
 key = "button.icon.icon.fill"
-when = { conditions = ["preset:ios-13"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
-pending = "U123"
+when = { conditions = ["preset:ios-13", "scheme:light"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#007aff33"
 rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.light.bar_image.fill"
+tolerance = 0
+
+[[fact]]
+key = "button.icon.icon.fill"
+when = { conditions = ["preset:ios-13", "scheme:dark"], not_conditions = ["idiom:pad"], states = ["pressed"], not_states = ["checked", "disabled", "focus_visible", "hover", "drop_target"], variants = ["icon_only"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+value = "#0a84ff66"
+rows = ["B-12", "B-9", "TB-4"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42275570795/ios-host-macos-15/press_bar_items.toml#items.dark.bar_image.fill"
+tolerance = 0
 
 [[fact]]
 key = "button.icon.icon.fill"
