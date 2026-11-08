@@ -76,6 +76,28 @@ text_styles = [
     "footnote_emphasized",  # docs/facts/macos/tokens.toml:3430
     "caption_1_emphasized",  # docs/facts/macos/tokens.toml:3476
     "caption_2_emphasized",  # docs/facts/macos/tokens.toml:3505
+    "large_title_tight",  # docs/facts/macos/tokens.toml:46378
+    "large_title_loose",  # docs/facts/macos/tokens.toml:46869
+    "title_1_tight",  # docs/facts/macos/tokens.toml:47330
+    "title_1_loose",  # docs/facts/macos/tokens.toml:47821
+    "title_2_tight",  # docs/facts/macos/tokens.toml:48282
+    "title_2_loose",  # docs/facts/macos/tokens.toml:48773
+    "title_3_tight",  # docs/facts/macos/tokens.toml:49234
+    "title_3_loose",  # docs/facts/macos/tokens.toml:49695
+    "headline_tight",  # docs/facts/macos/tokens.toml:50156
+    "headline_loose",  # docs/facts/macos/tokens.toml:50647
+    "subheadline_tight",  # docs/facts/macos/tokens.toml:51108
+    "subheadline_loose",  # docs/facts/macos/tokens.toml:51599
+    "body_tight",  # docs/facts/macos/tokens.toml:52060
+    "body_loose",  # docs/facts/macos/tokens.toml:52551
+    "callout_tight",  # docs/facts/macos/tokens.toml:53012
+    "callout_loose",  # docs/facts/macos/tokens.toml:53503
+    "footnote_tight",  # docs/facts/macos/tokens.toml:53964
+    "footnote_loose",  # docs/facts/macos/tokens.toml:54455
+    "caption_1_tight",  # docs/facts/macos/tokens.toml:54916
+    "caption_1_loose",  # docs/facts/macos/tokens.toml:55407
+    "caption_2_tight",  # docs/facts/macos/tokens.toml:55868
+    "caption_2_loose",  # docs/facts/macos/tokens.toml:56359
 ]
 durations = [
     "context_default",  # docs/facts/macos/tokens.toml:3084
