@@ -213,6 +213,8 @@ NORMALISATIONS = {
     "number_format": "a number in one spelling (`1.0` is `1`, `0.50` is `0.5`, `4.0px` is `4px`), in a value, a unit "
                      "literal, a colour function and an expression",
     "expression_spacing": "an expression's whitespace collapsed, and none around `(`, `)`, `,` and `=`",
+    "omitted_option": "an `Option` field inside a list item or an enum variant's payload stated `\"none\"` is left "
+                      "out, as S11 reads one left out there (`None`; the core's types, check_facts.key_info)",
 }
 IDENTITY_NORMALISATIONS = ("key_quoting", "empty_selectors", "selector_sets")
 
@@ -418,10 +420,54 @@ def norm_value(v, on, used):
     return ("other", repr(v))
 
 
-def fact_value(data, on, used):
+def fact_value(data, on, used, types=None):
     if "pending" in data:
         return ("pending", data.get("pending"))
-    return norm_value(data.get("value"), on, used)
+    return norm_value(stated_value(data, on, used, types), on, used)
+
+
+def stated_value(data, on, used, types):
+    """A fact's value with the `Option` members S11 reads as `None` when left out (inside a list item or an enum
+    variant's payload) left out where they state `"none"` (omitted_option; `types`, a check_facts.Context, gives the
+    core's types)."""
+    v = data.get("value")
+    if "omitted_option" not in on or types is None or not isinstance(v, (list, dict)):
+        return v
+    typ = check_facts.key_info(types, data.get("key"))[4] if isinstance(data.get("key"), str) else None
+    out = without_none_options(types, v, typ)
+    if out != v:
+        used.add("omitted_option")
+    return out
+
+
+def without_none_options(types, v, typ, inside=False):
+    """`v` under the core's type `typ` without the `Option` members stated `"none"` inside a list item or an enum
+    variant's payload (S11: "an `Option` inside a list item or an enum variant's payload left out is `None`"); an
+    `Option` field elsewhere, left out, is missing, and is kept."""
+    if isinstance(v, list):
+        item = check_facts.item_type(typ) if typ else None
+        return [without_none_options(types, x, item, True) for x in v]
+    if not isinstance(v, dict):
+        return v
+    variant = bool(typ) and check_facts.strip_type(typ) in types.enums
+    out = {}
+    for k, x in v.items():
+        t = check_facts.child_type(types, typ, k) if typ else None
+        if inside and not variant and x == "none" and t and t.strip().startswith("Option<"):
+            continue
+        out[k] = without_none_options(types, x, t, inside or variant)
+    return out
+
+
+def type_context(root, rev):
+    """The core's and the catalogue's types at a commit, as check_facts reads them (key_info, child_type)."""
+    tree = Tree(root, rev)
+    try:
+        return check_facts.Context(root, core_text=tree.text(SPEC.as_posix()),
+                                   cat_text=tree.text(CATALOGUE.as_posix()),
+                                   sources_text=tree.text(SOURCES.as_posix()), presets=set(), rows=set())
+    except check_facts.InputError as err:
+        raise InputError(f"the core's types at {rev}: {err}") from err
 
 
 def strip_empty(v):
@@ -1417,16 +1463,18 @@ def worlds(fact, platform):
     return out
 
 
-def resolve_pair(facts, lf, vf, platform):
+def resolve_pair(facts, lf, vf, platform, types=None):
     """(equivalent, [one line per world]): the lane's and the verifier's values evaluated in the lane fact's
-    combination under every world it holds in; equivalent only where both resolve, in every world, to one value."""
+    combination under every world it holds in; equivalent only where both resolve, in every world, to one value.
+    The values are read as omitted_option reads them (`types`)."""
     notes, ok = [], True
+    on = tuple(NORMALISATIONS)
     for world in worlds(lf, platform):
         label = ", ".join(sorted(world)) or "no condition"
         r = Resolver(facts, lf, set(world))
         try:
-            a = r.value(lf.data.get("value"))
-            b = r.value(vf.data.get("value"))
+            a = r.value(stated_value(lf.data, on, set(), types))
+            b = r.value(stated_value(vf.data, on, set(), types))
         except Unresolved as err:
             notes.append(f"{label}: unresolved: {err}")
             ok = False
@@ -1452,10 +1500,12 @@ def side(f):
     return d
 
 
-def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
+def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None, types=None):
     """Write tiebreak.toml and agreed.toml into `out`; return the summary table. `agreed_models`: a compare-model
-    result, whose agreed combinations alone are compared (the others were the model comparison's)."""
+    result, whose agreed combinations alone are compared (the others were the model comparison's). `types`: the
+    core's types the normalisations read (type_context(), at the units' revision by default)."""
     unit = find_unit(doc, unit_id)
+    types = type_context(root, doc["rev"]) if types is None else types
     lane_unit, lane_all = unit_facts(root, doc, unit)
     refused = 0
     if agreed_models is not None:
@@ -1482,7 +1532,7 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
         used = set()
         identity_of(lf.data, all_on, used)
         identity_of(vf.data, all_on, used)
-        a, b = fact_value(lf.data, all_on, used), fact_value(vf.data, all_on, used)
+        a, b = fact_value(lf.data, all_on, used, types), fact_value(vf.data, all_on, used, types)
         for n in used:
             stats[n]["changed"] += 1
         if fact_value(lf.data, (), set()) == fact_value(vf.data, (), set()):
@@ -1494,11 +1544,11 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
                 if n in IDENTITY_NORMALISATIONS:
                     if identity_of(lf.data, rest) != identity_of(vf.data, rest):
                         stats[n]["decisive"] += 1
-                elif fact_value(lf.data, rest, set()) != fact_value(vf.data, rest, set()):
+                elif fact_value(lf.data, rest, set(), types) != fact_value(vf.data, rest, set(), types):
                     stats[n]["decisive"] += 1
         elif "pending" not in lf.data and "pending" not in vf.data and (
                 has_expression(lf.data.get("value")) or has_expression(vf.data.get("value"))):
-            ok, notes = resolve_pair(lane_all, lf, vf, unit["platform"])
+            ok, notes = resolve_pair(lane_all, lf, vf, unit["platform"], types)
             (equivalent if ok else disagreed).append((lf, vf, notes))
         else:
             disagreed.append((lf, vf, []))
@@ -1507,7 +1557,7 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
             continue
         if ident in lane_any:
             lf = lane_any[ident]
-            if fact_value(lf.data, all_on, set()) == fact_value(vf.data, all_on, set()):
+            if fact_value(lf.data, all_on, set(), types) == fact_value(vf.data, all_on, set(), types):
                 outside_agreed += 1
             else:
                 outside.append((lf, vf))
@@ -2113,6 +2163,14 @@ Literals.
 ADD-A1: a record.
 '''
 
+SELF_TEST_SKETCH = '''
+```rust
+pub struct SketchPaint { pub layers: Vec<SketchLayer>, pub kind: SketchKind, pub inset: Option<Value<Px>> }
+pub struct SketchLayer { pub kind: SketchKind }
+pub enum SketchKind { Plain, Linear { angle: Deg, offset: Option<Value<Px>> } }
+```
+'''   # synthetic types: an `Option` in a list item, in an enum variant's payload and in neither
+
 SELF_TEST_MODELS = '''
 [[model]]
 widget = "button"
@@ -2180,6 +2238,8 @@ def _fact(key, value, when=None, n=1, q="color: #ffffff;", measured=False, pendi
     return out + _CITE.format(n=n, q=q) + "\n"
 
 
+_TRANSITION = ('{ properties = ["fill"], kind = "interpolate", duration_ms = 100, delay_ms = 0, timing = "linear", '
+               'engine = "win_ui" }')
 RESOLUTION_LANE = {   # the lane's facts the resolution cases read (windows: one preset, the worlds are the schemes)
     "docs/facts/windows/roles.toml": _fact("role.window.foreground", '"#000000"', '{ conditions = ["scheme:light"] }')
     + _fact("role.window.foreground", '"#ffffff"', '{ conditions = ["scheme:dark"] }'),
@@ -2193,6 +2253,8 @@ RESOLUTION_LANE = {   # the lane's facts the resolution cases read (windows: one
         _fact("button.body.stroke.color", '"absent"'),
         _fact("button.body.fill", '"#000000"', '{ states = ["hover"] }'),
         _fact("button.body.fill", '"= m3_role(primary)"', '{ states = ["pressed"] }'),
+        _fact("button.body.transitions", f"[{_TRANSITION}]"),
+        _fact("button.body.focus.transition", _TRANSITION),
     ]),
 }
 RESOLUTION_VERIFIER = "".join([
@@ -2256,6 +2318,9 @@ def self_test() -> int:
                  {**common, "docs/facts/gnome/button.toml": head_button, "docs/facts/gnome/tokens.toml": head_tokens,
                   "docs/facts/gnome/state-models.toml": SELF_TEST_MODELS, **RESOLUTION_LANE})
     out = Path(tempfile.mkdtemp(prefix="verify-facts-out-"))
+    types = check_facts.Context(repo, core_text=check_facts.SELF_TEST_CORE + SELF_TEST_SKETCH,
+                                cat_text=check_facts.SELF_TEST_CATALOGUE, sources_text=check_facts.SELF_TEST_SOURCES,
+                                presets=set(), rows=set())
     try:
         since = {p: "HEAD~1" for p in PLATFORMS}
         rev, bases, counts, units = compute_units(repo, "HEAD", since, lo=2, hi=3)
@@ -2403,7 +2468,7 @@ def self_test() -> int:
             _fact("button.body.stroke.width", '"1px"', None, 18),                     # verifier-only
             _fact("button.body.corners.top_left", '"8.0px"', '{ states = ["hover"] }', 19),   # outside, agreed
         ]))
-        summary = compare(repo, units1, "GN-T1", vfile)
+        summary = compare(repo, units1, "GN-T1", vfile, types=types)
         check("compare: counts", {k: summary[k] for k in ("agreed", "disagreed", "lane_only", "verifier_only",
                                                            "outside_unit", "outside_unit_disagreed",
                                                            "agreed_before_normalising")},
@@ -2453,14 +2518,15 @@ def self_test() -> int:
         combos2 = tomllib.loads((out / "brief4" / "combinations.toml").read_text())["combination"]
         check("brief --combinations-from: the agreed combinations only", len(combos2), 4)
         check("brief --combinations-from: no leak", [f for f in found2 if f[0] == "leak"], [])
-        s2 = compare(repo, units1, "GN-T1", vfile, out / "second", mc)
+        s2 = compare(repo, units1, "GN-T1", vfile, out / "second", mc, types)
         check("compare --combinations-from: counts", {k: s2[k] for k in ("lane_facts", "agreed", "lane_only",
                                                                          "refused_by_model")},
               {"lane_facts": 4, "agreed": 3, "lane_only": 0, "refused_by_model": 2})
         check("compare --combinations-from: the ledger line names the refused", "2 refused by the verifier's state "
               "model" in s2["ledger"], True)
         try:
-            compare(repo, units1, "GN-T1", vfile, out / "second", {**mc, "summary": {**mc["summary"], "unit": "X"}})
+            compare(repo, units1, "GN-T1", vfile, out / "second", {**mc, "summary": {**mc["summary"], "unit": "X"}},
+                    types)
             failures.append("compare: another unit's model comparison accepted")
         except InputError:
             pass
@@ -2474,7 +2540,7 @@ def self_test() -> int:
         rfile = out / "resolution" / "facts.toml"
         rfile.parent.mkdir()
         rfile.write_text(RESOLUTION_VERIFIER)
-        s3 = compare(repo, units3, "WN-T1", rfile)
+        s3 = compare(repo, units3, "WN-T1", rfile, types=types)
         check("resolution: counts, the equivalent never agreed", {k: s3[k] for k in (
             "agreed", "equivalent_by_resolution", "disagreed")},
               {"agreed": 0, "equivalent_by_resolution": 2, "disagreed": 4})
@@ -2503,6 +2569,29 @@ def self_test() -> int:
             "= mix(#000000, #ffffff, 0.5)", "= max(sub(4px, 6px), div(10px, 4))", "= with_alpha(#ff0000, 0.25)",
             "= round(2.5)", "= pick(1, #000000, #ffffff)")],
               ["srgb(0.5, 0.5, 0.5)", "2.5px", "srgb(1, 0, 0, 0.25)", "3", "#ffffff"])
+        # an Option left out of a list item is None (S11), so it agrees with a stated "none"; in a single
+        # transition, where `from` is stated, it stays a difference
+        units4 = {"rev": doc["rev"], "unit": [{
+            "id": "WN-T2", "platform": "windows", "kind": "cited", "presets": ["windows-11"], "facts": 2,
+            "identities": [{"file": "button.toml", "key": k} for k in ("button.body.transitions",
+                                                                         "button.body.focus.transition")]}]}
+        ofile = out / "omitted" / "facts.toml"
+        ofile.parent.mkdir()
+        with_none = _TRANSITION.replace(' }', ', from = "none" }')
+        ofile.write_text(_fact("button.body.transitions", f"[{with_none}]")
+                         + _fact("button.body.focus.transition", with_none))
+        s4 = compare(repo, units4, "WN-T2", ofile, types=types)
+        ot = tomllib.loads((out / "omitted" / "tiebreak.toml").read_text())
+        check("omitted option: a list item's `none` agrees with one left out, a single transition's does not",
+              (s4["agreed"], s4["disagreed"], [d["key"] for d in ot.get("disagreed", [])],
+               {n["name"]: (n["changed"], n["decisive"]) for n in ot["normalisation"]}["omitted_option"]),
+              (1, 1, ["button.body.focus.transition"], (1, 1)))
+        check("omitted option: an enum variant's payload too, never outside one",
+              [without_none_options(types, v, "SketchPaint") for v in (
+                  {"layers": [{"kind": {"linear": {"angle_deg": 0, "offset_px": "none"}}}], "inset": "none"},
+                  {"kind": {"linear": {"angle_deg": 0, "offset_px": "none"}}, "inset": "none"})],
+              [{"layers": [{"kind": {"linear": {"angle_deg": 0}}}], "inset": "none"},
+               {"kind": {"linear": {"angle_deg": 0}}, "inset": "none"}])
         check("normalise: srgb is its hex", norm_value("srgb(1, 1, 1)", tuple(NORMALISATIONS), set()),
               ("string", "#ffffff"))
         check("normalise: an expression", norm_value("= alpha( surface.foreground , 0.50 )", tuple(NORMALISATIONS),
