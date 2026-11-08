@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 c4eedde149e1336227dad24ef786640ca9a802d31ab7e94d9c6cf991224503a3
+# generated lines: sha256 27c78a423c5efb1024fbb7927cfe3e5b138074251a0339288f285ba85ebbc0df
 
 [preset]
 id = "macos-tahoe"
@@ -164,99 +164,99 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.body.margin.bottom_px" = ["U159", "U323"]
 # docs/facts/macos/button.toml:43840
 "widgets.button.body.margin.left_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:44192
+# docs/facts/macos/button.toml:44238
 "widgets.button.icon.icon.size_px" = ["U102", "U323"]
-# docs/facts/macos/button.toml:44224
+# docs/facts/macos/button.toml:44270
 "widgets.button.icon.glyph" = ["U314", "U323"]
-# docs/facts/macos/button.toml:44263
+# docs/facts/macos/button.toml:44309
 "widgets.button.menu_indicator" = "U315"
-# docs/facts/macos/button.toml:44269
+# docs/facts/macos/button.toml:44315
 "widgets.button.values.menu_indicator_gap_px" = ["U315", "U333"]
-# docs/facts/macos/button.toml:44280
+# docs/facts/macos/button.toml:44326
 "widgets.button.body.corners.bottom_left" = "U323"
-# docs/facts/macos/button.toml:44286
+# docs/facts/macos/button.toml:44332
 "widgets.button.body.corners.bottom_right" = "U323"
-# docs/facts/macos/button.toml:44298
+# docs/facts/macos/button.toml:44344
 "widgets.button.body.corners.top_left" = "U323"
-# docs/facts/macos/button.toml:44304
+# docs/facts/macos/button.toml:44350
 "widgets.button.body.corners.top_right" = "U323"
-# docs/facts/macos/button.toml:44430
+# docs/facts/macos/button.toml:44476
 "widgets.button.body.min_height_px" = "U323"
-# docs/facts/macos/button.toml:44436
+# docs/facts/macos/button.toml:44482
 "widgets.button.body.min_width_px" = "U323"
-# docs/facts/macos/button.toml:44442
+# docs/facts/macos/button.toml:44488
 "widgets.button.body.padding.bottom_px" = "U323"
-# docs/facts/macos/button.toml:44448
+# docs/facts/macos/button.toml:44494
 "widgets.button.body.padding.left_px" = "U323"
-# docs/facts/macos/button.toml:44454
+# docs/facts/macos/button.toml:44500
 "widgets.button.body.padding.right_px" = "U323"
-# docs/facts/macos/button.toml:44460
+# docs/facts/macos/button.toml:44506
 "widgets.button.body.padding.top_px" = "U323"
-# docs/facts/macos/button.toml:44538
+# docs/facts/macos/button.toml:44584
 "widgets.button.label.text.font.size" = "U323"
-# docs/facts/macos/button.toml:44568
+# docs/facts/macos/button.toml:44614
 "widgets.button.label.text.line_height" = "U323"
-# docs/facts/macos/button.toml:44888
+# docs/facts/macos/button.toml:44934
 "widgets.button.values.menu_indicator_anchor" = ["U333", "U315"]
-# docs/facts/macos/button.toml:44901
-"widgets.button.values.label_position" = "U333"
-# docs/facts/macos/button.toml:44907
-"widgets.button.values.focus_visible_when" = "U331"
-# docs/facts/macos/button.toml:44914
-"widgets.button.body.opacity" = ["U332", "U323"]
-# docs/facts/macos/button.toml:44920
-"widgets.button.body.transform" = ["U332", "U323"]
-# docs/facts/macos/button.toml:44926
-"widgets.button.body.bindings" = ["U332", "U323"]
-# docs/facts/macos/button.toml:44933
-"widgets.button.icon.transitions" = ["U181", "U323"]
-# docs/facts/macos/button.toml:44941
-"widgets.button.icon.icon.rendering_mode" = ["U324", "U323"]
 # docs/facts/macos/button.toml:44947
-"widgets.button.icon.icon.weight" = ["U324", "U323"]
+"widgets.button.values.label_position" = "U333"
 # docs/facts/macos/button.toml:44953
+"widgets.button.values.focus_visible_when" = "U331"
+# docs/facts/macos/button.toml:44960
+"widgets.button.body.opacity" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44966
+"widgets.button.body.transform" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44972
+"widgets.button.body.bindings" = ["U332", "U323"]
+# docs/facts/macos/button.toml:44979
+"widgets.button.icon.transitions" = ["U181", "U323"]
+# docs/facts/macos/button.toml:44987
+"widgets.button.icon.icon.rendering_mode" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44993
+"widgets.button.icon.icon.weight" = ["U324", "U323"]
+# docs/facts/macos/button.toml:44999
 "widgets.button.icon.icon.scale" = ["U324", "U323"]
-# docs/facts/macos/button.toml:44959
+# docs/facts/macos/button.toml:45005
 "widgets.button.icon.icon.axes" = ["U324", "U323"]
-# docs/facts/macos/button.toml:44965
+# docs/facts/macos/button.toml:45011
 "widgets.button.icon.icon.state_effect" = ["U324", "U323"]
-# docs/facts/macos/button.toml:44971
+# docs/facts/macos/button.toml:45017
 "widgets.button.icon.icon.symbol_variants" = ["U324", "U323"]
-# docs/facts/macos/button.toml:44977
+# docs/facts/macos/button.toml:45023
 "widgets.button.icon.icon.symbolic_colors" = ["U324", "U323"]
-# docs/facts/macos/button.toml:44983
+# docs/facts/macos/button.toml:45029
 "widgets.button.icon.icon.animation" = ["U324", "U323"]
-# docs/facts/macos/button.toml:45089
+# docs/facts/macos/button.toml:45135
 "widgets.button.menu_indicator.glyph.source" = "U315"
-# docs/facts/macos/button.toml:45095
+# docs/facts/macos/button.toml:45141
 "widgets.button.menu_indicator.glyph.size_px" = "U315"
-# docs/facts/macos/button.toml:45101
+# docs/facts/macos/button.toml:45147
 "widgets.button.menu_indicator.glyph.fill" = "U315"
-# docs/facts/macos/button.toml:45107
+# docs/facts/macos/button.toml:45153
 "widgets.button.menu_indicator.glyph.stroke" = "U315"
-# docs/facts/macos/button.toml:45113
+# docs/facts/macos/button.toml:45159
 "widgets.button.menu_indicator.glyph.axes" = "U315"
-# docs/facts/macos/button.toml:45119
+# docs/facts/macos/button.toml:45165
 "widgets.button.menu_indicator.glyph.draw_extent" = "U315"
-# docs/facts/macos/button.toml:45125
+# docs/facts/macos/button.toml:45171
 "widgets.button.menu_indicator.glyph.draw_start" = "U315"
-# docs/facts/macos/button.toml:45131
+# docs/facts/macos/button.toml:45177
 "widgets.button.menu_indicator.glyph.mirroring" = "U315"
-# docs/facts/macos/button.toml:45137
+# docs/facts/macos/button.toml:45183
 "widgets.button.menu_indicator.min_width_px" = "U315"
-# docs/facts/macos/button.toml:45143
+# docs/facts/macos/button.toml:45189
 "widgets.button.menu_indicator.min_height_px" = "U315"
-# docs/facts/macos/button.toml:45149
+# docs/facts/macos/button.toml:45195
 "widgets.button.menu_indicator.margin.top_px" = "U315"
-# docs/facts/macos/button.toml:45155
+# docs/facts/macos/button.toml:45201
 "widgets.button.menu_indicator.margin.right_px" = "U315"
-# docs/facts/macos/button.toml:45161
+# docs/facts/macos/button.toml:45207
 "widgets.button.menu_indicator.margin.bottom_px" = "U315"
-# docs/facts/macos/button.toml:45167
+# docs/facts/macos/button.toml:45213
 "widgets.button.menu_indicator.margin.left_px" = "U315"
-# docs/facts/macos/button.toml:45173
+# docs/facts/macos/button.toml:45219
 "widgets.button.menu_indicator.transform" = "U315"
-# docs/facts/macos/button.toml:45179
+# docs/facts/macos/button.toml:45225
 "widgets.button.menu_indicator.transitions" = "U181"
 # docs/facts/macos/roles.toml:12859
 "colors.light.global.drop_highlight" = "U322"
@@ -368,559 +368,559 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "tokens.text.keyed.caption_1_emphasized.font.width" = "U177"
 # docs/facts/macos/tokens.toml:17517
 "tokens.text.keyed.caption_2_emphasized.font.width" = "U177"
-# docs/facts/macos/tokens.toml:29109
+# docs/facts/macos/tokens.toml:29811
 "tokens.text.keyed.large_title_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:29115
+# docs/facts/macos/tokens.toml:29817
 "tokens.text.keyed.large_title_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:29335
+# docs/facts/macos/tokens.toml:30037
 "tokens.text.keyed.large_title_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:29341
+# docs/facts/macos/tokens.toml:30043
 "tokens.text.keyed.large_title_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:29347
+# docs/facts/macos/tokens.toml:30049
 "tokens.text.keyed.large_title_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:29353
+# docs/facts/macos/tokens.toml:30055
 "tokens.text.keyed.large_title_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:29602
+# docs/facts/macos/tokens.toml:30304
 "tokens.text.keyed.large_title_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:29608
+# docs/facts/macos/tokens.toml:30310
 "tokens.text.keyed.large_title_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:29828
+# docs/facts/macos/tokens.toml:30530
 "tokens.text.keyed.large_title_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:29834
+# docs/facts/macos/tokens.toml:30536
 "tokens.text.keyed.large_title_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:29840
+# docs/facts/macos/tokens.toml:30542
 "tokens.text.keyed.large_title_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:29846
+# docs/facts/macos/tokens.toml:30548
 "tokens.text.keyed.large_title_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:29852
+# docs/facts/macos/tokens.toml:30554
 "tokens.text.keyed.large_title_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:30063
+# docs/facts/macos/tokens.toml:30765
 "tokens.text.keyed.title_1_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:30069
+# docs/facts/macos/tokens.toml:30771
 "tokens.text.keyed.title_1_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:30289
+# docs/facts/macos/tokens.toml:30991
 "tokens.text.keyed.title_1_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:30295
+# docs/facts/macos/tokens.toml:30997
 "tokens.text.keyed.title_1_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:30301
+# docs/facts/macos/tokens.toml:31003
 "tokens.text.keyed.title_1_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:30307
+# docs/facts/macos/tokens.toml:31009
 "tokens.text.keyed.title_1_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:30556
+# docs/facts/macos/tokens.toml:31258
 "tokens.text.keyed.title_1_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:30562
+# docs/facts/macos/tokens.toml:31264
 "tokens.text.keyed.title_1_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:30782
+# docs/facts/macos/tokens.toml:31484
 "tokens.text.keyed.title_1_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:30788
+# docs/facts/macos/tokens.toml:31490
 "tokens.text.keyed.title_1_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:30794
+# docs/facts/macos/tokens.toml:31496
 "tokens.text.keyed.title_1_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:30800
+# docs/facts/macos/tokens.toml:31502
 "tokens.text.keyed.title_1_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:30806
+# docs/facts/macos/tokens.toml:31508
 "tokens.text.keyed.title_1_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:31017
+# docs/facts/macos/tokens.toml:31719
 "tokens.text.keyed.title_2_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:31023
+# docs/facts/macos/tokens.toml:31725
 "tokens.text.keyed.title_2_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:31243
+# docs/facts/macos/tokens.toml:31945
 "tokens.text.keyed.title_2_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:31249
+# docs/facts/macos/tokens.toml:31951
 "tokens.text.keyed.title_2_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:31255
+# docs/facts/macos/tokens.toml:31957
 "tokens.text.keyed.title_2_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:31261
+# docs/facts/macos/tokens.toml:31963
 "tokens.text.keyed.title_2_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:31510
+# docs/facts/macos/tokens.toml:32212
 "tokens.text.keyed.title_2_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:31516
+# docs/facts/macos/tokens.toml:32218
 "tokens.text.keyed.title_2_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:31736
-"tokens.text.keyed.title_2_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:31742
-"tokens.text.keyed.title_2_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:31748
-"tokens.text.keyed.title_2_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:31754
-"tokens.text.keyed.title_2_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:31760
-"tokens.text.keyed.title_2_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:31971
-"tokens.text.keyed.title_3_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:31977
-"tokens.text.keyed.title_3_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:32197
-"tokens.text.keyed.title_3_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:32203
-"tokens.text.keyed.title_3_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:32209
-"tokens.text.keyed.title_3_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:32215
-"tokens.text.keyed.title_3_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:32221
-"tokens.text.keyed.title_3_tight.line_height" = "U312"
-# docs/facts/macos/tokens.toml:32432
-"tokens.text.keyed.title_3_loose.font.family" = "U311"
 # docs/facts/macos/tokens.toml:32438
-"tokens.text.keyed.title_3_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:32658
-"tokens.text.keyed.title_3_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:32664
-"tokens.text.keyed.title_3_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:32670
-"tokens.text.keyed.title_3_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:32676
-"tokens.text.keyed.title_3_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:32682
-"tokens.text.keyed.title_3_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:32893
-"tokens.text.keyed.headline_tight.font.family" = "U311"
+"tokens.text.keyed.title_2_loose.font.style" = "U311"
+# docs/facts/macos/tokens.toml:32444
+"tokens.text.keyed.title_2_loose.font.axes" = "U311"
+# docs/facts/macos/tokens.toml:32450
+"tokens.text.keyed.title_2_loose.font.features" = "U311"
+# docs/facts/macos/tokens.toml:32456
+"tokens.text.keyed.title_2_loose.font.width" = "U177"
+# docs/facts/macos/tokens.toml:32462
+"tokens.text.keyed.title_2_loose.line_height" = "U312"
+# docs/facts/macos/tokens.toml:32673
+"tokens.text.keyed.title_3_tight.font.family" = "U311"
+# docs/facts/macos/tokens.toml:32679
+"tokens.text.keyed.title_3_tight.font.weight" = "U311"
 # docs/facts/macos/tokens.toml:32899
+"tokens.text.keyed.title_3_tight.font.style" = "U311"
+# docs/facts/macos/tokens.toml:32905
+"tokens.text.keyed.title_3_tight.font.axes" = "U311"
+# docs/facts/macos/tokens.toml:32911
+"tokens.text.keyed.title_3_tight.font.features" = "U311"
+# docs/facts/macos/tokens.toml:32917
+"tokens.text.keyed.title_3_tight.font.width" = "U177"
+# docs/facts/macos/tokens.toml:32923
+"tokens.text.keyed.title_3_tight.line_height" = "U312"
+# docs/facts/macos/tokens.toml:33134
+"tokens.text.keyed.title_3_loose.font.family" = "U311"
+# docs/facts/macos/tokens.toml:33140
+"tokens.text.keyed.title_3_loose.font.weight" = "U311"
+# docs/facts/macos/tokens.toml:33360
+"tokens.text.keyed.title_3_loose.font.style" = "U311"
+# docs/facts/macos/tokens.toml:33366
+"tokens.text.keyed.title_3_loose.font.axes" = "U311"
+# docs/facts/macos/tokens.toml:33372
+"tokens.text.keyed.title_3_loose.font.features" = "U311"
+# docs/facts/macos/tokens.toml:33378
+"tokens.text.keyed.title_3_loose.font.width" = "U177"
+# docs/facts/macos/tokens.toml:33384
+"tokens.text.keyed.title_3_loose.line_height" = "U312"
+# docs/facts/macos/tokens.toml:33595
+"tokens.text.keyed.headline_tight.font.family" = "U311"
+# docs/facts/macos/tokens.toml:33601
 "tokens.text.keyed.headline_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:33119
+# docs/facts/macos/tokens.toml:33821
 "tokens.text.keyed.headline_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:33125
+# docs/facts/macos/tokens.toml:33827
 "tokens.text.keyed.headline_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:33131
+# docs/facts/macos/tokens.toml:33833
 "tokens.text.keyed.headline_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:33137
+# docs/facts/macos/tokens.toml:33839
 "tokens.text.keyed.headline_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:33386
+# docs/facts/macos/tokens.toml:34088
 "tokens.text.keyed.headline_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:33392
+# docs/facts/macos/tokens.toml:34094
 "tokens.text.keyed.headline_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:33612
+# docs/facts/macos/tokens.toml:34314
 "tokens.text.keyed.headline_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:33618
+# docs/facts/macos/tokens.toml:34320
 "tokens.text.keyed.headline_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:33624
+# docs/facts/macos/tokens.toml:34326
 "tokens.text.keyed.headline_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:33630
+# docs/facts/macos/tokens.toml:34332
 "tokens.text.keyed.headline_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:33636
+# docs/facts/macos/tokens.toml:34338
 "tokens.text.keyed.headline_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:33847
+# docs/facts/macos/tokens.toml:34549
 "tokens.text.keyed.subheadline_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:33853
+# docs/facts/macos/tokens.toml:34555
 "tokens.text.keyed.subheadline_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:34073
+# docs/facts/macos/tokens.toml:34775
 "tokens.text.keyed.subheadline_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:34079
+# docs/facts/macos/tokens.toml:34781
 "tokens.text.keyed.subheadline_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:34085
+# docs/facts/macos/tokens.toml:34787
 "tokens.text.keyed.subheadline_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:34091
+# docs/facts/macos/tokens.toml:34793
 "tokens.text.keyed.subheadline_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:34340
+# docs/facts/macos/tokens.toml:35042
 "tokens.text.keyed.subheadline_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:34346
+# docs/facts/macos/tokens.toml:35048
 "tokens.text.keyed.subheadline_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:34566
+# docs/facts/macos/tokens.toml:35268
 "tokens.text.keyed.subheadline_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:34572
+# docs/facts/macos/tokens.toml:35274
 "tokens.text.keyed.subheadline_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:34578
+# docs/facts/macos/tokens.toml:35280
 "tokens.text.keyed.subheadline_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:34584
+# docs/facts/macos/tokens.toml:35286
 "tokens.text.keyed.subheadline_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:34590
+# docs/facts/macos/tokens.toml:35292
 "tokens.text.keyed.subheadline_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:34801
+# docs/facts/macos/tokens.toml:35503
 "tokens.text.keyed.body_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:34807
+# docs/facts/macos/tokens.toml:35509
 "tokens.text.keyed.body_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:35027
+# docs/facts/macos/tokens.toml:35729
 "tokens.text.keyed.body_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:35033
+# docs/facts/macos/tokens.toml:35735
 "tokens.text.keyed.body_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:35039
+# docs/facts/macos/tokens.toml:35741
 "tokens.text.keyed.body_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:35045
+# docs/facts/macos/tokens.toml:35747
 "tokens.text.keyed.body_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:35294
+# docs/facts/macos/tokens.toml:35996
 "tokens.text.keyed.body_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:35300
+# docs/facts/macos/tokens.toml:36002
 "tokens.text.keyed.body_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:35520
+# docs/facts/macos/tokens.toml:36222
 "tokens.text.keyed.body_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:35526
+# docs/facts/macos/tokens.toml:36228
 "tokens.text.keyed.body_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:35532
+# docs/facts/macos/tokens.toml:36234
 "tokens.text.keyed.body_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:35538
+# docs/facts/macos/tokens.toml:36240
 "tokens.text.keyed.body_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:35544
+# docs/facts/macos/tokens.toml:36246
 "tokens.text.keyed.body_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:35755
+# docs/facts/macos/tokens.toml:36457
 "tokens.text.keyed.callout_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:35761
+# docs/facts/macos/tokens.toml:36463
 "tokens.text.keyed.callout_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:35981
+# docs/facts/macos/tokens.toml:36683
 "tokens.text.keyed.callout_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:35987
+# docs/facts/macos/tokens.toml:36689
 "tokens.text.keyed.callout_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:35993
+# docs/facts/macos/tokens.toml:36695
 "tokens.text.keyed.callout_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:35999
+# docs/facts/macos/tokens.toml:36701
 "tokens.text.keyed.callout_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:36248
+# docs/facts/macos/tokens.toml:36950
 "tokens.text.keyed.callout_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:36254
+# docs/facts/macos/tokens.toml:36956
 "tokens.text.keyed.callout_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:36474
+# docs/facts/macos/tokens.toml:37176
 "tokens.text.keyed.callout_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:36480
+# docs/facts/macos/tokens.toml:37182
 "tokens.text.keyed.callout_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:36486
+# docs/facts/macos/tokens.toml:37188
 "tokens.text.keyed.callout_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:36492
+# docs/facts/macos/tokens.toml:37194
 "tokens.text.keyed.callout_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:36498
+# docs/facts/macos/tokens.toml:37200
 "tokens.text.keyed.callout_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:36709
+# docs/facts/macos/tokens.toml:37411
 "tokens.text.keyed.footnote_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:36715
+# docs/facts/macos/tokens.toml:37417
 "tokens.text.keyed.footnote_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:36935
+# docs/facts/macos/tokens.toml:37637
 "tokens.text.keyed.footnote_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:36941
+# docs/facts/macos/tokens.toml:37643
 "tokens.text.keyed.footnote_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:36947
+# docs/facts/macos/tokens.toml:37649
 "tokens.text.keyed.footnote_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:36953
+# docs/facts/macos/tokens.toml:37655
 "tokens.text.keyed.footnote_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:37202
+# docs/facts/macos/tokens.toml:37904
 "tokens.text.keyed.footnote_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:37208
+# docs/facts/macos/tokens.toml:37910
 "tokens.text.keyed.footnote_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:37428
+# docs/facts/macos/tokens.toml:38130
 "tokens.text.keyed.footnote_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:37434
+# docs/facts/macos/tokens.toml:38136
 "tokens.text.keyed.footnote_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:37440
+# docs/facts/macos/tokens.toml:38142
 "tokens.text.keyed.footnote_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:37446
+# docs/facts/macos/tokens.toml:38148
 "tokens.text.keyed.footnote_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:37452
+# docs/facts/macos/tokens.toml:38154
 "tokens.text.keyed.footnote_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:37663
+# docs/facts/macos/tokens.toml:38365
 "tokens.text.keyed.caption_1_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:37669
+# docs/facts/macos/tokens.toml:38371
 "tokens.text.keyed.caption_1_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:37889
+# docs/facts/macos/tokens.toml:38591
 "tokens.text.keyed.caption_1_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:37895
+# docs/facts/macos/tokens.toml:38597
 "tokens.text.keyed.caption_1_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:37901
+# docs/facts/macos/tokens.toml:38603
 "tokens.text.keyed.caption_1_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:37907
+# docs/facts/macos/tokens.toml:38609
 "tokens.text.keyed.caption_1_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:38156
+# docs/facts/macos/tokens.toml:38858
 "tokens.text.keyed.caption_1_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:38162
+# docs/facts/macos/tokens.toml:38864
 "tokens.text.keyed.caption_1_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:38382
+# docs/facts/macos/tokens.toml:39084
 "tokens.text.keyed.caption_1_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:38388
+# docs/facts/macos/tokens.toml:39090
 "tokens.text.keyed.caption_1_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:38394
+# docs/facts/macos/tokens.toml:39096
 "tokens.text.keyed.caption_1_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:38400
+# docs/facts/macos/tokens.toml:39102
 "tokens.text.keyed.caption_1_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:38406
+# docs/facts/macos/tokens.toml:39108
 "tokens.text.keyed.caption_1_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:38617
+# docs/facts/macos/tokens.toml:39319
 "tokens.text.keyed.caption_2_tight.font.family" = "U311"
-# docs/facts/macos/tokens.toml:38623
+# docs/facts/macos/tokens.toml:39325
 "tokens.text.keyed.caption_2_tight.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:38843
+# docs/facts/macos/tokens.toml:39545
 "tokens.text.keyed.caption_2_tight.font.style" = "U311"
-# docs/facts/macos/tokens.toml:38849
+# docs/facts/macos/tokens.toml:39551
 "tokens.text.keyed.caption_2_tight.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:38855
+# docs/facts/macos/tokens.toml:39557
 "tokens.text.keyed.caption_2_tight.font.features" = "U311"
-# docs/facts/macos/tokens.toml:38861
+# docs/facts/macos/tokens.toml:39563
 "tokens.text.keyed.caption_2_tight.font.width" = "U177"
-# docs/facts/macos/tokens.toml:39110
+# docs/facts/macos/tokens.toml:39812
 "tokens.text.keyed.caption_2_loose.font.family" = "U311"
-# docs/facts/macos/tokens.toml:39116
+# docs/facts/macos/tokens.toml:39818
 "tokens.text.keyed.caption_2_loose.font.weight" = "U311"
-# docs/facts/macos/tokens.toml:39336
+# docs/facts/macos/tokens.toml:40038
 "tokens.text.keyed.caption_2_loose.font.style" = "U311"
-# docs/facts/macos/tokens.toml:39342
+# docs/facts/macos/tokens.toml:40044
 "tokens.text.keyed.caption_2_loose.font.axes" = "U311"
-# docs/facts/macos/tokens.toml:39348
+# docs/facts/macos/tokens.toml:40050
 "tokens.text.keyed.caption_2_loose.font.features" = "U311"
-# docs/facts/macos/tokens.toml:39354
+# docs/facts/macos/tokens.toml:40056
 "tokens.text.keyed.caption_2_loose.font.width" = "U177"
-# docs/facts/macos/tokens.toml:39360
+# docs/facts/macos/tokens.toml:40062
 "tokens.text.keyed.caption_2_loose.line_height" = "U312"
-# docs/facts/macos/tokens.toml:39552
+# docs/facts/macos/tokens.toml:40254
 "tokens.icons.sizes.keyed.button.size_px" = "U102"
-# docs/facts/macos/tokens.toml:39558
+# docs/facts/macos/tokens.toml:40260
 "tokens.icons.sizes.keyed.button.weight" = "U102"
-# docs/facts/macos/tokens.toml:39564
+# docs/facts/macos/tokens.toml:40266
 "tokens.icons.sizes.keyed.button.scale" = "U102"
-# docs/facts/macos/tokens.toml:39570
+# docs/facts/macos/tokens.toml:40272
 "tokens.icons.sizes.keyed.button.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:39576
+# docs/facts/macos/tokens.toml:40278
 "tokens.icons.sizes.keyed.list_row.size_px" = "U102"
-# docs/facts/macos/tokens.toml:39582
+# docs/facts/macos/tokens.toml:40284
 "tokens.icons.sizes.keyed.list_row.weight" = "U102"
-# docs/facts/macos/tokens.toml:39588
+# docs/facts/macos/tokens.toml:40290
 "tokens.icons.sizes.keyed.list_row.scale" = "U102"
-# docs/facts/macos/tokens.toml:39594
+# docs/facts/macos/tokens.toml:40296
 "tokens.icons.sizes.keyed.list_row.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:39600
+# docs/facts/macos/tokens.toml:40302
 "tokens.icons.sizes.keyed.tab.size_px" = "U102"
-# docs/facts/macos/tokens.toml:39606
+# docs/facts/macos/tokens.toml:40308
 "tokens.icons.sizes.keyed.tab.weight" = "U102"
-# docs/facts/macos/tokens.toml:39612
+# docs/facts/macos/tokens.toml:40314
 "tokens.icons.sizes.keyed.tab.scale" = "U102"
-# docs/facts/macos/tokens.toml:39618
+# docs/facts/macos/tokens.toml:40320
 "tokens.icons.sizes.keyed.tab.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:39624
+# docs/facts/macos/tokens.toml:40326
 "tokens.icons.sizes.keyed.status_item.size_px" = "U102"
-# docs/facts/macos/tokens.toml:39630
+# docs/facts/macos/tokens.toml:40332
 "tokens.icons.sizes.keyed.status_item.weight" = "U102"
-# docs/facts/macos/tokens.toml:39636
+# docs/facts/macos/tokens.toml:40338
 "tokens.icons.sizes.keyed.status_item.scale" = "U102"
-# docs/facts/macos/tokens.toml:39642
+# docs/facts/macos/tokens.toml:40344
 "tokens.icons.sizes.keyed.status_item.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:39648
+# docs/facts/macos/tokens.toml:40350
 "tokens.icons.sizes.keyed.sidebar.size_px" = "U102"
-# docs/facts/macos/tokens.toml:39654
+# docs/facts/macos/tokens.toml:40356
 "tokens.icons.sizes.keyed.sidebar.weight" = "U102"
-# docs/facts/macos/tokens.toml:39660
+# docs/facts/macos/tokens.toml:40362
 "tokens.icons.sizes.keyed.sidebar.scale" = "U102"
-# docs/facts/macos/tokens.toml:39666
+# docs/facts/macos/tokens.toml:40368
 "tokens.icons.sizes.keyed.sidebar.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:39674
+# docs/facts/macos/tokens.toml:40376
 "tokens.caret.blink_on_ms" = "U316"
-# docs/facts/macos/tokens.toml:39680
+# docs/facts/macos/tokens.toml:40382
 "tokens.caret.blink_off_ms" = "U316"
-# docs/facts/macos/tokens.toml:39686
+# docs/facts/macos/tokens.toml:40388
 "tokens.caret.blink_style" = "U316"
-# docs/facts/macos/tokens.toml:39694
+# docs/facts/macos/tokens.toml:40396
 "tokens.text.rendering.engine" = "U317"
-# docs/facts/macos/tokens.toml:39700
+# docs/facts/macos/tokens.toml:40402
 "tokens.text.rendering.antialiasing" = "U317"
-# docs/facts/macos/tokens.toml:39706
+# docs/facts/macos/tokens.toml:40408
 "tokens.text.rendering.hinting" = "U317"
-# docs/facts/macos/tokens.toml:39712
+# docs/facts/macos/tokens.toml:40414
 "tokens.text.rendering.subpixel_order" = "U317"
-# docs/facts/macos/tokens.toml:39718
+# docs/facts/macos/tokens.toml:40420
 "tokens.text.rendering.lcd_filter" = "U317"
-# docs/facts/macos/tokens.toml:39724
+# docs/facts/macos/tokens.toml:40426
 "tokens.text.rendering.gamma" = "U317"
-# docs/facts/macos/tokens.toml:39730
+# docs/facts/macos/tokens.toml:40432
 "tokens.text.rendering.contrast" = "U317"
-# docs/facts/macos/tokens.toml:39738
+# docs/facts/macos/tokens.toml:40440
 "tokens.icons.mirroring" = "U318"
-# docs/facts/macos/tokens.toml:39746
+# docs/facts/macos/tokens.toml:40448
 "tokens.text.fallbacks.families" = "U319"
-# docs/facts/macos/tokens.toml:39752
+# docs/facts/macos/tokens.toml:40454
 "tokens.text.fallbacks.emoji_family" = "U319"
-# docs/facts/macos/tokens.toml:39758
+# docs/facts/macos/tokens.toml:40460
 "tokens.text.fallbacks.per_language" = "U319"
-# docs/facts/macos/tokens.toml:39764
+# docs/facts/macos/tokens.toml:40466
 "tokens.text.fallbacks.per_family" = "U319"
-# docs/facts/macos/tokens.toml:39772
+# docs/facts/macos/tokens.toml:40474
 "tokens.behavior.hide_pointer_while_typing" = "U320"
-# docs/facts/macos/tokens.toml:39778
+# docs/facts/macos/tokens.toml:40480
 "tokens.behavior.double_click_distance_px" = "U321"
-# docs/facts/macos/tokens.toml:39954
+# docs/facts/macos/tokens.toml:40656
 "tokens.text.roles.monospace" = "U325"
-# docs/facts/macos/tokens.toml:39960
+# docs/facts/macos/tokens.toml:40662
 "tokens.text.roles.numeric" = "U325"
-# docs/facts/macos/tokens.toml:40048
+# docs/facts/macos/tokens.toml:40750
 "tokens.caret.blink_timeout_ms" = "U328"
-# docs/facts/macos/tokens.toml:40054
+# docs/facts/macos/tokens.toml:40756
 "tokens.caret.secondary" = "U328"
-# docs/facts/macos/tokens.toml:40060
+# docs/facts/macos/tokens.toml:40762
 "tokens.caret.shown_in_read_only" = "U328"
-# docs/facts/macos/tokens.toml:40066
+# docs/facts/macos/tokens.toml:40768
 "tokens.caret.solid_while_typing" = "U328"
-# docs/facts/macos/tokens.toml:40074
+# docs/facts/macos/tokens.toml:40776
 "tokens.behavior.drag_threshold_px" = "U329"
-# docs/facts/macos/tokens.toml:40080
+# docs/facts/macos/tokens.toml:40782
 "tokens.behavior.drag_time_ms" = "U329"
-# docs/facts/macos/tokens.toml:40086
+# docs/facts/macos/tokens.toml:40788
 "tokens.behavior.drag_min_delay_ms" = "U329"
-# docs/facts/macos/tokens.toml:40092
+# docs/facts/macos/tokens.toml:40794
 "tokens.behavior.hover_time_ms" = "U329"
-# docs/facts/macos/tokens.toml:40111
+# docs/facts/macos/tokens.toml:40813
 "tokens.behavior.spring_loading_ms" = "U329"
-# docs/facts/macos/tokens.toml:40117
+# docs/facts/macos/tokens.toml:40819
 "tokens.behavior.hide_pointer_delay_ms" = "U329"
-# docs/facts/macos/tokens.toml:40123
+# docs/facts/macos/tokens.toml:40825
 "tokens.behavior.hide_pointer_fade_ms" = "U329"
-# docs/facts/macos/tokens.toml:40129
+# docs/facts/macos/tokens.toml:40831
 "tokens.behavior.double_click_height_px" = "U329"
-# docs/facts/macos/tokens.toml:40135
+# docs/facts/macos/tokens.toml:40837
 "tokens.behavior.single_click_activates" = "U329"
-# docs/facts/macos/tokens.toml:40141
+# docs/facts/macos/tokens.toml:40843
 "tokens.behavior.touch.slop_px" = "U330"
-# docs/facts/macos/tokens.toml:40147
+# docs/facts/macos/tokens.toml:40849
 "tokens.behavior.touch.paging_slop_px" = "U330"
-# docs/facts/macos/tokens.toml:40153
+# docs/facts/macos/tokens.toml:40855
 "tokens.behavior.touch.double_tap_time_ms" = "U330"
-# docs/facts/macos/tokens.toml:40159
+# docs/facts/macos/tokens.toml:40861
 "tokens.behavior.touch.double_tap_slop_px" = "U330"
-# docs/facts/macos/tokens.toml:40165
+# docs/facts/macos/tokens.toml:40867
 "tokens.behavior.touch.delay_ms" = "U330"
-# docs/facts/macos/tokens.toml:40171
+# docs/facts/macos/tokens.toml:40873
 "tokens.behavior.focus_visible_when" = "U331"
-# docs/facts/macos/tokens.toml:40179
+# docs/facts/macos/tokens.toml:40881
 "tokens.icons.sizes.keyed.button.axes" = "U102"
-# docs/facts/macos/tokens.toml:40185
+# docs/facts/macos/tokens.toml:40887
 "tokens.icons.sizes.keyed.button.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40191
+# docs/facts/macos/tokens.toml:40893
 "tokens.icons.sizes.keyed.button.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40197
+# docs/facts/macos/tokens.toml:40899
 "tokens.icons.sizes.keyed.list_row.axes" = "U102"
-# docs/facts/macos/tokens.toml:40203
+# docs/facts/macos/tokens.toml:40905
 "tokens.icons.sizes.keyed.list_row.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40209
+# docs/facts/macos/tokens.toml:40911
 "tokens.icons.sizes.keyed.list_row.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40215
+# docs/facts/macos/tokens.toml:40917
 "tokens.icons.sizes.keyed.tab.axes" = "U102"
-# docs/facts/macos/tokens.toml:40221
+# docs/facts/macos/tokens.toml:40923
 "tokens.icons.sizes.keyed.tab.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40227
+# docs/facts/macos/tokens.toml:40929
 "tokens.icons.sizes.keyed.tab.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40233
+# docs/facts/macos/tokens.toml:40935
 "tokens.icons.sizes.keyed.status_item.axes" = "U102"
-# docs/facts/macos/tokens.toml:40239
+# docs/facts/macos/tokens.toml:40941
 "tokens.icons.sizes.keyed.status_item.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40245
+# docs/facts/macos/tokens.toml:40947
 "tokens.icons.sizes.keyed.status_item.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40251
+# docs/facts/macos/tokens.toml:40953
 "tokens.icons.sizes.keyed.sidebar.axes" = "U102"
-# docs/facts/macos/tokens.toml:40257
+# docs/facts/macos/tokens.toml:40959
 "tokens.icons.sizes.keyed.sidebar.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40263
+# docs/facts/macos/tokens.toml:40965
 "tokens.icons.sizes.keyed.sidebar.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40271
+# docs/facts/macos/tokens.toml:40973
 "tokens.icons.sizes.toolbar.fill" = "U102"
-# docs/facts/macos/tokens.toml:40277
+# docs/facts/macos/tokens.toml:40979
 "tokens.icons.sizes.toolbar.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:40283
+# docs/facts/macos/tokens.toml:40985
 "tokens.icons.sizes.toolbar.weight" = "U102"
-# docs/facts/macos/tokens.toml:40289
+# docs/facts/macos/tokens.toml:40991
 "tokens.icons.sizes.toolbar.scale" = "U102"
-# docs/facts/macos/tokens.toml:40295
+# docs/facts/macos/tokens.toml:40997
 "tokens.icons.sizes.toolbar.axes" = "U102"
-# docs/facts/macos/tokens.toml:40301
+# docs/facts/macos/tokens.toml:41003
 "tokens.icons.sizes.toolbar.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40307
+# docs/facts/macos/tokens.toml:41009
 "tokens.icons.sizes.toolbar.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40313
+# docs/facts/macos/tokens.toml:41015
 "tokens.icons.sizes.toolbar.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40319
+# docs/facts/macos/tokens.toml:41021
 "tokens.icons.sizes.toolbar.animation" = "U102"
-# docs/facts/macos/tokens.toml:40325
+# docs/facts/macos/tokens.toml:41027
 "tokens.icons.sizes.small.fill" = "U102"
-# docs/facts/macos/tokens.toml:40331
+# docs/facts/macos/tokens.toml:41033
 "tokens.icons.sizes.small.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:40337
+# docs/facts/macos/tokens.toml:41039
 "tokens.icons.sizes.small.weight" = "U102"
-# docs/facts/macos/tokens.toml:40343
+# docs/facts/macos/tokens.toml:41045
 "tokens.icons.sizes.small.scale" = "U102"
-# docs/facts/macos/tokens.toml:40349
+# docs/facts/macos/tokens.toml:41051
 "tokens.icons.sizes.small.axes" = "U102"
-# docs/facts/macos/tokens.toml:40355
+# docs/facts/macos/tokens.toml:41057
 "tokens.icons.sizes.small.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40361
+# docs/facts/macos/tokens.toml:41063
 "tokens.icons.sizes.small.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40367
+# docs/facts/macos/tokens.toml:41069
 "tokens.icons.sizes.small.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40373
+# docs/facts/macos/tokens.toml:41075
 "tokens.icons.sizes.small.animation" = "U102"
-# docs/facts/macos/tokens.toml:40379
+# docs/facts/macos/tokens.toml:41081
 "tokens.icons.sizes.large.fill" = "U102"
-# docs/facts/macos/tokens.toml:40385
+# docs/facts/macos/tokens.toml:41087
 "tokens.icons.sizes.large.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:40391
+# docs/facts/macos/tokens.toml:41093
 "tokens.icons.sizes.large.weight" = "U102"
-# docs/facts/macos/tokens.toml:40397
+# docs/facts/macos/tokens.toml:41099
 "tokens.icons.sizes.large.scale" = "U102"
-# docs/facts/macos/tokens.toml:40403
+# docs/facts/macos/tokens.toml:41105
 "tokens.icons.sizes.large.axes" = "U102"
-# docs/facts/macos/tokens.toml:40409
+# docs/facts/macos/tokens.toml:41111
 "tokens.icons.sizes.large.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40415
+# docs/facts/macos/tokens.toml:41117
 "tokens.icons.sizes.large.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40421
+# docs/facts/macos/tokens.toml:41123
 "tokens.icons.sizes.large.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40427
+# docs/facts/macos/tokens.toml:41129
 "tokens.icons.sizes.large.animation" = "U102"
-# docs/facts/macos/tokens.toml:40433
+# docs/facts/macos/tokens.toml:41135
 "tokens.icons.sizes.dialog.fill" = "U102"
-# docs/facts/macos/tokens.toml:40439
+# docs/facts/macos/tokens.toml:41141
 "tokens.icons.sizes.dialog.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:40445
+# docs/facts/macos/tokens.toml:41147
 "tokens.icons.sizes.dialog.weight" = "U102"
-# docs/facts/macos/tokens.toml:40451
+# docs/facts/macos/tokens.toml:41153
 "tokens.icons.sizes.dialog.scale" = "U102"
-# docs/facts/macos/tokens.toml:40457
+# docs/facts/macos/tokens.toml:41159
 "tokens.icons.sizes.dialog.axes" = "U102"
-# docs/facts/macos/tokens.toml:40463
+# docs/facts/macos/tokens.toml:41165
 "tokens.icons.sizes.dialog.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40469
+# docs/facts/macos/tokens.toml:41171
 "tokens.icons.sizes.dialog.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40475
+# docs/facts/macos/tokens.toml:41177
 "tokens.icons.sizes.dialog.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40481
+# docs/facts/macos/tokens.toml:41183
 "tokens.icons.sizes.dialog.animation" = "U102"
-# docs/facts/macos/tokens.toml:40487
+# docs/facts/macos/tokens.toml:41189
 "tokens.icons.sizes.panel.fill" = "U102"
-# docs/facts/macos/tokens.toml:40493
+# docs/facts/macos/tokens.toml:41195
 "tokens.icons.sizes.panel.rendering_mode" = "U102"
-# docs/facts/macos/tokens.toml:40499
+# docs/facts/macos/tokens.toml:41201
 "tokens.icons.sizes.panel.weight" = "U102"
-# docs/facts/macos/tokens.toml:40505
+# docs/facts/macos/tokens.toml:41207
 "tokens.icons.sizes.panel.scale" = "U102"
-# docs/facts/macos/tokens.toml:40511
+# docs/facts/macos/tokens.toml:41213
 "tokens.icons.sizes.panel.axes" = "U102"
-# docs/facts/macos/tokens.toml:40517
+# docs/facts/macos/tokens.toml:41219
 "tokens.icons.sizes.panel.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40523
+# docs/facts/macos/tokens.toml:41225
 "tokens.icons.sizes.panel.symbol_variants" = "U102"
-# docs/facts/macos/tokens.toml:40529
+# docs/facts/macos/tokens.toml:41231
 "tokens.icons.sizes.panel.symbolic_colors" = "U102"
-# docs/facts/macos/tokens.toml:40535
+# docs/facts/macos/tokens.toml:41237
 "tokens.icons.sizes.panel.animation" = "U102"
-# docs/facts/macos/tokens.toml:40543
+# docs/facts/macos/tokens.toml:41245
 "tokens.icons.sizes.keyed.button.fill" = "U102"
-# docs/facts/macos/tokens.toml:40549
+# docs/facts/macos/tokens.toml:41251
 "tokens.icons.sizes.keyed.button.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40555
+# docs/facts/macos/tokens.toml:41257
 "tokens.icons.sizes.keyed.button.animation" = "U102"
-# docs/facts/macos/tokens.toml:40561
+# docs/facts/macos/tokens.toml:41263
 "tokens.icons.sizes.keyed.list_row.fill" = "U102"
-# docs/facts/macos/tokens.toml:40567
+# docs/facts/macos/tokens.toml:41269
 "tokens.icons.sizes.keyed.list_row.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40573
+# docs/facts/macos/tokens.toml:41275
 "tokens.icons.sizes.keyed.list_row.animation" = "U102"
-# docs/facts/macos/tokens.toml:40579
+# docs/facts/macos/tokens.toml:41281
 "tokens.icons.sizes.keyed.tab.fill" = "U102"
-# docs/facts/macos/tokens.toml:40585
+# docs/facts/macos/tokens.toml:41287
 "tokens.icons.sizes.keyed.tab.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40591
+# docs/facts/macos/tokens.toml:41293
 "tokens.icons.sizes.keyed.tab.animation" = "U102"
-# docs/facts/macos/tokens.toml:40597
+# docs/facts/macos/tokens.toml:41299
 "tokens.icons.sizes.keyed.status_item.fill" = "U102"
-# docs/facts/macos/tokens.toml:40603
+# docs/facts/macos/tokens.toml:41305
 "tokens.icons.sizes.keyed.status_item.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40609
+# docs/facts/macos/tokens.toml:41311
 "tokens.icons.sizes.keyed.status_item.animation" = "U102"
-# docs/facts/macos/tokens.toml:40615
+# docs/facts/macos/tokens.toml:41317
 "tokens.icons.sizes.keyed.sidebar.fill" = "U102"
-# docs/facts/macos/tokens.toml:40621
+# docs/facts/macos/tokens.toml:41323
 "tokens.icons.sizes.keyed.sidebar.state_effect" = "U102"
-# docs/facts/macos/tokens.toml:40627
+# docs/facts/macos/tokens.toml:41329
 "tokens.icons.sizes.keyed.sidebar.animation" = "U102"
 
 [inputs.selected_content_background]
@@ -2754,521 +2754,521 @@ keyed.caption_2_emphasized.max_lines = "absent"
 keyed.caption_2_emphasized.scaling_role = "none"
 # docs/facts/macos/tokens.toml:17729
 scaling = "linear"
-# docs/facts/macos/tokens.toml:29088
+# docs/facts/macos/tokens.toml:29790
 keyed.large_title_tight.font.size_px = 26
-# docs/facts/macos/tokens.toml:29121
+# docs/facts/macos/tokens.toml:29823
 keyed.large_title_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:29163
+# docs/facts/macos/tokens.toml:29865
 keyed.large_title_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:29220
+# docs/facts/macos/tokens.toml:29922
 keyed.large_title_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:29251
+# docs/facts/macos/tokens.toml:29953
 keyed.large_title_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:29293
+# docs/facts/macos/tokens.toml:29995
 keyed.large_title_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:29361
+# docs/facts/macos/tokens.toml:30063
 keyed.large_title_tight.line_height_px = 30.62109375
-# docs/facts/macos/tokens.toml:29397
+# docs/facts/macos/tokens.toml:30099
 keyed.large_title_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:29439
+# docs/facts/macos/tokens.toml:30141
 keyed.large_title_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:29481
+# docs/facts/macos/tokens.toml:30183
 keyed.large_title_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:29523
+# docs/facts/macos/tokens.toml:30225
 keyed.large_title_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:29565
+# docs/facts/macos/tokens.toml:30267
 keyed.large_title_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:29581
+# docs/facts/macos/tokens.toml:30283
 keyed.large_title_loose.font.size_px = 26
-# docs/facts/macos/tokens.toml:29614
+# docs/facts/macos/tokens.toml:30316
 keyed.large_title_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:29656
+# docs/facts/macos/tokens.toml:30358
 keyed.large_title_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:29713
+# docs/facts/macos/tokens.toml:30415
 keyed.large_title_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:29744
+# docs/facts/macos/tokens.toml:30446
 keyed.large_title_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:29786
+# docs/facts/macos/tokens.toml:30488
 keyed.large_title_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:29858
+# docs/facts/macos/tokens.toml:30560
 keyed.large_title_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:29900
+# docs/facts/macos/tokens.toml:30602
 keyed.large_title_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:29942
+# docs/facts/macos/tokens.toml:30644
 keyed.large_title_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:29984
+# docs/facts/macos/tokens.toml:30686
 keyed.large_title_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:30026
+# docs/facts/macos/tokens.toml:30728
 keyed.large_title_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:30042
+# docs/facts/macos/tokens.toml:30744
 keyed.title_1_tight.font.size_px = 22
-# docs/facts/macos/tokens.toml:30075
+# docs/facts/macos/tokens.toml:30777
 keyed.title_1_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:30117
+# docs/facts/macos/tokens.toml:30819
 keyed.title_1_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:30174
+# docs/facts/macos/tokens.toml:30876
 keyed.title_1_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:30205
+# docs/facts/macos/tokens.toml:30907
 keyed.title_1_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:30247
+# docs/facts/macos/tokens.toml:30949
 keyed.title_1_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:30315
+# docs/facts/macos/tokens.toml:31017
 keyed.title_1_tight.line_height_px = 25.91015625
-# docs/facts/macos/tokens.toml:30351
+# docs/facts/macos/tokens.toml:31053
 keyed.title_1_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:30393
+# docs/facts/macos/tokens.toml:31095
 keyed.title_1_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:30435
+# docs/facts/macos/tokens.toml:31137
 keyed.title_1_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:30477
+# docs/facts/macos/tokens.toml:31179
 keyed.title_1_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:30519
+# docs/facts/macos/tokens.toml:31221
 keyed.title_1_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:30535
+# docs/facts/macos/tokens.toml:31237
 keyed.title_1_loose.font.size_px = 22
-# docs/facts/macos/tokens.toml:30568
+# docs/facts/macos/tokens.toml:31270
 keyed.title_1_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:30610
+# docs/facts/macos/tokens.toml:31312
 keyed.title_1_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:30667
+# docs/facts/macos/tokens.toml:31369
 keyed.title_1_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:30698
+# docs/facts/macos/tokens.toml:31400
 keyed.title_1_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:30740
+# docs/facts/macos/tokens.toml:31442
 keyed.title_1_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:30812
+# docs/facts/macos/tokens.toml:31514
 keyed.title_1_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:30854
+# docs/facts/macos/tokens.toml:31556
 keyed.title_1_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:30896
+# docs/facts/macos/tokens.toml:31598
 keyed.title_1_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:30938
+# docs/facts/macos/tokens.toml:31640
 keyed.title_1_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:30980
+# docs/facts/macos/tokens.toml:31682
 keyed.title_1_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:30996
+# docs/facts/macos/tokens.toml:31698
 keyed.title_2_tight.font.size_px = 17
-# docs/facts/macos/tokens.toml:31029
+# docs/facts/macos/tokens.toml:31731
 keyed.title_2_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:31071
+# docs/facts/macos/tokens.toml:31773
 keyed.title_2_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:31128
+# docs/facts/macos/tokens.toml:31830
 keyed.title_2_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:31159
+# docs/facts/macos/tokens.toml:31861
 keyed.title_2_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:31201
+# docs/facts/macos/tokens.toml:31903
 keyed.title_2_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:31269
+# docs/facts/macos/tokens.toml:31971
 keyed.title_2_tight.line_height_px = 20.021484375
-# docs/facts/macos/tokens.toml:31305
+# docs/facts/macos/tokens.toml:32007
 keyed.title_2_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:31347
+# docs/facts/macos/tokens.toml:32049
 keyed.title_2_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:31389
+# docs/facts/macos/tokens.toml:32091
 keyed.title_2_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:31431
+# docs/facts/macos/tokens.toml:32133
 keyed.title_2_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:31473
+# docs/facts/macos/tokens.toml:32175
 keyed.title_2_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:31489
+# docs/facts/macos/tokens.toml:32191
 keyed.title_2_loose.font.size_px = 17
-# docs/facts/macos/tokens.toml:31522
+# docs/facts/macos/tokens.toml:32224
 keyed.title_2_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:31564
+# docs/facts/macos/tokens.toml:32266
 keyed.title_2_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:31621
+# docs/facts/macos/tokens.toml:32323
 keyed.title_2_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:31652
+# docs/facts/macos/tokens.toml:32354
 keyed.title_2_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:31694
+# docs/facts/macos/tokens.toml:32396
 keyed.title_2_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:31766
+# docs/facts/macos/tokens.toml:32468
 keyed.title_2_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:31808
+# docs/facts/macos/tokens.toml:32510
 keyed.title_2_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:31850
+# docs/facts/macos/tokens.toml:32552
 keyed.title_2_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:31892
+# docs/facts/macos/tokens.toml:32594
 keyed.title_2_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:31934
+# docs/facts/macos/tokens.toml:32636
 keyed.title_2_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:31950
+# docs/facts/macos/tokens.toml:32652
 keyed.title_3_tight.font.size_px = 15
-# docs/facts/macos/tokens.toml:31983
+# docs/facts/macos/tokens.toml:32685
 keyed.title_3_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:32025
+# docs/facts/macos/tokens.toml:32727
 keyed.title_3_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:32082
+# docs/facts/macos/tokens.toml:32784
 keyed.title_3_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:32113
+# docs/facts/macos/tokens.toml:32815
 keyed.title_3_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:32155
+# docs/facts/macos/tokens.toml:32857
 keyed.title_3_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:32227
+# docs/facts/macos/tokens.toml:32929
 keyed.title_3_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:32269
+# docs/facts/macos/tokens.toml:32971
 keyed.title_3_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:32311
+# docs/facts/macos/tokens.toml:33013
 keyed.title_3_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:32353
+# docs/facts/macos/tokens.toml:33055
 keyed.title_3_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:32395
+# docs/facts/macos/tokens.toml:33097
 keyed.title_3_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:32411
+# docs/facts/macos/tokens.toml:33113
 keyed.title_3_loose.font.size_px = 15
-# docs/facts/macos/tokens.toml:32444
+# docs/facts/macos/tokens.toml:33146
 keyed.title_3_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:32486
+# docs/facts/macos/tokens.toml:33188
 keyed.title_3_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:32543
+# docs/facts/macos/tokens.toml:33245
 keyed.title_3_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:32574
+# docs/facts/macos/tokens.toml:33276
 keyed.title_3_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:32616
+# docs/facts/macos/tokens.toml:33318
 keyed.title_3_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:32688
+# docs/facts/macos/tokens.toml:33390
 keyed.title_3_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:32730
+# docs/facts/macos/tokens.toml:33432
 keyed.title_3_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:32772
+# docs/facts/macos/tokens.toml:33474
 keyed.title_3_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:32814
+# docs/facts/macos/tokens.toml:33516
 keyed.title_3_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:32856
+# docs/facts/macos/tokens.toml:33558
 keyed.title_3_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:32872
+# docs/facts/macos/tokens.toml:33574
 keyed.headline_tight.font.size_px = 13
-# docs/facts/macos/tokens.toml:32905
+# docs/facts/macos/tokens.toml:33607
 keyed.headline_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:32947
+# docs/facts/macos/tokens.toml:33649
 keyed.headline_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:33004
+# docs/facts/macos/tokens.toml:33706
 keyed.headline_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:33035
+# docs/facts/macos/tokens.toml:33737
 keyed.headline_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:33077
+# docs/facts/macos/tokens.toml:33779
 keyed.headline_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:33145
+# docs/facts/macos/tokens.toml:33847
 keyed.headline_tight.line_height_px = 15.310546875
-# docs/facts/macos/tokens.toml:33181
+# docs/facts/macos/tokens.toml:33883
 keyed.headline_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:33223
+# docs/facts/macos/tokens.toml:33925
 keyed.headline_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:33265
+# docs/facts/macos/tokens.toml:33967
 keyed.headline_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:33307
+# docs/facts/macos/tokens.toml:34009
 keyed.headline_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:33349
+# docs/facts/macos/tokens.toml:34051
 keyed.headline_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:33365
+# docs/facts/macos/tokens.toml:34067
 keyed.headline_loose.font.size_px = 13
-# docs/facts/macos/tokens.toml:33398
+# docs/facts/macos/tokens.toml:34100
 keyed.headline_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:33440
+# docs/facts/macos/tokens.toml:34142
 keyed.headline_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:33497
+# docs/facts/macos/tokens.toml:34199
 keyed.headline_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:33528
+# docs/facts/macos/tokens.toml:34230
 keyed.headline_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:33570
+# docs/facts/macos/tokens.toml:34272
 keyed.headline_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:33642
+# docs/facts/macos/tokens.toml:34344
 keyed.headline_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:33684
+# docs/facts/macos/tokens.toml:34386
 keyed.headline_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:33726
+# docs/facts/macos/tokens.toml:34428
 keyed.headline_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:33768
+# docs/facts/macos/tokens.toml:34470
 keyed.headline_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:33810
+# docs/facts/macos/tokens.toml:34512
 keyed.headline_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:33826
+# docs/facts/macos/tokens.toml:34528
 keyed.subheadline_tight.font.size_px = 11
-# docs/facts/macos/tokens.toml:33859
+# docs/facts/macos/tokens.toml:34561
 keyed.subheadline_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:33901
+# docs/facts/macos/tokens.toml:34603
 keyed.subheadline_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:33958
+# docs/facts/macos/tokens.toml:34660
 keyed.subheadline_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:33989
+# docs/facts/macos/tokens.toml:34691
 keyed.subheadline_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:34031
+# docs/facts/macos/tokens.toml:34733
 keyed.subheadline_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:34099
+# docs/facts/macos/tokens.toml:34801
 keyed.subheadline_tight.line_height_px = 12.955078125
-# docs/facts/macos/tokens.toml:34135
+# docs/facts/macos/tokens.toml:34837
 keyed.subheadline_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:34177
+# docs/facts/macos/tokens.toml:34879
 keyed.subheadline_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:34219
+# docs/facts/macos/tokens.toml:34921
 keyed.subheadline_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:34261
+# docs/facts/macos/tokens.toml:34963
 keyed.subheadline_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:34303
+# docs/facts/macos/tokens.toml:35005
 keyed.subheadline_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:34319
+# docs/facts/macos/tokens.toml:35021
 keyed.subheadline_loose.font.size_px = 11
-# docs/facts/macos/tokens.toml:34352
+# docs/facts/macos/tokens.toml:35054
 keyed.subheadline_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:34394
+# docs/facts/macos/tokens.toml:35096
 keyed.subheadline_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:34451
+# docs/facts/macos/tokens.toml:35153
 keyed.subheadline_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:34482
+# docs/facts/macos/tokens.toml:35184
 keyed.subheadline_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:34524
+# docs/facts/macos/tokens.toml:35226
 keyed.subheadline_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:34596
+# docs/facts/macos/tokens.toml:35298
 keyed.subheadline_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:34638
+# docs/facts/macos/tokens.toml:35340
 keyed.subheadline_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:34680
+# docs/facts/macos/tokens.toml:35382
 keyed.subheadline_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:34722
+# docs/facts/macos/tokens.toml:35424
 keyed.subheadline_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:34764
+# docs/facts/macos/tokens.toml:35466
 keyed.subheadline_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:34780
+# docs/facts/macos/tokens.toml:35482
 keyed.body_tight.font.size_px = 13
-# docs/facts/macos/tokens.toml:34813
+# docs/facts/macos/tokens.toml:35515
 keyed.body_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:34855
+# docs/facts/macos/tokens.toml:35557
 keyed.body_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:34912
+# docs/facts/macos/tokens.toml:35614
 keyed.body_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:34943
+# docs/facts/macos/tokens.toml:35645
 keyed.body_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:34985
+# docs/facts/macos/tokens.toml:35687
 keyed.body_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:35053
+# docs/facts/macos/tokens.toml:35755
 keyed.body_tight.line_height_px = 15.310546875
-# docs/facts/macos/tokens.toml:35089
+# docs/facts/macos/tokens.toml:35791
 keyed.body_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:35131
+# docs/facts/macos/tokens.toml:35833
 keyed.body_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:35173
+# docs/facts/macos/tokens.toml:35875
 keyed.body_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:35215
+# docs/facts/macos/tokens.toml:35917
 keyed.body_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:35257
+# docs/facts/macos/tokens.toml:35959
 keyed.body_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:35273
+# docs/facts/macos/tokens.toml:35975
 keyed.body_loose.font.size_px = 13
-# docs/facts/macos/tokens.toml:35306
+# docs/facts/macos/tokens.toml:36008
 keyed.body_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:35348
+# docs/facts/macos/tokens.toml:36050
 keyed.body_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:35405
+# docs/facts/macos/tokens.toml:36107
 keyed.body_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:35436
+# docs/facts/macos/tokens.toml:36138
 keyed.body_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:35478
+# docs/facts/macos/tokens.toml:36180
 keyed.body_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:35550
+# docs/facts/macos/tokens.toml:36252
 keyed.body_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:35592
+# docs/facts/macos/tokens.toml:36294
 keyed.body_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:35634
+# docs/facts/macos/tokens.toml:36336
 keyed.body_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:35676
+# docs/facts/macos/tokens.toml:36378
 keyed.body_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:35718
+# docs/facts/macos/tokens.toml:36420
 keyed.body_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:35734
+# docs/facts/macos/tokens.toml:36436
 keyed.callout_tight.font.size_px = 12
-# docs/facts/macos/tokens.toml:35767
+# docs/facts/macos/tokens.toml:36469
 keyed.callout_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:35809
+# docs/facts/macos/tokens.toml:36511
 keyed.callout_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:35866
+# docs/facts/macos/tokens.toml:36568
 keyed.callout_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:35897
+# docs/facts/macos/tokens.toml:36599
 keyed.callout_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:35939
+# docs/facts/macos/tokens.toml:36641
 keyed.callout_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:36007
+# docs/facts/macos/tokens.toml:36709
 keyed.callout_tight.line_height_px = 14.1328125
-# docs/facts/macos/tokens.toml:36043
+# docs/facts/macos/tokens.toml:36745
 keyed.callout_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:36085
+# docs/facts/macos/tokens.toml:36787
 keyed.callout_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:36127
+# docs/facts/macos/tokens.toml:36829
 keyed.callout_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:36169
+# docs/facts/macos/tokens.toml:36871
 keyed.callout_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:36211
+# docs/facts/macos/tokens.toml:36913
 keyed.callout_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:36227
+# docs/facts/macos/tokens.toml:36929
 keyed.callout_loose.font.size_px = 12
-# docs/facts/macos/tokens.toml:36260
+# docs/facts/macos/tokens.toml:36962
 keyed.callout_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:36302
+# docs/facts/macos/tokens.toml:37004
 keyed.callout_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:36359
+# docs/facts/macos/tokens.toml:37061
 keyed.callout_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:36390
+# docs/facts/macos/tokens.toml:37092
 keyed.callout_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:36432
+# docs/facts/macos/tokens.toml:37134
 keyed.callout_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:36504
+# docs/facts/macos/tokens.toml:37206
 keyed.callout_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:36546
+# docs/facts/macos/tokens.toml:37248
 keyed.callout_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:36588
+# docs/facts/macos/tokens.toml:37290
 keyed.callout_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:36630
+# docs/facts/macos/tokens.toml:37332
 keyed.callout_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:36672
+# docs/facts/macos/tokens.toml:37374
 keyed.callout_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:36688
+# docs/facts/macos/tokens.toml:37390
 keyed.footnote_tight.font.size_px = 10
-# docs/facts/macos/tokens.toml:36721
+# docs/facts/macos/tokens.toml:37423
 keyed.footnote_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:36763
+# docs/facts/macos/tokens.toml:37465
 keyed.footnote_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:36820
+# docs/facts/macos/tokens.toml:37522
 keyed.footnote_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:36851
+# docs/facts/macos/tokens.toml:37553
 keyed.footnote_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:36893
+# docs/facts/macos/tokens.toml:37595
 keyed.footnote_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:36961
+# docs/facts/macos/tokens.toml:37663
 keyed.footnote_tight.line_height_px = 11.77734375
-# docs/facts/macos/tokens.toml:36997
+# docs/facts/macos/tokens.toml:37699
 keyed.footnote_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:37039
+# docs/facts/macos/tokens.toml:37741
 keyed.footnote_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:37081
+# docs/facts/macos/tokens.toml:37783
 keyed.footnote_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:37123
+# docs/facts/macos/tokens.toml:37825
 keyed.footnote_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:37165
+# docs/facts/macos/tokens.toml:37867
 keyed.footnote_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:37181
+# docs/facts/macos/tokens.toml:37883
 keyed.footnote_loose.font.size_px = 10
-# docs/facts/macos/tokens.toml:37214
+# docs/facts/macos/tokens.toml:37916
 keyed.footnote_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:37256
+# docs/facts/macos/tokens.toml:37958
 keyed.footnote_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:37313
+# docs/facts/macos/tokens.toml:38015
 keyed.footnote_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:37344
+# docs/facts/macos/tokens.toml:38046
 keyed.footnote_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:37386
+# docs/facts/macos/tokens.toml:38088
 keyed.footnote_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:37458
+# docs/facts/macos/tokens.toml:38160
 keyed.footnote_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:37500
+# docs/facts/macos/tokens.toml:38202
 keyed.footnote_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:37542
+# docs/facts/macos/tokens.toml:38244
 keyed.footnote_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:37584
+# docs/facts/macos/tokens.toml:38286
 keyed.footnote_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:37626
+# docs/facts/macos/tokens.toml:38328
 keyed.footnote_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:37642
+# docs/facts/macos/tokens.toml:38344
 keyed.caption_1_tight.font.size_px = 10
-# docs/facts/macos/tokens.toml:37675
+# docs/facts/macos/tokens.toml:38377
 keyed.caption_1_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:37717
+# docs/facts/macos/tokens.toml:38419
 keyed.caption_1_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:37774
+# docs/facts/macos/tokens.toml:38476
 keyed.caption_1_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:37805
+# docs/facts/macos/tokens.toml:38507
 keyed.caption_1_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:37847
+# docs/facts/macos/tokens.toml:38549
 keyed.caption_1_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:37915
+# docs/facts/macos/tokens.toml:38617
 keyed.caption_1_tight.line_height_px = 11.77734375
-# docs/facts/macos/tokens.toml:37951
+# docs/facts/macos/tokens.toml:38653
 keyed.caption_1_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:37993
+# docs/facts/macos/tokens.toml:38695
 keyed.caption_1_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:38035
+# docs/facts/macos/tokens.toml:38737
 keyed.caption_1_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:38077
+# docs/facts/macos/tokens.toml:38779
 keyed.caption_1_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:38119
+# docs/facts/macos/tokens.toml:38821
 keyed.caption_1_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:38135
+# docs/facts/macos/tokens.toml:38837
 keyed.caption_1_loose.font.size_px = 10
-# docs/facts/macos/tokens.toml:38168
+# docs/facts/macos/tokens.toml:38870
 keyed.caption_1_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:38210
+# docs/facts/macos/tokens.toml:38912
 keyed.caption_1_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:38267
+# docs/facts/macos/tokens.toml:38969
 keyed.caption_1_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:38298
+# docs/facts/macos/tokens.toml:39000
 keyed.caption_1_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:38340
+# docs/facts/macos/tokens.toml:39042
 keyed.caption_1_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:38412
+# docs/facts/macos/tokens.toml:39114
 keyed.caption_1_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:38454
+# docs/facts/macos/tokens.toml:39156
 keyed.caption_1_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:38496
+# docs/facts/macos/tokens.toml:39198
 keyed.caption_1_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:38538
+# docs/facts/macos/tokens.toml:39240
 keyed.caption_1_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:38580
+# docs/facts/macos/tokens.toml:39282
 keyed.caption_1_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:38596
+# docs/facts/macos/tokens.toml:39298
 keyed.caption_2_tight.font.size_px = 10
-# docs/facts/macos/tokens.toml:38629
+# docs/facts/macos/tokens.toml:39331
 keyed.caption_2_tight.decoration = "absent"
-# docs/facts/macos/tokens.toml:38671
+# docs/facts/macos/tokens.toml:39373
 keyed.caption_2_tight.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:38728
+# docs/facts/macos/tokens.toml:39430
 keyed.caption_2_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:38759
+# docs/facts/macos/tokens.toml:39461
 keyed.caption_2_tight.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:38801
+# docs/facts/macos/tokens.toml:39503
 keyed.caption_2_tight.case = "mixed"
-# docs/facts/macos/tokens.toml:38869
+# docs/facts/macos/tokens.toml:39571
 keyed.caption_2_tight.line_height_px = 11.77734375
-# docs/facts/macos/tokens.toml:38905
+# docs/facts/macos/tokens.toml:39607
 keyed.caption_2_tight.fill = "absent"
-# docs/facts/macos/tokens.toml:38947
+# docs/facts/macos/tokens.toml:39649
 keyed.caption_2_tight.elision = "absent"
-# docs/facts/macos/tokens.toml:38989
+# docs/facts/macos/tokens.toml:39691
 keyed.caption_2_tight.wrap = "absent"
-# docs/facts/macos/tokens.toml:39031
+# docs/facts/macos/tokens.toml:39733
 keyed.caption_2_tight.max_lines = "absent"
-# docs/facts/macos/tokens.toml:39073
+# docs/facts/macos/tokens.toml:39775
 keyed.caption_2_tight.scaling_role = "none"
-# docs/facts/macos/tokens.toml:39089
+# docs/facts/macos/tokens.toml:39791
 keyed.caption_2_loose.font.size_px = 10
-# docs/facts/macos/tokens.toml:39122
+# docs/facts/macos/tokens.toml:39824
 keyed.caption_2_loose.decoration = "absent"
-# docs/facts/macos/tokens.toml:39164
+# docs/facts/macos/tokens.toml:39866
 keyed.caption_2_loose.mnemonic_decoration = "absent"
-# docs/facts/macos/tokens.toml:39221
+# docs/facts/macos/tokens.toml:39923
 keyed.caption_2_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/tokens.toml:39252
+# docs/facts/macos/tokens.toml:39954
 keyed.caption_2_loose.word_spacing_px = 0
-# docs/facts/macos/tokens.toml:39294
+# docs/facts/macos/tokens.toml:39996
 keyed.caption_2_loose.case = "mixed"
-# docs/facts/macos/tokens.toml:39366
+# docs/facts/macos/tokens.toml:40068
 keyed.caption_2_loose.fill = "absent"
-# docs/facts/macos/tokens.toml:39408
+# docs/facts/macos/tokens.toml:40110
 keyed.caption_2_loose.elision = "absent"
-# docs/facts/macos/tokens.toml:39450
+# docs/facts/macos/tokens.toml:40152
 keyed.caption_2_loose.wrap = "absent"
-# docs/facts/macos/tokens.toml:39492
+# docs/facts/macos/tokens.toml:40194
 keyed.caption_2_loose.max_lines = "absent"
-# docs/facts/macos/tokens.toml:39534
+# docs/facts/macos/tokens.toml:40236
 keyed.caption_2_loose.scaling_role = "none"
-# docs/facts/macos/tokens.toml:39833
+# docs/facts/macos/tokens.toml:40535
 roles.body_emphasized = "= token.text.keyed.body_emphasized"
-# docs/facts/macos/tokens.toml:39859
+# docs/facts/macos/tokens.toml:40561
 roles.caption_emphasized = "= token.text.keyed.caption_1_emphasized"
-# docs/facts/macos/tokens.toml:39888
+# docs/facts/macos/tokens.toml:40590
 roles.display_large = "= token.text.roles.large_title"
-# docs/facts/macos/tokens.toml:39904
+# docs/facts/macos/tokens.toml:40606
 roles.display_medium = "= token.text.roles.large_title"
-# docs/facts/macos/tokens.toml:39920
+# docs/facts/macos/tokens.toml:40622
 roles.display_small = "= token.text.roles.large_title"
-# docs/facts/macos/tokens.toml:39937
+# docs/facts/macos/tokens.toml:40639
 roles.label = "= token.text.keyed.label"
 # S9.4
 font_dpi = 72
@@ -3280,11 +3280,11 @@ double_click_time_ms = 500
 key_repeat.delay_ms = 500
 # docs/facts/macos/tokens.toml:1101
 key_repeat.interval_ms = 83.333
-# docs/facts/macos/tokens.toml:39786
+# docs/facts/macos/tokens.toml:40488
 mnemonics = "never"
-# docs/facts/macos/tokens.toml:39809
+# docs/facts/macos/tokens.toml:40511
 mnemonic_when_disabled = "absent"
-# docs/facts/macos/tokens.toml:40100
+# docs/facts/macos/tokens.toml:40802
 long_press_ms = "= token.behavior.double_click_time"
 
 [tokens.params]
@@ -3306,23 +3306,23 @@ durations.context_default_ms = 250
 speed_factor = 1
 
 [tokens.icons]
-# docs/facts/macos/tokens.toml:39971
+# docs/facts/macos/tokens.toml:40673
 set = "sf_symbols"
-# docs/facts/macos/tokens.toml:39982
+# docs/facts/macos/tokens.toml:40684
 theme = "absent"
-# docs/facts/macos/tokens.toml:40000
+# docs/facts/macos/tokens.toml:40702
 theme_fallback = "absent"
 # S4.5
 animated_visuals = {}
 
 [tokens]
-# docs/facts/macos/tokens.toml:40022
+# docs/facts/macos/tokens.toml:40724
 elevation = {}
-# docs/facts/macos/tokens.toml:40034
+# docs/facts/macos/tokens.toml:40736
 size_classes = {}
-# docs/facts/macos/tokens.toml:41687
+# docs/facts/macos/tokens.toml:42389
 kde = "absent"
-# docs/facts/macos/tokens.toml:41704
+# docs/facts/macos/tokens.toml:42406
 material = "absent"
 
 [tokens.focus]
@@ -3354,7 +3354,7 @@ text.font.axes = { opsz = "follows_size" }
 text.font.features = {}
 # docs/facts/macos/button.toml:43800
 text.scaling_role = "none"
-# docs/facts/macos/button.toml:44705
+# docs/facts/macos/button.toml:44751
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
 # docs/facts/macos/button.toml:7689
 text.fill = "#000000d8"
@@ -3366,23 +3366,23 @@ icon_text_gap_px = 2
 repeat_delay_ms = "= token.params.pointer_repeat.delay"
 # docs/facts/macos/button.toml:13831
 repeat_interval_ms = "= token.params.pointer_repeat.interval"
-# docs/facts/macos/button.toml:44180
+# docs/facts/macos/button.toml:44226
 icon_placement = "leading"
-# docs/facts/macos/button.toml:44735
+# docs/facts/macos/button.toml:44781
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/macos/button.toml:44753
+# docs/facts/macos/button.toml:44799
 display_mode = "absent"
-# docs/facts/macos/button.toml:44771
+# docs/facts/macos/button.toml:44817
 back_display_mode = "absent"
-# docs/facts/macos/button.toml:44789
+# docs/facts/macos/button.toml:44835
 back_title_fallback = false
-# docs/facts/macos/button.toml:44808
+# docs/facts/macos/button.toml:44854
 help_tooltip_on_click = false
-# docs/facts/macos/button.toml:44826
+# docs/facts/macos/button.toml:44872
 subtitle_gap_px = "absent"
-# docs/facts/macos/button.toml:44844
+# docs/facts/macos/button.toml:44890
 shows_icon = "absent"
-# docs/facts/macos/button.toml:44862
+# docs/facts/macos/button.toml:44908
 menu_trigger = "absent"
 
 [widgets.button.body]
@@ -3418,11 +3418,11 @@ focus.corners.curve = "circular"
 focus.dash = "solid"
 # docs/facts/macos/button.toml:21000
 focus.shadow = "absent"
-# docs/facts/macos/button.toml:44615
+# docs/facts/macos/button.toml:44661
 max_width_px = "auto"
-# docs/facts/macos/button.toml:44645
+# docs/facts/macos/button.toml:44691
 touch_target_px = "absent"
-# docs/facts/macos/button.toml:44675
+# docs/facts/macos/button.toml:44721
 interaction = "absent"
 # docs/facts/macos/button.toml:3418
 fill = "#00000013"
@@ -6076,7 +6076,7 @@ when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/macos/button.toml:44232
+# docs/facts/macos/button.toml:44278
 absent = true
 
 [[rules]]
@@ -6084,13 +6084,13 @@ when = { not_variants = ["circular", "route", "@small_square", "tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:45195
+# docs/facts/macos/button.toml:45241
 margin.top_px = 0
-# docs/facts/macos/button.toml:45701
+# docs/facts/macos/button.toml:45747
 margin.right_px = 0
-# docs/facts/macos/button.toml:46207
+# docs/facts/macos/button.toml:46253
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:46713
+# docs/facts/macos/button.toml:46759
 margin.left_px = 0
 
 [[rules]]
@@ -6098,13 +6098,13 @@ when = { variants = ["@small_square"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:47219
+# docs/facts/macos/button.toml:47265
 margin.top_px = 1
-# docs/facts/macos/button.toml:47250
+# docs/facts/macos/button.toml:47296
 margin.right_px = 0
-# docs/facts/macos/button.toml:47281
+# docs/facts/macos/button.toml:47327
 margin.bottom_px = 1
-# docs/facts/macos/button.toml:47312
+# docs/facts/macos/button.toml:47358
 margin.left_px = 0
 
 [[rules]]
@@ -6112,13 +6112,13 @@ when = { variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:47343
+# docs/facts/macos/button.toml:47389
 margin.top_px = 1
-# docs/facts/macos/button.toml:47374
+# docs/facts/macos/button.toml:47420
 margin.right_px = 1
-# docs/facts/macos/button.toml:47405
+# docs/facts/macos/button.toml:47451
 margin.bottom_px = 2
-# docs/facts/macos/button.toml:47436
+# docs/facts/macos/button.toml:47482
 margin.left_px = 1
 
 [[rules]]
@@ -6126,7 +6126,7 @@ when = { not_variants = ["help", "menu", "route"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:47495
+# docs/facts/macos/button.toml:47541
 glyph = "absent"
 
 [[rules]]
@@ -6134,7 +6134,7 @@ when = { variants = ["menu"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:47527
+# docs/facts/macos/button.toml:47573
 glyph = "absent"
 
 [[rules]]
