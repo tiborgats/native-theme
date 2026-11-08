@@ -11,9 +11,11 @@ platform preset, generated from the platform's verified facts, with the
 application's layers over it; resolved for a window, it gives the style of
 each part of each widget, which a connector hands its toolkit.
 
-0.8.0, the model described here, is being built: its bundled presets are
-`adwaita` and `macos-tahoe`, the button is its one typed widget so far, and
-the OS readers and the connectors return to it in later steps.
+0.8.0, the model described here, is being built: eight platform presets are
+bundled (`adwaita`, `kde-breeze`, `macos-tahoe`, `macos-monterey`,
+`windows-11`, `material-3`, `ios-26`, `ios-13`), the button is its one typed
+widget so far, the OS readers are back, and the connectors return to it in a
+later step.
 
 **gpui**
 
@@ -41,8 +43,8 @@ The connectors pull `native-theme` in transitively, so you only add one
 dependency for the common case. The core crates and the iced connector build
 with Rust 1.88; the gpui, egui and egui-widgets crates need Rust 1.95.
 
-In 0.8.0 the OS readers are being ported to the new model; until they
-return, a theme is a bundled preset and the application's layers.
+In 0.8.0 a theme is a bundled preset, the OS reader's layer
+(`native_theme::Theme::from_system`) and the application's layers.
 
 ## Quick start
 

@@ -37,8 +37,8 @@ impl InputName {
 
     /// The `accent` input, every preset's (S9.1).
     #[cfg_attr(
-        not(all(target_os = "linux", feature = "portal")),
-        allow(dead_code, reason = "a reader's: the GNOME reader states it")
+        not(all(target_os = "linux", any(feature = "portal", feature = "kde"))),
+        allow(dead_code, reason = "a reader's: the GNOME and KDE readers state it")
     )]
     pub(crate) fn accent() -> InputName {
         InputName(vec![crate::key!("accent")])

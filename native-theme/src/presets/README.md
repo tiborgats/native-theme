@@ -54,6 +54,12 @@ blocks, the `PresetId` entry, and the checks above green.
 |------|--------|
 | `adwaita.toml` | GNOME's libadwaita |
 | `macos-tahoe.toml` | Apple's macOS 26 Tahoe |
+| `macos-monterey.toml` | Apple's macOS 12 Monterey to macOS 15, its facts read on macOS 15 |
+| `material-3.toml` | Google's Material 3 |
+| `ios-26.toml` | Apple's iOS 26 |
+| `ios-13.toml` | Apple's iOS 13 to iOS 18, its facts read on iOS 18 |
+| `kde-breeze.toml` | KDE's Breeze, Plasma 6 |
+| `windows-11.toml` | Microsoft's Windows 11 (WinUI 3) |
 
 ## Naming a platform preset
 

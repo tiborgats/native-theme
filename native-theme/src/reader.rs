@@ -9,12 +9,11 @@
 //! [`Theme::reload_reader`](crate::Theme::reload_reader) reads again with
 //! the same.
 //!
-//! The readers linked so far: GNOME's (with the `portal` feature, on GNOME
-//! and Budgie), the portal-only read of the Linux desktops with no reader
-//! of their own (S16's *Which reader*, ADD-A135), and macOS's (with the
-//! `macos` feature). The KDE and Windows readers return with their presets
-//! (the 0.8.0 plan's M1b); until then `from_system` reports their platforms
-//! as [`ThemeError::PlatformUnsupported`].
+//! The readers: GNOME's (with the `portal` feature, on GNOME and Budgie),
+//! the portal-only read of the Linux desktops with no reader of their own
+//! (S16's *Which reader*, ADD-A135), KDE's (with the `kde` feature, on KDE
+//! Plasma), macOS's (with the `macos` feature) and Windows' (with the
+//! `windows` feature).
 
 use crate::error::{ReaderFailure, ThemeError};
 use crate::layer::Layer;
@@ -25,8 +24,9 @@ use crate::resolve::ReaderState;
 /// where another stood in for it (S9.1, S9.3: the status's `Fallback`).
 #[cfg_attr(
     not(any(
-        all(target_os = "linux", feature = "portal"),
-        all(target_os = "macos", feature = "macos")
+        all(target_os = "linux", any(feature = "portal", feature = "kde")),
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
     )),
     allow(dead_code, reason = "a reader's: no reader is linked in this build")
 )]
@@ -49,17 +49,26 @@ pub(crate) enum SystemReader {
     /// the portal, then 0.7.0's scheme and motion chain.
     #[cfg(all(target_os = "linux", feature = "portal"))]
     Portal,
+    /// The KDE reader: kdeglobals, the scheme file it names and, on X11,
+    /// `Xft.dpi`.
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    Kde,
     /// The macOS reader: AppKit's appearances, colours and settings.
     #[cfg(all(target_os = "macos", feature = "macos"))]
     Macos,
+    /// The Windows reader: `UISettings`, high contrast and its system
+    /// colours.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    Windows,
 }
 
 impl SystemReader {
     /// Reads the system, the reader's own platform's part under `own`.
     #[cfg_attr(
         not(any(
-            all(target_os = "linux", feature = "portal"),
-            all(target_os = "macos", feature = "macos")
+            all(target_os = "linux", any(feature = "portal", feature = "kde")),
+            all(target_os = "macos", feature = "macos"),
+            all(target_os = "windows", feature = "windows")
         )),
         allow(unused_variables, reason = "no reader is linked in this build")
     )]
@@ -69,8 +78,12 @@ impl SystemReader {
             SystemReader::Gnome => Ok(crate::gnome::read(own).await),
             #[cfg(all(target_os = "linux", feature = "portal"))]
             SystemReader::Portal => Ok(crate::gnome::portal::read().await),
+            #[cfg(all(target_os = "linux", feature = "kde"))]
+            SystemReader::Kde => crate::kde::read(own),
             #[cfg(all(target_os = "macos", feature = "macos"))]
             SystemReader::Macos => crate::macos::read(own),
+            #[cfg(all(target_os = "windows", feature = "windows"))]
+            SystemReader::Windows => crate::windows::read(own),
         }
     }
 }
@@ -85,7 +98,9 @@ impl SystemReader {
 /// desktop with no reader of its own (Xfce, Cinnamon, MATE, LXQt, the
 /// Wayland compositors, COSMIC, one the refinement leaves unnamed) by the
 /// portal-only read, under `adwaita` too (S16's *Which reader*); either
-/// [`ThemeError::FeatureDisabled`] without the `portal` feature. Linux has
+/// [`ThemeError::FeatureDisabled`] without the `portal` feature. KDE is read
+/// by the KDE reader under `kde-breeze`, [`ThemeError::FeatureDisabled`]
+/// without the `kde` feature. Linux has
 /// no generation table: the one preset of the desktop is its only
 /// generation, so `generation` is accepted where it is that preset and is
 /// [`ThemeError::PresetNotForPlatform`] otherwise.
@@ -94,8 +109,10 @@ impl SystemReader {
 /// ([`ThemeError::FeatureDisabled`] without it), under the running
 /// version's generation ([`macos_preset`]).
 ///
-/// KDE and Windows are [`ThemeError::PlatformUnsupported`] in this build:
-/// no reader reads them until their readers and presets return.
+/// On Windows the Windows reader reads, with the `windows` feature
+/// ([`ThemeError::FeatureDisabled`] without it), under the running build's
+/// generation ([`windows_preset`]). Another platform is
+/// [`ThemeError::PlatformUnsupported`].
 pub(crate) async fn select(
     generation: Option<PresetId>,
 ) -> Result<(SystemReader, PresetId), ThemeError> {
@@ -112,7 +129,17 @@ pub(crate) async fn select(
         let _ = generation;
         Err(ThemeError::FeatureDisabled)
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    {
+        windows_preset(crate::windows::os_version(), generation)
+            .map(|id| (SystemReader::Windows, id))
+    }
+    #[cfg(all(target_os = "windows", not(feature = "windows")))]
+    {
+        let _ = generation;
+        Err(ThemeError::FeatureDisabled)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         let _ = generation;
         Err(ThemeError::PlatformUnsupported)
@@ -131,7 +158,45 @@ fn macos_preset(
     running: crate::pipeline::OsVersion,
     generation: Option<PresetId>,
 ) -> Result<PresetId, ThemeError> {
-    let table = &crate::pipeline::MACOS_GENERATIONS;
+    table_preset(
+        &crate::pipeline::MACOS_GENERATIONS,
+        crate::pipeline::macos_major(running),
+        generation,
+    )
+}
+
+/// The Windows preset of `running`, as [`macos_preset`] over
+/// `pipeline::WINDOWS_GENERATIONS`, by the running build.
+#[cfg_attr(
+    not(all(target_os = "windows", feature = "windows")),
+    allow(dead_code, reason = "the Windows reader's: not linked in this build")
+)]
+fn windows_preset(
+    running: crate::pipeline::OsVersion,
+    generation: Option<PresetId>,
+) -> Result<PresetId, ThemeError> {
+    table_preset(&crate::pipeline::WINDOWS_GENERATIONS, running, generation)
+}
+
+/// The preset of `running` in `table`: `generation` where it names one of
+/// the table's presets (R1.5), [`ThemeError::PresetNotForPlatform`] where it
+/// names another, else the table's preset for `running`
+/// (`pipeline::preset_for_version`).
+#[cfg_attr(
+    not(any(
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows")
+    )),
+    allow(
+        dead_code,
+        reason = "a generation table's reader: not linked in this build"
+    )
+)]
+fn table_preset(
+    table: &crate::pipeline::GenerationTable,
+    running: crate::pipeline::OsVersion,
+    generation: Option<PresetId>,
+) -> Result<PresetId, ThemeError> {
     match generation {
         Some(id)
             if std::iter::once(&table.oldest)
@@ -141,7 +206,7 @@ fn macos_preset(
             Ok(id)
         }
         Some(id) => Err(ThemeError::PresetNotForPlatform(id)),
-        None => PresetId::from_key(crate::pipeline::macos_generation(running).0)
+        None => PresetId::from_key(crate::pipeline::preset_for_version(table, running).0)
             .ok_or(ThemeError::PlatformUnsupported),
     }
 }
@@ -196,7 +261,16 @@ fn desktop_reader(
                 Err(ThemeError::FeatureDisabled)
             }
         }
-        crate::detect::LinuxDesktop::Kde => Err(ThemeError::PlatformUnsupported),
+        crate::detect::LinuxDesktop::Kde => {
+            #[cfg(feature = "kde")]
+            {
+                Ok((SystemReader::Kde, PresetId::KdeBreeze))
+            }
+            #[cfg(not(feature = "kde"))]
+            {
+                Err(ThemeError::FeatureDisabled)
+            }
+        }
     }
 }
 
@@ -205,8 +279,8 @@ mod tests {
     use super::*;
     use crate::detect::LinuxDesktop;
 
-    /// Every Linux desktop but KDE's, with no reader of its own in this
-    /// build (S16's *Which reader*).
+    /// Every Linux desktop with no reader of its own (S16's *Which
+    /// reader*).
     const PORTAL_ONLY: [LinuxDesktop; 11] = [
         LinuxDesktop::Xfce,
         LinuxDesktop::Cinnamon,
@@ -223,8 +297,8 @@ mod tests {
 
     /// GNOME and Budgie are read by the GNOME reader under `adwaita`, every
     /// desktop with no reader of its own by the portal-only read under
-    /// `adwaita`, both with the `portal` feature; KDE has no reader in this
-    /// build.
+    /// `adwaita`, both with the `portal` feature; KDE by the KDE reader under
+    /// `kde-breeze`, with the `kde` feature.
     #[test]
     fn the_desktop_chooses_the_reader_and_its_preset() {
         for desktop in [LinuxDesktop::Gnome, LinuxDesktop::Budgie] {
@@ -253,9 +327,15 @@ mod tests {
                 "{desktop:?}"
             );
         }
+        #[cfg(feature = "kde")]
         assert_eq!(
             linux_reader(LinuxDesktop::Kde, None),
-            Err(ThemeError::PlatformUnsupported)
+            Ok((SystemReader::Kde, PresetId::KdeBreeze))
+        );
+        #[cfg(not(feature = "kde"))]
+        assert_eq!(
+            linux_reader(LinuxDesktop::Kde, None),
+            Err(ThemeError::FeatureDisabled)
         );
     }
 
@@ -325,6 +405,38 @@ mod macos_tests {
         for id in [PresetId::Adwaita, PresetId::Ios26, PresetId::Material3] {
             assert_eq!(
                 macos_preset(running, Some(id)),
+                Err(ThemeError::PresetNotForPlatform(id))
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod windows_tests {
+    use super::*;
+    use crate::pipeline::OsVersion;
+
+    /// With no generation named, every Windows build gets `windows-11`, the
+    /// table's one row, Windows 10's included (M2b Step 7).
+    #[test]
+    fn the_windows_build_chooses_the_preset() {
+        for running in [OsVersion::new(10, 0, 26200), OsVersion::new(10, 0, 19045)] {
+            assert_eq!(windows_preset(running, None), Ok(PresetId::Windows11));
+        }
+    }
+
+    /// A named generation is taken where it is Windows', and refused
+    /// otherwise (R1.5).
+    #[test]
+    fn a_generation_is_a_windows_preset_or_refused() {
+        let running = OsVersion::new(10, 0, 26200);
+        assert_eq!(
+            windows_preset(running, Some(PresetId::Windows11)),
+            Ok(PresetId::Windows11)
+        );
+        for id in [PresetId::Adwaita, PresetId::MacosTahoe, PresetId::KdeBreeze] {
+            assert_eq!(
+                windows_preset(running, Some(id)),
                 Err(ThemeError::PresetNotForPlatform(id))
             );
         }

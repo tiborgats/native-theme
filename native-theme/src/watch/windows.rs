@@ -57,7 +57,7 @@ const TEXT_SCALE_FACTOR_CHANGED: &str = "TextScaleFactorChanged";
 #[cfg(test)]
 const HIGH_CONTRAST_CHANGED: &str = "HighContrastChanged";
 
-/// `UISettings::AnimationsEnabledChanged`, for `SPI_GETCLIENTAREAANIMATION`.
+/// `UISettings::AnimationsEnabledChanged`, for `UISettings.AnimationsEnabled`.
 #[cfg(test)]
 const ANIMATIONS_ENABLED_CHANGED: &str = "AnimationsEnabledChanged";
 

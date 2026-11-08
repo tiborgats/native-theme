@@ -26,6 +26,16 @@ Writes these tables under `native-theme/tests/vectors/`:
   qt6/src/platformtheme/kfontsettingsdata.cpp`, read from the source cache) and typical choices, Qt 5's and earlier
   Qt 6 releases' strings, and each field count's and field's edge cases; each result read through `QFont`'s getters
   and `resolveMask()`. A string cell is a JSON string literal.
+- `reader.kde_color_scheme.tsv`, by the `public_api` route: the KDE reader's scheme test, Plasma's own
+  (`plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:469-485`, `xdg-desktop-portal-kde@6.8.2
+  src/settings.cpp:259-273`): kdeglobals' `[Colors:Window] BackgroundNormal` written by the system's KConfig 6.31,
+  the palette `KColorScheme::createApplicationPalette` (KColorScheme 6.31) builds from it, and Qt's `qGray` of its
+  window colour against the threshold read from both pinned files (`readers.cpp`); each row checked against the
+  system's plasma-integration platform theme, `QStyleHints::colorScheme()` over the same kdeglobals.
+- `reader.qxcb_xft_dpi.tsv`, by the `public_api` route: the DPI Qt's xcb plugin (`qtbase@6.12.0
+  src/plugins/platforms/xcb/qxcbscreen.cpp:298-314`, `:366-373`, `:856-876`) forces from the X resources, the
+  system's Qt 6.12.0 run against an Xvfb server whose root window holds them (`readers.cpp`), each input also read
+  back through `xrdb -query`, which the KDE reader reads.
 
 The functions' inputs: the Breeze 6.8.2 colour schemes' colours (`breeze@6.8.2 colors/BreezeLight.colors`,
 `BreezeDark.colors`, read from the source cache) at the arguments the facts pass (`docs/facts/kde/`), the branches'
@@ -44,9 +54,11 @@ row.
 
 The remaining sources Qt's and KDE's headers need are the system's: it requires g++, bubblewrap, Qt 6.12.0's
 development headers (private ones included) and `moc`, and the KF6 Config 6.31 headers and libraries; it refuses
-another Qt or KConfig. Run from the repository root, the source cache's folder optional:
+another Qt or KConfig. The readers' two tables also need the KF6 ColorScheme 6.31 headers and library, the
+plasma-integration platform theme, Qt's xcb plugin, Xvfb and xrdb. Run from the repository root, the source cache's
+folder optional (`--only-readers`: those two tables alone):
 
-    python3 -I tools/kde-vectors/generate.py [source cache]
+    python3 -I tools/kde-vectors/generate.py [--only-readers] [source cache]
 """
 
 import json
@@ -905,15 +917,299 @@ def qfont_table(source_cache: Path, work: Path):
     print(f"reader.qfont_from_string.tsv: {len(rows)} rows")
 
 
+# ---- The KDE reader's scheme test and its font DPI (the public_api route: the system's Qt 6.12.0, KConfig 6.31 and
+# KColorScheme 6.31, plasma-integration's platform theme, Qt's xcb plugin on an Xvfb server)
+
+PORTAL_KDE = "xdg-desktop-portal-kde@6.8.2"
+PORTAL_SETTINGS = "src/settings.cpp"
+HINTS = "qt6/src/platformtheme/khintssettings.cpp"
+# KColorScheme's minor, kcolorscheme@6.31.0's: the headers' KCOLORSCHEME_VERSION_STRING.
+KCOLORSCHEME_MINOR = "6.31"
+XVFB = "Xvfb"
+XRDB = "xrdb"
+READER_LIBS = ["-lKF6ColorScheme", "-lKF6ConfigGui", "-lKF6ConfigCore", "-lQt6Gui", "-lQt6Core", "-lxcb", "-ldl"]
+# Qt::ColorScheme's values (qnamespace.h): what QStyleHints::colorScheme() answers.
+QT_COLOR_SCHEME = {1: "light", 2: "dark"}
+# kconfiggroupgui.cpp:37-53: the values KConfig reads as an invalid colour (empty, "invalid") or hands to Qt's colour
+# parser (a leading '#', no comma), which S9.3 (ADD-A140) has the reader read as unset.
+KCONFIG_QT_PARSED = ["", "invalid", "Invalid", "#232629", "#eff0f1", "#000", "#fff", "#2326294d", "#zzzzzz", "#",
+                     "black", "white", "transparent", "red", "35;38;41", "35 38 41", "35"]
+DARK = "35,38,41"
+# A dark colour's entry varied as KConfig reads its components (kconfiggroupgui.cpp:54-93): the forms it accepts give
+# the dark colour, the others its default.
+KCONFIG_FORMS = ["35, 38, 41", "35 ,38 ,41", "\t35,\t38,\t41", "35,38,41\t", " 35,38,41 ", "+35,+38,+41",
+                 "035,038,041", "-0,-0,-0", "35,38,41,255", "35,38,41,0", "35,38,41,128", "35,38", "35,38,41,255,0",
+                 "35,38,41,", ",35,38,41", "35,,41", "35,38,256", "35,38,41,256", "-1,38,41", "35,38,-1",
+                 "35,38,0x29", "35,38,41.0", "35,38,4 1", "35,38,41 #", "35,38,99999999999", "35,38,2147483689",
+                 "35,38,1e1", "3 5,38,41", "35,38,41 ", "35,38,٤١", "35,38,41\n", "35,38,41\r",
+                 "35,38,41\v", "35,38,41\f", "35,38,41\x00"]
+RANDOM_SCHEME = 40
+
+
+def kcolorscheme_version():
+    """The KF6 ColorScheme headers' `KCOLORSCHEME_VERSION_STRING`; empty where they are missing."""
+    try:
+        header = (KF6_INCLUDE / "KColorScheme" / "kcolorscheme_version.h").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    found = re.search(r'#define KCOLORSCHEME_VERSION_STRING "([^"]+)"', header)
+    return found.group(1) if found else ""
+
+
+def scheme_threshold(cache: Path):
+    """The grey below which Plasma calls a scheme dark: plasma-integration's determineColorScheme and the portal's
+    readFdoColorScheme, read from the pins, which must agree."""
+    found = []
+    for sid, path, dark in [(PLASMA_INTEGRATION, HINTS, r"colorScheme = Qt::ColorScheme::Dark;"),
+                            (PORTAL_KDE, PORTAL_SETTINGS, r"result = 1; // prefer dark")]:
+        text = pinned.pinned(cache, sid, path).decode("utf-8")
+        m = re.search(r"const int windowBackgroundGray = qGray\((?:systemPalette->|palette\.)window\(\)\.color\(\)"
+                      r"\.rgb\(\)\);\s+(?:uint result = 0; // no preference\s+)?if \(windowBackgroundGray < (\d+)\) "
+                      r"\{\s+" + re.escape(dark), text)
+        if not m:
+            sys.exit(f"{sid} {path}: no `qGray(... window() ...) < N` dark test")
+        found.append(int(m.group(1)))
+    if found[0] != found[1]:
+        sys.exit(f"plasma-integration's threshold {found[0]} and the portal's {found[1]} differ")
+    return found[0]
+
+
+def breeze_backgrounds(cache: Path):
+    """Every BackgroundNormal value Breeze 6.8.2's three schemes write, as written."""
+    values = []
+    for path in ["colors/BreezeLight.colors", "colors/BreezeDark.colors", "colors/BreezeClassic.colors"]:
+        text = pinned.pinned(cache, BREEZE, path).decode("utf-8")
+        values += re.findall(r"^BackgroundNormal=(.*)$", text, re.M)
+    return values
+
+
+def readers_build(work: Path):
+    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui", QT_INCLUDE / "QtCore" / QT_VERSION,
+          QT_INCLUDE / "QtCore" / QT_VERSION / "QtCore", QT_INCLUDE / "QtGui" / QT_VERSION,
+          QT_INCLUDE / "QtGui" / QT_VERSION / "QtGui"]
+    kf6 = [KF6_INCLUDE / "KColorScheme", KF6_INCLUDE / "KConfig", KF6_INCLUDE / "KConfigCore",
+           KF6_INCLUDE / "KConfigGui"]
+    exe = work / "readers"
+    pinned.sandboxed(["g++", "-std=c++20", "-fPIC", "-O2", *(f"-I{p}" for p in [*qt, *kf6]), "-o", exe,
+                      HERE / "readers.cpp", *READER_LIBS], writable=[work], check=True)
+    return exe
+
+
+def text_line(s):
+    """A harness input line: None as "-", else hex_text."""
+    return "-" if s is None else hex_text(s)
+
+
+def readers_run(exe: Path, mode, inputs):
+    """The harness's lines for inputs, sandboxed; the xcb mode on an Xvfb server started in the sandbox."""
+    script = 'mkdir -p /tmp/w && exec "$0" "$1" /tmp/w'
+    if mode == "xcb":
+        script = ('mkdir -p /tmp/w && Xvfb :7 -noreset -nolisten tcp -screen 0 1280x720x24 >/tmp/xvfb.log 2>&1 & x=$!; '
+                  'n=0; while [ ! -S /tmp/.X11-unix/X7 ] && [ $n -lt 400 ]; do sleep 0.05; n=$((n+1)); done; '
+                  'DISPLAY=:7 "$0" "$1" /tmp/w; s=$?; kill $x; wait $x 2>/dev/null; exit $s')
+    lines = [text_line(s) for s in inputs]
+    out = pinned.sandboxed(["sh", "-c", script, exe, mode], readable=[exe.parent],
+                           input="".join(x + "\n" for x in lines), capture_output=True, text=True, check=False)
+    if out.returncode != 0:
+        sys.exit(f"{exe.name} {mode}: exit {out.returncode}: {out.stderr.strip()[-2000:]}")
+    rows = out.stdout.splitlines()
+    if len(rows) != len(lines):
+        sys.exit(f"{exe.name} {mode}: {len(rows)} results for {len(lines)} inputs")
+    return [r.split("\t") for r in rows]
+
+
+def option_string_cell(s):
+    return "none" if s is None else string_cell(s)
+
+
+def threshold_neighbours(threshold):
+    """Colours on both sides of qGray's threshold: greys, one channel stepped across it with the others held, and
+    weighted sums just below the threshold that rounding the mean (not truncating it) would call light."""
+    limit = 32 * threshold          # qGray(r, g, b) < threshold exactly where 11r + 16g + 5b < 32 * threshold
+    rows = [(threshold - 2,) * 3, (threshold - 1,) * 3, (threshold,) * 3, (threshold + 1,) * 3]
+    weights = (11, 16, 5)
+    for held in [threshold, 255, 200, 128, 0]:
+        for i in range(3):
+            rest = sum(w * held for k, w in enumerate(weights) if k != i)
+            need = -(-(limit - rest) // weights[i])   # the least channel value reaching the limit
+            if 1 <= need <= 255:
+                below = [held] * 3
+                below[i] = need - 1
+                above = list(below)
+                above[i] = need
+                rows += [tuple(below), tuple(above)]
+    for target in [limit - 1, limit - 16, limit]:
+        hit = next(((r, g, b) for r in range(255, -1, -1) for g in range(256)
+                    for b in [(target - 11 * r - 16 * g) // 5] if 0 <= b <= 255 and 11 * r + 16 * g + 5 * b == target),
+                   None)
+        if hit:
+            rows.append(hit)
+    out = []
+    for c in rows:
+        if c not in out:
+            out.append(c)
+    return out
+
+
+def kde_color_scheme_table(source_cache: Path, work: Path, rng):
+    threshold = scheme_threshold(source_cache)
+    exe = readers_build(work)
+    entries = [None, *dict.fromkeys(breeze_backgrounds(source_cache)), "0,0,0", "255,255,255", "0,0,0,0",
+               "255,255,255,0", DARK, "239,240,241"]
+    entries += [",".join(map(str, c)) for c in threshold_neighbours(threshold)]
+    entries += KCONFIG_FORMS
+    for k in range(RANDOM_SCHEME):
+        c = [rng.randrange(256) for _ in range(3)]
+        while k % 2:   # half of them within a few steps of the threshold
+            green = (32 * threshold - 11 * c[0] - 5 * c[2]) // 16 + rng.randrange(-2, 3)
+            if 0 <= green <= 255:
+                c[1] = green
+                break
+            c = [rng.randrange(256) for _ in range(3)]
+        entries.append(",".join(map(str, c)))
+    entries = list(dict.fromkeys(entries)) + [s for s in KCONFIG_QT_PARSED]
+    palette = readers_run(exe, "palette", entries)
+    plasma = readers_run(exe, "plasma", entries)
+    rows, left_out = [], []
+    for s, p, q in zip(entries, palette, plasma):
+        has_key, read_back, valid, gray = p[0] == "1", p[1], p[2] == "1", int(p[7])
+        if has_key != (s is not None) or (s is not None and unhex_text(read_back) != s):
+            sys.exit(f"kdeglobals does not hold the input {s!r}: read back {read_back}")
+        scheme = "dark" if gray < threshold else "light"
+        if QT_COLOR_SCHEME.get(int(q[0])) != scheme or q[1:] != p[3:6]:
+            sys.exit(f"{s!r}: plasma-integration's platform theme answers {q}, the palette {p}")
+        if s is not None and (s in ("", "invalid") or s.startswith("#") or "," not in s):
+            left_out.append((s, scheme, valid, p[3:6]))
+        else:
+            rows.append([option_string_cell(s), scheme])
+    write_table(
+        VECTORS / "reader.kde_color_scheme.tsv",
+        ["# function: reader.kde_color_scheme",
+         "# route: public_api",
+         f"# source: {PLASMA_INTEGRATION}",
+         f"# source: {PORTAL_KDE}",
+         "# source: kcolorscheme@6.31.0",
+         "# source: kconfig@6.31.0",
+         "# source: qtbase@6.12.0",
+         "# generations: kde-breeze",
+         "# generator: tools/kde-vectors",
+         "# inputs: background_normal:option<string>",
+         "# outputs: scheme:enum<Scheme>",
+         f"# written by tools/kde-vectors/generate.py on Qt {qt_version()}, KConfig {kconfig_version()} and",
+         f"# KColorScheme {kcolorscheme_version()}; do not edit. Each row: kdeglobals' [Colors:Window]",
+         "# BackgroundNormal (a JSON string literal, the value KConfig holds; `none`: the file has no such",
+         "# key), written by KConfig into a kdeglobals with a [Colors:View] group, KColorScheme::",
+         "# createApplicationPalette of it, and Plasma's test of the palette's active window colour: dark where",
+         f"# qGray(rgb()) < {threshold} (the threshold read from plasma-integration's determineColorScheme and the",
+         "# portal's readFdoColorScheme at their pins), else light. Each row is checked against the system's",
+         "# plasma-integration platform theme (QStyleHints::colorScheme() on the offscreen platform over the same",
+         "# kdeglobals). The inputs: unset, the BackgroundNormal values of Breeze 6.8.2's three schemes, black,",
+         "# white and alpha, colours on both sides of the threshold, a dark colour's entry in each form KConfig",
+         "# accepts or refuses as a colour, seeded random colours. Left out: "
+         f"{len(left_out)} values KConfig reads as an",
+         "# invalid colour or through Qt's colour parser, which S9.3 (ADD-A140) has the reader read as unset",
+         "# (its default, light), with Plasma's answer and the colour:",
+         *(f"# {string_cell(s)}: {scheme} ({'valid' if valid else 'invalid'}, rgb {','.join(c)})"
+           for s, scheme, valid, c in left_out)],
+        ["background_normal", "scheme"],
+        rows,
+    )
+    print(f"reader.kde_color_scheme.tsv: {len(rows)} rows ({len(left_out)} left out)")
+    return exe
+
+
+# X resources: lines `<name>:\t<value>` as xrdb writes them, each value varied as Qt's xcb plugin reads Xft.dpi.
+XFT_TAIL = "Xft.hinting:\t1\nXft.hintstyle:\thintslight\nXft.rgba:\trgb\n"
+XFT_VALUES = ["96", "120", "144", "192", "288", "72", "1", "0", "-96", "+96", "096", " 96", "\t96", "96 ", "96\t",
+              "96\r", "96\v", "96\f", "96.0", "96.4", "96.5", "95.5", "97.5", "96.49999999999999", "0.5", "0.4",
+              "0.49999999999999994", "-0.4", "-0.5", "-1.5", "1e2", "1E2", "1e+2", "9.6e1", "96.", ".5e3", "+96.5",
+              " 96.5 ", "96,5", "9 6", "96 dpi", "96dpi", "0x60", "0x60.0", "abc", "", "1e", "1e400", "1e-400",
+              "0e5", "inf", "-inf", "nan", "Infinity", "2147483647", "2147483648", "-2147483648", "2147483647.4",
+              "2147483647.5", "-2147483648.4", "99999999999", "1e10", "96 ", "٩٦",
+              "96.000000"]
+XFT_RESOURCES = [
+    "", "Xft.dpi:\t96\n", "Xft.dpi:\t96", "Xcursor.size:\t24\nXcursor.theme:\tbreeze_cursors\nXft.antialias:\t1\n"
+    "Xft.dpi:\t96\n" + XFT_TAIL, "Xcursor.size:\t24\nXft.antialias:\t1\n" + XFT_TAIL,
+    "Xft.dpi: 96\n", "Xft.dpi:96\n", "Xft.dpi:  96\n", "xft.dpi:\t96\n", "Xft.DPI:\t96\n", "Xft.dpi :\t96\n",
+    " Xft.dpi:\t96\n", "*.dpi:\t96\n", "*dpi:\t96\n", "Xft*dpi:\t96\n", "Xft.dpix:\t96\n", "XXft.dpi:\t96\n",
+    "Xft.dpi:\t96\nXft.dpi:\t120\n", "Xft.dpi:\t120\nXft.dpi:\tabc\n", "Xft.dpi:\t120\nXft.dpi:\t0\n",
+    "Xft.dpi:\t120\nXft.dpi:\t-1\n", "Xft.dpi:\t120\nXft.dpi:\t\n", "Xft.dpi:\t120\nXft.dpi: 144\n",
+    "Xft.dpi:\t0\nXft.dpi:\t120\n", "Xft.dpi:\t120\r\nXft.hinting:\t1\r\n", "Xft.dpi:\t120\n\n\n",
+    "\nXft.dpi:\t120", "Xft.dpi:\t120\\\nXft.hinting:\t1\n", "! Xft.dpi:\t96\n", "Xft.dpi:\t144\n" + XFT_TAIL,
+    "Xft.antialias:\t1\nXft.dpi:\t96.5\n", "Xft.dpi:\t1e400\nXft.dpi:\t1e2\n", "Xft.dpi:\t120\nXft.dpi:\tnan\n",
+]
+
+
+def xrdb_version():
+    out = subprocess.run([XRDB, "-version"], capture_output=True, text=True, check=False)
+    return out.stdout.strip() or "version unknown"
+
+
+def qxcb_xft_dpi_table(exe: Path):
+    inputs = list(dict.fromkeys(XFT_RESOURCES + [f"Xft.dpi:\t{v}\n" for v in XFT_VALUES]))
+    results = readers_run(exe, "xcb", inputs)
+    rows, differing = [], []
+    for s, r in zip(inputs, results):
+        forced, logical, xrdb = int(r[0]), float(r[1]), r[2]
+        if forced < 0 or logical != (forced if forced > 0 else 96):
+            sys.exit(f"{s!r}: forcedDpi {forced} and logicalDpi {logical} disagree")
+        if xrdb == "!" or (unhex_text(xrdb) or "") != s:
+            differing.append((s, xrdb))
+        rows.append([string_cell(s), str(forced) if forced > 0 else "none"])
+    write_table(
+        VECTORS / "reader.qxcb_xft_dpi.tsv",
+        ["# function: reader.qxcb_xft_dpi",
+         "# route: public_api",
+         "# source: qtbase@6.12.0",
+         "# generations: kde-breeze",
+         "# generator: tools/kde-vectors",
+         "# inputs: resources:string",
+         "# outputs: dpi:option<number>",
+         f"# written by tools/kde-vectors/generate.py on Qt {qt_version()}; do not edit. Each row: the X resources",
+         "# (a JSON string literal), set as the root window's RESOURCE_MANAGER property of an Xvfb server (no",
+         "# property for the empty string), and the DPI Qt's xcb plugin forces from them at start: QXcbScreen::",
+         "# forcedDpi() of the system's libQt6XcbQpa, `none` where it forces none and Qt's logical DPI is its",
+         "# fallback (every row's QPlatformScreen::logicalDpi() checked to be the forced DPI, else 96). The server",
+         "# runs no XSETTINGS manager, so no Xft/DPI setting overrides the resources. The inputs: resources as xrdb",
+         "# writes them, the Xft.dpi line's name spelt otherwise, several Xft.dpi lines, and one line's value in the",
+         "# forms an integer and a decimal take, whitespace, signs, rounding, ranges and junk.",
+         *([f"# `xrdb -query` ({xrdb_version()}), which the reader reads the resources from, prints each input",
+            "# back unchanged."]
+           if not differing else
+           [f"# `xrdb -query` ({xrdb_version()}), which the reader reads the resources from, prints {len(differing)}",
+            f"# of the {len(inputs)} inputs otherwise (the input, then what xrdb prints):",
+            *(f"# {string_cell(s)} -> {'(xrdb failed)' if x == '!' else string_cell(unhex_text(x) or '')}"
+              for s, x in differing)])],
+        ["resources", "dpi"],
+        rows,
+    )
+    print(f"reader.qxcb_xft_dpi.tsv: {len(rows)} rows ({len(differing)} that xrdb prints otherwise)")
+
+
+def readers_tables(source_cache: Path, work: Path, rng):
+    if not kcolorscheme_version().startswith(KCOLORSCHEME_MINOR + "."):
+        sys.exit(f"KF6 ColorScheme {kcolorscheme_version() or '(none)'} found; the pin is KColorScheme "
+                 f"{KCOLORSCHEME_MINOR}")
+    for tool in (XVFB, XRDB):
+        if subprocess.run(["sh", "-c", f"command -v {tool}"], capture_output=True, check=False).returncode != 0:
+            sys.exit(f"{tool} not found: the xcb plugin's table runs it")
+    exe = kde_color_scheme_table(source_cache, work, rng)
+    qxcb_xft_dpi_table(exe)
+
+
 def main():
     if qt_version() != QT_VERSION:
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
     if not kconfig_version().startswith(KCONFIG_MINOR + "."):
         sys.exit(f"KF6 Config {kconfig_version() or '(none)'} found; the pin is KConfig {KCONFIG_MINOR}")
-    source_cache = citations.cache_dir(sys.argv[1] if len(sys.argv) > 1 else None)
+    args = [a for a in sys.argv[1:] if a != "--only-readers"]
+    source_cache = citations.cache_dir(args[0] if args else None)
     rng = random.Random(SEED)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
+        if len(args) < len(sys.argv) - 1:
+            readers_tables(source_cache, tmp, random.Random(SEED + 1))
+            return
         cache = tmp / "sources"
         pinned.materialise(source_cache, [(sid, path) for sid, paths in FILES.items() for path in paths], cache)
         reference = build(cache, tmp, REFERENCE_FLAGS, "reference")
@@ -978,6 +1274,7 @@ def main():
 
         new_tables(rng, reference, fused, source_cache)
         qfont_table(source_cache, tmp)
+        readers_tables(source_cache, tmp, random.Random(SEED + 1))
 
 if __name__ == "__main__":
     main()

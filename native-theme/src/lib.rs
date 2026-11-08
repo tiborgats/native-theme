@@ -49,14 +49,14 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! The model is being built: the two bundled presets, `adwaita` and
-//! `macos-tahoe`, still list fields whose facts are pending, and
-//! [`Theme::from_preset`] refuses a preset with a pending field
-//! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
-//! widget is the button; of the platform readers GNOME's is back
-//! ([`Theme::from_system`], the `portal` feature), with the portal-only read
-//! of the Linux desktops that have no reader of their own, and macOS's (the
-//! `macos` feature).
+//! The model is being built: the eight bundled presets ([`PresetId::all`])
+//! still list fields whose facts are pending, and [`Theme::from_preset`]
+//! refuses a preset with a pending field ([`ThemeError::Preset`]), so none
+//! builds a theme yet; the one typed widget is the button; the platform
+//! readers are back ([`Theme::from_system`]): KDE's (the `kde` feature),
+//! GNOME's (the `portal` feature), with the portal-only read of the Linux
+//! desktops that have no reader of their own, macOS's (the `macos` feature)
+//! and Windows' (the `windows` feature).
 //!
 //! # Feature flags
 //!
@@ -66,11 +66,11 @@
 //!
 //! | Feature | Enables |
 //! |---|---|
-//! | `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
+//! | `kde` | The KDE Plasma reader, [`Theme::from_system`]: `kdeglobals` as KConfig cascades it, the colour scheme file it names and, on X11, `Xft.dpi`; and the KDE icon theme (Linux) |
 //! | `macos` | The macOS reader, [`Theme::from_system`]: AppKit's appearances, colours and settings; the running macOS version and its generation, in [`pipeline::diagnose_platform_support`] |
-//! | `windows` | The running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `windows` | The Windows reader, [`Theme::from_system`]: `UISettings`' colours, text scale and effects, high contrast and its system colours; the running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
 //! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
-//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME, the portal-only desktops and macOS) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications: KDE (with `kde`), GNOME and the portal-only desktops (with `portal`), macOS (with `macos`) and Windows (with `windows`) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
 //! | `native` | `linux`, `macos` and `windows` |
@@ -157,7 +157,8 @@ mod gnome;
 /// - The icon-set choice of a settings UI,
 ///   [`IconSetChoice`](icons::IconSetChoice).
 pub mod icons;
-/// The KDE icon theme, read from `kdeglobals`.
+/// The KDE reader: kdeglobals, the scheme file it names and, on X11,
+/// `Xft.dpi` (Linux); the KDE icon theme `detect` reports.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub(crate) mod kde;
 pub mod pipeline;
@@ -182,10 +183,8 @@ pub mod rasterize;
 /// Requires the `system-icons` feature, and macOS.
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub(crate) mod sficons;
-/// The running Windows version.
-///
-/// Requires the `windows` feature, and Windows.
-#[cfg(all(target_os = "windows", feature = "windows"))]
+/// The Windows reader and the running Windows version; the reader's build
+/// from what Windows gave is compiled on every platform, for its tests.
 pub(crate) mod windows;
 /// Windows Segoe Fluent / stock icon loader.
 ///

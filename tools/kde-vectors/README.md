@@ -6,7 +6,14 @@ by the `compiled_source` route, under `native-theme/tests/vectors/`: `kirigami_l
 `kde_selection_inactive.tsv`; and, by the `public_api` route, the KDE reader's `reader.qfont_from_string.tsv`:
 `QFont::fromString` called through the system's Qt 6.12.0 (`qfont.cpp`) on the strings Qt 6.12 writes for Plasma's
 default fonts (`plasma-integration@6.8.2`) and typical choices, Qt 5's strings and each field's edge cases, each
-result read through `QFont`'s getters and `resolveMask()` (its string cells JSON string literals).
+result read through `QFont`'s getters and `resolveMask()` (its string cells JSON string literals); and, by the
+`public_api` route through `readers.cpp`, the KDE reader's other two helpers' tables: `reader.kde_color_scheme.tsv`,
+Plasma's dark-or-light test (kdeglobals' `[Colors:Window] BackgroundNormal` written by the system's KConfig 6.31,
+`KColorScheme::createApplicationPalette` of it, Qt's `qGray` of the palette's window colour against the threshold
+read from plasma-integration's and xdg-desktop-portal-kde's pinned files, each row checked against the installed
+plasma-integration platform theme's `QStyleHints::colorScheme()`), and `reader.qxcb_xft_dpi.tsv`, the DPI Qt's xcb
+plugin forces from the X resources (the system's Qt 6.12.0 on an Xvfb server whose root window's `RESOURCE_MANAGER`
+holds them, read through `QXcbScreen::forcedDpi()`; each input also read back through `xrdb -query`).
 
 `generate.py` reads each upstream file from the source cache (`scripts/update_sources.sh`) as the commit
 `docs/facts/sources.toml` pins holds it, through git's objects (`tools/pinned.py`): Qt's `qcolor.cpp`, Kirigami's
@@ -23,7 +30,9 @@ inputs on which a build fusing `QColor::toRgb`'s `1.0f - (s * f)` gives another 
 them.
 
 Requires g++, bubblewrap, `pkg-config`, Qt 6.12.0's development headers (private ones included) and `moc`, and the KF6
-Config 6.31 headers and libraries; it refuses another Qt or KConfig. Run from the repository root, the source cache's
-folder optional:
+Config 6.31 headers and libraries; it refuses another Qt or KConfig. The readers' two tables also need the KF6
+ColorScheme 6.31 headers and library (it refuses another), the plasma-integration platform theme, Qt's xcb plugin,
+Xvfb and xrdb. Run from the repository root, the source cache's folder optional (`--only-readers`: those two tables
+alone):
 
-    python3 -I tools/kde-vectors/generate.py [source cache]
+    python3 -I tools/kde-vectors/generate.py [--only-readers] [source cache]
