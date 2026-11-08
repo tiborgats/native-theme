@@ -19,7 +19,8 @@
 //! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases:
 //!
 //! 1. **Platform-specific wakeup** -- where the backend has one, it runs
-//!    first (GNOME closes its D-Bus connection).
+//!    first (GNOME closes its D-Bus connection; macOS, which has no watcher
+//!    thread, removes its observer).
 //!    This wakes the background thread's event loop so it can observe the
 //!    disconnect.
 //! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
@@ -55,6 +56,8 @@
 
 #[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
 mod gnome;
+#[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
+mod macos;
 
 use std::sync::mpsc;
 use std::thread::JoinHandle;
@@ -147,6 +150,17 @@ impl ThemeSubscription {
             platform_shutdown,
         }
     }
+
+    /// Create a `ThemeSubscription` for a watcher without a thread: dropping
+    /// it only runs `platform_shutdown`.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    pub(crate) fn from_platform_shutdown(platform_shutdown: Box<dyn FnOnce() + Send>) -> Self {
+        Self {
+            shutdown_tx: None,
+            thread: None,
+            platform_shutdown: Some(platform_shutdown),
+        }
+    }
 }
 
 impl Drop for ThemeSubscription {
@@ -175,7 +189,11 @@ impl Drop for ThemeSubscription {
 /// a callback that panics loses that one event, and the watcher keeps
 /// running. This holds with the default `panic = "unwind"`; under
 /// `panic = "abort"` a panicking callback aborts the process.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         callback(ThemeChangeEvent::Changed)
@@ -189,11 +207,19 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// and the callback fires once for all of them. The value is T20's KDE
 /// window, reused on every platform to keep one user action one event: a
 /// design value, not a platform fact.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 const DEBOUNCE_MS: u32 = 300;
 
 /// [`DEBOUNCE_MS`] as a [`Duration`](std::time::Duration).
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_MS as u64);
 
 /// Fire `callback` once per burst of relevant messages from `events`,
@@ -307,9 +333,12 @@ impl Debounce {
 /// lists its sources): on GNOME and Budgie the portal's `SettingChanged`
 /// for the `org.freedesktop.appearance` settings and the
 /// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
-/// keys the reader reads. One change can raise several of them, so the
-/// callback fires once per burst, 300 ms after the last. The KDE, macOS
-/// and Windows watchers return with their readers.
+/// keys the reader reads; on a desktop with no reader of its own the same
+/// signal for the settings its portal-only read reads; on macOS the
+/// notifications of the macOS reader's sources, with the `macos` feature.
+/// One change can raise several of them, so the callback fires once per
+/// burst, 300 ms after the last. The KDE and Windows watchers return with
+/// their readers.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
 /// the watcher keeps running (with the default `panic = "unwind"`; under
@@ -318,7 +347,8 @@ impl Debounce {
 /// for.
 ///
 /// On Linux the backend is the one of the desktop the reader is chosen by:
-/// GNOME's for GNOME and Budgie (with `portal`). An unrecognised
+/// GNOME's for GNOME and Budgie, the portal-only read's for every desktop
+/// with no reader of its own (both with `portal`). An unrecognised
 /// `XDG_CURRENT_DESKTOP` counts as the desktop of its portal backend, which
 /// this asks, as [`Theme::from_system`](crate::Theme::from_system) does,
 /// else as KDE where the user's `kdeglobals` exists.
@@ -341,7 +371,9 @@ pub fn on_theme_change(
         let _ = callback;
         match linux_backend(pollster::block_on(crate::detect::refined_linux_desktop())) {
             #[cfg(feature = "portal")]
-            Some(LinuxBackend::Gnome) => gnome::watch_gnome(callback),
+            Some(LinuxBackend::Gnome) => gnome::watch_gnome(callback, gnome::GNOME),
+            #[cfg(feature = "portal")]
+            Some(LinuxBackend::Portal) => gnome::watch_gnome(callback, gnome::PORTAL),
 
             _ => Err(crate::Error::WatchUnavailable {
                 reason: "theme watching not supported for this desktop environment",
@@ -349,7 +381,22 @@ pub fn on_theme_change(
         }
     }
 
-    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    #[cfg(target_os = "macos")]
+    {
+        #[cfg(feature = "macos")]
+        {
+            macos::watch_macos(callback)
+        }
+        #[cfg(not(feature = "macos"))]
+        {
+            let _ = callback;
+            Err(crate::Error::WatchUnavailable {
+                reason: "enable the 'macos' feature for macOS theme watching",
+            })
+        }
+    }
+
+    #[cfg(target_os = "windows")]
     {
         let _ = callback;
         Err(crate::Error::WatchUnavailable {
@@ -370,9 +417,12 @@ pub fn on_theme_change(
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LinuxBackend {
-    /// [`gnome::watch_gnome`].
+    /// [`gnome::watch_gnome`] of the GNOME reader's sources.
     #[cfg(feature = "portal")]
     Gnome,
+    /// [`gnome::watch_gnome`] of the portal-only read's sources.
+    #[cfg(feature = "portal")]
+    Portal,
 }
 
 /// The backend that watches `desktop`, the refined desktop the reader is
@@ -385,6 +435,18 @@ fn linux_backend(desktop: crate::detect::LinuxDesktop) -> Option<LinuxBackend> {
         crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
             Some(LinuxBackend::Gnome)
         }
+        #[cfg(feature = "portal")]
+        crate::detect::LinuxDesktop::Xfce
+        | crate::detect::LinuxDesktop::Cinnamon
+        | crate::detect::LinuxDesktop::Mate
+        | crate::detect::LinuxDesktop::LxQt
+        | crate::detect::LinuxDesktop::Hyprland
+        | crate::detect::LinuxDesktop::Sway
+        | crate::detect::LinuxDesktop::River
+        | crate::detect::LinuxDesktop::Niri
+        | crate::detect::LinuxDesktop::Wayfire
+        | crate::detect::LinuxDesktop::CosmicDe
+        | crate::detect::LinuxDesktop::Unknown => Some(LinuxBackend::Portal),
         _ => None,
     }
 }
@@ -409,22 +471,29 @@ mod tests {
         }
     }
 
-    /// An unrecognised desktop that nothing names has no watcher.
+    /// An unrecognised desktop that nothing names is watched as its
+    /// portal-only read reads it, with `portal` (S16's *Which reader*);
+    /// without it, and on KDE until its reader returns, there is no
+    /// watcher.
     #[cfg(target_os = "linux")]
     #[test]
-    fn an_unknown_desktop_that_nothing_names_is_not_watched() {
+    fn an_unknown_desktop_that_nothing_names_is_watched_through_the_portal() {
         let desktop =
             crate::detect::refine_linux_desktop(crate::detect::LinuxDesktop::Unknown, None, || {
                 false
             });
+        #[cfg(feature = "portal")]
+        assert_eq!(linux_backend(desktop), Some(LinuxBackend::Portal));
+        #[cfg(not(feature = "portal"))]
         assert_eq!(linux_backend(desktop), None);
+        assert_eq!(linux_backend(crate::detect::LinuxDesktop::Kde), None);
     }
 
     /// The source-to-notification table (M1-T6-08): for each linked reader,
     /// every source its module lists under `# Sources`, and the notification
     /// its watcher observes for it: a `namespace key` of the portal's
-    /// `SettingChanged` (GNOME). The KDE, macOS and Windows rows return with
-    /// their readers.
+    /// `SettingChanged` (GNOME, the portal-only read), a notification's name
+    /// (macOS). The KDE and Windows rows return with their readers.
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         (
             "gnome",
@@ -473,6 +542,16 @@ mod tests {
         ),
         (
             "gnome",
+            "org.gnome.desktop.interface font-name",
+            "org.gnome.desktop.interface font-name",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface monospace-font-name",
+            "org.gnome.desktop.interface monospace-font-name",
+        ),
+        (
+            "gnome",
             "org.gnome.desktop.a11y.interface high-contrast",
             "org.gnome.desktop.a11y.interface high-contrast",
         ),
@@ -481,10 +560,65 @@ mod tests {
             "org.gnome.desktop.a11y.interface reduced-motion",
             "org.gnome.desktop.a11y.interface reduced-motion",
         ),
+        (
+            "portal",
+            "org.freedesktop.appearance color-scheme",
+            "org.freedesktop.appearance color-scheme",
+        ),
+        (
+            "portal",
+            "org.freedesktop.appearance accent-color",
+            "org.freedesktop.appearance accent-color",
+        ),
+        (
+            "portal",
+            "org.freedesktop.appearance contrast",
+            "org.freedesktop.appearance contrast",
+        ),
+        (
+            "portal",
+            "org.freedesktop.appearance reduced-motion",
+            "org.freedesktop.appearance reduced-motion",
+        ),
+        (
+            "portal",
+            "org.gnome.desktop.interface color-scheme",
+            "org.gnome.desktop.interface color-scheme",
+        ),
+        (
+            "portal",
+            "org.gnome.desktop.interface enable-animations",
+            "org.gnome.desktop.interface enable-animations",
+        ),
+        (
+            "portal",
+            "org.gnome.desktop.a11y.interface reduced-motion",
+            "org.gnome.desktop.a11y.interface reduced-motion",
+        ),
+        (
+            "macos",
+            "AppleInterfaceStyle",
+            "AppleInterfaceThemeChangedNotification",
+        ),
+        ("macos", "NSColor", "NSSystemColorsDidChangeNotification"),
+        (
+            "macos",
+            "NSScroller.preferredScrollerStyle",
+            "NSPreferredScrollerStyleDidChangeNotification",
+        ),
+        (
+            "macos",
+            "NSWorkspace.accessibilityDisplayOptions",
+            "NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification",
+        ),
     ];
 
     /// Each reader's module source, whose docs list its sources.
-    const READER_MODULES: &[(&str, &str)] = &[("gnome", include_str!("../gnome/mod.rs"))];
+    const READER_MODULES: &[(&str, &str)] = &[
+        ("gnome", include_str!("../gnome/mod.rs")),
+        ("portal", include_str!("../gnome/portal.rs")),
+        ("macos", include_str!("../macos.rs")),
+    ];
 
     /// The sources a reader module lists: the first code span of each item
     /// of its `# Sources` doc section.
@@ -500,7 +634,10 @@ mod tests {
     }
 
     /// The notifications the table gives for `reader`'s sources.
-    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[cfg(any(
+        all(target_os = "linux", feature = "portal"),
+        all(target_os = "macos", feature = "macos"),
+    ))]
     fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
         SOURCE_NOTIFICATIONS
             .iter()
@@ -536,13 +673,38 @@ mod tests {
     #[cfg(all(target_os = "linux", feature = "portal"))]
     #[test]
     fn the_gnome_watcher_observes_every_gnome_source() {
-        for setting in table_notifications("gnome") {
-            let (namespace, key) = setting.split_once(' ').unwrap();
-            assert!(
-                gnome::watches(namespace, key),
-                "the GNOME watcher ignores the SettingChanged of `{setting}`"
+        for (reader, watched) in [("gnome", gnome::GNOME), ("portal", gnome::PORTAL)] {
+            for setting in table_notifications(reader) {
+                let (namespace, key) = setting.split_once(' ').unwrap();
+                assert!(
+                    gnome::watches(watched, namespace, key),
+                    "the {reader} watcher ignores the SettingChanged of `{setting}`"
+                );
+            }
+            assert_eq!(
+                watched.len(),
+                table_notifications(reader).count(),
+                "{reader}: a watched setting with no row"
             );
         }
+    }
+
+    /// The macOS watcher registers for the notification of every macOS row.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn the_macos_watcher_observes_every_macos_source() {
+        let observed: Vec<&str> = macos::registrations().iter().map(|r| r.name_id).collect();
+        for notification in table_notifications("macos") {
+            assert!(
+                observed.contains(&notification),
+                "the macOS watcher does not register for `{notification}`"
+            );
+        }
+        assert_eq!(
+            observed.len(),
+            table_notifications("macos").count(),
+            "macos: a registered notification with no row"
+        );
     }
 
     /// Every gsettings key the GNOME reader reads is a listed source.
@@ -568,6 +730,33 @@ mod tests {
             assert!(
                 sources.contains(&setting.as_str()),
                 "the GNOME reader reads `{setting}`, which its `# Sources` do not list"
+            );
+        }
+    }
+
+    /// Every gsettings key the portal-only read reads is a listed source.
+    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[test]
+    fn the_portal_only_read_lists_every_gsetting_it_reads() {
+        let sources = listed_sources(include_str!("../gnome/portal.rs"));
+        let mut read = Vec::new();
+        let _ = crate::gnome::portal::build_reading(
+            None,
+            None,
+            ashpd::desktop::settings::Contrast::default(),
+            None,
+            None,
+            |schema, key| {
+                read.push(format!("{schema} {key}"));
+                None
+            },
+            || None,
+        );
+        assert!(!read.is_empty());
+        for setting in &read {
+            assert!(
+                sources.contains(&setting.as_str()),
+                "the portal-only read reads `{setting}`, which its `# Sources` do not list"
             );
         }
     }
@@ -791,7 +980,7 @@ mod tests {
     /// the two, so a drop that hangs fails the test after `per_drop_timeout`
     /// instead of blocking it. A platform or desktop without a watcher
     /// (`WatchUnavailable`) skips the test.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
         for round in 0..rounds {
             let (done_tx, done_rx) = mpsc::channel();
@@ -808,6 +997,13 @@ mod tests {
                 ),
             }
         }
+    }
+
+    /// The macOS watcher has no thread: a drop removes its observer.
+    #[cfg(all(target_os = "macos", feature = "watch"))]
+    #[test]
+    fn macos_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
     }
 
     /// A few rounds keep the test short.

@@ -1,4 +1,5 @@
 //! libadwaita's snapping of the portal's accent colour to one of its nine accents.
+//! Its arithmetic was made panic-free after the clean room (the identity `fmod` dropped), without reading LGPL source.
 
 /// One of libadwaita's nine accent colours.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,8 +53,8 @@ pub fn adw_accent_nearest(red: f32, green: f32, blue: f32) -> AdwAccent {
 
     let c = lab_a.hypot(lab_b);
     let t = f64::from(lab_b).atan2(f64::from(lab_a));
-    let h = ((t * 180.0) / std::f64::consts::PI) as f32;
-    let mut h = (f64::from(h) % 360.0) as f32;
+    // `atan2` keeps `h` within ±180, where libadwaita's `fmod(h, 360)` changes nothing.
+    let mut h = ((t * 180.0) / std::f64::consts::PI) as f32;
     if h < 0.0 {
         h += 360.0_f32;
     }
@@ -119,8 +120,8 @@ mod tests {
     }
 
     #[test]
-    fn every_row_of_the_table() {
-        let table = include_str!("../vectors/reader.adw_accent_nearest.tsv");
+    fn vectors_reader_adw_accent_nearest() {
+        let table = include_str!("../../tests/vectors/reader.adw_accent_nearest.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(lines.next(), Some("red\tgreen\tblue\taccent"));
         let mut rows = 0usize;

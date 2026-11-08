@@ -1,4 +1,5 @@
 //! Pango's font-description string parser, as GNOME's reader reads the gsettings font strings.
+//! Its arithmetic was made panic-free after the clean room, without reading LGPL source.
 
 /// A parsed Pango font description: each optional field is `None` where the parser left it unset.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,14 +61,14 @@ fn getword(bytes: &[u8], end: usize, comma_stops: bool) -> (usize, usize) {
         if !is_space(b) {
             break;
         }
-        end -= 1;
+        end = end.saturating_sub(1);
     }
     let mut start = end;
     while let Some(b) = byte_before(bytes, start) {
         if is_space(b) || (comma_stops && b == b',') {
             break;
         }
-        start -= 1;
+        start = start.saturating_sub(1);
     }
     (start, end)
 }
@@ -85,10 +86,10 @@ fn matches(name: &str, word: &str) -> bool {
             break;
         };
         if nb.to_ascii_lowercase() == wb.to_ascii_lowercase() {
-            ni += 1;
-            wi += 1;
+            ni = ni.saturating_add(1);
+            wi = wi.saturating_add(1);
         } else if nb == b'-' {
-            ni += 1;
+            ni = ni.saturating_add(1);
         } else {
             return false;
         }
@@ -246,7 +247,7 @@ fn digits_end(bytes: &[u8], from: usize, hex: bool) -> usize {
         if !ok {
             break;
         }
-        i += 1;
+        i = i.saturating_add(1);
     }
     i
 }
@@ -264,12 +265,7 @@ fn hex_value(int_digits: &[u8], frac_digits: &[u8], exp: i64) -> f64 {
     let mut scale: i64 = exp;
     let mut seen_nonzero = false;
     for (index, &d) in int_digits.iter().chain(frac_digits.iter()).enumerate() {
-        let v = match d {
-            b'0'..=b'9' => d - b'0',
-            b'a'..=b'f' => d - b'a' + 10,
-            b'A'..=b'F' => d - b'A' + 10,
-            _ => 0,
-        };
+        let v = char::from(d).to_digit(16).unwrap_or(0);
         let in_frac = index >= int_digits.len();
         if mantissa >> 60 == 0 {
             mantissa = (mantissa << 4) | u64::from(v);
@@ -291,18 +287,17 @@ fn hex_value(int_digits: &[u8], frac_digits: &[u8], exp: i64) -> f64 {
     if !seen_nonzero {
         return 0.0;
     }
-    let bits = 64 - mantissa.leading_zeros();
+    let bits = u64::BITS.saturating_sub(mantissa.leading_zeros());
     let mut kept = mantissa;
-    if bits > 53 {
-        let shift = bits - 53;
-        let dropped_mask = (1u64 << shift) - 1;
+    if let Some(shift) = bits.checked_sub(53).filter(|&shift| shift > 0) {
+        let dropped_mask = !(u64::MAX << shift);
         let dropped = mantissa & dropped_mask;
-        let half = 1u64 << (shift - 1);
+        let half = (1u64 << shift) >> 1;
         kept = mantissa >> shift;
         scale = scale.saturating_add(i64::from(shift));
         let round_up = dropped > half || (dropped == half && (sticky || kept & 1 == 1));
         if round_up {
-            kept += 1;
+            kept = kept.saturating_add(1);
         }
     }
     let mut value = kept as f64;
@@ -310,12 +305,12 @@ fn hex_value(int_digits: &[u8], frac_digits: &[u8], exp: i64) -> f64 {
     while s > 0 {
         let step = s.min(1000);
         value *= 2f64.powi(step as i32);
-        s -= step;
+        s = s.saturating_sub(step);
     }
     while s < 0 {
         let step = s.max(-1000);
         value *= 2f64.powi(step as i32);
-        s -= step;
+        s = s.saturating_sub(step);
     }
     value
 }
@@ -324,46 +319,47 @@ fn hex_value(int_digits: &[u8], frac_digits: &[u8], exp: i64) -> f64 {
 fn strtod_prefix(bytes: &[u8]) -> Option<(f64, usize)> {
     let mut i = 0usize;
     while bytes.get(i) == Some(&0x0b) {
-        i += 1;
+        i = i.saturating_add(1);
     }
     let mut negative = false;
     match bytes.get(i) {
-        Some(b'+') => i += 1,
+        Some(b'+') => i = i.saturating_add(1),
         Some(b'-') => {
             negative = true;
-            i += 1;
+            i = i.saturating_add(1);
         }
         _ => {}
     }
     let sign = if negative { -1.0 } else { 1.0 };
     if starts_with_ignore_case(bytes, i, b"infinity") {
-        return Some((sign * f64::INFINITY, i + 8));
+        return Some((sign * f64::INFINITY, i.saturating_add(8)));
     }
     if starts_with_ignore_case(bytes, i, b"inf") {
-        return Some((sign * f64::INFINITY, i + 3));
+        return Some((sign * f64::INFINITY, i.saturating_add(3)));
     }
     if starts_with_ignore_case(bytes, i, b"nan") {
-        let mut end = i + 3;
+        let mut end = i.saturating_add(3);
         if bytes.get(end) == Some(&b'(') {
-            let mut j = end + 1;
+            let mut j = end.saturating_add(1);
             while bytes
                 .get(j)
                 .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'_')
             {
-                j += 1;
+                j = j.saturating_add(1);
             }
             if bytes.get(j) == Some(&b')') {
-                end = j + 1;
+                end = j.saturating_add(1);
             }
         }
         return Some((f64::NAN, end));
     }
-    let is_hex = bytes.get(i) == Some(&b'0') && matches!(bytes.get(i + 1), Some(b'x') | Some(b'X'));
+    let is_hex = bytes.get(i) == Some(&b'0')
+        && matches!(bytes.get(i.saturating_add(1)), Some(b'x') | Some(b'X'));
     if is_hex {
-        let int_start = i + 2;
+        let int_start = i.saturating_add(2);
         let int_end = digits_end(bytes, int_start, true);
         let (frac_start, frac_end) = if bytes.get(int_end) == Some(&b'.') {
-            let fs = int_end + 1;
+            let fs = int_end.saturating_add(1);
             (fs, digits_end(bytes, fs, true))
         } else {
             (int_end, int_end)
@@ -374,13 +370,13 @@ fn strtod_prefix(bytes: &[u8]) -> Option<(f64, usize)> {
             let mut end = frac_end;
             let mut exp: i64 = 0;
             if matches!(bytes.get(end), Some(b'p') | Some(b'P')) {
-                let mut j = end + 1;
+                let mut j = end.saturating_add(1);
                 let mut exp_negative = false;
                 match bytes.get(j) {
-                    Some(b'+') => j += 1,
+                    Some(b'+') => j = j.saturating_add(1),
                     Some(b'-') => {
                         exp_negative = true;
-                        j += 1;
+                        j = j.saturating_add(1);
                     }
                     _ => {}
                 }
@@ -390,25 +386,26 @@ fn strtod_prefix(bytes: &[u8]) -> Option<(f64, usize)> {
                     for &d in bytes.get(j..exp_end).unwrap_or(&[]) {
                         e = e
                             .saturating_mul(10)
-                            .saturating_add(i64::from(d - b'0'))
+                            .saturating_add(i64::from(char::from(d).to_digit(10)?))
                             .min(1_000_000);
                     }
-                    exp = if exp_negative { -e } else { e };
+                    exp = if exp_negative { e.saturating_neg() } else { e };
                     end = exp_end;
                 }
             }
             return Some((sign * hex_value(int_digits, frac_digits, exp), end));
         }
         // "0x" without hex digits: the number is the "0".
-        return Some((sign * 0.0, i + 1));
+        return Some((sign * 0.0, i.saturating_add(1)));
     }
     let start = i;
     let int_end = digits_end(bytes, start, false);
     let mut end = int_end;
     let mut any_digit = int_end > start;
     if bytes.get(end) == Some(&b'.') {
-        let frac_end = digits_end(bytes, end + 1, false);
-        if frac_end > end + 1 {
+        let frac_start = end.saturating_add(1);
+        let frac_end = digits_end(bytes, frac_start, false);
+        if frac_end > frac_start {
             any_digit = true;
         }
         if any_digit {
@@ -419,9 +416,9 @@ fn strtod_prefix(bytes: &[u8]) -> Option<(f64, usize)> {
         return None;
     }
     if matches!(bytes.get(end), Some(b'e') | Some(b'E')) {
-        let mut j = end + 1;
+        let mut j = end.saturating_add(1);
         if matches!(bytes.get(j), Some(b'+') | Some(b'-')) {
-            j += 1;
+            j = j.saturating_add(1);
         }
         let exp_end = digits_end(bytes, j, false);
         if exp_end > j {
@@ -504,17 +501,17 @@ pub fn pango_font_description(s: &str) -> PangoDescription {
     }
 
     while byte_before(bytes, last).is_some_and(is_space) {
-        last -= 1;
+        last = last.saturating_sub(1);
     }
     if byte_before(bytes, last) == Some(b',') {
-        last -= 1;
+        last = last.saturating_sub(1);
     }
     while byte_before(bytes, last).is_some_and(is_space) {
-        last -= 1;
+        last = last.saturating_sub(1);
     }
     let mut first = 0usize;
     while first < last && bytes.get(first).copied().is_some_and(is_space) {
-        first += 1;
+        first = first.saturating_add(1);
     }
     if first < last {
         let family = text(first, last)
@@ -644,8 +641,8 @@ mod tests {
     }
 
     #[test]
-    fn every_row_of_the_table() {
-        let table = include_str!("../vectors/reader.pango_font_description.tsv");
+    fn vectors_reader_pango_font_description() {
+        let table = include_str!("../../tests/vectors/reader.pango_font_description.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(
             lines.next(),
@@ -676,5 +673,49 @@ mod tests {
         );
         assert_eq!(rows, 263);
         println!("pango_font_description: {rows} of {rows} rows pass");
+    }
+
+    #[test]
+    fn hex_mantissa_past_53_bits_rounds_to_nearest_even() {
+        // 2^53 + 1 and 2^55 + 4 are ties kept even; 2^53 + 3 and 2^55 + 12 ties rounded up;
+        // 2^55 + 1 rounds down.
+        assert_eq!(
+            strtod_prefix(b"0x20000000000001"),
+            Some((9007199254740992.0, 16))
+        );
+        assert_eq!(
+            strtod_prefix(b"0x20000000000003"),
+            Some((9007199254740996.0, 16))
+        );
+        assert_eq!(
+            strtod_prefix(b"0x80000000000001"),
+            Some((36028797018963968.0, 16))
+        );
+        assert_eq!(
+            strtod_prefix(b"0x80000000000004"),
+            Some((36028797018963968.0, 16))
+        );
+        assert_eq!(
+            strtod_prefix(b"0x8000000000000C"),
+            Some((36028797018963984.0, 16))
+        );
+    }
+
+    #[test]
+    fn hex_exponent_past_any_double_saturates() {
+        assert_eq!(
+            strtod_prefix(b"0x1p99999999999999999999"),
+            Some((f64::INFINITY, 24))
+        );
+        assert_eq!(strtod_prefix(b"0x1p-99999999999999999999"), Some((0.0, 25)));
+        let tiny = pango_font_description("Sans 0x1p-99999999999999999999");
+        assert_eq!(tiny.family.as_deref(), Some("Sans"));
+        assert_eq!(tiny.size, Some(0));
+        let huge = pango_font_description("Sans 0x1p99999999999999999999");
+        assert_eq!(
+            huge.family.as_deref(),
+            Some("Sans 0x1p99999999999999999999")
+        );
+        assert_eq!(huge.size, None);
     }
 }

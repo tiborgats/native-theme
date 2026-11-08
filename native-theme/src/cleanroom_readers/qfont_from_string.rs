@@ -1,4 +1,5 @@
 //! Qt's `QFont::fromString`, as KDE's reader reads kdeglobals font entries.
+//! Its arithmetic was made panic-free after the clean room, without reading LGPL source.
 
 use std::collections::BTreeMap;
 
@@ -67,27 +68,27 @@ fn is_decimal(text: &str) -> bool {
     }
     let mut digits = 0usize;
     while bytes.get(i).is_some_and(u8::is_ascii_digit) {
-        i += 1;
-        digits += 1;
+        i = i.saturating_add(1);
+        digits = digits.saturating_add(1);
     }
     if bytes.get(i) == Some(&b'.') {
-        i += 1;
+        i = i.saturating_add(1);
         while bytes.get(i).is_some_and(u8::is_ascii_digit) {
-            i += 1;
-            digits += 1;
+            i = i.saturating_add(1);
+            digits = digits.saturating_add(1);
         }
     }
     if digits == 0 {
         return false;
     }
     if matches!(bytes.get(i), Some(b'e') | Some(b'E')) {
-        i += 1;
+        i = i.saturating_add(1);
         if matches!(bytes.get(i), Some(b'+') | Some(b'-')) {
-            i += 1;
+            i = i.saturating_add(1);
         }
         let start = i;
         while bytes.get(i).is_some_and(u8::is_ascii_digit) {
-            i += 1;
+            i = i.saturating_add(1);
         }
         if i == start {
             return false;
@@ -167,7 +168,11 @@ fn integer_parts(field: &str) -> Option<(bool, u64)> {
 fn checked_int(field: &str) -> Option<i32> {
     let (negative, magnitude) = integer_parts(field)?;
     let magnitude = i64::try_from(magnitude).ok()?;
-    let value = if negative { -magnitude } else { magnitude };
+    let value = if negative {
+        magnitude.checked_neg()?
+    } else {
+        magnitude
+    };
     i32::try_from(value).ok()
 }
 
@@ -214,10 +219,10 @@ fn legacy(w: i32) -> i32 {
     ];
     let w = i64::from(w);
     let [(first_old, first_new), rest @ ..] = PAIRS;
-    let mut best_distance = (first_old - w).abs();
+    let mut best_distance = first_old.abs_diff(w);
     let mut result = first_new;
     for (old, new) in rest {
-        let d = (old - w).abs();
+        let d = old.abs_diff(w);
         if d >= best_distance {
             break;
         }
@@ -241,7 +246,7 @@ fn entry(text: &str) -> Option<([u8; 4], &str)> {
     for c in tag.encode_utf16() {
         let slot = bytes.get_mut(count)?;
         *slot = u8::try_from(c).unwrap_or_default();
-        count += 1;
+        count = count.saturating_add(1);
     }
     if count != 4 || bytes == [0; 4] {
         return None;
@@ -332,7 +337,7 @@ fn entries(l: &[&str]) -> (Features, Axes) {
     let Some(n) = l.get(pos).map(|f| int(f)) else {
         return (features, axes);
     };
-    pos += 1;
+    pos = pos.saturating_add(1);
     let n = usize::try_from(n).unwrap_or_default();
     let Some(end) = pos.checked_add(n).filter(|end| *end <= count) else {
         return (features, axes);
@@ -349,7 +354,7 @@ fn entries(l: &[&str]) -> (Features, Axes) {
     let Some(m) = l.get(pos).map(|f| int(f)) else {
         return (features, axes);
     };
-    pos += 1;
+    pos = pos.saturating_add(1);
     let m = usize::try_from(m).unwrap_or_default();
     let Some(end) = pos.checked_add(m).filter(|end| *end <= count) else {
         return (features, axes);
@@ -556,8 +561,8 @@ mod tests {
     }
 
     #[test]
-    fn every_row_of_the_table() {
-        let table = include_str!("../vectors/reader.qfont_from_string.tsv");
+    fn vectors_reader_qfont_from_string() {
+        let table = include_str!("../../tests/vectors/reader.qfont_from_string.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(
             lines.next(),
@@ -590,5 +595,20 @@ mod tests {
         );
         assert_eq!(rows, 284);
         println!("qfont_from_string: {rows} of {rows} rows pass");
+    }
+
+    #[test]
+    fn integers_at_the_64_and_32_bit_edges() {
+        assert_eq!(checked_int("-2147483648"), Some(i32::MIN));
+        assert_eq!(checked_int("-2147483649"), None);
+        assert_eq!(int("-9223372036854775808"), 0);
+        assert_eq!(int("-18446744073709551615"), 0);
+        assert_eq!(int("18446744073709551616"), 0);
+    }
+
+    #[test]
+    fn legacy_weights_at_the_32_bit_edges() {
+        assert_eq!(legacy(i32::MIN), 100);
+        assert_eq!(legacy(i32::MAX), 900);
     }
 }

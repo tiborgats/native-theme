@@ -46,11 +46,22 @@ impl Theme {
     /// The portal's reads are D-Bus calls, on which this blocks; an
     /// application inside an async executor awaits
     /// [`Theme::from_system_async`].
+    ///
+    /// On macOS the scroller style and keyboard navigation are AppKit's
+    /// main-thread API: called off the main thread, as from an executor's
+    /// worker, this does not read them, and [`Theme::system`]'s
+    /// `overlay_scrollbars` and `full_keyboard_access` are `false`, with no
+    /// [`ReaderStatus::Fallback`] (S16). AppKit runs an application's event
+    /// loop on the main thread; one that builds the theme on another thread
+    /// and needs the two settings calls [`Theme::reload_reader`] from its
+    /// event loop.
     pub fn from_system(generation: Option<PresetId>) -> Result<Theme, ThemeError> {
         pollster::block_on(Theme::from_system_async(generation))
     }
 
-    /// [`Theme::from_system`], awaited.
+    /// [`Theme::from_system`], awaited. On macOS it reads the scroller
+    /// style and keyboard navigation only when polled on the main thread, as
+    /// [`Theme::from_system`] says.
     pub async fn from_system_async(generation: Option<PresetId>) -> Result<Theme, ThemeError> {
         let (reader, preset) = super::reader::select(generation).await?;
         let failed = |failure| ThemeError::Reader { preset, failure };
@@ -163,12 +174,16 @@ impl Theme {
     /// returns [`Theme::reader_status`].
     ///
     /// Blocks on the portal's D-Bus calls, as [`Theme::from_system`] does;
-    /// [`Theme::reload_reader_async`] awaits them.
+    /// [`Theme::reload_reader_async`] awaits them. On macOS it reads the
+    /// scroller style and keyboard navigation only when called on the main
+    /// thread, as [`Theme::from_system`] says.
     pub fn reload_reader(&mut self) -> ReaderStatus {
         pollster::block_on(self.reload_reader_async())
     }
 
-    /// [`Theme::reload_reader`], awaited.
+    /// [`Theme::reload_reader`], awaited. On macOS it reads the scroller
+    /// style and keyboard navigation only when polled on the main thread, as
+    /// [`Theme::from_system`] says.
     pub async fn reload_reader_async(&mut self) -> ReaderStatus {
         let Some((reader, own)) = self.reader else {
             return self.reader_status();

@@ -7,6 +7,9 @@ use ashpd::desktop::Color as PortalColor;
 use ashpd::desktop::settings::{ColorScheme, Contrast as PortalContrast, ReducedMotion};
 
 use super::*;
+use crate::blocks::text::{FontStyle, TextCase, TextStylePatch};
+use crate::units::FontSize;
+use helpers::AdwAccent;
 
 /// A text-scaling factor other than the identity (synthetic).
 const SCALED: f32 = 1.5;
@@ -47,6 +50,8 @@ fn gnome_data() -> GnomeData {
         session_type: None,
         overlay_scrolling: None,
         icon_theme: None,
+        font_name: None,
+        monospace_font_name: None,
     }
 }
 
@@ -116,18 +121,18 @@ fn nothing_read_is_the_light_scheme_unscaled() {
 #[test]
 fn one_gsettings_read_per_key() {
     for (scheme, contrast, motion, reads) in [
-        (None, PortalContrast::NoPreference, None, 7),
+        (None, PortalContrast::NoPreference, None, 9),
         (
             Some(ColorScheme::PreferDark),
             PortalContrast::NoPreference,
             None,
-            6,
+            8,
         ),
         (
             Some(ColorScheme::PreferDark),
             PortalContrast::High,
             Some(ReducedMotion::NoPreference),
-            4,
+            6,
         ),
     ] {
         let mut keys = Vec::new();
@@ -157,8 +162,8 @@ fn a_spent_deadline_reads_nothing() {
 
 // === the accent ===
 
-/// The portal's accent is the accent input at both schemes: GNOME's accent
-/// setting is independent of the scheme (S9.3).
+/// The portal's accent, classified, is the accent input at both schemes:
+/// GNOME's accent setting is independent of the scheme (S9.3).
 #[test]
 fn the_portal_accent_is_the_accent_at_both_schemes() {
     for portal_scheme in [ColorScheme::PreferLight, ColorScheme::PreferDark] {
@@ -171,13 +176,67 @@ fn the_portal_accent_is_the_accent_at_both_schemes() {
             no_gsettings,
             PresetId::Adwaita,
         );
-        let accent = Color {
-            r: 0.25,
-            g: 0.5,
-            b: 0.75,
-            a: 1.0,
-        };
-        assert_eq!(stated_accent(&reading), Some([Some(accent), Some(accent)]));
+        let accent = Color::parse("#3584e4");
+        assert_eq!(stated_accent(&reading), Some([accent, accent]));
+    }
+}
+
+/// The accent stated is the colour of the libadwaita accent the portal's
+/// colour classifies as, not the portal's own colour (S9.3, ADD-A135):
+/// each accent's own colour as itself, another colour as the accent of its
+/// hue (synthetic colours, classified by the helper's table's rules).
+#[test]
+fn the_accent_is_libadwaitas_nearest() {
+    for (rgb, accent) in [
+        ((0.0, 0.0, 0.0), AdwAccent::Slate),
+        ((0.9, 0.1, 0.1), AdwAccent::Red),
+        ((0.1, 0.6, 0.2), AdwAccent::Green),
+    ] {
+        let mut data = gnome_data();
+        data.accent_rgb = Some(rgb);
+        let color = helpers::accent_color(accent);
+        assert_eq!(
+            stated_accent(&build_gnome_reading(&data, PresetId::Adwaita)),
+            Some([color, color]),
+            "{rgb:?}"
+        );
+    }
+    for accent in [
+        AdwAccent::Blue,
+        AdwAccent::Teal,
+        AdwAccent::Green,
+        AdwAccent::Yellow,
+        AdwAccent::Orange,
+        AdwAccent::Red,
+        AdwAccent::Pink,
+        AdwAccent::Purple,
+        AdwAccent::Slate,
+    ] {
+        let color = helpers::accent_color(accent).unwrap();
+        assert_eq!(
+            adw_accent_nearest(color.r, color.g, color.b),
+            accent,
+            "{accent:?}"
+        );
+    }
+}
+
+/// Blue's colour is the `adwaita` preset's own accent at both schemes, the
+/// one fact of the nine (`docs/facts/gnome/roles.toml:5565`).
+#[test]
+fn blue_is_the_presets_accent() {
+    let file = crate::toml::layer::read_preset(PresetId::Adwaita.source()).unwrap();
+    let (_, accent) = file
+        .layer
+        .bases
+        .inputs
+        .entries
+        .iter()
+        .find(|(name, _)| *name == InputName::accent())
+        .unwrap();
+    let blue = helpers::accent_color(AdwAccent::Blue).map(Value::Stated);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        assert_eq!(accent.per_scheme.get(scheme).cloned(), blue, "{scheme:?}");
     }
 }
 
@@ -195,11 +254,11 @@ fn an_out_of_range_accent_is_unset() {
 
 #[test]
 fn the_accents_range_is_inclusive() {
-    for (rgb, channel) in [((0.0, 0.0, 0.0), 0.0), ((1.0, 1.0, 1.0), 1.0)] {
-        let color = portal_accent(rgb).unwrap();
+    for rgb in [(0.0, 0.0, 0.0), (1.0, 1.0, 1.0)] {
         assert_eq!(
-            [color.r, color.g, color.b, color.a],
-            [channel, channel, channel, 1.0]
+            portal_accent(rgb),
+            helpers::accent_color(AdwAccent::Slate),
+            "{rgb:?}"
         );
     }
 }
@@ -354,6 +413,102 @@ fn the_icon_theme_is_the_own_presets() {
         .as_ref()
         .and_then(|icons| icons.theme.clone());
     assert_eq!(theme, Some(Value::Stated("Papirus".to_string())));
+}
+
+// === the fonts ===
+
+/// The `body` and `monospace` slots' patches in the reading's common
+/// bases.
+fn slots(reading: &Reading) -> (Option<TextStylePatch>, Option<TextStylePatch>) {
+    let roles = reading
+        .layer
+        .bases
+        .tokens
+        .text
+        .as_ref()
+        .and_then(|text| text.roles.as_deref());
+    let slot = |patch: Option<&BlockPatch<crate::blocks::text::TextStyle>>| match patch {
+        Some(BlockPatch::Fields(style)) => Some(style.clone()),
+        _ => None,
+    };
+    (
+        roles.and_then(|roles| slot(roles.body.as_ref())),
+        roles.and_then(|roles| slot(roles.monospace.as_ref())),
+    )
+}
+
+/// `font-name` patches `body` and `monospace-font-name` `monospace`, in the
+/// common bases, any preset taking them (S9.5); a point size in logical
+/// pixels by the own preset's `token.text.font_dpi`, adwaita's 96 (S9.4;
+/// `docs/facts/gnome/tokens.toml:6744`).
+#[test]
+fn the_fonts_patch_body_and_monospace() {
+    let mut data = gnome_data();
+    data.font_name = Some("Adwaita Sans Bold Italic 12".to_string());
+    data.monospace_font_name = Some("Adwaita Mono 15px".to_string());
+    let reading = build_gnome_reading(&data, PresetId::Adwaita);
+    assert!(reading.layer.for_preset.is_empty());
+    let (Some(body), Some(mono)) = slots(&reading) else {
+        panic!("both slots patched");
+    };
+    let font = |style: &TextStylePatch| style.font.clone().unwrap();
+    let body = font(&body);
+    assert_eq!(body.family, Some(Value::Stated("Adwaita Sans".to_string())));
+    assert_eq!(body.size, Some(Value::Stated(FontSize::Px(16.0))));
+    assert_eq!(body.weight, Some(Value::Stated(700)));
+    assert_eq!(body.style, Some(Value::Stated(FontStyle::Italic)));
+    let mono = font(&mono);
+    assert_eq!(mono.family, Some(Value::Stated("Adwaita Mono".to_string())));
+    assert_eq!(mono.size, Some(Value::Stated(FontSize::Px(15.0))));
+    assert_eq!(mono.weight, Some(Value::Stated(400)));
+    assert_eq!(mono.style, Some(Value::Stated(FontStyle::Normal)));
+}
+
+/// What the reader keeps of a description (synthetic strings): the first
+/// family of a list; no size where none or zero is given; small caps as
+/// the case; a width in percent; no patch for a string naming no family.
+#[test]
+fn a_font_string_patches_what_it_states() {
+    let patch = |text: &str| helpers::font_patch(text, Some(96.0));
+    let style = patch("Cantarell,Sans Small-Caps Condensed").unwrap();
+    let font = style.font.clone().unwrap();
+    assert_eq!(font.family, Some(Value::Stated("Cantarell".to_string())));
+    assert_eq!(font.size, None);
+    assert_eq!(style.case, Some(Value::Stated(TextCase::SmallCaps)));
+    assert!(matches!(font.width, Some(Value::Stated(width)) if width < 100.0));
+    assert_eq!(patch("Sans 0").unwrap().font.unwrap().size, None);
+    assert_eq!(patch("Sans 11").unwrap().case, None);
+    assert_eq!(
+        patch("Sans 11").unwrap().font.unwrap().width,
+        Some(Value::Stated(100.0))
+    );
+    for text in ["", "   ", "11", "Bold 11"] {
+        assert_eq!(patch(text), None, "{text:?}");
+    }
+    // No DPI: a point size is not converted, a pixel size is.
+    assert_eq!(
+        helpers::font_patch("Sans 11", None)
+            .unwrap()
+            .font
+            .unwrap()
+            .size,
+        None
+    );
+    assert_eq!(
+        helpers::font_patch("Sans 11px", None)
+            .unwrap()
+            .font
+            .unwrap()
+            .size,
+        Some(Value::Stated(FontSize::Px(11.0)))
+    );
+}
+
+/// No font string read, no text-role patch.
+#[test]
+fn no_font_string_patches_no_slot() {
+    let reading = build_gnome_reading(&gnome_data(), PresetId::Adwaita);
+    assert_eq!(reading.layer.bases.tokens.text, None);
 }
 
 // === the portal backend and the deadline ===

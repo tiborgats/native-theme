@@ -5,6 +5,23 @@
 //! `kdedefaults/kdeglobals`, the defaults Plasma keeps beneath the user's
 //! file, then the user's `kdeglobals`, each in the user's config directory
 //! (`$XDG_CONFIG_HOME`, else `~/.config`).
+//!
+//! The clean room's Qt font parser, `qfont_from_string` (the 0.8.0 plan's
+//! D10), its code placed in `src/cleanroom_readers/`, unchanged but for its
+//! panic-free arithmetic, is linked
+//! here with its vector test; the KDE reader, which reads kdeglobals' font entries
+//! with it, returns with the `kde-breeze` preset (M1b).
+
+#[path = "../cleanroom_readers/qfont_from_string.rs"]
+#[allow(
+    dead_code,
+    reason = "the KDE reader's helper, which reads kdeglobals' font entries once the reader returns with kde-breeze (M1b); linked now so its vector test runs"
+)]
+#[allow(
+    clippy::collapsible_if,
+    reason = "the clean room's parser, its style kept as written (D10): a style lint only"
+)]
+mod qfont_from_string;
 
 /// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or
 /// empty.

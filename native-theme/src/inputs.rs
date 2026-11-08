@@ -44,6 +44,15 @@ impl InputName {
         InputName(vec![crate::key!("accent")])
     }
 
+    /// The input of one segment, `key`.
+    #[cfg_attr(
+        not(all(target_os = "macos", feature = "macos")),
+        allow(dead_code, reason = "a reader's: the macOS reader states it")
+    )]
+    pub(crate) fn from_key(key: Key) -> InputName {
+        InputName(vec![key])
+    }
+
     /// The path's segments.
     #[must_use]
     #[cfg_attr(
