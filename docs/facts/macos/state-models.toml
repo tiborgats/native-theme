@@ -22,27 +22,78 @@
 # style is the `split_button` widget, ADD-A123: the probe's `combo_unified` buttons, `combo_split` being no button),
 # one border shape, one tint prominence, one image position. The context: a button in a toolbar (`NSToolbarItem`,
 # the probe's toolbar window, which gives its item views control size extra_large, `view_*_controlSize_raw` 4: their
-# min_height and font are stated, the rest pending U94). Each variant was measured alone: no variant set is declared
-# (the report lists the sets AppKit draws).
+# min_height and font are stated, the rest pending U94). Each variant was measured alone; the sets AppKit draws are
+# the products below (the tie-break of MC-C1), their looks pending.
 # The output-route button (MAC-P3-9†, the facts lane t16b): `route` is AVKit's AVRoutePickerView, an NSView
 # (AVRoutePickerView.h:31, :83), not an NSButton bezel, so it holds none of the bezel variants; its four button states
 # (:62-67) are rest, pressed (highlighted), `route_active` (AirPlay active) and both, so it draws no `disabled`
 # and no `default` (the class declares no enabled state, key equivalent or control size: it takes no size), and
 # `route_active` only on it; `@bordered` is `routePickerButtonBordered` (:118-121, default YES), only on it.
+# The tie-break of MC-C1 (the blind verifier, its model compared): `indeterminate` (a toggle in the mixed state: an
+# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it), `selected` (the
+# item NSToolbar's `selectedItemIdentifier` names, highlighted, in a toolbar only; MAC-TL11†) and `@menu_on_hold` (an
+# NSComboButton with an action, its menu on a click and hold, the catalogue's) are drawn, their looks pending (U693,
+# U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
+# button is an NSButtonCell, so `menu` draws no `default`. One NSButton holds a bezel style (or none), a border shape,
+# a tint prominence, a button type, a destructive action and an image position at once, and an NSComboButton a title,
+# an image or both: `variant_products` states those sets (AppKit draws each; no pass measured one, U695's pending
+# facts in button.toml), trimmed by `exclusive_variants`.
 widget = "button"
 when = { conditions = ["preset:macos-tahoe"] }
 available = true
-variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered"]
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"]
 sizes = ["mini", "small", "regular", "large", "extra_large"]
 default_size = "regular"
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 densities = []
-axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["pressed", "disabled", "default", "checked", "indeterminate", "focus_visible", "selected", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
 variant_sets = [["route", "@bordered"]]
 exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "menu", "route"], ["pill", "@rounded_rectangle", "circular"], ["primary", "tinted"], ["icon_only", "with_icon"]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }]
-rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†"]
+variant_products = [[{ any = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat"] }, { any = ["pill", "@rounded_rectangle"] }, { any = ["primary", "tinted"] }, { any = ["toggle"] }, { any = ["destructive"] }, { any = ["icon_only", "with_icon"] }], [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["icon_only", "with_icon"] }]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["checked", "indeterminate"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
+rows = ["MAC-B01", "MAC-B02", "MAC-B07", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†", "MAC-TL11†", "MAC-N29†"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:150"
+quote = "Buttons support the off and on states, and an additional mixed state depending on the value of the `allowsMixedState` property."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:71-74"
+quote = "static const NSControlStateValue NSControlStateValueMixed = -1;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSToolbar.h:108-116"
+quote = "This method can be used to select identifiers of custom view items, or to force a selection change."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSToolbar.h:245"
+quote = "If implemented, the toolbar will remember and display the selected item with a special highlight."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:18"
+quote = "If `action` is set, `menu` will appear on click and hold. If `action` is `nil`, then `menu` will appear on click."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:23-68"
+quote = "@interface NSComboButton : NSControl"
+absent = ["keyEquivalent"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSWindow.h:671"
+quote = "@property (nullable, retain) NSButtonCell *defaultButtonCell;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:73"
+quote = "- (void)setButtonType:(NSButtonType)type;"
 
 [[model.cite]]
 kind = "published"
@@ -297,18 +348,95 @@ tolerance = 0
 # pass (the runner image's setting); no macOS 15 pass draws the buttons with it off. The toolbar context draws
 # otherwise: the toolbar bezel in a toolbar is 22 px high, on the sheet 20 px (the item view's and the sheet button's
 # intrinsic height, the last two citations; the tie-break of the monterey slice).
+# The tie-break of MC-C1 (the blind verifier, its model compared): `indeterminate` (a toggle in the mixed state: an
+# NSButton holds one NSControlStateValue, so never with `checked`, and only a stateful type shows it), `selected` (the
+# item NSToolbar's `selectedItemIdentifier` names, highlighted, in a toolbar only; MAC-TL11†) and `@menu_on_hold` (an
+# NSComboButton with an action, its menu on a click and hold, the catalogue's) are drawn, their looks pending (U693,
+# U694; `menu_trigger` stated); NSComboButton is no NSButton and declares no key equivalent, and the window's default
+# button is an NSButtonCell, so `menu` draws no `default`. One NSButton holds a bezel style (or none), a border shape,
+# a tint prominence, a button type, a destructive action and an image position at once, and an NSComboButton a title,
+# an image or both: `variant_products` states those sets (AppKit draws each; no pass measured one, U695's pending
+# facts in button.toml), trimmed by `exclusive_variants`.
+# As on macos-tahoe, the output-route button: AVRoutePickerView is in the 15.5 SDK (macos(10.15)), with its four
+# button states, its border (default YES) and no enabled state, key equivalent or control size, so `route`, `@bordered`
+# and `route_active` are declared as there, every look pending on macOS 15 (U692: no macOS 15 pass reads the view).
 widget = "button"
 when = { conditions = ["preset:macos-monterey"] }
 available = true
-variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "destructive", "menu", "icon_only", "with_icon"]
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "destructive", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"]
 sizes = ["mini", "small", "regular", "large"]
 default_size = "regular"
+sizes_by_variant = [{ variant = "route", sizes = [] }]
 densities = []
-axes = { states = ["pressed", "disabled", "default", "checked", "focus_visible"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
+axes = { states = ["pressed", "disabled", "default", "checked", "indeterminate", "focus_visible", "selected", "route_active"], conditions = ["scheme:light", "scheme:dark", "window_inactive", "not_main", "app_inactive", "contrast_increased"], contexts = [{ scope = "any", widget = "toolbar", part = "bar" }] }
 exclusive = []
-exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "menu"], ["icon_only", "with_icon"]]
-not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }]
-rows = ["MAC-B01", "MAC-B02", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17"]
+variant_sets = [["route", "@bordered"]]
+exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat", "menu", "route"], ["icon_only", "with_icon"]]
+variant_products = [[{ any = ["@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "flat"] }, { any = ["toggle"] }, { any = ["destructive"] }, { any = ["icon_only", "with_icon"] }], [{ one = ["menu"] }, { any = ["@menu_on_hold"] }, { any = ["icon_only", "with_icon"] }]]
+not_drawn = [{ conditions = ["app_inactive"], not_conditions = ["window_inactive"] }, { conditions = ["app_inactive"], not_conditions = ["not_main"] }, { states = ["checked"], not_variants = ["toggle"] }, { states = ["route_active"], not_variants = ["route"] }, { variants = ["@bordered"], not_variants = ["route"] }, { states = ["disabled"], variants = ["route"] }, { states = ["default"], variants = ["route"] }, { states = ["checked", "indeterminate"] }, { states = ["indeterminate"], not_variants = ["toggle"] }, { states = ["selected"], not_context = [{ scope = "any", widget = "toolbar", part = "bar" }] }, { variants = ["@menu_on_hold"], not_variants = ["menu"] }, { states = ["default"], variants = ["menu"] }]
+rows = ["MAC-B01", "MAC-B02", "MAC-B08", "MAC-B10", "MAC-X16", "MAC-X17", "MAC-P3-9†", "MAC-TL11†", "MAC-N29†"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:147"
+quote = "Buttons support the off and on states, and an additional mixed state depending on the value of the `allowsMixedState` property."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:71-74"
+quote = "static const NSControlStateValue NSControlStateValueMixed = -1;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSToolbar.h:108-116"
+quote = "This method can be used to select identifiers of custom view items, or to force a selection change."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSToolbar.h:245"
+quote = "If implemented, the toolbar will remember and display the selected item with a special highlight."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:18"
+quote = "If `action` is set, `menu` will appear on click and hold. If `action` is `nil`, then `menu` will appear on click."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSComboButton.h:23-68"
+quote = "@interface NSComboButton : NSControl"
+absent = ["keyEquivalent"]
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSWindow.h:671"
+quote = "@property (nullable, retain) NSButtonCell *defaultButtonCell;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSButton.h:72"
+quote = "- (void)setButtonType:(NSButtonType)type;"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:62-67"
+quote = "typedef NS_ENUM(NSInteger, AVRoutePickerViewButtonState) { AVRoutePickerViewButtonStateNormal = 0, AVRoutePickerViewButtonStateNormalHighlighted = 1, AVRoutePickerViewButtonStateActive = 2, AVRoutePickerViewButtonStateActiveHighlighted = 3"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:57-58"
+quote = "Active state of the picker. The picker has this state when AirPlay is active."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:118-121"
+quote = "Whether or not the picker button has a border. Default is YES."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:83-161"
+quote = "@interface AVRoutePickerView : AVKitPlatformViewClass"
+absent = ["enabled", "keyEquivalent", "controlSize"]
 
 [[model.cite]]
 kind = "published"

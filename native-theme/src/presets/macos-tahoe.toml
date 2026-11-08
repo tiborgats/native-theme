@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 9c1c4d4e7347f7610815d409efc5416144afdee05cfc97d50b8e59492186dd83
+# generated lines: sha256 99f597ec85f835126aeaa9582628fcbe1cab84229beefb0be545b35fe8440a48
 
 [preset]
 id = "macos-tahoe"
@@ -135,7 +135,7 @@ keys = [
 # docs/facts/macos/state-models.toml:9
 [declare.widget.button]
 available = true
-variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered"]
+variants = ["toggle", "@flexible_push", "@small_square", "@shadowless_square", "@accessory_bar", "@accessory_bar_action", "@badge", "circular", "help", "tool", "glass", "flat", "primary", "tinted", "destructive", "pill", "@rounded_rectangle", "menu", "icon_only", "with_icon", "route", "@bordered", "@menu_on_hold"]
 sizes = ["mini", "small", "regular", "large", "extra_large"]
 default_size = "regular"
 densities = []
@@ -144,8 +144,16 @@ exclusive_variants = [["@flexible_push", "@small_square", "@shadowless_square", 
 sizes_by_variant = [{ variant = "route", sizes = [] }]
 
 [pending]
+# docs/facts/macos/button.toml:1322
+"widgets.button.body.corners.top_left" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
+# docs/facts/macos/button.toml:4679
+"widgets.button.body.corners.top_right" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
+# docs/facts/macos/button.toml:8036
+"widgets.button.body.corners.bottom_right" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
+# docs/facts/macos/button.toml:11393
+"widgets.button.body.corners.bottom_left" = ["U97", "U96", "U91", "U92", "U93", "U323", "U693", "U695"]
 # docs/facts/macos/button.toml:125088
-"widgets.button.body.focus.corners.curve" = ["U100", "U323"]
+"widgets.button.body.focus.corners.curve" = ["U100", "U323", "U695"]
 # docs/facts/macos/button.toml:125884
 "widgets.button.body.focus.transition" = "U182"
 # docs/facts/macos/button.toml:136638
@@ -154,115 +162,107 @@ sizes_by_variant = [{ variant = "route", sizes = [] }]
 "widgets.button.body.transitions" = "U181"
 # docs/facts/macos/button.toml:136657
 "widgets.button.values.presentations" = "U302"
-# docs/facts/macos/button.toml:217165
+# docs/facts/macos/button.toml:217147
 "widgets.button.label.text.elision" = ["U178", "U323"]
-# docs/facts/macos/button.toml:217171
+# docs/facts/macos/button.toml:217153
 "widgets.button.label.text.wrap" = ["U178", "U323"]
-# docs/facts/macos/button.toml:217177
+# docs/facts/macos/button.toml:217159
 "widgets.button.label.text.max_lines" = ["U178", "U323"]
-# docs/facts/macos/button.toml:217392
+# docs/facts/macos/button.toml:217374
 "widgets.button.body.margin.top_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:217585
+# docs/facts/macos/button.toml:217567
 "widgets.button.body.margin.right_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:217778
+# docs/facts/macos/button.toml:217760
 "widgets.button.body.margin.bottom_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:217971
+# docs/facts/macos/button.toml:217953
 "widgets.button.body.margin.left_px" = ["U159", "U323"]
-# docs/facts/macos/button.toml:218830
+# docs/facts/macos/button.toml:218785
+"widgets.button.body.padding.top_px" = ["U313", "U323", "U695"]
+# docs/facts/macos/button.toml:218791
+"widgets.button.body.padding.right_px" = ["U313", "U323", "U695"]
+# docs/facts/macos/button.toml:218797
+"widgets.button.body.padding.bottom_px" = ["U313", "U323", "U695"]
+# docs/facts/macos/button.toml:218803
+"widgets.button.body.padding.left_px" = ["U313", "U323", "U695"]
+# docs/facts/macos/button.toml:218812
 "widgets.button.icon.glyph" = ["U314", "U323"]
-# docs/facts/macos/button.toml:218869
+# docs/facts/macos/button.toml:218851
 "widgets.button.menu_indicator" = "U315"
-# docs/facts/macos/button.toml:218875
+# docs/facts/macos/button.toml:218857
 "widgets.button.values.menu_indicator_gap_px" = ["U315", "U333"]
-# docs/facts/macos/button.toml:218886
-"widgets.button.body.corners.bottom_left" = "U323"
-# docs/facts/macos/button.toml:218892
-"widgets.button.body.corners.bottom_right" = "U323"
-# docs/facts/macos/button.toml:218904
-"widgets.button.body.corners.top_left" = "U323"
-# docs/facts/macos/button.toml:218910
-"widgets.button.body.corners.top_right" = "U323"
-# docs/facts/macos/button.toml:219036
-"widgets.button.body.min_height_px" = "U323"
-# docs/facts/macos/button.toml:219042
+# docs/facts/macos/button.toml:219018
+"widgets.button.body.min_height_px" = ["U323", "U695"]
+# docs/facts/macos/button.toml:219024
 "widgets.button.body.min_width_px" = "U323"
-# docs/facts/macos/button.toml:219048
-"widgets.button.body.padding.bottom_px" = "U323"
-# docs/facts/macos/button.toml:219054
-"widgets.button.body.padding.left_px" = "U323"
-# docs/facts/macos/button.toml:219060
-"widgets.button.body.padding.right_px" = "U323"
-# docs/facts/macos/button.toml:219066
-"widgets.button.body.padding.top_px" = "U323"
-# docs/facts/macos/button.toml:219246
+# docs/facts/macos/button.toml:219228
 "widgets.button.icon.icon.size_px" = "U323"
+# docs/facts/macos/button.toml:219276
+"widgets.button.label.text.font.size" = ["U323", "U695"]
 # docs/facts/macos/button.toml:219294
-"widgets.button.label.text.font.size" = "U323"
-# docs/facts/macos/button.toml:219312
 "widgets.button.label.text.font.width" = "U323"
-# docs/facts/macos/button.toml:219324
+# docs/facts/macos/button.toml:219306
 "widgets.button.label.text.line_height" = "U323"
-# docs/facts/macos/button.toml:219644
+# docs/facts/macos/button.toml:219643
 "widgets.button.values.menu_indicator_anchor" = ["U333", "U315"]
-# docs/facts/macos/button.toml:219657
+# docs/facts/macos/button.toml:219656
 "widgets.button.values.label_position" = "U333"
-# docs/facts/macos/button.toml:219663
+# docs/facts/macos/button.toml:219662
 "widgets.button.values.focus_visible_when" = "U331"
-# docs/facts/macos/button.toml:219670
+# docs/facts/macos/button.toml:219669
 "widgets.button.body.opacity" = ["U332", "U323"]
-# docs/facts/macos/button.toml:219676
+# docs/facts/macos/button.toml:219675
 "widgets.button.body.transform" = ["U332", "U323"]
-# docs/facts/macos/button.toml:219682
+# docs/facts/macos/button.toml:219681
 "widgets.button.body.bindings" = ["U332", "U323"]
-# docs/facts/macos/button.toml:219689
+# docs/facts/macos/button.toml:219688
 "widgets.button.icon.transitions" = ["U181", "U323"]
-# docs/facts/macos/button.toml:219697
+# docs/facts/macos/button.toml:219696
 "widgets.button.icon.icon.rendering_mode" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219703
+# docs/facts/macos/button.toml:219702
 "widgets.button.icon.icon.weight" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219815
+# docs/facts/macos/button.toml:219814
 "widgets.button.icon.icon.axes" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219821
+# docs/facts/macos/button.toml:219820
 "widgets.button.icon.icon.state_effect" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219827
+# docs/facts/macos/button.toml:219826
 "widgets.button.icon.icon.symbol_variants" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219833
+# docs/facts/macos/button.toml:219832
 "widgets.button.icon.icon.symbolic_colors" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219839
+# docs/facts/macos/button.toml:219838
 "widgets.button.icon.icon.animation" = ["U324", "U323"]
-# docs/facts/macos/button.toml:219907
+# docs/facts/macos/button.toml:219906
 "widgets.button.icon.icon.scale" = "U323"
-# docs/facts/macos/button.toml:219945
+# docs/facts/macos/button.toml:219944
 "widgets.button.menu_indicator.glyph.source" = "U315"
-# docs/facts/macos/button.toml:219951
+# docs/facts/macos/button.toml:219950
 "widgets.button.menu_indicator.glyph.size_px" = "U315"
-# docs/facts/macos/button.toml:219957
+# docs/facts/macos/button.toml:219956
 "widgets.button.menu_indicator.glyph.fill" = "U315"
-# docs/facts/macos/button.toml:219963
+# docs/facts/macos/button.toml:219962
 "widgets.button.menu_indicator.glyph.stroke" = "U315"
-# docs/facts/macos/button.toml:219969
+# docs/facts/macos/button.toml:219968
 "widgets.button.menu_indicator.glyph.axes" = "U315"
-# docs/facts/macos/button.toml:219975
+# docs/facts/macos/button.toml:219974
 "widgets.button.menu_indicator.glyph.draw_extent" = "U315"
-# docs/facts/macos/button.toml:219981
+# docs/facts/macos/button.toml:219980
 "widgets.button.menu_indicator.glyph.draw_start" = "U315"
-# docs/facts/macos/button.toml:219987
+# docs/facts/macos/button.toml:219986
 "widgets.button.menu_indicator.glyph.mirroring" = "U315"
-# docs/facts/macos/button.toml:219993
+# docs/facts/macos/button.toml:219992
 "widgets.button.menu_indicator.min_width_px" = "U315"
-# docs/facts/macos/button.toml:219999
+# docs/facts/macos/button.toml:219998
 "widgets.button.menu_indicator.min_height_px" = "U315"
-# docs/facts/macos/button.toml:220005
+# docs/facts/macos/button.toml:220004
 "widgets.button.menu_indicator.margin.top_px" = "U315"
-# docs/facts/macos/button.toml:220011
+# docs/facts/macos/button.toml:220010
 "widgets.button.menu_indicator.margin.right_px" = "U315"
-# docs/facts/macos/button.toml:220017
+# docs/facts/macos/button.toml:220016
 "widgets.button.menu_indicator.margin.bottom_px" = "U315"
-# docs/facts/macos/button.toml:220023
+# docs/facts/macos/button.toml:220022
 "widgets.button.menu_indicator.margin.left_px" = "U315"
-# docs/facts/macos/button.toml:220029
+# docs/facts/macos/button.toml:220028
 "widgets.button.menu_indicator.transform" = "U315"
-# docs/facts/macos/button.toml:220035
+# docs/facts/macos/button.toml:220034
 "widgets.button.menu_indicator.transitions" = "U181"
 # docs/facts/macos/roles.toml:13087
 "colors.light.global.drop_highlight" = "U322"
@@ -3342,25 +3342,25 @@ paint = "= input.keyboard_focus_indicator"
 text.font.family = ".AppleSystemUIFont"
 # docs/facts/macos/button.toml:25984
 text.font.weight = 400
-# docs/facts/macos/button.toml:216583
+# docs/facts/macos/button.toml:216565
 text.decoration = "absent"
-# docs/facts/macos/button.toml:216650
+# docs/facts/macos/button.toml:216632
 text.mnemonic_decoration = "absent"
-# docs/facts/macos/button.toml:216694
+# docs/facts/macos/button.toml:216676
 text.letter_spacing = "= sf_tracking(font_size, sf_pro)"
-# docs/facts/macos/button.toml:216745
+# docs/facts/macos/button.toml:216727
 text.word_spacing_px = 0
-# docs/facts/macos/button.toml:216812
+# docs/facts/macos/button.toml:216794
 text.case = "mixed"
-# docs/facts/macos/button.toml:216888
+# docs/facts/macos/button.toml:216870
 text.font.style = "normal"
-# docs/facts/macos/button.toml:216919
+# docs/facts/macos/button.toml:216901
 text.font.axes = { opsz = "follows_size" }
-# docs/facts/macos/button.toml:216950
+# docs/facts/macos/button.toml:216932
 text.font.features = {}
-# docs/facts/macos/button.toml:217183
+# docs/facts/macos/button.toml:217165
 text.scaling_role = "none"
-# docs/facts/macos/button.toml:219461
+# docs/facts/macos/button.toml:219443
 padding = { top_px = 0, right_px = 0, bottom_px = 0, left_px = 0 }
 # docs/facts/macos/button.toml:18054
 text.fill = "#000000d8"
@@ -3372,23 +3372,23 @@ icon_text_gap_px = 2
 repeat_delay_ms = "= token.params.pointer_repeat.delay"
 # docs/facts/macos/button.toml:27095
 repeat_interval_ms = "= token.params.pointer_repeat.interval"
-# docs/facts/macos/button.toml:218558
+# docs/facts/macos/button.toml:218540
 icon_placement = "leading"
-# docs/facts/macos/button.toml:219491
+# docs/facts/macos/button.toml:219473
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/macos/button.toml:219509
+# docs/facts/macos/button.toml:219491
 display_mode = "absent"
-# docs/facts/macos/button.toml:219527
+# docs/facts/macos/button.toml:219509
 back_display_mode = "absent"
-# docs/facts/macos/button.toml:219545
+# docs/facts/macos/button.toml:219527
 back_title_fallback = false
-# docs/facts/macos/button.toml:219564
+# docs/facts/macos/button.toml:219546
 help_tooltip_on_click = false
-# docs/facts/macos/button.toml:219582
+# docs/facts/macos/button.toml:219564
 subtitle_gap_px = "absent"
-# docs/facts/macos/button.toml:219600
+# docs/facts/macos/button.toml:219582
 shows_icon = "absent"
-# docs/facts/macos/button.toml:219618
+# docs/facts/macos/button.toml:219600
 menu_trigger = "absent"
 
 [widgets.button.body]
@@ -3422,11 +3422,11 @@ cursor = "absent"
 focus.dash = "solid"
 # docs/facts/macos/button.toml:125552
 focus.shadow = "absent"
-# docs/facts/macos/button.toml:219371
+# docs/facts/macos/button.toml:219353
 max_width_px = "auto"
-# docs/facts/macos/button.toml:219401
+# docs/facts/macos/button.toml:219383
 touch_target_px = "absent"
-# docs/facts/macos/button.toml:219431
+# docs/facts/macos/button.toml:219413
 interaction = "absent"
 # docs/facts/macos/button.toml:13527
 fill = "#00000013"
@@ -7540,13 +7540,13 @@ target = "button.body"
 [rules.set]
 # docs/facts/macos/button.toml:24231
 min_height_px = 14
-# docs/facts/macos/button.toml:217208
+# docs/facts/macos/button.toml:217190
 margin.top_px = 0
-# docs/facts/macos/button.toml:217401
+# docs/facts/macos/button.toml:217383
 margin.right_px = 3
-# docs/facts/macos/button.toml:217594
+# docs/facts/macos/button.toml:217576
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:217787
+# docs/facts/macos/button.toml:217769
 margin.left_px = 3
 
 [[rules]]
@@ -7782,7 +7782,7 @@ target = "button.label"
 [rules.set]
 # docs/facts/macos/button.toml:25936
 text.font.size_px = 9
-# docs/facts/macos/button.toml:217015
+# docs/facts/macos/button.toml:216997
 text.line_height_px = 11
 
 [[rules]]
@@ -7800,7 +7800,7 @@ target = "button.label"
 [rules.set]
 # docs/facts/macos/button.toml:25968
 text.font.size_px = 11
-# docs/facts/macos/button.toml:217046
+# docs/facts/macos/button.toml:217028
 text.line_height_px = 13
 
 [[rules]]
@@ -26774,7 +26774,7 @@ when = { not_variants = ["route"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/macos/button.toml:216984
+# docs/facts/macos/button.toml:216966
 text.font.width = 100
 
 [[rules]]
@@ -26782,7 +26782,7 @@ when = { sizes = ["regular"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/macos/button.toml:217077
+# docs/facts/macos/button.toml:217059
 text.line_height_px = 16
 
 [[rules]]
@@ -26790,7 +26790,7 @@ when = { sizes = ["large"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/macos/button.toml:217108
+# docs/facts/macos/button.toml:217090
 text.line_height_px = 16
 
 [[rules]]
@@ -26798,7 +26798,7 @@ when = { sizes = ["extra_large"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/macos/button.toml:217139
+# docs/facts/macos/button.toml:217121
 text.line_height_px = 16
 
 [[rules]]
@@ -26806,13 +26806,13 @@ when = { variants = ["circular"], sizes = ["regular"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:217254
+# docs/facts/macos/button.toml:217236
 margin.top_px = 0
-# docs/facts/macos/button.toml:217447
+# docs/facts/macos/button.toml:217429
 margin.right_px = 4
-# docs/facts/macos/button.toml:217640
+# docs/facts/macos/button.toml:217622
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:217833
+# docs/facts/macos/button.toml:217815
 margin.left_px = 4
 
 [[rules]]
@@ -26820,13 +26820,13 @@ when = { variants = ["circular"], sizes = ["large"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:217300
+# docs/facts/macos/button.toml:217282
 margin.top_px = 0
-# docs/facts/macos/button.toml:217493
+# docs/facts/macos/button.toml:217475
 margin.right_px = 4
-# docs/facts/macos/button.toml:217686
+# docs/facts/macos/button.toml:217668
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:217879
+# docs/facts/macos/button.toml:217861
 margin.left_px = 4
 
 [[rules]]
@@ -26834,13 +26834,13 @@ when = { variants = ["circular"], sizes = ["extra_large"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:217346
+# docs/facts/macos/button.toml:217328
 margin.top_px = 0
-# docs/facts/macos/button.toml:217539
+# docs/facts/macos/button.toml:217521
 margin.right_px = 4
-# docs/facts/macos/button.toml:217732
+# docs/facts/macos/button.toml:217714
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:217925
+# docs/facts/macos/button.toml:217907
 margin.left_px = 4
 
 [[rules]]
@@ -26848,7 +26848,7 @@ when = { not_variants = ["route"], sizes = ["mini"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:218572
+# docs/facts/macos/button.toml:218554
 icon.size_px = 9
 
 [[rules]]
@@ -26856,7 +26856,7 @@ when = { not_variants = ["route"], sizes = ["small"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:218618
+# docs/facts/macos/button.toml:218600
 icon.size_px = 11
 
 [[rules]]
@@ -26864,7 +26864,7 @@ when = { not_variants = ["route"], sizes = ["regular"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:218664
+# docs/facts/macos/button.toml:218646
 icon.size_px = 13
 
 [[rules]]
@@ -26872,7 +26872,7 @@ when = { not_variants = ["route"], sizes = ["large"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:218710
+# docs/facts/macos/button.toml:218692
 icon.size_px = 13
 
 [[rules]]
@@ -26880,7 +26880,7 @@ when = { not_variants = ["route"], sizes = ["extra_large"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:218756
+# docs/facts/macos/button.toml:218738
 icon.size_px = 13
 
 [[rules]]
@@ -26888,7 +26888,7 @@ when = { not_variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/macos/button.toml:218838
+# docs/facts/macos/button.toml:218820
 absent = true
 
 [[rules]]
@@ -26896,7 +26896,7 @@ when = { conditions = ["scheme:light"], variants = ["route", "@bordered"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219094
+# docs/facts/macos/button.toml:219076
 icon.fill = "#000000d8"
 
 [[rules]]
@@ -26904,7 +26904,7 @@ when = { conditions = ["scheme:light"], variants = ["route", "@bordered"], state
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219110
+# docs/facts/macos/button.toml:219092
 icon.fill = "#000000d8"
 
 [[rules]]
@@ -26912,7 +26912,7 @@ when = { conditions = ["scheme:light"], variants = ["route", "@bordered"], state
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219126
+# docs/facts/macos/button.toml:219108
 icon.fill = "#5db4ff"
 
 [[rules]]
@@ -26920,7 +26920,7 @@ when = { conditions = ["scheme:light"], variants = ["route", "@bordered"], state
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219142
+# docs/facts/macos/button.toml:219124
 icon.fill = "#5db4ff"
 
 [[rules]]
@@ -26928,7 +26928,7 @@ when = { conditions = ["scheme:dark"], variants = ["route", "@bordered"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219158
+# docs/facts/macos/button.toml:219140
 icon.fill = "#ffffffd8"
 
 [[rules]]
@@ -26936,7 +26936,7 @@ when = { conditions = ["scheme:dark"], variants = ["route", "@bordered"], states
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219174
+# docs/facts/macos/button.toml:219156
 icon.fill = "#ffffffd8"
 
 [[rules]]
@@ -26944,7 +26944,7 @@ when = { conditions = ["scheme:dark"], variants = ["route", "@bordered"], states
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219190
+# docs/facts/macos/button.toml:219172
 icon.fill = "#5db4ff"
 
 [[rules]]
@@ -26952,15 +26952,31 @@ when = { conditions = ["scheme:dark"], variants = ["route", "@bordered"], states
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219206
+# docs/facts/macos/button.toml:219188
 icon.fill = "#5db4ff"
+
+[[rules]]
+when = { variants = ["menu"] }
+target = "button.values"
+
+[rules.set]
+# docs/facts/macos/button.toml:219620
+menu_trigger = "primary"
+
+[[rules]]
+when = { variants = ["menu", "@menu_on_hold"] }
+target = "button.values"
+
+[rules.set]
+# docs/facts/macos/button.toml:219631
+menu_trigger = "long_press"
 
 [[rules]]
 when = { not_variants = ["route"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:219709
+# docs/facts/macos/button.toml:219708
 icon.scale = "medium"
 
 [[rules]]
@@ -26968,13 +26984,13 @@ when = { not_variants = ["circular", "route", "@small_square", "tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:220051
+# docs/facts/macos/button.toml:220050
 margin.top_px = 0
-# docs/facts/macos/button.toml:220557
+# docs/facts/macos/button.toml:220556
 margin.right_px = 0
-# docs/facts/macos/button.toml:221063
+# docs/facts/macos/button.toml:221062
 margin.bottom_px = 0
-# docs/facts/macos/button.toml:221569
+# docs/facts/macos/button.toml:221568
 margin.left_px = 0
 
 [[rules]]
@@ -26982,13 +26998,13 @@ when = { variants = ["@small_square"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:222075
+# docs/facts/macos/button.toml:222074
 margin.top_px = 1
-# docs/facts/macos/button.toml:222106
+# docs/facts/macos/button.toml:222105
 margin.right_px = 0
-# docs/facts/macos/button.toml:222137
+# docs/facts/macos/button.toml:222136
 margin.bottom_px = 1
-# docs/facts/macos/button.toml:222168
+# docs/facts/macos/button.toml:222167
 margin.left_px = 0
 
 [[rules]]
@@ -26996,13 +27012,13 @@ when = { variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/macos/button.toml:222199
+# docs/facts/macos/button.toml:222198
 margin.top_px = 1
-# docs/facts/macos/button.toml:222230
+# docs/facts/macos/button.toml:222229
 margin.right_px = 1
-# docs/facts/macos/button.toml:222261
+# docs/facts/macos/button.toml:222260
 margin.bottom_px = 2
-# docs/facts/macos/button.toml:222292
+# docs/facts/macos/button.toml:222291
 margin.left_px = 1
 
 [[rules]]
@@ -27010,7 +27026,7 @@ when = { not_variants = ["help", "menu", "route"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:222351
+# docs/facts/macos/button.toml:222350
 glyph = "absent"
 
 [[rules]]
@@ -27018,7 +27034,7 @@ when = { variants = ["menu"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/macos/button.toml:222383
+# docs/facts/macos/button.toml:222382
 glyph = "absent"
 
 [[rules]]
