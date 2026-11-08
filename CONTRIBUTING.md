@@ -203,6 +203,16 @@ Together they find what the whole run finds (`gate_shards_add_up`). CI runs
 the gate so, one job per shard and one for the tables; the release's run
 refuses a shard.
 
+CI runs the gate on Linux with the default features alone, and
+`scripts/check_release.sh` runs it once, because no code on its path depends
+on the target or the features. `scripts/check_gate_cfg.py` keeps it so: it
+finds the path from the sources (the gate's test files, then every module
+their `use` and `mod` graph reaches) and fails on any `cfg`, `cfg!` or
+`cfg_attr` along it but a test-only one or a lint-level `cfg_attr`. Where it
+fails, move the platform code off the gate's path, or the gate must run on
+every configuration again. Every mode of `check_release.sh` and CI's parity
+job run it.
+
 The gate runs its parallel steps on as many threads as the machine has;
 `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
 above zero fails the test. The count sets the speed and the memory: as many

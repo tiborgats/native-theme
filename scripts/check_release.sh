@@ -878,6 +878,7 @@ CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
 PY_DATA_INPUTS="scripts docs native-theme/src native-theme/tests ROADMAP.md"
 EVIDENCE_PIN="docs/facts/sources.toml"
 STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
+GATE_CFG_INPUTS="scripts/check_gate_cfg.py native-theme/src native-theme/tests native-theme/build.rs native-theme-derive/src"
 declare -A CACHE_INPUTS=(
     ["panic-pattern scan (native-theme, native-theme-derive)"]="scripts/check_panic_patterns.py native-theme/src native-theme-derive/src"
     ["clippy (native-theme, native-theme-derive, all targets and features)"]="@rust:native-theme,native-theme-derive"
@@ -887,6 +888,8 @@ declare -A CACHE_INPUTS=(
     ["test (native-theme-derive)"]="@rust:native-theme-derive"
     ["test (native-theme, layers, vectors and the facts gate's fixtures)"]="@rust:native-theme docs scripts/widget_units.toml $EVIDENCE_PIN"
     ["facts gate (the facts, no preset)"]="@rust:native-theme docs/facts scripts/widget_units.toml"
+    ["the facts gate's path holds no cfg"]="$GATE_CFG_INPUTS"
+    ["the facts gate's path: self-test"]="scripts/check_gate_cfg.py"
     ["docs (native-theme)"]="@rust:native-theme"
     ["docs, private items (native-theme, Linux features)"]="@rust:native-theme"
 )
@@ -970,7 +973,8 @@ fi
 # (NT_FACTS_GATE_PRESETS=none), then each bundled preset alone; every part
 # runs the facts' own checks too, so together they run every check the
 # whole gate runs. The other test steps skip `facts_gate` (GATE_SKIP): no
-# `cfg` reaches it, so its outcome is one for every target and feature set.
+# `cfg` reaches it, so its outcome is one for every target and feature set,
+# which scripts/check_gate_cfg.py checks in every mode.
 FACTS_GATE=(cargo test -p native-theme --test facts_gate -- --exact facts_gate)
 GATE_SKIP=(-- --skip facts_gate --exact)
 facts_gate_steps() {
@@ -992,6 +996,8 @@ if [[ $QUICK_MODE ]]; then
     print_section "Per-task gate (--quick)"
     run_check "cargo fmt (all crates)" cargo fmt --all
     run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
+    run_check "the facts gate's path holds no cfg" python3 scripts/check_gate_cfg.py
+    run_check "the facts gate's path: self-test" python3 scripts/check_gate_cfg.py --self-test
     run_check "panic-pattern scan (native-theme, native-theme-derive)" \
         python3 scripts/check_panic_patterns.py native-theme/src native-theme-derive/src
     run_check "clippy (native-theme, native-theme-derive, all targets and features)" \
@@ -1149,6 +1155,8 @@ else
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
+run_check "the facts gate's path holds no cfg" python3 scripts/check_gate_cfg.py
+run_check "the facts gate's path: self-test" python3 scripts/check_gate_cfg.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check

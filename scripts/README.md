@@ -432,6 +432,30 @@ python3 scripts/check_panic_patterns.py native-theme/src
 python3 scripts/check_panic_patterns.py --self-test
 ```
 
+## check_gate_cfg.py
+
+The facts gate runs on one configuration only (CI's Linux `facts-gate`
+jobs, `check_release.sh`'s single gate step), which holds while no code on
+its path depends on the target or the features. This check finds the path
+from the sources, never from a list kept by hand: the gate's test files
+(`facts_gate.rs` and its `#[path]` modules), the crate root, then every
+module the `use` trees, paths and macro invocations of a module on the path
+reach through the `mod` declarations and re-exports, and every module with
+an `impl` of a type on the path; the derive crate and the build script are
+always on it. Along the path it fails on every `cfg`, `cfg!` and `cfg_attr`
+but a test-only one, a lint-level `cfg_attr` and a `cfg` on the declaration
+of a module off the path, each finding saying why. One edge is cut by name
+(`CUTS`: `icons::model`'s `icon_svg`, the bundled SVGs), and the cut fails
+where that function is named elsewhere on the path or the edge is gone.
+`--list` prints each module on the path and what reached it; `--self-test`
+runs its built-in scenarios. Every mode of `check_release.sh` and CI's parity
+job run both. Exits 0, 1 on a finding, 2 on an unreadable source.
+
+```sh
+python3 scripts/check_gate_cfg.py --list
+python3 scripts/check_gate_cfg.py --self-test
+```
+
 ## check_features.sh
 
 Checks that every workspace crate builds, without warnings, in every feature
