@@ -2782,11 +2782,17 @@ def product_problems(d, variants, groups):
 
 
 def drawn_variant_sets(d):
-    """(listed, from products, in all) counts of an entry's variant sets: the listed ones and the products' (each
+    """(listed, from products, in all) counts of an entry's variant sets (drawn_set_lists); a set the list and the
+    products both give is counted once."""
+    listed, products = drawn_set_lists(d)
+    return len(listed), len(products), len(listed | products)
+
+
+def drawn_set_lists(d):
+    """(the listed sets, the products' sets) of an entry, as frozensets: the listed ones and the products' (each
     trimmed as product_sets trims), less the sets a `not_drawn` entry stating only `variants` and `not_variants`
     removes whole and the listed sets `requires_variants` excludes (S17: the combinations are the sets less those it
-    excludes; holding one of its forms keeps a set, S10, ADD-A123); a set the list and the products both give is
-    counted once."""
+    excludes; holding one of its forms keeps a set, S10, ADD-A123)."""
     groups = d.get("exclusive_variants") if isinstance(d.get("exclusive_variants"), list) else []
     groups = [g for g in groups if str_list(g)]
     vs = d.get("variant_sets")
@@ -2802,7 +2808,7 @@ def drawn_variant_sets(d):
 
     listed = {x for x in listed if drawn(x) and requires_ok(d, x)}
     products = {x for x in products if drawn(x)}
-    return len(listed), len(products), len(listed | products)
+    return listed, products
 
 
 def part_patch_problems(ctx, value, widget) -> list:

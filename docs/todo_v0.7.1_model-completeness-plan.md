@@ -974,6 +974,7 @@ dev-dependencies and modules linked again.
 | `convert_inheritance_rules.py` (S19.2) | M1a | no | deleted at M4 |
 | `generate_widgets.py` | M1a | `--check` | deleted; the generated code is the source |
 | `check_facts_trace.py` | M1a | `--enabled` | deleted |
+| `verify_facts.py` (the verifiers' units, briefs, comparisons and audit sample) | M1b | `--self-test` | kept, for the follow-up units' verifiers |
 | `check_facts.py` | M0 | yes | kept |
 | `check_fact_citations.py` | M0 | the full run fails without the cache; `--commit` skips it, by name, only when the cache is absent; the SDK-header citations run in a macOS job of `os-probe.yml` | kept |
 | `check_function_vectors.py` | M1a | yes | kept |
