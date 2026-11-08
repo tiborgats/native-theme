@@ -3204,6 +3204,8 @@ source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "NSColor *selectedControlColor;"
 
 # highlightColor (NSColor.h:284: the colour highlightWithLevel: blends toward; the red accent leaves it unchanged, S9.1)
+# and so does the highlight setting: `AppleHighlightColor` written red (run 42328425189's colors-highlight-red pass,
+# its settings.txt) leaves highlightColor as the colours pass reads it, so the literal holds under it (U163)
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:light"] }
@@ -3240,6 +3242,16 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.aqua.highlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-tahoe", "scheme:dark"] }
@@ -3274,6 +3286,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-11-03-run-41651803413/os-probe-macos-26/reduce-transparency-off-tinting-off/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors/probe.toml#macos.colors.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-26/colors-highlight-red/probe.toml#macos.colors.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -6371,6 +6393,8 @@ source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Fr
 quote = "NSColor *selectedControlColor;"
 
 # highlightColor (NSColor.h:273: the colour all highlights tend toward; the red accent leaves it unchanged, S9.1)
+# and so does the highlight setting: `AppleHighlightColor` written red (run 42328425189's colors-highlight-red pass,
+# its settings.txt) leaves highlightColor as the colours pass reads it, so the literal holds under it (U163)
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:light"] }
@@ -6397,6 +6421,16 @@ kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.aqua.highlightColor"
 tolerance = 0
 
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/probe.toml#macos.colors.colors.aqua.highlightColor"
+tolerance = 0
+
 [[fact]]
 key = "role.@highlight"
 when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
@@ -6421,6 +6455,16 @@ tolerance = 0
 [[fact.cite]]
 kind = "measured"
 evidence = "docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/accent-red/probe.toml#macos.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors/probe.toml#macos.colors.colors.darkAqua.highlightColor"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-07-run-42328425189/os-probe-macos-15/colors-highlight-red/probe.toml#macos.colors.colors.darkAqua.highlightColor"
 tolerance = 0
 
 [[fact]]
@@ -10129,17 +10173,53 @@ kind = "published"
 source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:289-290"
 quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
 
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
 [[fact]]
 key = "role.selection.foreground_inactive"
-when = { conditions = ["preset:macos-tahoe", "contrast_increased"] }
-pending = "U235"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffffcd"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffffb3"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.darkAqua.foreground_inactive"
+tolerance = 1
+
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.aqua.disabled_foreground"
+tolerance = 1
 
 [[fact]]
 key = "role.selection.disabled.foreground"
-when = { conditions = ["preset:macos-tahoe", "contrast_increased"] }
-pending = "U235"
+when = { conditions = ["preset:macos-tahoe", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
 rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-26/selection-contrast.toml#selection_contrast.darkAqua.disabled_foreground"
+tolerance = 1
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -12594,7 +12674,9 @@ tolerance = 0
 # colours are absent (ADD-A130: they would reference `role.global.status.*`, which AppKit has none of, NSColor.h's
 # class and categories declaring no status colour), and the Selection set's `border` is absent (no outline colour
 # of a selection is declared: NSColor.h's selection colours are backgrounds and the text on them).
-# The Selection set's secondary text, link and disabled text were read on macOS 26 only (P4): pending (U236).
+# The Selection set's secondary text, link and disabled text: run 42215651196's P4 on macOS 15 (analysis/measure_selection.py's
+# solve over the image's and the red accent's selections), as macos-tahoe's; under Increase Contrast, read over one
+# selection colour only, still pending (U236).
 
 [[fact]]
 key = "role.window.negative"
@@ -12838,24 +12920,170 @@ absent = []
 
 [[fact]]
 key = "role.selection.foreground_inactive"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
-rows = []
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffffb3"
+rows = ["MAC-X15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffffb3"
+rows = ["MAC-X15"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.foreground_inactive"
+tolerance = 1
+
+# the unemphasized selection (`window_inactive`): the row view is not emphasized, so the label colours draw as
+# outside the selection (run 42215651196's `unemphasized` captures, as macos-tahoe's)
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.window.foreground_inactive"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffffcd"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.aqua.foreground_inactive"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.foreground_inactive"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffffb3"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.darkAqua.foreground_inactive"
+tolerance = 1
 
 [[fact]]
 key = "role.selection.link"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#0068da"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.link"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.selection.aqua.emphasized.samples.r1_linkColor_glyph.raw"
+tolerance = 0
+
+[[fact]]
+key = "role.selection.link"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#419cff"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.link"
+tolerance = 0
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/increase-contrast-on/probe.toml#macos.selection.darkAqua.emphasized.samples.r1_linkColor_glyph.raw"
+tolerance = 0
 
 [[fact]]
 key = "role.selection.disabled.foreground"
-when = { conditions = ["preset:macos-monterey"] }
-pending = "U236"
+when = { conditions = ["preset:macos-monterey", "scheme:light"] }
+value = "#ffffff59"
 rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.aqua.disabled_foreground"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "scheme:dark"] }
+value = "#ffffff59"
+rows = []
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42215651196/os-probe-macos-15/selection.toml#selection.darkAqua.disabled_foreground"
+tolerance = 1
+
+# the unemphasized selection (`window_inactive`): the row view is not emphasized, so the label colours draw as
+# outside the selection (run 42215651196's `unemphasized` captures, as macos-tahoe's)
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "window_inactive"] }
+value = "= role.window.disabled.foreground"
+rows = ["MAC-X16"]
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSTableCellView.h:35"
+quote = "The system label colors (labelColor, secondaryLabelColor, tertiaryLabelColor, and quaternaryLabelColor) automatically adapt when displayed with an emphasized backgroundStyle."
+
+[[fact.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AppKit.framework/Headers/NSCell.h:287-288"
+quote = "/* The background reflects the predominant color scheme of the view's appearance. */ NSBackgroundStyleNormal = 0,"
+
+# the emphasized selection under Increase Contrast: run 42272240639's analysis/measure_selection_contrast.py solves
+# the glyph over the image's and the red accent's selections
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:light"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.aqua.disabled_foreground"
+tolerance = 1
+
+[[fact]]
+key = "role.selection.disabled.foreground"
+when = { conditions = ["preset:macos-monterey", "contrast_increased", "scheme:dark"], not_conditions = ["window_inactive"] }
+value = "#ffffff80"
+rows = ["MAC-X22"]
+
+[[fact.cite]]
+kind = "measured"
+evidence = "docs/evidence/os-probe/2026-11-06-run-42272240639/os-probe-macos-15/selection-contrast.toml#selection_contrast.darkAqua.disabled_foreground"
+tolerance = 1
 
 # --- macos-tahoe: the drop target's highlight (MAC-X21; U322; facts lane t16b)
 
+# The table's drop highlight reads #0064e1 (light) and #0059d1 (dark) in run 42328425189's drag-over captures
+# (scripts/analysis_macos_events.py's `drop_highlight`), the emphasized selection's colour, which follows the accent
+# (`role.selection.background = input.selected_content_background`); no drag pass ran under another accent, so
+# whether the highlight is that input or a literal is not read: pending
 [[fact]]
 key = "role.global.drop_highlight"
 when = { conditions = ["preset:macos-tahoe"] }
@@ -12930,6 +13158,10 @@ absent = []
 
 # The drop target's highlight (MAC-X21; U600, as macos-tahoe's U322): NSColor.h (Xcode 16.4) declares no drop-target
 # colour, and no macOS 15 pass drags over a drop target
+# The table's drop highlight reads #0064e1 (light) and #0059d1 (dark) in run 42328425189's drag-over captures
+# (scripts/analysis_macos_events.py's `drop_highlight`), the emphasized selection's colour, which follows the accent
+# (`role.selection.background = input.selected_content_background`); no drag pass ran under another accent, so
+# whether the highlight is that input or a literal is not read: pending
 [[fact]]
 key = "role.global.drop_highlight"
 when = { conditions = ["preset:macos-monterey"] }
