@@ -217,8 +217,8 @@ the facts tooling reads it.
   same paths (`docs/evidence/<harness>/<date>-run-<id>/<image>/`, each run's `README.md`, `run.toml` and `analysis/`,
   the folder's `README.md`), and at its root a `README.md` (what it holds, that this repository pins it, the rules of
   this section) and this repository's licence files. The rules on the files a run holds (S17 *`evidence`* and
-  `check_fact_citations.py`'s: cited or an analysis's input, its README, its `run.toml`, its `analysis/`) apply there
-  unchanged.
+  `check_fact_citations.py`'s: cited or an analysis's input, its README, its `run.toml`, its `analysis/`, and its
+  records exempt by name, `settings.txt` and `environment.txt`, ADD-A136's rule) apply there unchanged.
 - **The pin:** one `[[source]]` of kind `git` in `docs/facts/sources.toml` with `evidence = true`:
   `id = "native-theme-evidence"`, `repository`, `commit`, `tag = "commit"`, `generations = []`, and no `project`, `release`,
   `researched` or `proof` (the commit is this project's own, moved by its own facts commits, which is no re-pin: D1
@@ -258,7 +258,7 @@ the facts tooling reads it.
 - **The step cache** (`check_release.sh --commit`, `--quick`) keys a step that reads evidence on the pin, in
   `sources.toml`: a reader accepts only a clean checkout at the pin, so the pin fixes the evidence it reads. The
   tooling task declares it for each such step (from the switch the traced Python checks read outside the repository).
-- **History:** neither repository's published history is rewritten. The evidence committed here so far stays in this
+- **History:** neither repository's pushed history is rewritten (an unpushed branch may be, below). The evidence committed here so far stays in this
   repository's history; the evidence repository deletes a file by a new commit, never a force push. From the switch,
   new runs go to the evidence repository only, and a `check_release.sh` step and CI's `parity` job fail on any tracked
   file under this repository's `docs/evidence/`.
@@ -284,8 +284,9 @@ the facts tooling reads it.
   `v0.8.0-tools-*` branches) is not rewritten, and its merge leaves its `docs/evidence/` files out (their objects are
   on GitHub already). Then a commit on the branch moves its pin to its evidence branch's head, and it merges as above.
   Rejected: merging them as they stand (528 MB more in every clone for ever, the growth the decision stops); a squash
-  merge (it loses the lanes' commit messages, which record their reasoning). Their rewrite touches no history anyone
-  else holds. They wait for the switch: merged before it, their runs would enter this repository's history.
+  merge (it loses the lanes' commit messages, which record their reasoning). The rewrite is approved (the
+  orchestrator, 2026-11-08): the no-rewrite rule protects pushed history only, and no one else holds these branches.
+  They wait for the switch: merged before it, their runs would enter this repository's history.
 - **Rejected:**
   - a git submodule at `docs/evidence` (a pin git understands, `git clone --recursive`): Cargo clones a git
     dependency's submodules, so every user depending on `native-theme` by git would download the evidence; every
