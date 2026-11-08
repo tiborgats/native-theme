@@ -644,7 +644,7 @@ mod tests {
     }
 
     #[test]
-    fn every_row_of_the_table() {
+    fn vectors_reader_pango_font_description() {
         let table = include_str!("../../tests/vectors/reader.pango_font_description.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(

@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn every_row_of_the_table() {
+    fn vectors_reader_adw_accent_nearest() {
         let table = include_str!("../../tests/vectors/reader.adw_accent_nearest.tsv");
         let mut lines = table.lines().filter(|l| !l.starts_with('#'));
         assert_eq!(lines.next(), Some("red\tgreen\tblue\taccent"));

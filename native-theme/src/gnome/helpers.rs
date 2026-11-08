@@ -1,5 +1,6 @@
-//! The clean room's two GNOME helpers (the 0.8.0 plan's D10), placed
-//! unchanged in `src/cleanroom_readers/`, and what the reader keeps of what
+//! The clean room's two GNOME helpers (the 0.8.0 plan's D10), their code
+//! placed unchanged in `src/cleanroom_readers/` (their vector tests named
+//! `vectors_reader_<helper>` and reading `tests/vectors/`), and what the reader keeps of what
 //! they give: Pango's font-description parser, [`pango_font_description`],
 //! for the gsettings font strings, and libadwaita's accent classification,
 //! [`adw_accent_nearest`], for the portal's accent (S9.3, S9.5).
