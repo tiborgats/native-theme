@@ -2131,10 +2131,11 @@ kind = "published"
 source = "gtk@4.24.1 gtk/gtklabel.c:3899-3903"
 quote = "if (!pango_parse_markup (str_for_display, -1, with_uline && do_mnemonics ? '_' : 0,"
 
-# the key press hides the pointer at once, by setting the `none` cursor (S17's zero stated by omission)
+# GTK hides the pointer only on a key press (`hide_pointer_while_typing`), never after the pointer rests: no idle
+# hiding, so the delay is absent (S4.2's *Hiding the pointer*; the tie-break of GN-C1)
 [[fact]]
 key = "token.behavior.hide_pointer_delay"
-value = "0ms"
+value = "absent"
 rows = ["GN-3.67†"]
 
 [[fact.cite]]
@@ -2313,7 +2314,7 @@ quote = "#define TIMEOUT_REPEAT      250"
 # the rule sets no family: the default font's, inherited
 [[fact]]
 key = "token.text.keyed.tab_counter.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -2586,7 +2587,7 @@ absent = ["color"]
 # the rule sets no family: the default font's, inherited
 [[fact]]
 key = "token.text.keyed.smaller.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -2603,7 +2604,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 # S2.2)
 [[fact]]
 key = "token.text.keyed.smaller.font.size"
-value = "= div(token.text.keyed.body.font.size, 1.2)"
+value = "= div(token.text.roles.body.font.size, 1.2)"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -2882,7 +2883,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_1.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = []
 
 [[fact.cite]]
@@ -2899,7 +2900,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.title_1.font.size"
-value = "= mul(token.text.keyed.body.font.size, 1.81)"
+value = "= mul(token.text.roles.body.font.size, 1.81)"
 rows = []
 
 [[fact.cite]]
@@ -3162,7 +3163,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_2.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = []
 
 [[fact.cite]]
@@ -3179,7 +3180,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.title_2.font.size"
-value = "= mul(token.text.keyed.body.font.size, 1.36)"
+value = "= mul(token.text.roles.body.font.size, 1.36)"
 rows = []
 
 [[fact.cite]]
@@ -3442,7 +3443,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_3.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3459,7 +3460,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.title_3.font.size"
-value = "= mul(token.text.keyed.body.font.size, 1.36)"
+value = "= mul(token.text.roles.body.font.size, 1.36)"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3722,7 +3723,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.title_4.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -3739,7 +3740,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.title_4.font.size"
-value = "= mul(token.text.keyed.body.font.size, 1.18)"
+value = "= mul(token.text.roles.body.font.size, 1.18)"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4002,7 +4003,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.heading.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4018,7 +4019,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # the class sets no size: the default font's, inherited
 key = "token.text.keyed.heading.font.size"
-value = "= token.text.keyed.body.font.size"
+value = "= token.text.roles.body.font.size"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4551,7 +4552,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.caption_heading.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4568,7 +4569,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.caption_heading.font.size"
-value = "= mul(token.text.keyed.body.font.size, 0.82)"
+value = "= mul(token.text.roles.body.font.size, 0.82)"
 rows = ["GN-1.189"]
 
 [[fact.cite]]
@@ -4831,7 +4832,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.caption.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = []
 
 [[fact.cite]]
@@ -4848,7 +4849,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # a percentage of the inherited (default) size
 key = "token.text.keyed.caption.font.size"
-value = "= mul(token.text.keyed.body.font.size, 0.82)"
+value = "= mul(token.text.roles.body.font.size, 0.82)"
 rows = []
 
 [[fact.cite]]
@@ -5669,7 +5670,7 @@ absent = ["color"]
 [[fact]]
 # the class sets no family: the default font's, inherited
 key = "token.text.keyed.numeric.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
@@ -5685,7 +5686,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 [[fact]]
 # the class sets no size: the default font's, inherited
 key = "token.text.keyed.numeric.font.size"
-value = "= token.text.keyed.body.font.size"
+value = "= token.text.roles.body.font.size"
 rows = ["GN-1.192"]
 
 [[fact.cite]]
@@ -5952,7 +5953,7 @@ absent = ["color"]
 # the rule sets no family: the default font's, inherited
 [[fact]]
 key = "token.text.keyed.narrow_switcher_label.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -5969,7 +5970,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 # default font's)
 [[fact]]
 key = "token.text.keyed.narrow_switcher_label.font.size"
-value = "= mul(token.text.keyed.body.font.size, 0.75)"
+value = "= mul(token.text.roles.body.font.size, 0.75)"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -5993,26 +5994,38 @@ kind = "published"
 source = "gsettings-desktop-schemas@51.0 schemas/org.gnome.desktop.interface.gschema.xml.in:107-108"
 quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default>"
 
-# the rule sets no weight: CSS's initial `normal`, as GTK registers it
+# the rule sets no weight: the label inherits its view switcher button's (AdwViewSwitcherButton, a GtkToggleButton,
+# node `button`), libadwaita's bold for every button (the tie-break of GN-C1)
 [[fact]]
 key = "token.text.keyed.narrow_switcher_label.font.weight"
-value = 400
+value = 700
 rows = ["GN-1.194"]
 
 [[fact.cite]]
 kind = "published"
-source = "libadwaita@1.10.0 src/stylesheet/widgets/_view-switcher.scss:15-16"
-quote = "&.narrow { font-size: 0.75rem;"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_view-switcher.scss:11-16"
+quote = "button.toggle { padding: 0; > stack > box { &.narrow { font-size: 0.75rem;"
+absent = ["font-weight"]
 
 [[fact.cite]]
 kind = "published"
-source = "gtk@4.24.1 gtk/gtkcssstylepropertyimpl.c:921-926"
-quote = "gtk_css_style_property_register (\"font-weight\", GTK_CSS_PROPERTY_FONT_WEIGHT, GTK_STYLE_PROPERTY_INHERIT | GTK_STYLE_PROPERTY_ANIMATED, GTK_CSS_AFFECTS_TEXT_SIZE, font_weight_parse, gtk_css_number_value_new (PANGO_WEIGHT_NORMAL, GTK_CSS_NUMBER));"
+source = "libadwaita@1.10.0 src/adw-view-switcher-button.ui:4"
+quote = "<template class=\"AdwViewSwitcherButton\" parent=\"GtkToggleButton\">"
 
 [[fact.cite]]
 kind = "published"
-source = "pango@1.58.2 pango/pango-font.h:136"
-quote = "PANGO_WEIGHT_NORMAL = 400,"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:18-24"
+quote = "button { @at-root %button_basic, & { min-height: 24px; min-width: 16px; padding: 5px 10px; border-radius: $button_radius; font-weight: bold;"
+
+[[fact.cite]]
+kind = "published"
+source = "gtk@4.24.1 gtk/gtkcssenumvalue.c:481-482"
+quote = "if (gtk_css_parser_try_ident (parser, \"bold\")) return gtk_css_number_value_new (PANGO_WEIGHT_BOLD, GTK_CSS_NUMBER);"
+
+[[fact.cite]]
+kind = "published"
+source = "pango@1.58.2 pango/pango-font.h:139"
+quote = "PANGO_WEIGHT_BOLD = 700,"
 
 [[fact]]
 key = "token.text.keyed.narrow_switcher_label.font.style"
@@ -6255,7 +6268,7 @@ absent = ["color"]
 # the rule sets no family: the default font's, inherited
 [[fact]]
 key = "token.text.keyed.badge_label.font.family"
-value = "= token.text.keyed.body.font.family"
+value = "= token.text.roles.body.font.family"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
@@ -6272,7 +6285,7 @@ quote = "<key name=\"font-name\" type=\"s\"> <default>'Adwaita Sans 11'</default
 # default font's)
 [[fact]]
 key = "token.text.keyed.badge_label.font.size"
-value = "= mul(token.text.keyed.body.font.size, 0.6)"
+value = "= mul(token.text.roles.body.font.size, 0.6)"
 rows = ["GN-1.194"]
 
 [[fact.cite]]
