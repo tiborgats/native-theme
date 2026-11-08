@@ -2185,6 +2185,37 @@ fn refusal_smoothstep_spread_or_inset() {
     );
 }
 
+/// A shadow layer's `spread` may be negative (S2.5, S12; ADD-A135), as
+/// CSS's spread distance may: a part's layer and an elevation entry's take
+/// it, its blur still at least zero.
+#[test]
+fn shadow_spread_may_be_negative() {
+    let layer = |blur: &str, spread: &str| {
+        format!(
+            "{{ x_px = 0, y_px = 4, blur_px = {blur}, spread_px = {spread}, \
+             color = \"#00000040\", inset = false, falloff = \"gaussian\" }}"
+        )
+    };
+    let shadow = |layer: &str| {
+        toml(&format!(
+            "[widgets.button.body]\nshadow = {{ layers = [{layer}] }}"
+        ))
+    };
+    assert_eq!(bare(&shadow(&layer("16", "-3"))), NONE);
+    assert_eq!(
+        bare(&shadow(&layer("-1", "-3"))),
+        ["widgets.button.body.shadow.layers[0].blur_px: out of range: at least zero"]
+    );
+    let elevation = toml(&format!(
+        "[tokens.elevation]\nwindow = [{}]",
+        layer("16", "-3")
+    ));
+    assert_eq!(
+        found(&elevation, &declare("elevation = [\"window\"]")),
+        NONE
+    );
+}
+
 #[test]
 fn refusal_follow_part_outside_focus() {
     let corner = |focus: bool| {
