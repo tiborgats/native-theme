@@ -21033,6 +21033,15 @@ quote = "/// Describes a visual effect to apply when this item is focused. If th
 # 3 pt wide, 1.5 pt each side of the button's frame edge on the straight sides, no shadow, in the light accent in both
 # appearances; its corners follow the bezel where there is one and are near square without (unread: U477), and its
 # entrance is not recorded (U477).
+# The token is one halo that some specimens hide, not a value that varies by style: press_focus.py's [token] takes
+# each reading over the specimens whose halo it reads whole (all four side runs on the frame's centre lines end on a
+# pixel that is not the halo's colour in the normal crop), and every such specimen gives the same value (dark: 9 of 9
+# on iOS 18, 13 of 13 on iOS 26; light: 6 of 9 and 10 of 13). The specimens left out, all in light, are those whose
+# band's inner half lies on pixels of the halo's own colour, where focused and normal cannot differ: filled's and
+# bordered_prominent's bezel, and the system type's title, which reaches the frame's sides. Their outer half is the
+# same band, 1.5 pt of the halo's colour outside each side of the frame, and in dark the same two styles, over a
+# bezel of another colour, read whole with the same width and offsets; the halo drawn with these values over a
+# bezel of its own colour gives the pixels captured.
 [[fact]]
 key = "token.focus.kind"
 value = "ring"
