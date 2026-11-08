@@ -66,10 +66,10 @@ variants = ["flat", "@gray", "tinted", "primary", "toggle", "@corner_fixed", "@c
 sizes = ["regular"]
 default_size = "regular"
 sizes_by_variant = [
-  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
 ]
 densities = []
 flags = ["@loading"]
@@ -634,6 +634,47 @@ kind = "measured"
 evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-15/analysis.toml#focus.phone_focus_system"
 tolerance = 0
 
+# each configuration style's default size: a new configuration's `buttonSize` (medium, the model's `regular`; U129)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.plain.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.borderless.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.gray.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.bordered.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.tinted.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.bordered_tinted.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.filled.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/symbols_read.toml#defaults.bordered_prominent.default_size"
+tolerance = 0
+
 [[model]]
 when = { conditions = ["preset:ios-26"] }
 widget = "button"
@@ -642,12 +683,12 @@ variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@
 sizes = ["regular"]
 default_size = "regular"
 sizes_by_variant = [
-  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "glass", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
-  { variant = "clear", sizes = ["mini", "small", "regular", "large"], default_size = { pending = "U129" } },
+  { variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "glass", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
+  { variant = "clear", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
 ]
 sizes_by_context = [
   { context = { scope = "any", widget = "toolbar", part = "bar" }, sizes = ["regular"], default_size = "regular" },
@@ -1312,3 +1353,75 @@ tolerance = 0
 kind = "measured"
 evidence = "docs/evidence/ios-host/2026-10-30-run-41020880059/ios-host-macos-26/analysis.toml#focus.phone_focus_system"
 tolerance = 0
+
+# each configuration style's default size: a new configuration's `buttonSize` (medium, the model's `regular`; U129)
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.plain.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.borderless.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.gray.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.bordered.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.tinted.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.bordered_tinted.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.filled.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.bordered_prominent.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.prominent_glass.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.prominent_clear_glass.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.glass.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.prominent_glass.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.clear_glass.default_size"
+tolerance = 0
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/symbols_read.toml#defaults.prominent_clear_glass.default_size"
+tolerance = 0
+
