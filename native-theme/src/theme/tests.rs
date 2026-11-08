@@ -1487,9 +1487,14 @@ fn a_declared_input_missing_at_a_slot() {
 
 /// `adwaita` on the synthetic route, its listed paths stated (S17).
 fn synthetic_adwaita() -> super::Theme {
-    let file = read_preset(PresetId::Adwaita.source()).unwrap();
+    synthetic_theme(PresetId::Adwaita)
+}
+
+/// The preset `id` on the synthetic route, its listed paths stated (S17).
+fn synthetic_theme(id: PresetId) -> super::Theme {
+    let file = read_preset(id.source()).unwrap();
     let layers = synthetic_layers(&file.pending, &file.layer).unwrap();
-    super::Theme::from_preset_synthetic(PresetId::Adwaita, Scheme::Light, layers).unwrap()
+    super::Theme::from_preset_synthetic(id, Scheme::Light, layers).unwrap()
 }
 
 /// The reader status without a system reader: `NoReader`, `StandIn` while
@@ -1608,4 +1613,126 @@ fn a_portal_only_reading_over_adwaita() {
         accent.map(crate::color::Color::to_srgb8_clamped),
         Some([0xe6, 0x2d, 0x42, 0xff])
     );
+}
+
+/// The colour `role` resolves to at the root of `theme`, as 8-bit sRGB.
+fn root_role(theme: &super::Theme, role: crate::blocks::part_style::RoleRef) -> Option<[u8; 4]> {
+    let resolved = theme
+        .resolve(
+            &mut WindowState::default(),
+            &WindowConditions::new(InputKind::Mouse),
+        )
+        .theme;
+    let scope = resolved.root_scope(&root());
+    resolved
+        .role(&scope, role)
+        .map(crate::color::Color::to_srgb8_clamped)
+}
+
+/// A macOS reading over `macos-tahoe` (S9.3, S9.5): it validates as the
+/// reader layer, its state is the system's, and the resolved theme shows
+/// what it read under the scheme in force: the accent, a role it read, a
+/// keyed system colour, and `role.@selected_control`, which the preset
+/// states as its input.
+#[test]
+fn a_macos_reading_over_macos_tahoe() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::macos::tests::{DARK, mac_data, synthetic};
+    use crate::roles::{GlobalRole, SurfaceRole, SurfaceSet};
+
+    let mut theme = synthetic_theme(PresetId::MacosTahoe);
+    let data = crate::macos::MacosData {
+        scheme: Scheme::Dark,
+        overlay_scrollbars: Some(true),
+        ..mac_data()
+    };
+    let reading = crate::macos::build_reading(&data, PresetId::MacosTahoe);
+    let status = theme.take(reading, PresetId::MacosTahoe).unwrap();
+    assert_eq!(status, ReaderStatus::Read);
+    assert_eq!(theme.scheme(), Scheme::Dark);
+    assert!(theme.system().unwrap().overlay_scrollbars);
+    let read = |n: u8| Some(synthetic(DARK + n).to_srgb8_clamped());
+    assert_eq!(
+        root_role(&theme, RoleRef::Global(GlobalRole::Accent)),
+        read(1)
+    );
+    assert_eq!(
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::Window, SurfaceRole::Background)
+        ),
+        read(6)
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("system_red"))),
+        read(16)
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("selected_control"))),
+        read(5)
+    );
+}
+
+/// Under Increase Contrast a macOS reading's rules and contrast bases show
+/// under the increased contrast it reports, over the preset's own
+/// increased-contrast rules (S9.3).
+#[test]
+fn a_macos_reading_under_increased_contrast() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::macos::tests::{LIGHT, mac_data, synthetic};
+    use crate::roles::{GlobalRole, SurfaceRole, SurfaceSet};
+
+    let mut theme = synthetic_theme(PresetId::MacosTahoe);
+    let data = crate::macos::MacosData {
+        increase_contrast: true,
+        ..mac_data()
+    };
+    let reading = crate::macos::build_reading(&data, PresetId::MacosTahoe);
+    assert_eq!(
+        theme.take(reading, PresetId::MacosTahoe).unwrap(),
+        ReaderStatus::Read
+    );
+    assert_eq!(
+        theme.system().unwrap().contrast,
+        Some(crate::inputs::Contrast::Increased)
+    );
+    let read = |n: u8| Some(synthetic(LIGHT + n).to_srgb8_clamped());
+    assert_eq!(
+        root_role(&theme, RoleRef::Global(GlobalRole::Accent)),
+        read(1)
+    );
+    assert_eq!(
+        root_role(
+            &theme,
+            RoleRef::Set(SurfaceSet::Window, SurfaceRole::Foreground)
+        ),
+        read(7)
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Keyed(crate::key!("system_blue"))),
+        read(19)
+    );
+}
+
+/// A macOS reading over another preset (S9.5): the accent, its common
+/// part, applies; its own part, macOS's roles, does not.
+#[test]
+fn a_macos_reading_over_adwaita_takes_its_common_part() {
+    use crate::blocks::part_style::RoleRef;
+    use crate::macos::tests::{LIGHT, mac_data, synthetic};
+    use crate::roles::{GlobalRole, SurfaceRole, SurfaceSet};
+
+    let mut theme = synthetic_adwaita();
+    let background = RoleRef::Set(SurfaceSet::Window, SurfaceRole::Background);
+    let before = root_role(&theme, background.clone());
+    let reading = crate::macos::build_reading(&mac_data(), PresetId::MacosTahoe);
+    assert_eq!(
+        theme.take(reading, PresetId::MacosTahoe).unwrap(),
+        ReaderStatus::Read
+    );
+    assert_eq!(
+        root_role(&theme, RoleRef::Global(GlobalRole::Accent)),
+        Some(synthetic(LIGHT + 1).to_srgb8_clamped())
+    );
+    assert_eq!(root_role(&theme, background), before);
 }

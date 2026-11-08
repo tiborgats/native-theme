@@ -10,11 +10,11 @@
 //! the same.
 //!
 //! The readers linked so far: GNOME's (with the `portal` feature, on GNOME
-//! and Budgie), and the portal-only read of the Linux desktops with no
-//! reader of their own (S16's *Which reader*, ADD-A135). The KDE, macOS and
-//! Windows readers return with their presets (the 0.8.0 plan's M1b); until
-//! then `from_system` reports their platforms as
-//! [`ThemeError::PlatformUnsupported`].
+//! and Budgie), the portal-only read of the Linux desktops with no reader
+//! of their own (S16's *Which reader*, ADD-A135), and macOS's (with the
+//! `macos` feature). The KDE and Windows readers return with their presets
+//! (the 0.8.0 plan's M1b); until then `from_system` reports their platforms
+//! as [`ThemeError::PlatformUnsupported`].
 
 use crate::error::{ReaderFailure, ThemeError};
 use crate::layer::Layer;
@@ -24,7 +24,10 @@ use crate::resolve::ReaderState;
 /// What one read gave: the state and the layer, and the source that failed
 /// where another stood in for it (S9.1, S9.3: the status's `Fallback`).
 #[cfg_attr(
-    not(all(target_os = "linux", feature = "portal")),
+    not(any(
+        all(target_os = "linux", feature = "portal"),
+        all(target_os = "macos", feature = "macos")
+    )),
     allow(dead_code, reason = "a reader's: no reader is linked in this build")
 )]
 pub(crate) struct Reading {
@@ -46,12 +49,18 @@ pub(crate) enum SystemReader {
     /// the portal, then 0.7.0's scheme and motion chain.
     #[cfg(all(target_os = "linux", feature = "portal"))]
     Portal,
+    /// The macOS reader: AppKit's appearances, colours and settings.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    Macos,
 }
 
 impl SystemReader {
     /// Reads the system, the reader's own platform's part under `own`.
     #[cfg_attr(
-        not(all(target_os = "linux", feature = "portal")),
+        not(any(
+            all(target_os = "linux", feature = "portal"),
+            all(target_os = "macos", feature = "macos")
+        )),
         allow(unused_variables, reason = "no reader is linked in this build")
     )]
     pub(crate) async fn read(self, own: PresetId) -> Result<Reading, ReaderFailure> {
@@ -60,6 +69,8 @@ impl SystemReader {
             SystemReader::Gnome => Ok(crate::gnome::read(own).await),
             #[cfg(all(target_os = "linux", feature = "portal"))]
             SystemReader::Portal => Ok(crate::gnome::portal::read().await),
+            #[cfg(all(target_os = "macos", feature = "macos"))]
+            SystemReader::Macos => crate::macos::read(own),
         }
     }
 }
@@ -77,9 +88,14 @@ impl SystemReader {
 /// [`ThemeError::FeatureDisabled`] without the `portal` feature. Linux has
 /// no generation table: the one preset of the desktop is its only
 /// generation, so `generation` is accepted where it is that preset and is
-/// [`ThemeError::PresetNotForPlatform`] otherwise. KDE, macOS and Windows
-/// are [`ThemeError::PlatformUnsupported`] in this build: no reader reads
-/// them until their readers and presets return.
+/// [`ThemeError::PresetNotForPlatform`] otherwise.
+///
+/// On macOS the macOS reader reads, with the `macos` feature
+/// ([`ThemeError::FeatureDisabled`] without it), under the running
+/// version's generation ([`macos_preset`]).
+///
+/// KDE and Windows are [`ThemeError::PlatformUnsupported`] in this build:
+/// no reader reads them until their readers and presets return.
 pub(crate) async fn select(
     generation: Option<PresetId>,
 ) -> Result<(SystemReader, PresetId), ThemeError> {
@@ -87,10 +103,46 @@ pub(crate) async fn select(
     {
         linux_reader(crate::detect::refined_linux_desktop().await, generation)
     }
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    {
+        macos_preset(crate::macos::os_version(), generation).map(|id| (SystemReader::Macos, id))
+    }
+    #[cfg(all(target_os = "macos", not(feature = "macos")))]
+    {
+        let _ = generation;
+        Err(ThemeError::FeatureDisabled)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     {
         let _ = generation;
         Err(ThemeError::PlatformUnsupported)
+    }
+}
+
+/// The macOS preset of `running`: `generation` where it names one of the
+/// generation table's presets (R1.5, `pipeline::MACOS_GENERATIONS`),
+/// [`ThemeError::PresetNotForPlatform`] where it names another, else the
+/// table's preset for `running`.
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos")),
+    allow(dead_code, reason = "the macOS reader's: not linked in this build")
+)]
+fn macos_preset(
+    running: crate::pipeline::OsVersion,
+    generation: Option<PresetId>,
+) -> Result<PresetId, ThemeError> {
+    let table = &crate::pipeline::MACOS_GENERATIONS;
+    match generation {
+        Some(id)
+            if std::iter::once(&table.oldest)
+                .chain(table.newer)
+                .any(|row| row.preset == id.key()) =>
+        {
+            Ok(id)
+        }
+        Some(id) => Err(ThemeError::PresetNotForPlatform(id)),
+        None => PresetId::from_key(crate::pipeline::macos_generation(running).0)
+            .ok_or(ThemeError::PlatformUnsupported),
     }
 }
 
@@ -228,6 +280,52 @@ mod tests {
             assert_eq!(
                 linux_reader(desktop, Some(PresetId::Material3)),
                 Err(ThemeError::PresetNotForPlatform(PresetId::Material3))
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod macos_tests {
+    use super::*;
+    use crate::pipeline::OsVersion;
+
+    /// With no generation named, the running version's row of the
+    /// generation table decides (`pipeline::macos_generation`); every row's
+    /// preset is a bundled one.
+    #[test]
+    fn the_macos_version_chooses_the_preset() {
+        assert_eq!(
+            macos_preset(OsVersion::new(26, 6, 2), None),
+            Ok(PresetId::MacosTahoe)
+        );
+        assert_eq!(
+            macos_preset(OsVersion::new(15, 7, 9), None),
+            Ok(PresetId::MacosMonterey)
+        );
+        let table = &crate::pipeline::MACOS_GENERATIONS;
+        for row in std::iter::once(&table.oldest).chain(table.newer) {
+            assert!(PresetId::from_key(row.preset).is_some(), "{}", row.preset);
+        }
+    }
+
+    /// A named generation is taken where it is one of macOS's, whatever
+    /// the running version, and refused otherwise (R1.5).
+    #[test]
+    fn a_generation_is_a_macos_preset_or_refused() {
+        let running = OsVersion::new(26, 0, 0);
+        assert_eq!(
+            macos_preset(running, Some(PresetId::MacosMonterey)),
+            Ok(PresetId::MacosMonterey)
+        );
+        assert_eq!(
+            macos_preset(running, Some(PresetId::MacosTahoe)),
+            Ok(PresetId::MacosTahoe)
+        );
+        for id in [PresetId::Adwaita, PresetId::Ios26, PresetId::Material3] {
+            assert_eq!(
+                macos_preset(running, Some(id)),
+                Err(ThemeError::PresetNotForPlatform(id))
             );
         }
     }

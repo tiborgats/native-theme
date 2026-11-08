@@ -38,8 +38,8 @@ portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
 # The running Windows version, for `pipeline::diagnose_platform_support`; the
 # Windows reader from M1b.
 windows = ["dep:windows", "dep:windows-version"]
-# The running macOS version, for `pipeline::diagnose_platform_support`; the
-# macOS reader from M1b.
+# The macOS reader: AppKit's appearances, colours and settings (macOS), and
+# the running macOS version, for `pipeline::diagnose_platform_support`.
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
 # Aliases of `kde` and `portal`.
 linux-kde = ["kde"]
@@ -49,7 +49,8 @@ linux = ["linux-kde", "linux-portal"]
 # Every platform feature.
 native = ["linux", "macos", "windows"]
 # `watch::on_theme_change`: OS theme-change notifications, on the platforms
-# whose reader is back (GNOME and the portal-only desktops, with `portal`).
+# whose reader is back (GNOME and the portal-only desktops, with `portal`;
+# macOS, with `macos`).
 watch = ["dep:notify", "zbus?/blocking-api"]
 # The bundled Material Symbols icon set.
 material-icons = []
@@ -110,6 +111,8 @@ objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "objc2-core-graphics",
     "NSWorkspace",
     "NSAccessibility",
+    "NSApplication",
+    "NSResponder",
 ] }
 block2 = { version = ">=0.6.2, <0.8.0", optional = true }
 objc2-core-text = { version = "0.3.2", optional = true, features = [

@@ -55,7 +55,8 @@
 //! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
 //! widget is the button; of the platform readers GNOME's is back
 //! ([`Theme::from_system`], the `portal` feature), with the portal-only read
-//! of the Linux desktops that have no reader of their own.
+//! of the Linux desktops that have no reader of their own, and macOS's (the
+//! `macos` feature).
 //!
 //! # Feature flags
 //!
@@ -66,9 +67,10 @@
 //! | Feature | Enables |
 //! |---|---|
 //! | `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
-//! | `macos`, `windows` | The running OS version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `macos` | The macOS reader, [`Theme::from_system`]: AppKit's appearances, colours and settings; the running macOS version and its generation, in [`pipeline::diagnose_platform_support`] |
+//! | `windows` | The running Windows version and its generation, in [`pipeline::diagnose_platform_support`] |
 //! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
-//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME and the portal-only desktops) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME, the portal-only desktops and macOS) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
 //! | `native` | `linux`, `macos` and `windows` |
@@ -167,8 +169,8 @@ pub mod watch;
 /// Requires the `system-icons` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub(crate) mod freedesktop;
-/// macOS platform helpers.
-#[cfg(target_os = "macos")]
+/// The macOS reader and platform helpers; the reader's build from what
+/// AppKit gave is compiled on every platform, for its tests.
 pub(crate) mod macos;
 /// SVG-to-RGBA rasterization utilities.
 ///
