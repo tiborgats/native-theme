@@ -15762,16 +15762,19 @@ kind = "published"
 source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
 quote = "Width=\"12\" Height=\"12\""
 
+# The gap is the content's end margin, which the ContentPresenter does not set (a zero stated by omission); the
+# chevron's written start margin is its `margin.left` (the catalogue's `Inline`, one to one; the tie-break of WN-C1).
 [[fact]]
 key = "button.values.menu_indicator_gap"
 when = { variants = ["menu"], not_variants = ["tool"] }
-value = "8px"
+value = "0px"
 rows = ["W2-18"]
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
-quote = "Margin=\"8,0,0,0\""
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:92"
+quote = "<ContentPresenter x:Name=\"ContentPresenter\""
+absent = ["Margin"]
 
 [[fact]]
 key = "button.values.menu_indicator_anchor"
@@ -18362,9 +18365,11 @@ rows = []
 
 # The drop-down button's chevron (`menu`): an AnimatedIcon of AnimatedChevronDownSmall, its fallback the FontIcon
 # U+E96E of SymbolThemeFontFamily at 8 (DropDownButton.xaml:93-97). How its glyph (source, stroke, the drawn part
-# of its path, axes, mirroring), its margin, minimum height and transform are stated is open (ledger #109's
-# question for AnimatedIcon glyphs), U519. The app-bar button's chevron outside a command bar likewise (its facts
-# above hold in `context toolbar.bar`).
+# of its path, axes, mirroring), minimum height and transform are stated is open (ledger #109's question for
+# AnimatedIcon glyphs), U519. The app-bar button's chevron outside a command bar likewise (its facts above hold in
+# `context toolbar.bar`). Its margin is the AnimatedIcon's own, as written (the tie-break of WN-C1: the catalogue's
+# `Inline` keeps a platform's written values one to one, the indicator's start margin its `margin.left` and the gap
+# the content's end margin, which the ContentPresenter does not set).
 [[fact]]
 key = "button.menu_indicator.glyph.source"
 when = { variants = ["menu"], not_variants = ["tool"] }
@@ -18402,10 +18407,48 @@ pending = "U519"
 rows = []
 
 [[fact]]
-key = "button.menu_indicator.margin"
+key = "button.menu_indicator.margin.top"
 when = { variants = ["menu"], not_variants = ["tool"] }
-pending = "U519"
-rows = []
+value = "0px"
+rows = ["W2-18"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "Margin=\"8,0,0,0\""
+
+[[fact]]
+key = "button.menu_indicator.margin.right"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["W2-18"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "Margin=\"8,0,0,0\""
+
+[[fact]]
+key = "button.menu_indicator.margin.bottom"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "0px"
+rows = ["W2-18"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "Margin=\"8,0,0,0\""
+
+[[fact]]
+key = "button.menu_indicator.margin.left"
+when = { variants = ["menu"], not_variants = ["tool"] }
+value = "8px"
+rows = ["W2-18"]
+
+[[fact.cite]]
+kind = "published"
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
+quote = "Margin=\"8,0,0,0\""
 
 [[fact]]
 key = "button.menu_indicator.min_height"
@@ -18500,10 +18543,11 @@ quote = "<controls:AnimatedIcon x:Name=\"ChevronIcon\" Grid.Column=\"1\" Margin=
 [[fact]]
 key = "button.values.menu_indicator_gap"
 when = { not_variants = ["menu"] }
-value = "8px"
+value = "0px"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:93"
-quote = "Margin=\"8,0,0,0\""
+source = "microsoft-ui-xaml@2.5.1 src/controls/dev/DropDownButton/DropDownButton.xaml:92"
+quote = "<ContentPresenter x:Name=\"ContentPresenter\""
+absent = ["Margin"]
