@@ -178,7 +178,7 @@ PLACEMENT_COLUMNS = ("preset", "value", "when")
 # S2.2's readers' helpers (ADD-A135): `reader.<helper>.tsv`, the list read from the core's *The readers' helpers*
 READER = "reader."
 HELPERS_RX = re.compile(r"The helpers are exactly these(.*?)`check_function_vectors\.py` reads this list", re.S)
-HELPER_NAME_RX = re.compile(r"`([a-z_][a-z0-9_]*)`\s*\(the ")
+HELPER_NAME_RX = re.compile(r"`([a-z_][a-z0-9_]*)`\s*\(the\s")
 # S9.4's text scaling (ADD-A135): a non-linear `token.text.scaling` kind calls its curve, the function named by the
 # kind in snake_case
 SCALING = ("TextScaling", "linear")
@@ -1111,8 +1111,8 @@ SELF_TEST_CORE = (check_facts.SELF_TEST_CORE.replace(
 ) + """
 **The readers' helpers** (ADD-A135). The helpers are exactly these, each a `pub(crate)` function of the reader
 module that uses it: `pango_font_description`
-(the GNOME reader's) and `qfont_from_string` (the KDE reader's). `check_function_vectors.py` reads this list as it
-reads S2.2's functions.
+(the GNOME reader's) and `qfont_from_string` (the
+KDE reader's). `check_function_vectors.py` reads this list as it reads S2.2's functions.
 """)
 
 

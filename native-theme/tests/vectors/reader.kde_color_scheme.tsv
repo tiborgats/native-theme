@@ -1,0 +1,152 @@
+# function: reader.kde_color_scheme
+# route: public_api
+# source: plasma-integration@6.8.2
+# source: xdg-desktop-portal-kde@6.8.2
+# source: kcolorscheme@6.31.0
+# source: kconfig@6.31.0
+# source: qtbase@6.12.0
+# generations: kde-breeze
+# generator: tools/kde-vectors
+# inputs: background_normal:option<string>
+# outputs: scheme:enum<Scheme>
+# written by tools/kde-vectors/generate.py on Qt 6.12.0, KConfig 6.31.0 and
+# KColorScheme 6.31.0; do not edit. Each row: kdeglobals' [Colors:Window]
+# BackgroundNormal (a JSON string literal, the value KConfig holds; `none`: the file has no such
+# key), written by KConfig into a kdeglobals with a [Colors:View] group, KColorScheme::
+# createApplicationPalette of it, and Plasma's test of the palette's active window colour: dark where
+# qGray(rgb()) < 192 (the threshold read from plasma-integration's determineColorScheme and the
+# portal's readFdoColorScheme at their pins), else light. Each row is checked against the system's
+# plasma-integration platform theme (QStyleHints::colorScheme() on the offscreen platform over the same
+# kdeglobals). The inputs: unset, the BackgroundNormal values of Breeze 6.8.2's three schemes, black,
+# white and alpha, colours on both sides of the threshold, a dark colour's entry in each form KConfig
+# accepts or refuses as a colour, seeded random colours. Left out: 17 values KConfig reads as an
+# invalid colour or through Qt's colour parser, which S9.3 (ADD-A140) has the reader read as unset
+# (its default, light), with Plasma's answer and the colour:
+# "": dark (invalid, rgb 0,0,0)
+# "invalid": dark (invalid, rgb 0,0,0)
+# "Invalid": dark (invalid, rgb 0,0,0)
+# "#232629": dark (valid, rgb 35,38,41)
+# "#eff0f1": light (valid, rgb 239,240,241)
+# "#000": dark (valid, rgb 0,0,0)
+# "#fff": light (valid, rgb 255,255,255)
+# "#2326294d": dark (valid, rgb 38,41,77)
+# "#zzzzzz": dark (invalid, rgb 0,0,0)
+# "#": dark (invalid, rgb 0,0,0)
+# "black": dark (valid, rgb 0,0,0)
+# "white": light (valid, rgb 255,255,255)
+# "transparent": dark (valid, rgb 0,0,0)
+# "red": dark (valid, rgb 255,0,0)
+# "35;38;41": dark (invalid, rgb 0,0,0)
+# "35 38 41": dark (invalid, rgb 0,0,0)
+# "35": dark (invalid, rgb 0,0,0)
+background_normal	scheme
+none	light
+"252,252,252"	light
+"42,46,50"	dark
+"222,224,226"	light
+"239,240,241"	light
+"61,174,233"	dark
+"247,247,247"	light
+"255,255,255"	light
+"41,44,48"	dark
+"32,35,38"	dark
+"20,22,24"	dark
+"35,38,39"	dark
+"49,54,59"	dark
+"0,0,0"	dark
+"0,0,0,0"	dark
+"255,255,255,0"	light
+"35,38,41"	dark
+"190,190,190"	dark
+"191,191,191"	dark
+"192,192,192"	light
+"193,193,193"	light
+"191,192,192"	dark
+"192,191,192"	dark
+"192,192,191"	dark
+"71,255,255"	dark
+"72,255,255"	light
+"255,128,255"	dark
+"255,129,255"	light
+"176,200,200"	dark
+"177,200,200"	light
+"200,183,200"	dark
+"200,184,200"	light
+"200,200,148"	dark
+"200,200,149"	light
+"255,133,242"	dark
+"35, 38, 41"	dark
+"35 ,38 ,41"	dark
+"\t35,\t38,\t41"	dark
+"35,38,41\t"	dark
+" 35,38,41 "	dark
+"+35,+38,+41"	dark
+"035,038,041"	dark
+"-0,-0,-0"	dark
+"35,38,41,255"	dark
+"35,38,41,0"	dark
+"35,38,41,128"	dark
+"35,38"	light
+"35,38,41,255,0"	light
+"35,38,41,"	light
+",35,38,41"	light
+"35,,41"	light
+"35,38,256"	light
+"35,38,41,256"	light
+"-1,38,41"	light
+"35,38,-1"	light
+"35,38,0x29"	light
+"35,38,41.0"	light
+"35,38,4 1"	light
+"35,38,41 #"	light
+"35,38,99999999999"	light
+"35,38,2147483689"	light
+"35,38,1e1"	light
+"3 5,38,41"	light
+"35,38,41 "	light
+"35,38,٤١"	light
+"35,38,41\n"	dark
+"35,38,41\r"	dark
+"35,38,41\u000b"	dark
+"35,38,41\f"	dark
+"35,38,41\u0000"	dark
+"156,123,192"	dark
+"243,189,81"	dark
+"16,138,117"	dark
+"193,211,122"	dark
+"21,216,81"	dark
+"212,186,169"	light
+"186,198,191"	light
+"202,228,59"	light
+"128,95,22"	dark
+"222,186,147"	light
+"59,122,99"	dark
+"127,234,205"	light
+"114,44,168"	dark
+"96,245,234"	light
+"67,27,215"	dark
+"145,223,190"	dark
+"183,148,102"	dark
+"152,226,175"	light
+"167,89,247"	dark
+"235,212,26"	dark
+"148,252,140"	light
+"152,238,133"	light
+"143,234,109"	dark
+"136,244,151"	light
+"161,118,176"	dark
+"204,236,19"	dark
+"63,125,169"	dark
+"182,202,188"	light
+"162,122,153"	dark
+"148,218,210"	light
+"119,143,234"	dark
+"132,232,198"	light
+"148,70,148"	dark
+"240,180,122"	dark
+"150,234,136"	dark
+"222,227,10"	dark
+"79,176,112"	dark
+"151,229,162"	dark
+"163,189,188"	dark
+"135,249,141"	light
