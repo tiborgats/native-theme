@@ -310,6 +310,17 @@ fn gate_fixture_whole_block_over_leaf_facts() {
     );
 }
 
+/// A block stated per leaf and whole after its leaves under a narrower
+/// `when` (S17 *Which fact applies*): where the block's fact does not hold,
+/// its leaves' facts state it, so the block is no key without a fact
+/// there; on a flat button the block's `absent` applies.
+#[test]
+fn gate_fixture_block_beside_its_leaves() {
+    let report = fixture_report("block_beside_leaves");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.compared > 0, "{report:?}");
+}
+
 /// A token's block stated whole and its leaf after it (S17 *Which fact
 /// applies*, for every key): the block's fact compares the block but the
 /// leaf where the leaf's later fact applies, which compares the leaf; a
