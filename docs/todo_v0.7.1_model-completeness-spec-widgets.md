@@ -9749,7 +9749,7 @@ is also a part of the text widgets (ADD-A24). Additions: ADD-A24.
 (`Value<f32>`, logical pixels per inch, required on every preset, the DPI its points convert by, S9.4, stated from
 its platform's facts except on `macos-*` and `ios-*`, where it is 72, the specification's own value, as their point is
 the logical pixel, S9.4, ADD-A125; where the platform has a DPI setting the reader reports it as `ReaderState.font_dpi`, KDE's
-`forceFontDPI` or `Xft.dpi`, platform-facts' *Font DPI override*, which then wins over the token, ADD-A103). Keyed
+`Xft.dpi` on an X11 session (S9.3; ADD-A140), which then wins over the token, ADD-A103). Keyed
 styles one flavour alone uses are declared preset-wide, since S10
 has flavour declarations for widgets and components only, and are referenced only under `cond flavor:<f>`, as
 Kirigami's elevation entries are (`token.elevation`); Material's `_emphasized` styles are no such styles, Compose's
@@ -9878,7 +9878,9 @@ holds.
 - kdeglobals `[ColorEffects:Disabled]` (six keys: intensity, colour, contrast effect and amount),
   `[ColorEffects:Inactive]`
   including `ChangeSelectionColor` and `Enable`, and the `[Colors:*][Inactive]` subgroups: K3.40, K3.50, K3.51.
-- kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today): Q3.1, K3.54.
+- kdeglobals `[Colors:*]` (all seven sets, the keys the reader flattens today; an unset key as KColorScheme reads it,
+  and the `Window` background deciding the scheme by Plasma's own test, `kde_color_scheme`, S9.3, ADD-A140): Q3.1,
+  K3.54.
 - kdeglobals `[General] AccentColor` into `input.accent` at both schemes where set and not equal to Qt's
   `transparent`; else the `Selection` set's `BackgroundNormal` at the read scheme, the portal's `Highlight`, and
   `#00000000` at that scheme in its `for_preset.kde-breeze` part (S9.3): K3.54.
@@ -9894,9 +9896,11 @@ holds.
 - breezerc `[Style] MnemonicsMode`: K3.44.
 - kdeglobals `[General] XftAntialias`, `XftHintStyle`, `XftSubPixel` (keys to verify in plasma-workspace): K3.45.
 - kdeglobals font strings with their extras (`[General] font`, `fixed`, `smallestReadableFont`, `menuFont`,
-  `toolBarFont`; the slots and keyed styles each patches, *keyed text styles per platform*): K3.46; kcmfonts `[General]
-  forceFontDPI` and `Xft.dpi` into `ReaderState.font_dpi` (platform-facts' *Font DPI override*): K3.46.
-- icon theme `index.theme` `*Default` sizes: K3.63.
+  `toolBarFont`; the slots and keyed styles each patches, *keyed text styles per platform*): K3.46; `Xft.dpi` on an X11
+  session, as Qt's xcb plugin reads it (`qxcb_xft_dpi`), into `ReaderState.font_dpi`, `kcmfonts`' `forceFontDPI`
+  (platform-facts' *Font DPI override*) not read (S9.3, ADD-A140): K3.46.
+- icon theme `index.theme` `*Default` sizes (`MainToolbarDefault` among them; an omitted key KIconTheme's group
+  default, S9.3, ADD-A140): K3.63.
 - kcminputrc `[Mouse] cursorTheme`, `cursorSize`; key repeat (`kwin src/main.cpp:108-109`,
   `src/keyboard_input.cpp:196-209`): K3.64, K-P3-16†.
 - `org.kde.KWin.TabletModeManager` D-Bus property (to verify) into `cond tablet_mode`: K3.83.
@@ -9923,8 +9927,9 @@ holds.
 - the material policy state (AcrylicBrush's `OnMaterialPolicyStatusChanged`; its inputs to verify) into
   `cond system_setting:material_policy`, and the battery saver state (API to verify) into `cond battery_saver`: W3-07.
 - `UISettings.AutoHideScrollBars` into `cond overlay_scrollbars`: W1-152†.
-- `UISettings.AnimationsEnabled`, `SPI_GETCLIENTAREAANIMATION`: W3-37; `UISettings.AdvancedEffectsEnabled`, registry
-  `EnableTransparency`: W3-38.
+- `UISettings.AnimationsEnabled` into `cond animations_off` and `cond reduced_motion` (`SPI_GETCLIENTAREAANIMATION`
+  not read, S9.3, ADD-A140): W3-37; `UISettings.AdvancedEffectsEnabled` (the registry's `EnableTransparency` not
+  read beside it, S9.3): W3-38.
 - `GetDoubleClickTime` or `UISettings.DoubleClickTime`, `SPI_GETMOUSEHOVERTIME`, `SPI_GETMENUSHOWDELAY`, `SM_CXDRAG`,
   `SM_CYDRAG`, `SPI_GETWHEELSCROLLLINES`, `SPI_GETKEYBOARDDELAY`: W3-41 (its `UISettings.MessageDuration` is out,
   R1.1: the shell's notifications);

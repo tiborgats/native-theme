@@ -766,7 +766,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-36 | `IconStyle.size (= an expression on text_scale where the icon grows; ADD-A55)` | field |
 | W3-37 | `PartStyle.transitions @ cond animations_off per animation` | rule |
 | W3-37 | `token.motion.speed_factor @ cond animations_off` | rule |
-| W3-37 | `reader:windows:UISettings.AnimationsEnabled, SPI_GETCLIENTAREAANIMATION` | reader |
+| W3-37 | `reader:windows:UISettings.AnimationsEnabled` (false: `cond animations_off` and `cond reduced_motion`, Windows' one motion setting, which WinUI reads; `SPI_GETCLIENTAREAANIMATION` not read; S9.3, ADD-A140) | reader |
 | W3-38 | `Material.fallback @ cond reduced_transparency per material` | rule |
 | W3-38 | `reader:windows:UISettings.AdvancedEffectsEnabled, registry EnableTransparency` | reader |
 | W3-39 | `declare.widget.{input,text_area,combo_box,list,date_picker,time_picker,picker_wheel}.densities (compact)` (each entry's *Sizes and densities*) | field |
