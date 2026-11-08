@@ -5949,7 +5949,13 @@ which fields are struct blocks the valid keys decide (below).
   A `measured` citation names no `source`: its evidence run's README names the harness and its commit. `tolerance` is
   a number in the value's canonical unit (a colour's per 8-bit channel, alpha included; channels compare on the 0–255
 scale unclamped, so one outside the gamut lies outside `0..=255`, while a colour measured from drawn pixels is compared
-with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). The gate has no connector, so no case
+with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). A tolerance is at most the precision
+  the analysis's method gives the value, its error bound, which the analysis's docstring states (ADD-A141; the iOS
+  tie-break round 4): a straight colour solved from composites over black and over white, each read to one 8-bit
+  level, holds to `floor(1/α)` levels per straight channel, `α` the solved alpha, as one level of a composite is
+  `1/α` levels of the channel beneath it (`read_buttons.py`'s one-level rule). Readings
+  of merged runs that spread wider than that bound disagree: the fact states the reading the bound holds, or is
+  pending, never a tolerance widened to hold them all. The gate has no connector, so no case
   of the hand-over's connector types is its: it draws the resolved colour as the measured platform's renderer does
   into the capture's frame, then reads it as the measured colour was read from the pixels (ADD-A131). An in-gamut
   colour draws the same in every case, so this matters only where the resolved colour leaves the gamut, and each
@@ -6019,7 +6025,13 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   scaling, S9.4; `pt`; `ms` and `s`; `deg`; `rem` and `em` have none, so a value written in them is cited where the
   platform states it in px, or measured, or, for a factor of the default font size, read through `rem_to_factor`, below); a member is added to a list, or to the conversions below, as a class 1
   change; a span the number, colour or `TimeSpan` notations read (a `TimeSpan`, a byte list) is not read again by the number
-  form, while the text notations only add candidate strings and take no span. A literal
+  form, while the text notations only add candidate strings and take no span. A gradient's angle, which no source
+  writes as a number of degrees, is read as the angle the gradient's own notation computes, S2.3's convention: XAML's
+  `LinearGradientBrush` from its start and end points (ledger queue #38, #57), and QML's `Gradient` from its
+  `orientation`, `Gradient.Vertical`, the default a quote leaves out (`qtdeclarative@6.12.0
+  src/quick/items/qquickrectangle_p.h:123`), 180°, and `Gradient.Horizontal` 90° (ADD-A141; U421, Kirigami's round
+  button's gloss), its `GradientStop`s' positions and colours read by the number and colour notations, a QML colour
+  form the facts need added to them as a class 1 change. A literal
   without a unit takes the value literal's dimension in its
   canonical unit; a literal with a unit must be of the value's dimension, px and pt being distinct, and is normalised
   within it (`0.2s` is `200ms`). Numbers are equal to a relative 1e-4, colours as 8-bit sRGB channels with alpha to
@@ -6036,7 +6048,9 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   literal of the citation's quote as the unitless factor n, which GTK multiplies by the default font size
   (`gtk@4.24.1 gtk/gtkcssnumbervalue.c:405-408`, `gtk_css_font_size_get_default_px`, `gtk/gtkcssenumvalue.c:213-231`,
   GtkSettings' `gtk-font-name`, not the root widget's computed size): the fact keeps GTK's derivation,
-  `= mul(token.text.keyed.body.font.size, 0.75)` for libadwaita's `0.75rem`; without the conversion a `rem` value keeps no literal,
+  `= mul(token.text.roles.body.font.size, 0.75)` for libadwaita's `0.75rem`, the `body` slot, which the GNOME
+  reader's `font-name` patch reaches as GTK's default font size follows the setting, not the keyed `.body` style
+  (ADD-A141; the GN-C1 tie-break, which moved the facts so); without the conversion a `rem` value keeps no literal,
   so a `0.75rem` quote never holds a plain `0.75`. AppKit's width trait has no conversion: no pinned
   source maps `NSFontWidthTrait` to a percent, so a `macos-*` width is measured on the font's `wdth` axis
   (S2.8's *Width*, ADD-A130). Nor has an Apple weight trait (`NSFontWeightTrait`, `UIFontWeightTrait`): S2.8's
@@ -6056,7 +6070,24 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   is missing and that the range is the whole definition and each name the platform's own (taken from where the platform does define
   it, another release or a sibling class). A definition spread over several ranges (an Objective-C class and its
   categories) has one citation per range, the names absent from each. A measured absence is a `measured` citation
-  whose evidence records that nothing is drawn (an image analysis's output).
+  whose evidence records that nothing is drawn (an image analysis's output), or that the platform does not draw the
+  view, as its own view tree records it (`hidden`, an alpha of 0, no size), an analysis's output reading the tree
+  (ADD-A141; the iOS tie-break round 4, U684), with a crop showing no ink where the run kept one; a view the
+  platform hides only for want of room (a title the bar drops when it does not fit) is a layout's outcome, not an
+  absence, so the analysis shows the view hidden where it would fit (a short title, a wide bar) before an absence
+  rests on it.
+  **An absence in time** (ADD-A141; U554). A value that says something never happens (`FocusVisibleWhen::Keyboard`'s
+  `timeout` `None`, a caret that never stops blinking) is an absence: it cites the code path that would end it, an
+  absence citation as above naming the timer or the call that would (`postDelayed`, a timeout property), where the
+  platform's source is pinned (Compose's focus indication follows Android's touch mode, `androidx@e4d933c9
+  compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt:3807-3808`, which
+  `ensureTouchMode` changes on input events and the window manager's report changes after one,
+  `frameworks-base@android-17.0.0_r1 core/java/android/view/ViewRootImpl.java:7766-7800`, its callers at `:8445-8472`,
+  `:9188-9196`, `:9760-9781`, `:5359-5366`, no timer among them, as the Material facts are to cite it). A
+  measurement shows it only for the span it records, so a measured citation alone holds it only where no source is
+  pinned (the closed platforms), its analysis stating the span, a recorded inexactness for any later end. Rejected: a
+  measured span as the whole claim where the source is pinned (`material-3`'s 1.5 s capture, U554); `Absent` for
+  "never" (the field is the platform's value, and `None` is S1's "no limit").
   **A zero stated by omission** (ADD-A122): where the platform's value is zero only because its code sets none (no
   delay: the code acts at once; no offset, no spacing), the fact's value is the zero literal (`"0ms"`, `"0px"`, `0`),
   and its citation is an absence citation as above: the whole definition of the code path that would apply the value
@@ -6258,7 +6289,15 @@ the C++ literal's `L` suffix its type, not a unit, as in Kotlin), `negate` (−x
   such entry gets one of kind `sdk` naming the image) and its exact builds (`[images.os-probe-macos-26]
   preset = "macos-tahoe"`, `source = "xcode@26.6"`, `os = "<build>"`, `toolkit = "<build>"`, the last where a toolkit
   drew or answered); the checker requires the others and that the preset is among the entry's generations. The builds are recorded, not matched: a runner image
-  moves within a release (D1). Every evidence file is cited by a fact, a state-model entry or a
+  moves within a release (D1). Where two builds of the release a preset describes read one fact differently beyond
+  its tolerance (`macos-tahoe`'s facts mix macOS 26.6.2 and 26.7.2 readings, the macOS measured verifier's report),
+  the newest build's reading is the fact's, as R1.5 has a preset describe the newest release a supported runner
+  measures (D12), and the older build's citation leaves that fact (its file stays evidence where another fact cites
+  it); where they agree, both cite it (ADD-A141; the macOS tie-break round 7). The SDK entry a run names follows the
+  same rule: `xcode@26.6` serves `macos-tahoe` while the newest runner build's Xcode is 26.6, and a newer Xcode on the
+  newest build is pinned as its own entry with its header copies. Rejected: the older build (the first measured, no
+  reason the platform gives); a tolerance wide enough for both (a value no one build draws); a condition per build
+  (the model has none, and R1.5 rejects a per-release overlay). Every evidence file is cited by a fact, a state-model entry or a
   vector table (S2.2, S13), or is the input of a cited analysis output (its `input_image`, above): a recording
   and the crop the harness cut its frames with (`transition-caret.mov` and `.crop`, run 42272240639) are data: the
   analysis that reads the frames names them in its `input_image`, as the files the frames were cut from. Not evidence: a run's README and `run.toml`, and its records, the
