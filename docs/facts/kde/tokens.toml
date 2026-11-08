@@ -905,8 +905,17 @@ absent = []
 # shadow by its own); its box is the surface shrunk by Shadow_Overlap on every side (the padding's overlap term),
 # so the spread is minus the overlap; its blur the renderer's radius, CSS's blur radius (standard deviation half
 # of it, calculateBlurStdDev: falloff `gaussian`); its colour breezerc's ShadowColor (role.global.shadow_reference) with the alpha set (QColor::setAlphaF,
-# with_alpha) to the layer's opacity times ShadowStrength / 255, breezerc's default 255 (token.params.shadow is no
-# group of the slice yet: the strength stated as its default). ShadowNone draws no shadow: the empty entry.
+# with_alpha) to the layer's opacity times ShadowStrength / 255 (token.params.shadow.strength, below, the reader's
+# breezerc [Common] ShadowStrength). Each layer is rendered around a box of its own radius, which the spread leaves:
+# S2.5's `corner_radius` (ADD-A136), which the model's ShadowLayer does not hold yet (its code follow-up), so the
+# layers state none until it does, the reader refusing the key meanwhile. Its values then: a window's layer the
+# decoration's scaled radius plus half a pixel, `= add(mul(2.5px, 2), 0.5px)` (breezedecoration.cpp:829, :872-875;
+# Frame_FrameRadius 2.5 times the decoration's smallSpacing, kdecoration/breeze.h:27-29, which Breeze's comments give
+# as 2 on Wayland, while kdecoration's DecorationSettings derives it from the title font, a quarter of its 'M'
+# height rounded up to even, at least 2, kdecoration@6.8.2 src/decorationsettings.cpp:18-31: the comments' 2 holds
+# while that height is at most 10 px, a reading for the KDE host to confirm); a popup's the style's frame radius,
+# 5 (breezeshadowhelper.cpp:205-208, breezehelper.h:345-348, breezemetrics.h:31, :42).
+# ShadowNone draws no shadow: the empty entry.
 
 [[fact]]
 key = "token.elevation.window_none"
@@ -931,7 +940,7 @@ quote = "// None CompositeShadowParams(),"
 
 [[fact]]
 key = "token.elevation.window_small"
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -977,7 +986,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_medium"
-value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1023,7 +1032,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_large"
-value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1069,7 +1078,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.window_very_large"
-value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 1.0)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(token.params.shadow.strength, 255), 1.0)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1113,12 +1122,13 @@ kind = "published"
 source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
 quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
 
+
 # an inactive window's decoration shadow is drawn at half strength (createShadowObject(0.5), K1.18)
 
 [[fact]]
 key = "token.elevation.window_small"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(1, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.4, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1165,7 +1175,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_medium"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(8px, 0px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.9, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(8px, -4px)", blur_px = 16, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.3, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1212,7 +1222,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_large"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(12px, 0px)", blur_px = 48, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.8, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(12px, -6px)", blur_px = 24, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.2, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1259,7 +1269,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 [[fact]]
 key = "token.elevation.window_very_large"
 when = { conditions = ["window_inactive"] }
-value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(255, 255), 0.5)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(16px, 0px)", blur_px = 64, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.7, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(16px, -8px)", blur_px = 32, spread_px = -3, color = "= with_alpha(role.global.shadow_reference, mul(0.1, mul(div(token.params.shadow.strength, 255), 0.5)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.1"]
 
 [[fact.cite]]
@@ -1326,7 +1336,7 @@ quote = "// None CompositeShadowParams(),"
 
 [[fact]]
 key = "token.elevation.popup_small"
-value = [{ x_px = 0, y_px = "= add(3px, 0px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.26, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(3px, -2px)", blur_px = 6, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.16, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(3px, 0px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.26, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(3px, -2px)", blur_px = 6, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.16, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1367,7 +1377,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_medium"
-value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.24, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.14, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(4px, 0px)", blur_px = 16, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.24, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(4px, -2px)", blur_px = 8, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.14, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1408,7 +1418,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_large"
-value = [{ x_px = 0, y_px = "= add(5px, 0px)", blur_px = 20, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.22, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(5px, -3px)", blur_px = 10, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.12, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(5px, 0px)", blur_px = 20, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.22, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(5px, -3px)", blur_px = 10, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.12, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1449,7 +1459,7 @@ quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://ww
 
 [[fact]]
 key = "token.elevation.popup_very_large"
-value = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.2, div(255, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(6px, -3px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.1, div(255, 255)))", inset = false, falloff = "gaussian" }]
+value = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.2, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }, { x_px = 0, y_px = "= add(6px, -3px)", blur_px = 12, spread_px = -2, color = "= with_alpha(role.global.shadow_reference, mul(0.1, div(token.params.shadow.strength, 255)))", inset = false, falloff = "gaussian" }]
 rows = ["K3.2"]
 
 [[fact.cite]]
@@ -1487,6 +1497,26 @@ conversion = ["negate"]
 kind = "published"
 source = "breeze@6.8.2 libbreezecommon/breezeboxshadowrenderer.cpp:34-38"
 quote = "static inline qreal calculateBlurStdDev(int radius) { // See https://www.w3.org/TR/css-backgrounds-3/#shadow-blur return radius * 0.5; }"
+
+
+# the shadows' strength (S4.6's `shadow` group, ADD-A44): breezerc's [Common] ShadowStrength, read by the decoration
+# and the style alike, at its default where the file states none; the elevations above scale each layer's opacity by
+# it over 255
+
+[[fact]]
+key = "token.params.shadow.strength"
+value = 255
+rows = ["K3.1", "K3.2"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kdecoration/breezesettingsdata.kcfg:11-15"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breeze.kcfg:12-16"
+quote = "<entry name=\"ShadowStrength\" type = \"Int\"> <default>255</default> <min>25</min> <max>255</max> </entry>"
 
 # Kirigami's and qqc2-desktop-style's surfaces draw their shadow with Kirigami's ShadowedRectangle, whose falloff is
 # a smoothstep over a rounded rectangle's distance field (shadowedrectangle.frag:36-45), not S2.5's (CSS) Gaussian
@@ -3269,8 +3299,6 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
 
-
-
 [[fact]]
 key = "token.text.keyed.heading_1.font.weight"
 value = 400
@@ -4042,8 +4070,6 @@ quote = "case 2: factor = 1.20;"
 kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
-
-
 
 [[fact]]
 key = "token.text.keyed.heading_2.font.weight"
@@ -4817,8 +4843,6 @@ kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
 
-
-
 [[fact]]
 key = "token.text.keyed.heading_3.font.weight"
 value = 400
@@ -5590,8 +5614,6 @@ quote = "case 4: factor = 1.10;"
 kind = "published"
 source = "kirigami@6.31.0 src/controls/Heading.qml:32"
 quote = "return Platform.Theme.defaultFont.pointSize * factor;"
-
-
 
 [[fact]]
 key = "token.text.keyed.heading_4.font.weight"

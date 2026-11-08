@@ -8848,215 +8848,608 @@ kind = "published"
 source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
 quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
-# qqc2's ToolButton passes the control's font, the QML default (the general font), not QToolButton's
+# qqc2's ToolButton passes the control's font to its style item, which starts at the application font and ignores
+# an equal one; while it is (a copy of) the application font the item draws with QToolButton's, the toolbar font, and
+# Qt Quick's own default for a ToolButton is the platform's ToolButtonFont, the same toolbar font, so the label
+# takes token.text.keyed.toolbar as the Qt Widgets tool button's does
 
 [[fact]]
 key = "button.label.text.font.family"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.family"
+value = "= token.text.keyed.toolbar.font.family"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.size"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.size"
+value = "= token.text.keyed.toolbar.font.size"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.weight"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.weight"
+value = "= token.text.keyed.toolbar.font.weight"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.style"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.style"
+value = "= token.text.keyed.toolbar.font.style"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.width"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.width"
+value = "= token.text.keyed.toolbar.font.width"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.axes"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.axes"
+value = "= token.text.keyed.toolbar.font.axes"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.font.features"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.font.features"
+value = "= token.text.keyed.toolbar.font.features"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.scaling_role"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.scaling_role"
+value = "= token.text.keyed.toolbar.scaling_role"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.letter_spacing"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.letter_spacing"
+value = "= token.text.keyed.toolbar.letter_spacing"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.word_spacing"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.word_spacing"
+value = "= token.text.keyed.toolbar.word_spacing"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.line_height"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.line_height"
+value = "= token.text.keyed.toolbar.line_height"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.case"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.case"
+value = "= token.text.keyed.toolbar.case"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.decoration"
 when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
-value = "= token.text.roles.body.decoration"
+value = "= token.text.keyed.toolbar.decoration"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:278-279"
-quote = "const QFont font = qApp->font(\"QPushButton\");"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:62"
+quote = "font: controlRoot.font"
 
 [[fact.cite]]
 kind = "published"
-source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:139-150"
-quote = "case PushButtonFont:"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:430-432"
+quote = "const QFont font = m_font.isCopyOf(qApp->font()) ? qApp->font(\"QToolButton\") : m_font; opt->font = font; opt->fontMetrics = QFontMetrics(font);"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:177"
+quote = "m_font = qApp->font();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:1555-1560"
+quote = "void KQuickStyleItem::setFont(const QFont &font) { if (font == m_font) { return; } m_font = font;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktoolbutton.cpp:52-55"
+quote = "QFont QQuickToolButton::defaultFont() const { return QQuickTheme::font(QQuickTheme::ToolBar); }"
+
+[[fact.cite]]
+kind = "published"
+source = "qtdeclarative@6.12.0 src/quicktemplates/qquicktheme.cpp:45"
+quote = "case QQuickTheme::ToolBar: return QPlatformTheme::ToolButtonFont;"
+
+[[fact.cite]]
+kind = "published"
+source = "qtbase@6.12.0 src/widgets/kernel/qapplication.cpp:588-589"
+quote = "if (const QFont *font = theme->font(QPlatformTheme::ToolButtonFont)) fontHash->insert(QByteArrayLiteral(\"QToolButton\"), *font);"
+
+[[fact.cite]]
+kind = "published"
+source = "plasma-integration@6.8.2 qt6/src/platformtheme/kdeplatformtheme.cpp:163-165"
+quote = "case ToolButtonFont: fdtype = KFontSettingsData::ToolbarFont;"
 
 [[fact]]
 key = "button.label.text.fill"
@@ -10583,7 +10976,7 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.top"
-when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10605,7 +10998,7 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.right"
-when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10627,7 +11020,7 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.bottom"
-when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -10649,7 +11042,7 @@ quote = "arrowRect.setLeft(contentsRect.right() - Metrics::MenuButton_IndicatorW
 
 [[fact]]
 key = "button.menu_indicator.margin.left"
-when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
 value = "absent"
 rows = ["K1.27"]
 
@@ -11520,7 +11913,7 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 
 [[fact]]
 key = "button.menu_indicator.min_width"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "20px"
 rows = ["K1.155"]
 
@@ -11541,7 +11934,7 @@ quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
 
 [[fact]]
 key = "button.menu_indicator.glyph.size"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "10px"
 rows = ["K1.155"]
 
@@ -11567,7 +11960,7 @@ quote = "static constexpr int MenuButton_IndicatorWidth = 20;"
 
 [[fact]]
 key = "button.menu_indicator.glyph.fill"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "absent"
 rows = ["K1.155"]
 
@@ -11584,7 +11977,7 @@ quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.width"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "1.001px"
 rows = ["K1.155"]
 
@@ -11600,7 +11993,7 @@ quote = "static constexpr qreal Symbol = 1.001;"
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.cap"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "square"
 rows = ["K1.155"]
 
@@ -11611,7 +12004,7 @@ quote = "painter->setBrush(Qt::NoBrush); QPen pen(color, PenWidth::Symbol); pen.
 
 [[fact]]
 key = "button.menu_indicator.glyph.stroke.join"
-when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+when = { variants = ["tool", "@inline_large"] }
 value = "miter"
 rows = ["K1.155"]
 
@@ -11894,6 +12287,242 @@ quote = "_palette.setBrush(QPalette::Active, QPalette::Window, active.background
 # Breeze draws an arrow only on a push button with a menu and on a tool button's inline small and large
 # menu styles (K1.27, K1.155; the split style is `split_button`); flavour kirigami declares no inline style, so
 # there it is the menu alone (the state models)
+
+# Kirigami's ToolButton with a menu (Accessible.ButtonMenu) and a label: the style item sets HasMenu alone, so Breeze
+# draws the inline large arrow (`@inline_large`) with the style item's palette, the Kirigami colour set's text and
+# background in every text and background role: the arrow shade's mix of the two, the text colour itself where the
+# item passes focus (visual focus, a pressed non-flat button, `highlighted`); a flat one's arrow takes the shade alone
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] }
+value = "= kcu_mix(surface.foreground, surface.background, 0.15)"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7765-7772"
+quote = "} else if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineSmall || menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineLarge) { copy.rect = menuRect; copy.state &= ~State_MouseOver; copy.state &= ~State_Sunken; copy.state &= ~State_On;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:112-119"
+quote = "QPalette pal; for (auto state : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) { pal.setBrush(state, QPalette::WindowText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Window, ret.scheme.background()); pal.setBrush(state, QPalette::Base, ret.scheme.background()); pal.setBrush(state, QPalette::Text, ret.scheme.foreground()); pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:209-214"
+quote = "case QPalette::Text: return KColorUtils::mix(palette.color(group, QPalette::Text), palette.color(group, QPalette::Base), arrowShade); case QPalette::WindowText: return KColorUtils::mix(palette.color(group, QPalette::WindowText), palette.color(group, QPalette::Window), arrowShade); case QPalette::ButtonText: return KColorUtils::mix(palette.color(group, QPalette::ButtonText), palette.color(group, QPalette::Button), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"], not_variants = ["flat"], states = ["focus_visible"] }
+value = "= surface.foreground"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7765-7772"
+quote = "} else if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineSmall || menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineLarge) { copy.rect = menuRect; copy.state &= ~State_MouseOver; copy.state &= ~State_Sunken; copy.state &= ~State_On;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:112-119"
+quote = "QPalette pal; for (auto state : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) { pal.setBrush(state, QPalette::WindowText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Window, ret.scheme.background()); pal.setBrush(state, QPalette::Base, ret.scheme.background()); pal.setBrush(state, QPalette::Text, ret.scheme.foreground()); pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:60"
+quote = "hasFocus: controlRoot.visualFocus || (!controlRoot.flat && controlRoot.pressed) || controlRoot.highlighted"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4458-4459"
+quote = "} else if (hasFocus && !mouseOver) { color = palette.color(QPalette::ButtonText);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"], not_variants = ["flat"], states = ["pressed"] }
+value = "= surface.foreground"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7765-7772"
+quote = "} else if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineSmall || menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineLarge) { copy.rect = menuRect; copy.state &= ~State_MouseOver; copy.state &= ~State_Sunken; copy.state &= ~State_On;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:112-119"
+quote = "QPalette pal; for (auto state : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) { pal.setBrush(state, QPalette::WindowText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Window, ret.scheme.background()); pal.setBrush(state, QPalette::Base, ret.scheme.background()); pal.setBrush(state, QPalette::Text, ret.scheme.foreground()); pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:60"
+quote = "hasFocus: controlRoot.visualFocus || (!controlRoot.flat && controlRoot.pressed) || controlRoot.highlighted"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4458-4459"
+quote = "} else if (hasFocus && !mouseOver) { color = palette.color(QPalette::ButtonText);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large", "@highlighted"], not_variants = ["flat"] }
+value = "= surface.foreground"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7765-7772"
+quote = "} else if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineSmall || menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineLarge) { copy.rect = menuRect; copy.state &= ~State_MouseOver; copy.state &= ~State_Sunken; copy.state &= ~State_On;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:112-119"
+quote = "QPalette pal; for (auto state : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) { pal.setBrush(state, QPalette::WindowText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Window, ret.scheme.background()); pal.setBrush(state, QPalette::Base, ret.scheme.background()); pal.setBrush(state, QPalette::Text, ret.scheme.foreground()); pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:60"
+quote = "hasFocus: controlRoot.visualFocus || (!controlRoot.flat && controlRoot.pressed) || controlRoot.highlighted"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4458-4459"
+quote = "} else if (hasFocus && !mouseOver) { color = palette.color(QPalette::ButtonText);"
+
+[[fact]]
+key = "button.menu_indicator.glyph.stroke.paint"
+when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"], states = ["disabled"] }
+value = "= kcu_mix(surface.disabled.foreground, surface.disabled.background, 0.15)"
+rows = ["K1.155"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:91"
+quote = "\"menu\": controlRoot.Accessible.role === Accessible.ButtonMenu,"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:412-414"
+quote = "if (m_properties.value(QStringLiteral(\"menu\")).toBool()) { opt->features |= QStyleOptionToolButton::HasMenu; }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:221-249"
+quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *option)"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:7765-7772"
+quote = "} else if (menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineSmall || menuStyle == BreezePrivate::ToolButtonMenuArrowStyle::InlineLarge) { copy.rect = menuRect; copy.state &= ~State_MouseOver; copy.state &= ~State_Sunken; copy.state &= ~State_On;"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 plugin/kquickstyleitem.cpp:982"
+quote = "m_styleoption->palette = m_theme->palette();"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:112-119"
+quote = "QPalette pal; for (auto state : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) { pal.setBrush(state, QPalette::WindowText, ret.scheme.foreground()); pal.setBrush(state, QPalette::Window, ret.scheme.background()); pal.setBrush(state, QPalette::Base, ret.scheme.background()); pal.setBrush(state, QPalette::Text, ret.scheme.foreground()); pal.setBrush(state, QPalette::Button, ret.scheme.background()); pal.setBrush(state, QPalette::ButtonText, ret.scheme.foreground());"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:209-214"
+quote = "case QPalette::Text: return KColorUtils::mix(palette.color(group, QPalette::Text), palette.color(group, QPalette::Base), arrowShade); case QPalette::WindowText: return KColorUtils::mix(palette.color(group, QPalette::WindowText), palette.color(group, QPalette::Window), arrowShade); case QPalette::ButtonText: return KColorUtils::mix(palette.color(group, QPalette::ButtonText), palette.color(group, QPalette::Button), arrowShade);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:38"
+quote = "static const qreal arrowShade = 0.15;"
+
 [[fact]]
 key = "button.menu_indicator"
 when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_small", "@inline_large"] }
@@ -11912,7 +12541,7 @@ quote = "ToolButtonMenuArrowStyle toolButtonMenuArrowStyle(const QStyleOption *o
 
 [[fact]]
 key = "button.menu_indicator"
-when = { conditions = ["flavor:kirigami"], not_variants = ["menu"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_large"] }
 value = "absent"
 rows = ["K1.27", "K1.155"]
 
@@ -12820,11 +13449,61 @@ kind = "published"
 source = "qqc2-desktop-style@6.31.0 kirigami-plasmadesktop-integration/plasmadesktoptheme.cpp:300"
 quote = "setBackgroundColor(colors.scheme.background(KColorScheme::NormalBackground).color());"
 
+# a flat round button's background Rectangle is hidden at rest (RoundButton.qml:79): no fill; shown while hovered,
+# focused or highlighted, at its colour with the alpha set to 0 (checked or pressed: the tint, below)
 [[fact]]
 key = "button.body.fill"
 when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"] }
+value = "absent"
+rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:79"
+quote = "visible: !controlRoot.flat || controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted || controlRoot.checked || controlRoot.down"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["hover"] }
 value = "= with_alpha(surface.background, 0)"
 rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:79"
+quote = "visible: !controlRoot.flat || controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted || controlRoot.checked || controlRoot.down"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:87-88"
+quote = "} else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0)"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["focused"] }
+value = "= with_alpha(surface.background, 0)"
+rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:79"
+quote = "visible: !controlRoot.flat || controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted || controlRoot.checked || controlRoot.down"
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:87-88"
+quote = "} else if (controlRoot.flat) { return Qt.alpha(Kirigami.Theme.backgroundColor, 0)"
+
+[[fact]]
+key = "button.body.fill"
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat", "@highlighted"] }
+value = "= with_alpha(surface.background, 0)"
+rows = ["Q2.5"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:79"
+quote = "visible: !controlRoot.flat || controlRoot.hovered || controlRoot.activeFocus || controlRoot.highlighted || controlRoot.checked || controlRoot.down"
 
 [[fact.cite]]
 kind = "published"
