@@ -1443,6 +1443,29 @@ fn gate_fixture_not_drawn_context() {
     assert!(report.queried > 0, "{report:?}");
 }
 
+/// An `axes.contexts` entry that lists selectors is a chain of ancestors,
+/// outermost first, each the element inside the one before (S17): the
+/// preset's rule naming both ancestors holds in it, and the fact naming the
+/// nearest button the inner, flat one; a value wrong there alone fails, in
+/// the chain's combinations, on the key and never on the context's reading.
+#[test]
+fn gate_fixture_context_chain() {
+    let report = fixture_report("context_chain");
+    assert_eq!(report.failures, Vec::<String>::new());
+    assert!(report.queried > 0, "{report:?}");
+    let wrong = fixture_report_with("context_chain", "wrong.toml");
+    assert!(!wrong.failures.is_empty(), "{wrong:?}");
+    assert!(
+        wrong
+            .failures
+            .iter()
+            .all(|failure| failure.contains("button.body.min_width")
+                && failure.contains("context: Some(Array(")),
+        "{:?}",
+        wrong.failures
+    );
+}
+
 /// A `not_drawn` entry naming a size is evaluated by the count and by the
 /// run (S17: `not_drawn` entries are `when`s, which state `sizes`, S11):
 /// the preset's wrong value at the small size is never queried where the

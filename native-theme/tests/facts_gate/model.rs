@@ -658,9 +658,9 @@ pub struct Point {
 /// Whether a `not_drawn` entry's `when` names an element by its variants
 /// and its context, for the count of an entry's combinations
 /// ([`NOT_DRAWN_KEYS`], the only keys reading an entry lets it state): a
-/// context matched as S7 matches one against the axis' context (each key it
-/// states equal, each list it states held). The run matches every entry as
-/// the query does.
+/// context matched as S7 matches one against the axis' context, one of a
+/// chain's ancestors (each key it states equal, each list it states held).
+/// The run matches every entry as the query does.
 fn names_element(when: &Table, variants: &[String], context: Option<&Value>) -> bool {
     let contexts = |key: &str| {
         when.get(key)
@@ -668,17 +668,23 @@ fn names_element(when: &Table, variants: &[String], context: Option<&Value>) -> 
             .cloned()
             .unwrap_or_default()
     };
+    let ancestors: Vec<&Table> = match context {
+        Some(Value::Array(chain)) => chain.iter().filter_map(Value::as_table).collect(),
+        Some(ancestor) => ancestor.as_table().into_iter().collect(),
+        None => Vec::new(),
+    };
     let matches = |wanted: &Value| {
-        let (Some(wanted), Some(held)) = (wanted.as_table(), context.and_then(Value::as_table))
-        else {
+        let Some(wanted) = wanted.as_table() else {
             return false;
         };
-        wanted.iter().all(|(key, value)| match value {
-            Value::Array(_) => {
-                let listed = strings(held.get(key));
-                strings(Some(value)).iter().all(|x| listed.contains(x))
-            }
-            other => held.get(key) == Some(other),
+        ancestors.iter().any(|held| {
+            wanted.iter().all(|(key, value)| match value {
+                Value::Array(_) => {
+                    let listed = strings(held.get(key));
+                    strings(Some(value)).iter().all(|x| listed.contains(x))
+                }
+                other => held.get(key) == Some(other),
+            })
         })
     };
     strings(when.get("variants"))
