@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """The source cache's list, docs/facts/sources.toml (plan D1, specification S17): well formed, and complete.
 
-Form: every field is a string, none blank, `generations`, `sparse`, `sources` and `describes` lists of strings (a field of another
-type is reported and left out of the other checks); every [[source]] has the fields of its kind and no others; ids are
-unique and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the commit's first eight hex
-digits); SHAs are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin per name and generation.
+Form: every field is a string, none blank, `generations`, `sparse`, `sources` and `describes` lists of strings, `evidence`
+a bool (a field of another type is reported and left out of the other checks); every [[source]] has the fields of its
+kind and no others; ids are unique and `<name>@<version>` (for a commit pin, `tag = "commit"`, the version is the
+commit's first eight hex digits); SHAs are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin
+per name and generation. The git entry with `evidence = true`, this project's evidence repository (spec S17 *The
+evidence root*), is waived the rules it cannot meet: `release`, `researched` and `proof`, a non-empty `generations`
+and the `<name>@<version>` id (EVIDENCE_WAIVED).
 A git entry's repository is an https URL with a path, its tag a tag name that is the id's version (after a `v` or a
 prefix ending in `/`, `_` or `-`), its sparse folders relative paths without spaces, `..` or a leading `-`. Every
 [[site]] names its method, and a "repository" site the git [[source]] ids of its repositories, each naming the site
@@ -39,7 +42,7 @@ SPARSE_RX = re.compile(r"[A-Za-z0-9._+@][A-Za-z0-9._+@/-]*")
 COMMON = {"id", "kind", "release", "generations", "researched", "proof"}
 KINDS = {
     # kind: (required beyond COMMON, optional)
-    "git": ({"repository", "tag", "commit"}, {"project", "site", "tag_object", "arch", "sparse", "note"}),
+    "git": ({"repository", "tag", "commit"}, {"project", "site", "tag_object", "arch", "sparse", "note", "evidence"}),
     # An sdk entry is an Xcode on a runner image (its header citations checked by os-probe.yml's macOS job), a
     # Windows runner image the OS probe measures, or a system image another harness measures (the Android
     # emulator's); SDK_SHAPES holds each one's fields.
@@ -57,7 +60,11 @@ SDK_SHAPES = {
 }
 SITE_FIELDS = ({"project", "url", "method"}, {"sources", "note"})
 NOT_PINNED_FIELDS = ({"name", "reason"}, {"project"})
-LIST_FIELDS = {"generations", "sparse", "sources", "describes"}   # lists of strings; every other field is a string
+LIST_FIELDS = {"generations", "sparse", "sources", "describes"}   # lists of strings
+BOOL_FIELDS = {"evidence"}                                         # bools; every other field is a string
+# The COMMON fields the evidence entry (a git entry with `evidence = true`) does without: its commit is this project's
+# own, moved by its own facts commits, so it has no release, research date or proof of a platform pin.
+EVIDENCE_WAIVED = {"release", "researched", "proof"}
 
 
 class Entry(dict):
@@ -68,7 +75,13 @@ class Entry(dict):
 def typed(key, value):
     if key in LIST_FIELDS:
         return isinstance(value, list) and all(isinstance(x, str) for x in value)
+    if key in BOOL_FIELDS:
+        return isinstance(value, bool)
     return isinstance(value, str)
+
+
+def type_name(key):
+    return "a list of strings" if key in LIST_FIELDS else "a bool" if key in BOOL_FIELDS else "a string"
 
 
 def entries(data, table, out):
@@ -85,8 +98,7 @@ def entries(data, table, out):
         ok = Entry((k, v) for k, v in e.items() if typed(k, v))
         ok.bad = frozenset(e.keys() - ok.keys())
         label = ok.get("id") or ok.get("project") or ok.get("name") or f"#{i + 1}"
-        out += [f"{table} {label}: {k} is not {'a list of strings' if k in LIST_FIELDS else 'a string'}"
-                for k in sorted(ok.bad)]
+        out += [f"{table} {label}: {k} is not {type_name(k)}" for k in sorted(ok.bad)]
         got.append(ok)
     return got
 
@@ -115,12 +127,13 @@ def source_problems(e):
     if kind not in KINDS:
         return [f"{where}: kind {kind!r} is not one of {', '.join(KINDS)}"]
     required, optional = KINDS[kind]
-    out = fields_problems(where, e, COMMON | required, optional)
+    evidence = kind == "git" and e.get("evidence") is True
+    out = fields_problems(where, e, (COMMON - EVIDENCE_WAIVED if evidence else COMMON) | required, optional)
     m = ID_RX.fullmatch(sid)
-    if not m:
+    if not m and not evidence:
         out.append(f"{where}: id is not `<name>@<version>`")
     gens = e.get("generations")
-    if not isinstance(gens, list) or not gens:
+    if not isinstance(gens, list) or (not gens and not evidence):
         out.append(f"{where}: generations is not a non-empty list")
     else:
         out += [f"{where}: generation {g!r} is not a preset id" for g in gens if g not in PRESETS]
@@ -382,6 +395,28 @@ def self_test() -> int:
         return text.replace(old, new, 1)
 
     expect("good", good, [])
+    evidence = good + """
+[[source]]
+id = "native-theme-evidence"
+kind = "git"
+evidence = true
+repository = "https://github.com/tiborgats/native-theme-evidence.git"
+tag = "commit"
+commit = "342ac5a6bfe26225d9dfe209d51e1ff9d3238c97"
+generations = []
+note = "The evidence repository."
+"""
+    expect("the evidence entry", evidence, [])
+    expect("the evidence entry's waiver needs `evidence = true`", edit(evidence, "evidence = true\n", ""),
+           ["source native-theme-evidence: missing field `proof`", "source native-theme-evidence: missing field "
+            "`release`", "source native-theme-evidence: missing field `researched`",
+            "source native-theme-evidence: id is not `<name>@<version>`",
+            "source native-theme-evidence: generations is not a non-empty list"])
+    expect("evidence not a bool", edit(evidence, "evidence = true", 'evidence = "true"'),
+           ["source native-theme-evidence: evidence is not a bool", "source native-theme-evidence: missing field "
+            "`proof`", "source native-theme-evidence: missing field `release`", "source native-theme-evidence: "
+            "missing field `researched`", "source native-theme-evidence: id is not `<name>@<version>`",
+            "source native-theme-evidence: generations is not a non-empty list"])
     expect("duplicate id", edit(good, 'id = "docs@f54166ed"', 'id = "breeze@6.8.2"'),
            ["source breeze@6.8.2: a commit pin's version is not its commit's first eight hex digits",
             "source breeze@6.8.2: id not unique",

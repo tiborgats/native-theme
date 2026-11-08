@@ -21,6 +21,8 @@
 #                 arch, the package and release in archlinux@2026-10-29 where the snapshot carries it.
 #   sparse        large repositories: the folders the documents cite, fetched alone (cone mode).
 #   site          documentation repositories: the site whose pages they are the source of.
+#   evidence      `true` on the one entry pinning this project's evidence repository (id `native-theme-evidence`,
+#                 `generations = []`, no `project`, `release`, `researched` or `proof`: spec S17 *The evidence root*).
 #
 # The release set (docs/todo_v0.7.1_model-completeness-ledger.md, *Release set*): the newest stable release of each
 # platform at M0 (2026-10-29), coherent. KDE and GNOME: what the Arch Linux Archive snapshot of 2026-10-29 carries
@@ -1134,6 +1136,20 @@ generations = ["macos-tahoe", "ios-26"]
 researched = "2026-10-31"
 proof = "the Wayback Machine's capture of 2026-02-09 11:47:06 UTC (the `id_` form, the archived JSON unchanged), in macOS 26's and iOS 26's lifetime (D12); sha256sum of the saved file"
 note = "The HIG's Typography page as its DocC JSON. The macOS tracking table is at #/primaryContentSections/0/content/83 (rows /rows/<n>/1/0/inlineContent/0/text); the captures of 2025-10-01 and 2026-07-07 carry the same macOS table. Its 1/1000 em column equals iOS's SF Pro column at every size; the points column differs at 52 and 53 pt (0.31 and 0.33 swapped)."
+
+# This project's own evidence (spec S17 *The evidence root*): the measured runs the facts cite, kept in the evidence
+# repository and pinned here by commit. Its commit moves with the facts commits that add runs (the 0.8.0 plan's *The
+# evidence repository*), which is no re-pin: D1 freezes the platform sources, not this project's own records.
+
+[[source]]
+id = "native-theme-evidence"
+kind = "git"
+evidence = true
+repository = "https://github.com/tiborgats/native-theme-evidence.git"
+tag = "commit"
+commit = "342ac5a6bfe26225d9dfe209d51e1ff9d3238c97"
+generations = []
+note = "The evidence repository: docs/evidence/<harness>/<date>-run-<id>/<image>/ at the paths a measured citation names, read by the checkers, the generators that read evidence and the facts gate from a clean checkout at this commit (NATIVE_THEME_EVIDENCE, else <cache>/native-theme-evidence/). Its first commit, 5146132c, holds docs/evidence/ of v0.8.0-rc1 at 4ee2b529 (the same tree); this commit adds its README and licence files."
 
 # Documentation sites the documents cite. `method`: "repository", the site's public source repositories are pinned
 # above (`sources`); "snapshot", each cited page is to be saved with its date and SHA-256 (a later M0 step adds the
