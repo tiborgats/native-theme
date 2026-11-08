@@ -163,7 +163,8 @@ them, which is false); a lenient validation mode (it hides the gaps the gate exi
   later unit becomes a fact the gate skips until that unit is enabled.
 - **Today's evidence.** The five runs under `docs/evidence/os-probe/` (about 6,400 files, of which today's rows cite a
   few hundred) are listed by run folder in `check_fact_citations.py` as legacy evidence: their files count as cited
-  until M4, when every legacy file no fact cites is deleted (git history keeps it) and the list is emptied. Rejected:
+  until M4, when every legacy file no fact cites is deleted from the evidence repository (*The evidence repository*;
+  the history of both repositories keeps it) and the list is emptied. Rejected:
   deleting the uncited files now (a lane converting a row may need another render of the same run); a warning instead
   of a failure (nothing would catch an uncited file after M4).
 - **`platform-facts.md`** becomes generated at the switch, from the verified facts only; today's presets and the
@@ -185,12 +186,14 @@ half-written files; separate build folders cost tens of GB each). Everything els
 code task builds or its gate reads (`docs/facts`, the presets, the probe):
 
 - **Facts lanes, preset writers and tie-breakers** each work in their own git worktree of `v0.8.0-rc1` and never run
-  `cargo` there, so no build folder is created; they write TOML and run only the Python checkers.
+  `cargo` there, so no build folder is created; they write TOML and run only the Python checkers. A lane that
+  measures commits its runs in its own clone of the evidence repository (*The evidence repository*).
 - **Verifiers** work in a scratchpad folder holding a generated brief (the unit's keys, the pins, the catalogue's
   state-model source lines and, for `measured` facts, copies of the cited evidence and the method's script), and
   write their output there. They read only that folder and the source cache, not the project, whose gap maps and
-  `platform-facts.md` state values they could copy. That rests on the brief, which is why the quote check and the
-  audit sample exist.
+  `platform-facts.md` state values they could copy, nor the cache's evidence checkout (*The evidence repository*),
+  whose analysis outputs they could copy too; the brief holds the evidence they need. That rests on the brief,
+  which is why the quote check and the audit sample exist.
 - **The orchestrator** compares, brings verified facts and a unit's eight preset parts into `v0.8.0-rc1`, and runs the
   gates there.
 - **Tooling** (the probe's passes, the hosts, the harnesses, the vector generators, the workflow jobs) works on
@@ -201,6 +204,104 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   (they are registered by a relative path and `.claude/` is git-ignored); if not, D9 covers making their paths
   absolute.
 - Worktrees are removed when their work is merged.
+
+### The evidence repository (D6's evidence item, decided by the maintainer on 2026-11-08)
+
+Measured evidence moves out of this repository into a separate evidence repository, pinned by commit. At the decision
+`v0.8.0-rc1` held 141 MB under `docs/evidence/` and its `.git` 388 MB, the iOS and macOS facts branches held 353 MB
+and 175 MB of evidence, and M3a's six units add more; every clone of this repository downloads all of it, while only
+the facts tooling reads it.
+
+- **The repository:** `tiborgats/native-theme-evidence` on GitHub, public (anyone can check a measured fact, and CI
+  fetches it without credentials), created by the maintainer. Its tree is this repository's `docs/evidence/` at the
+  same paths (`docs/evidence/<harness>/<date>-run-<id>/<image>/`, each run's `README.md`, `run.toml` and `analysis/`,
+  the folder's `README.md`), and at its root a `README.md` (what it holds, that this repository pins it, the rules of
+  this section) and this repository's licence files. The rules on the files a run holds (S17 *`evidence`* and
+  `check_fact_citations.py`'s: cited or an analysis's input, its README, its `run.toml`, its `analysis/`) apply there
+  unchanged.
+- **The pin:** one `[[source]]` of kind `git` in `docs/facts/sources.toml` with `evidence = true`:
+  `id = "native-theme-evidence"`, `repository`, `commit`, `tag = "commit"`, `generations = []`, and no `project`, `release`,
+  `researched` or `proof` (the commit is this project's own, moved by its own facts commits, which is no re-pin: D1
+  freezes the platform sources; spec S17 *The evidence root*). `scripts/update_sources.sh` checks it out at
+  `<cache>/native-theme-evidence/` like every pin, `--verify` included; `--only native-theme-evidence` fetches it
+  alone (the whole cache is about 4.4 GB, and running the facts gate needs only this entry), and a moved pin is
+  fetched into the existing checkout, so only the new runs download.
+- **The evidence root:** citations keep their `docs/evidence/...` paths. Every reader (today `check_facts.py`,
+  `check_fact_citations.py`, `check_function_vectors.py`, `generate_dynamic_type.py` and the facts gate) resolves a
+  path `docs/evidence/<rest>` to `<root>/docs/evidence/<rest>`, the root being the directory `NATIVE_THEME_EVIDENCE`
+  names (CI's checkout, a lane's clone), else the pin's checkout in the source cache (`NATIVE_THEME_SOURCES`, else
+  `scripts/citations.py`'s default; the gate holds the same default). One rule wherever the root lies: a reader fails,
+  naming the root and the pin, unless the root is a clean git checkout (no changed and no untracked file) whose HEAD
+  is the pinned commit, so S17's "committed" means in that commit's tree; without a root it fails, naming
+  `update_sources.sh --only native-theme-evidence`. A reader that runs never skips the evidence it cannot find, since
+  a gate that passes without its inputs is no gate (`check_release.sh --commit` still skips `check_fact_citations.py`
+  by name where the source cache is absent, as *The new scripts* says). A test fixture whose root holds its own
+  `docs/evidence/` (the gate's fixtures, the checkers' self-tests) is its own evidence root. The analysis scripts run
+  in the evidence repository's root, as they ran in this one's.
+- **Branches and the pin's moves:** the evidence repository's branches follow this repository's. A branch that adds
+  evidence commits its runs on an evidence branch of the same name, cut from the evidence commit it pins, and its
+  facts commit moves the pin to that branch's head; a lane works in its own clone beside its worktree
+  (`.claude/worktrees/<branch>-evidence/`, git-ignored with the worktrees) with `NATIVE_THEME_EVIDENCE` set to it, and
+  commits its runs there before it checks (it may amend a commit it has not pushed). The evidence branch is pushed
+  before the commit that pins it (CI's checkout fails otherwise). When a branch of this repository merges into
+  another, its evidence branch merges into the other's evidence branch first (created at the other's pinned commit
+  where it has none), by a fast-forward or a merge commit, never a rebase or a squash, so every commit a pin ever
+  named stays reachable; the merge here pins the evidence branch's new head, which also settles a conflict on the
+  pin's line. An evidence branch is deleted only once merged. Rejected: one linear evidence `main` every lane pushes
+  to (a branch's pin would then hold runs only other, unmerged branches cite, and S17's "every evidence file is cited"
+  would fail on every branch but the last merged).
+- **CI:** every job whose steps read evidence (today `ci.yml`'s test matrix, whose `cargo test -p native-theme` runs
+  the facts gate, and its `parity` job's `check_function_vectors.py`; `dependency-canary.yml`'s tests; the macOS job of
+  `os-probe.yml` that checks the SDK-header citations, once it runs `check_fact_citations.py`) checks the evidence
+  repository out at the commit `sources.toml` pins (that commit alone, depth 1) and sets `NATIVE_THEME_EVIDENCE` to
+  it, through one shared step, so the jobs cannot differ.
+- **The step cache** (`check_release.sh --commit`, `--quick`) keys a step that reads evidence on the pin, in
+  `sources.toml`: a reader accepts only a clean checkout at the pin, so the pin fixes the evidence it reads. The
+  tooling task declares it for each such step (from the switch the traced Python checks read outside the repository).
+- **History:** neither repository's published history is rewritten. The evidence committed here so far stays in this
+  repository's history; the evidence repository deletes a file by a new commit, never a force push. From the switch,
+  new runs go to the evidence repository only, and a `check_release.sh` step and CI's `parity` job fail on any tracked
+  file under this repository's `docs/evidence/`.
+- **The switch**, in this order:
+  1. the maintainer creates the repository;
+  2. its first two commits, on its `v0.8.0-rc1` branch with `main` at the same commit: the first holds `v0.8.0-rc1`'s
+     `docs/evidence/` byte for byte at the commit the switch follows, its message naming that commit; the second adds
+     the root README and the licence files and restates `docs/evidence/README.md` for its new home (it says the runs
+     are kept "in the repository");
+  3. the tooling task's branch (the readers, `update_sources.sh`, `check_sources.py`, the gate, CI, the step cache,
+     the guard, `CONTRIBUTING.md`) ends with the switch commit: the pin added, naming the second commit, and
+     `docs/evidence/` removed. The orchestrator merges it whole, so no commit of `v0.8.0-rc1` has a reader without its
+     evidence. `CONTRIBUTING.md`'s link into `docs/evidence/` points at the evidence repository; the working
+     documents' and the imported rows' `docs/evidence/` paths stay as written, naming files by the root rule above
+     (`docs/archive/` is never edited);
+  4. the branches open at the switch land as the next item says.
+- **Branches open at the switch:** their evidence goes to the evidence repository, not into this repository's history.
+  Each one's changes to `docs/evidence/` since its merge base with `v0.8.0-rc1` are applied on its evidence branch,
+  cut from the switch's pin (the paths are the same, so the diff applies as it stands), and pushed. A branch never
+  pushed (on 2026-11-08 `facts-ios-m1b3` with its sub-branches, `facts-macos-m1b4`, `checkfacts-perf`,
+  `facts-hosts-m1b`) then has `docs/evidence/` filtered out of its own commits, every commit and message kept, the
+  branches rewritten in one run so that commits they share stay shared; a pushed branch (`v0.8.0-tools` and its
+  `v0.8.0-tools-*` branches) is not rewritten, and its merge leaves its `docs/evidence/` files out (their objects are
+  on GitHub already). Then a commit on the branch moves its pin to its evidence branch's head, and it merges as above.
+  Rejected: merging them as they stand (528 MB more in every clone for ever, the growth the decision stops); a squash
+  merge (it loses the lanes' commit messages, which record their reasoning). Their rewrite touches no history anyone
+  else holds. They wait for the switch: merged before it, their runs would enter this repository's history.
+- **Rejected:**
+  - a git submodule at `docs/evidence` (a pin git understands, `git clone --recursive`): Cargo clones a git
+    dependency's submodules, so every user depending on `native-theme` by git would download the evidence; every
+    worktree would need its own checkout of it, where the source cache holds one for all; and it would be a second
+    pinning mechanism beside `sources.toml`, outside `update_sources.sh --verify`;
+  - the evidence tree at the repository's root (`os-probe/...`, the prefix stripped): the analysis outputs'
+    `input_image`, the scripts' usage lines and the open branches' diffs name `docs/evidence/...` paths, so each would
+    need rewriting or a second mapping, against two folder levels with nothing else in them;
+  - one repository per platform or harness: more pins and checkouts for no gain at this size;
+  - an id with a version (`native-theme-evidence@<eight hex digits>`, as other untagged pins): a new cache folder and
+    a full download at every pin move, the old folders left behind;
+  - importing the evidence's history into the new repository: it stays readable here, and a first commit naming its
+    source commit is enough;
+  - a reader accepting a root that is not clean or whose HEAD differs from the pin, with a note: "committed" would
+    have two meanings, and a check could pass on evidence no commit pins;
+  - keeping it here and Git LFS (D6's other options).
 
 ## Decisions
 
@@ -342,8 +443,10 @@ code task builds or its gate reads (`docs/facts`, the presets, the probe):
   - the slice's measured cost per widget and platform (facts written, hours, harness rounds, tokens), extrapolated
     first to 0.8.0's units (D13: 0.8.0's date and budget), then to the later units (the follow-up releases), and the
     budget caps per milestone;
-  - the evidence's size, extrapolated, and where it lives above a threshold (in the repository; a separate evidence
-    repository pinned by commit, recommended above about 500 MB; Git LFS, rejected for its quota and bandwidth costs);
+  - the evidence's size, extrapolated (with it the evidence repository's growth and CI's checkout time). Where it
+    lives was decided early, by the maintainer on 2026-11-08: a separate evidence repository pinned by commit (*The
+    evidence repository*), over keeping it in this repository (recommended up to about 500 MB, which the open facts
+    branches already pass) and Git LFS (rejected for its quota and bandwidth costs);
   - the facts gate's run time, the build's time and the docs.rs build, with a budget;
   - whether each unit's preset rules are generated from its verified facts instead of written (the facts carry S11's
     `when` and the platform's order: less work and no drift, against longer presets and the hand-written parts that
@@ -758,8 +861,8 @@ on to the next unit meanwhile.
 ## M4 — The facts gate, complete for 0.8.0's units
 
 - Every unit of M3a enabled; `docs/facts/imported/` emptied (each row converted, or recorded as not a model value with
-  its reason); S19.2's staged file removed; uncited legacy evidence deleted and the legacy list emptied (with
-  `imported/` empty no lane still converts a legacy row, and git history keeps the files);
+  its reason); S19.2's staged file removed; uncited legacy evidence deleted from the evidence repository and the
+  legacy list emptied (with `imported/` empty no lane still converts a legacy row, and git history keeps the files);
   the accent run over every pinned scheme and accent; the palette run over every bundled palette.
 - **The enabled units' checks** (a tooling task before the gate): the facts gate fails on a skipped fact of the
   enabled units and on a fact whose key lies in no unit, and reports the others by unit (*One rule for every model
@@ -857,7 +960,8 @@ dev-dependencies and modules linked again.
     builds listed);
   - every evidence file is cited by a fact, a state-model entry or a vector table (spec S17), except the legacy runs
     until M4. Evidence files are the files under
-    `docs/evidence/<harness>/<date>-run-<id>/<image>/`; READMEs are not evidence, and a run's README stays while any
+    `docs/evidence/<harness>/<date>-run-<id>/<image>/` in the evidence repository at its pin (*The evidence
+    repository*); READMEs are not evidence, and a run's README stays while any
     file of the run is cited. Spike and drift runs record their result in the ledger with the run's URL and commit
     evidence only where a fact cites it.
 - **Facts, independently:** per unit and platform, a verifier that is not the lane's author first derives the unit's
@@ -900,8 +1004,8 @@ dev-dependencies and modules linked again.
   attempts and their evidence, and the options (another setup such as real hardware or another image, a catalogue
   correction, a release blocker). Each is the maintainer's decision, since R21 releases no unit with a gap (D13): an
   open entry blocks the release that enables its unit.
-- **Evidence** is committed (GitHub's artifacts expire), images losslessly compressed; where it lives above a size
-  threshold is decided at D6.
+- **Evidence** is committed to the evidence repository (GitHub's artifacts expire), images losslessly compressed
+  (*The evidence repository*; decided by the maintainer on 2026-11-08, D6's evidence item).
 
 ## Spec changes
 
@@ -946,6 +1050,8 @@ tasks; the generator's drift check makes the code follow.
 - [ ] M1a slice core
 - [ ] M1b slice complete
 - [ ] D6 checkpoint
+- [x] D6's evidence item: the evidence repository (the maintainer, 2026-11-08)
+- [ ] The evidence repository's switch (the tooling task, then *The evidence repository*'s steps)
 - [x] D13 0.8.0's scope, (B) (2026-11-06)
 - [x] D14 the follow-up releases' version numbers, (a) by logic (2026-11-06)
 - [ ] M2 model core
