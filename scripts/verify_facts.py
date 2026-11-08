@@ -64,11 +64,14 @@ read at the units' revision:
 - `pins.toml`: the `docs/facts/sources.toml` entries serving a preset of the unit's platform (all of them, so the
   list does not say which the lane cited; the evidence repository's entry left out), each with its checkout's path in
   the source cache (`--cache`, else citations.cache_dir);
-- `catalogue.md`: for each widget the keys name (a catalogue entry, `component.<key>` too), its catalogue items
-  CATALOGUE_ITEMS as the catalogue writes them, with their lines;
-- `spec.md`: the specification's SPEC_SECTIONS (S17 in full, and the S2.2, S7.1, S7.2, S10 and S11 its facts and
-  state models are written in), each found by its heading, from it to the next heading of its level or above
-  (headings inside code blocks not counted); a section it cannot find stops the brief;
+- `catalogue.md`: the catalogue's CATALOGUE_SECTIONS (what an entry's names mean) and, for each widget the keys
+  name (a catalogue entry, `component.<key>` too), its whole entry, as the catalogue writes them, with their lines;
+- `spec.md`: the specification's normative sections, SPEC_SECTIONS (S1 to S21: the parts, fields and their types,
+  the roles, tokens, surfaces and bindings, the expressions, references, functions and absence, the declarations,
+  the preset spelling and, in S17, the facts and state models; not the progress table nor S22, the additions
+  register; the traces, gap maps and `platform-facts.md`, which state platform values, are never copied), each
+  found by its heading, from it to the next heading of its level or above (headings inside code blocks not
+  counted); a section it cannot find stops the brief;
 - `facts-format.md`: the lane brief's FORMAT_SECTIONS (`--lane-brief`, the facts lanes' brief, which lives outside
   the repository);
 - for a measured unit, `docs/evidence/…`: each evidence file the unit's facts cite, and each cited run's `run.toml`
@@ -84,9 +87,11 @@ sources.toml, `catalogue.md` from the catalogue, `spec.md` from the specificatio
 brief, `README.md` from the unit's id, platform, kind, presets and file list, each with the file's own headings. A
 string found is a collision: `trivial` where it is shorter than FLOOR characters or a keyword or bool (KEYWORDS);
 else, where the file's inputs hold it too, unavoidable, classed by the file (LEAK_CLASSES: `identity`, the verifier
-is told what to state; `specification`, the texts every lane and verifier reads; `sources`; `template`); else a
-`leak`, a string that can only have come from the lane's facts. It prints the counts and each collision but the
-trivial ones (to stdout, never into the folder); a leak is exit 1.
+is told what to state; `specification`, the model's vocabulary in the texts every lane and verifier reads;
+`sources`; `template`), but `normative-value` where the string is a platform value (platform_value: a citation, a
+value holding a literal, a text that is no name) in normative text, a leak to report; else a `leak`, a string that
+can only have come from the lane's facts. It prints the counts and each collision but the trivial ones (to stdout,
+never into the folder); a leak or a normative value is exit 1.
 
 `compare-model <unit> <verifier-state-models.toml>`: the lane's state-model entries of the unit's widgets against the
 verifier's, an entry named by its widget and its `when` (its `preset:` or `flavor:` conditions). Per entry both
@@ -108,15 +113,21 @@ the summary, each entry with its differences, the agreed combinations (`[[combin
 
 `compare <unit> <verifier-facts.toml>`: the lane's facts of the unit (with `--combinations-from`, those of the agreed
 combinations) against the verifier's file, by identity. The values are compared after NORMALISATIONS, each listed in
-the output with the facts whose spelling it changed and the pairs that agree only through it. Counts: agreed,
-disagreed, lane-only (the compared identities the verifier does not state), verifier-only (the verifier's identities
-the lane states nowhere on the platform), outside the compared combinations (the verifier's identities the lane
-states elsewhere: unchanged since the baseline, pending, or refused by the model comparison) and refused by the
-model. It writes into `--out` (the verifier file's folder): `tiebreak.toml`, the summary, the normalisations, a
-summary line in the ledger's *Verification rates* table's form, each disagreement with both values and both
-citations, each one-sided fact with its value and citations, and each fact outside the compared combinations whose
-values differ (a lane's pending fact among them) with both; `agreed.toml`, the agreed facts with both citations,
-which `sample` reads.
+the output with the facts whose spelling it changed and the pairs that agree only through it. A pair that still
+differs where either side holds an expression or a reference is resolved (Resolver): both values are evaluated in
+the lane fact's combination, under each world it holds in (worlds: its conditions, with each scheme and preset it
+leaves open), references read from the lane's facts of the platform and S2.2's arithmetic, `alpha`, `with_alpha`,
+`mix` and `pick` evaluated; a pair equal (same) in every world is `equivalent by resolution`, a class of its own,
+never agreed nor in the audit sample's population, listed with its resolved values per world; any other stays
+disagreed, with the resolved values or why they did not resolve (`absent` is no colour, so it never equals a
+transparent one). Counts: agreed, equivalent by resolution, disagreed, lane-only (the compared identities the
+verifier does not state), verifier-only (the verifier's identities the lane states nowhere on the platform), outside
+the compared combinations (the verifier's identities the lane states elsewhere: unchanged since the baseline,
+pending, or refused by the model comparison) and refused by the model. It writes into `--out` (the verifier file's
+folder): `tiebreak.toml`, the summary, the normalisations, a summary line in the ledger's *Verification rates*
+table's form, each equivalent and each disagreement with both values, both citations and the resolution, each
+one-sided fact with its value and citations, and each fact outside the compared combinations whose values differ (a
+lane's pending fact among them) with both; `agreed.toml`, the agreed facts with both citations, which `sample` reads.
 
 `sample <unit> --compared DIR --seed N`: the audit sample of the agreed facts of `DIR/agreed.toml` (the plan: 5 %
 per lane and unit, at least ten), `max(--min, ceil(--rate × agreed))` of them, never more than there are: the agreed
@@ -165,12 +176,14 @@ KIND_CODES = {"cited": "C", "measured": "M"}
 MIN_FACTS = 300
 MAX_FACTS = 1000
 
-CATALOGUE_ITEMS = ("Variants", "Sizes and densities", "Flags", "Exclusive groups", "State-model source")
+# The catalogue's sections that define what an entry's names mean, before the entries.
+CATALOGUE_SECTIONS = ("Entry format", "Shared value types", "Shared flags", "Selector notation")
 FORMAT_SECTIONS = ("## The format", "## Canonical forms")
 SPEC = check_facts.CORE
-# The specification's sections the facts format reads (the lane brief's list): S2.2's literals and expressions, S7.1's
-# conditions, S7.2's state flags, S10's declarations, S11's spelling and `when`, S17 in full.
-SPEC_SECTIONS = ("S2.2", "S7.1", "S7.2", "S10", "S11", "S17")
+# The specification's normative sections: S1 to S21, which define the keys (parts, fields and their types, roles,
+# tokens, surfaces, bindings), the value grammar (expressions, references, functions, absence) and the facts; not its
+# progress table nor S22, the additions register.
+SPEC_SECTIONS = tuple(f"S{n}" for n in range(1, 22))
 SPEC_HEADING = re.compile(r"^(#{2,4}) (S\d+(?:\.\d+)*)[.\s]")
 SPEC_HEADER = "# The specification's sections the facts format reads"
 FLOOR = 4
@@ -689,40 +702,62 @@ def widget_of(segs, entries):
     return segs[0]
 
 
+def heading_spans(text, level_of):
+    """[(first line, last line, heading's key)] of the text's sections whose heading `level_of` keys (returning
+    (level, key) or None), each up to the next heading of its level or above; headings inside code blocks are not
+    headings."""
+    lines = text.splitlines()
+    heads, fence = [], False
+    for n, line in enumerate(lines, 1):
+        if line.startswith("```"):
+            fence = not fence
+            continue
+        m = re.match(r"^(#{1,6}) ", line) if not fence else None
+        if m:
+            heads.append((n, len(m.group(1)), level_of(line)))
+    out = []
+    for i, (n, level, key) in enumerate(heads):
+        if key is None:
+            continue
+        end = next((m - 1 for m, lv, _ in heads[i + 1:] if lv <= level), len(lines))
+        while end > n and not lines[end - 1].strip():
+            end -= 1
+        out.append((n, end, key))
+    return out
+
+
 def catalogue_text(cat_text, widgets):
-    """(the text, the lines it adds to the catalogue's): each widget's CATALOGUE_ITEMS lines, as the catalogue
-    writes them."""
-    entries = {e.name: e for e in spec_catalogue.entries(cat_text)}
+    """(the text, the lines it adds to the catalogue's): the catalogue's CATALOGUE_SECTIONS and each widget's whole
+    entry, as the catalogue writes them."""
     lines = cat_text.splitlines()
-    out = ["# The catalogue's lines for the unit's widgets", "",
-           f"From `{CATALOGUE.as_posix()}`: each widget's {', '.join(CATALOGUE_ITEMS)} items, as the catalogue writes "
-           "them. The state-model source names where the combinations come from; the other items name what the "
-           "model can express (S10, S17)."]
+    names = {e.name for e in spec_catalogue.entries(cat_text)}
+
+    def key(line):
+        m = re.match(r"^## (.+?)\s*$", line)
+        if m and m.group(1) in CATALOGUE_SECTIONS:
+            return m.group(1)
+        m = spec_catalogue.TYPED_HEADING.match(line) or spec_catalogue.COMPONENT_HEADING.match(line)
+        if m:
+            name = m.group(1) if line.startswith("### ") else f"component.{m.group(1)}"
+            return name if name in widgets and name in names else None
+        return None
+
+    out = ["# The catalogue's sections for the unit's widgets", "",
+           f"From `{CATALOGUE.as_posix()}`: {', '.join(CATALOGUE_SECTIONS)}, and each widget's whole entry, as the "
+           "catalogue writes them."]
     if not widgets:
         out += ["", "The unit's keys name no widget: they are colour roles, tokens or inputs, whose facts take "
                     "conditions only (S7)."]
     added = list(out)
-    for w in sorted(widgets):
-        e = entries[w]
-        nums = set()
-        for it in e.items:
-            if it.label in CATALOGUE_ITEMS:
-                span = list(range(it.line, it.line + len(it.lines)))
-                while span and not lines[span[-1] - 1].strip():
-                    span.pop()
-                nums |= set(span)
-        runs = []
-        for n in sorted(nums):
-            if runs and n == runs[-1][-1] + 1:
-                runs[-1].append(n)
-            else:
-                runs.append([n])
-        head = f"## {w} (catalogue line {e.line})"
-        out += ["", head]
-        added.append(head)
-        for r in runs:
-            out += ["", f"Lines {r[0]}-{r[-1]}:", ""] + [lines[n - 1] for n in r]
-            added.append(f"Lines {r[0]}-{r[-1]}:")
+    spans = heading_spans(cat_text, key)
+    found = {k for _, _, k in spans}
+    missing = sorted((set(CATALOGUE_SECTIONS) | set(widgets)) - found)
+    if missing:
+        raise InputError(f"{CATALOGUE}: no section {', '.join(missing)}")
+    for a, b, _ in spans:
+        mark = f"<!-- the catalogue's lines {a}-{b} -->"
+        out += ["", mark, ""] + lines[a - 1:b]
+        added.append(mark)
     return "\n".join(out) + "\n", "\n".join(added)
 
 
@@ -743,24 +778,20 @@ def spec_text(spec, ids=SPEC_SECTIONS):
     """(the text, the lines it adds to the specification's): the sections `ids`, each from its heading to the next
     heading of its level or above (headings inside code blocks not counted), in the specification's order."""
     lines = spec.splitlines()
-    heads, fence = [], False
-    for n, line in enumerate(lines, 1):
-        if line.startswith("```"):
-            fence = not fence
-            continue
-        m = None if fence else SPEC_HEADING.match(line)
-        if m:
-            heads.append((n, len(m.group(1)), m.group(2)))
-    out, found = [SPEC_HEADER, "", f"From `{SPEC.as_posix()}`: {', '.join(ids)}."], set()
+
+    def key(line):
+        m = SPEC_HEADING.match(line)
+        return m.group(2) if m and m.group(2) in ids else None
+
+    out = [SPEC_HEADER, "", f"From `{SPEC.as_posix()}`: {ids[0]} to {ids[-1]}." if len(ids) > 1 else
+           f"From `{SPEC.as_posix()}`: {ids[0]}."]
     added = list(out)
-    for i, (n, level, sid) in enumerate(heads):
-        if sid not in ids:
-            continue
-        end = next((m - 1 for m, lv, _ in heads[i + 1:] if lv <= level), len(lines))
-        out += ["", f"<!-- the specification's lines {n}-{end} -->", ""] + lines[n - 1:end]
-        added.append(f"<!-- the specification's lines {n}-{end} -->")
-        found.add(sid)
-    missing = [x for x in ids if x not in found]
+    spans = heading_spans(spec, key)
+    for a, b, _ in spans:
+        mark = f"<!-- the specification's lines {a}-{b} -->"
+        out += ["", mark, ""] + lines[a - 1:b]
+        added.append(mark)
+    missing = [x for x in ids if x not in {k for _, _, k in spans}]
     if missing:
         raise InputError(f"{SPEC}: no section {', '.join(missing)}")
     return "\n".join(out).rstrip() + "\n", "\n".join(added)
@@ -867,14 +898,15 @@ def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combin
     files.append(("pins.toml", "the pinned sources and their checkouts"))
     catalogue, cat_added = catalogue_text(cat, widgets)
     write["catalogue.md"] = (catalogue, cat + "\n" + cat_added)
-    files.append(("catalogue.md", "the catalogue's lines for the unit's widgets"))
+    files.append(("catalogue.md", "the catalogue's shared definitions and the unit's widgets' entries"))
     write["facts-format.md"] = (format_text(lane_brief), lane_brief + "\n" + FORMAT_HEADER)
     files.append(("facts-format.md", "the facts format"))
     spec = tree.text(SPEC.as_posix())
     spec_out, spec_added = spec_text(spec)
     write["spec.md"] = (spec_out, spec + "\n" + spec_added)
-    files.append(("spec.md", f"the specification's {', '.join(SPEC_SECTIONS)} (S17 in full: the facts, the state "
-                             f"models, the gate)"))
+    files.append(("spec.md", f"the specification's normative sections, {SPEC_SECTIONS[0]} to {SPEC_SECTIONS[-1]} "
+                             f"(the model's blocks, roles, tokens, selectors, declarations, preset spelling and, in "
+                             f"S17, the facts and state models)"))
     if unit["kind"] == "measured":
         if evidence_root is None:
             try:
@@ -966,11 +998,25 @@ LEAK_CLASSES = {"keys.toml": "identity", "combinations.toml": "identity", "catal
                 "README.md": "template"}
 
 
+def platform_value(s, what):
+    """Whether a lane string is a platform value rather than the model's vocabulary: a citation's source, quote or
+    evidence, or a value holding a literal (S2.2: a number, a colour, a length…) or a text that is no snake_case name
+    (a font family, an icon name); a name (`circular`, `@card`) and an expression or reference without a literal
+    (`= role.global.accent`) are vocabulary, as is an `absent` name."""
+    if what.startswith("a citation's"):
+        return what != "a citation's absent name"
+    if s.lstrip().startswith("="):
+        return bool(check_fact_citations.string_literals(s.lstrip()[1:]))
+    return not check_facts.NAME.match(s) or bool(check_fact_citations.string_literals(s))
+
+
 def leak_check(out, facts, inputs):
     """[(class, string, what, file, line)] of every string of the facts' values and citations found in the folder's
-    files (the evidence copies left out): `trivial` (under FLOOR characters, or a keyword or bool), else the class of
-    the file (LEAK_CLASSES) where the text the file was written from holds it too (`inputs`: {file: that text}), else
-    `leak`, a string that can only have come from the lane's facts."""
+    files (the evidence copies left out): `trivial` (under FLOOR characters, or a keyword or bool), else, where the
+    text the file was written from holds it too (`inputs`: {file: that text}), the class of the file (LEAK_CLASSES),
+    but `normative-value` where that class is `specification` and the string a platform value (platform_value: a
+    platform value in normative text, a leak to report), else `leak`, a string that can only have come from the
+    lane's facts."""
     found = []
     texts = {}
     for p in sorted(Path(out).rglob("*")):
@@ -980,12 +1026,16 @@ def leak_check(out, facts, inputs):
     for s, what in sorted(needles(facts).items()):
         rx = needle_rx(s)
         for rel, text in texts.items():
+            if s not in text:
+                continue
             for m in rx.finditer(text):
                 line = text.count("\n", 0, m.start()) + 1
                 if len(s) < FLOOR or s in KEYWORDS:
                     cls = "trivial"
-                elif rel in inputs and rx.search(inputs[rel]):
+                elif rel in inputs and s in inputs[rel] and rx.search(inputs[rel]):
                     cls = LEAK_CLASSES.get(rel, "leak")
+                    if cls == "specification" and platform_value(s, what):
+                        cls = "normative-value"
                 else:
                     cls = "leak"
                 found.append((cls, s, what, rel, line))
@@ -993,13 +1043,13 @@ def leak_check(out, facts, inputs):
 
 
 def leak_report(found):
-    names = ("leak", "identity", "specification", "sources", "template", "trivial")
+    names = ("leak", "normative-value", "identity", "specification", "sources", "template", "trivial")
     counts = {c: sum(1 for f in found if f[0] == c) for c in names}
-    lines = [f"# leak check: {counts['leak']} leaks; unavoidable collisions: {counts['identity']} in the identities, "
-             f"{counts['specification']} in the specification's text (the catalogue, the specification, the lane "
-             f"brief's format), "
-             f"{counts['sources']} in sources.toml's entries, {counts['template']} in the README's own text, "
-             f"{counts['trivial']} trivial (under {FLOOR} characters, or a keyword or bool)"]
+    lines = [f"# leak check: {counts['leak']} leaks, {counts['normative-value']} platform values in normative text "
+             f"(the catalogue, the specification, the lane brief's format: leaks to report); unavoidable collisions: "
+             f"{counts['identity']} in the identities, {counts['specification']} of the model's vocabulary in "
+             f"normative text, {counts['sources']} in sources.toml's entries, {counts['template']} in the README's "
+             f"own text, {counts['trivial']} trivial (under {FLOOR} characters, or a keyword or bool)"]
     groups = {}
     for cls, s, what, rel, line in found:
         if cls != "trivial":
@@ -1008,6 +1058,337 @@ def leak_report(found):
         more = f" (+{len(at) - 5} more)" if len(at) > 5 else ""
         lines.append(f"{cls}\t{rel}:{','.join(map(str, at[:5]))}{more}\t{what}\t{s!r}")
     return counts, "\n".join(lines)
+
+
+# ------------------------------------------------------------------------------------------- resolution
+
+class Unresolved(Exception):
+    """A value the resolver cannot evaluate (a reference no lane fact states, a platform function, an operand of
+    the wrong kind); its message names why."""
+
+
+EXPR_TOKEN = re.compile(r"\s*(?:(?P<colour>\b(?:srgb|display_p3)\([^()]*\))|(?P<hex>#[0-9a-zA-Z]+)"
+                        r"|(?P<num>-?\d+(?:\.\d+)?(?:px|ms|deg|pt)?)(?![\w.])"
+                        r"|(?P<name>@?[a-z_][a-z0-9_]*(?:\.@?[a-z0-9_][a-z0-9_]*)*)|(?P<p>[(),]))")
+UNIT_SUFFIXES = {"_px": "px", "_ms": "ms", "_deg": "deg", "_pt": "pt"}
+REF_HEADS = ("role", "token", "input", "part", "widget", "values")
+NUM_EQ = 1e-4      # check_fact_citations.NUMBER_EQ: relative
+CHANNEL_EQ = 0.5   # half an 8-bit step, on the 0-255 scale
+
+
+def parse_expression(text):
+    """An S2.2 expression's tree: ("lit", text), ("ref", path) or ("call", name, [args])."""
+    toks, i = [], 0
+    while i < len(text):
+        if not text[i:].strip():
+            break
+        m = EXPR_TOKEN.match(text, i)
+        if not m or m.end() == i:
+            raise Unresolved(f"cannot read {text[i:]!r}")
+        toks.append((m.lastgroup, m.group(m.lastgroup)))
+        i = m.end()
+    pos = 0
+
+    def node():
+        nonlocal pos
+        if pos >= len(toks):
+            raise Unresolved(f"{text!r} ends early")
+        kind, t = toks[pos]
+        pos += 1
+        if kind == "name" and pos < len(toks) and toks[pos] == ("p", "("):
+            pos += 1
+            args = [node()]
+            while pos < len(toks) and toks[pos] == ("p", ","):
+                pos += 1
+                args.append(node())
+            if pos >= len(toks) or toks[pos] != ("p", ")"):
+                raise Unresolved(f"{text!r}: a call is not closed")
+            pos += 1
+            return ("call", t, args)
+        if kind == "name":
+            return ("ref", t)
+        if kind == "p":
+            raise Unresolved(f"{text!r}: {t!r} out of place")
+        return ("lit", t)
+
+    tree = node()
+    if pos != len(toks):
+        raise Unresolved(f"{text!r}: more after the expression")
+    return tree
+
+
+def literal(t, unit=None):
+    """A literal's resolved value: ("num", x, unit), ("colour", channels 0-255, space), ("keyword", …), ("bool", …)
+    or ("name", …)."""
+    if t in KEYWORDS - {"true", "false"}:
+        return ("keyword", t)
+    if t in ("true", "false"):
+        return ("bool", t == "true")
+    if check_facts.HEX_LITERAL.match(t) or check_facts.FUNC_COLOUR.match(t):
+        lits = check_fact_citations.string_literals(t)
+        if len(lits) == 1 and lits[0].kind == "colour":
+            return ("colour", tuple(lits[0].value), lits[0].dim)
+    m = check_facts.UNIT_LITERAL.match(t)
+    if m:
+        return ("num", float(m.group(1)), m.group(2))
+    if re.fullmatch(r"-?\d+(?:\.\d+)?", t):
+        return ("num", float(t), unit)
+    return ("name", t)
+
+
+def num(v, what):
+    if v[0] != "num":
+        raise Unresolved(f"{what}: not a number ({render(v)})")
+    return v[1], v[2]
+
+
+def colour(v, what):
+    if v[0] != "colour":
+        raise Unresolved(f"{what}: not a colour ({render(v)})")
+    return v[1], v[2]
+
+
+def arith(name, args):
+    if name in ("floor", "round"):
+        x, u = num(args[0], name)
+        return ("num", float(math.floor(x) if name == "floor" else math.copysign(math.floor(abs(x) + 0.5), x)), u)
+    (x, u), (y, w) = num(args[0], name), num(args[1], name)
+    if name in ("add", "sub", "min", "max"):
+        if u and w and u != w:
+            raise Unresolved(f"{name}: {u} and {w}")
+        r = {"add": x + y, "sub": x - y, "min": min(x, y), "max": max(x, y)}[name]
+        return ("num", r, u or w)
+    if name == "mul":
+        if u and w:
+            raise Unresolved(f"mul: {u} times {w}")
+        return ("num", x * y, u or w)
+    if y == 0:
+        raise Unresolved("div: by zero")
+    return ("num", x / y, None if u and u == w else u)
+
+
+def call(name, args):
+    if name in ("add", "sub", "mul", "div", "min", "max") and len(args) == 2 or name in ("floor", "round") \
+            and len(args) == 1:
+        return arith(name, args)
+    if name in ("alpha", "with_alpha") and len(args) == 2:
+        (c, space), (a, _) = colour(args[0], name), num(args[1], name)
+        return ("colour", c[:3] + ((c[3] * a) if name == "alpha" else a * 255,), space)
+    if name == "mix" and len(args) == 3:
+        (a, sa), (b, sb), (t, _) = colour(args[0], name), colour(args[1], name), num(args[2], name)
+        if sa != sb:
+            raise Unresolved("mix: two colour spaces")
+        alpha = a[3] * (1 - t) + b[3] * t
+        rgb = tuple((x * a[3] * (1 - t) + y * b[3] * t) / alpha if alpha else 0.0 for x, y in zip(a[:3], b[:3]))
+        return ("colour", rgb + (alpha,), sa)
+    if name == "pick" and len(args) >= 3:
+        i, _ = num(args[0], name)
+        if not float(i).is_integer() or not 0 <= int(i) < len(args) - 1:
+            raise Unresolved(f"pick: no colour at {i}")
+        return args[1 + int(i)]
+    raise Unresolved(f"the function {name}() is not evaluated here")
+
+
+def render(v):
+    if v[0] == "num":
+        return num_text(round(v[1], 6)) + (v[2] or "")
+    if v[0] == "colour":
+        ch = v[1]
+        if v[2] == "srgb" and all(abs(c - round(c)) < 1e-6 for c in ch):
+            r, g, b, a = (round(c) for c in ch)
+            return f"#{r:02x}{g:02x}{b:02x}" + ("" if a == 255 else f"{a:02x}")
+        name = "srgb" if v[2] == "srgb" else "display_p3"
+        return f"{name}({', '.join(num_text(round(c / 255, 6)) for c in (ch[:3] if ch[3] == 255 else ch))})"
+    if v[0] in ("list", "table"):
+        inner = ", ".join(render(x) if v[0] == "list" else f"{x[0]} = {render(x[1])}" for x in v[1])
+        return f"[{inner}]" if v[0] == "list" else f"{{ {inner} }}"
+    if v[0] == "bool":
+        return "true" if v[1] else "false"
+    return str(v[1])
+
+
+def same(a, b):
+    """Two resolved values equal: numbers within NUM_EQ (relative) and of one unit where both state one, colours of
+    one space within CHANNEL_EQ per channel, lists and tables member by member."""
+    if a[0] != b[0]:
+        return False
+    if a[0] == "num":
+        return (not a[2] or not b[2] or a[2] == b[2]) and abs(a[1] - b[1]) <= NUM_EQ * max(1.0, abs(a[1]), abs(b[1]))
+    if a[0] == "colour":
+        return a[2] == b[2] and all(abs(x - y) <= CHANNEL_EQ for x, y in zip(a[1], b[1]))
+    if a[0] == "list":
+        return len(a[1]) == len(b[1]) and all(same(x, y) for x, y in zip(a[1], b[1]))
+    if a[0] == "table":
+        return [k for k, _ in a[1]] == [k for k, _ in b[1]] and all(same(x[1], y[1]) for x, y in zip(a[1], b[1]))
+    return a[1] == b[1]
+
+
+def has_expression(v):
+    return any(isinstance(x, str) and x.lstrip().startswith("=") for x in value_strings(v))
+
+
+class Resolver:
+    """Evaluates values in one combination: the compared fact's `when` (the element's states, variants, sizes and
+    context) under one world (its conditions, with a scheme and a preset where the `when` fixes none). A reference
+    reads the lane's facts of the platform: `role.`, `token.` and `input.` by the facts whose conditions the world
+    holds (of the compared fact's accent run where the referenced facts have runs), `part.`, `widget.<part>.` and
+    `values.` by the facts of the compared fact's widget whose `when` the combination implies; the last such fact
+    applies (S17), a whole block's fact read at its leaf. `surface.`, `element.`, `base`, `font_size`, `line_height`,
+    `body_font_height`, `text_scale` and the platform functions are not evaluated."""
+
+    def __init__(self, facts, fact, world):
+        self.by_key = {}
+        for f in facts:
+            if isinstance(f.identity[0], tuple):
+                self.by_key.setdefault(f.identity[0], []).append(f)
+        self.fact = fact
+        self.when = fact.data.get("when") if isinstance(fact.data.get("when"), dict) else {}
+        self.world = world
+        self.segs = fact.identity[0] if isinstance(fact.identity[0], tuple) else ()
+        self.depth = 0
+
+    def holds_world(self, f):
+        w = f.data.get("when") if isinstance(f.data.get("when"), dict) else {}
+        return (check_facts.when_lists(w, "conditions") <= self.world
+                and not check_facts.when_lists(w, "not_conditions") & self.world)
+
+    def implied(self, f):
+        """The fact's `when` holds wherever the combination's does: each list a subset of the combination's (its
+        conditions held by the world), its context, position and `latest` the combination's own."""
+        w = f.data.get("when") if isinstance(f.data.get("when"), dict) else {}
+        for k, v in w.items():
+            if k in ("conditions", "not_conditions"):
+                continue
+            if check_facts.str_list(v):
+                if not set(v) <= check_facts.when_lists(self.when, k):
+                    return False
+            elif check_facts.canonical_when(v) != check_facts.canonical_when(self.when.get(k)):
+                return False
+        return self.holds_world(f)
+
+    def run_of(self, cands):
+        mine = (self.fact.data.get("scheme_file"), self.fact.data.get("accent"))
+        own = [f for f in cands if (f.data.get("scheme_file"), f.data.get("accent")) == mine]
+        return own or [f for f in cands if "scheme_file" not in f.data and "accent" not in f.data]
+
+    def lookup(self, segs, test, name):
+        for k in range(len(segs), 0, -1):
+            cands = [f for f in self.run_of(self.by_key.get(segs[:k], [])) if test(f)]
+            if not cands:
+                continue
+            f = cands[-1]
+            if "pending" in f.data:
+                raise Unresolved(f"{name}: pending in the lane's facts ({f.data['pending']})")
+            v = self.value(f.data.get("value"))
+            for seg in segs[k:]:
+                if v[0] != "table":
+                    raise Unresolved(f"{name}: {seg!r} inside a {v[0]}")
+                members = dict(v[1])
+                hit = next((members[x] for x in [seg] + [seg + suf for suf in UNIT_SUFFIXES] if x in members), None)
+                if hit is None:
+                    raise Unresolved(f"{name}: no {seg!r} in the lane's fact")
+                v = hit
+            return v
+        raise Unresolved(f"{name}: no lane fact applies")
+
+    def ref(self, path):
+        if path in ("true", "false"):
+            return ("bool", path == "true")
+        if path == "scheme":
+            scheme = next((c[7:] for c in self.world if c.startswith("scheme:")), None)
+            if scheme is None:
+                raise Unresolved("scheme: no scheme in the world")
+            return ("name", scheme)
+        parsed = check_facts.key_segments(path)
+        segs = tuple(parsed[0]) if isinstance(parsed, tuple) else ()
+        head = segs[0] if segs else path
+        if head not in REF_HEADS:
+            if "." not in path:
+                return ("name", path)
+            raise Unresolved(f"{path}: not evaluated here")
+        if head in ("role", "token", "input"):
+            return self.lookup(segs, self.holds_world, path)
+        widget = self.segs[:2] if self.segs[:1] == ("component",) else self.segs[:1]
+        if head == "part":
+            target = widget + self.segs[len(widget):len(widget) + 1] + segs[1:]
+        elif head == "widget":
+            target = widget + segs[1:]
+        else:
+            target = widget + ("values",) + segs[1:]
+        return self.lookup(target, self.implied, path)
+
+    def expr(self, tree, unit=None):
+        self.depth += 1
+        try:
+            if self.depth > 64:
+                raise Unresolved("a chain of references too long")
+            if tree[0] == "lit":
+                return literal(tree[1], unit)
+            if tree[0] == "ref":
+                return self.ref(tree[1])
+            if tree[1] == "active" and len(tree[2]) == 1 and tree[2][0][0] == "ref":
+                saved, self.world = self.world, self.world - {"window_inactive"}
+                try:
+                    return self.ref(tree[2][0][1])
+                finally:
+                    self.world = saved
+            return call(tree[1], [self.expr(a) for a in tree[2]])
+        finally:
+            self.depth -= 1
+
+    def value(self, v, unit=None):
+        if isinstance(v, bool):
+            return ("bool", v)
+        if isinstance(v, (int, float)):
+            return ("num", float(v), unit)
+        if isinstance(v, str):
+            if v.lstrip().startswith("="):
+                return self.expr(parse_expression(v.lstrip()[1:]), unit)
+            return literal(v, unit)
+        if isinstance(v, list):
+            return ("list", tuple(self.value(x) for x in v))
+        if isinstance(v, dict):
+            return ("table", tuple(sorted((k, self.value(x, next((u for suf, u in UNIT_SUFFIXES.items()
+                                                                  if k.endswith(suf)), None)))
+                                          for k, x in v.items())))
+        raise Unresolved(f"a value of type {type(v).__name__}")
+
+
+def worlds(fact, platform):
+    """The worlds a fact's combination holds in: its `when`'s conditions, with each scheme and each preset of the
+    platform where the `when` fixes none (and does not refuse it)."""
+    w = fact.data.get("when") if isinstance(fact.data.get("when"), dict) else {}
+    base = check_facts.when_lists(w, "conditions")
+    nots = check_facts.when_lists(w, "not_conditions")
+    axes = [[f"scheme:{x}" for x in ("light", "dark")], [f"preset:{x}" for x in PLATFORMS.get(platform, ())]]
+    out = [frozenset(base)]
+    for axis in axes:
+        if len(axis) < 2 or any(c in base for c in axis):
+            continue
+        out = [x | {c} for x in out for c in axis if c not in nots]
+    return out
+
+
+def resolve_pair(facts, lf, vf, platform):
+    """(equivalent, [one line per world]): the lane's and the verifier's values evaluated in the lane fact's
+    combination under every world it holds in; equivalent only where both resolve, in every world, to one value."""
+    notes, ok = [], True
+    for world in worlds(lf, platform):
+        label = ", ".join(sorted(world)) or "no condition"
+        r = Resolver(facts, lf, set(world))
+        try:
+            a = r.value(lf.data.get("value"))
+            b = r.value(vf.data.get("value"))
+        except Unresolved as err:
+            notes.append(f"{label}: unresolved: {err}")
+            ok = False
+            continue
+        if same(a, b):
+            notes.append(f"{label}: both {render(a)}")
+        else:
+            notes.append(f"{label}: lane {render(a)}, verifier {render(b)}")
+            ok = False
+    return ok, notes
 
 
 # --------------------------------------------------------------------------------------------- the compare
@@ -1043,7 +1424,7 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
     ver = last_by(vfacts, lambda f: f.identity)
     all_on = tuple(NORMALISATIONS)
     stats = {n: {"changed": 0, "decisive": 0} for n in NORMALISATIONS}
-    agreed, disagreed, lane_only, verifier_only, outside = [], [], [], [], []
+    agreed, equivalent, disagreed, lane_only, verifier_only, outside = [], [], [], [], [], []
     before = outside_agreed = 0
     for ident, lf in lane.items():
         vf = ver.get(ident)
@@ -1067,8 +1448,12 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
                         stats[n]["decisive"] += 1
                 elif fact_value(lf.data, rest, set()) != fact_value(vf.data, rest, set()):
                     stats[n]["decisive"] += 1
+        elif "pending" not in lf.data and "pending" not in vf.data and (
+                has_expression(lf.data.get("value")) or has_expression(vf.data.get("value"))):
+            ok, notes = resolve_pair(lane_all, lf, vf, unit["platform"])
+            (equivalent if ok else disagreed).append((lf, vf, notes))
         else:
-            disagreed.append((lf, vf))
+            disagreed.append((lf, vf, []))
     for ident, vf in ver.items():
         if ident in lane:
             continue
@@ -1080,12 +1465,13 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
                 outside.append((lf, vf))
         else:
             verifier_only.append(vf)
-    compared = len(agreed) + len(disagreed)
+    compared = len(agreed) + len(equivalent) + len(disagreed)
     summary = {
         "unit": unit["id"], "platform": unit["platform"], "kind": unit["kind"], "rev": doc["rev"],
         "verifier_file": vpath.as_posix(), "lane_facts": len(lane), "verifier_facts": len(ver),
         "verifier_repeated": len(vfacts) - len(ver), "compared": compared, "agreed": len(agreed),
-        "agreed_before_normalising": before, "disagreed": len(disagreed), "lane_only": len(lane_only),
+        "agreed_before_normalising": before, "equivalent_by_resolution": len(equivalent),
+        "disagreed": len(disagreed), "lane_only": len(lane_only),
         "verifier_only": len(verifier_only), "outside_unit": len(outside) + outside_agreed,
         "outside_unit_disagreed": len(outside), "refused_by_model": refused,
     }
@@ -1097,10 +1483,13 @@ def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
     for n, what in NORMALISATIONS.items():
         t += ["", "[[normalisation]]", f"name = {toml_string(n)}", f"what = {toml_string(what)}",
               f"changed = {stats[n]['changed']}", f"decisive = {stats[n]['decisive']}"]
-    for table, pairs in (("disagreed", disagreed), ("outside_unit", outside)):
-        for lf, vf in pairs:
+    for table, pairs in (("equivalent", equivalent), ("disagreed", disagreed),
+                         ("outside_unit", [(lf, vf, []) for lf, vf in outside])):
+        for lf, vf, notes in pairs:
             t += ["", f"[[{table}]]"] + [f"{k} = {toml_inline(v)}" for k, v in plain(lf.data).items()]
             t += [f"lane = {toml_inline(side(lf))}", f"verifier = {toml_inline(side(vf))}"]
+            if notes:
+                t.append(f"resolved = {toml_inline(notes)}")
     for table, facts, who in (("lane_only", lane_only, "lane"), ("verifier_only", verifier_only, "verifier")):
         for f in facts:
             t += ["", f"[[{table}]]"] + [f"{k} = {toml_inline(v)}" for k, v in plain(f.data).items()]
@@ -1123,8 +1512,10 @@ def sample_size(n, rate, least):
 def ledger_line(s):
     c = s["compared"]
     pct = f"{100 * s['agreed'] / c:.1f} %; {100 * s['agreed_before_normalising'] / c:.1f} % before" if c else "none"
+    eq = s.get("equivalent_by_resolution", 0)
     return (f"| {s['unit']} | {s['platform']} | lane {s['lane_facts']:,}, verifier {s['verifier_facts']:,} | "
-            f"{s['agreed']:,} of {c:,} compared combinations after normalising spellings ({pct}) | to tie-break: "
+            f"{s['agreed']:,} of {c:,} compared combinations after normalising spellings ({pct})"
+            + (f"; {eq:,} more equivalent by resolution" if eq else "") + " | to tie-break: "
             f"{s['disagreed']:,} disagreed, {s['lane_only']:,} lane-only, {s['verifier_only']:,} verifier-only"
             + (f", {s['refused_by_model']:,} refused by the verifier's state model"
                if s.get("refused_by_model") else "")
@@ -1515,7 +1906,7 @@ def main(argv) -> int:
                              citations.cache_dir(args.cache), combinations=not args.no_combinations, agreed=agreed)
             counts, report = leak_report(found)
             print(report)
-            return 1 if counts["leak"] else 0
+            return 1 if counts["leak"] or counts["normative-value"] else 0
         if args.cmd == "compare-model":
             summary = compare_model(root, read_units(root, args.units), args.unit, args.verifier_models, args.out)
             print(f"# {summary['unit']}: {summary['matched_entries']} entries matched, {summary['lane_only_entries']} "
@@ -1529,7 +1920,8 @@ def main(argv) -> int:
         if args.cmd == "compare":
             agreed = read_toml(args.combinations_from) if args.combinations_from else None
             summary = compare(root, read_units(root, args.units), args.unit, args.verifier_facts, args.out, agreed)
-            print(f"# {summary['unit']}: agreed {summary['agreed']}, disagreed {summary['disagreed']}, lane-only "
+            print(f"# {summary['unit']}: agreed {summary['agreed']}, equivalent by resolution "
+                  f"{summary['equivalent_by_resolution']}, disagreed {summary['disagreed']}, lane-only "
                   f"{summary['lane_only']}, verifier-only {summary['verifier_only']}, outside the unit "
                   f"{summary['outside_unit']} ({summary['outside_unit_disagreed']} differing)")
             print(summary["ledger"])
@@ -1547,6 +1939,26 @@ def main(argv) -> int:
 
 SELF_TEST_CATALOGUE = '''# catalogue
 
+## What this is
+
+Not normative here.
+
+## Entry format
+
+- **Parts:** each part's fields.
+
+## Shared value types
+
+| `ArrowStyle` | none, chevron |
+
+## Shared flags
+
+`drop_target`.
+
+## Selector notation
+
+`{checked}`.
+
 ## Buttons and toggles
 
 ### button
@@ -1559,7 +1971,15 @@ SELF_TEST_CATALOGUE = '''# catalogue
 - **Exclusive groups:** none; precedence: state models (S17).
 - **State-model source:**
   - `adwaita`: libadwaita's selectors in `_buttons.scss` (`border-radius: 6px;`).
-- **Notes:** a note naming #ffffff.
+- **Notes:** a note naming the card.
+
+### link
+
+- **Kind:** typed widget, not the unit's.
+
+## Tokens, conditions, readers, placement
+
+Not copied.
 '''
 
 SELF_TEST_SOURCES = '''
@@ -1582,43 +2002,49 @@ generations = []
 
 SELF_TEST_SPEC = '''# spec
 
+## 0. Progress
+
+Not normative.
+
+## S1. Section 1
+
 ## S2. Blocks
-
-### S2.1 Colour
-
-Colours.
 
 ### S2.2 Values and expressions
 
 Literals.
 
-## S7. Rules
+```toml
+## S99. inside a code block
+```
 
-### S7.1 Conditions
+## S3. Section 3
 
-`scheme:dark`.
+## S4. Section 4
 
-### S7.2 State flags
+## S5. Section 5
 
-`hover`.
+## S6. Section 6
 
-### S7.3 Sizes
+## S7. Section 7
 
-Sizes.
+## S8. Section 8
+
+## S9. Section 9
 
 ## S10. Declarations
 
-```toml
-## S99. not a heading: inside a code block
-```
-
 ## S11. Preset files (TOML)
 
-`when`.
+## S12. Section 12
 
-## S12. Validation
+## S13. Section 13
 
-Refusals.
+## S14. Section 14
+
+## S15. Section 15
+
+## S16. Section 16
 
 ## S17. Facts as data and the gate (R4, R22)
 
@@ -1626,9 +2052,17 @@ Refusals.
 
 `[[model]]`.
 
-## S18. Documents and scripts
+## S18. Section 18
 
-Scripts.
+## S19. Section 19
+
+## S20. Section 20
+
+## S21. Section 21
+
+## S22. Additions register
+
+ADD-A1: a record.
 '''
 
 SELF_TEST_MODELS = '''
@@ -1698,6 +2132,31 @@ def _fact(key, value, when=None, n=1, q="color: #ffffff;", measured=False, pendi
     return out + _CITE.format(n=n, q=q) + "\n"
 
 
+RESOLUTION_LANE = {   # the lane's facts the resolution cases read (windows: one preset, the worlds are the schemes)
+    "docs/facts/windows/roles.toml": _fact("role.window.foreground", '"#000000"', '{ conditions = ["scheme:light"] }')
+    + _fact("role.window.foreground", '"#ffffff"', '{ conditions = ["scheme:dark"] }'),
+    "docs/facts/windows/tokens.toml": _fact("token.focus.width", '"2px"'),
+    "docs/facts/windows/button.toml": "".join([
+        _fact("button.body.padding.top", '"3px"'), _fact("button.body.padding.bottom", '"3px"'),
+        _fact("button.body.padding.top", '"5px"', '{ variants = ["flat"] }'),
+        _fact("button.body.min_height", '"= add(24px, add(part.padding.top, part.padding.bottom))"'),
+        _fact("button.body.stroke.width", '"= token.focus.width"'),
+        _fact("button.body.fill", '"= alpha(role.window.foreground, 0.5)"', '{ states = ["checked"] }'),
+        _fact("button.body.stroke.color", '"absent"'),
+        _fact("button.body.fill", '"#000000"', '{ states = ["hover"] }'),
+        _fact("button.body.fill", '"= m3_role(primary)"', '{ states = ["pressed"] }'),
+    ]),
+}
+RESOLUTION_VERIFIER = "".join([
+    _fact("button.body.min_height", '"30px"'),                                     # equivalent: 24 + 3 + 3
+    _fact("button.body.stroke.width", '"2px"'),                                    # equivalent: the token
+    _fact("button.body.fill", '"#00000080"', '{ states = ["checked"] }'),          # equal in light only
+    _fact("button.body.stroke.color", '"= alpha(role.window.foreground, 0)"'),     # absent is no transparent colour
+    _fact("button.body.fill", '"= role.window.foreground"', '{ states = ["hover"] }'),   # equal in light only
+    _fact("button.body.fill", '"#6750a4"', '{ states = ["pressed"] }'),            # a platform function: unresolved
+])
+
+
 def _repo(base_files, head_files):
     tmp = Path(tempfile.mkdtemp(prefix="verify-facts-"))
 
@@ -1747,7 +2206,7 @@ def self_test() -> int:
     head_tokens = _fact("token.focus.width", '"2px"', None, 9, q="outline-width: 2px;")   # new
     repo = _repo({**common, "docs/facts/gnome/button.toml": base_button},
                  {**common, "docs/facts/gnome/button.toml": head_button, "docs/facts/gnome/tokens.toml": head_tokens,
-                  "docs/facts/gnome/state-models.toml": SELF_TEST_MODELS})
+                  "docs/facts/gnome/state-models.toml": SELF_TEST_MODELS, **RESOLUTION_LANE})
     out = Path(tempfile.mkdtemp(prefix="verify-facts-out-"))
     try:
         since = {p: "HEAD~1" for p in PLATFORMS}
@@ -1785,13 +2244,11 @@ def self_test() -> int:
               ["README.md", "catalogue.md", "combinations.toml", "facts-format.md", "keys.toml", "pins.toml",
                "spec.md"])
         spec_md = (out / "brief" / "spec.md").read_text()
-        check("brief: the specification's sections, S17's heading among them",
-              [x for x in spec_md.splitlines() if x.startswith("##")],
-              ["### S2.2 Values and expressions", "### S7.1 Conditions", "### S7.2 State flags",
-               "## S10. Declarations", "## S99. not a heading: inside a code block", "## S11. Preset files (TOML)",
-               "## S17. Facts as data and the gate (R4, R22)", "### State models"])
-        check("brief: S17 ends at S18", ("`[[model]]`." in spec_md, "Scripts." in spec_md, "Refusals." in spec_md),
-              (True, False, False))
+        heads = [x for x in spec_md.splitlines() if x.startswith("## ")]
+        check("brief: the specification's S1 to S21, S17's heading among them, not its progress nor S22",
+              ("## S17. Facts as data and the gate (R4, R22)" in heads, heads[0], heads[-1], len(heads),
+               "ADD-A1" in spec_md, "Not normative." in spec_md, "### State models" in spec_md),
+              (True, "## S1. Section 1", "## S21. Section 21", 22, False, False, True))
         try:
             spec_text(SELF_TEST_SPEC.replace("## S17.", "## S16."))
             failures.append("spec_text: a missing S17 accepted")
@@ -1804,11 +2261,19 @@ def self_test() -> int:
         check("brief: the platform's pins only, no evidence entry", [e["id"] for e in pins["source"]],
               ["libadwaita@1.10.0"])
         cat = (out / "brief" / "catalogue.md").read_text()
-        check("brief: the catalogue's items, not its notes", ("State-model source" in cat, "Notes" in cat),
-              (True, False))
-        check("brief: a quote the catalogue's lines hold is the specification's",
+        check("brief: the catalogue's shared sections and the widget's whole entry, nothing else",
+              ("## Entry format" in cat, "## Shared value types" in cat, "## Shared flags" in cat,
+               "## Selector notation" in cat, "- **Notes:** a note naming the card." in cat, "### link" in cat,
+               "Not copied." in cat, "Not normative here." in cat), (True,) * 5 + (False,) * 3)
+        check("brief: a platform value (a quote) in normative text is a leak to report",
               [(f[0], f[3]) for f in found if f[1] == "border-radius: 6px;" and f[0] != "trivial"],
-              [("specification", "catalogue.md")])
+              [("normative-value", "catalogue.md")])
+        check("leak check: the model's vocabulary is no platform value, a literal or a text is",
+              [platform_value(x, "a value of k") for x in ("circular", "@card", "= role.global.accent",
+                                                           "= alpha(role.x, 0.5)", "#ffffff", "0.3", "Cantarell",
+                                                           "adw-tab-counter-symbolic")]
+              + [platform_value("x.c:1", "a citation's source"), platform_value("font", "a citation's absent name")],
+              [False, False, False, True, True, True, True, True, True, False])
         combos = tomllib.loads((out / "brief" / "combinations.toml").read_text())
         check("brief: no value or citation in the combinations",
               any("value" in c or "cite" in c for c in combos["combination"]), False)
@@ -1928,6 +2393,45 @@ def self_test() -> int:
             failures.append("compare: another unit's model comparison accepted")
         except InputError:
             pass
+        # resolution: a reference or expression against a literal, evaluated in the combination
+        units3 = {"rev": doc["rev"], "unit": [{
+            "id": "WN-T1", "platform": "windows", "kind": "cited", "presets": ["windows-11"], "facts": 6,
+            "identities": [{"file": "button.toml", "key": k, **({"when": w} if w else {})} for k, w in (
+                ("button.body.min_height", None), ("button.body.stroke.width", None),
+                ("button.body.fill", {"states": ["checked"]}), ("button.body.stroke.color", None),
+                ("button.body.fill", {"states": ["hover"]}), ("button.body.fill", {"states": ["pressed"]}))]}]}
+        rfile = out / "resolution" / "facts.toml"
+        rfile.parent.mkdir()
+        rfile.write_text(RESOLUTION_VERIFIER)
+        s3 = compare(repo, units3, "WN-T1", rfile)
+        check("resolution: counts, the equivalent never agreed", {k: s3[k] for k in (
+            "agreed", "equivalent_by_resolution", "disagreed")},
+              {"agreed": 0, "equivalent_by_resolution": 2, "disagreed": 4})
+        rt = tomllib.loads((out / "resolution" / "tiebreak.toml").read_text())
+        check("resolution: each equivalent item listed with its worlds",
+              sorted((e["key"], tuple(e["resolved"])) for e in rt["equivalent"]),
+              [("button.body.min_height", ("scheme:light: both 30px", "scheme:dark: both 30px")),
+               ("button.body.stroke.width", ("scheme:light: both 2px", "scheme:dark: both 2px"))])
+        notes = {(d["key"], str(d.get("when"))): d.get("resolved", []) for d in rt["disagreed"]}
+        check("resolution: equal in one world only stays a disagreement",
+              notes[("button.body.fill", "{'states': ['checked']}")],
+              ["scheme:light: both srgb(0, 0, 0, 0.5)",
+               "scheme:dark: lane srgb(1, 1, 1, 0.5), verifier #00000080"])
+        check("resolution: absent against a transparent colour stays a disagreement",
+              notes[("button.body.stroke.color", "None")],
+              ["scheme:light: lane absent, verifier #00000000", "scheme:dark: lane absent, verifier #ffffff00"])
+        check("resolution: a platform function is unresolved",
+              notes[("button.body.fill", "{'states': ['pressed']}")][0].startswith(
+                  "scheme:light: unresolved: the function m3_role()"), True)
+        check("resolution: no equivalent in the audit sample's population",
+              tomllib.loads((out / "resolution" / "agreed.toml").read_text()).get("agreed", []), [])
+        check("resolution: the ledger line", "; 2 more equivalent by resolution |" in s3["ledger"], True)
+        check("resolution: the evaluator", [render(Resolver([], Fact("x.toml", 1, {"key": "button.body.x"}, [],
+                                                                       identity_of({"key": "button.body.x"})),
+                                                                  set()).value(v)) for v in (
+            "= mix(#000000, #ffffff, 0.5)", "= max(sub(4px, 6px), div(10px, 4))", "= with_alpha(#ff0000, 0.25)",
+            "= round(2.5)", "= pick(1, #000000, #ffffff)")],
+              ["srgb(0.5, 0.5, 0.5)", "2.5px", "srgb(1, 0, 0, 0.25)", "3", "#ffffff"])
         check("normalise: srgb is its hex", norm_value("srgb(1, 1, 1)", tuple(NORMALISATIONS), set()),
               ("string", "#ffffff"))
         check("normalise: an expression", norm_value("= alpha( surface.foreground , 0.50 )", tuple(NORMALISATIONS),

@@ -1241,10 +1241,12 @@ python3 scripts/verify_facts.py --self-test
 - `brief <unit> <out-dir> --lane-brief <lane-brief.md>`: the verifier's
   folder. It holds `README.md`, `keys.toml`, `combinations.toml`, `pins.toml`
   (the platform's `sources.toml` entries with their source-cache paths),
-  `catalogue.md` (the widgets' variants, sizes, flags, exclusive groups and
-  state-model source lines), `spec.md` (S17 in full, with S2.2, S7.1, S7.2,
-  S10 and S11, each found by its heading) and `facts-format.md` (the lane
-  brief's format sections). `--no-combinations` leaves the combinations out
+  `catalogue.md` (the catalogue's entry format, shared value types, shared
+  flags and selector notation, and each widget's whole entry), `spec.md`
+  (the specification's normative sections S1 to S21, each found by its
+  heading; not S22, the additions register, nor the traces, gap maps or
+  `platform-facts.md`, which state platform values) and `facts-format.md`
+  (the lane brief's format sections). `--no-combinations` leaves the combinations out
   (the state-model step); `--combinations-from` writes only those a
   `compare-model` result agrees on (the facts step). A measured unit also
   gets copies of its cited evidence files, with each run's `run.toml` and
@@ -1254,7 +1256,10 @@ python3 scripts/verify_facts.py --self-test
   the folder (the evidence copies left out). Each hit is printed with its
   class: `identity`, `specification`, `sources` or `template` (the file's
   own input holds the string too, so the hit is unavoidable), `trivial`
-  (under four characters, or a keyword), or `leak`. A leak exits 1.
+  (under four characters, or a keyword), `normative-value` (a platform
+  value, such as a citation, a literal or a font or icon name, that the
+  specification's or catalogue's own text holds: a leak to report), or
+  `leak`. A leak or a normative value exits 1.
 - `compare-model <unit> <verifier-state-models.toml>`: the lane's state
   models of the unit's widgets against the verifier's, entry by entry. It
   lists every declaration that differs (axes, flags, variants, sizes,
@@ -1270,7 +1275,14 @@ python3 scripts/verify_facts.py --self-test
   verifier's, by identity. It normalises colour spellings, number
   formatting, expression spacing and equivalent selectors and key spellings,
   and lists each normalisation with the facts it changed and the pairs that
-  agree only through it. It writes `tiebreak.toml` (the counts, a summary
+  agree only through it. A pair that still differs, where one side holds an
+  expression or a reference, is resolved: both values are evaluated in the
+  combination, under each scheme (and preset) it leaves open, the references
+  read from the lane's own facts, S2.2's arithmetic, `alpha`, `with_alpha`,
+  `mix` and `pick` evaluated. A pair equal in every case is **equivalent by
+  resolution**, its own class, listed with the resolved values and never
+  counted as agreed. `surface.`, `element.` and the platform functions are
+  not evaluated, and `absent` never equals a transparent colour. It writes `tiebreak.toml` (the counts, a summary
   line in the ledger's *Verification rates* form, and every disagreement and
   one-sided fact with both values and citations) and `agreed.toml` into
   `--out` (default: the verifier file's folder).
@@ -1281,9 +1293,11 @@ python3 scripts/verify_facts.py --self-test
 
 `--self-test` runs every subcommand on fixtures in a temporary git
 repository. It covers the units' counts and splitting, the brief's files,
-the specification's sections (S17's heading among them) and its leak check
-(a planted citation is caught), the model comparison and the two-step flow,
-each normalisation, an identity mismatch, one-sided facts and the sample's
+the specification's sections (S17's heading among them, S22 left out) and
+its leak check (a planted citation is caught, a platform value in the
+catalogue reported), the model comparison and the two-step flow, the
+resolution (equivalent, equal under one scheme only, `absent` against a
+transparent colour, an unevaluated function), each normalisation, an identity mismatch, one-sided facts and the sample's
 determinism. It runs in `check_release.sh` and in CI's parity job.
 
 Requires Python 3.11 and git.
