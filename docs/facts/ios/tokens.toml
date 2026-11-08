@@ -5754,11 +5754,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
 quote = "+12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.large_title_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
+quote = "34"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.large_title_tight.word_spacing"
@@ -6145,11 +6177,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
 quote = "+12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.large_title_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
+quote = "34"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.large_title_loose.word_spacing"
@@ -6538,11 +6602,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
 quote = "+14"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_1_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
 [[fact]]
 key = "token.text.keyed.title_1_tight.word_spacing"
@@ -6929,11 +7025,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
 quote = "+14"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_1_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
 [[fact]]
 key = "token.text.keyed.title_1_loose.word_spacing"
@@ -7322,11 +7450,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
 quote = "-12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_2_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_2_tight.word_spacing"
@@ -7713,11 +7873,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
 quote = "-12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_2_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_2_loose.word_spacing"
@@ -8106,11 +8298,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
 quote = "-23"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_3_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/0/0/inlineContent/0/text"
+quote = "20"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
+quote = "-23"
 
 [[fact]]
 key = "token.text.keyed.title_3_tight.word_spacing"
@@ -8497,11 +8721,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
 quote = "-23"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_3_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/0/0/inlineContent/0/text"
+quote = "20"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
+quote = "-23"
 
 [[fact]]
 key = "token.text.keyed.title_3_loose.word_spacing"
@@ -8890,11 +9146,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.headline_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.headline_tight.word_spacing"
@@ -9281,11 +9569,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.headline_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.headline_loose.word_spacing"
@@ -9674,11 +9994,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
 quote = "-16"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.subheadline_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.subheadline_tight.word_spacing"
@@ -10065,11 +10417,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
 quote = "-16"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.subheadline_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.subheadline_loose.word_spacing"
@@ -10458,11 +10842,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.body_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.body_tight.word_spacing"
@@ -10849,11 +11265,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.body_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.body_loose.word_spacing"
@@ -11242,11 +11690,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
 quote = "-20"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.callout_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/0/0/inlineContent/0/text"
+quote = "16"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
+quote = "-20"
 
 [[fact]]
 key = "token.text.keyed.callout_tight.word_spacing"
@@ -11633,11 +12113,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
 quote = "-20"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.callout_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/0/0/inlineContent/0/text"
+quote = "16"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
+quote = "-20"
 
 [[fact]]
 key = "token.text.keyed.callout_loose.word_spacing"
@@ -12026,11 +12538,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
 quote = "-6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.footnote_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.footnote_tight.word_spacing"
@@ -12417,11 +12961,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
 quote = "-6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.footnote_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.footnote_loose.word_spacing"
@@ -12810,11 +13386,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
 quote = "0"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_1_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.caption_1_tight.word_spacing"
@@ -13201,11 +13809,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
 quote = "0"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_1_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.caption_1_loose.word_spacing"
@@ -13594,11 +14234,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
 quote = "+6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_2_tight.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.caption_2_tight.word_spacing"
@@ -13985,11 +14657,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
 quote = "+6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_2_loose.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-6"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.caption_2_loose.word_spacing"
@@ -14379,11 +15083,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
 quote = "+12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
+quote = "34"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
+quote = "+12"
 
 [[fact]]
 key = "token.text.keyed.large_title_emphasized.word_spacing"
@@ -14772,11 +15508,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
 quote = "+14"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
 [[fact]]
 key = "token.text.keyed.title_1_emphasized.word_spacing"
@@ -15165,11 +15933,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
 quote = "-12"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/0/0/inlineContent/0/text"
+quote = "22"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/17/1/0/inlineContent/0/text"
+quote = "-12"
 
 [[fact]]
 key = "token.text.keyed.title_2_emphasized.word_spacing"
@@ -15558,11 +16358,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
 quote = "-23"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/0/0/inlineContent/0/text"
+quote = "20"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/15/1/0/inlineContent/0/text"
+quote = "-23"
 
 [[fact]]
 key = "token.text.keyed.title_3_emphasized.word_spacing"
@@ -15951,11 +16783,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.headline_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.headline_emphasized.word_spacing"
@@ -16344,11 +17208,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
 quote = "-16"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/0/0/inlineContent/0/text"
+quote = "15"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/10/1/0/inlineContent/0/text"
+quote = "-16"
 
 [[fact]]
 key = "token.text.keyed.subheadline_emphasized.word_spacing"
@@ -16737,11 +17633,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
 quote = "-26"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.body_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/0/0/inlineContent/0/text"
+quote = "17"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/12/1/0/inlineContent/0/text"
+quote = "-26"
 
 [[fact]]
 key = "token.text.keyed.body_emphasized.word_spacing"
@@ -17130,11 +18058,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
 quote = "-20"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.callout_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/0/0/inlineContent/0/text"
+quote = "16"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/11/1/0/inlineContent/0/text"
+quote = "-20"
 
 [[fact]]
 key = "token.text.keyed.callout_emphasized.word_spacing"
@@ -17523,11 +18483,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
 quote = "-6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "token.text.keyed.footnote_emphasized.word_spacing"
@@ -17916,11 +18908,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
 quote = "0"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/0/0/inlineContent/0/text"
+quote = "12"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/7/1/0/inlineContent/0/text"
+quote = "0"
 
 [[fact]]
 key = "token.text.keyed.caption_1_emphasized.word_spacing"
@@ -18309,11 +19333,43 @@ kind = "published"
 source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
 quote = "+6"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["D-7"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
 
 [[fact]]
 key = "token.text.keyed.caption_2_emphasized.word_spacing"
@@ -18745,19 +19801,51 @@ quote = "Tracking (1/1000 em)"
 
 [[fact.cite]]
 kind = "published"
-source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
-quote = "34"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/31/0/0/inlineContent/0/text"
+quote = "36"
 
 [[fact.cite]]
 kind = "published"
-source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
-quote = "+12"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/31/1/0/inlineContent/0/text"
+quote = "+10"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.extra_large_title.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["TS-4"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/31/0/0/inlineContent/0/text"
+quote = "36"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/31/1/0/inlineContent/0/text"
+quote = "+10"
 
 [[fact]]
 key = "token.text.keyed.extra_large_title.word_spacing"
@@ -19138,19 +20226,51 @@ quote = "Tracking (1/1000 em)"
 
 [[fact.cite]]
 kind = "published"
-source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/0/0/inlineContent/0/text"
-quote = "34"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
 
 [[fact.cite]]
 kind = "published"
-source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/29/1/0/inlineContent/0/text"
-quote = "+12"
+source = "hig-typography@2026-02-09 #/primaryContentSections/0/content/81/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
+# ios-13: the same, the HIG's iOS SF Pro table in a capture from iOS 18's lifetime (hig-typography@2025-08-15, ADD-A136;
+# its tables equal ios-26's snapshot's row by row); the row of the style's size cited (U462 settled)
 [[fact]]
 key = "token.text.keyed.extra_large_title_2.letter_spacing"
 when = { conditions = ["preset:ios-13"] }
-pending = "U462"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["TS-4"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/79/text"
+quote = "iOS, iPadOS, visionOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/title"
+quote = "SF Pro"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/0/0/inlineContent/0/text"
+quote = "28"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/80/tabs/0/content/1/rows/23/1/0/inlineContent/0/text"
+quote = "+14"
 
 [[fact]]
 key = "token.text.keyed.extra_large_title_2.word_spacing"

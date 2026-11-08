@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 00647a6a7364ad84d97e52e9cf6e4cbf05265863249b62a21f6ff261de400f62
+# generated lines: sha256 032ccd657050bc0e00ecf2d57247c4cdc1a77c02e0df7cc9c95a1dd5fd677348
 
 [preset]
 id = "ios-13"
@@ -601,373 +601,303 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 "tokens.text.keyed.large_title_tight.font.width" = "U464"
 # docs/facts/ios/tokens.toml:5716
 "tokens.text.keyed.large_title_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:5757
-"tokens.text.keyed.large_title_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:6087
+# docs/facts/ios/tokens.toml:6119
 "tokens.text.keyed.large_title_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:6107
+# docs/facts/ios/tokens.toml:6139
 "tokens.text.keyed.large_title_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:6148
-"tokens.text.keyed.large_title_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:6480
+# docs/facts/ios/tokens.toml:6544
 "tokens.text.keyed.title_1_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:6500
+# docs/facts/ios/tokens.toml:6564
 "tokens.text.keyed.title_1_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:6541
-"tokens.text.keyed.title_1_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:6871
+# docs/facts/ios/tokens.toml:6967
 "tokens.text.keyed.title_1_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:6891
+# docs/facts/ios/tokens.toml:6987
 "tokens.text.keyed.title_1_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:6932
-"tokens.text.keyed.title_1_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:7264
+# docs/facts/ios/tokens.toml:7392
 "tokens.text.keyed.title_2_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:7284
+# docs/facts/ios/tokens.toml:7412
 "tokens.text.keyed.title_2_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:7325
-"tokens.text.keyed.title_2_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:7655
+# docs/facts/ios/tokens.toml:7815
 "tokens.text.keyed.title_2_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:7675
+# docs/facts/ios/tokens.toml:7835
 "tokens.text.keyed.title_2_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:7716
-"tokens.text.keyed.title_2_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:8048
+# docs/facts/ios/tokens.toml:8240
 "tokens.text.keyed.title_3_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:8068
+# docs/facts/ios/tokens.toml:8260
 "tokens.text.keyed.title_3_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:8109
-"tokens.text.keyed.title_3_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:8439
+# docs/facts/ios/tokens.toml:8663
 "tokens.text.keyed.title_3_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:8459
+# docs/facts/ios/tokens.toml:8683
 "tokens.text.keyed.title_3_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:8500
-"tokens.text.keyed.title_3_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:8832
+# docs/facts/ios/tokens.toml:9088
 "tokens.text.keyed.headline_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:8852
+# docs/facts/ios/tokens.toml:9108
 "tokens.text.keyed.headline_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:8893
-"tokens.text.keyed.headline_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:9223
+# docs/facts/ios/tokens.toml:9511
 "tokens.text.keyed.headline_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:9243
+# docs/facts/ios/tokens.toml:9531
 "tokens.text.keyed.headline_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:9284
-"tokens.text.keyed.headline_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:9616
+# docs/facts/ios/tokens.toml:9936
 "tokens.text.keyed.subheadline_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:9636
+# docs/facts/ios/tokens.toml:9956
 "tokens.text.keyed.subheadline_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:9677
-"tokens.text.keyed.subheadline_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:10007
+# docs/facts/ios/tokens.toml:10359
 "tokens.text.keyed.subheadline_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:10027
+# docs/facts/ios/tokens.toml:10379
 "tokens.text.keyed.subheadline_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:10068
-"tokens.text.keyed.subheadline_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:10400
+# docs/facts/ios/tokens.toml:10784
 "tokens.text.keyed.body_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:10420
+# docs/facts/ios/tokens.toml:10804
 "tokens.text.keyed.body_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:10461
-"tokens.text.keyed.body_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:10791
+# docs/facts/ios/tokens.toml:11207
 "tokens.text.keyed.body_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:10811
+# docs/facts/ios/tokens.toml:11227
 "tokens.text.keyed.body_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:10852
-"tokens.text.keyed.body_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:11184
+# docs/facts/ios/tokens.toml:11632
 "tokens.text.keyed.callout_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:11204
+# docs/facts/ios/tokens.toml:11652
 "tokens.text.keyed.callout_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:11245
-"tokens.text.keyed.callout_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:11575
+# docs/facts/ios/tokens.toml:12055
 "tokens.text.keyed.callout_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:11595
+# docs/facts/ios/tokens.toml:12075
 "tokens.text.keyed.callout_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:11636
-"tokens.text.keyed.callout_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:11968
+# docs/facts/ios/tokens.toml:12480
 "tokens.text.keyed.footnote_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:11988
+# docs/facts/ios/tokens.toml:12500
 "tokens.text.keyed.footnote_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:12029
-"tokens.text.keyed.footnote_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:12359
+# docs/facts/ios/tokens.toml:12903
 "tokens.text.keyed.footnote_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:12379
+# docs/facts/ios/tokens.toml:12923
 "tokens.text.keyed.footnote_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:12420
-"tokens.text.keyed.footnote_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:12752
+# docs/facts/ios/tokens.toml:13328
 "tokens.text.keyed.caption_1_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:12772
+# docs/facts/ios/tokens.toml:13348
 "tokens.text.keyed.caption_1_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:12813
-"tokens.text.keyed.caption_1_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:13143
+# docs/facts/ios/tokens.toml:13751
 "tokens.text.keyed.caption_1_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:13163
+# docs/facts/ios/tokens.toml:13771
 "tokens.text.keyed.caption_1_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:13204
-"tokens.text.keyed.caption_1_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:13536
+# docs/facts/ios/tokens.toml:14176
 "tokens.text.keyed.caption_2_tight.font.width" = "U464"
-# docs/facts/ios/tokens.toml:13556
+# docs/facts/ios/tokens.toml:14196
 "tokens.text.keyed.caption_2_tight.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:13597
-"tokens.text.keyed.caption_2_tight.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:13927
+# docs/facts/ios/tokens.toml:14599
 "tokens.text.keyed.caption_2_loose.font.width" = "U464"
-# docs/facts/ios/tokens.toml:13947
+# docs/facts/ios/tokens.toml:14619
 "tokens.text.keyed.caption_2_loose.scaling_role" = "U464"
-# docs/facts/ios/tokens.toml:13988
-"tokens.text.keyed.caption_2_loose.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:14321
+# docs/facts/ios/tokens.toml:15025
 "tokens.text.keyed.large_title_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:14341
+# docs/facts/ios/tokens.toml:15045
 "tokens.text.keyed.large_title_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:14382
-"tokens.text.keyed.large_title_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:14714
+# docs/facts/ios/tokens.toml:15450
 "tokens.text.keyed.title_1_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:14734
+# docs/facts/ios/tokens.toml:15470
 "tokens.text.keyed.title_1_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:14775
-"tokens.text.keyed.title_1_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:15107
+# docs/facts/ios/tokens.toml:15875
 "tokens.text.keyed.title_2_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:15127
+# docs/facts/ios/tokens.toml:15895
 "tokens.text.keyed.title_2_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:15168
-"tokens.text.keyed.title_2_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:15500
+# docs/facts/ios/tokens.toml:16300
 "tokens.text.keyed.title_3_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:15520
+# docs/facts/ios/tokens.toml:16320
 "tokens.text.keyed.title_3_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:15561
-"tokens.text.keyed.title_3_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:15893
+# docs/facts/ios/tokens.toml:16725
 "tokens.text.keyed.headline_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:15913
+# docs/facts/ios/tokens.toml:16745
 "tokens.text.keyed.headline_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:15954
-"tokens.text.keyed.headline_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:16286
+# docs/facts/ios/tokens.toml:17150
 "tokens.text.keyed.subheadline_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:16306
+# docs/facts/ios/tokens.toml:17170
 "tokens.text.keyed.subheadline_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:16347
-"tokens.text.keyed.subheadline_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:16679
+# docs/facts/ios/tokens.toml:17575
 "tokens.text.keyed.body_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:16699
+# docs/facts/ios/tokens.toml:17595
 "tokens.text.keyed.body_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:16740
-"tokens.text.keyed.body_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:17072
+# docs/facts/ios/tokens.toml:18000
 "tokens.text.keyed.callout_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:17092
+# docs/facts/ios/tokens.toml:18020
 "tokens.text.keyed.callout_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:17133
-"tokens.text.keyed.callout_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:17465
+# docs/facts/ios/tokens.toml:18425
 "tokens.text.keyed.footnote_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:17485
+# docs/facts/ios/tokens.toml:18445
 "tokens.text.keyed.footnote_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:17526
-"tokens.text.keyed.footnote_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:17858
+# docs/facts/ios/tokens.toml:18850
 "tokens.text.keyed.caption_1_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:17878
+# docs/facts/ios/tokens.toml:18870
 "tokens.text.keyed.caption_1_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:17919
-"tokens.text.keyed.caption_1_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:18251
+# docs/facts/ios/tokens.toml:19275
 "tokens.text.keyed.caption_2_emphasized.font.width" = "U465"
-# docs/facts/ios/tokens.toml:18271
+# docs/facts/ios/tokens.toml:19295
 "tokens.text.keyed.caption_2_emphasized.scaling_role" = "U465"
-# docs/facts/ios/tokens.toml:18312
-"tokens.text.keyed.caption_2_emphasized.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:18695
+# docs/facts/ios/tokens.toml:19751
 "tokens.text.keyed.extra_large_title.font.width" = "U466"
-# docs/facts/ios/tokens.toml:18715
+# docs/facts/ios/tokens.toml:19771
 "tokens.text.keyed.extra_large_title.scaling_role" = "U466"
-# docs/facts/ios/tokens.toml:18756
-"tokens.text.keyed.extra_large_title.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:19088
+# docs/facts/ios/tokens.toml:20176
 "tokens.text.keyed.extra_large_title_2.font.width" = "U466"
-# docs/facts/ios/tokens.toml:19108
+# docs/facts/ios/tokens.toml:20196
 "tokens.text.keyed.extra_large_title_2.scaling_role" = "U466"
-# docs/facts/ios/tokens.toml:19149
-"tokens.text.keyed.extra_large_title_2.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:19390
-"tokens.text.roles.display_large" = "U467"
-# docs/facts/ios/tokens.toml:19395
-"tokens.text.roles.display_medium" = "U467"
-# docs/facts/ios/tokens.toml:19400
-"tokens.text.roles.display_small" = "U467"
-# docs/facts/ios/tokens.toml:19405
-"tokens.text.roles.label" = "U467"
-# docs/facts/ios/tokens.toml:19410
-"tokens.text.roles.monospace" = "U467"
-# docs/facts/ios/tokens.toml:19415
-"tokens.text.roles.numeric" = "U467"
-# docs/facts/ios/tokens.toml:19421
-"tokens.text.fallbacks.families" = "U468"
-# docs/facts/ios/tokens.toml:19426
-"tokens.text.fallbacks.per_language" = "U468"
-# docs/facts/ios/tokens.toml:19431
-"tokens.text.fallbacks.per_family" = "U468"
-# docs/facts/ios/tokens.toml:19452
-"tokens.text.rendering.engine" = "U469"
-# docs/facts/ios/tokens.toml:19472
-"tokens.text.rendering.hinting" = "U469"
-# docs/facts/ios/tokens.toml:19477
-"tokens.text.rendering.subpixel_order" = "U469"
-# docs/facts/ios/tokens.toml:19482
-"tokens.text.rendering.lcd_filter" = "U469"
-# docs/facts/ios/tokens.toml:19487
-"tokens.text.rendering.gamma" = "U469"
-# docs/facts/ios/tokens.toml:19492
-"tokens.text.rendering.contrast" = "U469"
-# docs/facts/ios/tokens.toml:19618
-"tokens.caret.secondary" = "U471"
-# docs/facts/ios/tokens.toml:19640
-"tokens.behavior.double_click_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:19645
-"tokens.behavior.double_click_distance_px" = "U472"
-# docs/facts/ios/tokens.toml:19650
-"tokens.behavior.double_click_height_px" = "U472"
-# docs/facts/ios/tokens.toml:19655
-"tokens.behavior.drag_threshold_px" = "U472"
-# docs/facts/ios/tokens.toml:19660
-"tokens.behavior.drag_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:19665
-"tokens.behavior.drag_min_delay_ms" = "U472"
-# docs/facts/ios/tokens.toml:19670
-"tokens.behavior.hover_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:19675
-"tokens.behavior.hide_pointer_while_typing" = "U472"
-# docs/facts/ios/tokens.toml:19680
-"tokens.behavior.hide_pointer_delay_ms" = "U472"
-# docs/facts/ios/tokens.toml:19685
-"tokens.behavior.hide_pointer_fade_ms" = "U472"
-# docs/facts/ios/tokens.toml:19690
-"tokens.behavior.single_click_activates" = "U472"
-# docs/facts/ios/tokens.toml:19696
-"tokens.behavior.key_repeat" = "U473"
-# docs/facts/ios/tokens.toml:19707
-"tokens.behavior.touch.delay_ms" = "U474"
-# docs/facts/ios/tokens.toml:19712
-"tokens.behavior.touch.slop_px" = "U474"
-# docs/facts/ios/tokens.toml:19717
-"tokens.behavior.touch.paging_slop_px" = "U474"
-# docs/facts/ios/tokens.toml:19722
-"tokens.behavior.touch.double_tap_time_ms" = "U474"
-# docs/facts/ios/tokens.toml:19727
-"tokens.behavior.touch.double_tap_slop_px" = "U474"
-# docs/facts/ios/tokens.toml:19733
-"tokens.behavior.spring_loading_ms" = "U475"
-# docs/facts/ios/tokens.toml:20123
-"tokens.focus.corners.top_left" = "U477"
-# docs/facts/ios/tokens.toml:20128
-"tokens.focus.corners.top_right" = "U477"
-# docs/facts/ios/tokens.toml:20133
-"tokens.focus.corners.bottom_right" = "U477"
-# docs/facts/ios/tokens.toml:20138
-"tokens.focus.corners.bottom_left" = "U477"
-# docs/facts/ios/tokens.toml:20143
-"tokens.focus.corners.curve" = "U477"
-# docs/facts/ios/tokens.toml:20173
-"tokens.focus.transition" = "U477"
-# docs/facts/ios/tokens.toml:20179
-"tokens.icons.set" = "U478"
-# docs/facts/ios/tokens.toml:20184
-"tokens.icons.theme" = "U478"
-# docs/facts/ios/tokens.toml:20189
-"tokens.icons.theme_fallback" = "U478"
-# docs/facts/ios/tokens.toml:20194
-"tokens.icons.mirroring" = "U478"
-# docs/facts/ios/tokens.toml:20349
-"tokens.icons.sizes.toolbar.fill" = "U479"
-# docs/facts/ios/tokens.toml:20420
-"tokens.icons.sizes.toolbar.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:20490
-"tokens.icons.sizes.toolbar.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:20495
-"tokens.icons.sizes.toolbar.animation" = "U479"
-# docs/facts/ios/tokens.toml:20500
-"tokens.icons.sizes.small.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:20505
-"tokens.icons.sizes.small.fill" = "U479"
 # docs/facts/ios/tokens.toml:20510
-"tokens.icons.sizes.small.axes" = "U479"
+"tokens.text.roles.display_large" = "U467"
 # docs/facts/ios/tokens.toml:20515
-"tokens.icons.sizes.small.symbol_variants" = "U479"
+"tokens.text.roles.display_medium" = "U467"
 # docs/facts/ios/tokens.toml:20520
-"tokens.icons.sizes.small.symbolic_colors" = "U479"
+"tokens.text.roles.display_small" = "U467"
 # docs/facts/ios/tokens.toml:20525
-"tokens.icons.sizes.small.state_effect" = "U479"
+"tokens.text.roles.label" = "U467"
 # docs/facts/ios/tokens.toml:20530
-"tokens.icons.sizes.small.animation" = "U479"
+"tokens.text.roles.monospace" = "U467"
 # docs/facts/ios/tokens.toml:20535
+"tokens.text.roles.numeric" = "U467"
+# docs/facts/ios/tokens.toml:20541
+"tokens.text.fallbacks.families" = "U468"
+# docs/facts/ios/tokens.toml:20546
+"tokens.text.fallbacks.per_language" = "U468"
+# docs/facts/ios/tokens.toml:20551
+"tokens.text.fallbacks.per_family" = "U468"
+# docs/facts/ios/tokens.toml:20572
+"tokens.text.rendering.engine" = "U469"
+# docs/facts/ios/tokens.toml:20592
+"tokens.text.rendering.hinting" = "U469"
+# docs/facts/ios/tokens.toml:20597
+"tokens.text.rendering.subpixel_order" = "U469"
+# docs/facts/ios/tokens.toml:20602
+"tokens.text.rendering.lcd_filter" = "U469"
+# docs/facts/ios/tokens.toml:20607
+"tokens.text.rendering.gamma" = "U469"
+# docs/facts/ios/tokens.toml:20612
+"tokens.text.rendering.contrast" = "U469"
+# docs/facts/ios/tokens.toml:20738
+"tokens.caret.secondary" = "U471"
+# docs/facts/ios/tokens.toml:20760
+"tokens.behavior.double_click_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:20765
+"tokens.behavior.double_click_distance_px" = "U472"
+# docs/facts/ios/tokens.toml:20770
+"tokens.behavior.double_click_height_px" = "U472"
+# docs/facts/ios/tokens.toml:20775
+"tokens.behavior.drag_threshold_px" = "U472"
+# docs/facts/ios/tokens.toml:20780
+"tokens.behavior.drag_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:20785
+"tokens.behavior.drag_min_delay_ms" = "U472"
+# docs/facts/ios/tokens.toml:20790
+"tokens.behavior.hover_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:20795
+"tokens.behavior.hide_pointer_while_typing" = "U472"
+# docs/facts/ios/tokens.toml:20800
+"tokens.behavior.hide_pointer_delay_ms" = "U472"
+# docs/facts/ios/tokens.toml:20805
+"tokens.behavior.hide_pointer_fade_ms" = "U472"
+# docs/facts/ios/tokens.toml:20810
+"tokens.behavior.single_click_activates" = "U472"
+# docs/facts/ios/tokens.toml:20816
+"tokens.behavior.key_repeat" = "U473"
+# docs/facts/ios/tokens.toml:20827
+"tokens.behavior.touch.delay_ms" = "U474"
+# docs/facts/ios/tokens.toml:20832
+"tokens.behavior.touch.slop_px" = "U474"
+# docs/facts/ios/tokens.toml:20837
+"tokens.behavior.touch.paging_slop_px" = "U474"
+# docs/facts/ios/tokens.toml:20842
+"tokens.behavior.touch.double_tap_time_ms" = "U474"
+# docs/facts/ios/tokens.toml:20847
+"tokens.behavior.touch.double_tap_slop_px" = "U474"
+# docs/facts/ios/tokens.toml:20853
+"tokens.behavior.spring_loading_ms" = "U475"
+# docs/facts/ios/tokens.toml:21243
+"tokens.focus.corners.top_left" = "U477"
+# docs/facts/ios/tokens.toml:21248
+"tokens.focus.corners.top_right" = "U477"
+# docs/facts/ios/tokens.toml:21253
+"tokens.focus.corners.bottom_right" = "U477"
+# docs/facts/ios/tokens.toml:21258
+"tokens.focus.corners.bottom_left" = "U477"
+# docs/facts/ios/tokens.toml:21263
+"tokens.focus.corners.curve" = "U477"
+# docs/facts/ios/tokens.toml:21293
+"tokens.focus.transition" = "U477"
+# docs/facts/ios/tokens.toml:21299
+"tokens.icons.set" = "U478"
+# docs/facts/ios/tokens.toml:21304
+"tokens.icons.theme" = "U478"
+# docs/facts/ios/tokens.toml:21309
+"tokens.icons.theme_fallback" = "U478"
+# docs/facts/ios/tokens.toml:21314
+"tokens.icons.mirroring" = "U478"
+# docs/facts/ios/tokens.toml:21469
+"tokens.icons.sizes.toolbar.fill" = "U479"
+# docs/facts/ios/tokens.toml:21540
+"tokens.icons.sizes.toolbar.symbol_variants" = "U479"
+# docs/facts/ios/tokens.toml:21610
+"tokens.icons.sizes.toolbar.state_effect" = "U479"
+# docs/facts/ios/tokens.toml:21615
+"tokens.icons.sizes.toolbar.animation" = "U479"
+# docs/facts/ios/tokens.toml:21620
+"tokens.icons.sizes.small.rendering_mode" = "U479"
+# docs/facts/ios/tokens.toml:21625
+"tokens.icons.sizes.small.fill" = "U479"
+# docs/facts/ios/tokens.toml:21630
+"tokens.icons.sizes.small.axes" = "U479"
+# docs/facts/ios/tokens.toml:21635
+"tokens.icons.sizes.small.symbol_variants" = "U479"
+# docs/facts/ios/tokens.toml:21640
+"tokens.icons.sizes.small.symbolic_colors" = "U479"
+# docs/facts/ios/tokens.toml:21645
+"tokens.icons.sizes.small.state_effect" = "U479"
+# docs/facts/ios/tokens.toml:21650
+"tokens.icons.sizes.small.animation" = "U479"
+# docs/facts/ios/tokens.toml:21655
 "tokens.icons.sizes.large.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:20540
+# docs/facts/ios/tokens.toml:21660
 "tokens.icons.sizes.large.fill" = "U479"
-# docs/facts/ios/tokens.toml:20545
+# docs/facts/ios/tokens.toml:21665
 "tokens.icons.sizes.large.axes" = "U479"
-# docs/facts/ios/tokens.toml:20550
+# docs/facts/ios/tokens.toml:21670
 "tokens.icons.sizes.large.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:20555
+# docs/facts/ios/tokens.toml:21675
 "tokens.icons.sizes.large.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:20560
+# docs/facts/ios/tokens.toml:21680
 "tokens.icons.sizes.large.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:20565
+# docs/facts/ios/tokens.toml:21685
 "tokens.icons.sizes.large.animation" = "U479"
-# docs/facts/ios/tokens.toml:20570
+# docs/facts/ios/tokens.toml:21690
 "tokens.icons.sizes.dialog.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:20575
+# docs/facts/ios/tokens.toml:21695
 "tokens.icons.sizes.dialog.fill" = "U479"
-# docs/facts/ios/tokens.toml:20580
+# docs/facts/ios/tokens.toml:21700
 "tokens.icons.sizes.dialog.axes" = "U479"
-# docs/facts/ios/tokens.toml:20585
+# docs/facts/ios/tokens.toml:21705
 "tokens.icons.sizes.dialog.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:20590
+# docs/facts/ios/tokens.toml:21710
 "tokens.icons.sizes.dialog.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:20595
+# docs/facts/ios/tokens.toml:21715
 "tokens.icons.sizes.dialog.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:20600
+# docs/facts/ios/tokens.toml:21720
 "tokens.icons.sizes.dialog.animation" = "U479"
-# docs/facts/ios/tokens.toml:20605
+# docs/facts/ios/tokens.toml:21725
 "tokens.icons.sizes.panel.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:20610
+# docs/facts/ios/tokens.toml:21730
 "tokens.icons.sizes.panel.fill" = "U479"
-# docs/facts/ios/tokens.toml:20615
+# docs/facts/ios/tokens.toml:21735
 "tokens.icons.sizes.panel.axes" = "U479"
-# docs/facts/ios/tokens.toml:20620
+# docs/facts/ios/tokens.toml:21740
 "tokens.icons.sizes.panel.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:20625
+# docs/facts/ios/tokens.toml:21745
 "tokens.icons.sizes.panel.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:20630
+# docs/facts/ios/tokens.toml:21750
 "tokens.icons.sizes.panel.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:20635
+# docs/facts/ios/tokens.toml:21755
 "tokens.icons.sizes.panel.animation" = "U479"
-# docs/facts/ios/tokens.toml:20643
+# docs/facts/ios/tokens.toml:21763
 "tokens.icons.sizes.keyed" = "U650"
-# docs/facts/ios/tokens.toml:20649
+# docs/facts/ios/tokens.toml:21769
 "tokens.elevation" = "U480"
-# docs/facts/ios/tokens.toml:20654
+# docs/facts/ios/tokens.toml:21774
 "tokens.size_classes" = "U480"
-# docs/facts/ios/tokens.toml:20697
+# docs/facts/ios/tokens.toml:21817
 "tokens.motion.timings.navigation" = "U481"
-# docs/facts/ios/tokens.toml:20703
+# docs/facts/ios/tokens.toml:21823
 "tokens.params.opacity.disabled" = "U486"
 
 [inputs.accent]
@@ -2141,1049 +2071,1119 @@ keyed.large_title_tight.font.axes = { opsz = "follows_size" }
 keyed.large_title_tight.font.features = {}
 # docs/facts/ios/tokens.toml:5701
 keyed.large_title_tight.line_height_px = 39
-# docs/facts/ios/tokens.toml:5763
+# docs/facts/ios/tokens.toml:5759
+keyed.large_title_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:5795
 keyed.large_title_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:5792
+# docs/facts/ios/tokens.toml:5824
 keyed.large_title_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:5821
+# docs/facts/ios/tokens.toml:5853
 keyed.large_title_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:5852
+# docs/facts/ios/tokens.toml:5884
 keyed.large_title_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:5881
+# docs/facts/ios/tokens.toml:5913
 keyed.large_title_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:5910
+# docs/facts/ios/tokens.toml:5942
 keyed.large_title_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:5939
+# docs/facts/ios/tokens.toml:5971
 keyed.large_title_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:5968
+# docs/facts/ios/tokens.toml:6000
 keyed.large_title_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:5997
+# docs/facts/ios/tokens.toml:6029
 keyed.large_title_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:6012
+# docs/facts/ios/tokens.toml:6044
 keyed.large_title_loose.font.size_px = 34
-# docs/facts/ios/tokens.toml:6027
+# docs/facts/ios/tokens.toml:6059
 keyed.large_title_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:6042
+# docs/facts/ios/tokens.toml:6074
 keyed.large_title_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:6057
+# docs/facts/ios/tokens.toml:6089
 keyed.large_title_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:6072
+# docs/facts/ios/tokens.toml:6104
 keyed.large_title_loose.font.features = {}
-# docs/facts/ios/tokens.toml:6092
+# docs/facts/ios/tokens.toml:6124
 keyed.large_title_loose.line_height_px = 43
-# docs/facts/ios/tokens.toml:6154
+# docs/facts/ios/tokens.toml:6182
+keyed.large_title_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:6218
 keyed.large_title_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:6183
+# docs/facts/ios/tokens.toml:6247
 keyed.large_title_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:6212
+# docs/facts/ios/tokens.toml:6276
 keyed.large_title_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:6243
+# docs/facts/ios/tokens.toml:6307
 keyed.large_title_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:6272
+# docs/facts/ios/tokens.toml:6336
 keyed.large_title_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:6301
+# docs/facts/ios/tokens.toml:6365
 keyed.large_title_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:6330
+# docs/facts/ios/tokens.toml:6394
 keyed.large_title_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:6359
+# docs/facts/ios/tokens.toml:6423
 keyed.large_title_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:6388
+# docs/facts/ios/tokens.toml:6452
 keyed.title_1_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:6405
+# docs/facts/ios/tokens.toml:6469
 keyed.title_1_tight.font.size_px = 28
-# docs/facts/ios/tokens.toml:6420
+# docs/facts/ios/tokens.toml:6484
 keyed.title_1_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:6435
+# docs/facts/ios/tokens.toml:6499
 keyed.title_1_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:6450
+# docs/facts/ios/tokens.toml:6514
 keyed.title_1_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:6465
+# docs/facts/ios/tokens.toml:6529
 keyed.title_1_tight.font.features = {}
-# docs/facts/ios/tokens.toml:6485
+# docs/facts/ios/tokens.toml:6549
 keyed.title_1_tight.line_height_px = 32
-# docs/facts/ios/tokens.toml:6547
+# docs/facts/ios/tokens.toml:6607
+keyed.title_1_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:6643
 keyed.title_1_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:6576
+# docs/facts/ios/tokens.toml:6672
 keyed.title_1_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:6605
+# docs/facts/ios/tokens.toml:6701
 keyed.title_1_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:6636
+# docs/facts/ios/tokens.toml:6732
 keyed.title_1_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:6665
+# docs/facts/ios/tokens.toml:6761
 keyed.title_1_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:6694
+# docs/facts/ios/tokens.toml:6790
 keyed.title_1_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:6723
+# docs/facts/ios/tokens.toml:6819
 keyed.title_1_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:6752
+# docs/facts/ios/tokens.toml:6848
 keyed.title_1_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:6781
+# docs/facts/ios/tokens.toml:6877
 keyed.title_1_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:6796
+# docs/facts/ios/tokens.toml:6892
 keyed.title_1_loose.font.size_px = 28
-# docs/facts/ios/tokens.toml:6811
+# docs/facts/ios/tokens.toml:6907
 keyed.title_1_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:6826
+# docs/facts/ios/tokens.toml:6922
 keyed.title_1_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:6841
+# docs/facts/ios/tokens.toml:6937
 keyed.title_1_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:6856
+# docs/facts/ios/tokens.toml:6952
 keyed.title_1_loose.font.features = {}
-# docs/facts/ios/tokens.toml:6876
+# docs/facts/ios/tokens.toml:6972
 keyed.title_1_loose.line_height_px = 36
-# docs/facts/ios/tokens.toml:6938
+# docs/facts/ios/tokens.toml:7030
+keyed.title_1_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:7066
 keyed.title_1_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:6967
+# docs/facts/ios/tokens.toml:7095
 keyed.title_1_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:6996
+# docs/facts/ios/tokens.toml:7124
 keyed.title_1_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:7027
+# docs/facts/ios/tokens.toml:7155
 keyed.title_1_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:7056
+# docs/facts/ios/tokens.toml:7184
 keyed.title_1_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:7085
+# docs/facts/ios/tokens.toml:7213
 keyed.title_1_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:7114
+# docs/facts/ios/tokens.toml:7242
 keyed.title_1_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:7143
+# docs/facts/ios/tokens.toml:7271
 keyed.title_1_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:7172
+# docs/facts/ios/tokens.toml:7300
 keyed.title_2_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:7189
+# docs/facts/ios/tokens.toml:7317
 keyed.title_2_tight.font.size_px = 22
-# docs/facts/ios/tokens.toml:7204
+# docs/facts/ios/tokens.toml:7332
 keyed.title_2_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:7219
+# docs/facts/ios/tokens.toml:7347
 keyed.title_2_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:7234
+# docs/facts/ios/tokens.toml:7362
 keyed.title_2_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:7249
+# docs/facts/ios/tokens.toml:7377
 keyed.title_2_tight.font.features = {}
-# docs/facts/ios/tokens.toml:7269
+# docs/facts/ios/tokens.toml:7397
 keyed.title_2_tight.line_height_px = 26
-# docs/facts/ios/tokens.toml:7331
+# docs/facts/ios/tokens.toml:7455
+keyed.title_2_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:7491
 keyed.title_2_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:7360
+# docs/facts/ios/tokens.toml:7520
 keyed.title_2_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:7389
+# docs/facts/ios/tokens.toml:7549
 keyed.title_2_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:7420
-keyed.title_2_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:7449
-keyed.title_2_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:7478
-keyed.title_2_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:7507
-keyed.title_2_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:7536
-keyed.title_2_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:7565
-keyed.title_2_loose.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:7580
+keyed.title_2_tight.case = "mixed"
+# docs/facts/ios/tokens.toml:7609
+keyed.title_2_tight.elision = "absent"
+# docs/facts/ios/tokens.toml:7638
+keyed.title_2_tight.wrap = "absent"
+# docs/facts/ios/tokens.toml:7667
+keyed.title_2_tight.max_lines = "absent"
+# docs/facts/ios/tokens.toml:7696
+keyed.title_2_tight.fill = "absent"
+# docs/facts/ios/tokens.toml:7725
+keyed.title_2_loose.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:7740
 keyed.title_2_loose.font.size_px = 22
-# docs/facts/ios/tokens.toml:7595
+# docs/facts/ios/tokens.toml:7755
 keyed.title_2_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:7610
+# docs/facts/ios/tokens.toml:7770
 keyed.title_2_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:7625
+# docs/facts/ios/tokens.toml:7785
 keyed.title_2_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:7640
+# docs/facts/ios/tokens.toml:7800
 keyed.title_2_loose.font.features = {}
-# docs/facts/ios/tokens.toml:7660
+# docs/facts/ios/tokens.toml:7820
 keyed.title_2_loose.line_height_px = 30
-# docs/facts/ios/tokens.toml:7722
+# docs/facts/ios/tokens.toml:7878
+keyed.title_2_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:7914
 keyed.title_2_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:7751
+# docs/facts/ios/tokens.toml:7943
 keyed.title_2_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:7780
+# docs/facts/ios/tokens.toml:7972
 keyed.title_2_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:7811
-keyed.title_2_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:7840
-keyed.title_2_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:7869
-keyed.title_2_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:7898
-keyed.title_2_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:7927
-keyed.title_2_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:7956
-keyed.title_3_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:7973
-keyed.title_3_tight.font.size_px = 20
-# docs/facts/ios/tokens.toml:7988
-keyed.title_3_tight.font.weight = 400
 # docs/facts/ios/tokens.toml:8003
+keyed.title_2_loose.case = "mixed"
+# docs/facts/ios/tokens.toml:8032
+keyed.title_2_loose.elision = "absent"
+# docs/facts/ios/tokens.toml:8061
+keyed.title_2_loose.wrap = "absent"
+# docs/facts/ios/tokens.toml:8090
+keyed.title_2_loose.max_lines = "absent"
+# docs/facts/ios/tokens.toml:8119
+keyed.title_2_loose.fill = "absent"
+# docs/facts/ios/tokens.toml:8148
+keyed.title_3_tight.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:8165
+keyed.title_3_tight.font.size_px = 20
+# docs/facts/ios/tokens.toml:8180
+keyed.title_3_tight.font.weight = 400
+# docs/facts/ios/tokens.toml:8195
 keyed.title_3_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:8018
+# docs/facts/ios/tokens.toml:8210
 keyed.title_3_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:8033
+# docs/facts/ios/tokens.toml:8225
 keyed.title_3_tight.font.features = {}
-# docs/facts/ios/tokens.toml:8053
+# docs/facts/ios/tokens.toml:8245
 keyed.title_3_tight.line_height_px = 23
-# docs/facts/ios/tokens.toml:8115
+# docs/facts/ios/tokens.toml:8303
+keyed.title_3_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:8339
 keyed.title_3_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:8144
+# docs/facts/ios/tokens.toml:8368
 keyed.title_3_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:8173
+# docs/facts/ios/tokens.toml:8397
 keyed.title_3_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:8204
+# docs/facts/ios/tokens.toml:8428
 keyed.title_3_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:8233
+# docs/facts/ios/tokens.toml:8457
 keyed.title_3_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:8262
+# docs/facts/ios/tokens.toml:8486
 keyed.title_3_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:8291
+# docs/facts/ios/tokens.toml:8515
 keyed.title_3_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:8320
+# docs/facts/ios/tokens.toml:8544
 keyed.title_3_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:8349
+# docs/facts/ios/tokens.toml:8573
 keyed.title_3_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:8364
+# docs/facts/ios/tokens.toml:8588
 keyed.title_3_loose.font.size_px = 20
-# docs/facts/ios/tokens.toml:8379
+# docs/facts/ios/tokens.toml:8603
 keyed.title_3_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:8394
+# docs/facts/ios/tokens.toml:8618
 keyed.title_3_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:8409
+# docs/facts/ios/tokens.toml:8633
 keyed.title_3_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:8424
+# docs/facts/ios/tokens.toml:8648
 keyed.title_3_loose.font.features = {}
-# docs/facts/ios/tokens.toml:8444
+# docs/facts/ios/tokens.toml:8668
 keyed.title_3_loose.line_height_px = 27
-# docs/facts/ios/tokens.toml:8506
+# docs/facts/ios/tokens.toml:8726
+keyed.title_3_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:8762
 keyed.title_3_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:8535
+# docs/facts/ios/tokens.toml:8791
 keyed.title_3_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:8564
+# docs/facts/ios/tokens.toml:8820
 keyed.title_3_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:8595
+# docs/facts/ios/tokens.toml:8851
 keyed.title_3_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:8624
+# docs/facts/ios/tokens.toml:8880
 keyed.title_3_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:8653
+# docs/facts/ios/tokens.toml:8909
 keyed.title_3_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:8682
+# docs/facts/ios/tokens.toml:8938
 keyed.title_3_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:8711
+# docs/facts/ios/tokens.toml:8967
 keyed.title_3_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:8740
+# docs/facts/ios/tokens.toml:8996
 keyed.headline_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:8757
+# docs/facts/ios/tokens.toml:9013
 keyed.headline_tight.font.size_px = 17
-# docs/facts/ios/tokens.toml:8772
+# docs/facts/ios/tokens.toml:9028
 keyed.headline_tight.font.weight = 590
-# docs/facts/ios/tokens.toml:8787
+# docs/facts/ios/tokens.toml:9043
 keyed.headline_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:8802
+# docs/facts/ios/tokens.toml:9058
 keyed.headline_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:8817
+# docs/facts/ios/tokens.toml:9073
 keyed.headline_tight.font.features = {}
-# docs/facts/ios/tokens.toml:8837
+# docs/facts/ios/tokens.toml:9093
 keyed.headline_tight.line_height_px = 20
-# docs/facts/ios/tokens.toml:8899
+# docs/facts/ios/tokens.toml:9151
+keyed.headline_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:9187
 keyed.headline_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:8928
+# docs/facts/ios/tokens.toml:9216
 keyed.headline_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:8957
+# docs/facts/ios/tokens.toml:9245
 keyed.headline_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:8988
+# docs/facts/ios/tokens.toml:9276
 keyed.headline_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:9017
+# docs/facts/ios/tokens.toml:9305
 keyed.headline_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:9046
+# docs/facts/ios/tokens.toml:9334
 keyed.headline_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:9075
+# docs/facts/ios/tokens.toml:9363
 keyed.headline_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:9104
+# docs/facts/ios/tokens.toml:9392
 keyed.headline_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:9133
+# docs/facts/ios/tokens.toml:9421
 keyed.headline_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:9148
+# docs/facts/ios/tokens.toml:9436
 keyed.headline_loose.font.size_px = 17
-# docs/facts/ios/tokens.toml:9163
+# docs/facts/ios/tokens.toml:9451
 keyed.headline_loose.font.weight = 590
-# docs/facts/ios/tokens.toml:9178
-keyed.headline_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:9193
-keyed.headline_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:9208
-keyed.headline_loose.font.features = {}
-# docs/facts/ios/tokens.toml:9228
-keyed.headline_loose.line_height_px = 24
-# docs/facts/ios/tokens.toml:9290
-keyed.headline_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:9319
-keyed.headline_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:9348
-keyed.headline_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:9379
-keyed.headline_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:9408
-keyed.headline_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:9437
-keyed.headline_loose.wrap = "absent"
 # docs/facts/ios/tokens.toml:9466
+keyed.headline_loose.font.style = "normal"
+# docs/facts/ios/tokens.toml:9481
+keyed.headline_loose.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:9496
+keyed.headline_loose.font.features = {}
+# docs/facts/ios/tokens.toml:9516
+keyed.headline_loose.line_height_px = 24
+# docs/facts/ios/tokens.toml:9574
+keyed.headline_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:9610
+keyed.headline_loose.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:9639
+keyed.headline_loose.decoration = "absent"
+# docs/facts/ios/tokens.toml:9668
+keyed.headline_loose.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:9699
+keyed.headline_loose.case = "mixed"
+# docs/facts/ios/tokens.toml:9728
+keyed.headline_loose.elision = "absent"
+# docs/facts/ios/tokens.toml:9757
+keyed.headline_loose.wrap = "absent"
+# docs/facts/ios/tokens.toml:9786
 keyed.headline_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:9495
+# docs/facts/ios/tokens.toml:9815
 keyed.headline_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:9524
+# docs/facts/ios/tokens.toml:9844
 keyed.subheadline_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:9541
+# docs/facts/ios/tokens.toml:9861
 keyed.subheadline_tight.font.size_px = 15
-# docs/facts/ios/tokens.toml:9556
+# docs/facts/ios/tokens.toml:9876
 keyed.subheadline_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:9571
+# docs/facts/ios/tokens.toml:9891
 keyed.subheadline_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:9586
+# docs/facts/ios/tokens.toml:9906
 keyed.subheadline_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:9601
+# docs/facts/ios/tokens.toml:9921
 keyed.subheadline_tight.font.features = {}
-# docs/facts/ios/tokens.toml:9621
+# docs/facts/ios/tokens.toml:9941
 keyed.subheadline_tight.line_height_px = 18
-# docs/facts/ios/tokens.toml:9683
+# docs/facts/ios/tokens.toml:9999
+keyed.subheadline_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:10035
 keyed.subheadline_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:9712
+# docs/facts/ios/tokens.toml:10064
 keyed.subheadline_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:9741
+# docs/facts/ios/tokens.toml:10093
 keyed.subheadline_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:9772
+# docs/facts/ios/tokens.toml:10124
 keyed.subheadline_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:9801
+# docs/facts/ios/tokens.toml:10153
 keyed.subheadline_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:9830
+# docs/facts/ios/tokens.toml:10182
 keyed.subheadline_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:9859
+# docs/facts/ios/tokens.toml:10211
 keyed.subheadline_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:9888
+# docs/facts/ios/tokens.toml:10240
 keyed.subheadline_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:9917
+# docs/facts/ios/tokens.toml:10269
 keyed.subheadline_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:9932
+# docs/facts/ios/tokens.toml:10284
 keyed.subheadline_loose.font.size_px = 15
-# docs/facts/ios/tokens.toml:9947
+# docs/facts/ios/tokens.toml:10299
 keyed.subheadline_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:9962
+# docs/facts/ios/tokens.toml:10314
 keyed.subheadline_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:9977
+# docs/facts/ios/tokens.toml:10329
 keyed.subheadline_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:9992
+# docs/facts/ios/tokens.toml:10344
 keyed.subheadline_loose.font.features = {}
-# docs/facts/ios/tokens.toml:10012
+# docs/facts/ios/tokens.toml:10364
 keyed.subheadline_loose.line_height_px = 20
-# docs/facts/ios/tokens.toml:10074
+# docs/facts/ios/tokens.toml:10422
+keyed.subheadline_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:10458
 keyed.subheadline_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:10103
+# docs/facts/ios/tokens.toml:10487
 keyed.subheadline_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:10132
+# docs/facts/ios/tokens.toml:10516
 keyed.subheadline_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:10163
+# docs/facts/ios/tokens.toml:10547
 keyed.subheadline_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:10192
+# docs/facts/ios/tokens.toml:10576
 keyed.subheadline_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:10221
+# docs/facts/ios/tokens.toml:10605
 keyed.subheadline_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:10250
+# docs/facts/ios/tokens.toml:10634
 keyed.subheadline_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:10279
+# docs/facts/ios/tokens.toml:10663
 keyed.subheadline_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:10308
+# docs/facts/ios/tokens.toml:10692
 keyed.body_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:10325
+# docs/facts/ios/tokens.toml:10709
 keyed.body_tight.font.size_px = 17
-# docs/facts/ios/tokens.toml:10340
+# docs/facts/ios/tokens.toml:10724
 keyed.body_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:10355
+# docs/facts/ios/tokens.toml:10739
 keyed.body_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:10370
+# docs/facts/ios/tokens.toml:10754
 keyed.body_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:10385
+# docs/facts/ios/tokens.toml:10769
 keyed.body_tight.font.features = {}
-# docs/facts/ios/tokens.toml:10405
+# docs/facts/ios/tokens.toml:10789
 keyed.body_tight.line_height_px = 20
-# docs/facts/ios/tokens.toml:10467
+# docs/facts/ios/tokens.toml:10847
+keyed.body_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:10883
 keyed.body_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:10496
+# docs/facts/ios/tokens.toml:10912
 keyed.body_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:10525
+# docs/facts/ios/tokens.toml:10941
 keyed.body_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:10556
+# docs/facts/ios/tokens.toml:10972
 keyed.body_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:10585
+# docs/facts/ios/tokens.toml:11001
 keyed.body_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:10614
+# docs/facts/ios/tokens.toml:11030
 keyed.body_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:10643
+# docs/facts/ios/tokens.toml:11059
 keyed.body_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:10672
+# docs/facts/ios/tokens.toml:11088
 keyed.body_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:10701
+# docs/facts/ios/tokens.toml:11117
 keyed.body_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:10716
+# docs/facts/ios/tokens.toml:11132
 keyed.body_loose.font.size_px = 17
-# docs/facts/ios/tokens.toml:10731
+# docs/facts/ios/tokens.toml:11147
 keyed.body_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:10746
+# docs/facts/ios/tokens.toml:11162
 keyed.body_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:10761
+# docs/facts/ios/tokens.toml:11177
 keyed.body_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:10776
+# docs/facts/ios/tokens.toml:11192
 keyed.body_loose.font.features = {}
-# docs/facts/ios/tokens.toml:10796
+# docs/facts/ios/tokens.toml:11212
 keyed.body_loose.line_height_px = 24
-# docs/facts/ios/tokens.toml:10858
+# docs/facts/ios/tokens.toml:11270
+keyed.body_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:11306
 keyed.body_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:10887
+# docs/facts/ios/tokens.toml:11335
 keyed.body_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:10916
+# docs/facts/ios/tokens.toml:11364
 keyed.body_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:10947
+# docs/facts/ios/tokens.toml:11395
 keyed.body_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:10976
+# docs/facts/ios/tokens.toml:11424
 keyed.body_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:11005
+# docs/facts/ios/tokens.toml:11453
 keyed.body_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:11034
+# docs/facts/ios/tokens.toml:11482
 keyed.body_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:11063
+# docs/facts/ios/tokens.toml:11511
 keyed.body_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:11092
+# docs/facts/ios/tokens.toml:11540
 keyed.callout_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:11109
+# docs/facts/ios/tokens.toml:11557
 keyed.callout_tight.font.size_px = 16
-# docs/facts/ios/tokens.toml:11124
+# docs/facts/ios/tokens.toml:11572
 keyed.callout_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:11139
+# docs/facts/ios/tokens.toml:11587
 keyed.callout_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:11154
+# docs/facts/ios/tokens.toml:11602
 keyed.callout_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:11169
+# docs/facts/ios/tokens.toml:11617
 keyed.callout_tight.font.features = {}
-# docs/facts/ios/tokens.toml:11189
+# docs/facts/ios/tokens.toml:11637
 keyed.callout_tight.line_height_px = 19
-# docs/facts/ios/tokens.toml:11251
-keyed.callout_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:11280
-keyed.callout_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:11309
-keyed.callout_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:11340
-keyed.callout_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:11369
-keyed.callout_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:11398
-keyed.callout_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:11427
-keyed.callout_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:11456
-keyed.callout_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:11485
-keyed.callout_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:11500
-keyed.callout_loose.font.size_px = 16
-# docs/facts/ios/tokens.toml:11515
-keyed.callout_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:11530
-keyed.callout_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:11545
-keyed.callout_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:11560
-keyed.callout_loose.font.features = {}
-# docs/facts/ios/tokens.toml:11580
-keyed.callout_loose.line_height_px = 23
-# docs/facts/ios/tokens.toml:11642
-keyed.callout_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:11671
-keyed.callout_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:11700
-keyed.callout_loose.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:11695
+keyed.callout_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
 # docs/facts/ios/tokens.toml:11731
-keyed.callout_loose.case = "mixed"
+keyed.callout_tight.word_spacing_px = 0
 # docs/facts/ios/tokens.toml:11760
-keyed.callout_loose.elision = "absent"
+keyed.callout_tight.decoration = "absent"
 # docs/facts/ios/tokens.toml:11789
+keyed.callout_tight.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:11820
+keyed.callout_tight.case = "mixed"
+# docs/facts/ios/tokens.toml:11849
+keyed.callout_tight.elision = "absent"
+# docs/facts/ios/tokens.toml:11878
+keyed.callout_tight.wrap = "absent"
+# docs/facts/ios/tokens.toml:11907
+keyed.callout_tight.max_lines = "absent"
+# docs/facts/ios/tokens.toml:11936
+keyed.callout_tight.fill = "absent"
+# docs/facts/ios/tokens.toml:11965
+keyed.callout_loose.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:11980
+keyed.callout_loose.font.size_px = 16
+# docs/facts/ios/tokens.toml:11995
+keyed.callout_loose.font.weight = 400
+# docs/facts/ios/tokens.toml:12010
+keyed.callout_loose.font.style = "normal"
+# docs/facts/ios/tokens.toml:12025
+keyed.callout_loose.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:12040
+keyed.callout_loose.font.features = {}
+# docs/facts/ios/tokens.toml:12060
+keyed.callout_loose.line_height_px = 23
+# docs/facts/ios/tokens.toml:12118
+keyed.callout_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:12154
+keyed.callout_loose.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:12183
+keyed.callout_loose.decoration = "absent"
+# docs/facts/ios/tokens.toml:12212
+keyed.callout_loose.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:12243
+keyed.callout_loose.case = "mixed"
+# docs/facts/ios/tokens.toml:12272
+keyed.callout_loose.elision = "absent"
+# docs/facts/ios/tokens.toml:12301
 keyed.callout_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:11818
+# docs/facts/ios/tokens.toml:12330
 keyed.callout_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:11847
+# docs/facts/ios/tokens.toml:12359
 keyed.callout_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:11876
+# docs/facts/ios/tokens.toml:12388
 keyed.footnote_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:11893
+# docs/facts/ios/tokens.toml:12405
 keyed.footnote_tight.font.size_px = 13
-# docs/facts/ios/tokens.toml:11908
+# docs/facts/ios/tokens.toml:12420
 keyed.footnote_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:11923
+# docs/facts/ios/tokens.toml:12435
 keyed.footnote_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:11938
+# docs/facts/ios/tokens.toml:12450
 keyed.footnote_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:11953
+# docs/facts/ios/tokens.toml:12465
 keyed.footnote_tight.font.features = {}
-# docs/facts/ios/tokens.toml:11973
+# docs/facts/ios/tokens.toml:12485
 keyed.footnote_tight.line_height_px = 16
-# docs/facts/ios/tokens.toml:12035
+# docs/facts/ios/tokens.toml:12543
+keyed.footnote_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:12579
 keyed.footnote_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:12064
+# docs/facts/ios/tokens.toml:12608
 keyed.footnote_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:12093
+# docs/facts/ios/tokens.toml:12637
 keyed.footnote_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:12124
+# docs/facts/ios/tokens.toml:12668
 keyed.footnote_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:12153
+# docs/facts/ios/tokens.toml:12697
 keyed.footnote_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:12182
+# docs/facts/ios/tokens.toml:12726
 keyed.footnote_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:12211
+# docs/facts/ios/tokens.toml:12755
 keyed.footnote_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:12240
+# docs/facts/ios/tokens.toml:12784
 keyed.footnote_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:12269
+# docs/facts/ios/tokens.toml:12813
 keyed.footnote_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:12284
+# docs/facts/ios/tokens.toml:12828
 keyed.footnote_loose.font.size_px = 13
-# docs/facts/ios/tokens.toml:12299
+# docs/facts/ios/tokens.toml:12843
 keyed.footnote_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:12314
+# docs/facts/ios/tokens.toml:12858
 keyed.footnote_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:12329
+# docs/facts/ios/tokens.toml:12873
 keyed.footnote_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:12344
+# docs/facts/ios/tokens.toml:12888
 keyed.footnote_loose.font.features = {}
-# docs/facts/ios/tokens.toml:12364
-keyed.footnote_loose.line_height_px = 18
-# docs/facts/ios/tokens.toml:12426
-keyed.footnote_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:12455
-keyed.footnote_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:12484
-keyed.footnote_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:12515
-keyed.footnote_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:12544
-keyed.footnote_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:12573
-keyed.footnote_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:12602
-keyed.footnote_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:12631
-keyed.footnote_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:12660
-keyed.caption_1_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:12677
-keyed.caption_1_tight.font.size_px = 12
-# docs/facts/ios/tokens.toml:12692
-keyed.caption_1_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:12707
-keyed.caption_1_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:12722
-keyed.caption_1_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:12737
-keyed.caption_1_tight.font.features = {}
-# docs/facts/ios/tokens.toml:12757
-keyed.caption_1_tight.line_height_px = 14
-# docs/facts/ios/tokens.toml:12819
-keyed.caption_1_tight.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:12848
-keyed.caption_1_tight.decoration = "absent"
-# docs/facts/ios/tokens.toml:12877
-keyed.caption_1_tight.mnemonic_decoration = "absent"
 # docs/facts/ios/tokens.toml:12908
-keyed.caption_1_tight.case = "mixed"
-# docs/facts/ios/tokens.toml:12937
-keyed.caption_1_tight.elision = "absent"
+keyed.footnote_loose.line_height_px = 18
 # docs/facts/ios/tokens.toml:12966
-keyed.caption_1_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:12995
-keyed.caption_1_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:13024
-keyed.caption_1_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:13053
-keyed.caption_1_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:13068
-keyed.caption_1_loose.font.size_px = 12
-# docs/facts/ios/tokens.toml:13083
-keyed.caption_1_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:13098
-keyed.caption_1_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:13113
-keyed.caption_1_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:13128
-keyed.caption_1_loose.font.features = {}
-# docs/facts/ios/tokens.toml:13148
-keyed.caption_1_loose.line_height_px = 18
-# docs/facts/ios/tokens.toml:13210
-keyed.caption_1_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:13239
-keyed.caption_1_loose.decoration = "absent"
+keyed.footnote_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:13002
+keyed.footnote_loose.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:13031
+keyed.footnote_loose.decoration = "absent"
+# docs/facts/ios/tokens.toml:13060
+keyed.footnote_loose.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:13091
+keyed.footnote_loose.case = "mixed"
+# docs/facts/ios/tokens.toml:13120
+keyed.footnote_loose.elision = "absent"
+# docs/facts/ios/tokens.toml:13149
+keyed.footnote_loose.wrap = "absent"
+# docs/facts/ios/tokens.toml:13178
+keyed.footnote_loose.max_lines = "absent"
+# docs/facts/ios/tokens.toml:13207
+keyed.footnote_loose.fill = "absent"
+# docs/facts/ios/tokens.toml:13236
+keyed.caption_1_tight.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:13253
+keyed.caption_1_tight.font.size_px = 12
 # docs/facts/ios/tokens.toml:13268
-keyed.caption_1_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:13299
-keyed.caption_1_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:13328
-keyed.caption_1_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:13357
-keyed.caption_1_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:13386
-keyed.caption_1_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:13415
-keyed.caption_1_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:13444
-keyed.caption_2_tight.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:13461
-keyed.caption_2_tight.font.size_px = 11
-# docs/facts/ios/tokens.toml:13476
-keyed.caption_2_tight.font.weight = 400
-# docs/facts/ios/tokens.toml:13491
-keyed.caption_2_tight.font.style = "normal"
-# docs/facts/ios/tokens.toml:13506
-keyed.caption_2_tight.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:13521
-keyed.caption_2_tight.font.features = {}
-# docs/facts/ios/tokens.toml:13541
-keyed.caption_2_tight.line_height_px = 11
+keyed.caption_1_tight.font.weight = 400
+# docs/facts/ios/tokens.toml:13283
+keyed.caption_1_tight.font.style = "normal"
+# docs/facts/ios/tokens.toml:13298
+keyed.caption_1_tight.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:13313
+keyed.caption_1_tight.font.features = {}
+# docs/facts/ios/tokens.toml:13333
+keyed.caption_1_tight.line_height_px = 14
+# docs/facts/ios/tokens.toml:13391
+keyed.caption_1_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:13427
+keyed.caption_1_tight.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:13456
+keyed.caption_1_tight.decoration = "absent"
+# docs/facts/ios/tokens.toml:13485
+keyed.caption_1_tight.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:13516
+keyed.caption_1_tight.case = "mixed"
+# docs/facts/ios/tokens.toml:13545
+keyed.caption_1_tight.elision = "absent"
+# docs/facts/ios/tokens.toml:13574
+keyed.caption_1_tight.wrap = "absent"
 # docs/facts/ios/tokens.toml:13603
-keyed.caption_2_tight.word_spacing_px = 0
+keyed.caption_1_tight.max_lines = "absent"
 # docs/facts/ios/tokens.toml:13632
-keyed.caption_2_tight.decoration = "absent"
+keyed.caption_1_tight.fill = "absent"
 # docs/facts/ios/tokens.toml:13661
-keyed.caption_2_tight.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:13692
-keyed.caption_2_tight.case = "mixed"
+keyed.caption_1_loose.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:13676
+keyed.caption_1_loose.font.size_px = 12
+# docs/facts/ios/tokens.toml:13691
+keyed.caption_1_loose.font.weight = 400
+# docs/facts/ios/tokens.toml:13706
+keyed.caption_1_loose.font.style = "normal"
 # docs/facts/ios/tokens.toml:13721
+keyed.caption_1_loose.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:13736
+keyed.caption_1_loose.font.features = {}
+# docs/facts/ios/tokens.toml:13756
+keyed.caption_1_loose.line_height_px = 18
+# docs/facts/ios/tokens.toml:13814
+keyed.caption_1_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:13850
+keyed.caption_1_loose.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:13879
+keyed.caption_1_loose.decoration = "absent"
+# docs/facts/ios/tokens.toml:13908
+keyed.caption_1_loose.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:13939
+keyed.caption_1_loose.case = "mixed"
+# docs/facts/ios/tokens.toml:13968
+keyed.caption_1_loose.elision = "absent"
+# docs/facts/ios/tokens.toml:13997
+keyed.caption_1_loose.wrap = "absent"
+# docs/facts/ios/tokens.toml:14026
+keyed.caption_1_loose.max_lines = "absent"
+# docs/facts/ios/tokens.toml:14055
+keyed.caption_1_loose.fill = "absent"
+# docs/facts/ios/tokens.toml:14084
+keyed.caption_2_tight.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:14101
+keyed.caption_2_tight.font.size_px = 11
+# docs/facts/ios/tokens.toml:14116
+keyed.caption_2_tight.font.weight = 400
+# docs/facts/ios/tokens.toml:14131
+keyed.caption_2_tight.font.style = "normal"
+# docs/facts/ios/tokens.toml:14146
+keyed.caption_2_tight.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:14161
+keyed.caption_2_tight.font.features = {}
+# docs/facts/ios/tokens.toml:14181
+keyed.caption_2_tight.line_height_px = 11
+# docs/facts/ios/tokens.toml:14239
+keyed.caption_2_tight.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:14275
+keyed.caption_2_tight.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:14304
+keyed.caption_2_tight.decoration = "absent"
+# docs/facts/ios/tokens.toml:14333
+keyed.caption_2_tight.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:14364
+keyed.caption_2_tight.case = "mixed"
+# docs/facts/ios/tokens.toml:14393
 keyed.caption_2_tight.elision = "absent"
-# docs/facts/ios/tokens.toml:13750
+# docs/facts/ios/tokens.toml:14422
 keyed.caption_2_tight.wrap = "absent"
-# docs/facts/ios/tokens.toml:13779
+# docs/facts/ios/tokens.toml:14451
 keyed.caption_2_tight.max_lines = "absent"
-# docs/facts/ios/tokens.toml:13808
+# docs/facts/ios/tokens.toml:14480
 keyed.caption_2_tight.fill = "absent"
-# docs/facts/ios/tokens.toml:13837
+# docs/facts/ios/tokens.toml:14509
 keyed.caption_2_loose.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:13852
+# docs/facts/ios/tokens.toml:14524
 keyed.caption_2_loose.font.size_px = 11
-# docs/facts/ios/tokens.toml:13867
+# docs/facts/ios/tokens.toml:14539
 keyed.caption_2_loose.font.weight = 400
-# docs/facts/ios/tokens.toml:13882
+# docs/facts/ios/tokens.toml:14554
 keyed.caption_2_loose.font.style = "normal"
-# docs/facts/ios/tokens.toml:13897
+# docs/facts/ios/tokens.toml:14569
 keyed.caption_2_loose.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:13912
+# docs/facts/ios/tokens.toml:14584
 keyed.caption_2_loose.font.features = {}
-# docs/facts/ios/tokens.toml:13932
+# docs/facts/ios/tokens.toml:14604
 keyed.caption_2_loose.line_height_px = 15
-# docs/facts/ios/tokens.toml:13994
+# docs/facts/ios/tokens.toml:14662
+keyed.caption_2_loose.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:14698
 keyed.caption_2_loose.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:14023
+# docs/facts/ios/tokens.toml:14727
 keyed.caption_2_loose.decoration = "absent"
-# docs/facts/ios/tokens.toml:14052
+# docs/facts/ios/tokens.toml:14756
 keyed.caption_2_loose.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:14083
+# docs/facts/ios/tokens.toml:14787
 keyed.caption_2_loose.case = "mixed"
-# docs/facts/ios/tokens.toml:14112
+# docs/facts/ios/tokens.toml:14816
 keyed.caption_2_loose.elision = "absent"
-# docs/facts/ios/tokens.toml:14141
+# docs/facts/ios/tokens.toml:14845
 keyed.caption_2_loose.wrap = "absent"
-# docs/facts/ios/tokens.toml:14170
+# docs/facts/ios/tokens.toml:14874
 keyed.caption_2_loose.max_lines = "absent"
-# docs/facts/ios/tokens.toml:14199
+# docs/facts/ios/tokens.toml:14903
 keyed.caption_2_loose.fill = "absent"
-# docs/facts/ios/tokens.toml:14229
+# docs/facts/ios/tokens.toml:14933
 keyed.large_title_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:14246
+# docs/facts/ios/tokens.toml:14950
 keyed.large_title_emphasized.font.size_px = 34
-# docs/facts/ios/tokens.toml:14261
+# docs/facts/ios/tokens.toml:14965
 keyed.large_title_emphasized.font.weight = 700
-# docs/facts/ios/tokens.toml:14276
+# docs/facts/ios/tokens.toml:14980
 keyed.large_title_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:14291
+# docs/facts/ios/tokens.toml:14995
 keyed.large_title_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:14306
+# docs/facts/ios/tokens.toml:15010
 keyed.large_title_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:14326
+# docs/facts/ios/tokens.toml:15030
 keyed.large_title_emphasized.line_height_px = 41
-# docs/facts/ios/tokens.toml:14388
+# docs/facts/ios/tokens.toml:15088
+keyed.large_title_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:15124
 keyed.large_title_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:14417
+# docs/facts/ios/tokens.toml:15153
 keyed.large_title_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:14446
+# docs/facts/ios/tokens.toml:15182
 keyed.large_title_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:14477
+# docs/facts/ios/tokens.toml:15213
 keyed.large_title_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:14506
+# docs/facts/ios/tokens.toml:15242
 keyed.large_title_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:14535
+# docs/facts/ios/tokens.toml:15271
 keyed.large_title_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:14564
+# docs/facts/ios/tokens.toml:15300
 keyed.large_title_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:14593
+# docs/facts/ios/tokens.toml:15329
 keyed.large_title_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:14622
+# docs/facts/ios/tokens.toml:15358
 keyed.title_1_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:14639
+# docs/facts/ios/tokens.toml:15375
 keyed.title_1_emphasized.font.size_px = 28
-# docs/facts/ios/tokens.toml:14654
+# docs/facts/ios/tokens.toml:15390
 keyed.title_1_emphasized.font.weight = 700
-# docs/facts/ios/tokens.toml:14669
+# docs/facts/ios/tokens.toml:15405
 keyed.title_1_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:14684
+# docs/facts/ios/tokens.toml:15420
 keyed.title_1_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:14699
+# docs/facts/ios/tokens.toml:15435
 keyed.title_1_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:14719
-keyed.title_1_emphasized.line_height_px = 34
-# docs/facts/ios/tokens.toml:14781
-keyed.title_1_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:14810
-keyed.title_1_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:14839
-keyed.title_1_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:14870
-keyed.title_1_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:14899
-keyed.title_1_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:14928
-keyed.title_1_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:14957
-keyed.title_1_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:14986
-keyed.title_1_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:15015
-keyed.title_2_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:15032
-keyed.title_2_emphasized.font.size_px = 22
-# docs/facts/ios/tokens.toml:15047
-keyed.title_2_emphasized.font.weight = 700
-# docs/facts/ios/tokens.toml:15062
-keyed.title_2_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:15077
-keyed.title_2_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:15092
-keyed.title_2_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:15112
-keyed.title_2_emphasized.line_height_px = 28
-# docs/facts/ios/tokens.toml:15174
-keyed.title_2_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:15203
-keyed.title_2_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:15232
-keyed.title_2_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:15263
-keyed.title_2_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:15292
-keyed.title_2_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:15321
-keyed.title_2_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:15350
-keyed.title_2_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:15379
-keyed.title_2_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:15408
-keyed.title_3_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:15425
-keyed.title_3_emphasized.font.size_px = 20
-# docs/facts/ios/tokens.toml:15440
-keyed.title_3_emphasized.font.weight = 590
 # docs/facts/ios/tokens.toml:15455
+keyed.title_1_emphasized.line_height_px = 34
+# docs/facts/ios/tokens.toml:15513
+keyed.title_1_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:15549
+keyed.title_1_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:15578
+keyed.title_1_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:15607
+keyed.title_1_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:15638
+keyed.title_1_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:15667
+keyed.title_1_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:15696
+keyed.title_1_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:15725
+keyed.title_1_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:15754
+keyed.title_1_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:15783
+keyed.title_2_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:15800
+keyed.title_2_emphasized.font.size_px = 22
+# docs/facts/ios/tokens.toml:15815
+keyed.title_2_emphasized.font.weight = 700
+# docs/facts/ios/tokens.toml:15830
+keyed.title_2_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:15845
+keyed.title_2_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:15860
+keyed.title_2_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:15880
+keyed.title_2_emphasized.line_height_px = 28
+# docs/facts/ios/tokens.toml:15938
+keyed.title_2_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:15974
+keyed.title_2_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:16003
+keyed.title_2_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:16032
+keyed.title_2_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:16063
+keyed.title_2_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:16092
+keyed.title_2_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:16121
+keyed.title_2_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:16150
+keyed.title_2_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:16179
+keyed.title_2_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:16208
+keyed.title_3_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:16225
+keyed.title_3_emphasized.font.size_px = 20
+# docs/facts/ios/tokens.toml:16240
+keyed.title_3_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:16255
 keyed.title_3_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:15470
+# docs/facts/ios/tokens.toml:16270
 keyed.title_3_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:15485
+# docs/facts/ios/tokens.toml:16285
 keyed.title_3_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:15505
+# docs/facts/ios/tokens.toml:16305
 keyed.title_3_emphasized.line_height_px = 25
-# docs/facts/ios/tokens.toml:15567
+# docs/facts/ios/tokens.toml:16363
+keyed.title_3_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:16399
 keyed.title_3_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:15596
+# docs/facts/ios/tokens.toml:16428
 keyed.title_3_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:15625
+# docs/facts/ios/tokens.toml:16457
 keyed.title_3_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:15656
+# docs/facts/ios/tokens.toml:16488
 keyed.title_3_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:15685
+# docs/facts/ios/tokens.toml:16517
 keyed.title_3_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:15714
+# docs/facts/ios/tokens.toml:16546
 keyed.title_3_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:15743
+# docs/facts/ios/tokens.toml:16575
 keyed.title_3_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:15772
-keyed.title_3_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:15801
-keyed.headline_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:15818
-keyed.headline_emphasized.font.size_px = 17
-# docs/facts/ios/tokens.toml:15833
-keyed.headline_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:15848
-keyed.headline_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:15863
-keyed.headline_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:15878
-keyed.headline_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:15898
-keyed.headline_emphasized.line_height_px = 22
-# docs/facts/ios/tokens.toml:15960
-keyed.headline_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:15989
-keyed.headline_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:16018
-keyed.headline_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:16049
-keyed.headline_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:16078
-keyed.headline_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:16107
-keyed.headline_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:16136
-keyed.headline_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:16165
-keyed.headline_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:16194
-keyed.subheadline_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:16211
-keyed.subheadline_emphasized.font.size_px = 15
-# docs/facts/ios/tokens.toml:16226
-keyed.subheadline_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:16241
-keyed.subheadline_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:16256
-keyed.subheadline_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:16271
-keyed.subheadline_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:16291
-keyed.subheadline_emphasized.line_height_px = 20
-# docs/facts/ios/tokens.toml:16353
-keyed.subheadline_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:16382
-keyed.subheadline_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:16411
-keyed.subheadline_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:16442
-keyed.subheadline_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:16471
-keyed.subheadline_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:16500
-keyed.subheadline_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:16529
-keyed.subheadline_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:16558
-keyed.subheadline_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:16587
-keyed.body_emphasized.font.family = ".AppleSystemUIFont"
 # docs/facts/ios/tokens.toml:16604
+keyed.title_3_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:16633
+keyed.headline_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:16650
+keyed.headline_emphasized.font.size_px = 17
+# docs/facts/ios/tokens.toml:16665
+keyed.headline_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:16680
+keyed.headline_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:16695
+keyed.headline_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:16710
+keyed.headline_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:16730
+keyed.headline_emphasized.line_height_px = 22
+# docs/facts/ios/tokens.toml:16788
+keyed.headline_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:16824
+keyed.headline_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:16853
+keyed.headline_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:16882
+keyed.headline_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:16913
+keyed.headline_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:16942
+keyed.headline_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:16971
+keyed.headline_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:17000
+keyed.headline_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:17029
+keyed.headline_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:17058
+keyed.subheadline_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:17075
+keyed.subheadline_emphasized.font.size_px = 15
+# docs/facts/ios/tokens.toml:17090
+keyed.subheadline_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:17105
+keyed.subheadline_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:17120
+keyed.subheadline_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:17135
+keyed.subheadline_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:17155
+keyed.subheadline_emphasized.line_height_px = 20
+# docs/facts/ios/tokens.toml:17213
+keyed.subheadline_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:17249
+keyed.subheadline_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:17278
+keyed.subheadline_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:17307
+keyed.subheadline_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:17338
+keyed.subheadline_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:17367
+keyed.subheadline_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:17396
+keyed.subheadline_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:17425
+keyed.subheadline_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:17454
+keyed.subheadline_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:17483
+keyed.body_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:17500
 keyed.body_emphasized.font.size_px = 17
-# docs/facts/ios/tokens.toml:16619
+# docs/facts/ios/tokens.toml:17515
 keyed.body_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:16634
+# docs/facts/ios/tokens.toml:17530
 keyed.body_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:16649
+# docs/facts/ios/tokens.toml:17545
 keyed.body_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:16664
+# docs/facts/ios/tokens.toml:17560
 keyed.body_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:16684
+# docs/facts/ios/tokens.toml:17580
 keyed.body_emphasized.line_height_px = 22
-# docs/facts/ios/tokens.toml:16746
+# docs/facts/ios/tokens.toml:17638
+keyed.body_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:17674
 keyed.body_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:16775
+# docs/facts/ios/tokens.toml:17703
 keyed.body_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:16804
+# docs/facts/ios/tokens.toml:17732
 keyed.body_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:16835
+# docs/facts/ios/tokens.toml:17763
 keyed.body_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:16864
+# docs/facts/ios/tokens.toml:17792
 keyed.body_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:16893
+# docs/facts/ios/tokens.toml:17821
 keyed.body_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:16922
+# docs/facts/ios/tokens.toml:17850
 keyed.body_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:16951
+# docs/facts/ios/tokens.toml:17879
 keyed.body_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:16980
+# docs/facts/ios/tokens.toml:17908
 keyed.callout_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:16997
-keyed.callout_emphasized.font.size_px = 16
-# docs/facts/ios/tokens.toml:17012
-keyed.callout_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:17027
-keyed.callout_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:17042
-keyed.callout_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:17057
-keyed.callout_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:17077
-keyed.callout_emphasized.line_height_px = 21
-# docs/facts/ios/tokens.toml:17139
-keyed.callout_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:17168
-keyed.callout_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:17197
-keyed.callout_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:17228
-keyed.callout_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:17257
-keyed.callout_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:17286
-keyed.callout_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:17315
-keyed.callout_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:17344
-keyed.callout_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:17373
-keyed.footnote_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:17390
-keyed.footnote_emphasized.font.size_px = 13
-# docs/facts/ios/tokens.toml:17405
-keyed.footnote_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:17420
-keyed.footnote_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:17435
-keyed.footnote_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:17450
-keyed.footnote_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:17470
-keyed.footnote_emphasized.line_height_px = 18
-# docs/facts/ios/tokens.toml:17532
-keyed.footnote_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:17561
-keyed.footnote_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:17590
-keyed.footnote_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:17621
-keyed.footnote_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:17650
-keyed.footnote_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:17679
-keyed.footnote_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:17708
-keyed.footnote_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:17737
-keyed.footnote_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:17766
-keyed.caption_1_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:17783
-keyed.caption_1_emphasized.font.size_px = 12
-# docs/facts/ios/tokens.toml:17798
-keyed.caption_1_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:17813
-keyed.caption_1_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:17828
-keyed.caption_1_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:17843
-keyed.caption_1_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:17863
-keyed.caption_1_emphasized.line_height_px = 16
 # docs/facts/ios/tokens.toml:17925
-keyed.caption_1_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:17954
-keyed.caption_1_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:17983
-keyed.caption_1_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:18014
-keyed.caption_1_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:18043
-keyed.caption_1_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:18072
-keyed.caption_1_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:18101
-keyed.caption_1_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:18130
-keyed.caption_1_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:18159
-keyed.caption_2_emphasized.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:18176
-keyed.caption_2_emphasized.font.size_px = 11
-# docs/facts/ios/tokens.toml:18191
-keyed.caption_2_emphasized.font.weight = 590
-# docs/facts/ios/tokens.toml:18206
-keyed.caption_2_emphasized.font.style = "normal"
-# docs/facts/ios/tokens.toml:18221
-keyed.caption_2_emphasized.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:18236
-keyed.caption_2_emphasized.font.features = {}
-# docs/facts/ios/tokens.toml:18256
-keyed.caption_2_emphasized.line_height_px = 13
-# docs/facts/ios/tokens.toml:18318
-keyed.caption_2_emphasized.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:18347
-keyed.caption_2_emphasized.decoration = "absent"
-# docs/facts/ios/tokens.toml:18376
-keyed.caption_2_emphasized.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:18407
-keyed.caption_2_emphasized.case = "mixed"
-# docs/facts/ios/tokens.toml:18436
-keyed.caption_2_emphasized.elision = "absent"
-# docs/facts/ios/tokens.toml:18465
-keyed.caption_2_emphasized.wrap = "absent"
-# docs/facts/ios/tokens.toml:18494
-keyed.caption_2_emphasized.max_lines = "absent"
-# docs/facts/ios/tokens.toml:18523
-keyed.caption_2_emphasized.fill = "absent"
-# docs/facts/ios/tokens.toml:18552
-roles.body_emphasized = "= token.text.keyed.body_emphasized"
-# docs/facts/ios/tokens.toml:18577
-roles.caption_emphasized = "= token.text.keyed.caption_1_emphasized"
-# docs/facts/ios/tokens.toml:18603
-keyed.extra_large_title.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:18620
-keyed.extra_large_title.font.size_px = 36
-# docs/facts/ios/tokens.toml:18635
-keyed.extra_large_title.font.weight = 700
-# docs/facts/ios/tokens.toml:18650
-keyed.extra_large_title.font.style = "normal"
-# docs/facts/ios/tokens.toml:18665
-keyed.extra_large_title.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:18680
-keyed.extra_large_title.font.features = {}
+keyed.callout_emphasized.font.size_px = 16
+# docs/facts/ios/tokens.toml:17940
+keyed.callout_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:17955
+keyed.callout_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:17970
+keyed.callout_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:17985
+keyed.callout_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:18005
+keyed.callout_emphasized.line_height_px = 21
+# docs/facts/ios/tokens.toml:18063
+keyed.callout_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:18099
+keyed.callout_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:18128
+keyed.callout_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:18157
+keyed.callout_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:18188
+keyed.callout_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:18217
+keyed.callout_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:18246
+keyed.callout_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:18275
+keyed.callout_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:18304
+keyed.callout_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:18333
+keyed.footnote_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:18350
+keyed.footnote_emphasized.font.size_px = 13
+# docs/facts/ios/tokens.toml:18365
+keyed.footnote_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:18380
+keyed.footnote_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:18395
+keyed.footnote_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:18410
+keyed.footnote_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:18430
+keyed.footnote_emphasized.line_height_px = 18
+# docs/facts/ios/tokens.toml:18488
+keyed.footnote_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:18524
+keyed.footnote_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:18553
+keyed.footnote_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:18582
+keyed.footnote_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:18613
+keyed.footnote_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:18642
+keyed.footnote_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:18671
+keyed.footnote_emphasized.wrap = "absent"
 # docs/facts/ios/tokens.toml:18700
-keyed.extra_large_title.line_height_px = 42
-# docs/facts/ios/tokens.toml:18762
-keyed.extra_large_title.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:18791
-keyed.extra_large_title.decoration = "absent"
+keyed.footnote_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:18729
+keyed.footnote_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:18758
+keyed.caption_1_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:18775
+keyed.caption_1_emphasized.font.size_px = 12
+# docs/facts/ios/tokens.toml:18790
+keyed.caption_1_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:18805
+keyed.caption_1_emphasized.font.style = "normal"
 # docs/facts/ios/tokens.toml:18820
+keyed.caption_1_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:18835
+keyed.caption_1_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:18855
+keyed.caption_1_emphasized.line_height_px = 16
+# docs/facts/ios/tokens.toml:18913
+keyed.caption_1_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:18949
+keyed.caption_1_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:18978
+keyed.caption_1_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:19007
+keyed.caption_1_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:19038
+keyed.caption_1_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:19067
+keyed.caption_1_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:19096
+keyed.caption_1_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:19125
+keyed.caption_1_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:19154
+keyed.caption_1_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:19183
+keyed.caption_2_emphasized.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:19200
+keyed.caption_2_emphasized.font.size_px = 11
+# docs/facts/ios/tokens.toml:19215
+keyed.caption_2_emphasized.font.weight = 590
+# docs/facts/ios/tokens.toml:19230
+keyed.caption_2_emphasized.font.style = "normal"
+# docs/facts/ios/tokens.toml:19245
+keyed.caption_2_emphasized.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:19260
+keyed.caption_2_emphasized.font.features = {}
+# docs/facts/ios/tokens.toml:19280
+keyed.caption_2_emphasized.line_height_px = 13
+# docs/facts/ios/tokens.toml:19338
+keyed.caption_2_emphasized.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:19374
+keyed.caption_2_emphasized.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:19403
+keyed.caption_2_emphasized.decoration = "absent"
+# docs/facts/ios/tokens.toml:19432
+keyed.caption_2_emphasized.mnemonic_decoration = "absent"
+# docs/facts/ios/tokens.toml:19463
+keyed.caption_2_emphasized.case = "mixed"
+# docs/facts/ios/tokens.toml:19492
+keyed.caption_2_emphasized.elision = "absent"
+# docs/facts/ios/tokens.toml:19521
+keyed.caption_2_emphasized.wrap = "absent"
+# docs/facts/ios/tokens.toml:19550
+keyed.caption_2_emphasized.max_lines = "absent"
+# docs/facts/ios/tokens.toml:19579
+keyed.caption_2_emphasized.fill = "absent"
+# docs/facts/ios/tokens.toml:19608
+roles.body_emphasized = "= token.text.keyed.body_emphasized"
+# docs/facts/ios/tokens.toml:19633
+roles.caption_emphasized = "= token.text.keyed.caption_1_emphasized"
+# docs/facts/ios/tokens.toml:19659
+keyed.extra_large_title.font.family = ".AppleSystemUIFont"
+# docs/facts/ios/tokens.toml:19676
+keyed.extra_large_title.font.size_px = 36
+# docs/facts/ios/tokens.toml:19691
+keyed.extra_large_title.font.weight = 700
+# docs/facts/ios/tokens.toml:19706
+keyed.extra_large_title.font.style = "normal"
+# docs/facts/ios/tokens.toml:19721
+keyed.extra_large_title.font.axes = { opsz = "follows_size" }
+# docs/facts/ios/tokens.toml:19736
+keyed.extra_large_title.font.features = {}
+# docs/facts/ios/tokens.toml:19756
+keyed.extra_large_title.line_height_px = 42
+# docs/facts/ios/tokens.toml:19814
+keyed.extra_large_title.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:19850
+keyed.extra_large_title.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:19879
+keyed.extra_large_title.decoration = "absent"
+# docs/facts/ios/tokens.toml:19908
 keyed.extra_large_title.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:18851
+# docs/facts/ios/tokens.toml:19939
 keyed.extra_large_title.case = "mixed"
-# docs/facts/ios/tokens.toml:18880
+# docs/facts/ios/tokens.toml:19968
 keyed.extra_large_title.elision = "absent"
-# docs/facts/ios/tokens.toml:18909
+# docs/facts/ios/tokens.toml:19997
 keyed.extra_large_title.wrap = "absent"
-# docs/facts/ios/tokens.toml:18938
+# docs/facts/ios/tokens.toml:20026
 keyed.extra_large_title.max_lines = "absent"
-# docs/facts/ios/tokens.toml:18967
+# docs/facts/ios/tokens.toml:20055
 keyed.extra_large_title.fill = "absent"
-# docs/facts/ios/tokens.toml:18996
+# docs/facts/ios/tokens.toml:20084
 keyed.extra_large_title_2.font.family = ".AppleSystemUIFont"
-# docs/facts/ios/tokens.toml:19013
+# docs/facts/ios/tokens.toml:20101
 keyed.extra_large_title_2.font.size_px = 28
-# docs/facts/ios/tokens.toml:19028
+# docs/facts/ios/tokens.toml:20116
 keyed.extra_large_title_2.font.weight = 700
-# docs/facts/ios/tokens.toml:19043
+# docs/facts/ios/tokens.toml:20131
 keyed.extra_large_title_2.font.style = "normal"
-# docs/facts/ios/tokens.toml:19058
+# docs/facts/ios/tokens.toml:20146
 keyed.extra_large_title_2.font.axes = { opsz = "follows_size" }
-# docs/facts/ios/tokens.toml:19073
+# docs/facts/ios/tokens.toml:20161
 keyed.extra_large_title_2.font.features = {}
-# docs/facts/ios/tokens.toml:19093
+# docs/facts/ios/tokens.toml:20181
 keyed.extra_large_title_2.line_height_px = 34
-# docs/facts/ios/tokens.toml:19155
+# docs/facts/ios/tokens.toml:20239
+keyed.extra_large_title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:20275
 keyed.extra_large_title_2.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:19184
+# docs/facts/ios/tokens.toml:20304
 keyed.extra_large_title_2.decoration = "absent"
-# docs/facts/ios/tokens.toml:19213
+# docs/facts/ios/tokens.toml:20333
 keyed.extra_large_title_2.mnemonic_decoration = "absent"
-# docs/facts/ios/tokens.toml:19244
+# docs/facts/ios/tokens.toml:20364
 keyed.extra_large_title_2.case = "mixed"
-# docs/facts/ios/tokens.toml:19273
+# docs/facts/ios/tokens.toml:20393
 keyed.extra_large_title_2.elision = "absent"
-# docs/facts/ios/tokens.toml:19302
+# docs/facts/ios/tokens.toml:20422
 keyed.extra_large_title_2.wrap = "absent"
-# docs/facts/ios/tokens.toml:19331
+# docs/facts/ios/tokens.toml:20451
 keyed.extra_large_title_2.max_lines = "absent"
-# docs/facts/ios/tokens.toml:19360
+# docs/facts/ios/tokens.toml:20480
 keyed.extra_large_title_2.fill = "absent"
-# docs/facts/ios/tokens.toml:19436
+# docs/facts/ios/tokens.toml:20556
 fallbacks.emoji_family = ".Apple Color Emoji UI"
-# docs/facts/ios/tokens.toml:19457
+# docs/facts/ios/tokens.toml:20577
 rendering.antialiasing = "grayscale"
 # S9.4
 font_dpi = 72
@@ -3195,9 +3195,9 @@ durations.ca_transaction_ms = 250
 durations.navigation_controller_hide_show_bar_ms = 200
 # docs/facts/ios/tokens.toml:1496
 durations.default_ms = 734.901
-# docs/facts/ios/tokens.toml:20662
+# docs/facts/ios/tokens.toml:21782
 speed_factor = 1
-# docs/facts/ios/tokens.toml:20678
+# docs/facts/ios/tokens.toml:21798
 durations.navigation_ms = 350
 
 [tokens.icons]
@@ -3207,11 +3207,11 @@ sizes.toolbar.size_px = 17
 sizes.toolbar.weight = "absent"
 # docs/facts/ios/tokens.toml:1634
 sizes.toolbar.scale = "large"
-# docs/facts/ios/tokens.toml:20200
+# docs/facts/ios/tokens.toml:21320
 sizes.toolbar.rendering_mode = "template"
-# docs/facts/ios/tokens.toml:20355
+# docs/facts/ios/tokens.toml:21475
 sizes.toolbar.axes = {}
-# docs/facts/ios/tokens.toml:20425
+# docs/facts/ios/tokens.toml:21545
 sizes.toolbar.symbolic_colors = {}
 # S4.5
 animated_visuals = {}
@@ -3219,55 +3219,55 @@ animated_visuals = {}
 [tokens.behavior]
 # docs/facts/ios/tokens.toml:1936
 long_press_ms = 500
-# docs/facts/ios/tokens.toml:19741
+# docs/facts/ios/tokens.toml:20861
 mnemonics = "never"
-# docs/facts/ios/tokens.toml:19819
+# docs/facts/ios/tokens.toml:20939
 mnemonic_when_disabled = "absent"
-# docs/facts/ios/tokens.toml:19897
+# docs/facts/ios/tokens.toml:21017
 focus_visible_when = "any_focus"
 
 [tokens.caret]
 # docs/facts/ios/tokens.toml:1954
 width_px = 2
-# docs/facts/ios/tokens.toml:19500
+# docs/facts/ios/tokens.toml:20620
 blink_on_ms = 650
-# docs/facts/ios/tokens.toml:19518
+# docs/facts/ios/tokens.toml:20638
 blink_off_ms = 350
-# docs/facts/ios/tokens.toml:19536
+# docs/facts/ios/tokens.toml:20656
 blink_style = "fade"
-# docs/facts/ios/tokens.toml:19552
+# docs/facts/ios/tokens.toml:20672
 blink_timeout_ms = "none"
-# docs/facts/ios/tokens.toml:19568
+# docs/facts/ios/tokens.toml:20688
 solid_while_typing = true
-# docs/facts/ios/tokens.toml:19586
+# docs/facts/ios/tokens.toml:20706
 color = "#426bf2"
-# docs/facts/ios/tokens.toml:19623
+# docs/facts/ios/tokens.toml:20743
 shown_in_read_only = false
 
 [tokens.focus]
-# docs/facts/ios/tokens.toml:19916
+# docs/facts/ios/tokens.toml:21036
 kind = "ring"
-# docs/facts/ios/tokens.toml:19941
+# docs/facts/ios/tokens.toml:21061
 paint = "#007aff"
-# docs/facts/ios/tokens.toml:19973
+# docs/facts/ios/tokens.toml:21093
 width_px = 3
-# docs/facts/ios/tokens.toml:19998
+# docs/facts/ios/tokens.toml:21118
 dash = "solid"
-# docs/facts/ios/tokens.toml:20023
+# docs/facts/ios/tokens.toml:21143
 offset.top_px = -1.5
-# docs/facts/ios/tokens.toml:20048
+# docs/facts/ios/tokens.toml:21168
 offset.right_px = -1.5
-# docs/facts/ios/tokens.toml:20073
+# docs/facts/ios/tokens.toml:21193
 offset.bottom_px = -1.5
-# docs/facts/ios/tokens.toml:20098
+# docs/facts/ios/tokens.toml:21218
 offset.left_px = -1.5
-# docs/facts/ios/tokens.toml:20148
+# docs/facts/ios/tokens.toml:21268
 shadow = "absent"
 
 [tokens]
-# docs/facts/ios/tokens.toml:20712
+# docs/facts/ios/tokens.toml:21832
 kde = "absent"
-# docs/facts/ios/tokens.toml:20729
+# docs/facts/ios/tokens.toml:21849
 material = "absent"
 
 [widgets.button.body]
@@ -11211,7 +11211,7 @@ when = { conditions = ["scheme:light"], not_conditions = ["contrast_increased"] 
 target = "tokens"
 
 [rules.set]
-# docs/facts/ios/tokens.toml:20265
+# docs/facts/ios/tokens.toml:21385
 icons.sizes.toolbar.fill = "#007aff"
 
 [[rules]]
@@ -11219,5 +11219,5 @@ when = { conditions = ["scheme:dark"], not_conditions = ["contrast_increased"] }
 target = "tokens"
 
 [rules.set]
-# docs/facts/ios/tokens.toml:20286
+# docs/facts/ios/tokens.toml:21406
 icons.sizes.toolbar.fill = "#0a84ff"
