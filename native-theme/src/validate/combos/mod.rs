@@ -3875,7 +3875,8 @@ pub(super) fn on_kde_breeze(preset: Option<PresetId>) -> bool {
         | PresetId::MacosMonterey
         | PresetId::Material3
         | PresetId::Ios26
-        | PresetId::Ios13 => false,
+        | PresetId::Ios13
+        | PresetId::Windows11 => false,
     })
 }
 

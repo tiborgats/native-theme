@@ -54,6 +54,8 @@ presets! {
     Ios13 => "ios-13", "ios-13.toml";
     /// KDE's Breeze, Plasma 6.
     KdeBreeze => "kde-breeze", "kde-breeze.toml";
+    /// Microsoft's Windows 11 (WinUI 3).
+    Windows11 => "windows-11", "windows-11.toml";
 }
 
 impl PresetId {
