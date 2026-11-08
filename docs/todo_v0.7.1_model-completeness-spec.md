@@ -4961,6 +4961,22 @@ state names to them); the order of precedence inside a group is a fact, cited fr
 preset states it as the order of its `exclusive` arrays, and the gate checks that order against the state-model data
 (S17).
 
+**A flag the platform clears** (ADD-A141; the MT-C1 and GN-C1 tie-breaks). Where the platform never holds a flag while
+another holds, clearing or refusing it (GTK never holds hover, active, focus or a drop on an insensitive widget,
+`gtk@4.24.1 gtk/gtkwidget.c:6253-6257`, `:8260-8261`, `:8320-8321`, `:10520-10522`, `gtk/gtkdroptarget.c:204-205`, as
+the GN-C1 verifier cites them; `material-3`'s state models leave out a disabled button's hover, press and focus
+alike), the two form an exclusive group, the flag that stays first (`["disabled", "hover"]`), not a `not_drawn`
+combination: so a connector whose toolkit reports both (one that tracks the pointer over a disabled element) is
+answered as the platform draws it,
+where `not_drawn` only keeps the gate from the pair and leaves the query applying both flags' rules. Where the other
+flags combine among themselves (GTK's and Compose's hover with a press), each pair is a group of its own
+(`[["disabled", "hover"], ["disabled", "pressed"], ["disabled", "focus_visible"]]`), so a flag may be in several
+groups: the groups apply in their declared order, each over the flags the earlier left, its highest held flag staying
+and its others dropped, as the query's drop does. `not_drawn` stays for combinations a connector does not produce or
+the platform has no look for (`checked` outside `toggle`, a variant outside its host). Rejected: `not_drawn` for
+these pairs (the gate's result, but a look the platform never draws for a connector that reports both); one group of
+all of them (`[disabled, pressed, hover]` drops the hover of a pressed button GTK draws hovered).
+
 `recency` names the widget's recency sets (R3, S7.2, ADD-A124), each the flags among which the platform shows the one
 set last, as Compose's state layer shows the latest of hover, focus and drag rather than a fixed precedence. A set's
 members are a fact cited from the platform's code (the list of interactions it keeps); its stated order is the
