@@ -31,7 +31,8 @@ targets = [
 # The KDE icon theme, read from the kdeglobals files as KConfig cascades them
 # (Linux); the KDE Plasma reader from M1b.
 kde = ["dep:configparser"]
-# The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings
+# The GNOME and Budgie reader, and the portal-only read of the Linux desktops
+# with no reader of their own: the XDG Desktop Portal settings and gsettings
 # (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
 # The running Windows version, for `pipeline::diagnose_platform_support`; the
@@ -48,7 +49,7 @@ linux = ["linux-kde", "linux-portal"]
 # Every platform feature.
 native = ["linux", "macos", "windows"]
 # `watch::on_theme_change`: OS theme-change notifications, on the platforms
-# whose reader is back (GNOME, with `portal`).
+# whose reader is back (GNOME and the portal-only desktops, with `portal`).
 watch = ["dep:notify", "zbus?/blocking-api"]
 # The bundled Material Symbols icon set.
 material-icons = []

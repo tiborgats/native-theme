@@ -22,10 +22,12 @@ This is the 0.8.0 model while it is being built:
   pending field (`ThemeError::Preset`), so neither builds a theme yet.
 - The one typed widget is the button; the other widgets come unit by unit.
 - One OS reader is back: GNOME's (the `portal` feature), which
-  `Theme::from_system` reads on GNOME and Budgie over `adwaita`, and the
-  `watch` feature's GNOME watcher; the KDE, macOS and Windows readers return
-  with their presets, and the reader features enable only what
-  [Feature flags](#feature-flags) says.
+  `Theme::from_system` reads on GNOME and Budgie over `adwaita`, with the
+  portal-only read of the Linux desktops that have no reader of their own
+  (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC), also over
+  `adwaita`, and the `watch` feature's watchers of both; the KDE, macOS and
+  Windows readers return with their presets, and the reader features enable
+  only what [Feature flags](#feature-flags) says.
 
 ## How it fits
 
@@ -164,8 +166,8 @@ native-theme = { version = "0.8", features = ["system-icons"] }
 |---|---|
 | `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
 | `macos` / `windows` | The running OS version and its generation, in `pipeline::diagnose_platform_support` |
-| `portal` | The GNOME and Budgie reader: the XDG Desktop Portal and gsettings (Linux) |
-| `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME) |
+| `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own: the XDG Desktop Portal and gsettings (Linux) |
+| `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME and the portal-only desktops) |
 | `linux-kde` / `linux-portal` | Aliases: `kde` and `portal` |
 | `linux` | Meta-feature: `linux-kde` + `linux-portal` |
 | `native` | Meta-feature: `linux` + `macos` + `windows` |

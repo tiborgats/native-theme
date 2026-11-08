@@ -54,7 +54,8 @@
 //! [`Theme::from_preset`] refuses a preset with a pending field
 //! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
 //! widget is the button; of the platform readers GNOME's is back
-//! ([`Theme::from_system`], the `portal` feature).
+//! ([`Theme::from_system`], the `portal` feature), with the portal-only read
+//! of the Linux desktops that have no reader of their own.
 //!
 //! # Feature flags
 //!
@@ -66,8 +67,8 @@
 //! |---|---|
 //! | `kde` | The KDE icon theme, read from the `kdeglobals` files as KConfig cascades them (Linux) |
 //! | `macos`, `windows` | The running OS version and its generation, in [`pipeline::diagnose_platform_support`] |
-//! | `portal` | The GNOME and Budgie reader, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
-//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME) |
+//! | `portal` | The GNOME and Budgie reader, and the portal-only read of the Linux desktops with no reader of their own, [`Theme::from_system`]: the XDG Desktop Portal and gsettings (Linux) |
+//! | `watch` | `watch::on_theme_change`, OS theme-change notifications, on the platforms whose reader is back (GNOME and the portal-only desktops) |
 //! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
 //! | `linux` | `linux-kde` and `linux-portal` |
 //! | `native` | `linux`, `macos` and `windows` |
@@ -134,7 +135,8 @@ mod widgets;
 
 pub mod detect;
 pub mod fonts;
-/// The GNOME reader: the XDG Desktop Portal and gsettings (Linux).
+/// The GNOME reader and the portal-only read: the XDG Desktop Portal and
+/// gsettings (Linux).
 #[cfg(all(target_os = "linux", feature = "portal"))]
 mod gnome;
 /// Icon loading.
