@@ -1822,15 +1822,16 @@ spaces:
   `docs/evidence/os-probe/2026-10-30-run-41006842699/os-probe-macos-15/button-pass/probe.toml:30775-30777`). Others: no variant default. Which size an element that states none has is declared (ADD-A60). Densities: none from the
   button rows; W3-39's compact dictionary sizes no button, so `windows-11` declares none; `macos-*` MAC-X17 and
   `material-3` MAT-X22 are the cross-widget density rows, traced at their own lines.
-- **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze`
-  `@recording` (the key-sequence button held pressed while it records, K-RL02†, K-KA-43†), `@keyboard_focus_change`
+- **Flags:** shared `route_active` (on `route`: macOS, iOS); keyed `ios-*` `@loading` (B-10), `kde-breeze` `@keyboard_focus_change`
   (flavour `kirigami`: the element's last focus change, in or out, was by the keyboard, Tab, Backtab or a shortcut,
   as qqc2-desktop-style's style item tests the control's `focusReason`, `qqc2-desktop-style@6.31.0
   plugin/kquickstyleitem.cpp:42-45`, `:884-890`, which Qt Quick sets on focus in and on focus out,
   `qtdeclarative@6.12.0 src/quick/items/qquickitem.cpp:4237`, `:4250`; Breeze draws the pen it passes as focus only
   with it, `breeze@6.8.2 kstyle/breezestyle.cpp:4518`, `:4577`, and `Button.qml` passes `highlighted` as focus, so a
   `@highlighted` button keeps its pen after focus leaves it by Tab; the connector sets it from its toolkit's focus
-  reason, Q1.8, Q1.9; ADD-A122); state flags used: hover,
+  reason, Q1.8, Q1.9; ADD-A122); no `@recording` (ADD-A139): KDE's key-sequence buttons draw no state of their
+  own while they record, only their text changing, the QWidget one in its usual states (K-RL02†), the Quick one a
+  checked `toggle` (K-KA-43†); state flags used: hover,
   pressed, focused, focus_visible, disabled, checked (iOS's selected bar item, `UIBarButtonItem.isSelected`, a toggle's on state,
   `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle), selected (macOS's selected toolbar item, the one
   `NSToolbar.selectedItemIdentifier` names among its selectable items, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
@@ -7476,8 +7477,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   dialog layer, K-KA-43†).
 - **Variants:** keyed `kde-breeze` `@ka_quick` (K-KA-43†).
 - **Sizes and densities:** none (no row states a size).
-- **Flags:** none of its own (the recording key-sequence button's `@recording` is `button`'s; the rows' open
-  editor is `list`'s `open`; the navigation pills are `button` elements); state flags used: none.
+- **Flags:** none of its own (a key-sequence button records in `button`'s usual states, the Quick one
+  `checked`, ADD-A139; the rows' open editor is `list`'s `open`; the navigation pills are `button` elements); state flags used: none.
 - **Exclusive groups:** none (states combine); precedence: state models (S17).
 - **may_be_absent:** values: `page_gap_px` (`kde-breeze`: the spacing is AdwShortcutsDialog's, GN-2.41;
   KShortcutsDialog's tree and the Quick editor's list lay out no such pages, K-RL02†, K-KA-43†); `natural_size`
@@ -7491,8 +7492,8 @@ dialog was carried (GN-2.57†): two platforms draw it (R14, S5.1).*
   (GN-2.41); the shortcuts are `list` rows in `context shortcuts_dialog` (a section's title
   `list.section_header`, a row's title its text and its dimmed caption `list.secondary_text`, its minimum height
   `list.row.min_height` there, GN-2.41; KDE's in-row extender's arrow `list.disclosure`, open while the editor shows,
-  K-RL02†); GNOME's shortcut labels `keycap` elements there (GN-2.41); KDE's key-sequence widget and the Quick
-  recorder `button @ variant @key_sequence` (K-RL02†, K-KA-43†) and their clear buttons `button @ variant
+  K-RL02†); GNOME's shortcut labels `keycap` elements there (GN-2.41); KDE's key-sequence widget `button @ variant @key_sequence` (K-RL02†) and the Quick
+  recorder `button @ variants {toggle,@key_sequence}` (K-KA-43†) and their clear buttons `button @ variant
   clear_field`; kirigami-addons' Save and Reset bar `toolbar @ variant bottom context shortcuts_dialog`
   (K-KA-43†).
 
@@ -10174,7 +10175,7 @@ and the owning group's name where the kinds are the same.
 | 114 | a scalar widget value typed `Value<f32>` with no unit suffix (`icon_text_gap: Value<f32>`) | its TOML form and unit type (`icon_text_gap_px: Value<Px>`, `show_delay_ms: Value<Ms>`, `start_angle_deg: Value<Deg>`, `width_fraction: Value<Fraction>`) | S1's units |
 | 115 | `sheet` and `tab` events `@open`, `@close` | `Appear`, `Disappear` | the typed events of an element appearing and disappearing |
 | 116 | `menu_bar.values.height`, `values.submenu_corners`, `sheet.values.max_width`, `sidebar.values.min_width`, `values.max_width`, `rating.values.glyph`, `avatar.values.palette`, `values.initials_size`, `picker_wheel.values.off_center_fade`, `page_indicator.values.follows_scroll`, `chart.values.series_colors`, `shortcuts_dialog.values.row_min_height` | the parts' fields: `menu_bar.bar.min_height`, `menu.body.corners @ context menu_bar`, `sheet.body.max_width`, `sidebar.pane.min_width`, `pane.max_width`, `rating.star.glyph`, `avatar.body.fill` (by `pick` and `name_index`), `avatar.initials.text`, `picker_wheel.item.opacity` and `dot` fields as expressions over the scroll position, `chart.series.fill`, `list.row.min_height @ context shortcuts_dialog` | one value, one home |
-| 117 | `toolbar.handle`, `tab.scroll_button`, `input.autofill_button`, `find_bar` flag `@neutral`, `popover` `@magnifier`, `shortcuts_dialog` flag `@recording` | `toolbar.grip`, `tab.scroll_arrow`, `input.autofill_affordance`, `@warning` (reverted by row 131: `find_bar`'s flag is `@neutral`), `input.magnifier`, `button`'s `@recording` | one name per part kind and meaning |
+| 117 | `toolbar.handle`, `tab.scroll_button`, `input.autofill_button`, `find_bar` flag `@neutral`, `popover` `@magnifier`, `shortcuts_dialog` flag `@recording` | `toolbar.grip`, `tab.scroll_arrow`, `input.autofill_affordance`, `@warning` (reverted by row 131: `find_bar`'s flag is `@neutral`), `input.magnifier`, `button`'s `@recording` (withdrawn by ADD-A139: recording draws no state of its own) | one name per part kind and meaning |
 | 118 | `group_box` keyed `@photo`, `@gray_bezel`, `@groove`, `@button` (MAC-N12); keyed `component.image` (GN-3.07) | typed `image` (`body`, `picture`; the same keyed variants) | the third check: one home for the image view's frame and shadow styles, which two platforms draw |
 | 119 | `form` keyed `@collapsed`; `checkbox`, `radio` keyed `@text_button`; `badge` keyed `@custom_color`; `list` keyed `@with_subtitle`, `@subtitle_cell`, `@two_line`; `button` part `attention_dot`, value `attention_dot_offset`, flag `@needs_attention` (also on `list`, `view_switcher`; `tab`'s, which draws GNOME's attention line, stays); `list.placeholder`; `menu` and `combo_box` popup placements in `menu.values.placement`; `toolbar.values.overflow_placement`; `calendar` `@out_of_range`; `progress_bar` `@nearly_full`; the widgets' own breakpoint values (`presentation_breakpoint`, `display_mode_breakpoints`, `pane_mode_breakpoints`, `collapse_thresholds`, `card_max_width_px`, `mobile_height_breakpoint_px`) | typed `collapsed`; the content variants `with_label`, `custom_color`, `with_subtitle`; the `badge` widget, variant `attention`, in the host's context; the flag `placeholder` on `list.row`; `combo_box.values.popup_placement`, `autocomplete.values.placement`, `button.values.menu_placement`; `disabled` on a day; an expression over `element.progress`; `breakpoints: Vec<Breakpoint>` | the third check: content variants are typed, one structure per control, the host's values stay the host's, one mechanism for breakpoints |
 | 120 | `code_editor.whitespace_mark` (`@space`, `@tab`, `@newline`, `@nbsp`), `misspelled_word`, `search_match`, `caret` `@bidi_secondary`; `input`'s and `text_area`'s missing secondary caret | `code_editor.invisible` (typed `space`, `tab`, `line_break`, `no_break_space`), `misspelling`, `find_match`, `secondary_caret` (on `input`, `text_area`, `code_editor`) | the third check: one name and one variant set per part kind across the text widgets |
