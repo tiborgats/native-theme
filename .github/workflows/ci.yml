@@ -79,14 +79,16 @@ jobs:
       - name: Clippy (egui widgets, all features)
         if: matrix.package == 'native-theme-egui-widgets'
         run: cargo clippy -p native-theme-egui-widgets --all-targets --all-features  # PLAN_EXCLUDED: clippy (native-theme-egui-widgets, all features)
-      # The test fixtures (tools/test-fixtures) and the showcases' shared crate
+      # The test fixtures (tools/test-fixtures), the preset check
+      # (tools/preset-check) and the showcases' shared crate
       # (tools/showcase-support), never published and with no leg of their
       # own: their tests and Linux-only code, as scripts/check_release.sh
       # lints every workspace crate.
-      - name: Clippy (the test fixtures and the showcase support)
+      - name: Clippy (the test fixtures, the preset check and the showcase support)
         if: matrix.package == 'native-theme'
         run: |
           cargo clippy -p native-theme-test-fixtures --all-targets
+          cargo clippy -p native-theme-preset-check --all-targets
           # The showcase support builds again at M5.
           # PLAN_EXCLUDED: clippy (native-theme-showcase-support)
           # PLAN_EXCLUDED: check (native-theme-showcase-support)
@@ -96,9 +98,10 @@ jobs:
       # expect_used in their crate roots, and scripts/check_strict_panic.sh
       # holds the rest of the list (indexing_slicing, arithmetic_side_effects,
       # panic, ...). native-theme with check_release.sh's NT_FEATURES and with
-      # none; native-theme-derive, the test fixtures (tools/test-fixtures) and
-      # the showcases' shared crate (tools/showcase-support), which have no leg
-      # of their own, here too.
+      # none; native-theme-derive, the test fixtures (tools/test-fixtures),
+      # the preset check (tools/preset-check, a binary) and the showcases'
+      # shared crate (tools/showcase-support), which have no leg of their own,
+      # here too.
       - name: Strict panic lints (native-theme)
         if: matrix.package == 'native-theme'
         run: |
@@ -106,6 +109,7 @@ jobs:
           bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
           bash scripts/check_strict_panic.sh -p native-theme-derive --lib
           bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
+          bash scripts/check_strict_panic.sh -p native-theme-preset-check --bins
           # PLAN_EXCLUDED: strict-panic (native-theme-showcase-support)
           # bash scripts/check_strict_panic.sh -p native-theme-showcase-support --lib
       # The same lints on the macOS and Windows code, which a Linux run never
@@ -255,6 +259,8 @@ jobs:
           - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
     steps:
       - uses: actions/checkout@v6
+      # The facts gate reads the evidence at its pin.
+      - uses: ./.github/actions/evidence
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme ${{ matrix.flags }}
@@ -340,6 +346,7 @@ jobs:
       - run: cargo test -p native-theme-build
       - run: cargo test -p native-theme-derive
       - run: cargo test -p native-theme-test-fixtures
+      - run: cargo test -p native-theme-preset-check
       # PLAN_EXCLUDED: test (native-theme-showcase-support)
       # - run: cargo test -p native-theme-showcase-support
 
@@ -473,6 +480,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # check_function_vectors.py reads the evidence at its pin.
+      - uses: ./.github/actions/evidence
       # The widget coverage's `cargo metadata` resolves the workspace with
       # the toolchain every other job uses.
       - uses: dtolnay/rust-toolchain@stable
@@ -521,6 +530,16 @@ jobs:
       # inheritance-rules.toml name the commit they read (`@fc6109d1`).
       - run: python3 scripts/check_pinned_citations.py
       - run: python3 scripts/check_pinned_citations.py --self-test
+      # The evidence lives in native-theme-evidence, pinned by
+      # docs/facts/sources.toml: no file under docs/evidence/ is tracked here,
+      # as scripts/check_release.sh checks too.
+      - name: No evidence in this repository
+        run: |
+          tracked=$(git ls-files -- docs/evidence)
+          if [ -n "$tracked" ]; then
+            printf "tracked here, belongs in native-theme-evidence: %s\n" $tracked | head -20
+            exit 1
+          fi
 
   doc:
     name: Documentation

@@ -550,7 +550,8 @@ def write_fixture(root: Path, presets=(), units=SELF_TEST_UNITS, extra=None):
 
 def fixture_context(root: Path):
     return check_facts.Context(root, core_text=check_facts.SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
-                               sources_text=check_facts.SELF_TEST_SOURCES, rows=check_facts.SELF_TEST_ROWS)
+                               sources_text=check_facts.SELF_TEST_SOURCES, rows=check_facts.SELF_TEST_ROWS,
+                               evidence=root)
 
 
 def self_test() -> int:

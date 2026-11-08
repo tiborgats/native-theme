@@ -5,6 +5,31 @@
 //! declarations run. `facts_gate` runs it over `docs/facts` and the bundled
 //! presets, the `gate_fixture_*` tests over fixtures, where every value is
 //! synthetic.
+//!
+//! During development `facts_gate` can be limited to some presets:
+//! `NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme
+//! --test facts_gate` gates those two alone, its report saying it ran a
+//! subset. An id no bundled preset has, an empty name or an id named twice
+//! fails the test; unset, every bundled preset runs. A subset is no gate:
+//! `scripts/check_release.sh` never sets the variable, so every mode of it
+//! gates every preset, and the release's run (`FACTS_GATE_RELEASE=1`)
+//! refuses a subset.
+//!
+//! The gate's parallel steps run on as many threads as the machine has;
+//! `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no
+//! number above zero fails. The count sets the speed and the memory: as many
+//! condition vectors are checked at once as there are threads, each one's
+//! combinations enumerated as they are checked, a chunk at a time, never all
+//! held, so each thread adds about 120 MB and the six presets peak near
+//! 4 GB on 16 threads, 6 GB on 32 (`run::thread_count`).
+//!
+//! The citations' evidence is read under the evidence root (S17 *The
+//! evidence root*, `facts::evidence_root`): the evidence repository checked
+//! out where `NATIVE_THEME_EVIDENCE` names, else in the source cache
+//! (`NATIVE_THEME_SOURCES`, else `scripts/citations.py`'s default) at
+//! `native-theme-evidence/`, clean and at the commit `docs/facts/sources.toml`
+//! pins (`scripts/update_sources.sh` fetches it); `facts_gate` fails without
+//! one. A fixture's evidence lies under its own root.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -33,6 +58,64 @@ const DIRECTORIES: [(&str, &str); 8] = [
     ("windows-11", "windows"),
     ("material-3", "material"),
 ];
+
+/// The environment variable that limits `facts_gate` to the presets it
+/// names, comma-separated (the module's docs).
+const PRESETS_VARIABLE: &str = "NT_FACTS_GATE_PRESETS";
+
+/// The presets `facts_gate` runs, in [`PresetId::all`]'s order: every
+/// bundled preset where `value`, [`PRESETS_VARIABLE`]'s value, is `None`,
+/// else those its comma-separated list names. An id no bundled preset has,
+/// an empty name or an id named twice is an error, never an empty run.
+fn selected_presets(value: Option<&str>) -> Result<Vec<PresetId>, String> {
+    let Some(value) = value else {
+        return Ok(PresetId::all().to_vec());
+    };
+    let mut named = Vec::new();
+    for name in value.split(',').map(str::trim) {
+        let known = || {
+            PresetId::all()
+                .iter()
+                .map(|id| id.key())
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        let id = PresetId::from_key(name).ok_or_else(|| {
+            format!(
+                "`{name}` is no bundled preset's id (the bundled: {})",
+                known()
+            )
+        })?;
+        if named.contains(&id) {
+            return Err(format!("`{name}` is named twice"));
+        }
+        named.push(id);
+    }
+    Ok(PresetId::all()
+        .iter()
+        .copied()
+        .filter(|id| named.contains(id))
+        .collect())
+}
+
+/// [`PRESETS_VARIABLE`]'s value; `None` where it is unset. A value that is
+/// not Unicode fails.
+fn presets_variable() -> Option<String> {
+    match std::env::var(PRESETS_VARIABLE) {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(value)) => {
+            panic!("{PRESETS_VARIABLE} is not Unicode: {value:?}")
+        }
+    }
+}
+
+/// A fixture's evidence root: the case's own root, holding its own
+/// `docs/evidence/` where it has one (S17 *The evidence root*), its facts
+/// root being `<case>/docs/facts`.
+fn fixture_evidence(root: &Path) -> &Path {
+    root.parent().and_then(Path::parent).unwrap()
+}
 
 /// A fixture's facts root and its preset (the fixtures' base with the
 /// case's declarations and rules, its `file`, appended), checked against
@@ -73,7 +156,7 @@ fn fixture_report(name: &str) -> run::Report {
 /// `file`, a twin of its `preset.toml`.
 fn fixture_report_with(name: &str, file: &str) -> run::Report {
     let (root, presets) = fixture(name, file);
-    run::run(&root, &presets)
+    run::run(&root, fixture_evidence(&root), &presets)
 }
 
 /// A listed path's register ids found, in order.
@@ -455,8 +538,8 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
     let units = units::Units::repository().unwrap();
     let platform = run::Platform::read(&root.join("gnome"), &units, &mut report);
     let preset = &presets[0].1;
-    let repo = root.parent().and_then(Path::parent).unwrap();
-    let keys = run::prepare(&platform, preset.id(), repo, &mut report);
+    let evidence = facts::Evidence::new(fixture_evidence(root));
+    let keys = run::prepare(&platform, preset.id(), &evidence, &mut report);
     let conditions = run::conditions(&["scheme:light".to_owned()], None).unwrap();
     let resolved = preset
         .resolve(&conditions, &native_theme::Layer::default())
@@ -479,7 +562,7 @@ fn stand_in_inputs(root: &Path, presets: &[(String, Preset)]) -> Vec<String> {
 fn gate_fixture_derived_input_perturbed() {
     let (root, presets) = fixture_edited("derived_input", with_tint);
     assert_eq!(stand_in_inputs(&root, &presets), ["accent"]);
-    let report = run::run(&root, &presets);
+    let report = run::run(&root, fixture_evidence(&root), &presets);
     assert_eq!(report.failures, Vec::<String>::new());
     assert!(report.compared > 0, "{report:?}");
 }
@@ -1218,7 +1301,7 @@ fn gate_fixture_not_drawn_sizes() {
     };
     let count = |text: &str| {
         let models = model::Model::read("probe", text).unwrap();
-        model::combinations(&models[0], &[Vec::new()], None, |_, _| {})
+        model::count(&models[0], &[Vec::new()])
     };
     assert_eq!(count(&state_model("")), 4);
     assert_eq!(
@@ -1711,7 +1794,7 @@ fn gate_measured_colour_drawn_per_renderer() {
             .into_iter()
             .map(|(_, preset)| (platform.to_owned(), preset))
             .collect();
-        run::run(&root, &presets)
+        run::run(&root, fixture_evidence(&root), &presets)
     };
     for platform in ["gnome", "kde", "material"] {
         let drawn = report(platform);
@@ -1749,7 +1832,7 @@ fn gate_measured_colour_drawn_only_from_pixels() {
             .into_iter()
             .map(|(_, preset)| (platform.to_owned(), preset))
             .collect();
-        run::run(&root, &presets)
+        run::run(&root, fixture_evidence(&root), &presets)
     };
     for name in ["measured_read", "measured_node", "measured_node_analysis"] {
         for platform in ["gnome", "kde", "material", "macos"] {
@@ -2020,10 +2103,172 @@ fn perturbed_colours_are_distinct() {
 /// against its platform's directory: every fact file and state model
 /// read, each entry's combinations counted, and each preset's normal,
 /// perturbed and declarations runs.
+/// [`PRESETS_VARIABLE`] unset: `facts_gate` runs every bundled preset.
+#[test]
+fn facts_gate_presets_unset_runs_all() {
+    assert_eq!(selected_presets(None), Ok(PresetId::all().to_vec()));
+}
+
+/// [`PRESETS_VARIABLE`] set: `facts_gate` runs the presets it names alone,
+/// in [`PresetId::all`]'s order, spaces around a name ignored.
+#[test]
+fn facts_gate_presets_filter() {
+    assert_eq!(
+        selected_presets(Some("macos-tahoe, adwaita")),
+        Ok(vec![PresetId::Adwaita, PresetId::MacosTahoe])
+    );
+    assert_eq!(selected_presets(Some("ios-13")), Ok(vec![PresetId::Ios13]));
+}
+
+/// [`PRESETS_VARIABLE`] naming an unknown id, nothing or an id twice fails,
+/// never runs an empty or silently narrowed gate.
+#[test]
+fn facts_gate_presets_unknown_id_fails() {
+    let unknown = selected_presets(Some("adwaita,no-such-preset")).unwrap_err();
+    assert!(
+        unknown.contains("`no-such-preset` is no bundled preset's id"),
+        "{unknown}"
+    );
+    assert!(selected_presets(Some("")).is_err());
+    assert!(selected_presets(Some("adwaita,")).is_err());
+    let twice = selected_presets(Some("adwaita,adwaita")).unwrap_err();
+    assert!(twice.contains("named twice"), "{twice}");
+}
+
+/// [`run::THREADS_VARIABLE`] sets the gate's threads; unset, the machine's
+/// parallelism; a value that is no number above zero fails.
+#[test]
+fn facts_gate_threads_variable() {
+    assert_eq!(run::thread_count(Some("4")), Ok(4));
+    assert_eq!(run::thread_count(Some(" 12 ")), Ok(12));
+    assert_eq!(
+        run::thread_count(None),
+        Ok(std::thread::available_parallelism().map_or(1, std::num::NonZero::get))
+    );
+    for refused in ["0", "", "four", "-2", "1.5"] {
+        let error = run::thread_count(Some(refused)).unwrap_err();
+        assert!(error.contains("no number above zero"), "{error}");
+    }
+}
+
+/// The evidence root outside a fixture (S17 *The evidence root*,
+/// [`facts::evidence_root_at`]): a clean checkout at the pin, the variable's
+/// directory before the source cache's; refused at another commit, with a
+/// changed, an untracked or an ignored file, as a subfolder, without a
+/// folder, and where `sources.toml` has no evidence entry or two.
+#[test]
+fn facts_gate_evidence_root() {
+    let base =
+        std::env::temp_dir().join(format!("native-theme-evidence-root-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    let cache = base.join("cache");
+    let repo = cache.join("native-theme-evidence");
+    std::fs::create_dir_all(repo.join("docs/evidence")).unwrap();
+    std::fs::write(repo.join("docs/evidence/a.toml"), "a = 1\n").unwrap();
+    let git = |args: &[&str]| {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&repo)
+            .args([
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "-c",
+                "commit.gpgsign=false",
+            ])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "git {args:?}: {output:?}");
+        String::from_utf8(output.stdout).unwrap()
+    };
+    git(&["init", "-q"]);
+    git(&["add", "-A"]);
+    git(&["commit", "-q", "-m", "c"]);
+    let head = git(&["rev-parse", "HEAD"]).trim().to_owned();
+    let facts = base.join("facts");
+    std::fs::create_dir_all(&facts).unwrap();
+    let pins = |commits: &[&str]| {
+        let entries: String = commits
+            .iter()
+            .map(|commit| {
+                format!("[[source]]\nid = \"native-theme-evidence\"\nkind = \"git\"\nevidence = true\ncommit = \"{commit}\"\n\n")
+            })
+            .collect();
+        std::fs::write(
+            facts.join("sources.toml"),
+            format!(
+                "{entries}[[source]]\nid = \"x@1\"\nkind = \"git\"\ncommit = \"{}\"\n",
+                "1".repeat(40)
+            ),
+        )
+        .unwrap();
+    };
+    let refused = |named: Option<PathBuf>, cache: &Path, want: &str| {
+        let error = facts::evidence_root_at(&facts, named, cache).unwrap_err();
+        assert!(error.contains(want), "{error}");
+    };
+    pins(&[&head]);
+    assert_eq!(
+        facts::evidence_root_at(&facts, None, &cache),
+        Ok(repo.clone())
+    );
+    let elsewhere = base.join("elsewhere");
+    assert_eq!(
+        facts::evidence_root_at(&facts, Some(repo.clone()), &elsewhere),
+        Ok(repo.clone())
+    );
+    refused(None, &elsewhere, "is no directory");
+    refused(
+        Some(repo.join("docs")),
+        &cache,
+        "is not the top of a git checkout",
+    );
+    for (path, ignored) in [
+        ("docs/evidence/b.toml", false),
+        ("docs/evidence/c.toml", true),
+    ] {
+        std::fs::write(repo.join(path), "b = 1\n").unwrap();
+        if ignored {
+            std::fs::write(repo.join(".git/info/exclude"), "c.toml\n").unwrap();
+        }
+        refused(
+            None,
+            &cache,
+            "is not clean: 1 paths changed, untracked or ignored",
+        );
+        std::fs::remove_file(repo.join(path)).unwrap();
+    }
+    std::fs::write(repo.join("docs/evidence/a.toml"), "a = 2\n").unwrap();
+    refused(None, &cache, "is not clean");
+    std::fs::write(repo.join("docs/evidence/a.toml"), "a = 1\n").unwrap();
+    let other = "0".repeat(40);
+    pins(&[&other]);
+    refused(
+        None,
+        &cache,
+        &format!("is at {head}, not at the pin {other}"),
+    );
+    pins(&[]);
+    refused(None, &cache, "0 evidence entries");
+    pins(&[&head, &head]);
+    refused(None, &cache, "2 evidence entries");
+    std::fs::remove_dir_all(&base).unwrap();
+}
+
 #[test]
 fn facts_gate() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../docs/facts");
-    let presets: Vec<(String, Preset)> = PresetId::all()
+    let variable = presets_variable();
+    let ids = selected_presets(variable.as_deref())
+        .unwrap_or_else(|error| panic!("{PRESETS_VARIABLE}: {error}"));
+    let subset = ids.len() < PresetId::all().len();
+    assert!(
+        !(subset && std::env::var_os("FACTS_GATE_RELEASE").is_some()),
+        "the release's gate runs every bundled preset: unset {PRESETS_VARIABLE}"
+    );
+    let presets: Vec<(String, Preset)> = ids
         .iter()
         .map(|id| {
             let directory = DIRECTORIES
@@ -2034,14 +2279,25 @@ fn facts_gate() {
             (directory, Preset::bundled(*id).unwrap())
         })
         .collect();
-    let report = run::run(&root, &presets);
+    let evidence = facts::evidence_root(&root).unwrap_or_else(|error| panic!("{error}"));
+    let report = run::run(&root, &evidence, &presets);
+    let scope = if subset {
+        format!(
+            "a subset, {} of {} bundled presets ({}) as {PRESETS_VARIABLE} names (unset it to \
+             gate every preset)",
+            ids.len(),
+            PresetId::all().len(),
+            ids.iter().map(|id| id.key()).collect::<Vec<_>>().join(", "),
+        )
+    } else {
+        format!("{} presets", presets.len())
+    };
     eprintln!(
-        "facts gate: {} presets, {} keys compared over {} distinct combinations in {:?}; \
+        "facts gate: {scope}, {} keys compared over {} distinct combinations in {:?}; \
          {} pending facts; skipped: {} facts of {} keys the model does not hold, {} facts of a unit \
          not enabled, {} whens, \
          {} accent-run facts, {} facts naming a preset not bundled, {} combinations, \
          {} state-model variants only skipped facts name",
-        presets.len(),
         report.compared,
         report.queried,
         report.elapsed,
@@ -2116,7 +2372,7 @@ fn facts_gate() {
     }
     assert!(
         report.failures.is_empty(),
-        "{} failures in {} groups (listed above)",
+        "{} failures in {} groups (listed above); gated: {scope}",
         report.failures.len(),
         report.groups.len()
     );

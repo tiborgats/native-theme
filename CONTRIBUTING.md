@@ -118,6 +118,14 @@ audits against the cached database with a warning naming its date, or warns
 that the audit did not run where no cached database loads. `--commit` needs
 `cargo-audit` installed too.
 
+`--commit` and `--quick` are faster than the steps they list: where
+`cargo-nextest` is installed their test steps run through it (the doctests
+through `cargo test --doc`), and a step whose declared inputs, tools,
+environment and command are unchanged since it last passed is skipped, the
+summary naming it `unchanged since <commit>` (`scripts/step_cache.sh`;
+`--no-cache` runs every step). The full run uses neither: every step runs, as
+listed above, through `cargo test`.
+
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
 On Linux it tests `native-theme` with no features and with all its Linux
@@ -168,6 +176,27 @@ RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --no-deps
 ```
 
 CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
+
+The facts gate (`native-theme/tests/facts_gate.rs`) gates every bundled preset
+in one run, minutes per preset. While you work on some presets, limit it to
+them:
+
+```bash
+NT_FACTS_GATE_PRESETS=adwaita,macos-tahoe cargo test -p native-theme --test facts_gate
+```
+
+An id no bundled preset has, an empty name or an id named twice fails the
+test; the gate's report (`-- --nocapture`) says it ran a subset. A subset is no
+gate: `scripts/check_release.sh` never sets the variable, so all its modes gate
+every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
+
+The gate runs its parallel steps on as many threads as the machine has;
+`NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
+above zero fails the test. The count sets the speed and the memory: as many
+condition vectors are checked at once as there are threads, each one's
+combinations enumerated as they are checked, a chunk at a time, never all
+held, so each thread adds about 120 MB and the six presets peak near 4 GB on
+16 threads, 6 GB on 32.
 
 ## Project structure
 
@@ -235,7 +264,7 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 
 Design-level choices are captured in files under `docs/`:
 
-- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence under [`docs/evidence/`](docs/evidence/); the bundled presets are generated from them (`scripts/generate_preset.py`)
+- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence in the evidence repository, [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence), at the paths its citations name (`docs/evidence/…`) and at the commit `sources.toml` pins; the bundled presets are generated from them (`scripts/generate_preset.py`)
 - [`docs/platform-facts.md`](docs/platform-facts.md) — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py`; never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
 - [`docs/property-registry.toml`](docs/property-registry.toml) — the registry of 0.7.0's theme fields, generated from the 0.8.0 model at its plan's M2.6
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)

@@ -286,8 +286,9 @@ sections, `docs/todo.md` and the presets' definition comments, the first
 three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
 triage, the pinned sources and their cache, the facts and their citations,
 the generated widgets, presets, `sf_tracking` and `dynamic_type` tables and
-`docs/platform-facts.md`, the function vectors, the trace lines and the
-pinned line citations), docs and the archive index, then the docs.rs emulation,
+`docs/platform-facts.md`, the function vectors, the trace lines, the
+pinned line citations and no file tracked under `docs/evidence/`, whose
+evidence lives in `native-theme-evidence`), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -324,9 +325,75 @@ exclusions with a YAML comment that is exactly
 `# PLAN_EXCLUDED: <description>`, and the first section fails unless the
 marks and the list name the same set.
 
+Two speed-ups apply to `--commit` and `--quick` alone; the full run runs
+every step through `cargo test`, with no cache. Where `cargo-nextest` is
+installed, the test steps run `cargo nextest run` (`cargo_tests` in the
+script), and `cargo test --doc` where `cargo test` would have run doctests too.
+The step cache (`step_cache.sh`, below) skips a step whose declared inputs are
+unchanged since it last passed; the summary lists each as
+`unchanged since <commit>`, and `--no-cache` runs every step.
+
 ```sh
+./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
+./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
+```
+
+## step_cache.sh
+
+The step cache of `check_release.sh --commit` and `--quick`, sourced by it.
+A step is skipped only when the SHA-256 key of its run equals the one recorded
+when it last passed: the tool versions (`rustc -vV`, `cargo -vV`, clippy's,
+rustdoc's, rustfmt's, Python's, nextest's), both scripts' own hashes, the
+environment (but `_`, `SHLVL`, `OLDPWD`), the step's description and command,
+and the content of its declared inputs (`CACHE_INPUTS` in `check_release.sh`:
+files, directories and globs by path and content, a missing one by name;
+`__pycache__` folders left out). A cargo step's inputs (`@rust:<crates>`) are
+the workspace manifest, lock and tool configuration, every Cargo configuration
+file Cargo would read, and the directory of each workspace package the crates
+reach on this host with every feature on; where that reach holds a registry
+build helper that probes the host (`pkg-config`, `cc`, …) or a workspace build
+script or procedural macro not reviewed for what it reads, the step is not
+cached. A failed step records nothing, nor does one whose inputs changed while
+it ran; a step with no declaration always runs. The records are in
+`target/check-release-cache/`, one file per step.
+
+`--self-test` shows that a declared file edited, added, renamed or removed, a
+glob's new match, the script edited, the command or the environment changed,
+re-run the step, and that a failure records nothing; `check_release.sh` runs it
+in every mode.
+
+```sh
+bash scripts/step_cache.sh --self-test
+```
+
+## preset-check (tools/preset-check)
+
+A dev-only binary, never published, for the facts lanes, which run no cargo:
+it loads a preset as a bundled preset loads (through the synthetic route where
+its `[pending]` table lists paths), under each scheme, and prints every
+problem in the reader's and validation's own words, grouped by class
+(`== Missing: 12`, then one line per problem; one found under a single scheme
+names it). Exit 0 when the preset loads, 1 otherwise. A preset whose `id`
+names a bundled preset loads as that preset, so its `preset:` conditions hold;
+any other loads as a preset no `PresetId` names, and the report says so.
+`-` reads the preset from stdin. `--draft <id>` loads what
+`python3 scripts/generate_preset.py <id>` prints, run in the current directory:
+that draft leaves the hand-written parts' blocks empty, and the reader stops at
+the first of them (`preset.generation: missing`) before validation runs. For a
+bundled preset, `generate_preset.py <id> --write` in the worktree carries its
+hand-written parts into the file, which `preset-check <file>` then loads whole.
+
+Built once in the main checkout, then run by path from any worktree, with no
+cargo:
+
+```sh
+cargo build -p native-theme-preset-check     # in /home/tibi/Rust/native-theme
+cd <worktree>
+python3 scripts/generate_preset.py ios-26 --write
+/home/tibi/Rust/native-theme/target/debug/preset-check native-theme/src/presets/ios-26.toml
+/home/tibi/Rust/native-theme/target/debug/preset-check --draft ios-26
 ```
 
 ## check_panic_patterns.py
@@ -701,8 +768,8 @@ Lists every citation of today's `docs/platform-facts.md` or the deleted
 the 0.8.0 plan's *Citations of today's platform-facts.md by line*): since
 the switch the document is generated and the rules file is gone, so a line
 number without its commit names a line of another file, or of none. It
-reads every file git tracks or would track, but `docs/archive/`,
-`docs/evidence/` and the scripts that define and convert the format
+reads every file git tracks or would track, but `docs/archive/` and the
+scripts that define and convert the format
 (`citations.py`, `repin_citations.py`, `import_platform_facts.py`,
 `convert_inheritance_rules.py` and itself). A `:N` continuation after a
 pinned citation inherits its commit; a mention with no line is no line
@@ -879,7 +946,9 @@ repository path where the rules give one, the lines and a status (resolved,
 heuristic, ambiguous, unresolved); the seeds file's excerpts of other
 documents' cells are marked as quotes. A module, imported by
 `check_sources.py` and meant for the re-pin of the citations; its docstring
-states the rules in the order they apply and the API. Existence checks (a path
+states the rules in the order they apply and the API, `evidence_root` among
+it (the evidence root every reader of evidence resolves, under
+`check_fact_citations.py`). Existence checks (a path
 carried from the citation before it, the Windows gap map's two bases, a bare
 name) use this repository's files, and with `--cache` also the source cache's
 checkouts. Run alone it prints the records as TSV, or with `--summary` the
@@ -906,6 +975,11 @@ an https URL, its tag the id's version as the project tags it (`v6.8.2` for
 a leading `-`; every `[[site]]` names its pinning method (its git source
 repositories, each naming the site back as its `site`, or snapshots), and a
 source's `site` is a listed site; every `[[not_pinned]]` gives its reason.
+The one git entry with `evidence = true` pins the evidence repository
+(specification S17 *The evidence root*): its id is `native-theme-evidence`,
+it is a commit pin with `generations = []` and a `note`, and it has no
+`project`, `release`, `researched` or `proof`, which it alone is waived (its
+commit is this project's own, moved by its facts commits).
 `update_sources.sh` refuses a file with any of these problems. Then, through `citations.py`, every project the core, the catalogue,
 the traces and the gap maps cite must be a source, a site or not pinned (the
 generated `docs/platform-facts.md` is not read: its citations are the facts',
@@ -937,7 +1011,8 @@ with the fields of their kind and a pinned source, `scheme_file` and `accent`
 both or neither in `kde/` only, and the generation rule: without `preset:`,
 its citations together serve each preset of its directory that exists (the
 bundled `native-theme/src/presets/<id>.toml`; with none the rule asks
-nothing). A
+nothing; a measured citation serves the preset its run's `run.toml` maps its
+image to, read under the evidence root, below `check_fact_citations.py`). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
@@ -1035,7 +1110,18 @@ python3 scripts/check_facts.py --self-test
 
 Checks what the 0.8.0 facts' citations say, against the source cache
 (`update_sources.sh`; `--cache DIR` or `NATIVE_THEME_SOURCES` overrides it)
-and `docs/evidence/`: each quote occurs, whitespace-normalised, in the cited
+and the evidence: a path `docs/evidence/<rest>` names
+`<root>/docs/evidence/<rest>`, the root being the evidence repository
+([`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence))
+checked out where `NATIVE_THEME_EVIDENCE` names, else in the source cache at
+`<cache>/native-theme-evidence/` (`update_sources.sh --only
+native-theme-evidence`), and accepted only clean (no changed, untracked or
+ignored file) at the commit `sources.toml`'s `evidence = true` entry pins:
+otherwise the run fails, naming the root and the pin (specification S17 *The
+evidence root*; `citations.evidence_root`, which `check_facts.py`,
+`check_function_vectors.py`, `generate_dynamic_type.py` and the facts gate
+apply alike; a self-test's fixture holds its own `docs/evidence/`). Each
+quote occurs, whitespace-normalised, in the cited
 lines at the pin (a JSON page: in the string at the pointer, in the snapshot
 file its `sources.toml` entry names with `file`); no `absent` name occurs
 there as an identifier; per generation, every literal of the value equals a
@@ -1300,10 +1386,19 @@ when it is at its commit with exactly the entry's `sparse` folders (a changed
 list fetches it again); a changed tracked file in it is reset to the commit.
 `--seed DIR` fetches a complete entry from the checkout `DIR/<repository
 name>` instead, when that checkout's HEAD is the commit (its tracked files
-only), `--jobs N` sets how many fetches run at once (4, at least 1).
+only), `--jobs N` sets how many fetches run at once (4, at least 1), `--only
+ID` (repeatable) fetches or verifies the named git entries alone.
 `--verify` runs offline and exits 1 unless every entry's checkout is at its
 commit with its sparse folders and no tracked file changed; both modes report
-cache folders no entry names. Before anything else both modes check
+cache folders no entry names (not with `--only`). The evidence entry's
+checkout, `<cache>/native-theme-evidence/`, is what this, the main checkout's
+readers of evidence read: a moved pin is fetched into it (only the new runs
+download), and both modes count an untracked or ignored file in it as a
+problem, since the readers refuse it. The entry is skipped, `--verify`
+included, where `NATIVE_THEME_EVIDENCE` is set and in any worktree of this
+repository (`git rev-parse --git-dir` differs from `--git-common-dir`), so a
+worktree, whose pin may differ, never moves the checkout under a gate running
+in the main checkout: it sets `NATIVE_THEME_EVIDENCE` to a clone of its own. Before anything else both modes check
 `sources.toml` with `check_sources.py`'s form rules and exit 2 on a problem,
 and every path the script writes or removes must resolve to a folder directly
 inside the cache. The SDK and distribution entries are not fetched; an SDK
@@ -1316,6 +1411,7 @@ Requires git and Python 3.11; network access unless `--verify`.
 ```sh
 ./scripts/update_sources.sh
 ./scripts/update_sources.sh --verify
+./scripts/update_sources.sh --only native-theme-evidence
 ```
 
 ## repin_citations.py
