@@ -181,7 +181,11 @@ MIN_FACTS = 300
 MAX_FACTS = 1000
 
 # The catalogue's sections that define what an entry's names mean, before the entries.
-CATALOGUE_SECTIONS = ("Entry format", "Shared value types", "Shared flags", "Selector notation")
+# The catalogue sections every brief needs, and those copied where the catalogue has them (the colour roles',
+# tokens' and keyed components' definitions, which a unit of roles or tokens reads).
+CATALOGUE_REQUIRED = ("Entry format", "Shared value types", "Shared flags", "Selector notation")
+CATALOGUE_SECTIONS = CATALOGUE_REQUIRED + ("Nested controls", "Keyed components", "Colour roles and text ramp",
+                                           "Tokens, conditions, readers, placement")
 FORMAT_SECTIONS = ("## The format", "## Canonical forms")
 SPEC = check_facts.CORE
 # The specification's normative sections: S1 to S21, which define the keys (parts, fields and their types, roles,
@@ -757,7 +761,7 @@ def catalogue_text(cat_text, widgets):
     added = list(out)
     spans = heading_spans(cat_text, key)
     found = {k for _, _, k in spans}
-    missing = sorted((set(CATALOGUE_SECTIONS) | set(widgets)) - found)
+    missing = sorted((set(CATALOGUE_REQUIRED) | set(widgets)) - found)
     if missing:
         raise InputError(f"{CATALOGUE}: no section {', '.join(missing)}")
     for a, b, _ in spans:
@@ -2023,7 +2027,7 @@ Not normative here.
 
 ## Tokens, conditions, readers, placement
 
-Not copied.
+Copied: the tokens' definitions.
 '''
 
 SELF_TEST_SOURCES = '''
@@ -2308,7 +2312,8 @@ def self_test() -> int:
         check("brief: the catalogue's shared sections and the widget's whole entry, nothing else",
               ("## Entry format" in cat, "## Shared value types" in cat, "## Shared flags" in cat,
                "## Selector notation" in cat, "- **Notes:** a note naming the card." in cat, "### link" in cat,
-               "Not copied." in cat, "Not normative here." in cat), (True,) * 5 + (False,) * 3)
+               "Copied: the tokens' definitions." in cat, "Not normative here." in cat),
+              (True,) * 5 + (False, True, False))
         check("brief: a citation in the copied normative text is elided, the text around it kept",
               ([f for f in found if f[0] in ("leak", "normative-value")], "border-radius: 6px;" in cat,
                "libadwaita's selectors in `_buttons.scss` (`⟦elided: a citation of this unit⟧`)." in cat),
