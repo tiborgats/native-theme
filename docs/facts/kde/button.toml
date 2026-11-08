@@ -1697,6 +1697,172 @@ kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
 
+# A default command link with the neutral highlight (round 6): its option carries no DefaultButton, so the frame
+# takes renderButtonFrame's rest branch, whose pen is the neutral colour (the rest look's own, K1.25)
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default"] }
+value = "= role.view.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default"] }
+value = "= role.view.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default"] }
+value = "= role.view.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default"] }
+value = "= role.view.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
 [[fact]]
 key = "button.body.fill"
 when = { states = ["checked"] }
@@ -6104,6 +6270,171 @@ quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighl
 kind = "published"
 source = "breeze@6.8.2 kstyle/breezehelper.cpp:104-105"
 quote = "_contrastBias = KColorScheme::frameContrast();"
+
+# The same, disabled: the rest branch's neutral pen in the disabled group
+[[fact]]
+key = "button.body.stroke.top.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default", "disabled"] }
+value = "= role.view.disabled.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.right.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default", "disabled"] }
+value = "= role.view.disabled.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.bottom.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default", "disabled"] }
+value = "= role.view.disabled.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
+
+[[fact]]
+key = "button.body.stroke.left.paint"
+when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "warning"], states = ["default", "disabled"] }
+value = "= role.view.disabled.neutral"
+rows = ["K2.7", "K1.25"]
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:1987-1989"
+quote = "QStyleOptionButton option; option.initFrom(button); option.features |= QStyleOptionButton::CommandLinkButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:2004"
+quote = "drawControl(QStyle::CE_PushButton, &option, &painter, button);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4526"
+quote = "bool hasNeutralHighlight = hasHighlightNeutral(widget, option);"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezestyle.cpp:4543"
+quote = "defaultButton = buttonOption->features & QStyleOptionButton::DefaultButton;"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:703-707"
+quote = "} else { bgBrush = palette.button().color(); penBrush = hasNeutralHighlight ? neutralText(palette) : KColorUtils::mix(palette.button().color(), palette.buttonText().color(), frameIntensityBias()); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.h:81-85"
+quote = "QColor neutralText(const QPalette &palette) const { return _viewNeutralTextBrush.brush(palette).color(); }"
+
+[[fact.cite]]
+kind = "published"
+source = "breeze@6.8.2 kstyle/breezehelper.cpp:92"
+quote = "_viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);"
 
 [[fact]]
 key = "button.body.fill"
@@ -12819,6 +13150,15 @@ rows = ["K1.153"]
 kind = "published"
 source = "qtbase@6.12.0 src/widgets/widgets/qtoolbutton.cpp:187"
 quote = "toolButtonStyle = Qt::ToolButtonIconOnly;"
+
+# A tool button showing its icon and its text (round 6): QToolButton draws them beside or under each other by its
+# toolButtonStyle (Qt::ToolButtonTextBesideIcon, Qt::ToolButtonTextUnderIcon), which `with_icon` does not fix, and the
+# toolbar's style sets it in a toolbar (K1.153); no source or evidence gives the position for the variant set (U697)
+[[fact]]
+key = "button.values.label_position"
+when = { variants = ["tool", "with_icon"] }
+pending = "U697"
+rows = ["K1.153"]
 
 [[fact]]
 key = "button.values.shows_icon"
