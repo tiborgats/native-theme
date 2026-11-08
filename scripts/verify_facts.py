@@ -120,11 +120,13 @@ combinations) against the verifier's file, by identity. The values are compared 
 the output with the facts whose spelling it changed and the pairs that agree only through it. A pair that still
 differs where either side holds an expression or a reference is resolved (Resolver): both values are evaluated in
 the lane fact's combination, under each world it holds in (worlds: its conditions, with each scheme and preset it
-leaves open), references read from the lane's facts of the platform and S2.2's arithmetic, `alpha`, `with_alpha`,
-`mix` and `pick` evaluated; a pair equal (same) in every world is `equivalent by resolution`, a class of its own,
-never agreed nor in the audit sample's population, listed with its resolved values per world; any other stays
-disagreed, with the resolved values or why they did not resolve (`absent` is no colour, so it never equals a
-transparent one). Counts: agreed, equivalent by resolution, disagreed, lane-only (the compared identities the
+leaves open; explore() opens every other condition it leaves open that a fact the resolution reads names, splitting
+the world, the condition held and not, as for the schemes, a one-valued condition's other values and CONTRAST's
+other member refused where one is held), references read from the lane's facts of the platform and S2.2's
+arithmetic, `alpha`, `with_alpha`, `mix` and `pick` evaluated; a pair equal (same) in every world is `equivalent by
+resolution`, a class of its own, never agreed nor in the audit sample's population, listed with its resolved values
+per world; any other stays disagreed, with the resolved values or why they did not resolve (`absent` is no colour,
+so it never equals a transparent one). Counts: agreed, equivalent by resolution, disagreed, lane-only (the compared identities the
 verifier does not state), verifier-only (the verifier's identities the lane states nowhere on the platform), outside
 the compared combinations (the verifier's identities the lane states elsewhere: unchanged since the baseline,
 pending, or refused by the model comparison) and refused by the model. It writes into `--out` (the verifier file's
@@ -1327,10 +1329,12 @@ class Resolver:
     reads the lane's facts of the platform: `role.`, `token.` and `input.` by the facts whose conditions the world
     holds (of the compared fact's accent run where the referenced facts have runs), `part.`, `widget.<part>.` and
     `values.` by the facts of the compared fact's widget whose `when` the combination implies; the last such fact
-    applies (S17), a whole block's fact read at its leaf. `surface.`, `element.`, `base`, `font_size`, `line_height`,
-    `body_font_height`, `text_scale` and the platform functions are not evaluated."""
+    applies (S17), a whole block's fact read at its leaf. A fact naming a condition the world leaves open
+    (condition_open: `decided` holds those the compared `when` names and the splits so far) raises Branch, where the
+    rest of its `when` holds, so explore() splits the world on it. `surface.`, `element.`, `base`, `font_size`,
+    `line_height`, `body_font_height`, `text_scale` and the platform functions are not evaluated."""
 
-    def __init__(self, facts, fact, world):
+    def __init__(self, facts, fact, world, decided=frozenset()):
         self.by_key = {}
         for f in facts:
             if isinstance(f.identity[0], tuple):
@@ -1338,13 +1342,14 @@ class Resolver:
         self.fact = fact
         self.when = fact.data.get("when") if isinstance(fact.data.get("when"), dict) else {}
         self.world = world
+        self.decided = frozenset(decided)
         self.segs = fact.identity[0] if isinstance(fact.identity[0], tuple) else ()
         self.depth = 0
 
     def holds_world(self, f):
         w = f.data.get("when") if isinstance(f.data.get("when"), dict) else {}
-        return (check_facts.when_lists(w, "conditions") <= self.world
-                and not check_facts.when_lists(w, "not_conditions") & self.world)
+        return conditions_hold(check_facts.when_lists(w, "conditions"), check_facts.when_lists(w, "not_conditions"),
+                               self.world, self.decided)
 
     def implied(self, f):
         """The fact's `when` holds wherever the combination's does: each list a subset of the combination's (its
@@ -1367,10 +1372,9 @@ class Resolver:
 
     def lookup(self, segs, test, name):
         for k in range(len(segs), 0, -1):
-            cands = [f for f in self.run_of(self.by_key.get(segs[:k], [])) if test(f)]
-            if not cands:
+            f = next((x for x in reversed(self.run_of(self.by_key.get(segs[:k], []))) if test(x)), None)
+            if f is None:
                 continue
-            f = cands[-1]
             if "pending" in f.data:
                 raise Unresolved(f"{name}: pending in the lane's facts ({f.data['pending']})")
             v = self.value(f.data.get("value"))
@@ -1421,11 +1425,12 @@ class Resolver:
             if tree[0] == "ref":
                 return self.ref(tree[1])
             if tree[1] == "active" and len(tree[2]) == 1 and tree[2][0][0] == "ref":
-                saved, self.world = self.world, self.world - {"window_inactive"}
+                saved = self.world, self.decided
+                self.world, self.decided = self.world - {"window_inactive"}, self.decided | {"window_inactive"}
                 try:
                     return self.ref(tree[2][0][1])
                 finally:
-                    self.world = saved
+                    self.world, self.decided = saved
             return call(tree[1], [self.expr(a) for a in tree[2]])
         finally:
             self.depth -= 1
@@ -1450,41 +1455,105 @@ class Resolver:
 
 def worlds(fact, platform):
     """The worlds a fact's combination holds in: its `when`'s conditions, with each scheme and each preset of the
-    platform where the `when` fixes none (and does not refuse it)."""
+    platform where the `when` fixes none (and does not refuse it). explore() opens the other conditions."""
     w = fact.data.get("when") if isinstance(fact.data.get("when"), dict) else {}
     base = check_facts.when_lists(w, "conditions")
     nots = check_facts.when_lists(w, "not_conditions")
     axes = [[f"scheme:{x}" for x in ("light", "dark")], [f"preset:{x}" for x in PLATFORMS.get(platform, ())]]
     out = [frozenset(base)]
     for axis in axes:
-        if len(axis) < 2 or any(c in base for c in axis):
-            continue
-        out = [x | {c} for x in out for c in axis if c not in nots]
+        values = [c for c in axis if c not in nots]
+        if values and not any(c in base for c in axis):
+            out = [x | {c} for x in out for c in values]
+    return out
+
+
+def world_label(world, platform):
+    """A world as the tie-breaker reads it: the conditions it holds, a platform's one preset left out."""
+    only = PLATFORMS.get(platform, ())
+    return ", ".join(sorted(c for c in world if len(only) > 1 or c != f"preset:{only[0]}")) or "no condition"
+
+
+class Branch(Exception):
+    """A condition an evaluation reads that its world leaves open (condition_open): explore() splits the world on
+    it."""
+
+    def __init__(self, condition):
+        super().__init__(condition)
+        self.condition = condition
+
+
+AXES = ("scheme", "preset")   # each world fixes one of each (worlds())
+
+
+def condition_open(c, world, decided):
+    """Whether a world leaves a condition open: not decided (named by the compared `when`, or split on before), no
+    scheme or preset (the world fixes them), and not refused by another value of a one-valued condition the world
+    holds (check_facts.ONE_VALUED, one container's `container_size:`, CONTRAST; S7.1, S12)."""
+    if c in decided or c in world:
+        return False
+    head, _, arg = c.partition(":")
+    if head in AXES:
+        return False
+    if head in check_facts.ONE_VALUED:
+        return not any(x.partition(":")[0] == head for x in world)
+    if head == "container_size":
+        return not any(x.startswith(f"container_size:{arg.partition(':')[0]}:") for x in world)
+    if c in check_facts.CONTRAST:
+        return not any(x in check_facts.CONTRAST for x in world)
+    return True
+
+
+def conditions_hold(conds, nots, world, decided):
+    """Whether a `when`'s conditions hold in a world: False where a condition the world decides refuses it, else
+    Branch on the first it leaves open, else True."""
+    if any(c not in world and not condition_open(c, world, decided) for c in conds) or (nots & world):
+        return False
+    opened = sorted(c for c in conds | nots if condition_open(c, world, decided))
+    if opened:
+        raise Branch(opened[0])
+    return True
+
+
+def explore(fact, platform, evaluate):
+    """[(world, result)]: `evaluate(world, decided)` under each world the fact's combination holds in (worlds()), a
+    world split, the condition held and not, on each condition an evaluation reads that the world leaves open
+    (Branch), so every condition the result depends on is opened, as the schemes are."""
+    w = fact.data.get("when") if isinstance(fact.data.get("when"), dict) else {}
+    named = frozenset(check_facts.when_lists(w, "conditions") | check_facts.when_lists(w, "not_conditions"))
+    stack = [(world, named) for world in reversed(worlds(fact, platform))]
+    out = []
+    while stack:
+        world, decided = stack.pop()
+        try:
+            out.append((world, evaluate(world, decided)))
+        except Branch as b:
+            stack.append((world, decided | {b.condition}))
+            stack.append((world | {b.condition}, decided | {b.condition}))
     return out
 
 
 def resolve_pair(facts, lf, vf, platform, types=None):
     """(equivalent, [one line per world]): the lane's and the verifier's values evaluated in the lane fact's
-    combination under every world it holds in; equivalent only where both resolve, in every world, to one value.
-    The values are read as omitted_option reads them (`types`)."""
-    notes, ok = [], True
+    combination under every world it holds in (explore(): the schemes, the presets and each condition the resolution
+    reads); equivalent only where both resolve, in every world, to one value. The values are read as omitted_option
+    reads them (`types`)."""
     on = tuple(NORMALISATIONS)
-    for world in worlds(lf, platform):
-        label = ", ".join(sorted(world)) or "no condition"
-        r = Resolver(facts, lf, set(world))
+
+    def evaluate(world, decided):
+        r = Resolver(facts, lf, set(world), decided)
         try:
             a = r.value(stated_value(lf.data, on, set(), types))
             b = r.value(stated_value(vf.data, on, set(), types))
         except Unresolved as err:
-            notes.append(f"{label}: unresolved: {err}")
-            ok = False
-            continue
+            return False, f"unresolved: {err}"
         if same(a, b):
-            notes.append(f"{label}: both {render(a)}")
-        else:
-            notes.append(f"{label}: lane {render(a)}, verifier {render(b)}")
-            ok = False
-    return ok, notes
+            return True, f"both {render(a)}"
+        return False, f"lane {render(a)}, verifier {render(b)}"
+
+    results = explore(lf, platform, evaluate)
+    return (all(ok for _, (ok, _) in results),
+            [f"{world_label(world, platform)}: {note}" for world, (_, note) in results])
 
 
 # --------------------------------------------------------------------------------------------- the compare
@@ -2243,7 +2312,9 @@ _TRANSITION = ('{ properties = ["fill"], kind = "interpolate", duration_ms = 100
 RESOLUTION_LANE = {   # the lane's facts the resolution cases read (windows: one preset, the worlds are the schemes)
     "docs/facts/windows/roles.toml": _fact("role.window.foreground", '"#000000"', '{ conditions = ["scheme:light"] }')
     + _fact("role.window.foreground", '"#ffffff"', '{ conditions = ["scheme:dark"] }'),
-    "docs/facts/windows/tokens.toml": _fact("token.focus.width", '"2px"'),
+    "docs/facts/windows/tokens.toml": _fact("token.focus.width", '"2px"')
+    + _fact("token.motion.durations.button", '"200ms"')
+    + _fact("token.motion.durations.button", '"0ms"', '{ conditions = ["animations_off"] }'),
     "docs/facts/windows/button.toml": "".join([
         _fact("button.body.padding.top", '"3px"'), _fact("button.body.padding.bottom", '"3px"'),
         _fact("button.body.padding.top", '"5px"', '{ variants = ["flat"] }'),
@@ -2255,6 +2326,7 @@ RESOLUTION_LANE = {   # the lane's facts the resolution cases read (windows: one
         _fact("button.body.fill", '"= m3_role(primary)"', '{ states = ["pressed"] }'),
         _fact("button.body.transitions", f"[{_TRANSITION}]"),
         _fact("button.body.focus.transition", _TRANSITION),
+        _fact("button.values.press", '"= token.motion.durations.button"'),
     ]),
 }
 RESOLUTION_VERIFIER = "".join([
@@ -2592,6 +2664,20 @@ def self_test() -> int:
                   {"kind": {"linear": {"angle_deg": 0, "offset_px": "none"}}, "inset": "none"})],
               [{"layers": [{"kind": {"linear": {"angle_deg": 0}}}], "inset": "none"},
                {"kind": {"linear": {"angle_deg": 0}}, "inset": "none"}])
+        # the conditions a combination leaves open, as the schemes: a reference that differs under one is no
+        # equivalent
+        units5 = {"rev": doc["rev"], "unit": [{
+            "id": "WN-T3", "platform": "windows", "kind": "cited", "presets": ["windows-11"], "facts": 1,
+            "identities": [{"file": "button.toml", "key": "button.values.press"}]}]}
+        efile = out / "conditions" / "facts.toml"
+        efile.parent.mkdir()
+        efile.write_text(_fact("button.values.press", '"200ms"'))                    # not under animations_off
+        s5 = compare(repo, units5, "WN-T3", efile, types=types)
+        et = tomllib.loads((out / "conditions" / "tiebreak.toml").read_text())
+        check("open conditions: a reference differing under animations_off stays a disagreement",
+              (s5["equivalent_by_resolution"], s5["disagreed"], et["disagreed"][0]["resolved"]),
+              (0, 1, ["animations_off, scheme:light: lane 0ms, verifier 200ms", "scheme:light: both 200ms",
+                      "animations_off, scheme:dark: lane 0ms, verifier 200ms", "scheme:dark: both 200ms"]))
         check("normalise: srgb is its hex", norm_value("srgb(1, 1, 1)", tuple(NORMALISATIONS), set()),
               ("string", "#ffffff"))
         check("normalise: an expression", norm_value("= alpha( surface.foreground , 0.50 )", tuple(NORMALISATIONS),
