@@ -3603,8 +3603,8 @@ controls take keyboard focus, and so show it. On macOS it is the Keyboard naviga
 Keyboard), which `NSApplication.isFullKeyboardAccessEnabled` reports, "whether
 keyboard navigation is enabled in System Settings > Keyboard", not "the separate accessibility setting named 'Full
 Keyboard Access'" (`NSApplication.h:377-380` at xcode@26.6, `:373-376` at xcode@16.4), whose highlight the system
-draws (MAC-X31†, out, R1.1); the macOS reader reads that property, which key-value observing does not report changes
-of (the same note), so a change shows at the reader's next read, no watcher event announcing it. On iOS it is Full Keyboard Access, the one
+draws (MAC-X31†, out, R1.1); the macOS reader reads that property, on the main thread only (S9.3's *The macOS
+reader's readings*; ADD-A138), and key-value observing does not report its changes (the same note), so a change shows at the reader's next read, no watcher event announcing it. On iOS it is Full Keyboard Access, the one
 setting of the name (X-FO-3†, no API found). The name stays the API's. Rejected: renaming the condition after the
 macOS setting's label (iOS's setting and both platforms' API keep the name); one condition per macOS setting (the
 accessibility setting's highlight is the system's, MAC-X31†, which no preset states).
@@ -4162,8 +4162,10 @@ accent, the reason the layer exists, above).
 
 **The accent inputs as one group** (ADD-A132). Every layer above the preset states the current preset's accent inputs
 (S9.1), those of its inputs that apply (S8), as one group: at a scheme at which it states any of them, a per-scheme
-value or a contrast base, it states every one's per-scheme value. So at every slot (S9) a layer gives all of them a
-value or none, and the accent inputs in force at a slot all come from one layer, the last that gives any there: no
+value or a contrast base, it states every one's per-scheme value. The one exception is a reader whose platform gives
+it its values only under the contrast in force: while that is a contrast, it states at such a scheme every one's base
+for that contrast and no per-scheme value (the macOS reader while Increase Contrast is on, S9.3's *The macOS
+reader's readings*; ADD-A138). So at every slot (S9) a layer gives all of them a value or none, and the accent inputs in force at a slot all come from one layer, the last that gives any there: no
 accent mixes with derived inputs of another, at any scheme or contrast (S8, S9.5). The preset, the bottom layer, needs
 no check, as nothing beneath it can mix with it. `Theme` checks the group where an application supplies the values,
 and refuses a change that breaks it with `Err(AccentInputsMissing)`, naming each accent input that lacks its
@@ -4177,7 +4179,8 @@ common bases or a `for_preset` part), or no accent input at all; it is accepted 
 alone. Weighed: the group per slot
 alone, a layer giving all of them a value or none at each slot (it needs a second condition, all or none of the
 contrast bases at a scheme where the layer states no per-scheme value, only to admit a group stated under a contrast
-alone, which no reader, palette or gate states); the check by input name it replaces (an `Accent` or a mapping stating a derived input at one scheme and the
+alone, which no palette or gate states and only the macOS reader does, by construction, the exception above;
+ADD-A138); the check by input name it replaces (an `Accent` or a mapping stating a derived input at one scheme and the
 `accent` at both mixes them at the other); every `Accent` required at both schemes, as a mapping is at
 its palette's (it removes the one-scheme `Accent`, an application's own choice, and leaves a stand-in's partial
 group); the stand-in's `accent` left
@@ -4198,10 +4201,10 @@ both schemes, so the user's accent
 shows when the application `pick`s the other scheme; a scheme-dependent value it states only under the scheme it read,
 and the other scheme keeps the value of the layers beneath, the preset's, until the system switches and the reader
 reads again (S9: an input is replaced slot by slot). Likewise for a contrast: a reader states an input's base for each
-contrast under which its platform gives the input a value of its own, beside its per-scheme value, which would
-otherwise stand under that contrast over the preset's base for it (S9): the macOS reader states its five inputs
-under the increased-contrast appearances (MAC-X22), as the macOS presets state their `contrast.increased`
-bases, and whether the Windows reader states the accent's and the ramp's `contrast.high` bases follows the Windows
+contrast under which its platform gives the input a value of its own, beside its per-scheme value where it reads
+one, which would otherwise stand under that contrast over the preset's base for it (S9): the macOS reader states its five inputs'
+`contrast.increased` bases from the Aqua and DarkAqua appearances it reads while Increase Contrast is on (MAC-X22;
+*The macOS reader's readings*, below; ADD-A138), as the macOS presets state theirs, and whether the Windows reader states the accent's and the ramp's `contrast.high` bases follows the Windows
 facts' high-contrast inputs (S22's follow-up). A reader states its own preset's accent inputs as one group (S9.2),
 every one at each scheme at which it states any (the macOS reader the five, read under the same appearances; the
 Windows reader the accent with its ramp; the GNOME and KDE readers the accent alone); a reader that cannot read one of
@@ -4214,7 +4217,12 @@ Windows reader's unreadable ramp shade costs the user's accent too, needs anothe
 dropping the whole group at the scheme for a failure under one contrast would cost the user's accent under every
 contrast for no gain where the preset's contrast base follows its default accent (macOS's increased contrast), and
 where it does not (a high-contrast theme's colours, if the Windows facts give them) the per-scheme values standing
-under that contrast cost what a reader stating no base there costs, for a rare failure). The KDE reader states its results, the `[WM]` fallback references among them (the catalogue's `[WM]`
+under that contrast cost what a reader stating no base there costs, for a rare failure). A slot at which the
+platform gives the reader no value in the state it reads (AppKit, which resolves its colours under the contrast in
+force alone, below) is no failure but a slot the platform gives none at: the reader states nothing there and
+reports no `Fallback` for it, as the KDE reader reports none for an absent `AccentColor` (below); `Fallback` stays
+for a read that fails (ADD-A138; weighed: `Fallback` there, which the macOS reader would report on every read, so it
+would carry no information; a status of its own, an API member for a state the platform is always in). The KDE reader states its results, the `[WM]` fallback references among them (the catalogue's `[WM]`
 roles), under the scheme it read only. Its `input.accent` (ADD-A132), read from kdeglobals with Plasma's
 `kdedefaults` beneath, as KConfig reads it:
 - where `[General] AccentColor` is set and not equal to Qt's `transparent` (`#00000000`, as `applyScheme()` compares
@@ -4241,7 +4249,7 @@ in a scheme where they differ); `#00000000` in the common bases (S9.5 carries it
 would mix and seed from transparent black). The new reads per
 platform are the rows of the traceability whose target is a reader read (S20); each is a `reader::<platform>` change.
 
-**The GNOME reader's readings** (ADD-A135; ledger queue #171, #173). Its sources are the XDG Settings portal's
+**The GNOME reader's readings** (ADD-A135, ADD-A138; ledger queue #171, #173, #179). Its sources are the XDG Settings portal's
 `org.freedesktop.appearance` namespace and gsettings, each setting the portal does not give (no session bus, no
 answer within the readers' D-Bus deadline, the setting missing) read from gsettings where GNOME keeps it, and a
 setting neither gives stated by nothing, so it keeps the no-reader state's value (S16): a flag false, an unread
@@ -4254,7 +4262,12 @@ setting neither gives stated by nothing, so it keeps the no-reader state's value
   helpers) and states that accent's colour (`src/adw-accent-color.c:52-80`). GNOME's own portal sends the chosen
   accent's colour, which classifies as itself, so the two differ only where another portal backend answers. A
   channel outside `0..=1`, which the portal's specification reads as no accent, states none, so the preset's own
-  shows, `adwaita`'s being libadwaita's blue, which libadwaita takes there (`:124-141`).
+  shows, `adwaita`'s being libadwaita's blue, which libadwaita takes there (`:124-141`); so does a channel that is
+  not a number (NaN), which no range holds (ADD-A138). libadwaita's own range check passes a NaN, every comparison
+  with it being false (`src/adw-settings-impl-portal.c:132-133`), and its classifier then falls through every cut to
+  pink (`src/adw-accent-color.c:171-198`); the reader does not follow it there: a NaN is no colour, that pink is the
+  comparisons' fall-through and no reading of one, and `adw_accent_nearest`'s table holds no such row (rejected:
+  pink, as libadwaita shows it; a `Fallback`, the portal's read having succeeded).
 - the scheme and `contrast_high` from the portal's `color-scheme` and `contrast`, else gsettings'
   `org.gnome.desktop.interface color-scheme` and `org.gnome.desktop.a11y.interface high-contrast` (the scheme light
   where neither gives one, the reader reporting a scheme as every reader does, S8);
@@ -4266,11 +4279,107 @@ setting neither gives stated by nothing, so it keeps the no-reader state's value
   (`gnome-settings-daemon@51.1 plugins/xsettings/gsd-xsettings-manager.c:243`, `:582-594`), the factor it already
   reports, so `adwaita`'s
   `token.text.font_dpi` converts its points (S9.4).
+- the text-role slots `body` from `org.gnome.desktop.interface font-name` and `monospace` from
+  `monospace-font-name`, in its common bases (S9.5; ADD-A138), each string parsed by `pango_font_description` (S2.2's
+  readers' helpers); a string naming no family patches no slot. Of the description it keeps the family, the first
+  non-empty entry of its comma-separated list (the model's family is one name; the list is GN-FM02†'s, the readers
+  unit's); the size, a point size converted by its own preset's `token.text.font_dpi` (S9.4; it reports no DPI,
+  above) and an absolute (`px`) size taken as it is, unpatched where the description sets none or zero; the
+  weight, unpatched outside 1 to 1000, S2.8's scale; the style (normal, oblique, italic; another integer, which only
+  `style=N` gives, unpatched); the width, Pango's permille as S2.8's percent; and small caps, as `TextCase::SmallCaps`.
+  A weight, style or width the string does not name is Pango's normal one, which the string means (a description
+  is a whole font), and is stated so; a description without small caps leaves the style's `case`, which may be a
+  transform no font names (`Upper`, S2.8). Pango's other variants (`All-Small-Caps`, `Petite-Caps`,
+  `All-Petite-Caps`, `Unicase`, `Title-Caps`), its gravity and its colour are not read, nor its `@` variations and
+  `#` features, which GN-1.193 maps to `Font.axes` and `Font.features` (the readers unit). GN-1.193 stays open on one
+  question: how a variation on `wght` or `wdth`, or an `smcp` feature, each a route S12 refuses in `axes` and
+  `features` (S2.8's `weight`, `width` and `TextCase::SmallCaps` being the only ones), meets the description's own
+  weight, width and variant. Pango's source at its pin (`pango@1.58.2`) settles it, read for which of the two the
+  drawn text follows where a description gives both, S2.8's *Weight* (the drawn face's coordinate) then stating the
+  weight; until then a `@` or `#` segment changes nothing the reader states.
 - `token.icons.theme` from `icon-theme` under `for_preset.adwaita`, a freedesktop theme's name being its own
   preset's (S9.5).
 Rejected: the portal's raw accent (it is not what any libadwaita application shows where the two differ); a nearest
 colour by distance (libadwaita computes none); the schema's defaults for unread keys (a value the system did not
-report).
+report); the font's family list as one name (Pango's list is a fallback order, GN-FM02†); Pango's other variants
+mapped to the nearest `TextCase` (no member means them); `Mixed` stated where the description names no small caps
+(it would undo a preset's case transform the font string says nothing of).
+
+**The macOS reader's readings** (ADD-A138; ledger queue #178, from the macOS reader study of 2026-11-08). It resolves
+each `NSColor` class property it reads under `NSAppearance appearanceNamed:` of `NSAppearanceNameAqua` (light) and
+`NSAppearanceNameDarkAqua` (dark), inside `performAsCurrentDrawingAppearance:` (macOS 11 and later,
+`NSAppearance.h:36` at xcode@26.6), converted to sRGB by `colorUsingColorSpace:`, and reads Increase Contrast from
+`NSWorkspace.accessibilityDisplayShouldIncreaseContrast`. AppKit resolves both appearances under the contrast in
+force: with Increase Contrast on they give the increased-contrast colours, `effectiveAppearance` staying `NSAppearanceNameAqua` (run
+41195846264, `os-probe-macos-26/probe.toml` against `increase-contrast-on/probe.toml`: `labelColor` `#000000d8`
+and `#000000ff` at `:3085`, the light `controlAccentColor` `#007affff` and `#0040ddff` at `:3139`, `:3234`; macOS
+15 alike, run 41006842699, `os-probe-macos-15/probe.toml:612`, `:666` against its `increase-contrast-on/`), the
+reads the presets' `contrast_increased` facts cite; and the increased-contrast names give no appearance: "Passing any
+of them to appearanceNamed: will return NULL" (`NSAppearance.h:73-74` at xcode@26.6 and xcode@16.4). So the flag
+decides where each read goes:
+- flag off: `ReaderState.contrast` is `None`; the five accent inputs (S9.1) take the reads as their per-scheme
+  values and the roles as the layer's bases, `input.accent` in the common bases and the rest under
+  `for_preset.<own>` (S9.5);
+- flag on: `ReaderState.contrast` is `Some(Contrast::Increased)`; the five inputs take the reads as their
+  `contrast.increased` bases at both schemes, with no per-scheme value (S9.2's exception), placed as with the flag
+  off, and the roles as reader rules under `scheme:<s>`, `contrast_increased` and `preset:<own>`.
+The slots it does not read are slots the platform gives none at (above), no `Fallback`: with the flag off, the
+increased-contrast slots, where an application's `set_contrast(Some(Increased))` shows the reader's per-scheme inputs
+and the preset's increased-contrast rules on the roles (every layer's bases apply before every layer's rules, S8);
+with it on, the slots without a contrast, then in force nowhere (`set_contrast(None)` takes the reader's contrast,
+S16), and the high-contrast slots, which only `set_contrast(Some(High))` reaches and where the preset's values show,
+macOS having no high contrast of its own. Rejected: the increased-contrast appearance names, through their `extern`
+statics or as strings (AppKit returns no appearance for them; their documented use,
+`bestMatchFromAppearancesWithNames:`, tells only what the flag tells); the preset's increased-contrast values copied
+into the slots not read (values not read under their conditions); the reads under the flag stated as per-scheme
+values too (values under a condition they were not read in, which would put inputs read under Increase Contrast beside
+the preset's normal roles at a high-contrast slot).
+
+Each target is read from the `NSColor` property its own preset's fact for that target measured (the fact's evidence
+names it, `…/probe.toml#macos.colors.<appearance>.<property>`), so on the OS the facts were measured on the
+reader's layer equals the preset; where that fact states a reference and no measurement, the reader states nothing
+at the target and reads the role referenced. Two of 0.7.0's reads (`2796b26e:native-theme/src/macos.rs`) change so:
+- its disabled text, `disabledControlTextColor` (`:131`, `:179`), becomes `tertiaryLabelColor`, which the facts for
+  `role.window.disabled.foreground` measure ("Foreground color for disabled static text", `NSColor.h:203`;
+  `docs/facts/macos/roles.toml:372-381`);
+- its inactive selection, `unemphasizedSelectedContentBackgroundColor` (`:139`, `:174`), states no
+  `role.selection.background` under `window_inactive`, which the presets state `= role.@selected_control_secondary`
+  from the header's "Alias for +secondarySelectedControlColor" (`NSColor.h:222`; `roles.toml:982-991`): the reader
+  reads `secondarySelectedControlColor` into `role.@selected_control_secondary` instead.
+The two macOS presets declare the same 27 keyed roles (`[declare] color_roles`), all in the slice. Of them the
+reader's port at the slice states `role.@system_red`, `@system_orange`, `@system_green` and `@system_blue` (0.7.0
+read those properties into its status colours, which map to no role on `macos-*`, AppKit declaring none) and
+`role.@selected_control_secondary` (0.7.0's inactive selection, above), and `role.@selected_control` follows its
+input, `input.selected_control` (`selectedControlColor`), which the five accent inputs' group brings (S9.2); the
+other 21 are the readers unit's new reads (their lines among MAC-DF01 to MAC-DF05†). Rejected: a literal port of
+0.7.0's two reads (a reader's layer differing from its own preset's facts on the OS they were measured on); all 27 at
+the slice (the readers unit's work without that unit's trace check, the plan's split); `@selected_control_secondary`
+left to the readers unit (the port would drop 0.7.0's inactive selection until then).
+
+`full_keyboard_access` (S7.1) is `NSApplication.sharedApplication.isFullKeyboardAccessEnabled` and
+`overlay_scrollbars` `NSScroller.preferredScrollerStyle`, both AppKit's on the main thread only (`NSApplication` and
+`NSScroller` are `NSResponder`s, which is `NS_SWIFT_UI_ACTOR`, `NSResponder.h:20` at xcode@26.6, and both bindings
+take a `MainThreadMarker`). The reader reads them where `MainThreadMarker::new()` finds the calling thread the main thread,
+as 0.7.0 read the scroller style (`2796b26e:native-theme/src/macos.rs:586`), and elsewhere states both unread:
+`false`, the no-reader state's value, as the GNOME reader's unread flags are, and no `Fallback`, S16 documenting it.
+Rejected: the reads run on the main thread through `dispatch2`'s `run_on_main`, which "will block indefinitely"
+where the main thread runs no event loop (dispatch2 0.3.1, `src/main_thread_bound.rs:15-18`), so a read from a
+worker the main thread waits on would deadlock; the user default `AppleKeyboardUIMode`, which no SDK header
+documents, nor its values, where the header has applications read the property ("accessing this property is fairly
+inexpensive", `NSApplication.h:377-380`); `Option<bool>` (every other flag is a `bool`, a condition holds or not
+in a resolution, and an application learns the setting by calling on the main thread); `Fallback(Platform(…))`
+(its meaning is a source another stood in for, S1, while here the caller's thread decides, which the documentation
+names).
+
+The macOS reader patches no text-role slot at the slice (S9.5): macOS has no font setting, its system, monospaced,
+menu, tool-tip and title-bar fonts being ones "System Settings has no setting for" (`2796b26e:native-theme/src/macos.rs:21-22`),
+so the presets' facts carry its fonts, each style's weight the drawn face's (S2.8's *Weight*). 0.7.0's mapping from
+AppKit's weight trait to a CSS weight goes with it: its thresholds have no source and differ from WebKit's, and
+ADD-A136 withdrew every conversion from the trait. The user's fonts AppKit keeps (`userFont`, `userFixedPitchFont`,
+MAC-I07) are the readers unit's reads, their weights then by S2.8's *Weight*. Rejected: patching `body` and
+`monospace` with the system font's family and size (it restates the preset's own facts, and S9.5 would carry Apple's
+system font to the other presets as if the user had chosen it); the face's `wght` coordinate read now (it needs
+`unsafe` Core Text calls, for a slot the reader does not patch); WebKit's thresholds (withdrawn, ADD-A136).
 
 **S9.4 Points, then text scaling.** A font size, line height, letter spacing or word spacing stated in points becomes logical pixels first, as
 `pt × dpi / 72`, where `dpi` is `ReaderState.font_dpi` where the reader reports one (the platform's setting: on KDE
@@ -4291,8 +4400,8 @@ its keys (this one, and S4.5's empty `animated_visuals`, ADD-A131); `Absent` on 
 conversion would have no operand, and a portable layer written in points would be refused there alone); an S6.3 mark
 under which `Absent` means 72 here (no fact, no checker exception, but `Absent` would carry a value, not its one
 meaning, not drawn). The Apple
-facts state their sizes in px; a point size a layer states, or the macOS reader reads (`NSFont`'s points), converts
-by 72 to the same number. Validation refuses a DPI, the token's or the reader's, that is not finite and above zero (S12).
+facts state their sizes in px; a point size a layer states, or one the macOS reader reads (`NSFont`'s points, from
+MAC-I07's reads on; it patches no font at the slice, S9.3), converts by 72 to the same number. Validation refuses a DPI, the token's or the reader's, that is not finite and above zero (S12).
 A reader states the font sizes it reads in logical pixels, converted by its own platform's DPI (its `font_dpi`, else
 its own preset's `token.text.font_dpi`), so they keep their size under any preset it applies them to (S9.5). The
 conversion comes before the text scaling, and both before every font-derived length (convert, then scale, then
@@ -4364,8 +4473,9 @@ over the style each slot references, their sizes in logical pixels (S9.4), compo
 the user's fonts reach the parts whose leaves reference the slots and the preset's token rules on the referenced styles still
 apply over them), and everything else, its own platform's keyed roles, tokens and inputs, under
 `for_preset.<its own preset>`. A reader patches exactly the slots its platform has a setting for (the KDE reader
-`body` from `[General] font`, `monospace` from `fixed`, `caption` from `smallestReadableFont`, …; a reader that reads each
-style's size, every slot); a slot it does not patch keeps the current preset's style, and a slot that shares
+`body` from `[General] font`, `monospace` from `fixed`, `caption` from `smallestReadableFont`, …; the GNOME reader `body`
+and `monospace`; a reader that reads each style's size, every slot; the macOS reader none at the slice, macOS having no
+font setting, S9.3's *The macOS reader's readings*, ADD-A138); a slot it does not patch keeps the current preset's style, and a slot that shares
 another's references that slot (S4.4), so under any preset the patch on `body` reaches every slot that preset shares
 with `body`. Its rules split the same way (S9.3): a rule on the portable part (a text-role slot
 read under a condition) applies to any preset, every other rule carries `preset:<its own preset>`, so the portable
@@ -5164,7 +5274,8 @@ impl Theme {
                                                           // refused as S14 says (a scheme it lacks, no source for
                                                           // the preset, missing accent inputs)
     pub fn reader_status(&self) -> ReaderStatus;         // `Fallback` where a read succeeded with a source standing
-                                                          // in (S9.1) or an accent group left out (S9.3):
+                                                          // in (S9.1) or an accent group left out after a failed
+                                                          // read (S9.3; not a slot the platform gives none at):
                                                           // `from_system` returns the theme then
     pub fn reload_reader(&mut self) -> ReaderStatus;     // re-read the system into the reader layer in place
                                                           // (a failure keeps the old layer); the application calls it
@@ -5254,7 +5365,20 @@ watcher (below) chooses its backend by the same refined desktop, so `on_theme_ch
 `PlatformUnsupported` on the desktops without a reader of their own (an application there loses the scheme 0.7.0
 gave it); the portal alone there (where no portal answers it reports light where 0.7.0 found dark); the GNOME reader
 whole there (its text-scaling, overlay-scrolling and icon-theme reads go beyond what 0.7.0 read on these desktops,
-which D13 does not ask for: a readers unit's decision).
+which D13 does not ask for: a readers unit's decision). The watcher of those desktops fires on the portal's
+`SettingChanged` of the settings their read takes from the portal and gsettings, the gsettings keys where the
+desktop's portal backend forwards them, as GNOME's does (`xdg-desktop-portal-gnome@51.0 src/settings.c:389-438`);
+`GTK_THEME` (fixed for a process)
+and `gtk-3.0/settings.ini` (a file no signal reports, which 0.7.0 did not watch either) are not watched, so a change
+there shows at the next read (ADD-A138; ledger queue #179).
+
+**The main thread on macOS** (ADD-A138; ledger queue #178). AppKit gives the Keyboard navigation setting and the
+scroller style to the main thread only, so `from_system`, `from_system_async`, `reload_reader` and
+`reload_reader_async` read `full_keyboard_access` and `overlay_scrollbars` only when called on the main thread, and
+elsewhere report both `false`, with no `Fallback` (S9.3's *The macOS reader's readings*); their documentation says
+so. An AppKit application's event loop, from which it calls `reload_reader` (above), runs on the main thread; one
+that awaits `from_system_async` on another thread and needs the two settings calls `reload_reader` from its event
+loop.
 
 **Today's API, feature by feature** (S19.3 migrates the branch's callers):
 
@@ -6340,6 +6464,7 @@ lines that cite it.
 | ADD-A135 | a spec batch (ledger queue #163, #164 (2), (3), #165, #166, #167's spec lines, #168, #169, #171–#173, and the facts lanes' round 3's four questions, 4f4c00a9), decided from the sources: `NSLineBreakByCharWrapping` `char` and `NSLineBreakByWordWrapping` measured with an overlong word, `word` or `word_char`, pending until then (U256; rejected: either read from the header's comment); a pending fact shadowed by a later pending fact exempt, the earlier narrowed once the later is measured (rejected: narrowing under every later pending fact; an exemption for the same register id only); `FillClip::Center`, the fill to the stroke's centre line inside the box, Breeze's frame, the Qt example a pen on the box's own outline (U680; rejected: Breeze's stroke `center` over `box`, a recorded inexactness, a fill inset length); NSComboButton's two triggers, `primary` under `menu` and `long_press` under the keyed `{menu, @menu_on_hold}` on `macos-*`, the button with an action, iOS's name for the same (rejected: a keyed condition, the action being the application's per button; `menu` read as one of the two; a `MenuTrigger` member for both); `FullKeyboardAccess` the setting under which controls take keyboard focus, on macOS Keyboard navigation as `isFullKeyboardAccessEnabled` reports it, not the accessibility setting of that name (rejected: a rename after the macOS label; one condition per setting); the releases in steps (the plan's D13, D14): S21.1 restated, S17's and S21.3's release statements per release over its enabled units, `check_ledger.py --final` over the enabled units' pending facts and register rows (a row of a unit not enabled where every pending fact naming it is) (rejected: the plan's D13 (A) and (C)); S21.3's stand-in entry, a 0.7.0 mapping kept for a widget whose unit is not enabled, the test failing it once the unit is (rejected: the widgets dropped, `pending` entries, their units in 0.8.0); the GNOME reader's accent libadwaita's OKLCH chroma and hue classification, the accent's colour stated (GN-3.15; rejected: the raw colour, a nearest colour by distance); the readers' helpers, `reader.<helper>.tsv`, `vectors_reader_<helper>` a unit test in the helper's module, the three listed, and the `string` column type (rejected: the helpers in S2.2's function table, no table, escaped `text`); the GNOME reader's readings (sources and fallbacks, the scheme light where none is given, an unread flag false, no font DPI) and S16's *Which reader*, a Linux desktop with no reader of its own read under `adwaita`, the portal's `org.freedesktop.appearance` settings first, then 0.7.0's own chain for the scheme and motion (`GTK_THEME`, gsettings' `color-scheme`, `reduced-motion` and `enable-animations`, `gtk-3.0/settings.ini`; the orchestrator's decision on the check), `from_system(Some(id))` only the desktop's preset (rejected: `PlatformUnsupported` there, which loses the scheme 0.7.0 gives, D13; the portal alone, light where 0.7.0 found dark; the GNOME reader whole there, reads beyond 0.7.0's); a negative shadow `spread`, CSS's, GTK's and Breeze's, an outer layer shrunk to nothing casting nothing, a zero radius staying zero where a shape grows (rejected: the spread at least zero; open, queue #174: a radius below the spread, and Breeze's kept window radius, its options named; #175: S2.4's stroke growth, pre-existing); a part a content variant leaves without content (the label under `icon_only`) no part absence, its facts naming that variant nowhere, as `adwaita`'s (rejected: an absence; a map of emptied parts with the gate skipping them; pending facts); a platform resource that is a colour only under a condition no role, the part referencing that colour (WinUI's elevation borders; rejected: a role only under a condition, a base from a gradient stop); WinUI's system colours keeping their placeholder bases, the reader's under `contrast_high`, the preset's rule there Aquatic's colours, measured (rejected: an input with `contrast.high` bases; the placeholder in force); S12's keyframe `icon.animation` refusal (#163, implemented in 70fd4f6c); `kirigami_shadow_alpha`'s table on `compiled_source`, the pinned shader on a pinned renderer (Mesa's software rasteriser) within a tolerance its header states, `fwidth` and GLSL's built-ins being inexact, its points outside the shape's antialiased edge, its zero beyond the drawn area (#167); S9.4's scaling as implemented (the text-scaling task): `AndroidNonLinear` the platform's converter, not Compose's copy, a line height above a font scale of 1.05 kept in proportion to its font, spacing through the curve, `DynamicType`'s ratio of the category's size to the default's and its no-value cases until D-5, the `dynamic_type` table serving `ios-26` alone (#176); `check_ledger.py --final` counting a state model's pending entry as a pending fact. Follow-ups: code, `FillClip::Center` (`center`), S12's range check accepting a negative `spread`, the gate's shadowed-pending exemption, `reader::select` and the watcher's backend for the desktops without a reader (the portal-only read and its test), the GNOME reader's accent through `adw_accent_nearest` once wired, the GNOME reader's scheme and motion chain on the desktops without a reader, the connectors' contract tests accepting stand-in entries and failing one of an enabled unit; scripts, `check_facts.py` (the exemption with self-test cases, `center`), `check_ledger.py --final` over the enabled units (a state model's pending entry by its widget's unit), `check_function_vectors.py` (the `reader.` kind, `string`, the waiting report, a tolerance on `kirigami_shadow_alpha`'s generated table, `token.text.scaling` counted as calling its curve, self-tests), `tools/kde-vectors`' offscreen GL harness on the pinned Mesa; connectors, each contract table's `FillClip::Center` row and the stand-in entries (the plan's table); facts, KDE (U680's two `fill_clip` facts `center`; the window shadows' corners under the negative spread weighed), macOS (`@menu_on_hold` and the set `[menu, @menu_on_hold]` in both state models, `menu_trigger` stated from `NSComboButton.h:18` and U333's and U616's trigger lines removed, whether the probe's unified buttons had an action and the look differs; the state models' and U331's and U611's wording for Keyboard navigation; a control's `wrap` measured), iOS (the label facts naming `icon_only` nowhere, U255's `icon_only` label lines removed; `wrap` under U256), GNOME (the eight accents' facts, #171), Windows (the three elevation-border role facts removed, a part under `contrast_high` referencing `role.@system_window_text` with the brush's citation; the eight system colours' rule under `contrast_high`, pending a register row for Aquatic's measurement on the Windows runner); ledger, #163–#169's and #171–#173's status | S1, S2.2, S2.4, S2.5, S2.7, S2.8, S3.1, S6.3, S7.1, S9.3, S9.4, S12, S16, S17, S18, S19.1, S21.1, S21.3; catalogue (the button's `menu_trigger`, `focus_visible_when` and `macos-*` keyed variants, the link's `focus_visible_when`, the conditions table, the readers); traces GNOME (GN-3.15), macOS (MAC-X13, MAC-N29†), KDE (K1.20, K3.1), Windows (W3-35) |
 | ADD-A136 | a spec batch (the macOS facts lane's round 4 questions, 3b7c8b03: the weight trait against the face, non-data evidence files, dots in evidence paths, U236's and U311's rows; ledger queue #174, #175, #176), decided from the sources and the runs: `Font.weight` the number that, asked of the same fonts, gives the drawn face, on Apple's platforms the face's `wght` coordinate (the variation's, else the axis's default; a font without the axis its `usWeightClass`), read from the font through the run's analysis, the weight trait no evidence and ADD-A123's `ns_font_weight` withdrawn, as macOS 15 draws `.SFNS-Semibold` at 590, `.SFNS-Medium` at 510 and `.SFNS-Heavy` at 860 under traits mapping to 600 or 700 or 400 (run 42215651196) (rejected: the trait by WebKit's thresholds, which draws another weight on SF's variable font; `kCTFontCSSWeightAttribute`, the trait's mapping on macOS 15 and the face's on macOS 26; the trait and a `wght` axis both, which S12 forbids); an evidence file cited, or the input an analysis output's `input_image` names (a recording and its crop), and a run's records, from which no fact's value is read, not evidence, a closed list of names (`settings.txt`, `environment.txt`) beside README.md and `run.toml`, data no citation reads staying on the harness's branch (rejected: records named as an analysis's input; records left out of the repository; an exemption by file type); an evidence path's TOML key written as TOML writes it, a non-bare key quoted (`"chevron.forward"`), the `evidence` a literal string, as the fact keys already quote a map entry (rejected: a backslash escape TOML does not have; JSON pointers for TOML, which rewrites every citation; keys renamed by the harness, names Apple's API does not give); S2.4's *Growing an outline*, one rule for an `Outside` or `Center` stroke's outer edge, an outset and a shadow's growing spread: a radius above zero grows by the whole distance, a zero radius stays zero, as GTK grows a rounded rectangle (#174 (1), #175; rejected: the distance added to every radius; CSS's spread factor `1 + (r − 1)³`, which a browser's box shadow applies, `material-3`'s elevations among them, but which changes nothing on `material-3`'s one shadowed part, the button's body, whose radii are at least 8 px and capsules at least 14 px against spreads of at most 4 px; a per-layer choice); `ShadowLayer.corner_radius` (`corner_radius_px`), one circular radius on all four corners which the layer's spread leaves, none on a `KirigamiSmoothstep` layer, Breeze's window shadows the window's radius plus half a pixel (overlap 3 px) and its popup shadows the frame radius (overlap 2 px, `kstyle/breezemetrics.h:172`), where the spread's rule would move each corner's arc 0.83 to 1.45 px inward (#174 (2), the form the orchestrator's; rejected: the full `Corners` form, as both sources set one radius and one number interpolates simply; a known inexactness; the drawn shadow measured and the nearest layer stated, the same inexactness; an enum keeping the part's radii, which cannot add the half pixel; the spread's rule keeping radii for every layer, against GTK and libadwaita's layers); `ios-13`'s `dynamic_type` rows and `macos-monterey`'s and `ios-13`'s `sf_tracking` rows (U237, U462) from a second Web Archive capture of the HIG's Typography page, the last after macOS 15's and iOS 18's release and before the page switched to describing 26 that holds the tables, describing those releases, else those rows pending under U237 and U462; equal rows cite both snapshots, a differing table selected by S2.2's enum operand then (#176; the pin to be fetched); the register's U144 and U146 settled in method (the faces' 510, 510, 590, 860), U236 narrowed to `macos-monterey`'s two translucent selection roles under Increase Contrast and U311 to the leading variants' style, axes and features and four weights; queue #160 (1)'s status. Follow-ups: code, `ShadowLayer.corner_radius` with its TOML spelling, S12's Kirigami refusal and its interpolation, the growth rule in the stroke's outer edge, the outset and the spread (a zero radius kept) with tests, `Font.weight`'s doc comment; scripts, `check_fact_citations.py` (`ns_font_weight` out of the conversions after the facts are re-cited, the records list and its self-test, quoted TOML keys in an evidence path, `at()` splitting outside quotes, self-tests), `check_facts.py`'s evidence-path parsing likewise; connectors, each contract table's `ShadowLayer.corner_radius` row; facts, macOS (every weight re-cited to the face's coordinate through `read_fonts.py`, U144's and U146's four weights and the five `*_emphasized` styles' 590 on both presets, `small_system`'s weight from the face, not `kCTFontCSSWeightAttribute` on macOS 15; U311's four weights; the uncited files of runs 42215651196 and 42272240639 cited or left on `v0.8.0-tools-probe-m2`), iOS (the text styles' and the button label's weights read from the face by the iOS host, the trait-converted facts pending under a register row of the iOS lane until then), KDE (`corner_radius_px` on every layer of the window and popup entries, `token.elevation.window_*` and `popup_*`, each an expression on the frame radius its surface reads), the orchestrator (the HIG capture fetched, pinned in `sources.toml` with `describes` and its generations, and compared with `hig-typography@2026-02-09`) | S2.4, S2.5, S2.8, S9.4, S12, S17; catalogue (the iOS button's `@role_primary`); traces KDE (K3.1, K3.2), macOS (MAC-X18); ledger (U144, U146, U236, U311; queue #160, #174–#176) |
 | ADD-A137 | the evidence root (the maintainer's decision of 2026-11-08, the 0.8.0 plan's D6 evidence item decided early; ledger queue #177): measured evidence in the evidence repository `native-theme-evidence` at `docs/evidence/`'s paths, pinned in `sources.toml` by one `evidence = true` `git` entry with a fixed id, a `docs/evidence/` path resolved against `NATIVE_THEME_EVIDENCE` or that entry's checkout in the source cache, read only from a clean checkout at the pinned commit | S17 |
+| ADD-A138 | a spec batch (ledger queue #178, the macOS reader study of 2026-11-08; #179, the GNOME reader's port on `readers-m1b2`, 3d465b6f and aa8ac27d), decided from the sources and the runs: the macOS reader's increased contrast, Aqua and DarkAqua read either way, which AppKit resolves under the contrast in force (runs 41195846264 and 41006842699), the increased-contrast names giving no appearance (`NSAppearance.h:73-74`), the reads filed by `accessibilityDisplayShouldIncreaseContrast` as the inputs' per-scheme values and the roles' bases, or as the inputs' `contrast.increased` bases and the roles' `contrast_increased` reader rules, S9.2's group exception for a reader's group under a contrast alone (rejected: the increased-contrast names, through `extern` statics or strings; the preset's values copied into the slots not read; the reads under the flag also as per-scheme values; the group rule per slot for every layer, which changes `set_accent`'s check for a group no application needs); a slot the platform gives the reader no value at in the state it reads no failure and no `Fallback` (rejected: `Fallback` on every macOS read, which says nothing; a status of its own, for a state the platform is always in); each macOS target read from the property its own preset's fact measured, a reference fact read at the role it references: `tertiaryLabelColor` for the disabled text where 0.7.0 read `disabledControlTextColor`, `secondarySelectedControlColor` into `role.@selected_control_secondary` for the inactive selection where 0.7.0 read `unemphasizedSelectedContentBackgroundColor` into the selection (rejected: a literal port); of the 27 keyed roles, the slice's port states `@system_red`, `@system_orange`, `@system_green`, `@system_blue` and `@selected_control_secondary`, and `@selected_control` follows its accent input, the other 21 the readers unit's (rejected: all 27 at the slice; `@selected_control_secondary` left to the readers unit, which drops 0.7.0's inactive selection from the port); `full_keyboard_access` and `overlay_scrollbars` read where `MainThreadMarker::new()` succeeds, `false` elsewhere with no `Fallback`, documented on `from_system`, `from_system_async`, `reload_reader` and `reload_reader_async` (rejected: `dispatch2`'s `run_on_main`, which can deadlock; `AppleKeyboardUIMode`, undocumented; `Option<bool>`; `Fallback`); the macOS reader patching no text-role slot at the slice, 0.7.0's weight-trait mapping removed (rejected: the system font's family and size; the face's `wght` read now, through `unsafe` Core Text calls; WebKit's thresholds); the GNOME reader's accent none for a NaN channel, as for one outside `0..=1` (rejected: libadwaita's pink, its comparisons' fall-through); the GNOME reader's fonts, `body` from `font-name` and `monospace` from `monospace-font-name` in its common bases, the family's first entry, the size, weight, style, width and small caps kept, a weight, style or width the string does not name stated as Pango's normal one, the style's `case` left without small caps, the other variants, gravity, colour, variations and features not read (rejected: the family list as one name; the other variants mapped to the nearest `TextCase`; `Mixed` stated without small caps); GN-1.193 open on how a `wght`, `wdth` or `smcp` segment meets the description's weight, width and variant (Pango's source at its pin, then S2.8's *Weight*); the portal-only desktops' watcher, `GTK_THEME` and `gtk-3.0/settings.ini` not watched. Follow-ups: code, the macOS reader (both appearances filed by the flag, `ReaderState.contrast`, the two re-targeted reads, the five keyed roles and the five accent inputs, `full_keyboard_access` read at the slice beside `overlay_scrollbars` under the one gate with the `NSApplication` and `NSResponder` features, no font read and `nsfont_weight_to_css` removed with its `unsafe` statics and `msg_send!`, tests of the filing under either flag and of the status), the four entry points' documentation of the main-thread reads, a test that a NaN accent channel states none (`portal_accent` already gives none on `readers-m1b2`); facts, GNOME (the eight accents' facts, #171, and a test comparing the reader's nine colours with them once they land); the readers unit, MAC-DF01 to MAC-DF05†'s 21 keyed roles, MAC-I07's user fonts, GN-1.193 (its question read from Pango at its pin); ledger, #171's status, #178, #179 | S7.1, S9.2, S9.3, S9.4, S9.5, S16; catalogue (the readers: GN-3.15, MAC-X13, MAC-X22); traces macOS (MAC-X13, MAC-X22) |
 | ADD-B01 | Pattern paint | S2.3 (R25.4) |
 | ADD-B02 | conic gradient | S2.3 (R25.4) |
 | ADD-B03 | Polygon and path shapes, and morphing | S2.4, S2.7 (R25.5) |

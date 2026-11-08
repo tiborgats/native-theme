@@ -9843,7 +9843,8 @@ holds.
 
 - portal accent RGB classified into one of libadwaita's nine accents by OKLCH chroma and hue ranges
   (`adw-settings-impl-portal.c:124-141`, `adw-accent-color.c:159-199`; `adw_accent_nearest`, S2.2's readers' helpers),
-  the accent's colour replacing the raw RGB the reader uses: GN-3.15 (S9.3, ADD-A135).
+  the accent's colour replacing the raw RGB the reader uses, a channel outside `0..=1` or NaN no accent: GN-3.15
+  (S9.3, ADD-A135, ADD-A138).
 - on a Linux desktop no reader of its own reads (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC, an
   unnamed one), the portal's `org.freedesktop.appearance` settings, then 0.7.0's chain for the scheme (`GTK_THEME`,
   gsettings' `color-scheme`, `gtk-3.0/settings.ini`) and its `enable-animations`, with gsettings' `reduced-motion` a new read, under
@@ -9937,8 +9938,11 @@ holds.
 **macOS**
 
 - `NSColor` read without clipping to sRGB, `colorSpace`: MAC-X10.
-- `NSColor` resolved under `NSAppearance` vibrantLight and vibrantDark: MAC-X03; under `accessibilityHighContrastAqua`
-  and `…DarkAqua`, stored as the inputs' per-contrast bases and colour rules: MAC-X22.
+- `NSColor` resolved under `NSAppearance` vibrantLight and vibrantDark: MAC-X03; under Aqua and DarkAqua while
+  `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` is on, which AppKit then resolves to their
+  increased-contrast colours (the increased-contrast appearance names give no appearance, `NSAppearance.h:73-74`),
+  stored as the inputs' `contrast.increased` bases and the roles' `contrast_increased` rules: MAC-X22 (S9.3,
+  ADD-A138).
 - `NSColor.withSystemEffect` (rollover, pressed, deepPressed, disabled) of each read colour, stated as state rules:
   MAC-X30†.
 - `NSAnimationContext.duration`, `NSWindow.animationResizeTime(_:)`, `CAMediaTimingFunction` control points: MAC-X11.
@@ -9946,7 +9950,7 @@ holds.
   `token.params.pointer_repeat.delay` and `.interval`), user defaults
   `NSTextInsertionPointBlinkPeriodOn` and `…Off`, `NSInitialToolTipDelay`: MAC-X12.
 - `NSApplication.isFullKeyboardAccessEnabled`, the Keyboard navigation setting (`NSApplication.h:377-380` at
-  xcode@26.6; S7.1, ADD-A135): MAC-X13.
+  xcode@26.6; S7.1, ADD-A135), read on the main thread only, `false` elsewhere (S9.3, S16, ADD-A138): MAC-X13.
 - `NSWorkspace.accessibilityDisplayShouldDifferentiateWithoutColor` (already probed): MAC-X24.
 - the Text size setting (14+; no public API, to verify) into `ReaderState.text_scaling_factor`; the "Show toolbar
   button shapes" setting (API or key to verify) into `cond button_shapes`: MAC-X26.

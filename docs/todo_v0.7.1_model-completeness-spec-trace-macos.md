@@ -771,7 +771,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X13 | `<widget>.values.focus_visible_when (Never for buttons, checkboxes, segments, links; AnyFocus for text fields and lists; ADD-A16)` | field |
 | MAC-X13 | `<widget>.values.focus_visible_when @ cond full_keyboard_access (Keyboard { … } for buttons, checkboxes, segments, links)` | rule |
 | MAC-X13 | `cond full_keyboard_access (ADD-A06)` | condition |
-| MAC-X13 | `reader:macos:NSApplication.isFullKeyboardAccessEnabled (the Keyboard navigation setting, not the accessibility setting of that name; S7.1, ADD-A135)` | reader |
+| MAC-X13 | `reader:macos:NSApplication.isFullKeyboardAccessEnabled (the Keyboard navigation setting, not the accessibility setting of that name; S7.1, ADD-A135; read on the main thread only, false elsewhere, S9.3, S16, ADD-A138)` | reader |
 | MAC-X14 | `token.caret.width` | token |
 | MAC-X14 | `token.caret.blink_style Fade (ADD-A24)` | token |
 | MAC-X14 | `input.caret.{min_width,min_height,corners}; text_area.caret.{min_width,min_height,corners}` (the insertion indicator's width, its height against the line and its shape: the caret parts' rules, S4.2) | field |
@@ -839,7 +839,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | MAC-X22 | `role.* @ cond contrast_increased` | rule |
 | MAC-X22 | `PartStyle.stroke @ cond contrast_increased (controls gain outlines, separators darken)` | rule |
 | MAC-X22 | `cond contrast_increased` | condition |
-| MAC-X22 | `reader:macos:NSColor resolved under accessibilityHighContrastAqua and DarkAqua` | reader |
+| MAC-X22 | `reader:macos:NSColor resolved under Aqua and DarkAqua while NSWorkspace.accessibilityDisplayShouldIncreaseContrast is on, stated as the inputs' contrast.increased bases and the roles' contrast_increased rules (AppKit resolves the appearances under the contrast in force; the increased-contrast appearance names give none, NSAppearance.h:73-74; S9.3, ADD-A138)` | reader |
 | MAC-X23 | `PartStyle.fill @ cond reduced_transparency (opaque values)` | rule |
 | MAC-X23 | `Material.fallback` | field |
 | MAC-X24 | `cond differentiate_without_color` | condition |
