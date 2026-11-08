@@ -1205,9 +1205,28 @@ python3 scripts/check_fact_citations.py --self-test
 
 The verifiers' tooling (the 0.8.0 plan's "Facts, independently"), which
 makes the lane-against-verifier comparison mechanical. It reads the facts
-as `check_facts.py` does, at a commit, through `git show`. A fact's identity
-is its key (as a TOML dotted key), its `when` (empty lists left out, name
-lists as sets), its `scheme_file` and its `accent`.
+and state models as `check_facts.py` does, at a commit, through `git show`.
+A fact's identity is its key (as a TOML dotted key), its `when` (empty lists
+left out, name lists as sets), its `scheme_file` and its `accent`.
+
+Each unit goes through two steps, as the plan asks: the verifier derives the
+state model first, and states values only for the combinations both models
+draw.
+
+```sh
+python3 scripts/verify_facts.py units --out units.toml
+python3 scripts/verify_facts.py brief KD-C1 /tmp/KD-C1-model --units units.toml \
+    --lane-brief lane-brief.md --no-combinations
+#   the verifier writes /tmp/KD-C1-model/state-models.toml
+python3 scripts/verify_facts.py compare-model KD-C1 /tmp/KD-C1-model/state-models.toml --units units.toml
+python3 scripts/verify_facts.py brief KD-C1 /tmp/KD-C1-facts --units units.toml \
+    --lane-brief lane-brief.md --combinations-from /tmp/KD-C1-model/model-compare.toml
+#   the verifier writes /tmp/KD-C1-facts/facts.toml
+python3 scripts/verify_facts.py compare KD-C1 /tmp/KD-C1-facts/facts.toml --units units.toml \
+    --combinations-from /tmp/KD-C1-model/model-compare.toml
+python3 scripts/verify_facts.py sample KD-C1 --compared /tmp/KD-C1-facts --seed 1
+python3 scripts/verify_facts.py --self-test
+```
 
 - `units`: the facts to verify since each platform's baseline (the M1a
   tie-break commits, built in; `--since kde=<commit>` or `--since <commit>`
@@ -1216,25 +1235,38 @@ lists as sets), its `scheme_file` and its `accent`.
   `measured`) they are split by key prefix into units of near equal size,
   at most 1,000 facts each; a unit under 300 joins a neighbour where the two
   fit in 1,000 (a kind with fewer facts stays one small unit). Unit ids look
-  like `KD-C1` and `MC-M4`. It writes a units file (TOML,
-  `--out`) holding each unit's scope and fact identities, and prints the
-  counts per platform and kind. The same commits give the same file.
+  like `KD-C1` and `MC-M4`. It writes a units file (TOML, `--out`) holding
+  each unit's scope and fact identities, and prints the counts per platform
+  and kind. The same commits give the same file.
 - `brief <unit> <out-dir> --lane-brief <lane-brief.md>`: the verifier's
-  folder. It holds `README.md`, `keys.toml`, `combinations.toml` (left out
-  with `--no-combinations`, for the state-model step), `pins.toml` (the
-  platform's `sources.toml` entries with their source-cache paths),
+  folder. It holds `README.md`, `keys.toml`, `combinations.toml`, `pins.toml`
+  (the platform's `sources.toml` entries with their source-cache paths),
   `catalogue.md` (the widgets' variants, sizes, flags, exclusive groups and
-  state-model source lines) and `facts-format.md` (the lane brief's format
-  sections). A measured unit also gets copies of its cited evidence files,
-  with each run's `run.toml` and `analysis/` scripts, taken from the
-  evidence root (a clean checkout at the pin). The folder holds no lane
-  value or citation. The leak check proves it: every value and citation
-  string of the unit's facts is looked for in the folder (the evidence
-  copies left out). Each hit is printed with its class: `identity`,
-  `specification`, `sources` or `template` (the file's own input holds the
-  string too, so the hit is unavoidable), `trivial` (under four characters,
-  or a keyword), or `leak`. A leak exits 1.
-- `compare <unit> <verifier-facts.toml>`: the unit's facts against the
+  state-model source lines), `spec.md` (S17 in full, with S2.2, S7.1, S7.2,
+  S10 and S11, each found by its heading) and `facts-format.md` (the lane
+  brief's format sections). `--no-combinations` leaves the combinations out
+  (the state-model step); `--combinations-from` writes only those a
+  `compare-model` result agrees on (the facts step). A measured unit also
+  gets copies of its cited evidence files, with each run's `run.toml` and
+  `analysis/` scripts, taken from the evidence root (a clean checkout at the
+  pin). The folder holds no lane value or citation. The leak check proves
+  it: every value and citation string of the unit's facts is looked for in
+  the folder (the evidence copies left out). Each hit is printed with its
+  class: `identity`, `specification`, `sources` or `template` (the file's
+  own input holds the string too, so the hit is unavoidable), `trivial`
+  (under four characters, or a keyword), or `leak`. A leak exits 1.
+- `compare-model <unit> <verifier-state-models.toml>`: the lane's state
+  models of the unit's widgets against the verifier's, entry by entry. It
+  lists every declaration that differs (axes, flags, variants, sizes,
+  `not_drawn`, exclusive groups, variant sets and products, recency) with
+  the members only one side states. It also lists the state combinations
+  and variant sets that `check_facts.py`'s expansion gives one side only.
+  Each combination of the unit is then agreed, or refused where the
+  verifier's model cannot draw it and the lane's can. A combination the
+  lane's own model cannot draw either is kept, marked `lane_model_refuses`.
+  It writes `model-compare.toml`.
+- `compare <unit> <verifier-facts.toml>`: the unit's facts (with
+  `--combinations-from`, those of the agreed combinations) against the
   verifier's, by identity. It normalises colour spellings, number
   formatting, expression spacing and equivalent selectors and key spellings,
   and lists each normalisation with the facts it changed and the pairs that
@@ -1248,20 +1280,13 @@ lists as sets), its `scheme_file` and its `accent`.
   the same sample. It writes `sample.toml`, which records the seed.
 
 `--self-test` runs every subcommand on fixtures in a temporary git
-repository. It covers the units' counts and splitting, the brief's files and
-its leak check (a planted citation is caught), each normalisation, an
-identity mismatch, one-sided facts and the sample's determinism. It runs in
-`check_release.sh` and in CI's parity job.
+repository. It covers the units' counts and splitting, the brief's files,
+the specification's sections (S17's heading among them) and its leak check
+(a planted citation is caught), the model comparison and the two-step flow,
+each normalisation, an identity mismatch, one-sided facts and the sample's
+determinism. It runs in `check_release.sh` and in CI's parity job.
 
 Requires Python 3.11 and git.
-
-```sh
-python3 scripts/verify_facts.py units --out units.toml
-python3 scripts/verify_facts.py brief KD-C1 /tmp/brief-KD-C1 --units units.toml --lane-brief lane-brief.md
-python3 scripts/verify_facts.py compare KD-C1 /tmp/brief-KD-C1/facts.toml --units units.toml
-python3 scripts/verify_facts.py sample KD-C1 --compared /tmp/brief-KD-C1 --seed 1
-python3 scripts/verify_facts.py --self-test
-```
 
 ## import_platform_facts.py
 

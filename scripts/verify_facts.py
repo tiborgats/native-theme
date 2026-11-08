@@ -1,26 +1,42 @@
 #!/usr/bin/env python3
 """The verifiers' tooling (the 0.8.0 plan's *Where the work happens* and *How values are checked*, "Facts,
-independently"): the units of a delta, the verifier's brief, the comparison of a lane's facts with its verifier's,
-and the audit sample. Offline but for `git`; the brief of a measured unit reads the evidence checkout.
+independently"): the units of a delta, the verifier's brief, the comparison of the state models and of the facts of a
+lane and its verifier, and the audit sample. Offline but for `git`; the brief of a measured unit reads the evidence
+checkout.
 
 Run from the repository root:
 
     python3 scripts/verify_facts.py units [--since [PLATFORM=]COMMIT ...] [--rev REV] [--out FILE]
-    python3 scripts/verify_facts.py brief <unit> <out-dir> --lane-brief FILE [--units FILE] [--no-combinations]
-                                          [--cache DIR]
+    python3 scripts/verify_facts.py brief <unit> <out-dir> --lane-brief FILE [--units FILE] [--cache DIR]
+                                          [--no-combinations | --combinations-from MODEL-COMPARE]
+    python3 scripts/verify_facts.py compare-model <unit> <verifier-state-models.toml> [--units FILE] [--out DIR]
     python3 scripts/verify_facts.py compare <unit> <verifier-facts.toml> [--units FILE] [--out DIR]
+                                            [--combinations-from MODEL-COMPARE]
     python3 scripts/verify_facts.py sample <unit> --compared DIR --seed N [--rate 0.05] [--min 10]
     python3 scripts/verify_facts.py --self-test
 
-The facts are read as scripts/check_facts.py reads them (items_of, canonical_key, canonical_when; the fact files of
-`docs/facts/<platform>/`, `state-models.toml` left out), at a commit, through `git show`.
+The flow per unit (the plan: the state model first, compared mechanically, then the values of the agreed
+combinations):
+
+    1. units --out units.toml
+    2. brief <unit> <A> --no-combinations           the verifier writes <A>/state-models.toml
+    3. compare-model <unit> <A>/state-models.toml   writes <A>/model-compare.toml (its differences to the tie-breaker)
+    4. brief <unit> <B> --combinations-from <A>/model-compare.toml    the verifier writes <B>/facts.toml
+    5. compare <unit> <B>/facts.toml --combinations-from <A>/model-compare.toml    writes <B>/tiebreak.toml, agreed.toml
+    6. sample <unit> --compared <B> --seed N        writes <B>/sample.toml
+
+(`brief` with neither option gives one folder for both steps, and `compare` without the option compares every
+combination of the unit.)
+
+The facts and state models are read as scripts/check_facts.py reads them (items_of, canonical_key, canonical_when; the
+fact files and `state-models.toml` of `docs/facts/<platform>/`), at a commit, through `git show`.
 
 A fact's identity (S17 *Which fact applies*): its key read as a TOML dotted key (check_facts.canonical_key), its
 `when` with empty lists and tables left out and its name lists read as sets (check_facts.canonical_when), its
-`scheme_file` and its `accent` (a colour, spelled as NORMALISATIONS' colour rules spell it). Within a unit a fact is also named by
-its file. Where one file states an identity twice, the last fact applies and is the one used. A fact's kind:
-`pending` (`pending = "U<n>"`, no citation, nothing to verify), `measured` (a `kind = "measured"` citation), `cited`
-(only `published` and `read` citations).
+`scheme_file` and its `accent` (a colour, spelled as NORMALISATIONS' colour rules spell it). Within a unit a fact
+is also named by its file. Where one file states an identity twice, the last fact applies and is the one used. A
+fact's kind: `pending` (`pending = "U<n>"`, no citation, nothing to verify), `measured` (a `kind = "measured"`
+citation), `cited` (only `published` and `read` citations).
 
 `units`: the delta of each platform since its baseline, BASELINE (the M1a tie-break commits, the verified state of
 each platform: the ledger's *Verification rates*) unless `--since` names another (`--since kde=<commit>`, or one
@@ -33,23 +49,26 @@ size, and a unit under MIN_FACTS merged into a neighbour where the two hold at m
 revision, the baselines, per platform and kind the new, changed and removed facts (pending ones included), and per
 unit its id, platform, kind, presets, counts, `scope` (per file and key family: the keys' common prefix and the
 count) and `identities` (file, line, key, `when`, `scheme_file`, `accent`, new or changed). It is deterministic: the
-same commits give the same file. `brief`, `compare` and `sample` read it (`--units`), or compute it as `units` with
-no option does.
+same commits give the same file. The other subcommands read it (`--units`), or compute it as `units` with no option
+does.
 
 `brief <unit> <out-dir>`: the verifier's folder (the plan: the unit's keys, the pins, the catalogue's state-model
 source lines and, for `measured` facts, copies of the cited evidence and the method's script), every file of it
 read at the units' revision:
 
-- `README.md`: the task, what to read (this folder and the source cache only) and what to write (`state-models.toml`
-  and `facts.toml` in the lanes' format);
+- `README.md`: the task, what to read (this folder and the source cache only) and what to write: `state-models.toml`
+  (with `--no-combinations`), `facts.toml` (with `--combinations-from`), or both;
 - `keys.toml`: the unit, its presets and its keys; `combinations.toml`: the combinations to state, each a key with its
-  `when`, `scheme_file` and `accent` as the lane wrote them (`--no-combinations` leaves the file out, for the plan's
-  first step: the verifier derives the state model before it sees the lane's combinations);
+  `when`, `scheme_file` and `accent` as the lane wrote them: every one, or with `--combinations-from` those a
+  compare-model result agrees on; `--no-combinations` leaves the file out;
 - `pins.toml`: the `docs/facts/sources.toml` entries serving a preset of the unit's platform (all of them, so the
   list does not say which the lane cited; the evidence repository's entry left out), each with its checkout's path in
   the source cache (`--cache`, else citations.cache_dir);
 - `catalogue.md`: for each widget the keys name (a catalogue entry, `component.<key>` too), its catalogue items
   CATALOGUE_ITEMS as the catalogue writes them, with their lines;
+- `spec.md`: the specification's SPEC_SECTIONS (S17 in full, and the S2.2, S7.1, S7.2, S10 and S11 its facts and
+  state models are written in), each found by its heading, from it to the next heading of its level or above
+  (headings inside code blocks not counted); a section it cannot find stops the brief;
 - `facts-format.md`: the lane brief's FORMAT_SECTIONS (`--lane-brief`, the facts lanes' brief, which lives outside
   the repository);
 - for a measured unit, `docs/evidence/…`: each evidence file the unit's facts cite, and each cited run's `run.toml`
@@ -61,23 +80,43 @@ facts (every leaf of a value, as TOML spells a number or a bool; every citation'
 `absent` name) is looked for in every file but the evidence copies (which hold the measured values by design), a
 string starting or ending in a letter or digit only where no letter, digit or `_` continues it. Each file is written
 from named inputs alone: `keys.toml` and `combinations.toml` from the unit's identities, `pins.toml` from
-sources.toml, `catalogue.md` from the catalogue, `facts-format.md` from the lane brief, `README.md` from the unit's
-id, platform, kind, presets and file list, each with the file's own headings. A string found is a collision:
-`trivial` where it is shorter than FLOOR characters or a keyword or bool (KEYWORDS); else, where the file's inputs
-hold it too, unavoidable, classed by the file (LEAK_CLASSES: `identity`, the verifier is told what to state;
-`specification`, the texts every lane and verifier reads; `sources`; `template`); else a `leak`, a string that can
-only have come from the lane's facts. It prints the counts and each collision but the trivial ones (to stdout, never
-into the folder); a leak is exit 1.
+sources.toml, `catalogue.md` from the catalogue, `spec.md` from the specification, `facts-format.md` from the lane
+brief, `README.md` from the unit's id, platform, kind, presets and file list, each with the file's own headings. A
+string found is a collision: `trivial` where it is shorter than FLOOR characters or a keyword or bool (KEYWORDS);
+else, where the file's inputs hold it too, unavoidable, classed by the file (LEAK_CLASSES: `identity`, the verifier
+is told what to state; `specification`, the texts every lane and verifier reads; `sources`; `template`); else a
+`leak`, a string that can only have come from the lane's facts. It prints the counts and each collision but the
+trivial ones (to stdout, never into the folder); a leak is exit 1.
 
-`compare <unit> <verifier-facts.toml>`: the lane's facts of the unit against the verifier's file, by identity. The
-values are compared after NORMALISATIONS, each listed in the output with the facts whose spelling it changed and
-the pairs that agree only through it. Counts: agreed, disagreed, lane-only (the unit's identities the verifier does
-not state), verifier-only (the verifier's identities the lane states nowhere on the platform) and outside the unit
-(the verifier's identities the lane states outside the unit: unchanged since the baseline, or pending). It writes
-into `--out` (the verifier file's folder): `tiebreak.toml`, the summary, the normalisations, a summary line in the
-ledger's *Verification rates* table's form, each disagreement with both values and both citations, each one-sided
-fact with its value and citations, and each fact outside the unit whose values differ (a lane's pending fact among
-them) with both; `agreed.toml`, the agreed facts with both citations, which `sample` reads.
+`compare-model <unit> <verifier-state-models.toml>`: the lane's state-model entries of the unit's widgets against the
+verifier's, an entry named by its widget and its `when` (its `preset:` or `flavor:` conditions). Per entry both
+state: each declaration (`available`, `variants`, `sizes`, `densities`, `axes.states`, `axes.conditions`,
+`axes.contexts`, `exclusive`, `not_drawn`, `flags`, `default_size`, `requires_variants`, `sizes_by_variant`,
+`sizes_by_context`, `exclusive_variants`, `variant_sets`, `variant_products`, `recency`) whose members differ, with
+the members only each side states (name lists as sets; an exclusive group and a recency set in their order, which
+is their precedence); and the combinations check_facts.py's expansion gives each side and not the other: the state
+combinations (check_facts.state_combinations) and the variant sets (check_facts.drawn_set_lists). Then each
+combination of the unit (its facts' `when`s) is agreed or refused: refused where the verifier's entries draw none of
+the combinations it holds in and the lane's may (entry_refusal: no entry applies, check_facts.applicable_entries;
+check_facts.model_never; a state neither in `axes.states` nor in `flags`, or no state combination holding it; a
+variant, size, density or condition the entry does not declare, or no variant set holding its variants; a context
+no `axes.contexts` chain matches, check_facts.selector_matches; a `not_drawn` entry whose lists it implies). A
+combination the lane's own model refuses too is kept, marked `lane_model_refuses`. A key that names no widget (a
+colour role, a token, an input) is agreed. It writes `model-compare.toml` into `--out` (the verifier file's folder):
+the summary, each entry with its differences, the agreed combinations (`[[combination]]`, which `brief` and
+`compare` read with `--combinations-from`) and the refused ones with the reasons.
+
+`compare <unit> <verifier-facts.toml>`: the lane's facts of the unit (with `--combinations-from`, those of the agreed
+combinations) against the verifier's file, by identity. The values are compared after NORMALISATIONS, each listed in
+the output with the facts whose spelling it changed and the pairs that agree only through it. Counts: agreed,
+disagreed, lane-only (the compared identities the verifier does not state), verifier-only (the verifier's identities
+the lane states nowhere on the platform), outside the compared combinations (the verifier's identities the lane
+states elsewhere: unchanged since the baseline, pending, or refused by the model comparison) and refused by the
+model. It writes into `--out` (the verifier file's folder): `tiebreak.toml`, the summary, the normalisations, a
+summary line in the ledger's *Verification rates* table's form, each disagreement with both values and both
+citations, each one-sided fact with its value and citations, and each fact outside the compared combinations whose
+values differ (a lane's pending fact among them) with both; `agreed.toml`, the agreed facts with both citations,
+which `sample` reads.
 
 `sample <unit> --compared DIR --seed N`: the audit sample of the agreed facts of `DIR/agreed.toml` (the plan: 5 %
 per lane and unit, at least ten), `max(--min, ceil(--rate × agreed))` of them, never more than there are: the agreed
@@ -87,8 +126,10 @@ sampled fact with both values and citations.
 
 Exit 0, 1 (`brief`: a leak), or 2 on an input it cannot read, an unknown unit or a wrong command line.
 
-    python3 scripts/verify_facts.py --self-test   # the units, a normalisation, an identity mismatch, one-sided facts,
-                                                  # the brief's leak check and the sample's determinism, on fixtures
+    python3 scripts/verify_facts.py --self-test   # the units, the brief and its leak check, the specification's
+                                                  # sections, the model comparison and the two-step flow, the
+                                                  # normalisations, an identity mismatch, one-sided facts and the
+                                                  # sample's determinism, on fixtures
 """
 import argparse
 import hashlib
@@ -126,6 +167,12 @@ MAX_FACTS = 1000
 
 CATALOGUE_ITEMS = ("Variants", "Sizes and densities", "Flags", "Exclusive groups", "State-model source")
 FORMAT_SECTIONS = ("## The format", "## Canonical forms")
+SPEC = check_facts.CORE
+# The specification's sections the facts format reads (the lane brief's list): S2.2's literals and expressions, S7.1's
+# conditions, S7.2's state flags, S10's declarations, S11's spelling and `when`, S17 in full.
+SPEC_SECTIONS = ("S2.2", "S7.1", "S7.2", "S10", "S11", "S17")
+SPEC_HEADING = re.compile(r"^(#{2,4}) (S\d+(?:\.\d+)*)[.\s]")
+SPEC_HEADER = "# The specification's sections the facts format reads"
 FLOOR = 4
 KEYWORDS = {"true", "false", "auto", "absent", "none"}
 EVIDENCE_DIR = "docs/evidence"
@@ -692,6 +739,33 @@ def format_text(lane_brief):
     return "\n".join(out).rstrip() + "\n"
 
 
+def spec_text(spec, ids=SPEC_SECTIONS):
+    """(the text, the lines it adds to the specification's): the sections `ids`, each from its heading to the next
+    heading of its level or above (headings inside code blocks not counted), in the specification's order."""
+    lines = spec.splitlines()
+    heads, fence = [], False
+    for n, line in enumerate(lines, 1):
+        if line.startswith("```"):
+            fence = not fence
+            continue
+        m = None if fence else SPEC_HEADING.match(line)
+        if m:
+            heads.append((n, len(m.group(1)), m.group(2)))
+    out, found = [SPEC_HEADER, "", f"From `{SPEC.as_posix()}`: {', '.join(ids)}."], set()
+    added = list(out)
+    for i, (n, level, sid) in enumerate(heads):
+        if sid not in ids:
+            continue
+        end = next((m - 1 for m, lv, _ in heads[i + 1:] if lv <= level), len(lines))
+        out += ["", f"<!-- the specification's lines {n}-{end} -->", ""] + lines[n - 1:end]
+        added.append(f"<!-- the specification's lines {n}-{end} -->")
+        found.add(sid)
+    missing = [x for x in ids if x not in found]
+    if missing:
+        raise InputError(f"{SPEC}: no section {', '.join(missing)}")
+    return "\n".join(out).rstrip() + "\n", "\n".join(added)
+
+
 def pins_text(sources_data, platform, cache):
     """(the text, the lines it adds to the entries': its comments and each entry's cache path)."""
     presets = set(PLATFORMS.get(platform, ()))
@@ -713,7 +787,9 @@ def pins_text(sources_data, platform, cache):
     return "\n".join(out), "\n".join(added)
 
 
-def readme_text(unit, files, cache):
+def readme_text(unit, files, cache, phase):
+    """The README; `phase`: "model" (no combinations: the state models alone), "facts" (the combinations both state
+    models draw: the facts alone) or "both"."""
     measured = unit["kind"] == "measured"
     out = [f"# Verifier's brief: unit {unit['id']} ({unit['platform']}, {unit['kind']})", "",
            f"You verify the {unit['facts']} facts of this unit for the presets {', '.join(unit['presets'])}, "
@@ -723,32 +799,38 @@ def readme_text(unit, files, cache):
            f"(`{cache}`, one checkout per `pins.toml` entry, at the pin). Nothing else: not the project, its gap "
            "maps or `platform-facts.md`, not the evidence repository's checkout.", ""]
     out += [f"- `{f}`: {what}" for f, what in files]
-    out += ["", "## What you write", "",
-            "1. `state-models.toml`: for each widget of the keys, the `[[model]]` entry derived from the sources (the "
-            "catalogue's state-model source names where to look): the states, conditions, contexts, variants, sizes "
-            "and densities the platform's drawing distinguishes, the exclusive groups, the combinations it does not "
-            "draw, each with its citations.",
-            "2. `facts.toml`: a `[[fact]]` for each key and combination, in the format of `facts-format.md`: `key`, "
-            "`when`, `scheme_file` and `accent` as `combinations.toml` writes them, `value`, `rows = []` and the "
-            "citations. A combination the platform draws that the list lacks gets a fact too; one you cannot source "
-            "gets none, and goes in your report with what you tried.",
-            "   " + ("Each value with a `measured` citation: `evidence = \"docs/evidence/<harness>/<run>/<image>/"
-                     "<file>#<path>\"` (the copies under `docs/evidence/`, the run's `analysis/` scripts its method), "
-                     "and its `tolerance`; check the reading, the method and the conversion."
-                     if measured else
-                     "Each value with a `published` (or `read`) citation: `source = \"<id> <path>:<lines>\"` from "
-                     "`pins.toml` and the `quote` found there."),
-            "3. Your report: the counts, the combinations you could not source, and anything the catalogue cannot "
-            "express."]
+    model = ("`state-models.toml`: for each widget of the keys, the `[[model]]` entry derived from the sources (the "
+             "catalogue's state-model source names where to look; the format is S17's *State models* in "
+             "`spec.md`): the states, conditions, contexts, variants, sizes and densities the platform's drawing "
+             "distinguishes, the exclusive groups, the combinations it does not draw, each with its citations.")
+    facts = ("`facts.toml`: a `[[fact]]` for each key and combination, in the format of `facts-format.md` and "
+             "`spec.md`: `key`, `when`, `scheme_file` and `accent` as `combinations.toml` writes them, `value`, "
+             "`rows = []` and the citations. A combination the platform draws that the list lacks gets a fact too; one "
+             "you cannot source gets none, and goes in your report with what you tried.")
+    how = ("Each value with a `measured` citation: `evidence = "
+           "\"docs/evidence/<harness>/<run>/<image>/<file>#<path>\"` (the copies under `docs/evidence/`, the run's "
+           "`analysis/` scripts its method), and its `tolerance`; check the reading, the method and the conversion."
+           if measured else
+           "Each value with a `published` (or `read`) citation: `source = \"<id> <path>:<lines>\"` from `pins.toml` "
+           "and the `quote` found there.")
+    steps = {"model": [model + " This brief holds no combinations: they follow once your state models are compared "
+                               "with the lane's."],
+             "facts": [facts + " The combinations are those your state models and the lane's both draw.", "   " + how],
+             "both": [model, facts, "   " + how]}[phase]
+    out += ["", "## What you write", ""] + [f"{i}. {x}" if not x.startswith("   ") else x for i, x in
+                                            enumerate(steps, 1)]
+    out.append(f"{sum(1 for x in steps if not x.startswith('   ')) + 1}. Your report: the counts, the combinations you "
+               f"could not source, and anything the catalogue cannot express.")
     return "\n".join(out) + "\n"
 
 
-def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combinations=True):
+def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combinations=True, agreed=None):
     """Write the unit's brief into `out` (a new or empty folder); return (the leak check's collisions, {file: the
-    text it was written from})."""
+    text it was written from}). `agreed`: a compare-model result, whose agreed combinations alone are written."""
     unit = find_unit(doc, unit_id)
     tree = Tree(root, doc["rev"])
     facts, _ = unit_facts(root, doc, unit)
+    stated = facts if agreed is None else agreed_facts(agreed, doc, unit, facts)
     out = Path(out)
     if out.exists() and any(out.iterdir()):
         raise InputError(f"{out} is not empty")
@@ -769,14 +851,14 @@ def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combin
     keys_head = ["# The unit's keys (S17 *Keys and values*): state each under every combination the platform draws.",
                  ""] + header
     combos_head = ["# The combinations to state: each key with its `when`, `scheme_file` and `accent`, as the lane's "
-                   "facts name them.", ""] + header
+                   "facts name them" + ("" if agreed is None else ", those both state models draw") + ".", ""] + header
     ident = identity_text(facts)
     write = {"keys.toml": ("\n".join(keys_head + ["", "keys = ["] + [f"  {toml_string(k)}," for k in keys] + ["]"])
                            + "\n", "\n".join(keys_head) + "\n" + ident)}
     files = [("keys.toml", "the unit and its keys")]
     if combinations:
         rows = list(combos_head)
-        for f in facts:
+        for f in stated:
             rows += ["", "[[combination]]"] + [f"{k} = {toml_inline(v)}" for k, v in plain(f.data).items()]
         write["combinations.toml"] = ("\n".join(rows) + "\n", "\n".join(combos_head) + "\n" + ident)
         files.append(("combinations.toml", "the combinations to state, one fact each"))
@@ -788,6 +870,11 @@ def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combin
     files.append(("catalogue.md", "the catalogue's lines for the unit's widgets"))
     write["facts-format.md"] = (format_text(lane_brief), lane_brief + "\n" + FORMAT_HEADER)
     files.append(("facts-format.md", "the facts format"))
+    spec = tree.text(SPEC.as_posix())
+    spec_out, spec_added = spec_text(spec)
+    write["spec.md"] = (spec_out, spec + "\n" + spec_added)
+    files.append(("spec.md", f"the specification's {', '.join(SPEC_SECTIONS)} (S17 in full: the facts, the state "
+                             f"models, the gate)"))
     if unit["kind"] == "measured":
         if evidence_root is None:
             try:
@@ -797,7 +884,7 @@ def brief(root, doc, unit_id, out, lane_brief, cache, evidence_root=None, combin
         n = copy_evidence(facts, Path(evidence_root), out)
         files.append((f"{EVIDENCE_DIR}/", f"the {n} evidence files the unit's facts cite, each run's run.toml and "
                                           f"analysis/ scripts"))
-    readme = readme_text(unit, files, cache)
+    readme = readme_text(unit, files, cache, "model" if not combinations else "both" if agreed is None else "facts")
     write["README.md"] = (readme, readme)
     for name, (text, _) in write.items():
         (out / name).write_text(text, encoding="utf-8")
@@ -875,7 +962,8 @@ def identity_text(facts):
 
 
 LEAK_CLASSES = {"keys.toml": "identity", "combinations.toml": "identity", "catalogue.md": "specification",
-                "facts-format.md": "specification", "pins.toml": "sources", "README.md": "template"}
+                "facts-format.md": "specification", "spec.md": "specification", "pins.toml": "sources",
+                "README.md": "template"}
 
 
 def leak_check(out, facts, inputs):
@@ -908,7 +996,8 @@ def leak_report(found):
     names = ("leak", "identity", "specification", "sources", "template", "trivial")
     counts = {c: sum(1 for f in found if f[0] == c) for c in names}
     lines = [f"# leak check: {counts['leak']} leaks; unavoidable collisions: {counts['identity']} in the identities, "
-             f"{counts['specification']} in the specification's text (the catalogue, the lane brief's format), "
+             f"{counts['specification']} in the specification's text (the catalogue, the specification, the lane "
+             f"brief's format), "
              f"{counts['sources']} in sources.toml's entries, {counts['template']} in the README's own text, "
              f"{counts['trivial']} trivial (under {FLOOR} characters, or a keyword or bool)"]
     groups = {}
@@ -934,10 +1023,15 @@ def side(f):
     return d
 
 
-def compare(root, doc, unit_id, verifier_path, out=None):
-    """Write tiebreak.toml and agreed.toml into `out`; return the summary table."""
+def compare(root, doc, unit_id, verifier_path, out=None, agreed_models=None):
+    """Write tiebreak.toml and agreed.toml into `out`; return the summary table. `agreed_models`: a compare-model
+    result, whose agreed combinations alone are compared (the others were the model comparison's)."""
     unit = find_unit(doc, unit_id)
     lane_unit, lane_all = unit_facts(root, doc, unit)
+    refused = 0
+    if agreed_models is not None:
+        kept = agreed_facts(agreed_models, doc, unit, lane_unit)
+        refused, lane_unit = len(lane_unit) - len(kept), kept
     vpath = Path(verifier_path)
     try:
         vtext = vpath.read_text(encoding="utf-8")
@@ -993,7 +1087,7 @@ def compare(root, doc, unit_id, verifier_path, out=None):
         "verifier_repeated": len(vfacts) - len(ver), "compared": compared, "agreed": len(agreed),
         "agreed_before_normalising": before, "disagreed": len(disagreed), "lane_only": len(lane_only),
         "verifier_only": len(verifier_only), "outside_unit": len(outside) + outside_agreed,
-        "outside_unit_disagreed": len(outside),
+        "outside_unit_disagreed": len(outside), "refused_by_model": refused,
     }
     summary["ledger"] = ledger_line(summary)
     out = Path(out) if out else vpath.parent
@@ -1031,8 +1125,272 @@ def ledger_line(s):
     pct = f"{100 * s['agreed'] / c:.1f} %; {100 * s['agreed_before_normalising'] / c:.1f} % before" if c else "none"
     return (f"| {s['unit']} | {s['platform']} | lane {s['lane_facts']:,}, verifier {s['verifier_facts']:,} | "
             f"{s['agreed']:,} of {c:,} compared combinations after normalising spellings ({pct}) | to tie-break: "
-            f"{s['disagreed']:,} disagreed, {s['lane_only']:,} lane-only, {s['verifier_only']:,} verifier-only | "
-            f"{sample_size(s['agreed'], 0.05, 10)} | |")
+            f"{s['disagreed']:,} disagreed, {s['lane_only']:,} lane-only, {s['verifier_only']:,} verifier-only"
+            + (f", {s['refused_by_model']:,} refused by the verifier's state model"
+               if s.get("refused_by_model") else "")
+            + f" | {sample_size(s['agreed'], 0.05, 10)} | |")
+
+
+# ------------------------------------------------------------------------------------- the state models
+
+MODEL_SKIP = {"widget", "when", "rows", "cite"}
+ORDERED_FIELDS = {"exclusive", "recency"}   # an exclusive group's order is its precedence, a recency set's its order
+
+
+def read_models(file, platform, text):
+    """The `[[model]]` entries of a state-models file's text, as check_facts.items_of reads them."""
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as err:
+        raise InputError(f"{file}: not valid TOML: {err}") from err
+    return check_facts.items_of(file, platform, text, data, "model")
+
+
+def platform_models(tree, platform):
+    path = f"{FACTS.as_posix()}/{platform}/{STATE_MODELS}"
+    return read_models(path, platform, tree.text(path)) if path in tree.files(path) else []
+
+
+def fact_widgets(tree, facts):
+    """[the catalogue entry each fact's key names, or None]."""
+    entries = {e.name: e for e in spec_catalogue.entries(tree.text(CATALOGUE.as_posix()))}
+    return [widget_of(f.identity[0] if isinstance(f.identity[0], tuple) else (), entries) for f in facts]
+
+
+def entry_id(it):
+    when = it.data.get("when")
+    return it.data.get("widget"), check_facts.canonical_when(strip_empty(when) if isinstance(when, dict) else when)
+
+
+def canon(field, x):
+    """A declaration's item as a comparable value: name lists as sets (in ORDERED_FIELDS, in order), tables without
+    their empty members."""
+    if isinstance(x, list):
+        if check_facts.str_list(x):
+            return ("list",) + (tuple(x) if field in ORDERED_FIELDS else tuple(sorted(set(x))))
+        return ("list",) + tuple(canon(field, v) for v in x)
+    if isinstance(x, dict):
+        return ("table",) + tuple(sorted((k, canon(field, v)) for k, v in x.items() if v not in ([], {}, None)))
+    return x
+
+
+def declarations(d):
+    """{field: {comparable item: the item as written}} of an entry: each list field's members, each table field's
+    entries (`recency`), a scalar as its one item; `axes` by its three lists."""
+    out = {}
+    for k, v in d.items():
+        if k in MODEL_SKIP:
+            continue
+        if k == "axes" and isinstance(v, dict):
+            for a, x in v.items():
+                out[f"axes.{a}"] = {canon(a, i): i for i in x} if isinstance(x, list) else {canon(a, x): x}
+        elif isinstance(v, list):
+            out[k] = {canon(k, i): i for i in v}
+        elif isinstance(v, dict):
+            out[k] = {(n, canon(k, i)): {n: i} for n, i in v.items()}
+        else:
+            out[k] = {canon(k, v): v}
+    return out
+
+
+def entry_combinations(d):
+    """(the state combinations, the variant sets) of an available entry, as check_facts.py expands them."""
+    if d.get("available") is not True:
+        return set(), set()
+    listed, products = check_facts.drawn_set_lists(d)
+    return check_facts.state_combinations(d), listed | products
+
+
+def covers(nd, when, states):
+    """A `not_drawn` entry stating only name lists that the `when` implies (each list a subset of the `when`'s): every
+    combination the `when` holds in is one it removes."""
+    if not isinstance(nd, dict) or not nd or nd.keys() - {"states", "not_states", "variants", "not_variants",
+                                                          "conditions", "not_conditions", "sizes", "densities"}:
+        return False
+    for k, v in nd.items():
+        have = states if k == "states" else check_facts.when_lists(when, k)
+        if not check_facts.str_list(v) or not set(v) <= have:
+            return False
+    return True
+
+
+def entry_refusal(when, e):
+    """Why one entry draws no combination the `when` holds in ([] where it may draw one)."""
+    d = e.data
+    if d.get("available") is not True:
+        return ["the entry declares the widget not available"]
+    lists = check_facts.when_lists
+    out = list(check_facts.model_never(when, e))
+    axes = d.get("axes") if isinstance(d.get("axes"), dict) else {}
+    latest = when.get("latest") if isinstance(when.get("latest"), dict) else {}
+    latest = {v for v in latest.values() if isinstance(v, str)}
+    states = lists(when, "states") | latest
+    on_axes = set(axes.get("states", [])) if check_facts.str_list(axes.get("states", [])) else set()
+    flags = set(d.get("flags", [])) if check_facts.str_list(d.get("flags", [])) else set()
+    combined = states & on_axes
+    if states - on_axes - flags:
+        out.append(f"states {sorted(states - on_axes - flags)} are neither in axes.states nor in flags")
+    elif not any(combined <= k and not lists(when, "not_states") & k for k in check_facts.state_combinations(d)):
+        out.append(f"no state combination holds {sorted(combined)} without {sorted(lists(when, 'not_states'))}")
+    variants = lists(when, "variants")
+    known = set(d.get("variants", [])) if check_facts.str_list(d.get("variants", [])) else set()
+    if variants - known:
+        out.append(f"variants {sorted(variants - known)} are not in variants")
+    elif len(variants) > 1 and not any(variants <= x and not lists(when, "not_variants") & x
+                                       for x in entry_combinations(d)[1]):
+        out.append(f"no variant set holds {sorted(variants)}")
+    for k in ("sizes", "densities"):
+        have = set(d.get(k, [])) if check_facts.str_list(d.get(k, [])) else set()
+        if k == "sizes":
+            for by in ("sizes_by_variant", "sizes_by_context"):
+                for e in d.get(by, []) if isinstance(d.get(by), list) else []:
+                    if isinstance(e, dict) and check_facts.str_list(e.get("sizes", [])):
+                        have |= set(e.get("sizes", []))
+        if lists(when, k) - have:
+            out.append(f"{k} {sorted(lists(when, k) - have)} are not in {k}")
+    conds = {c for c in lists(when, "conditions") if not c.startswith(("preset:", "flavor:"))}
+    have = set(axes.get("conditions", [])) if check_facts.str_list(axes.get("conditions", [])) else set()
+    if conds - have:
+        out.append(f"conditions {sorted(conds - have)} are not in axes.conditions")
+    chains = check_facts.axes_chains(d)
+    for sel in when.get("context", []) if isinstance(when.get("context"), list) else []:
+        if not any(check_facts.selector_matches(sel, c) is not False for c in chains):
+            out.append(f"no axes.contexts chain matches the context {toml_inline(sel)}")
+    for nd in d.get("not_drawn", []) if isinstance(d.get("not_drawn"), list) else []:
+        if covers(nd, when, states):
+            out.append(f"not_drawn {toml_inline(nd)} removes it")
+    return out
+
+
+def model_refusal(when, items):
+    """Why the widget's entries draw no combination the `when` holds in: none applies (check_facts.applicable_entries),
+    or each that applies refuses it; [] where one may draw it."""
+    when = when if isinstance(when, dict) else {}
+    apps = check_facts.applicable_entries(items, when)
+    if not apps:
+        return ["no state-model entry of the widget applies"]
+    reasons = []
+    for e in apps:
+        r = entry_refusal(when, e)
+        if not r:
+            return []
+        reasons += r
+    return reasons
+
+
+def flag_lists(sets):
+    return sorted(sorted(x) for x in sets)
+
+
+def compare_model(root, doc, unit_id, verifier_path, out=None):
+    """Write model-compare.toml into `out`; return its summary."""
+    unit = find_unit(doc, unit_id)
+    tree = Tree(root, doc["rev"])
+    facts, _ = unit_facts(root, doc, unit)
+    widgets_of = fact_widgets(tree, facts)
+    widgets = {w for w in widgets_of if w}
+    vpath = Path(verifier_path)
+    try:
+        vtext = vpath.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as err:
+        raise InputError(f"{vpath}: {err}") from err
+    lane = [it for it in platform_models(tree, unit["platform"]) if it.data.get("widget") in widgets]
+    ver_all = read_models(vpath.as_posix(), unit["platform"], vtext)
+    ver = [it for it in ver_all if it.data.get("widget") in widgets]
+    lane_by, ver_by = last_by(lane, entry_id), last_by(ver, entry_id)
+    t, counts = [], {"declarations": 0, "states_lane": 0, "states_verifier": 0, "sets_lane": 0, "sets_verifier": 0}
+    for eid in sorted(lane_by.keys() | ver_by.keys(), key=repr):
+        l, v = lane_by.get(eid), ver_by.get(eid)
+        it = l or v
+        head = ["", "[[entry]]", f"widget = {toml_string(eid[0])}"]
+        if "when" in it.data:
+            head.append(f"when = {toml_inline(it.data['when'])}")
+        if not (l and v):
+            t += head + [f"only = {toml_string('lane' if l else 'verifier')}", f"line = {it.line}"]
+            continue
+        t += head + [f"lane_line = {l.line}", f"verifier_line = {v.line}"]
+        a, b = declarations(l.data), declarations(v.data)
+        diffs = []
+        for field in sorted(a.keys() | b.keys()):
+            x, y = a.get(field, {}), b.get(field, {})
+            lo, vo = [x[k] for k in x if k not in y], [y[k] for k in y if k not in x]
+            if lo or vo:
+                counts["declarations"] += 1
+                diffs += ["", "[[entry.difference]]", f"field = {toml_string(field)}", f"lane_only = {toml_inline(lo)}",
+                          f"verifier_only = {toml_inline(vo)}"]
+        (ls, lv), (vs, vv) = entry_combinations(l.data), entry_combinations(v.data)
+        counts["states_lane"] += len(ls - vs)
+        counts["states_verifier"] += len(vs - ls)
+        counts["sets_lane"] += len(lv - vv)
+        counts["sets_verifier"] += len(vv - lv)
+        t += [f"state_combinations = {{ lane = {len(ls)}, verifier = {len(vs)} }}",
+              f"state_combinations_lane_only = {toml_inline(flag_lists(ls - vs))}",
+              f"state_combinations_verifier_only = {toml_inline(flag_lists(vs - ls))}",
+              f"variant_sets_lane_only = {toml_inline(flag_lists(lv - vv))}",
+              f"variant_sets_verifier_only = {toml_inline(flag_lists(vv - lv))}"] + diffs
+    agreed, refused = [], []
+    for f, w in zip(facts, widgets_of):
+        when = f.data.get("when")
+        if w is None:
+            agreed.append((f, [], []))
+            continue
+        r = model_refusal(when, [it for it in ver if it.data.get("widget") == w])
+        mine = model_refusal(when, [it for it in lane if it.data.get("widget") == w])
+        if r and not mine:
+            refused.append((f, r))
+        else:
+            agreed.append((f, mine, r))
+    summary = {
+        "unit": unit["id"], "platform": unit["platform"], "rev": doc["rev"], "verifier_file": vpath.as_posix(),
+        "widgets": sorted(widgets), "lane_entries": len(lane_by), "verifier_entries": len(ver_by),
+        "verifier_entries_of_other_widgets": len(ver_all) - len(ver),
+        "matched_entries": len(lane_by.keys() & ver_by.keys()),
+        "lane_only_entries": len(lane_by.keys() - ver_by.keys()),
+        "verifier_only_entries": len(ver_by.keys() - lane_by.keys()),
+        "declaration_differences": counts["declarations"],
+        "state_combinations_lane_only": counts["states_lane"],
+        "state_combinations_verifier_only": counts["states_verifier"],
+        "variant_sets_lane_only": counts["sets_lane"], "variant_sets_verifier_only": counts["sets_verifier"],
+        "combinations": len(facts), "agreed_combinations": len(agreed), "refused_combinations": len(refused),
+        "lane_model_refuses": sum(1 for _, mine, _ in agreed if mine),
+    }
+    rows = ["# The comparison of a lane's state models with its verifier's (scripts/verify_facts.py compare-model): "
+            "the tie-breaker's input, and the combinations the second brief states (brief --combinations-from).",
+            "", "[summary]"] + [f"{k} = {toml_inline(v)}" for k, v in summary.items()] + t
+    for f, mine, theirs in agreed:
+        rows += ["", "[[combination]]", f"file = {toml_string(f.file)}"]
+        rows += [f"{k} = {toml_inline(v)}" for k, v in plain(f.data).items()]
+        if mine:
+            rows += [f"lane_model_refuses = {toml_inline(mine)}", f"verifier_model_refuses = {toml_inline(theirs)}"]
+    for f, why in refused:
+        rows += ["", "[[refused]]", f"file = {toml_string(f.file)}"]
+        rows += [f"{k} = {toml_inline(v)}" for k, v in plain(f.data).items()]
+        rows.append(f"reasons = {toml_inline(why)}")
+    out = Path(out) if out else vpath.parent
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "model-compare.toml").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    return summary
+
+
+def read_toml(path):
+    try:
+        return tomllib.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
+        raise InputError(f"{path}: {err}") from err
+
+
+def agreed_facts(result, doc, unit, facts):
+    """The unit's facts whose combinations a compare-model result (its table) agrees on."""
+    head = result.get("summary", {})
+    if head.get("unit") != unit["id"] or head.get("rev") != doc["rev"]:
+        raise InputError(f"the compare-model result is of unit {head.get('unit')!r} at {head.get('rev')!r}, not "
+                         f"{unit['id']!r} at {doc['rev']!r}")
+    wanted = {(c.get("file"), identity_of(c)) for c in result.get("combination", [])}
+    got = [f for f in facts if (f.file, f.identity) in wanted]
+    if len(got) != len(wanted):
+        raise InputError(f"the compare-model result names {len(wanted) - len(got)} combinations unit {unit['id']} "
+                         f"does not hold")
+    return got
 
 
 # ---------------------------------------------------------------------------------------------- the sample
@@ -1112,11 +1470,18 @@ def main(argv) -> int:
     b.add_argument("--units")
     b.add_argument("--cache")
     b.add_argument("--no-combinations", action="store_true")
+    b.add_argument("--combinations-from")
+    m = sub.add_parser("compare-model")
+    m.add_argument("unit")
+    m.add_argument("verifier_models")
+    m.add_argument("--units")
+    m.add_argument("--out")
     c = sub.add_parser("compare")
     c.add_argument("unit")
     c.add_argument("verifier_facts")
     c.add_argument("--units")
     c.add_argument("--out")
+    c.add_argument("--combinations-from")
     s = sub.add_parser("sample")
     s.add_argument("unit")
     s.add_argument("--compared", required=True)
@@ -1143,13 +1508,27 @@ def main(argv) -> int:
                 lane_brief = Path(args.lane_brief).read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError) as err:
                 raise InputError(f"--lane-brief {args.lane_brief}: {err}") from err
+            if args.no_combinations and args.combinations_from:
+                raise InputError("--no-combinations and --combinations-from exclude each other")
+            agreed = read_toml(args.combinations_from) if args.combinations_from else None
             found, _ = brief(root, read_units(root, args.units), args.unit, args.out_dir, lane_brief,
-                          citations.cache_dir(args.cache), combinations=not args.no_combinations)
+                             citations.cache_dir(args.cache), combinations=not args.no_combinations, agreed=agreed)
             counts, report = leak_report(found)
             print(report)
             return 1 if counts["leak"] else 0
+        if args.cmd == "compare-model":
+            summary = compare_model(root, read_units(root, args.units), args.unit, args.verifier_models, args.out)
+            print(f"# {summary['unit']}: {summary['matched_entries']} entries matched, {summary['lane_only_entries']} "
+                  f"lane-only, {summary['verifier_only_entries']} verifier-only; {summary['declaration_differences']} "
+                  f"declarations differ; state combinations {summary['state_combinations_lane_only']} lane-only, "
+                  f"{summary['state_combinations_verifier_only']} verifier-only; variant sets "
+                  f"{summary['variant_sets_lane_only']} lane-only, {summary['variant_sets_verifier_only']} "
+                  f"verifier-only; combinations {summary['agreed_combinations']} agreed, "
+                  f"{summary['refused_combinations']} refused by the verifier's model")
+            return 0
         if args.cmd == "compare":
-            summary = compare(root, read_units(root, args.units), args.unit, args.verifier_facts, args.out)
+            agreed = read_toml(args.combinations_from) if args.combinations_from else None
+            summary = compare(root, read_units(root, args.units), args.unit, args.verifier_facts, args.out, agreed)
             print(f"# {summary['unit']}: agreed {summary['agreed']}, disagreed {summary['disagreed']}, lane-only "
                   f"{summary['lane_only']}, verifier-only {summary['verifier_only']}, outside the unit "
                   f"{summary['outside_unit']} ({summary['outside_unit_disagreed']} differing)")
@@ -1199,6 +1578,93 @@ id = "native-theme-evidence"
 kind = "git"
 evidence = true
 generations = []
+'''
+
+SELF_TEST_SPEC = '''# spec
+
+## S2. Blocks
+
+### S2.1 Colour
+
+Colours.
+
+### S2.2 Values and expressions
+
+Literals.
+
+## S7. Rules
+
+### S7.1 Conditions
+
+`scheme:dark`.
+
+### S7.2 State flags
+
+`hover`.
+
+### S7.3 Sizes
+
+Sizes.
+
+## S10. Declarations
+
+```toml
+## S99. not a heading: inside a code block
+```
+
+## S11. Preset files (TOML)
+
+`when`.
+
+## S12. Validation
+
+Refusals.
+
+## S17. Facts as data and the gate (R4, R22)
+
+### State models
+
+`[[model]]`.
+
+## S18. Documents and scripts
+
+Scripts.
+'''
+
+SELF_TEST_MODELS = '''
+[[model]]
+widget = "button"
+available = true
+variants = ["flat"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed", "disabled"], conditions = [], contexts = [] }
+exclusive = []
+not_drawn = [{ states = ["disabled", "pressed"] }]
+rows = []
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:1"
+quote = "button:hover"
+'''
+
+SELF_TEST_VERIFIER_MODELS = '''
+[[model]]
+widget = "button"
+available = true
+variants = ["flat", "@pill"]
+sizes = []
+densities = []
+axes = { states = ["hover", "pressed"], conditions = [], contexts = [] }
+exclusive = [["pressed", "hover"]]
+not_drawn = []
+rows = []
+
+[[model.cite]]
+kind = "published"
+source = "libadwaita@1.10.0 src/stylesheet/widgets/_buttons.scss:9"
+quote = "button:active"
 '''
 
 SELF_TEST_LANE_BRIEF = '''# Facts lane brief
@@ -1258,7 +1724,8 @@ def self_test() -> int:
         if got != want:
             failures.append(f"{label}: got {got!r}, want {want!r}")
 
-    common = {SOURCES.as_posix(): SELF_TEST_SOURCES, CATALOGUE.as_posix(): SELF_TEST_CATALOGUE}
+    common = {SOURCES.as_posix(): SELF_TEST_SOURCES, CATALOGUE.as_posix(): SELF_TEST_CATALOGUE,
+              SPEC.as_posix(): SELF_TEST_SPEC}
     base_button = "".join([
         _fact("button.body.fill", '"#ffffff"', '{ states = ["hover"] }', 1),
         _fact("button.body.fill", '"#eeeeee"', '{ states = ["pressed"] }', 2, q="color: #eeeeee;"),
@@ -1279,7 +1746,8 @@ def self_test() -> int:
     ])
     head_tokens = _fact("token.focus.width", '"2px"', None, 9, q="outline-width: 2px;")   # new
     repo = _repo({**common, "docs/facts/gnome/button.toml": base_button},
-                 {**common, "docs/facts/gnome/button.toml": head_button, "docs/facts/gnome/tokens.toml": head_tokens})
+                 {**common, "docs/facts/gnome/button.toml": head_button, "docs/facts/gnome/tokens.toml": head_tokens,
+                  "docs/facts/gnome/state-models.toml": SELF_TEST_MODELS})
     out = Path(tempfile.mkdtemp(prefix="verify-facts-out-"))
     try:
         since = {p: "HEAD~1" for p in PLATFORMS}
@@ -1314,7 +1782,21 @@ def self_test() -> int:
         classes = {f[0] for f in found}
         check("brief: no leak", [f for f in found if f[0] == "leak"], [])
         check("brief: files", sorted(p.name for p in (out / "brief").iterdir()),
-              ["README.md", "catalogue.md", "combinations.toml", "facts-format.md", "keys.toml", "pins.toml"])
+              ["README.md", "catalogue.md", "combinations.toml", "facts-format.md", "keys.toml", "pins.toml",
+               "spec.md"])
+        spec_md = (out / "brief" / "spec.md").read_text()
+        check("brief: the specification's sections, S17's heading among them",
+              [x for x in spec_md.splitlines() if x.startswith("##")],
+              ["### S2.2 Values and expressions", "### S7.1 Conditions", "### S7.2 State flags",
+               "## S10. Declarations", "## S99. not a heading: inside a code block", "## S11. Preset files (TOML)",
+               "## S17. Facts as data and the gate (R4, R22)", "### State models"])
+        check("brief: S17 ends at S18", ("`[[model]]`." in spec_md, "Scripts." in spec_md, "Refusals." in spec_md),
+              (True, False, False))
+        try:
+            spec_text(SELF_TEST_SPEC.replace("## S17.", "## S16."))
+            failures.append("spec_text: a missing S17 accepted")
+        except InputError:
+            pass
         check("brief: the format excerpt's sections",
               [x for x in (out / "brief" / "facts-format.md").read_text().splitlines() if x.startswith("## ")],
               ["## The format (normative)", "## Canonical forms (binding)"])
@@ -1410,6 +1892,42 @@ def self_test() -> int:
         check("compare: the ledger line", summary["ledger"].startswith(
             "| GN-T1 | gnome | lane 6, verifier 10 | 4 of 5 compared combinations after normalising spellings "
             "(80.0 %; 40.0 % before) | to tie-break: 1 disagreed, 1 lane-only, 2 verifier-only | 4 | |"), True)
+        # the two-phase flow: the model comparison, the second brief, the comparison of its combinations
+        vmodels = out / "verifier" / "state-models.toml"
+        vmodels.write_text(SELF_TEST_VERIFIER_MODELS)
+        ms = compare_model(repo, units1, "GN-T1", vmodels)
+        check("compare-model: counts", {k: ms[k] for k in (
+            "matched_entries", "declaration_differences", "state_combinations_lane_only",
+            "state_combinations_verifier_only", "agreed_combinations", "refused_combinations")},
+              {"matched_entries": 1, "declaration_differences": 4, "state_combinations_lane_only": 3,
+               "state_combinations_verifier_only": 0, "agreed_combinations": 4, "refused_combinations": 2})
+        mc = tomllib.loads((out / "verifier" / "model-compare.toml").read_text())
+        check("compare-model: each difference listed", {d["field"]: (d["lane_only"], d["verifier_only"])
+                                                         for d in mc["entry"][0]["difference"]},
+              {"axes.states": (["disabled"], []), "exclusive": ([], [["pressed", "hover"]]),
+               "not_drawn": ([{"states": ["disabled", "pressed"]}], []), "variants": ([], ["@pill"])})
+        check("compare-model: the combinations only the lane's model gives",
+              mc["entry"][0]["state_combinations_lane_only"], [["disabled"], ["disabled", "hover"],
+                                                                ["hover", "pressed"]])
+        check("compare-model: the refused combinations and why",
+              [(r["key"], r["reasons"][0][:24]) for r in mc["refused"]],
+              [("button.body.corners.bottom_right", "['hover', 'pressed'] are"),
+               ("button.body.opacity", "states ['disabled'] are ")])
+        found2, _ = brief(repo, units1, "GN-T1", out / "brief4", lane_brief, Path("/cache"), agreed=mc)
+        combos2 = tomllib.loads((out / "brief4" / "combinations.toml").read_text())["combination"]
+        check("brief --combinations-from: the agreed combinations only", len(combos2), 4)
+        check("brief --combinations-from: no leak", [f for f in found2 if f[0] == "leak"], [])
+        s2 = compare(repo, units1, "GN-T1", vfile, out / "second", mc)
+        check("compare --combinations-from: counts", {k: s2[k] for k in ("lane_facts", "agreed", "lane_only",
+                                                                         "refused_by_model")},
+              {"lane_facts": 4, "agreed": 3, "lane_only": 0, "refused_by_model": 2})
+        check("compare --combinations-from: the ledger line names the refused", "2 refused by the verifier's state "
+              "model" in s2["ledger"], True)
+        try:
+            compare(repo, units1, "GN-T1", vfile, out / "second", {**mc, "summary": {**mc["summary"], "unit": "X"}})
+            failures.append("compare: another unit's model comparison accepted")
+        except InputError:
+            pass
         check("normalise: srgb is its hex", norm_value("srgb(1, 1, 1)", tuple(NORMALISATIONS), set()),
               ("string", "#ffffff"))
         check("normalise: an expression", norm_value("= alpha( surface.foreground , 0.50 )", tuple(NORMALISATIONS),
@@ -1447,7 +1965,8 @@ def self_test() -> int:
     for f in failures:
         print(f"self-test FAIL: {f}", file=sys.stderr)
     if not failures:
-        print("self-test ok (units, brief and leak check, compare and its normalisations, sample)")
+        print("self-test ok (units, brief and leak check, specification sections, compare-model and the two-step "
+              "flow, compare and its normalisations, sample)")
     return 1 if failures else 0
 
 

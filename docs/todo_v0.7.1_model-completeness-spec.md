@@ -6209,9 +6209,10 @@ are compared, while `m3_role`'s own rows are its vector table's (S2.2).
   (S17's quote, absence, evidence and citation rules), `scripts/check_facts_trace.py` (every live trace row of an
   enabled unit in a fact's or a state-model entry's `rows`, or carrying a verdict, S20), `scripts/check_function_vectors.py` (S2.2, S13),
   `scripts/check_sources.py` and `scripts/update_sources.sh` (S17's sources), `scripts/generate_platform_facts.py`
-  (`platform-facts.md` from the facts), and the one-off converters `scripts/import_platform_facts.py` (today's rows
-  as lane input) and `scripts/convert_inheritance_rules.py` (S19.2): new, in `scripts/check_release.sh` or not as
-  the 0.8.0 plan's table of scripts states (ADD-A117).
+  (`platform-facts.md` from the facts), `scripts/verify_facts.py` (the verifiers' units, briefs and mechanical
+  comparisons of state models and facts, and the audit sample), and the one-off converters
+  `scripts/import_platform_facts.py` (today's rows as lane input) and `scripts/convert_inheritance_rules.py` (S19.2):
+  new, in `scripts/check_release.sh` or not as the 0.8.0 plan's table of scripts states (ADD-A117).
 - `scripts/check_connector_parity.py`: rewritten to apply its naming and sibling rules over the new resolved types'
   leaves.
 
