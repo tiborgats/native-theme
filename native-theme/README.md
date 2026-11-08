@@ -16,20 +16,23 @@ theme has a value wherever the model requires one.
 
 This is the 0.8.0 model while it is being built:
 
-- Two presets are bundled: `adwaita` (GNOME's libadwaita) and `macos-tahoe`
-  (macOS 26). Both still list fields whose facts are pending (their
-  `[pending]` tables), and `Theme::from_preset` refuses a preset with a
-  pending field (`ThemeError::Preset`), so neither builds a theme yet.
+- Eight presets are bundled: `adwaita` (GNOME's libadwaita), `kde-breeze`
+  (KDE's Breeze, Plasma 6), `macos-tahoe` (macOS 26), `macos-monterey`
+  (macOS 12 to 15), `windows-11` (Windows 11, WinUI 3), `material-3`
+  (Google's Material 3), `ios-26` (iOS 26) and `ios-13` (iOS 13 to 18). Each
+  still lists fields whose facts are pending (its `[pending]` table), and
+  `Theme::from_preset` refuses a preset with a pending field
+  (`ThemeError::Preset`), so none builds a theme yet.
 - The one typed widget is the button; the other widgets come unit by unit.
-- Two OS readers are back: GNOME's (the `portal` feature), which
-  `Theme::from_system` reads on GNOME and Budgie over `adwaita`, with the
-  portal-only read of the Linux desktops that have no reader of their own
-  (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors, COSMIC), also over
-  `adwaita`; and macOS's (the `macos` feature), over the running version's
-  generation, `macos-tahoe` or `macos-monterey`; with the `watch` feature's
-  watchers of each. The KDE and Windows readers return with their presets,
-  and the reader features enable only what [Feature flags](#feature-flags)
-  says.
+- The four OS readers are back, each with the `watch` feature's watcher:
+  KDE's (the `kde` feature), which `Theme::from_system` reads on KDE Plasma
+  over `kde-breeze`; GNOME's (the `portal` feature), on GNOME and Budgie over
+  `adwaita`, with the portal-only read of the Linux desktops that have no
+  reader of their own (Xfce, Cinnamon, MATE, LXQt, the Wayland compositors,
+  COSMIC), also over `adwaita`; macOS's (the `macos` feature), over the
+  running version's generation, `macos-tahoe` or `macos-monterey`; and
+  Windows' (the `windows` feature), over `windows-11`. Each reads what
+  [Feature flags](#feature-flags) says.
 
 ## How it fits
 

@@ -49,14 +49,14 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! The model is being built: the two bundled presets, `adwaita` and
-//! `macos-tahoe`, still list fields whose facts are pending, and
-//! [`Theme::from_preset`] refuses a preset with a pending field
-//! ([`ThemeError::Preset`]), so neither builds a theme yet; the one typed
-//! widget is the button; of the platform readers GNOME's is back
-//! ([`Theme::from_system`], the `portal` feature), with the portal-only read
-//! of the Linux desktops that have no reader of their own, and macOS's (the
-//! `macos` feature).
+//! The model is being built: the eight bundled presets ([`PresetId::all`])
+//! still list fields whose facts are pending, and [`Theme::from_preset`]
+//! refuses a preset with a pending field ([`ThemeError::Preset`]), so none
+//! builds a theme yet; the one typed widget is the button; the platform
+//! readers are back ([`Theme::from_system`]): KDE's (the `kde` feature),
+//! GNOME's (the `portal` feature), with the portal-only read of the Linux
+//! desktops that have no reader of their own, macOS's (the `macos` feature)
+//! and Windows' (the `windows` feature).
 //!
 //! # Feature flags
 //!
