@@ -945,7 +945,9 @@ repository path where the rules give one, the lines and a status (resolved,
 heuristic, ambiguous, unresolved); the seeds file's excerpts of other
 documents' cells are marked as quotes. A module, imported by
 `check_sources.py` and meant for the re-pin of the citations; its docstring
-states the rules in the order they apply and the API. Existence checks (a path
+states the rules in the order they apply and the API, `evidence_root` among
+it (the evidence root every reader of evidence resolves, under
+`check_fact_citations.py`). Existence checks (a path
 carried from the citation before it, the Windows gap map's two bases, a bare
 name) use this repository's files, and with `--cache` also the source cache's
 checkouts. Run alone it prints the records as TSV, or with `--summary` the
@@ -972,6 +974,11 @@ an https URL, its tag the id's version as the project tags it (`v6.8.2` for
 a leading `-`; every `[[site]]` names its pinning method (its git source
 repositories, each naming the site back as its `site`, or snapshots), and a
 source's `site` is a listed site; every `[[not_pinned]]` gives its reason.
+The one git entry with `evidence = true` pins the evidence repository
+(specification S17 *The evidence root*): its id is `native-theme-evidence`,
+it is a commit pin with `generations = []` and a `note`, and it has no
+`project`, `release`, `researched` or `proof`, which it alone is waived (its
+commit is this project's own, moved by its facts commits).
 `update_sources.sh` refuses a file with any of these problems. Then, through `citations.py`, every project the core, the catalogue,
 the traces and the gap maps cite must be a source, a site or not pinned (the
 generated `docs/platform-facts.md` is not read: its citations are the facts',
@@ -1003,7 +1010,8 @@ with the fields of their kind and a pinned source, `scheme_file` and `accent`
 both or neither in `kde/` only, and the generation rule: without `preset:`,
 its citations together serve each preset of its directory that exists (the
 bundled `native-theme/src/presets/<id>.toml`; with none the rule asks
-nothing). A
+nothing; a measured citation serves the preset its run's `run.toml` maps its
+image to, read under the evidence root, below `check_fact_citations.py`). A
 state-model entry's declarations are checked against the catalogue's entry,
 a palette fact's key against its file, and a bundled palette's
 `[palette.sources]` and `[palette.picks]` against the palette facts and the
@@ -1101,7 +1109,18 @@ python3 scripts/check_facts.py --self-test
 
 Checks what the 0.8.0 facts' citations say, against the source cache
 (`update_sources.sh`; `--cache DIR` or `NATIVE_THEME_SOURCES` overrides it)
-and `docs/evidence/`: each quote occurs, whitespace-normalised, in the cited
+and the evidence: a path `docs/evidence/<rest>` names
+`<root>/docs/evidence/<rest>`, the root being the evidence repository
+([`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence))
+checked out where `NATIVE_THEME_EVIDENCE` names, else in the source cache at
+`<cache>/native-theme-evidence/` (`update_sources.sh --only
+native-theme-evidence`), and accepted only clean (no changed, untracked or
+ignored file) at the commit `sources.toml`'s `evidence = true` entry pins:
+otherwise the run fails, naming the root and the pin (specification S17 *The
+evidence root*; `citations.evidence_root`, which `check_facts.py`,
+`check_function_vectors.py`, `generate_dynamic_type.py` and the facts gate
+apply alike; a self-test's fixture holds its own `docs/evidence/`). Each
+quote occurs, whitespace-normalised, in the cited
 lines at the pin (a JSON page: in the string at the pointer, in the snapshot
 file its `sources.toml` entry names with `file`); no `absent` name occurs
 there as an identifier; per generation, every literal of the value equals a
@@ -1366,10 +1385,19 @@ when it is at its commit with exactly the entry's `sparse` folders (a changed
 list fetches it again); a changed tracked file in it is reset to the commit.
 `--seed DIR` fetches a complete entry from the checkout `DIR/<repository
 name>` instead, when that checkout's HEAD is the commit (its tracked files
-only), `--jobs N` sets how many fetches run at once (4, at least 1).
+only), `--jobs N` sets how many fetches run at once (4, at least 1), `--only
+ID` (repeatable) fetches or verifies the named git entries alone.
 `--verify` runs offline and exits 1 unless every entry's checkout is at its
 commit with its sparse folders and no tracked file changed; both modes report
-cache folders no entry names. Before anything else both modes check
+cache folders no entry names (not with `--only`). The evidence entry's
+checkout, `<cache>/native-theme-evidence/`, is what this, the main checkout's
+readers of evidence read: a moved pin is fetched into it (only the new runs
+download), and both modes count an untracked or ignored file in it as a
+problem, since the readers refuse it. The entry is skipped, `--verify`
+included, where `NATIVE_THEME_EVIDENCE` is set and in any worktree of this
+repository (`git rev-parse --git-dir` differs from `--git-common-dir`), so a
+worktree, whose pin may differ, never moves the checkout under a gate running
+in the main checkout: it sets `NATIVE_THEME_EVIDENCE` to a clone of its own. Before anything else both modes check
 `sources.toml` with `check_sources.py`'s form rules and exit 2 on a problem,
 and every path the script writes or removes must resolve to a folder directly
 inside the cache. The SDK and distribution entries are not fetched; an SDK
@@ -1382,6 +1410,7 @@ Requires git and Python 3.11; network access unless `--verify`.
 ```sh
 ./scripts/update_sources.sh
 ./scripts/update_sources.sh --verify
+./scripts/update_sources.sh --only native-theme-evidence
 ```
 
 ## repin_citations.py

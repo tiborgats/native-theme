@@ -264,7 +264,7 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 
 Design-level choices are captured in files under `docs/`:
 
-- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence under [`docs/evidence/`](docs/evidence/); the bundled presets are generated from them (`scripts/generate_preset.py`)
+- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence in the evidence repository, [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence), at the paths its citations name (`docs/evidence/…`) and at the commit `sources.toml` pins; the bundled presets are generated from them (`scripts/generate_preset.py`)
 - [`docs/platform-facts.md`](docs/platform-facts.md) — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py`; never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
 - [`docs/property-registry.toml`](docs/property-registry.toml) — the registry of 0.7.0's theme fields, generated from the 0.8.0 model at its plan's M2.6
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)
