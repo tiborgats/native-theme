@@ -22,7 +22,10 @@
 //! (S9.3, ADD-A138).
 //!
 //! The reader patches no text-role slot: WinUI draws its own type ramp, and
-//! Windows' text-size setting is the text-scaling factor (S9.4, S9.5).
+//! Windows' text-size setting is the text-scaling factor (S9.4, S9.5). It
+//! reads no icon size: `windows-11`'s small and large sizes are pending
+//! (U516), whose facts decide whether they are the shell's metrics the
+//! reader would read or WinUI's own sizes (S9.3, ADD-A140).
 //!
 //! # Sources
 //!
@@ -33,8 +36,8 @@
 //!   foreground, which tells light from dark (`UISettings::ColorValuesChanged`).
 //! - `UISettings.TextScaleFactor`: the text scale
 //!   (`UISettings::TextScaleFactorChanged`).
-//! - `UISettings.AnimationsEnabled`: animations off, the *Animation effects*
-//!   setting turned off (`UISettings::AnimationsEnabledChanged`, Windows 10
+//! - `UISettings.AnimationsEnabled`: animations off and reduced motion, the
+//!   *Animation effects* setting turned off (`UISettings::AnimationsEnabledChanged`, Windows 10
 //!   2004 and later).
 //! - `UISettings.AdvancedEffectsEnabled`: reduced transparency, the
 //!   *Transparency effects* setting turned off
@@ -103,9 +106,9 @@ pub(crate) fn os_version() -> crate::pipeline::OsVersion {
 
 /// The eight `GetSysColor` colours WinUI's `HighContrast` theme dictionaries
 /// draw with, each a `SystemColor*Color` resource, `GetSysColor` of its
-/// index (`microsoft-ui-xaml@8463f45
-/// dxaml/xcp/components/theming/FrameworkTheming.cpp:145-157`, `:219-231`;
-/// `theminginterop/SystemThemingInterop.cpp:202`), and the keyed role it
+/// index (`microsoft-ui-xaml@2.5.1
+/// src/dxaml/xcp/components/theming/FrameworkTheming.cpp:145-158`, `:219-232`;
+/// `src/dxaml/xcp/components/theminginterop/SystemThemingInterop.cpp:202`), and the keyed role it
 /// is (ADD-A135, the Windows trace's W3-35).
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(
@@ -182,10 +185,10 @@ pub(crate) struct WindowsData {
 /// The scheme the foreground tells, as Microsoft's guide for Win32 apps
 /// tells it: dark where the foreground "can be classified as light",
 /// `((5 * clr.G) + (2 * clr.R) + clr.B) > (8 * 128)` ("Support Dark and
-/// Light themes in Win32 apps",
-/// <https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/ui/apply-windows-themes>,
-/// `IsColorLight`, ms.date 2026-06-16, windows-dev-docs commit c7a7d5ac),
-/// "If the foreground is light, then Dark mode is enabled". In `f32`, whose
+/// Light themes in Win32 apps", ms.date 2026-06-16, `IsColorLight`,
+/// `windows-dev-docs@f54166ed
+/// hub/apps/desktop/modernize/ui/apply-windows-themes.md:5`, `:75-78`,
+/// `:88`), "If the foreground is light, then Dark mode is enabled". In `f32`, whose
 /// sums of these 8-bit products are exact.
 #[cfg_attr(
     not(all(target_os = "windows", feature = "windows")),
@@ -204,7 +207,8 @@ fn scheme(foreground: Color) -> Scheme {
 /// part under `own` (S9.5). Zero I/O.
 ///
 /// - The state: the scheme ([`scheme`]); `Contrast::High` under high
-///   contrast; animations off where *Animation effects* is off; reduced
+///   contrast; animations off and reduced motion where *Animation effects*
+///   is off, the one setting standing for both (W3-37); reduced
 ///   transparency where *Transparency effects* is; the text-scaling factor
 ///   where it is finite and above zero, else unscaled ([`UNSCALED`]); no
 ///   font DPI, the reader reading no font (S9.4).
@@ -226,6 +230,7 @@ pub(crate) fn build_reading(data: &WindowsData, own: PresetId) -> Reading {
     let mut state = ReaderState::new(scheme(data.foreground), factor.unwrap_or(UNSCALED));
     state.contrast = high_contrast.then_some(Contrast::High);
     state.animations_off = data.animations_enabled == Some(false);
+    state.reduced_motion = state.animations_off;
     state.reduced_transparency = data.advanced_effects_enabled == Some(false);
 
     let mut layer = Layer::default();

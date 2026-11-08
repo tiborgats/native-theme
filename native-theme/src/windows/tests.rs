@@ -81,7 +81,7 @@ fn the_state_is_what_windows_gives() {
     let state = build_reading(&data(), PresetId::Windows11).state;
     assert_eq!(state.scheme, Scheme::Dark);
     assert_eq!(state.contrast, None);
-    assert!(!state.animations_off && !state.reduced_transparency);
+    assert!(!state.animations_off && !state.reduced_motion && !state.reduced_transparency);
     assert_eq!(state.text_scaling_factor, UNSCALED);
     assert_eq!(state.font_dpi, None);
 
@@ -99,8 +99,18 @@ fn the_state_is_what_windows_gives() {
     .state;
     assert_eq!(state.scheme, Scheme::Light);
     assert_eq!(state.contrast, Some(Contrast::High));
-    assert!(state.animations_off && state.reduced_transparency);
+    assert!(state.animations_off && state.reduced_motion && state.reduced_transparency);
     assert_eq!(state.text_scaling_factor, 1.5);
+
+    let unread = build_reading(
+        &WindowsData {
+            animations_enabled: None,
+            ..data()
+        },
+        PresetId::Windows11,
+    )
+    .state;
+    assert!(!unread.animations_off && !unread.reduced_motion);
 
     for unusable in [0.0, -1.0, f64::NAN, f64::INFINITY] {
         let state = build_reading(
