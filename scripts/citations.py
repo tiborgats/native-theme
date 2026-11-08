@@ -124,7 +124,7 @@ def evidence_root(sources_data, cache=None):
     root = Path(named) if named else cache_dir(cache) / EVIDENCE_ID
     where = f"{EVIDENCE_VARIABLE}={root}" if named else f"{root} (the source cache's checkout of {EVIDENCE_ID})"
     fix = (f"check {EVIDENCE_ID} out there at {commit}" if named
-           else "fetch it with scripts/update_sources.sh")
+           else f"fetch it with scripts/update_sources.sh --only {EVIDENCE_ID}")
     if not root.is_dir():
         raise EvidenceRootError(f"no evidence root: {where} is no directory; the pin is {commit} ({fix})")
 

@@ -243,7 +243,7 @@ pub fn evidence_root_at(
             (
                 root,
                 place,
-                "fetch it with scripts/update_sources.sh".to_owned(),
+                format!("fetch it with scripts/update_sources.sh --only {EVIDENCE_ID}"),
             )
         }
     };
