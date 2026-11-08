@@ -1574,7 +1574,10 @@ spaces:
     `backButtonDisplayMode` (C-2).
   - `help_tooltip_on_click: Value<bool>` — KDE's ContextualHelpButton shows its tooltip on click (Q2.48).
   - `hit_extension: Sides<Value<Px>>` — margins that enlarge the hit area beyond the drawn button (K-KA-26†; a
-    minimum size is `body.touch_target`).
+    minimum size is `body.touch_target`). On `kde-breeze`, where it is required, a button the platform gives no
+    extension states `0px` on each side, S17's zero by omission (Qt's `QAbstractButton::hitButton` tests the rect
+    alone, `qtbase@6.12.0 src/widgets/widgets/qabstractbutton.cpp:895-898`, as the KD-C1 verifier cites it), never
+    `Absent`, which means a platform without the value (ADD-A141; the KD-C1 verifier's question).
   - `display_mode: Value<PasteDisplayMode>`, `PasteDisplayMode { Icon, Label, IconAndLabel }` — iOS's paste control
     (C-17).
   - `scaffold_placement: Value<Placement>` — where Material's scaffold puts the FAB (strategy
@@ -1833,7 +1836,9 @@ spaces:
   own while they record, only their text changing, the QWidget one in its usual states (K-RL02†), the Quick one a
   checked `toggle` (K-KA-43†); state flags used: hover,
   pressed, focused, focus_visible, disabled, checked (iOS's selected bar item, `UIBarButtonItem.isSelected`, a toggle's on state,
-  `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle), selected (macOS's selected toolbar item, the one
+  `button @ variant toggle`, P3-3†), indeterminate (WinUI's toggle; AppKit's toggle in the mixed state, which an
+  NSButton takes with `allowsMixedState`, `NSButton.h:147` at xcode@16.4, `:150` at xcode@26.6, never with `checked`,
+  `NSCell.h:71-74`, the MC-C1 tie-break, U693; ADD-A141), selected (macOS's selected toolbar item, the one
   `NSToolbar.selectedItemIdentifier` names among its selectable items, MAC-TL11†), open, default, drop_target (a spring-loaded button under a drag, P3-11†, MAC-X21), dragged (a
   toolbar item dragged in the customization, MAC-P3-6†, P4-10†), over_dark_content (on `clear`: the clear glass's
   dimming layer where the content beneath is bright, X-MT-10).
@@ -1841,9 +1846,13 @@ spaces:
   AppBarButton, AppBarToggleButton, accent and subtle templates; their Checked* and Indeterminate* states name the
   check state with them, so `checked` and `indeterminate` each combine with that group) and `[indeterminate, checked]`
   (the template takes the Indeterminate* states while `IsChecked` is null and the Checked* states only otherwise,
-  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); others none (states
+  `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/dxaml/lib/ToggleButton_Partial.cpp:98-133`; ADD-A122); `adwaita`:
+  `[disabled, hover]`, `[disabled, pressed]`, `[disabled, focused]`, `[disabled, focus_visible]` and `[disabled,
+  drop_target]`, GTK never holding those flags on an insensitive widget, and `material-3`: `[disabled, hover]`,
+  `[disabled, pressed]` and `[disabled, focus_visible]`, each pair a group of its own as the other flags combine
+  (S10's *A flag the platform clears*; ADD-A141, in place of the state models' `not_drawn` pairs); others none (states
   combine: libadwaita's CSS and Breeze's branches combine flags; K1.29's "pressed wins" is a rule order, not a group;
-  `material-3`'s are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
+  `material-3`'s other precedences are recency sets, below); precedence: state models (S17). Recency sets: `material-3`:
   `state_layer = [focus_visible, hover]` (Material's recency sets, above: Compose's ripple, `Button.kt:156-157`,
   `Surface.kt:253-264`; `pressed` combines; Material draws no dragged layer on a button, MAT-X29) and
   `elevation = [pressed, focus_visible, hover]` (the elevated, filled and tonal buttons, toggle buttons and FABs:
@@ -8482,7 +8491,12 @@ the one declaring preset and, where the absence is a rule's, that rule's selecto
   `@error` one look, a style sheet naming the palette's highlighted-text and highlight colours for the comment's text
   and background, and `@plain` none (`ktitlewidget.cpp:57-80`): one rule for the three, referring to
   `role.selection.foreground` and `role.selection.background`, where Qt applies that sheet; it passes colour names
-  where `palette()` takes role names, so the value phase measures what Qt draws and states the rule from it.
+  where `palette()` takes role names, so the value phase measures what Qt draws and states the rule from it. The
+  base is what KTitleWidget draws by default, level 1 and the message type `Info` (`ktitlewidget.cpp:112`, `:29`, as
+  the KD-C1 verifier cites them), so `@level_1` and `@info` are the base under another name, stating no rule of
+  their own, and an element holding neither draws as one holding both; `@plain` is the message type whose rule
+  differs from the base (its comment's `fill` `Absent`) (ADD-A141; the KD-C1 verifier's question). Rejected: a base
+  with no level and no message type (a look KTitleWidget never draws).
 - **Sizes:** none. **Flags:** none. **Exclusive groups:** none; precedence: state models (S17).
 - **may_be_absent:** none beyond S6.3's drawing fields (a widget given no icon or comment has none queried, S6.3;
   `@plain`'s comment paints no background, its `fill` `Absent`, a drawing field).
@@ -8995,7 +9009,7 @@ platform:
 | `link`, `link_visited` | link text, visited link text | `link` required; `link_visited` may_be_absent on `macos-*`, `windows-11`, `ios-*`, `material-3` (no visited state: macOS draws no visited link, gap-map-macos's §2.28 note; WinUI's hyperlinks have none, gap-map-windows' `:1695` note; `link`'s state-model sources for `ios-*` and `material-3` name none) | K3.54, GN-1.265 |
 | `negative`, `neutral`, `positive` | the set's status text colours (KDE `ForegroundNegative`, `ForegroundNeutral`, `ForegroundPositive`); a platform without per-set values states `negative = role.global.status.error.standalone`, `neutral = role.global.status.warning.standalone`, `positive = role.global.status.success.standalone` (`windows-11`, which has no standalone status colour, the `fill` instead) (KDE's neutral is a warning, rename row 86; `StatusRoles`' own `neutral` is another colour) | `negative` may_be_absent on `macos-*`; `neutral` may_be_absent on `material-3` and `macos-*`, `positive` may_be_absent on `material-3` and `macos-*` (the status each references is absent there: Material has no warning or success role, below; AppKit declares no status colour, `NSColor.h:77-401`, the macOS status roles absent, below; ADD-A130) | K3.54, Q3.10; gap-map-material's colour-role note (no warning or success role) |
 | `decoration_focus`, `decoration_hover` | KDE's focus and hover decoration colours of the set | `decoration_focus` may_be_absent on every preset but `kde-breeze`, `decoration_hover` may_be_absent on every preset but `kde-breeze` (KColorScheme's decoration roles; the other platforms state focus by `token.focus` and hover per part) | Q3.11, Q3.12, K3.54 |
-| `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
+| `border` | the set's stroke colour (translucent where the platform's is) | required, but may_be_absent on `macos-*` in the `Selection` set (AppKit declares no colour for a selection's outline, only the selected content's and text's backgrounds and the text on them, `NSColor.h:210-211`, `:221-222`, `:232-235`, `:240-241`: the facts state it absent, or the outline a selected row's capture shows; a part stroking inside a selected row states its own colour, a separator's; ADD-A130), and on `windows-11` in the `Selection` set (WinUI names no selection outline: `ListViewItemPresenter` takes the selected item's backgrounds, its foreground and its selection indicator's brushes and no selected border brush, `microsoft-ui-xaml@2.5.1 src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml:256`; ADD-A141, the WN-C1 tie-break) | all; absorbs today's `border.color` and `border.opacity` as `alpha(...)` |
 | `shade` | the translucent shade line/overlay of the set (libadwaita `*_shade_color`) | may_be_absent on every preset but `adwaita` (libadwaita's shade colours, no other platform's); on `adwaita` a set GN-1.270 names no shade of states `= role.window.shade` (`--shade-color`) | GN-1.270 |
 | `disabled` | `DisabledRoles`: a record of the colour fields above (the record itself is always there) | each field may_be_absent on the presets the `DisabledRoles` paragraph below names for it | R5.1 |
 
@@ -9012,7 +9026,10 @@ but `Header`, whose darker shade libadwaita states, GN-1.15).
 
 `DisabledRoles` has the same colour fields as `SurfaceRoles` except `disabled`. Each may_be_absent, with its presets:
 `background` (`adwaita`, `macos-*`, `windows-11`, `material-3`), `background_alternate` (every preset but
-`kde-breeze`), `foreground` (`adwaita`), `foreground_inactive` (every preset but `kde-breeze`), `foreground_active`
+`kde-breeze`), `foreground` (`adwaita`; `windows-11` in the `Selection` set, where WinUI names no disabled selected
+text colour and dims the disabled item by its opacity, `ListViewItemPresenter`'s `DisabledOpacity` beside its
+`SelectedDisabledBackground`, `ListViewItem_themeresources.xaml:256`, as libadwaita's widgets dim, below; ADD-A141, the
+WN-C1 tie-break), `foreground_inactive` (every preset but `kde-breeze`), `foreground_active`
 (every preset but `kde-breeze`), `link` (every preset but `kde-breeze`), `link_visited` (every preset but
 `kde-breeze`), `negative` (every preset but `kde-breeze`), `neutral` (every preset but `kde-breeze`), `positive`
 (every preset but `kde-breeze`), `decoration_focus` (every preset but `kde-breeze`), `decoration_hover` (every preset
@@ -9027,7 +9044,7 @@ field and set absent, as libadwaita's own widgets dim by opacity (below): the `V
 `insensitive_bg_color` and `insensitive_fg_color` (`src/stylesheet/_compat-colors.scss:12-13`), public named colours
 libadwaita defines for applications' own drawing and its stylesheet does not use itself (GN-1.176, ADD-A122); `macos-*`, `windows-11`,
 `ios-*` and `material-3` state the disabled text colour, `foreground` (today's `defaults.disabled_text_color`; on `ios-*`
-D-9, D-20), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
+D-9, D-20; on `windows-11` in every set but `Selection`, above), and `ios-*` its disabled background too (D-20), their other disabled looks being per-part rules. On
 KDE each field but `border` is the KColorScheme disabled effect applied to the active value (`kde_effects(c,
 background, disabled, <role kind>)`, the kind `foreground`, `decoration` or `background` per field, `background` the
 set's active background, `active(role.<set>.background)`, never the effected one, which reads `token.kde.disabled`,
@@ -9163,7 +9180,7 @@ six computed backgrounds (`background_active` …) are KColorScheme's tints of t
 | `shadow_reference` | what the platform names as the shadow colour (today's `shadow_color`; macOS `shadowColor`, Material `shadow`) | may_be_absent on `adwaita`, `windows-11`, `ios-*` (no named shadow colour: their shadows state each layer's colour, GN-3.01, W3-01, X-SH-1); `kde-breeze` names one (breezerc `ShadowColor`, K3.1, K3.2) | today's `shadow_color`, MAT-X5, K3.1 |
 | `selection_text_background` | the highlight behind selected text (today's `text_selection_background`) | required on every preset (every platform highlights selected text; a platform that does not distinguish it from selected items states a reference to the `Selection` set, below) | today's fields; GN-3.40, X-SE-1, MAC-X15, W3-25 |
 | `selection_text_foreground` | the selected text's colour (today's `text_selection_color`); absent where the text keeps its own colour | may_be_absent on `adwaita` (GN-3.41), `windows-11` (W3-25), `material-3` (Compose's `TextSelectionColors` holds a handle and a background colour only, gap-map-material's note on `compose/MaterialTheme.kt:279-281`), `ios-*` (X-SE-1 names the highlight colour alone) | today's fields |
-| `selection_text_background_unfocused` | an unfocused field's selection (WinUI's `SelectionHighlightColorWhenNotFocused`, AppKit's unemphasised selection, libadwaita's selection without `:focus-within`; ADD-A49) | may_be_absent on `kde-breeze`, `ios-*`, `material-3` (no unfocused selection colour: KDE's changes with the window, a `window_inactive` rule, K1.45) | W1-032, W3-25, MAC-I05, GN-3.40 |
+| `selection_text_background_unfocused` | an unfocused field's selection (WinUI's `SelectionHighlightColorWhenNotFocused`, AppKit's unemphasised selection, libadwaita's selection without `:focus-within`; ADD-A49) | may_be_absent on `kde-breeze`, `ios-*`, `material-3` (no unfocused selection colour: KDE's changes with the window, a `window_inactive` rule, K1.45) and on `windows-11` (WinUI hides an unfocused box's selection by default: `SelectionHighlightColorWhenNotFocused` defaults to transparent, which hides it, `microsoft-ui-xaml@2.5.1 src/dxaml/xcp/core/native/text/Controls/TextBoxBase.cpp:4356`, `:4287`, so nothing is drawn, the role WinUI's only where an application sets the property; ADD-A141, the WN-C1 tie-break) | W1-032, W3-25, MAC-I05, GN-3.40 |
 | `selection_text_foreground_unfocused` | an unfocused field's selected text (macOS's unemphasised selected text colour) | may_be_absent on every preset but `macos-*` (AppKit's alone, MAC-I05) | MAC-I05 |
 | `find_highlight` | the find/search match highlight | may_be_absent on `adwaita`, `kde-breeze`, `windows-11`, `material-3` (no find-highlight colour of the platform's: KDE's editor states its match fill on `code_editor.find_match`, K-SF08†) | MAC-DF04, MAC-X15, TA-2, C-25 |
 | `drop_highlight` | the drop-target highlight | may_be_absent on `kde-breeze`, `material-3` (no drop-target colour of their own: their drop indicators are stated on the parts, K1.182, MAT-L10) | R12, GN-3.66†, MAC-X21, W3-49†, C-24 |
