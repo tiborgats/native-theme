@@ -8152,6 +8152,14 @@ kind = "published"
 source = "breeze-icons@6.31.0 icons/breeze.theme.in:114"
 quote = "Inherits=hicolor"
 
+# An icon size an icon theme's index.theme omits (S9.3, ADD-A140: the KDE reader's icon sizes). KIconTheme reads each
+# group's `<Group>Default` key with the group's built-in default beneath (kiconthemes@6.31.0 src/kicontheme.cpp:469-472,
+# cited on each fact), the defaults its group table holds (:154-157, :160-167). So each of the six size facts below
+# cites, beside Breeze's value, the default KIconTheme takes for its group where a theme leaves the key unset or holds a
+# value KConfig does not convert to an integer (kconfig@6.31.0 src/core/kconfiggroup.cpp:256-268): the table,
+# declaration through the group's row. Every default equals Breeze's value but Desktop's 32, where Breeze states
+# DesktopDefault=48 (token.icons.sizes.large.size).
+
 [[fact]]
 key = "token.icons.sizes.toolbar.size"
 value = "22px"
@@ -8166,6 +8174,16 @@ quote = "ToolbarDefault=22"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-162"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22},"
 
 [[fact]]
 key = "token.icons.sizes.toolbar.axes"
@@ -8357,6 +8375,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-163"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22},"
+
 [[fact]]
 key = "token.icons.sizes.keyed.main_toolbar.axes"
 value = {}
@@ -8542,6 +8570,16 @@ quote = "SmallDefault=16"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-164"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16},"
 
 [[fact]]
 key = "token.icons.sizes.small.axes"
@@ -8729,6 +8767,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-161"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32},"
+
 [[fact]]
 key = "token.icons.sizes.large.axes"
 value = {}
@@ -8915,6 +8963,16 @@ kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
 
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-165"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16}, {KIconLoader::Panel, \"Panel\", 48},"
+
 [[fact]]
 key = "token.icons.sizes.panel.axes"
 value = {}
@@ -9100,6 +9158,16 @@ quote = "DialogDefault=32"
 kind = "published"
 source = "kiconthemes@6.31.0 src/kicontheme.cpp:469-472"
 quote = "KConfigGroup cg(d->sharedConfig, mainSection); for (auto &iconGroup : d->m_iconGroups) { iconGroup.defaultSize = cg.readEntry(iconGroup.name + QLatin1String(\"Default\"), iconGroup.defaultSize); iconGroup.availableSizes = cg.readEntry(iconGroup.name + QLatin1String(\"Sizes\"), QList<int>());"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:154-157"
+quote = "struct GroupInfo { KIconLoader::Group type; const char *name; int defaultSize;"
+
+[[fact.cite]]
+kind = "published"
+source = "kiconthemes@6.31.0 src/kicontheme.cpp:160-166"
+quote = "std::array<GroupInfo, KIconLoader::LastGroup> m_iconGroups = {{ {KIconLoader::Desktop, \"Desktop\", 32}, {KIconLoader::Toolbar, \"Toolbar\", 22}, {KIconLoader::MainToolbar, \"MainToolbar\", 22}, {KIconLoader::Small, \"Small\", 16}, {KIconLoader::Panel, \"Panel\", 48}, {KIconLoader::Dialog, \"Dialog\", 32},"
 
 [[fact]]
 key = "token.icons.sizes.dialog.axes"
