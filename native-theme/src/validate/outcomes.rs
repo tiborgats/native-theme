@@ -494,7 +494,7 @@ impl Space {
             items: &decided,
             out: &mut out,
         };
-        search.walk(0, &mut vec![None; n], &mut Vec::new(), witness);
+        search.walk(&mut vec![None; n], &mut Vec::new(), witness);
         out
     }
 
@@ -608,44 +608,55 @@ impl Space {
     }
 
     /// Completes `values` as [`Space::solve`] asks; `false` where no
-    /// completion exists.
+    /// completion exists. Depth first over the partial assignments, held on
+    /// the heap, so the stack does not grow with the atoms.
     fn extend(&self, values: &mut Vec<Option<bool>>, clauses: &[&[(usize, bool)]]) -> bool {
-        if !self.propagate(values, clauses) || !self.groups_hold(values) || !self.admits(values) {
-            return false;
-        }
-        // An atom of a clause not yet away from its needs first, its other
-        // value tried first; then any atom, false first.
-        let open = clauses.iter().find_map(|clause| {
-            let away = clause
-                .iter()
-                .any(|(atom, want)| values.get(*atom).copied().flatten() == Some(!*want));
-            if away {
-                return None;
+        let mut tries = vec![std::mem::take(values)];
+        while let Some(mut tried) = tries.pop() {
+            if !self.propagate(&mut tried, clauses)
+                || !self.groups_hold(&tried)
+                || !self.admits(&tried)
+            {
+                continue;
             }
-            clause
-                .iter()
-                .find(|(atom, _)| values.get(*atom).copied().flatten().is_none())
-                .map(|(atom, want)| (*atom, !*want))
-        });
-        let next = open.or_else(|| {
-            values
-                .iter()
-                .position(Option::is_none)
-                .map(|atom| (atom, false))
-        });
-        let Some((atom, first)) = next else {
-            let complete: Vec<bool> = values.iter().map(|v| v.unwrap_or(false)).collect();
-            return self.admissible(&complete);
-        };
-        for value in [first, !first] {
-            let mut tried = values.clone();
+            // An atom of a clause not yet away from its needs first, its other
+            // value tried first; then any atom, false first.
+            let open = clauses.iter().find_map(|clause| {
+                let away = clause
+                    .iter()
+                    .any(|(atom, want)| tried.get(*atom).copied().flatten() == Some(!*want));
+                if away {
+                    return None;
+                }
+                clause
+                    .iter()
+                    .find(|(atom, _)| matches!(tried.get(*atom), Some(None)))
+                    .map(|(atom, want)| (*atom, !*want))
+            });
+            let next = open.or_else(|| {
+                tried
+                    .iter()
+                    .position(Option::is_none)
+                    .map(|atom| (atom, false))
+            });
+            let Some((atom, first)) = next else {
+                let complete: Vec<bool> = tried.iter().map(|v| v.unwrap_or(false)).collect();
+                if self.admissible(&complete) {
+                    *values = tried;
+                    return true;
+                }
+                continue;
+            };
+            // The last pushed is tried first.
+            let mut second = tried.clone();
+            if let Some(slot) = second.get_mut(atom) {
+                *slot = Some(!first);
+            }
+            tries.push(second);
             if let Some(slot) = tried.get_mut(atom) {
-                *slot = Some(value);
+                *slot = Some(first);
             }
-            if self.extend(&mut tried, clauses) {
-                *values = tried;
-                return true;
-            }
+            tries.push(tried);
         }
         false
     }
@@ -727,79 +738,112 @@ struct Search<'s> {
     out: &'s mut Vec<Vec<bool>>,
 }
 
+/// One step of [`Search::walk`], held on the heap.
+enum Step {
+    /// Decide the items from this index on, under a witness realising every
+    /// decision so far.
+    Decide(usize, Vec<bool>),
+    /// Take a decision on the item at this index (`true`: it applies), then
+    /// decide the items after it under the witness realising it.
+    Take(usize, bool, Vec<bool>),
+    /// Open again the atoms an applying item fixed.
+    Unfix(Vec<usize>),
+    /// Take back the last item set away.
+    Restore,
+}
+
 impl Search<'_> {
-    /// Decides the items from `index` on: `fixed` the atoms the applying
-    /// ones fix, `away` the ones not applying, `witness` an assignment that
-    /// realises every decision so far.
-    fn walk(
-        &mut self,
+    /// Decides every item: `fixed` the atoms the applying ones fix, `away`
+    /// the ones not applying, `witness` an assignment that realises every
+    /// decision so far. Each item's decision the witness takes is walked
+    /// first, then the other, where some assignment realises it; the steps
+    /// are held on the heap, so the stack does not grow with the items.
+    fn walk(&mut self, fixed: &mut [Option<bool>], away: &mut Vec<usize>, witness: Vec<bool>) {
+        let mut steps = vec![Step::Decide(0, witness)];
+        while let Some(step) = steps.pop() {
+            match step {
+                Step::Decide(index, witness) => {
+                    let Some(needs) = self.items.get(index) else {
+                        self.out.push(witness);
+                        continue;
+                    };
+                    let applies = needs
+                        .iter()
+                        .all(|(atom, want)| witness.get(*atom) == Some(want));
+                    let other = self.other(index, needs, applies, fixed, away, &witness);
+                    // The last pushed is taken first.
+                    if let Some(found) = other {
+                        steps.push(Step::Take(index, !applies, found));
+                    }
+                    steps.push(Step::Take(index, applies, witness));
+                }
+                Step::Take(index, applies, witness) => {
+                    if applies {
+                        let trail = self
+                            .items
+                            .get(index)
+                            .map(|needs| fix(fixed, needs))
+                            .unwrap_or_default();
+                        steps.push(Step::Unfix(trail));
+                    } else {
+                        away.push(index);
+                        steps.push(Step::Restore);
+                    }
+                    steps.push(Step::Decide(index.saturating_add(1), witness));
+                }
+                Step::Unfix(trail) => unfix(fixed, &trail),
+                Step::Restore => {
+                    away.pop();
+                }
+            }
+        }
+    }
+
+    /// An assignment realising the decision on the item at `index` (its
+    /// selector `needs`) that `witness` does not take (`applies`: the
+    /// witness's), under the decisions so far; `None` where there is none.
+    fn other(
+        &self,
         index: usize,
-        fixed: &mut Vec<Option<bool>>,
+        needs: &[(usize, bool)],
+        applies: bool,
+        fixed: &mut [Option<bool>],
         away: &mut Vec<usize>,
-        witness: Vec<bool>,
-    ) {
-        let Some(needs) = self.items.get(index) else {
-            self.out.push(witness);
-            return;
-        };
-        let next = index.saturating_add(1);
-        let applies = needs
-            .iter()
-            .all(|(atom, want)| witness.get(*atom) == Some(want));
-        // The other decision, where some assignment realises it.
-        let other = if applies {
+        witness: &[bool],
+    ) -> Option<Vec<bool>> {
+        if applies {
             let pinned = needs
                 .iter()
                 .all(|(atom, want)| self.space.implied(fixed, *atom) == Some(*want));
-            (!pinned).then(|| {
-                away.push(index);
-                let clauses = self.clauses(away);
-                let found = self
-                    .space
-                    .repair(fixed, &clauses, &witness, needs, false)
-                    .or_else(|| self.space.solve(fixed, &clauses));
-                away.pop();
-                found
-            })
+            if pinned {
+                return None;
+            }
+            away.push(index);
+            let clauses = self.clauses(away);
+            let found = self
+                .space
+                .repair(fixed, &clauses, witness, needs, false)
+                .or_else(|| self.space.solve(fixed, &clauses));
+            away.pop();
+            found
         } else {
             let open = needs
                 .iter()
                 .all(|(atom, want)| self.space.implied(fixed, *atom) != Some(!*want));
-            open.then(|| {
-                let trail = fix(fixed, needs);
-                let clauses = self.clauses(away);
-                let found = if self.space.refutes(fixed, &clauses) {
-                    None
-                } else {
-                    self.space
-                        .repair(fixed, &clauses, &witness, needs, true)
-                        .or_else(|| self.space.solve(fixed, &clauses))
-                };
-                unfix(fixed, &trail);
-                found
-            })
-        }
-        .flatten();
-        // The decision the witness takes, then the other.
-        if applies {
-            let trail = fix(fixed, needs);
-            self.walk(next, fixed, away, witness);
-            unfix(fixed, &trail);
-        } else {
-            away.push(index);
-            self.walk(next, fixed, away, witness);
-            away.pop();
-        }
-        if let Some(found) = other {
-            if applies {
-                away.push(index);
-                self.walk(next, fixed, away, found);
-                away.pop();
-            } else {
-                let trail = fix(fixed, needs);
-                self.walk(next, fixed, away, found);
-                unfix(fixed, &trail);
+            if !open {
+                return None;
             }
+            let trail = fix(fixed, needs);
+            let clauses = self.clauses(away);
+            let found = if self.space.refutes(fixed, &clauses) {
+                None
+            } else {
+                self.space
+                    .repair(fixed, &clauses, witness, needs, true)
+                    .or_else(|| self.space.solve(fixed, &clauses))
+            };
+            unfix(fixed, &trail);
+            found
         }
     }
 

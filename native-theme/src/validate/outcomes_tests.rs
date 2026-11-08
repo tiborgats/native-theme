@@ -397,3 +397,30 @@ proptest! {
         );
     }
 }
+
+/// The search takes a stack that does not grow with the rules or the atoms:
+/// 400 rules over 400 free atoms, the `i`th needing the first `i + 1` of
+/// them, search on a 64 KiB thread, and every applicability vector the
+/// chain allows (no rule applying, then each prefix applying) is found.
+#[test]
+fn outcomes_search_on_a_small_stack() {
+    const N: usize = 400;
+    let run = || {
+        let atoms: Vec<Atom> = (0..N)
+            .map(|i| Atom::Variant(VariantRef::Keyed(key::Key::new(&format!("v_{i}")).unwrap())))
+            .collect();
+        let items: Vec<Item> = (0..N)
+            .map(|i| Some((0..=i).map(|atom| (atom, true)).collect()))
+            .collect();
+        let found = searched(&atoms, &declarations(false), &[], &items);
+        let expected: HashSet<Vec<bool>> = (0..=N)
+            .map(|applying| (0..N).map(|item| item < applying).collect())
+            .collect();
+        assert_eq!(found, expected);
+    };
+    let thread = std::thread::Builder::new()
+        .stack_size(64 << 10)
+        .spawn(run)
+        .unwrap();
+    assert!(thread.join().is_ok(), "the search did not finish on 64 KiB");
+}
