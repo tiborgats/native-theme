@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 c89477797859cc9aadda3ffed19648e33828da539ebb5bd5237388e766d51d7e
+# generated lines: sha256 b477bb5b4760a246114607769587cdb94df67f8d42f32b83a6e89b56bb8c0e6a
 
 [preset]
 id = "kde-breeze"
@@ -455,13 +455,13 @@ exclusive_variants = [["icon_only", "with_icon"]]
 "widgets.button.body.stroke.fill_clip" = "U680"
 # docs/facts/kde/button.toml:1062
 "widgets.button.body.transform.origin" = "U422"
-# docs/facts/kde/button.toml:8753
+# docs/facts/kde/button.toml:8768
 "widgets.button.label.text.mnemonic_decoration.thickness_px" = "U180"
-# docs/facts/kde/button.toml:8758
+# docs/facts/kde/button.toml:8773
 "widgets.button.label.text.mnemonic_decoration.offset_px" = "U180"
-# docs/facts/kde/button.toml:12891
+# docs/facts/kde/button.toml:12906
 "widgets.button.menu_indicator.glyph.source" = "U420"
-# docs/facts/kde/button.toml:13023
+# docs/facts/kde/button.toml:13038
 "widgets.button.menu_indicator.transform.origin" = "U422"
 # docs/facts/kde/tokens.toml:1526
 "tokens.elevation.qqc2_menu" = "U403"
@@ -4961,183 +4961,183 @@ cursor = "absent"
 touch_target_px = "absent"
 # docs/facts/kde/button.toml:1109
 bindings = []
-# docs/facts/kde/button.toml:1144
+# docs/facts/kde/button.toml:1159
 fill = "= role.button.background"
-# docs/facts/kde/button.toml:1154
-stroke.top.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 # docs/facts/kde/button.toml:1169
-stroke.right.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
+stroke.top.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 # docs/facts/kde/button.toml:1184
-stroke.bottom.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
+stroke.right.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 # docs/facts/kde/button.toml:1199
+stroke.bottom.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
+# docs/facts/kde/button.toml:1214
 stroke.left.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7759
+# docs/facts/kde/button.toml:7774
 shadow = { layers = [{ x_px = 0, y_px = 1.001, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.125)", inset = false, falloff = "gaussian" }] }
-# docs/facts/kde/button.toml:8219
+# docs/facts/kde/button.toml:8234
 transitions = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }]
 
 [widgets.button.label]
-# docs/facts/kde/button.toml:8389
+# docs/facts/kde/button.toml:8404
 padding.top_px = 0
-# docs/facts/kde/button.toml:8406
+# docs/facts/kde/button.toml:8421
 padding.right_px = 0
-# docs/facts/kde/button.toml:8423
+# docs/facts/kde/button.toml:8438
 padding.bottom_px = 0
-# docs/facts/kde/button.toml:8440
+# docs/facts/kde/button.toml:8455
 padding.left_px = 0
-# docs/facts/kde/button.toml:8459
-text.font.family = "= token.text.roles.body.font.family"
 # docs/facts/kde/button.toml:8474
-text.font.size = "= token.text.roles.body.font.size"
+text.font.family = "= token.text.roles.body.font.family"
 # docs/facts/kde/button.toml:8489
-text.font.weight = "= token.text.roles.body.font.weight"
+text.font.size = "= token.text.roles.body.font.size"
 # docs/facts/kde/button.toml:8504
-text.font.style = "= token.text.roles.body.font.style"
+text.font.weight = "= token.text.roles.body.font.weight"
 # docs/facts/kde/button.toml:8519
-text.font.width = "= token.text.roles.body.font.width"
+text.font.style = "= token.text.roles.body.font.style"
 # docs/facts/kde/button.toml:8534
-text.font.axes = "= token.text.roles.body.font.axes"
+text.font.width = "= token.text.roles.body.font.width"
 # docs/facts/kde/button.toml:8549
-text.font.features = "= token.text.roles.body.font.features"
+text.font.axes = "= token.text.roles.body.font.axes"
 # docs/facts/kde/button.toml:8564
-text.scaling_role = "= token.text.roles.body.scaling_role"
+text.font.features = "= token.text.roles.body.font.features"
 # docs/facts/kde/button.toml:8579
-text.letter_spacing = "= token.text.roles.body.letter_spacing"
+text.scaling_role = "= token.text.roles.body.scaling_role"
 # docs/facts/kde/button.toml:8594
-text.word_spacing = "= token.text.roles.body.word_spacing"
+text.letter_spacing = "= token.text.roles.body.letter_spacing"
 # docs/facts/kde/button.toml:8609
-text.line_height = "= token.text.roles.body.line_height"
+text.word_spacing = "= token.text.roles.body.word_spacing"
 # docs/facts/kde/button.toml:8624
-text.case = "= token.text.roles.body.case"
+text.line_height = "= token.text.roles.body.line_height"
 # docs/facts/kde/button.toml:8639
+text.case = "= token.text.roles.body.case"
+# docs/facts/kde/button.toml:8654
 text.decoration = "= token.text.roles.body.decoration"
-# docs/facts/kde/button.toml:8656
+# docs/facts/kde/button.toml:8671
 text.elision = "none"
-# docs/facts/kde/button.toml:8673
+# docs/facts/kde/button.toml:8688
 text.wrap = "none"
-# docs/facts/kde/button.toml:8695
+# docs/facts/kde/button.toml:8710
 text.max_lines = "none"
-# docs/facts/kde/button.toml:8708
+# docs/facts/kde/button.toml:8723
 text.mnemonic_decoration.line = "underline"
-# docs/facts/kde/button.toml:8718
-text.mnemonic_decoration.style = "solid"
 # docs/facts/kde/button.toml:8733
+text.mnemonic_decoration.style = "solid"
+# docs/facts/kde/button.toml:8748
 text.mnemonic_decoration.by_word = false
-# docs/facts/kde/button.toml:8743
+# docs/facts/kde/button.toml:8758
 text.mnemonic_decoration.paint = "= part.text.fill"
-# docs/facts/kde/button.toml:9785
+# docs/facts/kde/button.toml:9800
 text.fill = "= role.button.foreground"
 
 [widgets.button.subtitle]
-# docs/facts/kde/button.toml:10039
+# docs/facts/kde/button.toml:10054
 absent = true
 
 [widgets.button.icon]
-# docs/facts/kde/button.toml:10440
+# docs/facts/kde/button.toml:10455
 icon.size_px = "= token.icons.sizes.small.size"
-# docs/facts/kde/button.toml:10462
+# docs/facts/kde/button.toml:10477
 icon.rendering_mode = "from_icon"
-# docs/facts/kde/button.toml:10509
+# docs/facts/kde/button.toml:10524
 icon.fill = "= role.window.foreground"
-# docs/facts/kde/button.toml:10733
+# docs/facts/kde/button.toml:10748
 icon.weight = "absent"
-# docs/facts/kde/button.toml:10754
+# docs/facts/kde/button.toml:10769
 icon.scale = "absent"
-# docs/facts/kde/button.toml:10775
+# docs/facts/kde/button.toml:10790
 icon.axes = {}
-# docs/facts/kde/button.toml:10796
+# docs/facts/kde/button.toml:10811
 icon.symbol_variants = []
-# docs/facts/kde/button.toml:10817
+# docs/facts/kde/button.toml:10832
 icon.animation = "absent"
-# docs/facts/kde/button.toml:10838
+# docs/facts/kde/button.toml:10853
 icon.state_effect = "absent"
-# docs/facts/kde/button.toml:10899
+# docs/facts/kde/button.toml:10914
 icon.symbolic_colors = { background = "= active(role.window.background)", highlight = "= active(role.selection.background)", highlighted_text = "= active(role.selection.foreground)", positive_text = "= active(role.window.positive)", neutral_text = "= active(role.window.neutral)", negative_text = "= active(role.window.negative)", accent = "= active(role.selection.background)" }
-# docs/facts/kde/button.toml:10964
+# docs/facts/kde/button.toml:10979
 glyph = "absent"
-# docs/facts/kde/button.toml:11030
+# docs/facts/kde/button.toml:11045
 transitions = []
 
 [widgets.button.menu_indicator]
-# docs/facts/kde/button.toml:11056
+# docs/facts/kde/button.toml:11071
 min_width_px = 20
-# docs/facts/kde/button.toml:11087
+# docs/facts/kde/button.toml:11102
 min_height_px = 20
-# docs/facts/kde/button.toml:11127
+# docs/facts/kde/button.toml:11142
 margin.top_px = 0
-# docs/facts/kde/button.toml:11160
+# docs/facts/kde/button.toml:11175
 margin.right_px = -6
-# docs/facts/kde/button.toml:11213
+# docs/facts/kde/button.toml:11228
 margin.bottom_px = 0
-# docs/facts/kde/button.toml:11246
+# docs/facts/kde/button.toml:11261
 margin.left_px = 6
-# docs/facts/kde/button.toml:11389
+# docs/facts/kde/button.toml:11404
 glyph.size_px = 10
-# docs/facts/kde/button.toml:11430
+# docs/facts/kde/button.toml:11445
 glyph.fill = "absent"
-# docs/facts/kde/button.toml:11463
+# docs/facts/kde/button.toml:11478
 glyph.stroke.width_px = 1.001
-# docs/facts/kde/button.toml:11494
+# docs/facts/kde/button.toml:11509
 glyph.stroke.cap = "square"
-# docs/facts/kde/button.toml:11515
+# docs/facts/kde/button.toml:11530
 glyph.stroke.join = "miter"
-# docs/facts/kde/button.toml:11536
+# docs/facts/kde/button.toml:11551
 glyph.stroke.paint = "= kcu_mix(role.button.foreground, role.button.background, 0.15)"
-# docs/facts/kde/button.toml:12898
+# docs/facts/kde/button.toml:12913
 glyph.axes = {}
-# docs/facts/kde/button.toml:12909
+# docs/facts/kde/button.toml:12924
 glyph.draw_extent = "absent"
-# docs/facts/kde/button.toml:12920
+# docs/facts/kde/button.toml:12935
 glyph.draw_start = "absent"
-# docs/facts/kde/button.toml:12931
+# docs/facts/kde/button.toml:12946
 glyph.mirroring = "never"
-# docs/facts/kde/button.toml:12943
+# docs/facts/kde/button.toml:12958
 transform.scale_x = 1
-# docs/facts/kde/button.toml:12959
+# docs/facts/kde/button.toml:12974
 transform.scale_y = 1
-# docs/facts/kde/button.toml:12975
+# docs/facts/kde/button.toml:12990
 transform.rotate_deg = 0
-# docs/facts/kde/button.toml:12991
+# docs/facts/kde/button.toml:13006
 transform.translate_x_px = 0
-# docs/facts/kde/button.toml:13007
+# docs/facts/kde/button.toml:13022
 transform.translate_y_px = 0
-# docs/facts/kde/button.toml:13029
+# docs/facts/kde/button.toml:13044
 transitions = []
 
 [widgets.button.values]
-# docs/facts/kde/button.toml:13040
+# docs/facts/kde/button.toml:13055
 icon_text_gap_px = 4
-# docs/facts/kde/button.toml:13065
+# docs/facts/kde/button.toml:13080
 menu_indicator_gap_px = 4
-# docs/facts/kde/button.toml:13083
+# docs/facts/kde/button.toml:13098
 menu_indicator_anchor = "inline"
-# docs/facts/kde/button.toml:13114
+# docs/facts/kde/button.toml:13129
 icon_placement = "leading"
-# docs/facts/kde/button.toml:13131
+# docs/facts/kde/button.toml:13146
 label_position = "text_beside_icon"
-# docs/facts/kde/button.toml:13163
-shows_icon = true
 # docs/facts/kde/button.toml:13178
-focus_visible_when = "= token.behavior.focus_visible_when"
+shows_icon = true
 # docs/facts/kde/button.toml:13193
-repeat_delay_ms = 300
+focus_visible_when = "= token.behavior.focus_visible_when"
 # docs/facts/kde/button.toml:13208
+repeat_delay_ms = 300
+# docs/facts/kde/button.toml:13223
 repeat_interval_ms = 100
-# docs/facts/kde/button.toml:13256
+# docs/facts/kde/button.toml:13271
 subtitle_gap_px = "absent"
-# docs/facts/kde/button.toml:13275
+# docs/facts/kde/button.toml:13290
 menu_trigger = "absent"
-# docs/facts/kde/button.toml:13329
+# docs/facts/kde/button.toml:13344
 back_title_fallback = false
-# docs/facts/kde/button.toml:13346
+# docs/facts/kde/button.toml:13361
 back_display_mode = "absent"
-# docs/facts/kde/button.toml:13363
+# docs/facts/kde/button.toml:13378
 display_mode = "absent"
-# docs/facts/kde/button.toml:13380
+# docs/facts/kde/button.toml:13395
 help_tooltip_on_click = false
-# docs/facts/kde/button.toml:13410
+# docs/facts/kde/button.toml:13425
 hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
-# docs/facts/kde/button.toml:13422
+# docs/facts/kde/button.toml:13437
 presentations = []
 
 [[rules]]
@@ -5155,8 +5155,6 @@ target = "button.body"
 [rules.set]
 # docs/facts/kde/button.toml:932
 focus = "absent"
-# docs/facts/kde/button.toml:1120
-bindings = [{ surface = "button" }]
 
 [[rules]]
 when = { conditions = ["flavor:kirigami"], variants = ["help"] }
@@ -5167,11 +5165,27 @@ target = "button.body"
 cursor = "whats_this"
 
 [[rules]]
+when = { conditions = ["flavor:kirigami"], not_variants = ["tool", "circular"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/kde/button.toml:1124
+bindings = [{ surface = "button" }]
+
+[[rules]]
+when = { conditions = ["flavor:kirigami"], variants = ["tool"], not_variants = ["flat"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/kde/button.toml:1135
+bindings = [{ surface = "button" }]
+
+[[rules]]
 when = { conditions = ["flavor:kirigami"], variants = ["tool", "flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1133
+# docs/facts/kde/button.toml:1148
 bindings = []
 
 [[rules]]
@@ -5179,13 +5193,13 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["warning"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1214
+# docs/facts/kde/button.toml:1229
 stroke.top.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1240
+# docs/facts/kde/button.toml:1255
 stroke.right.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1266
+# docs/facts/kde/button.toml:1281
 stroke.bottom.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1292
+# docs/facts/kde/button.toml:1307
 stroke.left.paint = "= role.view.neutral"
 
 [[rules]]
@@ -5193,15 +5207,15 @@ when = { not_conditions = ["window_inactive"], states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1318
+# docs/facts/kde/button.toml:1333
 fill = "= kcu_mix(role.button.background, active(role.selection.background), 0.2)"
-# docs/facts/kde/button.toml:1329
+# docs/facts/kde/button.toml:1344
 stroke.top.paint = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1345
+# docs/facts/kde/button.toml:1360
 stroke.right.paint = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1361
+# docs/facts/kde/button.toml:1376
 stroke.bottom.paint = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1377
+# docs/facts/kde/button.toml:1392
 stroke.left.paint = "= kcu_mix(active(role.selection.background), kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5209,15 +5223,15 @@ when = { conditions = ["flavor:kirigami"], states = ["default"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1393
+# docs/facts/kde/button.toml:1408
 fill = "= kcu_mix(role.button.background, role.selection.background, 0.2)"
-# docs/facts/kde/button.toml:1424
+# docs/facts/kde/button.toml:1439
 stroke.top.paint = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1460
+# docs/facts/kde/button.toml:1475
 stroke.right.paint = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1496
+# docs/facts/kde/button.toml:1511
 stroke.bottom.paint = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:1532
+# docs/facts/kde/button.toml:1547
 stroke.left.paint = "= kcu_mix(role.selection.background, kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5225,15 +5239,15 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], sta
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1570
+# docs/facts/kde/button.toml:1585
 fill = "= role.button.background"
-# docs/facts/kde/button.toml:1596
+# docs/facts/kde/button.toml:1611
 stroke.top.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1622
+# docs/facts/kde/button.toml:1637
 stroke.right.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1648
+# docs/facts/kde/button.toml:1663
 stroke.bottom.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1674
+# docs/facts/kde/button.toml:1689
 stroke.left.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5241,13 +5255,13 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "war
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1702
+# docs/facts/kde/button.toml:1717
 stroke.top.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1743
+# docs/facts/kde/button.toml:1758
 stroke.right.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1784
+# docs/facts/kde/button.toml:1799
 stroke.bottom.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1825
+# docs/facts/kde/button.toml:1840
 stroke.left.paint = "= role.view.neutral"
 
 [[rules]]
@@ -5255,15 +5269,15 @@ when = { states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1866
+# docs/facts/kde/button.toml:1881
 fill = "= kcu_mix(role.button.background, role.button.foreground, 0.125)"
-# docs/facts/kde/button.toml:1877
+# docs/facts/kde/button.toml:1892
 stroke.top.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1893
+# docs/facts/kde/button.toml:1908
 stroke.right.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1909
+# docs/facts/kde/button.toml:1924
 stroke.bottom.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:1925
+# docs/facts/kde/button.toml:1940
 stroke.left.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5271,15 +5285,15 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:1941
+# docs/facts/kde/button.toml:1956
 fill = "= kcu_mix(role.button.background, role.view.neutral, 0.3)"
-# docs/facts/kde/button.toml:1962
+# docs/facts/kde/button.toml:1977
 stroke.top.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1978
+# docs/facts/kde/button.toml:1993
 stroke.right.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:1994
+# docs/facts/kde/button.toml:2009
 stroke.bottom.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:2010
+# docs/facts/kde/button.toml:2025
 stroke.left.paint = "= role.view.neutral"
 
 [[rules]]
@@ -5287,7 +5301,7 @@ when = { states = ["pressed"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2026
+# docs/facts/kde/button.toml:2041
 fill = "= kcu_mix(role.button.background, active(role.selection.background), 0.3)"
 
 [[rules]]
@@ -5295,7 +5309,7 @@ when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2047
+# docs/facts/kde/button.toml:2062
 fill = "= kcu_mix(role.button.background, role.selection.background, 0.3)"
 
 [[rules]]
@@ -5303,13 +5317,13 @@ when = { states = ["hover"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2083
+# docs/facts/kde/button.toml:2098
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2130
+# docs/facts/kde/button.toml:2145
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2177
+# docs/facts/kde/button.toml:2192
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2224
+# docs/facts/kde/button.toml:2239
 stroke.left.paint = "= active(role.selection.background)"
 
 [[rules]]
@@ -5317,13 +5331,13 @@ when = { conditions = ["flavor:kirigami"], states = ["hover"], not_states = ["di
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2099
+# docs/facts/kde/button.toml:2114
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2146
+# docs/facts/kde/button.toml:2161
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2193
+# docs/facts/kde/button.toml:2208
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2240
+# docs/facts/kde/button.toml:2255
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5331,13 +5345,13 @@ when = { states = ["focus_visible"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2271
+# docs/facts/kde/button.toml:2286
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2374
+# docs/facts/kde/button.toml:2389
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2477
+# docs/facts/kde/button.toml:2492
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2580
+# docs/facts/kde/button.toml:2595
 stroke.left.paint = "= active(role.selection.background)"
 
 [[rules]]
@@ -5345,13 +5359,13 @@ when = { conditions = ["flavor:kirigami"], states = ["focus_visible"], not_state
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2287
+# docs/facts/kde/button.toml:2302
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2390
+# docs/facts/kde/button.toml:2405
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2493
+# docs/facts/kde/button.toml:2508
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2596
+# docs/facts/kde/button.toml:2611
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5359,13 +5373,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["@highlighted"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2318
+# docs/facts/kde/button.toml:2333
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2421
+# docs/facts/kde/button.toml:2436
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2524
+# docs/facts/kde/button.toml:2539
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2627
+# docs/facts/kde/button.toml:2642
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5373,13 +5387,13 @@ when = { states = ["pressed"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2683
+# docs/facts/kde/button.toml:2698
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2730
+# docs/facts/kde/button.toml:2745
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2777
+# docs/facts/kde/button.toml:2792
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:2824
+# docs/facts/kde/button.toml:2839
 stroke.left.paint = "= active(role.selection.background)"
 
 [[rules]]
@@ -5387,13 +5401,13 @@ when = { conditions = ["flavor:kirigami"], states = ["pressed"], not_states = ["
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2699
+# docs/facts/kde/button.toml:2714
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2746
+# docs/facts/kde/button.toml:2761
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2793
+# docs/facts/kde/button.toml:2808
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:2840
+# docs/facts/kde/button.toml:2855
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5401,15 +5415,15 @@ when = { variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2874
+# docs/facts/kde/button.toml:2889
 fill = "absent"
-# docs/facts/kde/button.toml:2885
+# docs/facts/kde/button.toml:2900
 stroke.top.paint = "absent"
-# docs/facts/kde/button.toml:2896
+# docs/facts/kde/button.toml:2911
 stroke.right.paint = "absent"
-# docs/facts/kde/button.toml:2907
+# docs/facts/kde/button.toml:2922
 stroke.bottom.paint = "absent"
-# docs/facts/kde/button.toml:2918
+# docs/facts/kde/button.toml:2933
 stroke.left.paint = "absent"
 
 [[rules]]
@@ -5417,7 +5431,7 @@ when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2929
+# docs/facts/kde/button.toml:2944
 fill = "= alpha(active(role.selection.background), 0)"
 
 [[rules]]
@@ -5425,7 +5439,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:2945
+# docs/facts/kde/button.toml:2960
 fill = "= alpha(role.selection.background, 0)"
 
 [[rules]]
@@ -5433,7 +5447,7 @@ when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["d
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:3228
+# docs/facts/kde/button.toml:3243
 fill = "= alpha(active(role.selection.background), 0.125)"
 
 [[rules]]
@@ -5441,7 +5455,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["defau
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:3244
+# docs/facts/kde/button.toml:3259
 fill = "= alpha(role.selection.background, 0.125)"
 
 [[rules]]
@@ -5449,7 +5463,7 @@ when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disable
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:3280
+# docs/facts/kde/button.toml:3295
 fill = "= alpha(active(role.selection.background), 0)"
 
 [[rules]]
@@ -5457,7 +5471,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:3296
+# docs/facts/kde/button.toml:3311
 fill = "= alpha(role.selection.background, 0)"
 
 [[rules]]
@@ -5465,7 +5479,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat", "@highlighted"], 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:3327
+# docs/facts/kde/button.toml:3342
 fill = "= alpha(role.selection.background, 0)"
 
 [[rules]]
@@ -5473,7 +5487,7 @@ when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["d
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4023
+# docs/facts/kde/button.toml:4038
 fill = "= alpha(active(role.selection.background), 0.125)"
 
 [[rules]]
@@ -5481,7 +5495,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["defau
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4039
+# docs/facts/kde/button.toml:4054
 fill = "= alpha(role.selection.background, 0.125)"
 
 [[rules]]
@@ -5489,7 +5503,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat", "@highlighted"], 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4075
+# docs/facts/kde/button.toml:4090
 fill = "= alpha(role.selection.background, 0.125)"
 
 [[rules]]
@@ -5497,23 +5511,23 @@ when = { variants = ["flat"], states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4136
+# docs/facts/kde/button.toml:4151
 fill = "= alpha(role.button.foreground, 0.125)"
-# docs/facts/kde/button.toml:4173
+# docs/facts/kde/button.toml:4188
 stroke.top.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4220
+# docs/facts/kde/button.toml:4235
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:4236
+# docs/facts/kde/button.toml:4251
 stroke.right.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4283
+# docs/facts/kde/button.toml:4298
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:4299
+# docs/facts/kde/button.toml:4314
 stroke.bottom.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4346
+# docs/facts/kde/button.toml:4361
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:4362
+# docs/facts/kde/button.toml:4377
 stroke.left.paint = "= kcu_mix(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4409
+# docs/facts/kde/button.toml:4424
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5521,15 +5535,15 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["check
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4147
+# docs/facts/kde/button.toml:4162
 fill = "= alpha(surface.foreground, 0.125)"
-# docs/facts/kde/button.toml:4189
+# docs/facts/kde/button.toml:4204
 stroke.top.paint = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4252
+# docs/facts/kde/button.toml:4267
 stroke.right.paint = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4315
+# docs/facts/kde/button.toml:4330
 stroke.bottom.paint = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:4378
+# docs/facts/kde/button.toml:4393
 stroke.left.paint = "= kcu_mix(surface.background, surface.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5537,23 +5551,23 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], s
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4425
+# docs/facts/kde/button.toml:4440
 fill = "= alpha(role.view.neutral, 0.3)"
-# docs/facts/kde/button.toml:4451
+# docs/facts/kde/button.toml:4466
 stroke.top.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:4467
+# docs/facts/kde/button.toml:4482
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:4483
+# docs/facts/kde/button.toml:4498
 stroke.right.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:4499
+# docs/facts/kde/button.toml:4514
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:4515
+# docs/facts/kde/button.toml:4530
 stroke.bottom.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:4531
+# docs/facts/kde/button.toml:4546
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:4547
+# docs/facts/kde/button.toml:4562
 stroke.left.paint = "= role.view.neutral"
-# docs/facts/kde/button.toml:4563
+# docs/facts/kde/button.toml:4578
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5561,7 +5575,7 @@ when = { variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4579
+# docs/facts/kde/button.toml:4594
 fill = "= alpha(active(role.selection.background), 0.3)"
 
 [[rules]]
@@ -5569,7 +5583,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["press
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4605
+# docs/facts/kde/button.toml:4620
 fill = "= alpha(role.selection.background, 0.3)"
 
 [[rules]]
@@ -5577,21 +5591,21 @@ when = { variants = ["flat"], states = ["hover"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4646
+# docs/facts/kde/button.toml:4661
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:4693
+# docs/facts/kde/button.toml:4708
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:4709
+# docs/facts/kde/button.toml:4724
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:4756
+# docs/facts/kde/button.toml:4771
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:4772
+# docs/facts/kde/button.toml:4787
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:4819
+# docs/facts/kde/button.toml:4834
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:4835
+# docs/facts/kde/button.toml:4850
 stroke.left.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:4882
+# docs/facts/kde/button.toml:4897
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5599,13 +5613,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["hover
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4662
+# docs/facts/kde/button.toml:4677
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:4725
+# docs/facts/kde/button.toml:4740
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:4788
+# docs/facts/kde/button.toml:4803
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:4851
+# docs/facts/kde/button.toml:4866
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5613,21 +5627,21 @@ when = { variants = ["flat"], states = ["focus_visible"], not_states = ["disable
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4898
+# docs/facts/kde/button.toml:4913
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5001
+# docs/facts/kde/button.toml:5016
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:5058
+# docs/facts/kde/button.toml:5073
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5161
+# docs/facts/kde/button.toml:5176
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:5218
+# docs/facts/kde/button.toml:5233
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5321
+# docs/facts/kde/button.toml:5336
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:5378
+# docs/facts/kde/button.toml:5393
 stroke.left.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5481
+# docs/facts/kde/button.toml:5496
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5635,13 +5649,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["focus
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4914
+# docs/facts/kde/button.toml:4929
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5074
+# docs/facts/kde/button.toml:5089
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5234
+# docs/facts/kde/button.toml:5249
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5394
+# docs/facts/kde/button.toml:5409
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5649,21 +5663,21 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat", "@highlighted"], 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:4945
+# docs/facts/kde/button.toml:4960
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5017
+# docs/facts/kde/button.toml:5032
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:5105
+# docs/facts/kde/button.toml:5120
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5177
+# docs/facts/kde/button.toml:5192
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:5265
+# docs/facts/kde/button.toml:5280
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5337
+# docs/facts/kde/button.toml:5352
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:5425
+# docs/facts/kde/button.toml:5440
 stroke.left.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5497
+# docs/facts/kde/button.toml:5512
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5671,21 +5685,21 @@ when = { variants = ["flat"], states = ["pressed"], not_states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:5538
+# docs/facts/kde/button.toml:5553
 stroke.top.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5585
+# docs/facts/kde/button.toml:5600
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:5601
+# docs/facts/kde/button.toml:5616
 stroke.right.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5648
+# docs/facts/kde/button.toml:5663
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:5664
+# docs/facts/kde/button.toml:5679
 stroke.bottom.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5711
+# docs/facts/kde/button.toml:5726
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:5727
+# docs/facts/kde/button.toml:5742
 stroke.left.paint = "= active(role.selection.background)"
-# docs/facts/kde/button.toml:5774
+# docs/facts/kde/button.toml:5789
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5693,13 +5707,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["press
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:5554
+# docs/facts/kde/button.toml:5569
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5617
+# docs/facts/kde/button.toml:5632
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5680
+# docs/facts/kde/button.toml:5695
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:5743
+# docs/facts/kde/button.toml:5758
 stroke.left.paint = "= role.selection.background"
 
 [[rules]]
@@ -5707,15 +5721,15 @@ when = { states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:5790
+# docs/facts/kde/button.toml:5805
 fill = "= role.button.disabled.background"
-# docs/facts/kde/button.toml:5801
+# docs/facts/kde/button.toml:5816
 stroke.top.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:5817
+# docs/facts/kde/button.toml:5832
 stroke.right.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:5833
+# docs/facts/kde/button.toml:5848
 stroke.bottom.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:5849
+# docs/facts/kde/button.toml:5864
 stroke.left.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5723,13 +5737,13 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:5865
+# docs/facts/kde/button.toml:5880
 stroke.top.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:5886
+# docs/facts/kde/button.toml:5901
 stroke.right.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:5907
+# docs/facts/kde/button.toml:5922
 stroke.bottom.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:5928
+# docs/facts/kde/button.toml:5943
 stroke.left.paint = "= role.view.disabled.neutral"
 
 [[rules]]
@@ -5737,15 +5751,15 @@ when = { not_conditions = ["window_inactive"], states = ["default", "disabled"] 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:5949
+# docs/facts/kde/button.toml:5964
 fill = "= kcu_mix(role.button.disabled.background, role.selection.disabled.background, 0.2)"
-# docs/facts/kde/button.toml:5965
+# docs/facts/kde/button.toml:5980
 stroke.top.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:5986
+# docs/facts/kde/button.toml:6001
 stroke.right.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:6007
+# docs/facts/kde/button.toml:6022
 stroke.bottom.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:6028
+# docs/facts/kde/button.toml:6043
 stroke.left.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5753,15 +5767,15 @@ when = { conditions = ["flavor:kirigami"], states = ["default", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6049
+# docs/facts/kde/button.toml:6064
 fill = "= kcu_mix(role.button.disabled.background, role.selection.disabled.background, 0.2)"
-# docs/facts/kde/button.toml:6065
+# docs/facts/kde/button.toml:6080
 stroke.top.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:6086
+# docs/facts/kde/button.toml:6101
 stroke.right.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:6107
+# docs/facts/kde/button.toml:6122
 stroke.bottom.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:6128
+# docs/facts/kde/button.toml:6143
 stroke.left.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5769,15 +5783,15 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], sta
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6149
+# docs/facts/kde/button.toml:6164
 fill = "= role.button.disabled.background"
-# docs/facts/kde/button.toml:6170
+# docs/facts/kde/button.toml:6185
 stroke.top.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6196
+# docs/facts/kde/button.toml:6211
 stroke.right.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6222
+# docs/facts/kde/button.toml:6237
 stroke.bottom.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6248
+# docs/facts/kde/button.toml:6263
 stroke.left.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5785,13 +5799,13 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link", "war
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6275
+# docs/facts/kde/button.toml:6290
 stroke.top.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6316
+# docs/facts/kde/button.toml:6331
 stroke.right.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6357
+# docs/facts/kde/button.toml:6372
 stroke.bottom.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6398
+# docs/facts/kde/button.toml:6413
 stroke.left.paint = "= role.view.disabled.neutral"
 
 [[rules]]
@@ -5799,15 +5813,15 @@ when = { states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6439
+# docs/facts/kde/button.toml:6454
 fill = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, 0.125)"
-# docs/facts/kde/button.toml:6450
+# docs/facts/kde/button.toml:6465
 stroke.top.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6466
+# docs/facts/kde/button.toml:6481
 stroke.right.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6482
+# docs/facts/kde/button.toml:6497
 stroke.bottom.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:6498
+# docs/facts/kde/button.toml:6513
 stroke.left.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5815,15 +5829,15 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["warning"], states = 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6514
+# docs/facts/kde/button.toml:6529
 fill = "= kcu_mix(role.button.disabled.background, role.view.disabled.neutral, 0.3)"
-# docs/facts/kde/button.toml:6535
+# docs/facts/kde/button.toml:6550
 stroke.top.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6551
+# docs/facts/kde/button.toml:6566
 stroke.right.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6567
+# docs/facts/kde/button.toml:6582
 stroke.bottom.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6583
+# docs/facts/kde/button.toml:6598
 stroke.left.paint = "= role.view.disabled.neutral"
 
 [[rules]]
@@ -5831,15 +5845,15 @@ when = { variants = ["flat"], states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6599
+# docs/facts/kde/button.toml:6614
 fill = "absent"
-# docs/facts/kde/button.toml:6610
+# docs/facts/kde/button.toml:6625
 stroke.top.paint = "absent"
-# docs/facts/kde/button.toml:6621
+# docs/facts/kde/button.toml:6636
 stroke.right.paint = "absent"
-# docs/facts/kde/button.toml:6632
+# docs/facts/kde/button.toml:6647
 stroke.bottom.paint = "absent"
-# docs/facts/kde/button.toml:6643
+# docs/facts/kde/button.toml:6658
 stroke.left.paint = "absent"
 
 [[rules]]
@@ -5847,23 +5861,23 @@ when = { variants = ["flat"], states = ["disabled", "hover"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6658
+# docs/facts/kde/button.toml:6673
 fill = "= alpha(role.selection.disabled.background, 0)"
-# docs/facts/kde/button.toml:6689
+# docs/facts/kde/button.toml:6704
 stroke.top.paint = "= alpha(role.selection.disabled.background, 0)"
-# docs/facts/kde/button.toml:6720
+# docs/facts/kde/button.toml:6735
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:6736
+# docs/facts/kde/button.toml:6751
 stroke.right.paint = "= alpha(role.selection.disabled.background, 0)"
-# docs/facts/kde/button.toml:6767
+# docs/facts/kde/button.toml:6782
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:6783
+# docs/facts/kde/button.toml:6798
 stroke.bottom.paint = "= alpha(role.selection.disabled.background, 0)"
-# docs/facts/kde/button.toml:6814
+# docs/facts/kde/button.toml:6829
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:6830
+# docs/facts/kde/button.toml:6845
 stroke.left.paint = "= alpha(role.selection.disabled.background, 0)"
-# docs/facts/kde/button.toml:6861
+# docs/facts/kde/button.toml:6876
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5871,13 +5885,13 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], s
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6877
+# docs/facts/kde/button.toml:6892
 stroke.top.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6898
+# docs/facts/kde/button.toml:6913
 stroke.right.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6919
+# docs/facts/kde/button.toml:6934
 stroke.bottom.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:6940
+# docs/facts/kde/button.toml:6955
 stroke.left.paint = "= role.view.disabled.neutral"
 
 [[rules]]
@@ -5885,15 +5899,15 @@ when = { not_conditions = ["window_inactive"], variants = ["flat"], states = ["d
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6961
+# docs/facts/kde/button.toml:6976
 fill = "= alpha(role.selection.disabled.background, 0.125)"
-# docs/facts/kde/button.toml:7008
+# docs/facts/kde/button.toml:7023
 stroke.top.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7034
+# docs/facts/kde/button.toml:7049
 stroke.right.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7060
+# docs/facts/kde/button.toml:7075
 stroke.bottom.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7086
+# docs/facts/kde/button.toml:7101
 stroke.left.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5901,15 +5915,15 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], states = ["defau
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:6982
+# docs/facts/kde/button.toml:6997
 fill = "= alpha(role.selection.disabled.background, 0.125)"
-# docs/facts/kde/button.toml:7112
+# docs/facts/kde/button.toml:7127
 stroke.top.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7143
+# docs/facts/kde/button.toml:7158
 stroke.right.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7174
+# docs/facts/kde/button.toml:7189
 stroke.bottom.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
-# docs/facts/kde/button.toml:7205
+# docs/facts/kde/button.toml:7220
 stroke.left.paint = "= kcu_mix(role.selection.disabled.background, kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.5)"
 
 [[rules]]
@@ -5917,23 +5931,23 @@ when = { variants = ["flat"], states = ["checked", "disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7236
+# docs/facts/kde/button.toml:7251
 fill = "= alpha(role.button.disabled.foreground, 0.125)"
-# docs/facts/kde/button.toml:7288
+# docs/facts/kde/button.toml:7303
 stroke.top.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7350
+# docs/facts/kde/button.toml:7365
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:7366
+# docs/facts/kde/button.toml:7381
 stroke.right.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7428
+# docs/facts/kde/button.toml:7443
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:7444
+# docs/facts/kde/button.toml:7459
 stroke.bottom.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7506
+# docs/facts/kde/button.toml:7521
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:7522
+# docs/facts/kde/button.toml:7537
 stroke.left.paint = "= kcu_mix(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7584
+# docs/facts/kde/button.toml:7599
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5941,15 +5955,15 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7247
+# docs/facts/kde/button.toml:7262
 fill = "= alpha(surface.disabled.foreground, 0.125)"
-# docs/facts/kde/button.toml:7304
+# docs/facts/kde/button.toml:7319
 stroke.top.paint = "= kcu_mix(surface.disabled.background, surface.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7382
+# docs/facts/kde/button.toml:7397
 stroke.right.paint = "= kcu_mix(surface.disabled.background, surface.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7460
+# docs/facts/kde/button.toml:7475
 stroke.bottom.paint = "= kcu_mix(surface.disabled.background, surface.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:7538
+# docs/facts/kde/button.toml:7553
 stroke.left.paint = "= kcu_mix(surface.disabled.background, surface.disabled.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -5957,23 +5971,23 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["flat", "warning"], s
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7600
+# docs/facts/kde/button.toml:7615
 fill = "= alpha(role.view.disabled.neutral, 0.3)"
-# docs/facts/kde/button.toml:7626
+# docs/facts/kde/button.toml:7641
 stroke.top.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:7642
+# docs/facts/kde/button.toml:7657
 stroke.top.dash = "solid"
-# docs/facts/kde/button.toml:7658
+# docs/facts/kde/button.toml:7673
 stroke.right.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:7674
+# docs/facts/kde/button.toml:7689
 stroke.right.dash = "solid"
-# docs/facts/kde/button.toml:7690
+# docs/facts/kde/button.toml:7705
 stroke.bottom.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:7706
+# docs/facts/kde/button.toml:7721
 stroke.bottom.dash = "solid"
-# docs/facts/kde/button.toml:7722
+# docs/facts/kde/button.toml:7737
 stroke.left.paint = "= role.view.disabled.neutral"
-# docs/facts/kde/button.toml:7738
+# docs/facts/kde/button.toml:7753
 stroke.left.dash = "solid"
 
 [[rules]]
@@ -5981,7 +5995,7 @@ when = { states = ["pressed"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7790
+# docs/facts/kde/button.toml:7805
 shadow = "absent"
 
 [[rules]]
@@ -5989,7 +6003,7 @@ when = { states = ["checked"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7801
+# docs/facts/kde/button.toml:7816
 shadow = "absent"
 
 [[rules]]
@@ -5997,7 +6011,7 @@ when = { states = ["disabled"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7812
+# docs/facts/kde/button.toml:7827
 shadow = "absent"
 
 [[rules]]
@@ -6005,7 +6019,7 @@ when = { variants = ["flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7823
+# docs/facts/kde/button.toml:7838
 shadow = "absent"
 
 [[rules]]
@@ -6013,7 +6027,7 @@ when = { conditions = ["window_inactive"], not_conditions = ["flavor:kirigami"] 
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7834
+# docs/facts/kde/button.toml:7849
 shadow = "absent"
 
 [[rules]]
@@ -6021,13 +6035,13 @@ when = { variants = ["circular"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7850
+# docs/facts/kde/button.toml:7865
 corners.top_left = "ellipse"
-# docs/facts/kde/button.toml:7886
+# docs/facts/kde/button.toml:7901
 corners.top_right = "ellipse"
-# docs/facts/kde/button.toml:7922
+# docs/facts/kde/button.toml:7937
 corners.bottom_right = "ellipse"
-# docs/facts/kde/button.toml:7958
+# docs/facts/kde/button.toml:7973
 corners.bottom_left = "ellipse"
 
 [[rules]]
@@ -6035,15 +6049,15 @@ when = { variants = ["tool"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:7994
+# docs/facts/kde/button.toml:8009
 padding.top_px = "= sub(add(6px, 2px), 1.001px)"
-# docs/facts/kde/button.toml:8020
+# docs/facts/kde/button.toml:8035
 padding.right_px = "= sub(add(6px, 2px), 1.001px)"
-# docs/facts/kde/button.toml:8046
+# docs/facts/kde/button.toml:8061
 padding.bottom_px = "= sub(add(6px, 2px), 1.001px)"
-# docs/facts/kde/button.toml:8072
+# docs/facts/kde/button.toml:8087
 padding.left_px = "= sub(add(6px, 2px), 1.001px)"
-# docs/facts/kde/button.toml:8182
+# docs/facts/kde/button.toml:8197
 min_width_px = "auto"
 
 [[rules]]
@@ -6051,13 +6065,13 @@ when = { variants = ["tool", "flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:8098
+# docs/facts/kde/button.toml:8113
 padding.top_px = "= sub(6px, 1.001px)"
-# docs/facts/kde/button.toml:8119
+# docs/facts/kde/button.toml:8134
 padding.right_px = "= sub(6px, 1.001px)"
-# docs/facts/kde/button.toml:8140
+# docs/facts/kde/button.toml:8155
 padding.bottom_px = "= sub(6px, 1.001px)"
-# docs/facts/kde/button.toml:8161
+# docs/facts/kde/button.toml:8176
 padding.left_px = "= sub(6px, 1.001px)"
 
 [[rules]]
@@ -6065,7 +6079,7 @@ when = { variants = ["icon_only"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:8193
+# docs/facts/kde/button.toml:8208
 min_width_px = "auto"
 
 [[rules]]
@@ -6073,7 +6087,7 @@ when = { states = ["disabled"], not_conditions = ["flavor:kirigami"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:8305
+# docs/facts/kde/button.toml:8320
 transitions = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }]
 
 [[rules]]
@@ -6081,7 +6095,7 @@ when = { conditions = ["flavor:kirigami"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:8337
+# docs/facts/kde/button.toml:8352
 transitions = [{ properties = ["fill"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["pressed"], none = ["disabled"], conditions = [] } }, from = ["pressed"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = "= token.motion.durations.animations", delay_ms = 0, timing = { steps = { count = 10, jump = "jump_end" } }, engine = { breeze = { any = ["hover", "focus_visible", "pressed"], none = ["disabled"], conditions = [] } }, from = ["hover", "focus_visible", "pressed"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } }, from = ["disabled"] }, { properties = ["fill"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }, { properties = ["stroke"], kind = "interpolate", duration_ms = 0, delay_ms = 0, timing = "absent", engine = { breeze = { any = [], none = [], conditions = [] } } }]
 
 [[rules]]
@@ -6089,39 +6103,39 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:8765
+# docs/facts/kde/button.toml:8780
 text.font.family = "= token.text.keyed.command_link_title.font.family"
-# docs/facts/kde/button.toml:8776
+# docs/facts/kde/button.toml:8791
 text.font.size = "= token.text.keyed.command_link_title.font.size"
-# docs/facts/kde/button.toml:8787
+# docs/facts/kde/button.toml:8802
 text.font.weight = "= token.text.keyed.command_link_title.font.weight"
-# docs/facts/kde/button.toml:8798
+# docs/facts/kde/button.toml:8813
 text.font.style = "= token.text.keyed.command_link_title.font.style"
-# docs/facts/kde/button.toml:8809
+# docs/facts/kde/button.toml:8824
 text.font.width = "= token.text.keyed.command_link_title.font.width"
-# docs/facts/kde/button.toml:8820
+# docs/facts/kde/button.toml:8835
 text.font.axes = "= token.text.keyed.command_link_title.font.axes"
-# docs/facts/kde/button.toml:8831
+# docs/facts/kde/button.toml:8846
 text.font.features = "= token.text.keyed.command_link_title.font.features"
-# docs/facts/kde/button.toml:8842
+# docs/facts/kde/button.toml:8857
 text.scaling_role = "= token.text.keyed.command_link_title.scaling_role"
-# docs/facts/kde/button.toml:8853
+# docs/facts/kde/button.toml:8868
 text.letter_spacing = "= token.text.keyed.command_link_title.letter_spacing"
-# docs/facts/kde/button.toml:8864
+# docs/facts/kde/button.toml:8879
 text.word_spacing = "= token.text.keyed.command_link_title.word_spacing"
-# docs/facts/kde/button.toml:8875
+# docs/facts/kde/button.toml:8890
 text.line_height = "= token.text.keyed.command_link_title.line_height"
-# docs/facts/kde/button.toml:8886
+# docs/facts/kde/button.toml:8901
 text.case = "= token.text.keyed.command_link_title.case"
-# docs/facts/kde/button.toml:8897
+# docs/facts/kde/button.toml:8912
 text.decoration = "= token.text.keyed.command_link_title.decoration"
-# docs/facts/kde/button.toml:8908
+# docs/facts/kde/button.toml:8923
 text.elision = "none"
-# docs/facts/kde/button.toml:8926
+# docs/facts/kde/button.toml:8941
 text.wrap = "none"
-# docs/facts/kde/button.toml:8944
+# docs/facts/kde/button.toml:8959
 text.max_lines = "none"
-# docs/facts/kde/button.toml:8956
+# docs/facts/kde/button.toml:8971
 text.mnemonic_decoration = "absent"
 
 [[rules]]
@@ -6129,31 +6143,31 @@ when = { variants = ["tool"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:8974
+# docs/facts/kde/button.toml:8989
 text.font.family = "= token.text.keyed.toolbar.font.family"
-# docs/facts/kde/button.toml:8990
+# docs/facts/kde/button.toml:9005
 text.font.size = "= token.text.keyed.toolbar.font.size"
-# docs/facts/kde/button.toml:9006
+# docs/facts/kde/button.toml:9021
 text.font.weight = "= token.text.keyed.toolbar.font.weight"
-# docs/facts/kde/button.toml:9022
+# docs/facts/kde/button.toml:9037
 text.font.style = "= token.text.keyed.toolbar.font.style"
-# docs/facts/kde/button.toml:9038
+# docs/facts/kde/button.toml:9053
 text.font.width = "= token.text.keyed.toolbar.font.width"
-# docs/facts/kde/button.toml:9054
+# docs/facts/kde/button.toml:9069
 text.font.axes = "= token.text.keyed.toolbar.font.axes"
-# docs/facts/kde/button.toml:9070
+# docs/facts/kde/button.toml:9085
 text.font.features = "= token.text.keyed.toolbar.font.features"
-# docs/facts/kde/button.toml:9086
+# docs/facts/kde/button.toml:9101
 text.scaling_role = "= token.text.keyed.toolbar.scaling_role"
-# docs/facts/kde/button.toml:9102
+# docs/facts/kde/button.toml:9117
 text.letter_spacing = "= token.text.keyed.toolbar.letter_spacing"
-# docs/facts/kde/button.toml:9118
+# docs/facts/kde/button.toml:9133
 text.word_spacing = "= token.text.keyed.toolbar.word_spacing"
-# docs/facts/kde/button.toml:9134
+# docs/facts/kde/button.toml:9149
 text.line_height = "= token.text.keyed.toolbar.line_height"
-# docs/facts/kde/button.toml:9150
+# docs/facts/kde/button.toml:9165
 text.case = "= token.text.keyed.toolbar.case"
-# docs/facts/kde/button.toml:9166
+# docs/facts/kde/button.toml:9181
 text.decoration = "= token.text.keyed.toolbar.decoration"
 
 [[rules]]
@@ -6161,31 +6175,31 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9187
+# docs/facts/kde/button.toml:9202
 text.font.family = "= token.text.keyed.toolbar.font.family"
-# docs/facts/kde/button.toml:9233
+# docs/facts/kde/button.toml:9248
 text.font.size = "= token.text.keyed.toolbar.font.size"
-# docs/facts/kde/button.toml:9279
+# docs/facts/kde/button.toml:9294
 text.font.weight = "= token.text.keyed.toolbar.font.weight"
-# docs/facts/kde/button.toml:9325
+# docs/facts/kde/button.toml:9340
 text.font.style = "= token.text.keyed.toolbar.font.style"
-# docs/facts/kde/button.toml:9371
+# docs/facts/kde/button.toml:9386
 text.font.width = "= token.text.keyed.toolbar.font.width"
-# docs/facts/kde/button.toml:9417
+# docs/facts/kde/button.toml:9432
 text.font.axes = "= token.text.keyed.toolbar.font.axes"
-# docs/facts/kde/button.toml:9463
+# docs/facts/kde/button.toml:9478
 text.font.features = "= token.text.keyed.toolbar.font.features"
-# docs/facts/kde/button.toml:9509
+# docs/facts/kde/button.toml:9524
 text.scaling_role = "= token.text.keyed.toolbar.scaling_role"
-# docs/facts/kde/button.toml:9555
+# docs/facts/kde/button.toml:9570
 text.letter_spacing = "= token.text.keyed.toolbar.letter_spacing"
-# docs/facts/kde/button.toml:9601
+# docs/facts/kde/button.toml:9616
 text.word_spacing = "= token.text.keyed.toolbar.word_spacing"
-# docs/facts/kde/button.toml:9647
+# docs/facts/kde/button.toml:9662
 text.line_height = "= token.text.keyed.toolbar.line_height"
-# docs/facts/kde/button.toml:9693
+# docs/facts/kde/button.toml:9708
 text.case = "= token.text.keyed.toolbar.case"
-# docs/facts/kde/button.toml:9739
+# docs/facts/kde/button.toml:9754
 text.decoration = "= token.text.keyed.toolbar.decoration"
 
 [[rules]]
@@ -6193,7 +6207,7 @@ when = { variants = ["flat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9800
+# docs/facts/kde/button.toml:9815
 text.fill = "= role.window.foreground"
 
 [[rules]]
@@ -6201,7 +6215,7 @@ when = { states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9816
+# docs/facts/kde/button.toml:9831
 text.fill = "= role.button.disabled.foreground"
 
 [[rules]]
@@ -6209,7 +6223,7 @@ when = { variants = ["flat"], states = ["disabled"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9832
+# docs/facts/kde/button.toml:9847
 text.fill = "= role.window.disabled.foreground"
 
 [[rules]]
@@ -6217,7 +6231,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9914
+# docs/facts/kde/button.toml:9929
 text.fill = "= surface.foreground"
 
 [[rules]]
@@ -6225,7 +6239,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat"], not_variants = [
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9930
+# docs/facts/kde/button.toml:9945
 text.fill = "= role.button.disabled.foreground"
 
 [[rules]]
@@ -6233,7 +6247,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["flat", "tool"], states =
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9949
+# docs/facts/kde/button.toml:9964
 text.fill = "= surface.disabled.foreground"
 
 [[rules]]
@@ -6241,7 +6255,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:9990
+# docs/facts/kde/button.toml:10005
 text.fill = "= role.button.foreground"
 
 [[rules]]
@@ -6249,7 +6263,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], sta
 target = "button.label"
 
 [rules.set]
-# docs/facts/kde/button.toml:10011
+# docs/facts/kde/button.toml:10026
 text.fill = "= role.button.disabled.foreground"
 
 [[rules]]
@@ -6257,43 +6271,43 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/kde/button.toml:10056
+# docs/facts/kde/button.toml:10071
 absent = false
-# docs/facts/kde/button.toml:10067
+# docs/facts/kde/button.toml:10082
 text.font.family = "= token.text.roles.body.font.family"
-# docs/facts/kde/button.toml:10088
+# docs/facts/kde/button.toml:10103
 text.font.size = "= token.text.roles.body.font.size"
-# docs/facts/kde/button.toml:10109
+# docs/facts/kde/button.toml:10124
 text.font.weight = "= token.text.roles.body.font.weight"
-# docs/facts/kde/button.toml:10130
+# docs/facts/kde/button.toml:10145
 text.font.style = "= token.text.roles.body.font.style"
-# docs/facts/kde/button.toml:10151
+# docs/facts/kde/button.toml:10166
 text.font.width = "= token.text.roles.body.font.width"
-# docs/facts/kde/button.toml:10172
+# docs/facts/kde/button.toml:10187
 text.font.axes = "= token.text.roles.body.font.axes"
-# docs/facts/kde/button.toml:10193
+# docs/facts/kde/button.toml:10208
 text.font.features = "= token.text.roles.body.font.features"
-# docs/facts/kde/button.toml:10214
+# docs/facts/kde/button.toml:10229
 text.scaling_role = "= token.text.roles.body.scaling_role"
-# docs/facts/kde/button.toml:10235
+# docs/facts/kde/button.toml:10250
 text.letter_spacing = "= token.text.roles.body.letter_spacing"
-# docs/facts/kde/button.toml:10256
+# docs/facts/kde/button.toml:10271
 text.word_spacing = "= token.text.roles.body.word_spacing"
-# docs/facts/kde/button.toml:10277
+# docs/facts/kde/button.toml:10292
 text.line_height = "= token.text.roles.body.line_height"
-# docs/facts/kde/button.toml:10298
+# docs/facts/kde/button.toml:10313
 text.case = "= token.text.roles.body.case"
-# docs/facts/kde/button.toml:10319
+# docs/facts/kde/button.toml:10334
 text.decoration = "= token.text.roles.body.decoration"
-# docs/facts/kde/button.toml:10340
+# docs/facts/kde/button.toml:10355
 text.elision = "none"
-# docs/facts/kde/button.toml:10358
+# docs/facts/kde/button.toml:10373
 text.wrap = "word"
-# docs/facts/kde/button.toml:10369
+# docs/facts/kde/button.toml:10384
 text.max_lines = "none"
-# docs/facts/kde/button.toml:10381
+# docs/facts/kde/button.toml:10396
 text.mnemonic_decoration = "absent"
-# docs/facts/kde/button.toml:10393
+# docs/facts/kde/button.toml:10408
 text.fill = "= role.button.foreground"
 
 [[rules]]
@@ -6301,7 +6315,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], sta
 target = "button.subtitle"
 
 [rules.set]
-# docs/facts/kde/button.toml:10414
+# docs/facts/kde/button.toml:10429
 text.fill = "= role.button.disabled.foreground"
 
 [[rules]]
@@ -6309,7 +6323,7 @@ when = { conditions = ["flavor:kirigami"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10482
+# docs/facts/kde/button.toml:10497
 icon.size_px = "= token.icons.sizes.small.size"
 
 [[rules]]
@@ -6317,7 +6331,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "flat"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10498
+# docs/facts/kde/button.toml:10513
 icon.size_px = "= token.icons.sizes.toolbar.size"
 
 [[rules]]
@@ -6325,9 +6339,9 @@ when = { states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10534
+# docs/facts/kde/button.toml:10549
 icon.fill = "= role.window.disabled.foreground"
-# docs/facts/kde/button.toml:10858
+# docs/facts/kde/button.toml:10873
 icon.state_effect = "disabled"
 
 [[rules]]
@@ -6335,7 +6349,7 @@ when = { conditions = ["flavor:kirigami"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10646
+# docs/facts/kde/button.toml:10661
 icon.fill = "= surface.foreground"
 
 [[rules]]
@@ -6343,7 +6357,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10657
+# docs/facts/kde/button.toml:10672
 icon.fill = "= surface.foreground"
 
 [[rules]]
@@ -6351,7 +6365,7 @@ when = { conditions = ["flavor:kirigami"], states = ["disabled"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10668
+# docs/facts/kde/button.toml:10683
 icon.fill = "= role.button.disabled.foreground"
 
 [[rules]]
@@ -6359,7 +6373,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "flat"], states =
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10694
+# docs/facts/kde/button.toml:10709
 icon.fill = "= surface.disabled.foreground"
 
 [[rules]]
@@ -6367,9 +6381,9 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:10945
+# docs/facts/kde/button.toml:10960
 icon.size_px = 20
-# docs/facts/kde/button.toml:10987
+# docs/facts/kde/button.toml:11002
 glyph = { replace = { source = { theme_icon = { name = "go-next-view", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= part.icon.fill", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" } }
 
 [[rules]]
@@ -6377,7 +6391,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"], dir
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:11008
+# docs/facts/kde/button.toml:11023
 glyph = { replace = { source = { theme_icon = { name = "go-previous-view", fallbacks = [] } }, size_px = "= part.icon.size", fill = "= part.icon.fill", stroke = "absent", axes = {}, draw_extent = "absent", draw_start = "absent", mirroring = "never" } }
 
 [[rules]]
@@ -6385,17 +6399,17 @@ when = { variants = ["menu"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11071
+# docs/facts/kde/button.toml:11086
 min_width_px = 20
-# docs/facts/kde/button.toml:11104
+# docs/facts/kde/button.toml:11119
 min_height_px = 20
-# docs/facts/kde/button.toml:11446
+# docs/facts/kde/button.toml:11461
 glyph.fill = "absent"
-# docs/facts/kde/button.toml:11478
+# docs/facts/kde/button.toml:11493
 glyph.stroke.width_px = 1.001
-# docs/facts/kde/button.toml:11504
+# docs/facts/kde/button.toml:11519
 glyph.stroke.cap = "square"
-# docs/facts/kde/button.toml:11525
+# docs/facts/kde/button.toml:11540
 glyph.stroke.join = "miter"
 
 [[rules]]
@@ -6403,17 +6417,17 @@ when = { variants = ["menu"], not_variants = ["tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11143
+# docs/facts/kde/button.toml:11158
 margin.top_px = 0
-# docs/facts/kde/button.toml:11186
+# docs/facts/kde/button.toml:11201
 margin.right_px = -6
-# docs/facts/kde/button.toml:11229
+# docs/facts/kde/button.toml:11244
 margin.bottom_px = 0
-# docs/facts/kde/button.toml:11271
+# docs/facts/kde/button.toml:11286
 margin.left_px = 6
-# docs/facts/kde/button.toml:11409
+# docs/facts/kde/button.toml:11424
 glyph.size_px = 10
-# docs/facts/kde/button.toml:11566
+# docs/facts/kde/button.toml:11581
 glyph.stroke.paint = "= kcu_mix(role.button.foreground, role.button.background, 0.15)"
 
 [[rules]]
@@ -6421,13 +6435,13 @@ when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11297
+# docs/facts/kde/button.toml:11312
 margin.top_px = "absent"
-# docs/facts/kde/button.toml:11319
+# docs/facts/kde/button.toml:11334
 margin.right_px = "absent"
-# docs/facts/kde/button.toml:11341
+# docs/facts/kde/button.toml:11356
 margin.bottom_px = "absent"
-# docs/facts/kde/button.toml:11363
+# docs/facts/kde/button.toml:11378
 margin.left_px = "absent"
 
 [[rules]]
@@ -6435,13 +6449,13 @@ when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11308
+# docs/facts/kde/button.toml:11323
 margin.top_px = "absent"
-# docs/facts/kde/button.toml:11330
+# docs/facts/kde/button.toml:11345
 margin.right_px = "absent"
-# docs/facts/kde/button.toml:11352
+# docs/facts/kde/button.toml:11367
 margin.bottom_px = "absent"
-# docs/facts/kde/button.toml:11374
+# docs/facts/kde/button.toml:11389
 margin.left_px = "absent"
 
 [[rules]]
@@ -6449,7 +6463,7 @@ when = { variants = ["menu", "flat"], not_variants = ["tool"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11597
+# docs/facts/kde/button.toml:11612
 glyph.stroke.paint = "= kcu_mix(role.window.foreground, role.window.background, 0.15)"
 
 [[rules]]
@@ -6457,7 +6471,7 @@ when = { variants = ["menu"], not_variants = ["tool"], states = ["disabled"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11628
+# docs/facts/kde/button.toml:11643
 glyph.stroke.paint = "= kcu_mix(role.button.disabled.foreground, role.button.disabled.background, 0.15)"
 
 [[rules]]
@@ -6465,7 +6479,7 @@ when = { variants = ["menu", "flat"], not_variants = ["tool"], states = ["disabl
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11659
+# docs/facts/kde/button.toml:11674
 glyph.stroke.paint = "= kcu_mix(role.window.disabled.foreground, role.window.disabled.background, 0.15)"
 
 [[rules]]
@@ -6473,29 +6487,29 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:11790
+# docs/facts/kde/button.toml:11805
 glyph.size_px = 5
-# docs/facts/kde/button.toml:11816
+# docs/facts/kde/button.toml:11831
 min_width_px = 5
-# docs/facts/kde/button.toml:11832
+# docs/facts/kde/button.toml:11847
 min_height_px = 5
-# docs/facts/kde/button.toml:11848
+# docs/facts/kde/button.toml:11863
 margin.top_px = 0
-# docs/facts/kde/button.toml:11865
+# docs/facts/kde/button.toml:11880
 margin.right_px = "= sub(4px, widget.body.margin.right)"
-# docs/facts/kde/button.toml:11886
+# docs/facts/kde/button.toml:11901
 margin.bottom_px = "= sub(3px, widget.body.margin.bottom)"
-# docs/facts/kde/button.toml:11902
+# docs/facts/kde/button.toml:11917
 margin.left_px = 0
-# docs/facts/kde/button.toml:11919
+# docs/facts/kde/button.toml:11934
 glyph.fill = "absent"
-# docs/facts/kde/button.toml:11936
+# docs/facts/kde/button.toml:11951
 glyph.stroke.width_px = 1.001
-# docs/facts/kde/button.toml:11952
+# docs/facts/kde/button.toml:11967
 glyph.stroke.cap = "square"
-# docs/facts/kde/button.toml:11963
+# docs/facts/kde/button.toml:11978
 glyph.stroke.join = "miter"
-# docs/facts/kde/button.toml:11974
+# docs/facts/kde/button.toml:11989
 glyph.stroke.paint = "= kcu_mix(role.button.foreground, role.button.background, 0.15)"
 
 [[rules]]
@@ -6503,7 +6517,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12010
+# docs/facts/kde/button.toml:12025
 glyph.stroke.paint = "= role.button.foreground"
 
 [[rules]]
@@ -6511,7 +6525,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12031
+# docs/facts/kde/button.toml:12046
 glyph.stroke.paint = "= kcu_mix(role.button.disabled.foreground, role.button.disabled.background, 0.15)"
 
 [[rules]]
@@ -6519,7 +6533,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12067
+# docs/facts/kde/button.toml:12082
 glyph.stroke.paint = "= kcu_mix(role.window.foreground, role.window.background, 0.15)"
 
 [[rules]]
@@ -6527,7 +6541,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12103
+# docs/facts/kde/button.toml:12118
 glyph.stroke.paint = "= kcu_mix(role.window.disabled.foreground, role.window.disabled.background, 0.15)"
 
 [[rules]]
@@ -6535,17 +6549,17 @@ when = { variants = ["tool", "@inline_large"] }
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12245
+# docs/facts/kde/button.toml:12260
 min_width_px = 20
-# docs/facts/kde/button.toml:12266
+# docs/facts/kde/button.toml:12281
 glyph.size_px = 10
-# docs/facts/kde/button.toml:12292
+# docs/facts/kde/button.toml:12307
 glyph.fill = "absent"
-# docs/facts/kde/button.toml:12309
+# docs/facts/kde/button.toml:12324
 glyph.stroke.width_px = 1.001
-# docs/facts/kde/button.toml:12325
+# docs/facts/kde/button.toml:12340
 glyph.stroke.cap = "square"
-# docs/facts/kde/button.toml:12336
+# docs/facts/kde/button.toml:12351
 glyph.stroke.join = "miter"
 
 [[rules]]
@@ -6553,7 +6567,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12347
+# docs/facts/kde/button.toml:12362
 glyph.stroke.paint = "= kcu_mix(role.button.foreground, role.button.background, 0.15)"
 
 [[rules]]
@@ -6561,7 +6575,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12383
+# docs/facts/kde/button.toml:12398
 glyph.stroke.paint = "= role.button.foreground"
 
 [[rules]]
@@ -6569,7 +6583,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12404
+# docs/facts/kde/button.toml:12419
 glyph.stroke.paint = "= kcu_mix(role.button.disabled.foreground, role.button.disabled.background, 0.15)"
 
 [[rules]]
@@ -6577,7 +6591,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12440
+# docs/facts/kde/button.toml:12455
 glyph.stroke.paint = "= kcu_mix(role.window.foreground, role.window.background, 0.15)"
 
 [[rules]]
@@ -6585,7 +6599,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12476
+# docs/facts/kde/button.toml:12491
 glyph.stroke.paint = "= kcu_mix(role.window.disabled.foreground, role.window.disabled.background, 0.15)"
 
 [[rules]]
@@ -6593,7 +6607,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"] 
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12627
+# docs/facts/kde/button.toml:12642
 glyph.stroke.paint = "= kcu_mix(surface.foreground, surface.background, 0.15)"
 
 [[rules]]
@@ -6601,7 +6615,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"],
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12673
+# docs/facts/kde/button.toml:12688
 glyph.stroke.paint = "= surface.foreground"
 
 [[rules]]
@@ -6609,7 +6623,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"],
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12719
+# docs/facts/kde/button.toml:12734
 glyph.stroke.paint = "= surface.foreground"
 
 [[rules]]
@@ -6617,7 +6631,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large", 
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12765
+# docs/facts/kde/button.toml:12780
 glyph.stroke.paint = "= surface.foreground"
 
 [[rules]]
@@ -6625,7 +6639,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["tool", "@inline_large"],
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12811
+# docs/facts/kde/button.toml:12826
 glyph.stroke.paint = "= kcu_mix(surface.disabled.foreground, surface.disabled.background, 0.15)"
 
 [[rules]]
@@ -6633,7 +6647,7 @@ when = { not_conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12857
+# docs/facts/kde/button.toml:12872
 absent = true
 
 [[rules]]
@@ -6641,7 +6655,7 @@ when = { conditions = ["flavor:kirigami"], not_variants = ["menu", "@inline_larg
 target = "button.menu_indicator"
 
 [rules.set]
-# docs/facts/kde/button.toml:12873
+# docs/facts/kde/button.toml:12888
 absent = true
 
 [[rules]]
@@ -6649,7 +6663,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13098
+# docs/facts/kde/button.toml:13113
 menu_indicator_anchor = "bottom_end"
 
 [[rules]]
@@ -6657,7 +6671,7 @@ when = { variants = ["tool"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13143
+# docs/facts/kde/button.toml:13158
 label_position = "icon_only"
 
 [[rules]]
@@ -6665,9 +6679,9 @@ when = { conditions = ["flavor:kirigami"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13223
+# docs/facts/kde/button.toml:13238
 repeat_delay_ms = 300
-# docs/facts/kde/button.toml:13239
+# docs/facts/kde/button.toml:13254
 repeat_interval_ms = 100
 
 [[rules]]
@@ -6675,7 +6689,7 @@ when = { variants = ["menu"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13285
+# docs/facts/kde/button.toml:13300
 menu_trigger = "primary"
 
 [[rules]]
@@ -6683,7 +6697,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_larg
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13296
+# docs/facts/kde/button.toml:13311
 menu_trigger = "primary"
 
 [[rules]]
@@ -6691,7 +6705,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["tool", "@inline_smal
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13312
+# docs/facts/kde/button.toml:13327
 menu_trigger = "long_press"
 
 [[rules]]
@@ -6699,7 +6713,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["help"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13398
+# docs/facts/kde/button.toml:13413
 help_tooltip_on_click = true
 
 [[rules]]
@@ -6707,7 +6721,7 @@ when = { not_conditions = ["flavor:kirigami"], variants = ["@command_link"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13440
+# docs/facts/kde/button.toml:13455
 icon_text_gap_px = 4
 
 [[rules]]
@@ -6715,45 +6729,43 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13456
+# docs/facts/kde/button.toml:13471
 padding.top_px = 6
-# docs/facts/kde/button.toml:13467
+# docs/facts/kde/button.toml:13482
 padding.right_px = 6
-# docs/facts/kde/button.toml:13478
+# docs/facts/kde/button.toml:13493
 padding.bottom_px = 6
-# docs/facts/kde/button.toml:13489
+# docs/facts/kde/button.toml:13504
 padding.left_px = 6
-# docs/facts/kde/button.toml:13500
+# docs/facts/kde/button.toml:13515
 min_width_px = "= add(token.params.layout.grid_unit, add(6px, 6px))"
-# docs/facts/kde/button.toml:13519
+# docs/facts/kde/button.toml:13534
 min_height_px = "= add(token.params.layout.grid_unit, add(6px, 6px))"
-# docs/facts/kde/button.toml:13611
+# docs/facts/kde/button.toml:13626
 corners.top_left = { full = { maximum_px = "absent" } }
-# docs/facts/kde/button.toml:13632
+# docs/facts/kde/button.toml:13647
 corners.top_right = { full = { maximum_px = "absent" } }
-# docs/facts/kde/button.toml:13653
+# docs/facts/kde/button.toml:13668
 corners.bottom_right = { full = { maximum_px = "absent" } }
-# docs/facts/kde/button.toml:13674
+# docs/facts/kde/button.toml:13689
 corners.bottom_left = { full = { maximum_px = "absent" } }
-# docs/facts/kde/button.toml:13695
-bindings = [{ surface = "button" }]
-# docs/facts/kde/button.toml:14033
+# docs/facts/kde/button.toml:14074
 stroke.top.paint = "= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14069
+# docs/facts/kde/button.toml:14110
 stroke.right.paint = "= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14105
+# docs/facts/kde/button.toml:14146
 stroke.bottom.paint = "= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14141
+# docs/facts/kde/button.toml:14182
 stroke.left.paint = "= kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14348
+# docs/facts/kde/button.toml:14389
 stroke.top.width_px = 1
-# docs/facts/kde/button.toml:14375
+# docs/facts/kde/button.toml:14416
 stroke.right.width_px = 1
-# docs/facts/kde/button.toml:14402
+# docs/facts/kde/button.toml:14443
 stroke.bottom.width_px = 1
-# docs/facts/kde/button.toml:14429
+# docs/facts/kde/button.toml:14470
 stroke.left.width_px = 1
-# docs/facts/kde/button.toml:14719
+# docs/facts/kde/button.toml:14760
 shadow = { layers = [{ x_px = 0, y_px = 1, blur_px = 0, spread_px = 0, color = "srgb(0, 0, 0, 0.15)", inset = false, falloff = "gaussian" }] }
 
 [[rules]]
@@ -6761,7 +6773,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
 target = "button.icon"
 
 [rules.set]
-# docs/facts/kde/button.toml:13536
+# docs/facts/kde/button.toml:13551
 icon.size_px = "= token.icons.sizes.keyed.small_medium.size"
 
 [[rules]]
@@ -6769,15 +6781,39 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
 target = "button.values"
 
 [rules.set]
-# docs/facts/kde/button.toml:13597
+# docs/facts/kde/button.toml:13612
 icon_text_gap_px = 4
+
+[[rules]]
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/kde/button.toml:13710
+bindings = [{ surface = "button" }]
+
+[[rules]]
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["pressed"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/kde/button.toml:13723
+bindings = [{ surface = "button" }]
+
+[[rules]]
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["checked"] }
+target = "button.body"
+
+[rules.set]
+# docs/facts/kde/button.toml:13735
+bindings = [{ surface = "button" }]
 
 [[rules]]
 when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"], states = ["focused"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13706
+# docs/facts/kde/button.toml:13747
 bindings = [{ surface = "selection" }]
 
 [[rules]]
@@ -6785,7 +6821,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "@highlighted
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13717
+# docs/facts/kde/button.toml:13758
 bindings = [{ surface = "selection" }]
 
 [[rules]]
@@ -6793,7 +6829,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], not_
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13730
+# docs/facts/kde/button.toml:13771
 bindings = []
 
 [[rules]]
@@ -6801,7 +6837,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_states =
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13750
+# docs/facts/kde/button.toml:13791
 fill = "= surface.background"
 
 [[rules]]
@@ -6809,7 +6845,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["d
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13766
+# docs/facts/kde/button.toml:13807
 fill = "= surface.disabled.background"
 
 [[rules]]
@@ -6817,7 +6853,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13794
+# docs/facts/kde/button.toml:13835
 fill = "absent"
 
 [[rules]]
@@ -6825,7 +6861,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13805
+# docs/facts/kde/button.toml:13846
 fill = "= with_alpha(surface.background, 0)"
 
 [[rules]]
@@ -6833,7 +6869,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13821
+# docs/facts/kde/button.toml:13862
 fill = "= with_alpha(surface.background, 0)"
 
 [[rules]]
@@ -6841,7 +6877,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat", "@hig
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13837
+# docs/facts/kde/button.toml:13878
 fill = "= with_alpha(surface.background, 0)"
 
 [[rules]]
@@ -6849,7 +6885,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["c
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13863
+# docs/facts/kde/button.toml:13904
 fill = "= kirigami_tint(surface.foreground, with_alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
 
 [[rules]]
@@ -6857,13 +6893,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["p
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13914
+# docs/facts/kde/button.toml:13955
 fill = "= kirigami_tint(surface.foreground, with_alpha(kirigami_lerp(role.button.background, role.button.foreground, token.params.color.frame_contrast), 0.8), 1)"
-# docs/facts/kde/button.toml:14739
+# docs/facts/kde/button.toml:14780
 shadow = "absent"
-# docs/facts/kde/button.toml:14774
+# docs/facts/kde/button.toml:14815
 transform.translate_x_px = 1
-# docs/facts/kde/button.toml:14785
+# docs/facts/kde/button.toml:14826
 transform.translate_y_px = 1
 
 [[rules]]
@@ -6871,7 +6907,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["c
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:13965
+# docs/facts/kde/button.toml:14006
 fill = "= kirigami_tint(surface.disabled.foreground, with_alpha(kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast), 0.8), 1)"
 
 [[rules]]
@@ -6879,13 +6915,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["d
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14177
+# docs/facts/kde/button.toml:14218
 stroke.top.paint = "= kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14213
+# docs/facts/kde/button.toml:14254
 stroke.right.paint = "= kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14249
+# docs/facts/kde/button.toml:14290
 stroke.bottom.paint = "= kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
-# docs/facts/kde/button.toml:14285
+# docs/facts/kde/button.toml:14326
 stroke.left.paint = "= kirigami_lerp(role.button.disabled.background, role.button.disabled.foreground, token.params.color.frame_contrast)"
 
 [[rules]]
@@ -6893,21 +6929,21 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14359
+# docs/facts/kde/button.toml:14400
 stroke.top.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:14386
+# docs/facts/kde/button.toml:14427
 stroke.right.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:14413
+# docs/facts/kde/button.toml:14454
 stroke.bottom.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:14440
+# docs/facts/kde/button.toml:14481
 stroke.left.paint = "= role.selection.background"
-# docs/facts/kde/button.toml:14540
+# docs/facts/kde/button.toml:14581
 stroke.top.width_px = 0
-# docs/facts/kde/button.toml:14551
+# docs/facts/kde/button.toml:14592
 stroke.right.width_px = 0
-# docs/facts/kde/button.toml:14562
+# docs/facts/kde/button.toml:14603
 stroke.bottom.width_px = 0
-# docs/facts/kde/button.toml:14573
+# docs/facts/kde/button.toml:14614
 stroke.left.width_px = 0
 
 [[rules]]
@@ -6915,13 +6951,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14456
+# docs/facts/kde/button.toml:14497
 stroke.top.paint = "= role.selection.disabled.background"
-# docs/facts/kde/button.toml:14477
+# docs/facts/kde/button.toml:14518
 stroke.right.paint = "= role.selection.disabled.background"
-# docs/facts/kde/button.toml:14498
+# docs/facts/kde/button.toml:14539
 stroke.bottom.paint = "= role.selection.disabled.background"
-# docs/facts/kde/button.toml:14519
+# docs/facts/kde/button.toml:14560
 stroke.left.paint = "= role.selection.disabled.background"
 
 [[rules]]
@@ -6929,13 +6965,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14584
+# docs/facts/kde/button.toml:14625
 stroke.top.width_px = 1
-# docs/facts/kde/button.toml:14595
+# docs/facts/kde/button.toml:14636
 stroke.right.width_px = 1
-# docs/facts/kde/button.toml:14606
+# docs/facts/kde/button.toml:14647
 stroke.bottom.width_px = 1
-# docs/facts/kde/button.toml:14617
+# docs/facts/kde/button.toml:14658
 stroke.left.width_px = 1
 
 [[rules]]
@@ -6943,13 +6979,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], stat
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14628
+# docs/facts/kde/button.toml:14669
 stroke.top.width_px = 1
-# docs/facts/kde/button.toml:14639
+# docs/facts/kde/button.toml:14680
 stroke.right.width_px = 1
-# docs/facts/kde/button.toml:14650
+# docs/facts/kde/button.toml:14691
 stroke.bottom.width_px = 1
-# docs/facts/kde/button.toml:14661
+# docs/facts/kde/button.toml:14702
 stroke.left.width_px = 1
 
 [[rules]]
@@ -6957,13 +6993,13 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat", "@hig
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14672
+# docs/facts/kde/button.toml:14713
 stroke.top.width_px = 1
-# docs/facts/kde/button.toml:14683
+# docs/facts/kde/button.toml:14724
 stroke.right.width_px = 1
-# docs/facts/kde/button.toml:14694
+# docs/facts/kde/button.toml:14735
 stroke.bottom.width_px = 1
-# docs/facts/kde/button.toml:14705
+# docs/facts/kde/button.toml:14746
 stroke.left.width_px = 1
 
 [[rules]]
@@ -6971,11 +7007,11 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular"], states = ["c
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14750
+# docs/facts/kde/button.toml:14791
 shadow = "absent"
-# docs/facts/kde/button.toml:14796
+# docs/facts/kde/button.toml:14837
 transform.translate_x_px = 1
-# docs/facts/kde/button.toml:14807
+# docs/facts/kde/button.toml:14848
 transform.translate_y_px = 1
 
 [[rules]]
@@ -6983,7 +7019,7 @@ when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"] }
 target = "button.body"
 
 [rules.set]
-# docs/facts/kde/button.toml:14761
+# docs/facts/kde/button.toml:14802
 shadow = "absent"
 
 [[rules]]

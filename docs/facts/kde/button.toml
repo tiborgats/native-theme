@@ -1117,9 +1117,13 @@ source = "breeze@6.8.2 kstyle/breezestyle.cpp:4511-4569"
 quote = "bool Style::drawPanelButtonCommandPrimitive(const QStyleOption *option, QPainter *painter, const QWidget *widget) const"
 absent = []
 
+# Qt Quick: a Button binds the Button set, flat or not; a ToolButton and a RoundButton bind it where they do not
+# inherit their parent's (below, and the RoundButton's facts further down). S6.1 merges a rule's bindings by key, so
+# an empty list cannot remove a binding an earlier rule states: each fact binds the set only where it holds.
+
 [[fact]]
 key = "button.body.bindings"
-when = { conditions = ["flavor:kirigami"] }
+when = { conditions = ["flavor:kirigami"], not_variants = ["tool", "circular"] }
 value = [{ surface = "button" }]
 rows = ["Q1.9"]
 
@@ -1127,6 +1131,17 @@ rows = ["Q1.9"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/Button.qml:17-18"
 quote = "Kirigami.Theme.colorSet: Kirigami.Theme.Button Kirigami.Theme.inherit: false"
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["flavor:kirigami"], variants = ["tool"], not_variants = ["flat"] }
+value = [{ surface = "button" }]
+rows = ["Q1.9"]
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/ToolButton.qml:18-19"
+quote = "Kirigami.Theme.colorSet: flat ? Kirigami.Theme.Window : Kirigami.Theme.Button Kirigami.Theme.inherit: flat"
 
 # a flat ToolButton inherits its parent's colour set (Kirigami.Theme.inherit: flat)
 
@@ -13694,7 +13709,7 @@ quote = "if (!d->explicitRadius) d->setRadius();"
 
 [[fact]]
 key = "button.body.bindings"
-when = { conditions = ["flavor:kirigami"], variants = ["circular"] }
+when = { conditions = ["flavor:kirigami"], variants = ["circular"], not_variants = ["flat"] }
 value = [{ surface = "button" }]
 rows = ["Q2.8"]
 
@@ -13702,6 +13717,32 @@ rows = ["Q2.8"]
 kind = "published"
 source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
 quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button"
+
+# a flat RoundButton pressed or checked binds the Button set (Kirigami.Theme.inherit false there)
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["pressed"] }
+value = [{ surface = "button" }]
+rows = ["Q2.8"]
+
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
+quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button Kirigami.Theme.inherit: flat && !down && !checked"
+
+[[fact]]
+key = "button.body.bindings"
+when = { conditions = ["flavor:kirigami"], variants = ["circular", "flat"], states = ["checked"] }
+value = [{ surface = "button" }]
+rows = ["Q2.8"]
+
+
+[[fact.cite]]
+kind = "published"
+source = "qqc2-desktop-style@6.31.0 org.kde.desktop/RoundButton.qml:16-17"
+quote = "Kirigami.Theme.colorSet: !flat && (controlRoot.activeFocus || controlRoot.highlighted) ? Kirigami.Theme.Selection : Kirigami.Theme.Button Kirigami.Theme.inherit: flat && !down && !checked"
 
 [[fact]]
 key = "button.body.bindings"

@@ -206,11 +206,14 @@ the suffix into the value's unit, a map's entries likewise, `absent = true` into
 then the rules in order) equals the transcribed facts' sequence, `when` by `when` (canonical_when) and value by value;
 and (2) for every key, every distinct `when` of the facts of its widget (or of the colour roles, the tokens, the inputs)
 and each scheme, that `when`'s minimal combination (its required names present and nothing else; ancestors as its
-contexts list them; a lone element where it names no position) resolves under the generated bases and rules to the value
-of the fact that applies there among all the key's facts, or to none where none holds (the last in file order, after the
-state model's exclusive reduction and its recency sets' stated order, S7.2, S10, S17); a combination where a pending or
-a left-out fact applies is skipped and counted, and a fact whose `when` no element can hold (two sizes, a required name
-refused, a state its group drops) is counted apart. Any difference is a mismatch.
+contexts list them; a lone element where it names no position) resolves under the generated bases and rules (the last
+matching rule winning; a keyed list, S6.1's transitions, bindings and presentations, the base's items and each matching
+rule's in order merged by their keys, keyed_merge(), each transition split per group, as S17 states such a fact, the
+merged list) to the value of the fact that applies there among all the key's facts, or to none where none holds (the
+last in file order, after the state model's exclusive reduction and its recency sets' stated order, S7.2, S10, S17); a
+combination where a pending or a left-out fact applies is skipped and counted, and a fact whose `when` no element can
+hold (two sizes, a required name refused, a state its group drops) is counted apart. Any difference is a mismatch: a
+keyed-list fact that leaves out an item of the base its rule merges over is one, as the merge keeps that item.
 
     python3 scripts/generate_preset.py --self-test   # fixture facts against the expected draft, and each rule
 """
@@ -1963,7 +1966,7 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     continue
                 applies = last_holding(fs, c, groups, recency)
                 if applies is None:
-                    if preset_value(got, fs[0].kind, c, s, groups, recency) is not None:
+                    if preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ) is not None:
                         trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft states a value "
                                                f"where no fact holds")
                     continue
@@ -1978,8 +1981,8 @@ def round_trip(draft: Draft, text: str) -> Trip:
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the shadowed fact "
                                            f"{applies.where} applies")
                     continue
-                value = preset_value(got, fs[0].kind, c, s, groups, recency)
-                if normal(value) != normal(fact_value(applies)):
+                value = preset_value(got, fs[0].kind, c, s, groups, recency, fs[0].typ)
+                if normal(value) != normal(resolved_list(fact_value(applies), fs[0].typ)):
                     trip.mismatches.append(f"{fs[0].key} in {when} under scheme {s}: the draft gives {value!r}, "
                                            f"the fact that applies ({applies.where}) {applies.item.data['value']!r}")
     return trip
@@ -2019,16 +2022,92 @@ def back_value(f: Fact, node):
     return unspell(f.rel[-1], node, f.typ)[1]
 
 
-def preset_value(got, kind, c, scheme, groups, recency):
+def preset_value(got, kind, c, scheme, groups, recency, typ=None):
     """The value the read-back bases and rules give a key in a combination (S8: the bases, then the rules in order,
-    the last matching winning; an input's per-contrast base where its contrast holds, S9)."""
+    the last matching winning; an input's per-contrast base where its contrast holds, S9); a keyed list (S6.1) the
+    base merged with every matching rule's list in order, by its items' keys (keyed_merge())."""
     if kind == "input":
         contrast = next((x for x, _ in CONTRASTS if x in c["conditions"]), None)
         return got["base"].get((scheme, contrast), got["base"].get((scheme, None)))
     states = reduced(c["states"], groups)
-    return next((v for when, v in reversed(got["rules"])
-                 if holds(when if isinstance(when, dict) else {}, c, groups, recency, states)),
-                got["base"].get(scheme if kind == "role" else None))
+    base = got["base"].get(scheme if kind == "role" else None)
+    matching = [v for when, v in got["rules"] if holds(when if isinstance(when, dict) else {}, c, groups, recency,
+                                                       states)]
+    item_key = KEYED_LISTS.get(check_facts.strip_type(typ)) if typ else None
+    if item_key is None:
+        return matching[-1] if matching else base
+    merged = None
+    for v in ([base] if base is not None else []) + matching:
+        merged = keyed_merge(merged or [], v, item_key) if isinstance(v, list) else v
+    return merged
+
+
+def transition_key(item):
+    """A transition's key in a list (S6.1, ADD-A124, ADD-A126): its property group, its `from` set (`None`, left out
+    or `"none"`, any state; two sets of the same flags one key) and its Breeze test (none for another engine or a
+    stated zero), as `Transition::merge_keyed` reads them; a transition is split per group first (split_groups())."""
+    props = item.get("properties")
+    origin = item.get("from")
+    origin = frozenset(origin) if check_facts.str_list(origin) else None
+    stated, duration = check_facts.unit_value(item, "duration")
+    name, payload = check_facts.variant_of(item.get("engine"))
+    test = None
+    if name in ("breeze", "breeze_tab_bar") and isinstance(payload, dict) and not (
+            stated and check_facts.stated_zero(duration)):
+        test = tuple(frozenset(payload.get(k, [])) if check_facts.str_list(payload.get(k, [])) else normal(
+            payload.get(k)) for k in ("any", "none", "conditions"))
+    return "transition", normal(props), origin, test
+
+
+def binding_key(item):
+    """A binding's key in a list (S6.1, ADD-A122): every `Surface(_)` binding one key, a role binding its role."""
+    name, payload = check_facts.variant_of(item)
+    if name == "role" and isinstance(payload, dict):
+        return "role", normal(payload.get("role"))
+    return ("surface",) if name == "surface" else ("item", normal(item))
+
+
+def presentation_key(item):
+    """A presentation's key in a list (S6.1): its event."""
+    return "presentation", normal(item.get("event") if isinstance(item, dict) else item)
+
+
+# S6.1's keyed lists, by the core's type of the field, each with its items' key
+KEYED_LISTS = {"Vec<Transition>": transition_key, "Vec<Binding>": binding_key,
+               "Vec<PresentationTransition>": presentation_key}
+
+
+def split_groups(items: list, item_key) -> list:
+    """A list's items as the merge keys them: a transition listing several property groups split per group, each
+    with the others' fields (S6.1; `split_by_group`)."""
+    if item_key is not transition_key:
+        return list(items)
+    out = []
+    for item in items:
+        props = item.get("properties") if isinstance(item, dict) else None
+        if isinstance(props, list) and len(props) > 1:
+            out += [{**item, "properties": [p]} for p in props]
+        else:
+            out.append(item)
+    return out
+
+
+def keyed_merge(earlier: list, later: list, item_key) -> list:
+    """S6.1's keyed-list merge: each later item replaces the earlier item of its key, the merged list holding the
+    earlier items not replaced, in their order, then the later items, in theirs (`merge_keyed_by`)."""
+    held = split_groups(earlier, item_key)
+    for item in split_groups(later, item_key):
+        k = item_key(item) if isinstance(item, dict) else ("item", normal(item))
+        held = [x for x in held if (item_key(x) if isinstance(x, dict) else ("item", normal(x))) != k]
+        held.append(item)
+    return held
+
+
+def resolved_list(value, typ):
+    """A fact's value as the resolution gives it (S17: a keyed list is stated as the merged list): a keyed list
+    merged into an empty one, its transitions split per group; any other value as it is."""
+    item_key = KEYED_LISTS.get(check_facts.strip_type(typ)) if typ else None
+    return keyed_merge([], value, item_key) if item_key is not None and isinstance(value, list) else value
 
 
 # ------------------------------------------------------------------------------------------------- report
@@ -3678,6 +3757,54 @@ def self_test() -> int:
         if present_trip.mismatches or redrawn != [("rule", "")] or rule not in present_text:
             failures.append(f"a `present` fact: {redrawn}, round trip {present_trip}, its rule written "
                             f"{rule in present_text}")
+        # a keyed list (S6.1, S17): a rule's transitions merge over the base's by key, so a fact that leaves out an
+        # item of the base mismatches, the merge keeping it, and one stating the merged list, in either order of the
+        # items it restates, passes
+        def transition(group, ms):
+            return (f'{{ properties = ["{group}"], kind = "interpolate", duration_ms = {ms}, delay_ms = 0, '
+                    f'timing = "linear", engine = "gtk_css" }}')
+
+        listed = SELF_TEST_FILES["docs/facts/gnome/button.toml"].replace(_fact("button.body.transitions", "[]"), _fact(
+            "button.body.transitions", f'[{transition("fill", 100)}, {transition("stroke", 200)}]'), 1)
+        for n, (rule_list, mismatched) in enumerate((
+                (f'[{transition("fill", 50)}]', True),
+                (f'[{transition("stroke", 200)}, {transition("fill", 50)}]', False),
+                (f'[{transition("fill", 50)}, {transition("stroke", 200)}]', False))):
+            root = Path(tmp) / f"keyed{n}"
+            write(root, {**SELF_TEST_FILES, "docs/facts/gnome/button.toml": listed + _fact(
+                "button.body.transitions", rule_list, '{ states = ["hover"] }')})
+            keyed_trip = generate(fixture_context(root), "adwaita")[2]
+            found = [m for m in keyed_trip.mismatches if m.startswith("button.body.transitions in ")]
+            if bool(found) != mismatched or len(found) != len(keyed_trip.mismatches):
+                failures.append(f"a keyed list's rule {rule_list}: mismatches {keyed_trip.mismatches}, expected "
+                                f"{'one' if mismatched else 'none'}")
+        merges = [
+            ("a transition split per group, `from` sets compared as sets, a stated zero keyed with no test",
+             [{"properties": ["fill", "stroke"], "from": ["hover", "pressed"], "duration_ms": 0,
+               "engine": {"breeze": {"any": ["hover"], "none": [], "conditions": []}}}],
+             [{"properties": ["stroke"], "from": ["pressed", "hover"], "duration_ms": 0, "engine": "gtk_css"}],
+             transition_key,
+             [{"properties": ["fill"], "from": ["hover", "pressed"], "duration_ms": 0,
+               "engine": {"breeze": {"any": ["hover"], "none": [], "conditions": []}}},
+              {"properties": ["stroke"], "from": ["pressed", "hover"], "duration_ms": 0, "engine": "gtk_css"}]),
+            ("a Breeze test is a key of its own, `from` left out the same as \"none\"",
+             [{"properties": ["fill"], "duration_ms": 10, "engine": {"breeze": {"any": ["hover"]}}}],
+             [{"properties": ["fill"], "from": "none", "duration_ms": 10, "engine": {"breeze": {"any": ["pressed"]}}}],
+             transition_key,
+             [{"properties": ["fill"], "duration_ms": 10, "engine": {"breeze": {"any": ["hover"]}}},
+              {"properties": ["fill"], "from": "none", "duration_ms": 10, "engine": {"breeze": {"any": ["pressed"]}}}]),
+            ("a surface binding replaces a surface binding, a role binding its role's",
+             [{"surface": "card"}, {"role": {"role": {"surface": "foreground"}, "value": "#000000"}}],
+             [{"role": {"role": {"surface": "foreground"}, "value": "#ffffff"}}, {"surface": "view"}],
+             binding_key,
+             [{"role": {"role": {"surface": "foreground"}, "value": "#ffffff"}}, {"surface": "view"}]),
+            ("a presentation by its event", [{"event": "show", "steps": [1]}, {"event": "hide", "steps": [2]}],
+             [{"event": "show", "steps": [3]}], presentation_key,
+             [{"event": "hide", "steps": [2]}, {"event": "show", "steps": [3]}]),
+        ]
+        for what, earlier, later, item_key, want in merges:
+            if normal(keyed_merge(earlier, later, item_key)) != normal(want):
+                failures.append(f"keyed_merge: {what}: {keyed_merge(earlier, later, item_key)}")
         # --write writes nothing where the round trip finds a mismatch (a generator bug, forced here) and says so,
         # over a committed preset the new text differs from; it writes the preset where it finds none
         root = Path(tmp) / "mismatch"
