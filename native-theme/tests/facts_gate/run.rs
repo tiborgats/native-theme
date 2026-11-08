@@ -1433,11 +1433,13 @@ fn vector_count(planned: &[Planned<'_>], own: Option<&Distinct>, vector: &[Strin
 }
 
 /// Runs the gate over the facts root `root` for `presets`, each with the
-/// platform directory it is checked against (S17 *Generations*).
-pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
+/// platform directory it is checked against (S17 *Generations*), the
+/// citations' evidence read under the evidence root `evidence` (S17 *The
+/// evidence root*: [`facts::evidence_root`]'s, or a fixture's own root).
+pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report {
     let started = Instant::now();
     let mut report = Report::default();
-    let evidence = facts::Evidence::new(root.parent().and_then(Path::parent).unwrap_or(root));
+    let evidence = facts::Evidence::new(evidence);
     let mut directories: Vec<_> = std::fs::read_dir(root)
         .map(|entries| {
             entries
