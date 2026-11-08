@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 ee09e468b7b88347e6cb8265b99552fc50ec4e4c4e80ea9ffeeb03673e171209
+# generated lines: sha256 6197498b8d97b054d4177c3a7ae8bca5dbb78b8b3c1d7c289c260eff6075dcfd
 
 [preset]
 id = "kde-breeze"
@@ -482,1557 +482,1557 @@ light = "#00000000"
 dark = "#00000000"
 
 [inputs.kde_scheme.button.background_normal]
-# docs/facts/kde/inputs.toml:29
+# docs/facts/kde/inputs.toml:41
 light = "#fcfcfc"
-# docs/facts/kde/inputs.toml:1197
+# docs/facts/kde/inputs.toml:2589
 dark = "#292c30"
 
 [inputs.kde_scheme.button.background_alternate]
-# docs/facts/kde/inputs.toml:40
+# docs/facts/kde/inputs.toml:67
 light = "#a3d4fa"
-# docs/facts/kde/inputs.toml:1208
+# docs/facts/kde/inputs.toml:2600
 dark = "#1e5774"
 
 [inputs.kde_scheme.button.foreground_normal]
-# docs/facts/kde/inputs.toml:51
+# docs/facts/kde/inputs.toml:93
 light = "#232629"
-# docs/facts/kde/inputs.toml:1219
+# docs/facts/kde/inputs.toml:2611
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.button.foreground_inactive]
-# docs/facts/kde/inputs.toml:62
+# docs/facts/kde/inputs.toml:119
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:1230
+# docs/facts/kde/inputs.toml:2622
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.button.foreground_active]
-# docs/facts/kde/inputs.toml:73
+# docs/facts/kde/inputs.toml:145
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1241
+# docs/facts/kde/inputs.toml:2633
 dark = "#3daee9"
 
 [inputs.kde_scheme.button.foreground_link]
-# docs/facts/kde/inputs.toml:84
+# docs/facts/kde/inputs.toml:171
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:1252
+# docs/facts/kde/inputs.toml:2644
 dark = "#1d99f3"
 
 [inputs.kde_scheme.button.foreground_visited]
-# docs/facts/kde/inputs.toml:95
+# docs/facts/kde/inputs.toml:197
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1263
+# docs/facts/kde/inputs.toml:2655
 dark = "#9b59b6"
 
 [inputs.kde_scheme.button.foreground_negative]
-# docs/facts/kde/inputs.toml:106
+# docs/facts/kde/inputs.toml:223
 light = "#da4453"
-# docs/facts/kde/inputs.toml:1274
+# docs/facts/kde/inputs.toml:2666
 dark = "#da4453"
 
 [inputs.kde_scheme.button.foreground_neutral]
-# docs/facts/kde/inputs.toml:117
+# docs/facts/kde/inputs.toml:249
 light = "#f67400"
-# docs/facts/kde/inputs.toml:1285
+# docs/facts/kde/inputs.toml:2677
 dark = "#f67400"
 
 [inputs.kde_scheme.button.foreground_positive]
-# docs/facts/kde/inputs.toml:128
+# docs/facts/kde/inputs.toml:275
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:1296
+# docs/facts/kde/inputs.toml:2688
 dark = "#27ae60"
 
 [inputs.kde_scheme.button.decoration_focus]
-# docs/facts/kde/inputs.toml:139
+# docs/facts/kde/inputs.toml:301
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1307
+# docs/facts/kde/inputs.toml:2699
 dark = "#3daee9"
 
 [inputs.kde_scheme.button.decoration_hover]
-# docs/facts/kde/inputs.toml:150
+# docs/facts/kde/inputs.toml:327
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1318
+# docs/facts/kde/inputs.toml:2710
 dark = "#3daee9"
 
 [inputs.kde_scheme.complementary.background_normal]
-# docs/facts/kde/inputs.toml:161
+# docs/facts/kde/inputs.toml:353
 light = "#2a2e32"
-# docs/facts/kde/inputs.toml:1329
+# docs/facts/kde/inputs.toml:2721
 dark = "#202326"
 
 [inputs.kde_scheme.complementary.background_alternate]
-# docs/facts/kde/inputs.toml:172
+# docs/facts/kde/inputs.toml:379
 light = "#1b1e20"
-# docs/facts/kde/inputs.toml:1340
+# docs/facts/kde/inputs.toml:2732
 dark = "#1e5774"
 
 [inputs.kde_scheme.complementary.foreground_normal]
-# docs/facts/kde/inputs.toml:183
+# docs/facts/kde/inputs.toml:405
 light = "#fcfcfc"
-# docs/facts/kde/inputs.toml:1351
+# docs/facts/kde/inputs.toml:2743
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.complementary.foreground_inactive]
-# docs/facts/kde/inputs.toml:194
+# docs/facts/kde/inputs.toml:431
 light = "#a1a9b1"
-# docs/facts/kde/inputs.toml:1362
+# docs/facts/kde/inputs.toml:2754
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.complementary.foreground_active]
-# docs/facts/kde/inputs.toml:205
+# docs/facts/kde/inputs.toml:457
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1373
+# docs/facts/kde/inputs.toml:2765
 dark = "#3daee9"
 
 [inputs.kde_scheme.complementary.foreground_link]
-# docs/facts/kde/inputs.toml:216
+# docs/facts/kde/inputs.toml:483
 light = "#1d99f3"
-# docs/facts/kde/inputs.toml:1384
+# docs/facts/kde/inputs.toml:2776
 dark = "#1d99f3"
 
 [inputs.kde_scheme.complementary.foreground_visited]
-# docs/facts/kde/inputs.toml:227
+# docs/facts/kde/inputs.toml:509
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1395
+# docs/facts/kde/inputs.toml:2787
 dark = "#9b59b6"
 
 [inputs.kde_scheme.complementary.foreground_negative]
-# docs/facts/kde/inputs.toml:238
+# docs/facts/kde/inputs.toml:535
 light = "#da4453"
-# docs/facts/kde/inputs.toml:1406
+# docs/facts/kde/inputs.toml:2798
 dark = "#da4453"
 
 [inputs.kde_scheme.complementary.foreground_neutral]
-# docs/facts/kde/inputs.toml:249
+# docs/facts/kde/inputs.toml:561
 light = "#f67400"
-# docs/facts/kde/inputs.toml:1417
+# docs/facts/kde/inputs.toml:2809
 dark = "#f67400"
 
 [inputs.kde_scheme.complementary.foreground_positive]
-# docs/facts/kde/inputs.toml:260
+# docs/facts/kde/inputs.toml:587
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:1428
+# docs/facts/kde/inputs.toml:2820
 dark = "#27ae60"
 
 [inputs.kde_scheme.complementary.decoration_focus]
-# docs/facts/kde/inputs.toml:271
+# docs/facts/kde/inputs.toml:613
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1439
+# docs/facts/kde/inputs.toml:2831
 dark = "#3daee9"
 
 [inputs.kde_scheme.complementary.decoration_hover]
-# docs/facts/kde/inputs.toml:282
+# docs/facts/kde/inputs.toml:639
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1450
+# docs/facts/kde/inputs.toml:2842
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.background_normal]
-# docs/facts/kde/inputs.toml:293
+# docs/facts/kde/inputs.toml:665
 light = "#dee0e2"
-# docs/facts/kde/inputs.toml:1461
+# docs/facts/kde/inputs.toml:2853
 dark = "#292c30"
 
 [inputs.kde_scheme.header.background_alternate]
-# docs/facts/kde/inputs.toml:304
+# docs/facts/kde/inputs.toml:691
 light = "#eff0f1"
-# docs/facts/kde/inputs.toml:1472
+# docs/facts/kde/inputs.toml:2864
 dark = "#202326"
 
 [inputs.kde_scheme.header.foreground_normal]
-# docs/facts/kde/inputs.toml:315
+# docs/facts/kde/inputs.toml:717
 light = "#232629"
-# docs/facts/kde/inputs.toml:1483
+# docs/facts/kde/inputs.toml:2875
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.header.foreground_inactive]
-# docs/facts/kde/inputs.toml:326
+# docs/facts/kde/inputs.toml:743
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:1494
+# docs/facts/kde/inputs.toml:2886
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.header.foreground_active]
-# docs/facts/kde/inputs.toml:337
+# docs/facts/kde/inputs.toml:769
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1505
+# docs/facts/kde/inputs.toml:2897
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.foreground_link]
-# docs/facts/kde/inputs.toml:348
+# docs/facts/kde/inputs.toml:795
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:1516
+# docs/facts/kde/inputs.toml:2908
 dark = "#1d99f3"
 
 [inputs.kde_scheme.header.foreground_visited]
-# docs/facts/kde/inputs.toml:359
+# docs/facts/kde/inputs.toml:821
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1527
+# docs/facts/kde/inputs.toml:2919
 dark = "#9b59b6"
 
 [inputs.kde_scheme.header.foreground_negative]
-# docs/facts/kde/inputs.toml:370
+# docs/facts/kde/inputs.toml:847
 light = "#da4453"
-# docs/facts/kde/inputs.toml:1538
+# docs/facts/kde/inputs.toml:2930
 dark = "#da4453"
 
 [inputs.kde_scheme.header.foreground_neutral]
-# docs/facts/kde/inputs.toml:381
+# docs/facts/kde/inputs.toml:873
 light = "#f67400"
-# docs/facts/kde/inputs.toml:1549
+# docs/facts/kde/inputs.toml:2941
 dark = "#f67400"
 
 [inputs.kde_scheme.header.foreground_positive]
-# docs/facts/kde/inputs.toml:392
+# docs/facts/kde/inputs.toml:899
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:1560
+# docs/facts/kde/inputs.toml:2952
 dark = "#27ae60"
 
 [inputs.kde_scheme.header.decoration_focus]
-# docs/facts/kde/inputs.toml:403
+# docs/facts/kde/inputs.toml:925
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1571
+# docs/facts/kde/inputs.toml:2963
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.decoration_hover]
-# docs/facts/kde/inputs.toml:414
+# docs/facts/kde/inputs.toml:951
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1582
+# docs/facts/kde/inputs.toml:2974
 dark = "#3daee9"
 
 [inputs.kde_scheme.selection.background_normal]
-# docs/facts/kde/inputs.toml:425
+# docs/facts/kde/inputs.toml:977
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1593
+# docs/facts/kde/inputs.toml:2985
 dark = "#3daee9"
 
 [inputs.kde_scheme.selection.background_alternate]
-# docs/facts/kde/inputs.toml:436
+# docs/facts/kde/inputs.toml:1003
 light = "#a3d4fa"
-# docs/facts/kde/inputs.toml:1604
+# docs/facts/kde/inputs.toml:2996
 dark = "#1e5774"
 
 [inputs.kde_scheme.selection.foreground_normal]
-# docs/facts/kde/inputs.toml:447
+# docs/facts/kde/inputs.toml:1029
 light = "#ffffff"
-# docs/facts/kde/inputs.toml:1615
+# docs/facts/kde/inputs.toml:3007
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.selection.foreground_inactive]
-# docs/facts/kde/inputs.toml:458
+# docs/facts/kde/inputs.toml:1055
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:1626
+# docs/facts/kde/inputs.toml:3018
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.selection.foreground_active]
-# docs/facts/kde/inputs.toml:469
+# docs/facts/kde/inputs.toml:1081
 light = "#ffffff"
-# docs/facts/kde/inputs.toml:1637
+# docs/facts/kde/inputs.toml:3029
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.selection.foreground_link]
-# docs/facts/kde/inputs.toml:480
+# docs/facts/kde/inputs.toml:1107
 light = "#fdbc4b"
-# docs/facts/kde/inputs.toml:1648
+# docs/facts/kde/inputs.toml:3040
 dark = "#fdbc4b"
 
 [inputs.kde_scheme.selection.foreground_visited]
-# docs/facts/kde/inputs.toml:491
+# docs/facts/kde/inputs.toml:1133
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1659
+# docs/facts/kde/inputs.toml:3051
 dark = "#9b59b6"
 
 [inputs.kde_scheme.selection.foreground_negative]
-# docs/facts/kde/inputs.toml:502
+# docs/facts/kde/inputs.toml:1159
 light = "#b03745"
-# docs/facts/kde/inputs.toml:1670
+# docs/facts/kde/inputs.toml:3062
 dark = "#b03745"
 
 [inputs.kde_scheme.selection.foreground_neutral]
-# docs/facts/kde/inputs.toml:513
+# docs/facts/kde/inputs.toml:1185
 light = "#c65c00"
-# docs/facts/kde/inputs.toml:1681
+# docs/facts/kde/inputs.toml:3073
 dark = "#c65c00"
 
 [inputs.kde_scheme.selection.foreground_positive]
-# docs/facts/kde/inputs.toml:524
+# docs/facts/kde/inputs.toml:1211
 light = "#176839"
-# docs/facts/kde/inputs.toml:1692
+# docs/facts/kde/inputs.toml:3084
 dark = "#176839"
 
 [inputs.kde_scheme.selection.decoration_focus]
-# docs/facts/kde/inputs.toml:535
+# docs/facts/kde/inputs.toml:1237
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1703
+# docs/facts/kde/inputs.toml:3095
 dark = "#3daee9"
 
 [inputs.kde_scheme.selection.decoration_hover]
-# docs/facts/kde/inputs.toml:546
+# docs/facts/kde/inputs.toml:1263
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1714
+# docs/facts/kde/inputs.toml:3106
 dark = "#3daee9"
 
 [inputs.kde_scheme.tooltip.background_normal]
-# docs/facts/kde/inputs.toml:557
+# docs/facts/kde/inputs.toml:1289
 light = "#f7f7f7"
-# docs/facts/kde/inputs.toml:1725
+# docs/facts/kde/inputs.toml:3117
 dark = "#292c30"
 
 [inputs.kde_scheme.tooltip.background_alternate]
-# docs/facts/kde/inputs.toml:568
+# docs/facts/kde/inputs.toml:1315
 light = "#eff0f1"
-# docs/facts/kde/inputs.toml:1736
+# docs/facts/kde/inputs.toml:3128
 dark = "#202326"
 
 [inputs.kde_scheme.tooltip.foreground_normal]
-# docs/facts/kde/inputs.toml:579
+# docs/facts/kde/inputs.toml:1341
 light = "#232629"
-# docs/facts/kde/inputs.toml:1747
+# docs/facts/kde/inputs.toml:3139
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.tooltip.foreground_inactive]
-# docs/facts/kde/inputs.toml:590
+# docs/facts/kde/inputs.toml:1367
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:1758
+# docs/facts/kde/inputs.toml:3150
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.tooltip.foreground_active]
-# docs/facts/kde/inputs.toml:601
+# docs/facts/kde/inputs.toml:1393
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1769
+# docs/facts/kde/inputs.toml:3161
 dark = "#3daee9"
 
 [inputs.kde_scheme.tooltip.foreground_link]
-# docs/facts/kde/inputs.toml:612
+# docs/facts/kde/inputs.toml:1419
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:1780
+# docs/facts/kde/inputs.toml:3172
 dark = "#1d99f3"
 
 [inputs.kde_scheme.tooltip.foreground_visited]
-# docs/facts/kde/inputs.toml:623
+# docs/facts/kde/inputs.toml:1445
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1791
+# docs/facts/kde/inputs.toml:3183
 dark = "#9b59b6"
 
 [inputs.kde_scheme.tooltip.foreground_negative]
-# docs/facts/kde/inputs.toml:634
+# docs/facts/kde/inputs.toml:1471
 light = "#da4453"
-# docs/facts/kde/inputs.toml:1802
+# docs/facts/kde/inputs.toml:3194
 dark = "#da4453"
 
 [inputs.kde_scheme.tooltip.foreground_neutral]
-# docs/facts/kde/inputs.toml:645
+# docs/facts/kde/inputs.toml:1497
 light = "#f67400"
-# docs/facts/kde/inputs.toml:1813
+# docs/facts/kde/inputs.toml:3205
 dark = "#f67400"
 
 [inputs.kde_scheme.tooltip.foreground_positive]
-# docs/facts/kde/inputs.toml:656
+# docs/facts/kde/inputs.toml:1523
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:1824
+# docs/facts/kde/inputs.toml:3216
 dark = "#27ae60"
 
 [inputs.kde_scheme.tooltip.decoration_focus]
-# docs/facts/kde/inputs.toml:667
+# docs/facts/kde/inputs.toml:1549
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1835
+# docs/facts/kde/inputs.toml:3227
 dark = "#3daee9"
 
 [inputs.kde_scheme.tooltip.decoration_hover]
-# docs/facts/kde/inputs.toml:678
+# docs/facts/kde/inputs.toml:1575
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1846
+# docs/facts/kde/inputs.toml:3238
 dark = "#3daee9"
 
 [inputs.kde_scheme.view.background_normal]
-# docs/facts/kde/inputs.toml:689
+# docs/facts/kde/inputs.toml:1601
 light = "#ffffff"
-# docs/facts/kde/inputs.toml:1857
+# docs/facts/kde/inputs.toml:3249
 dark = "#141618"
 
 [inputs.kde_scheme.view.background_alternate]
-# docs/facts/kde/inputs.toml:700
+# docs/facts/kde/inputs.toml:1627
 light = "#f7f7f7"
-# docs/facts/kde/inputs.toml:1868
+# docs/facts/kde/inputs.toml:3260
 dark = "#1d1f22"
 
 [inputs.kde_scheme.view.foreground_normal]
-# docs/facts/kde/inputs.toml:711
+# docs/facts/kde/inputs.toml:1653
 light = "#232629"
-# docs/facts/kde/inputs.toml:1879
+# docs/facts/kde/inputs.toml:3271
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.view.foreground_inactive]
-# docs/facts/kde/inputs.toml:722
+# docs/facts/kde/inputs.toml:1679
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:1890
+# docs/facts/kde/inputs.toml:3282
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.view.foreground_active]
-# docs/facts/kde/inputs.toml:733
+# docs/facts/kde/inputs.toml:1705
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1901
+# docs/facts/kde/inputs.toml:3293
 dark = "#3daee9"
 
 [inputs.kde_scheme.view.foreground_link]
-# docs/facts/kde/inputs.toml:744
+# docs/facts/kde/inputs.toml:1731
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:1912
+# docs/facts/kde/inputs.toml:3304
 dark = "#1d99f3"
 
 [inputs.kde_scheme.view.foreground_visited]
-# docs/facts/kde/inputs.toml:755
+# docs/facts/kde/inputs.toml:1757
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:1923
+# docs/facts/kde/inputs.toml:3315
 dark = "#9b59b6"
 
 [inputs.kde_scheme.view.foreground_negative]
-# docs/facts/kde/inputs.toml:766
+# docs/facts/kde/inputs.toml:1783
 light = "#da4453"
-# docs/facts/kde/inputs.toml:1934
+# docs/facts/kde/inputs.toml:3326
 dark = "#da4453"
 
 [inputs.kde_scheme.view.foreground_neutral]
-# docs/facts/kde/inputs.toml:777
+# docs/facts/kde/inputs.toml:1809
 light = "#f67400"
-# docs/facts/kde/inputs.toml:1945
+# docs/facts/kde/inputs.toml:3337
 dark = "#f67400"
 
 [inputs.kde_scheme.view.foreground_positive]
-# docs/facts/kde/inputs.toml:788
+# docs/facts/kde/inputs.toml:1835
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:1956
+# docs/facts/kde/inputs.toml:3348
 dark = "#27ae60"
 
 [inputs.kde_scheme.view.decoration_focus]
-# docs/facts/kde/inputs.toml:799
+# docs/facts/kde/inputs.toml:1861
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1967
+# docs/facts/kde/inputs.toml:3359
 dark = "#3daee9"
 
 [inputs.kde_scheme.view.decoration_hover]
-# docs/facts/kde/inputs.toml:810
+# docs/facts/kde/inputs.toml:1887
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:1978
+# docs/facts/kde/inputs.toml:3370
 dark = "#3daee9"
 
 [inputs.kde_scheme.window.background_normal]
-# docs/facts/kde/inputs.toml:821
+# docs/facts/kde/inputs.toml:1913
 light = "#eff0f1"
-# docs/facts/kde/inputs.toml:1989
+# docs/facts/kde/inputs.toml:3381
 dark = "#202326"
 
 [inputs.kde_scheme.window.background_alternate]
-# docs/facts/kde/inputs.toml:832
+# docs/facts/kde/inputs.toml:1939
 light = "#e3e5e7"
-# docs/facts/kde/inputs.toml:2000
+# docs/facts/kde/inputs.toml:3392
 dark = "#292c30"
 
 [inputs.kde_scheme.window.foreground_normal]
-# docs/facts/kde/inputs.toml:843
+# docs/facts/kde/inputs.toml:1965
 light = "#232629"
-# docs/facts/kde/inputs.toml:2011
+# docs/facts/kde/inputs.toml:3403
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.window.foreground_inactive]
-# docs/facts/kde/inputs.toml:854
+# docs/facts/kde/inputs.toml:1991
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:2022
+# docs/facts/kde/inputs.toml:3414
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.window.foreground_active]
-# docs/facts/kde/inputs.toml:865
+# docs/facts/kde/inputs.toml:2017
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2033
+# docs/facts/kde/inputs.toml:3425
 dark = "#3daee9"
 
 [inputs.kde_scheme.window.foreground_link]
-# docs/facts/kde/inputs.toml:876
+# docs/facts/kde/inputs.toml:2043
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:2044
+# docs/facts/kde/inputs.toml:3436
 dark = "#1d99f3"
 
 [inputs.kde_scheme.window.foreground_visited]
-# docs/facts/kde/inputs.toml:887
+# docs/facts/kde/inputs.toml:2069
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:2055
+# docs/facts/kde/inputs.toml:3447
 dark = "#9b59b6"
 
 [inputs.kde_scheme.window.foreground_negative]
-# docs/facts/kde/inputs.toml:898
+# docs/facts/kde/inputs.toml:2095
 light = "#da4453"
-# docs/facts/kde/inputs.toml:2066
+# docs/facts/kde/inputs.toml:3458
 dark = "#da4453"
 
 [inputs.kde_scheme.window.foreground_neutral]
-# docs/facts/kde/inputs.toml:909
+# docs/facts/kde/inputs.toml:2121
 light = "#f67400"
-# docs/facts/kde/inputs.toml:2077
+# docs/facts/kde/inputs.toml:3469
 dark = "#f67400"
 
 [inputs.kde_scheme.window.foreground_positive]
-# docs/facts/kde/inputs.toml:920
+# docs/facts/kde/inputs.toml:2147
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:2088
+# docs/facts/kde/inputs.toml:3480
 dark = "#27ae60"
 
 [inputs.kde_scheme.window.decoration_focus]
-# docs/facts/kde/inputs.toml:931
+# docs/facts/kde/inputs.toml:2173
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2099
+# docs/facts/kde/inputs.toml:3491
 dark = "#3daee9"
 
 [inputs.kde_scheme.window.decoration_hover]
-# docs/facts/kde/inputs.toml:942
+# docs/facts/kde/inputs.toml:2199
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2110
+# docs/facts/kde/inputs.toml:3502
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.inactive.background_normal]
-# docs/facts/kde/inputs.toml:953
+# docs/facts/kde/inputs.toml:2225
 light = "#eff0f1"
-# docs/facts/kde/inputs.toml:2121
+# docs/facts/kde/inputs.toml:3513
 dark = "#202326"
 
 [inputs.kde_scheme.header.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:964
+# docs/facts/kde/inputs.toml:2246
 light = "#e3e5e7"
-# docs/facts/kde/inputs.toml:2132
+# docs/facts/kde/inputs.toml:3524
 dark = "#292c30"
 
 [inputs.kde_scheme.header.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:975
+# docs/facts/kde/inputs.toml:2267
 light = "#232629"
-# docs/facts/kde/inputs.toml:2143
+# docs/facts/kde/inputs.toml:3535
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.header.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:986
+# docs/facts/kde/inputs.toml:2288
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:2154
+# docs/facts/kde/inputs.toml:3546
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.header.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:997
+# docs/facts/kde/inputs.toml:2309
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2165
+# docs/facts/kde/inputs.toml:3557
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:1008
+# docs/facts/kde/inputs.toml:2330
 light = "#2980b9"
-# docs/facts/kde/inputs.toml:2176
+# docs/facts/kde/inputs.toml:3568
 dark = "#1d99f3"
 
 [inputs.kde_scheme.header.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:1019
+# docs/facts/kde/inputs.toml:2351
 light = "#9b59b6"
-# docs/facts/kde/inputs.toml:2187
+# docs/facts/kde/inputs.toml:3579
 dark = "#9b59b6"
 
 [inputs.kde_scheme.header.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:1030
+# docs/facts/kde/inputs.toml:2372
 light = "#da4453"
-# docs/facts/kde/inputs.toml:2198
+# docs/facts/kde/inputs.toml:3590
 dark = "#da4453"
 
 [inputs.kde_scheme.header.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:1041
+# docs/facts/kde/inputs.toml:2393
 light = "#f67400"
-# docs/facts/kde/inputs.toml:2209
+# docs/facts/kde/inputs.toml:3601
 dark = "#f67400"
 
 [inputs.kde_scheme.header.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:1052
+# docs/facts/kde/inputs.toml:2414
 light = "#27ae60"
-# docs/facts/kde/inputs.toml:2220
+# docs/facts/kde/inputs.toml:3612
 dark = "#27ae60"
 
 [inputs.kde_scheme.header.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:1063
+# docs/facts/kde/inputs.toml:2435
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2231
+# docs/facts/kde/inputs.toml:3623
 dark = "#3daee9"
 
 [inputs.kde_scheme.header.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:1074
+# docs/facts/kde/inputs.toml:2456
 light = "#3daee9"
-# docs/facts/kde/inputs.toml:2242
+# docs/facts/kde/inputs.toml:3634
 dark = "#3daee9"
 
 [inputs.kde_scheme.wm.active_background]
-# docs/facts/kde/inputs.toml:1085
+# docs/facts/kde/inputs.toml:2477
 light = "#e3e5e7"
-# docs/facts/kde/inputs.toml:2253
+# docs/facts/kde/inputs.toml:3645
 dark = "#272c31"
 
 [inputs.kde_scheme.wm.active_foreground]
-# docs/facts/kde/inputs.toml:1096
+# docs/facts/kde/inputs.toml:2488
 light = "#232629"
-# docs/facts/kde/inputs.toml:2264
+# docs/facts/kde/inputs.toml:3656
 dark = "#fcfcfc"
 
 [inputs.kde_scheme.wm.inactive_background]
-# docs/facts/kde/inputs.toml:1107
+# docs/facts/kde/inputs.toml:2499
 light = "#eff0f1"
-# docs/facts/kde/inputs.toml:2275
+# docs/facts/kde/inputs.toml:3667
 dark = "#202428"
 
 [inputs.kde_scheme.wm.inactive_foreground]
-# docs/facts/kde/inputs.toml:1118
+# docs/facts/kde/inputs.toml:2510
 light = "#707d8a"
-# docs/facts/kde/inputs.toml:2286
+# docs/facts/kde/inputs.toml:3678
 dark = "#a1a9b1"
 
 [inputs.kde_scheme.groups]
-# docs/facts/kde/inputs.toml:1129
+# docs/facts/kde/inputs.toml:2521
 light = ["button", "complementary", "header", "selection", "tooltip", "view", "window"]
-# docs/facts/kde/inputs.toml:2297
+# docs/facts/kde/inputs.toml:3689
 dark = ["button", "complementary", "header", "selection", "tooltip", "view", "window"]
 
 [inputs.kde_scheme.inactive_groups]
-# docs/facts/kde/inputs.toml:1172
+# docs/facts/kde/inputs.toml:2564
 light = ["header"]
-# docs/facts/kde/inputs.toml:2340
+# docs/facts/kde/inputs.toml:3732
 dark = ["header"]
 
 [inputs.kde_scheme.unset_keys]
-# docs/facts/kde/inputs.toml:1185
+# docs/facts/kde/inputs.toml:2577
 light = []
-# docs/facts/kde/inputs.toml:2353
+# docs/facts/kde/inputs.toml:3745
 dark = []
 
 [inputs.kde_scheme.button.inactive.background_normal]
-# docs/facts/kde/inputs.toml:2365
+# docs/facts/kde/inputs.toml:3757
 light = "= input.kde_scheme.button.background_normal"
-# docs/facts/kde/inputs.toml:2365
+# docs/facts/kde/inputs.toml:3757
 dark = "= input.kde_scheme.button.background_normal"
 
 [inputs.kde_scheme.button.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:2385
+# docs/facts/kde/inputs.toml:3777
 light = "= input.kde_scheme.button.background_alternate"
-# docs/facts/kde/inputs.toml:2385
+# docs/facts/kde/inputs.toml:3777
 dark = "= input.kde_scheme.button.background_alternate"
 
 [inputs.kde_scheme.button.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:2405
+# docs/facts/kde/inputs.toml:3797
 light = "= input.kde_scheme.button.foreground_normal"
-# docs/facts/kde/inputs.toml:2405
+# docs/facts/kde/inputs.toml:3797
 dark = "= input.kde_scheme.button.foreground_normal"
 
 [inputs.kde_scheme.button.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:2425
+# docs/facts/kde/inputs.toml:3817
 light = "= input.kde_scheme.button.foreground_inactive"
-# docs/facts/kde/inputs.toml:2425
+# docs/facts/kde/inputs.toml:3817
 dark = "= input.kde_scheme.button.foreground_inactive"
 
 [inputs.kde_scheme.button.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:2445
+# docs/facts/kde/inputs.toml:3837
 light = "= input.kde_scheme.button.foreground_active"
-# docs/facts/kde/inputs.toml:2445
+# docs/facts/kde/inputs.toml:3837
 dark = "= input.kde_scheme.button.foreground_active"
 
 [inputs.kde_scheme.button.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:2465
+# docs/facts/kde/inputs.toml:3857
 light = "= input.kde_scheme.button.foreground_link"
-# docs/facts/kde/inputs.toml:2465
+# docs/facts/kde/inputs.toml:3857
 dark = "= input.kde_scheme.button.foreground_link"
 
 [inputs.kde_scheme.button.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:2485
+# docs/facts/kde/inputs.toml:3877
 light = "= input.kde_scheme.button.foreground_visited"
-# docs/facts/kde/inputs.toml:2485
+# docs/facts/kde/inputs.toml:3877
 dark = "= input.kde_scheme.button.foreground_visited"
 
 [inputs.kde_scheme.button.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:2505
+# docs/facts/kde/inputs.toml:3897
 light = "= input.kde_scheme.button.foreground_negative"
-# docs/facts/kde/inputs.toml:2505
+# docs/facts/kde/inputs.toml:3897
 dark = "= input.kde_scheme.button.foreground_negative"
 
 [inputs.kde_scheme.button.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:2525
+# docs/facts/kde/inputs.toml:3917
 light = "= input.kde_scheme.button.foreground_neutral"
-# docs/facts/kde/inputs.toml:2525
+# docs/facts/kde/inputs.toml:3917
 dark = "= input.kde_scheme.button.foreground_neutral"
 
 [inputs.kde_scheme.button.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:2545
+# docs/facts/kde/inputs.toml:3937
 light = "= input.kde_scheme.button.foreground_positive"
-# docs/facts/kde/inputs.toml:2545
+# docs/facts/kde/inputs.toml:3937
 dark = "= input.kde_scheme.button.foreground_positive"
 
 [inputs.kde_scheme.button.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:2565
+# docs/facts/kde/inputs.toml:3957
 light = "= input.kde_scheme.button.decoration_focus"
-# docs/facts/kde/inputs.toml:2565
+# docs/facts/kde/inputs.toml:3957
 dark = "= input.kde_scheme.button.decoration_focus"
 
 [inputs.kde_scheme.button.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:2585
+# docs/facts/kde/inputs.toml:3977
 light = "= input.kde_scheme.button.decoration_hover"
-# docs/facts/kde/inputs.toml:2585
+# docs/facts/kde/inputs.toml:3977
 dark = "= input.kde_scheme.button.decoration_hover"
 
 [inputs.kde_scheme.complementary.inactive.background_normal]
-# docs/facts/kde/inputs.toml:2605
+# docs/facts/kde/inputs.toml:3997
 light = "= input.kde_scheme.complementary.background_normal"
-# docs/facts/kde/inputs.toml:2605
+# docs/facts/kde/inputs.toml:3997
 dark = "= input.kde_scheme.complementary.background_normal"
 
 [inputs.kde_scheme.complementary.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:2625
+# docs/facts/kde/inputs.toml:4017
 light = "= input.kde_scheme.complementary.background_alternate"
-# docs/facts/kde/inputs.toml:2625
+# docs/facts/kde/inputs.toml:4017
 dark = "= input.kde_scheme.complementary.background_alternate"
 
 [inputs.kde_scheme.complementary.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:2645
+# docs/facts/kde/inputs.toml:4037
 light = "= input.kde_scheme.complementary.foreground_normal"
-# docs/facts/kde/inputs.toml:2645
+# docs/facts/kde/inputs.toml:4037
 dark = "= input.kde_scheme.complementary.foreground_normal"
 
 [inputs.kde_scheme.complementary.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:2665
+# docs/facts/kde/inputs.toml:4057
 light = "= input.kde_scheme.complementary.foreground_inactive"
-# docs/facts/kde/inputs.toml:2665
+# docs/facts/kde/inputs.toml:4057
 dark = "= input.kde_scheme.complementary.foreground_inactive"
 
 [inputs.kde_scheme.complementary.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:2685
+# docs/facts/kde/inputs.toml:4077
 light = "= input.kde_scheme.complementary.foreground_active"
-# docs/facts/kde/inputs.toml:2685
+# docs/facts/kde/inputs.toml:4077
 dark = "= input.kde_scheme.complementary.foreground_active"
 
 [inputs.kde_scheme.complementary.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:2705
+# docs/facts/kde/inputs.toml:4097
 light = "= input.kde_scheme.complementary.foreground_link"
-# docs/facts/kde/inputs.toml:2705
+# docs/facts/kde/inputs.toml:4097
 dark = "= input.kde_scheme.complementary.foreground_link"
 
 [inputs.kde_scheme.complementary.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:2725
+# docs/facts/kde/inputs.toml:4117
 light = "= input.kde_scheme.complementary.foreground_visited"
-# docs/facts/kde/inputs.toml:2725
+# docs/facts/kde/inputs.toml:4117
 dark = "= input.kde_scheme.complementary.foreground_visited"
 
 [inputs.kde_scheme.complementary.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:2745
+# docs/facts/kde/inputs.toml:4137
 light = "= input.kde_scheme.complementary.foreground_negative"
-# docs/facts/kde/inputs.toml:2745
+# docs/facts/kde/inputs.toml:4137
 dark = "= input.kde_scheme.complementary.foreground_negative"
 
 [inputs.kde_scheme.complementary.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:2765
+# docs/facts/kde/inputs.toml:4157
 light = "= input.kde_scheme.complementary.foreground_neutral"
-# docs/facts/kde/inputs.toml:2765
+# docs/facts/kde/inputs.toml:4157
 dark = "= input.kde_scheme.complementary.foreground_neutral"
 
 [inputs.kde_scheme.complementary.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:2785
+# docs/facts/kde/inputs.toml:4177
 light = "= input.kde_scheme.complementary.foreground_positive"
-# docs/facts/kde/inputs.toml:2785
+# docs/facts/kde/inputs.toml:4177
 dark = "= input.kde_scheme.complementary.foreground_positive"
 
 [inputs.kde_scheme.complementary.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:2805
+# docs/facts/kde/inputs.toml:4197
 light = "= input.kde_scheme.complementary.decoration_focus"
-# docs/facts/kde/inputs.toml:2805
+# docs/facts/kde/inputs.toml:4197
 dark = "= input.kde_scheme.complementary.decoration_focus"
 
 [inputs.kde_scheme.complementary.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:2825
+# docs/facts/kde/inputs.toml:4217
 light = "= input.kde_scheme.complementary.decoration_hover"
-# docs/facts/kde/inputs.toml:2825
+# docs/facts/kde/inputs.toml:4217
 dark = "= input.kde_scheme.complementary.decoration_hover"
 
 [inputs.kde_scheme.selection.inactive.background_normal]
-# docs/facts/kde/inputs.toml:2845
+# docs/facts/kde/inputs.toml:4237
 light = "= input.kde_scheme.selection.background_normal"
-# docs/facts/kde/inputs.toml:2845
+# docs/facts/kde/inputs.toml:4237
 dark = "= input.kde_scheme.selection.background_normal"
 
 [inputs.kde_scheme.selection.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:2865
+# docs/facts/kde/inputs.toml:4257
 light = "= input.kde_scheme.selection.background_alternate"
-# docs/facts/kde/inputs.toml:2865
+# docs/facts/kde/inputs.toml:4257
 dark = "= input.kde_scheme.selection.background_alternate"
 
 [inputs.kde_scheme.selection.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:2885
+# docs/facts/kde/inputs.toml:4277
 light = "= input.kde_scheme.selection.foreground_normal"
-# docs/facts/kde/inputs.toml:2885
+# docs/facts/kde/inputs.toml:4277
 dark = "= input.kde_scheme.selection.foreground_normal"
 
 [inputs.kde_scheme.selection.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:2905
+# docs/facts/kde/inputs.toml:4297
 light = "= input.kde_scheme.selection.foreground_inactive"
-# docs/facts/kde/inputs.toml:2905
+# docs/facts/kde/inputs.toml:4297
 dark = "= input.kde_scheme.selection.foreground_inactive"
 
 [inputs.kde_scheme.selection.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:2925
+# docs/facts/kde/inputs.toml:4317
 light = "= input.kde_scheme.selection.foreground_active"
-# docs/facts/kde/inputs.toml:2925
+# docs/facts/kde/inputs.toml:4317
 dark = "= input.kde_scheme.selection.foreground_active"
 
 [inputs.kde_scheme.selection.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:2945
+# docs/facts/kde/inputs.toml:4337
 light = "= input.kde_scheme.selection.foreground_link"
-# docs/facts/kde/inputs.toml:2945
+# docs/facts/kde/inputs.toml:4337
 dark = "= input.kde_scheme.selection.foreground_link"
 
 [inputs.kde_scheme.selection.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:2965
+# docs/facts/kde/inputs.toml:4357
 light = "= input.kde_scheme.selection.foreground_visited"
-# docs/facts/kde/inputs.toml:2965
+# docs/facts/kde/inputs.toml:4357
 dark = "= input.kde_scheme.selection.foreground_visited"
 
 [inputs.kde_scheme.selection.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:2985
+# docs/facts/kde/inputs.toml:4377
 light = "= input.kde_scheme.selection.foreground_negative"
-# docs/facts/kde/inputs.toml:2985
+# docs/facts/kde/inputs.toml:4377
 dark = "= input.kde_scheme.selection.foreground_negative"
 
 [inputs.kde_scheme.selection.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:3005
+# docs/facts/kde/inputs.toml:4397
 light = "= input.kde_scheme.selection.foreground_neutral"
-# docs/facts/kde/inputs.toml:3005
+# docs/facts/kde/inputs.toml:4397
 dark = "= input.kde_scheme.selection.foreground_neutral"
 
 [inputs.kde_scheme.selection.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:3025
+# docs/facts/kde/inputs.toml:4417
 light = "= input.kde_scheme.selection.foreground_positive"
-# docs/facts/kde/inputs.toml:3025
+# docs/facts/kde/inputs.toml:4417
 dark = "= input.kde_scheme.selection.foreground_positive"
 
 [inputs.kde_scheme.selection.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:3045
+# docs/facts/kde/inputs.toml:4437
 light = "= input.kde_scheme.selection.decoration_focus"
-# docs/facts/kde/inputs.toml:3045
+# docs/facts/kde/inputs.toml:4437
 dark = "= input.kde_scheme.selection.decoration_focus"
 
 [inputs.kde_scheme.selection.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:3065
+# docs/facts/kde/inputs.toml:4457
 light = "= input.kde_scheme.selection.decoration_hover"
-# docs/facts/kde/inputs.toml:3065
+# docs/facts/kde/inputs.toml:4457
 dark = "= input.kde_scheme.selection.decoration_hover"
 
 [inputs.kde_scheme.tooltip.inactive.background_normal]
-# docs/facts/kde/inputs.toml:3085
+# docs/facts/kde/inputs.toml:4477
 light = "= input.kde_scheme.tooltip.background_normal"
-# docs/facts/kde/inputs.toml:3085
+# docs/facts/kde/inputs.toml:4477
 dark = "= input.kde_scheme.tooltip.background_normal"
 
 [inputs.kde_scheme.tooltip.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:3105
+# docs/facts/kde/inputs.toml:4497
 light = "= input.kde_scheme.tooltip.background_alternate"
-# docs/facts/kde/inputs.toml:3105
+# docs/facts/kde/inputs.toml:4497
 dark = "= input.kde_scheme.tooltip.background_alternate"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:3125
+# docs/facts/kde/inputs.toml:4517
 light = "= input.kde_scheme.tooltip.foreground_normal"
-# docs/facts/kde/inputs.toml:3125
+# docs/facts/kde/inputs.toml:4517
 dark = "= input.kde_scheme.tooltip.foreground_normal"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:3145
+# docs/facts/kde/inputs.toml:4537
 light = "= input.kde_scheme.tooltip.foreground_inactive"
-# docs/facts/kde/inputs.toml:3145
+# docs/facts/kde/inputs.toml:4537
 dark = "= input.kde_scheme.tooltip.foreground_inactive"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:3165
+# docs/facts/kde/inputs.toml:4557
 light = "= input.kde_scheme.tooltip.foreground_active"
-# docs/facts/kde/inputs.toml:3165
+# docs/facts/kde/inputs.toml:4557
 dark = "= input.kde_scheme.tooltip.foreground_active"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:3185
+# docs/facts/kde/inputs.toml:4577
 light = "= input.kde_scheme.tooltip.foreground_link"
-# docs/facts/kde/inputs.toml:3185
+# docs/facts/kde/inputs.toml:4577
 dark = "= input.kde_scheme.tooltip.foreground_link"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:3205
+# docs/facts/kde/inputs.toml:4597
 light = "= input.kde_scheme.tooltip.foreground_visited"
-# docs/facts/kde/inputs.toml:3205
+# docs/facts/kde/inputs.toml:4597
 dark = "= input.kde_scheme.tooltip.foreground_visited"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:3225
+# docs/facts/kde/inputs.toml:4617
 light = "= input.kde_scheme.tooltip.foreground_negative"
-# docs/facts/kde/inputs.toml:3225
+# docs/facts/kde/inputs.toml:4617
 dark = "= input.kde_scheme.tooltip.foreground_negative"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:3245
+# docs/facts/kde/inputs.toml:4637
 light = "= input.kde_scheme.tooltip.foreground_neutral"
-# docs/facts/kde/inputs.toml:3245
+# docs/facts/kde/inputs.toml:4637
 dark = "= input.kde_scheme.tooltip.foreground_neutral"
 
 [inputs.kde_scheme.tooltip.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:3265
+# docs/facts/kde/inputs.toml:4657
 light = "= input.kde_scheme.tooltip.foreground_positive"
-# docs/facts/kde/inputs.toml:3265
+# docs/facts/kde/inputs.toml:4657
 dark = "= input.kde_scheme.tooltip.foreground_positive"
 
 [inputs.kde_scheme.tooltip.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:3285
+# docs/facts/kde/inputs.toml:4677
 light = "= input.kde_scheme.tooltip.decoration_focus"
-# docs/facts/kde/inputs.toml:3285
+# docs/facts/kde/inputs.toml:4677
 dark = "= input.kde_scheme.tooltip.decoration_focus"
 
 [inputs.kde_scheme.tooltip.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:3305
+# docs/facts/kde/inputs.toml:4697
 light = "= input.kde_scheme.tooltip.decoration_hover"
-# docs/facts/kde/inputs.toml:3305
+# docs/facts/kde/inputs.toml:4697
 dark = "= input.kde_scheme.tooltip.decoration_hover"
 
 [inputs.kde_scheme.view.inactive.background_normal]
-# docs/facts/kde/inputs.toml:3325
+# docs/facts/kde/inputs.toml:4717
 light = "= input.kde_scheme.view.background_normal"
-# docs/facts/kde/inputs.toml:3325
+# docs/facts/kde/inputs.toml:4717
 dark = "= input.kde_scheme.view.background_normal"
 
 [inputs.kde_scheme.view.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:3345
+# docs/facts/kde/inputs.toml:4737
 light = "= input.kde_scheme.view.background_alternate"
-# docs/facts/kde/inputs.toml:3345
+# docs/facts/kde/inputs.toml:4737
 dark = "= input.kde_scheme.view.background_alternate"
 
 [inputs.kde_scheme.view.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:3365
+# docs/facts/kde/inputs.toml:4757
 light = "= input.kde_scheme.view.foreground_normal"
-# docs/facts/kde/inputs.toml:3365
+# docs/facts/kde/inputs.toml:4757
 dark = "= input.kde_scheme.view.foreground_normal"
 
 [inputs.kde_scheme.view.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:3385
+# docs/facts/kde/inputs.toml:4777
 light = "= input.kde_scheme.view.foreground_inactive"
-# docs/facts/kde/inputs.toml:3385
+# docs/facts/kde/inputs.toml:4777
 dark = "= input.kde_scheme.view.foreground_inactive"
 
 [inputs.kde_scheme.view.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:3405
+# docs/facts/kde/inputs.toml:4797
 light = "= input.kde_scheme.view.foreground_active"
-# docs/facts/kde/inputs.toml:3405
+# docs/facts/kde/inputs.toml:4797
 dark = "= input.kde_scheme.view.foreground_active"
 
 [inputs.kde_scheme.view.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:3425
+# docs/facts/kde/inputs.toml:4817
 light = "= input.kde_scheme.view.foreground_link"
-# docs/facts/kde/inputs.toml:3425
+# docs/facts/kde/inputs.toml:4817
 dark = "= input.kde_scheme.view.foreground_link"
 
 [inputs.kde_scheme.view.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:3445
+# docs/facts/kde/inputs.toml:4837
 light = "= input.kde_scheme.view.foreground_visited"
-# docs/facts/kde/inputs.toml:3445
+# docs/facts/kde/inputs.toml:4837
 dark = "= input.kde_scheme.view.foreground_visited"
 
 [inputs.kde_scheme.view.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:3465
+# docs/facts/kde/inputs.toml:4857
 light = "= input.kde_scheme.view.foreground_negative"
-# docs/facts/kde/inputs.toml:3465
+# docs/facts/kde/inputs.toml:4857
 dark = "= input.kde_scheme.view.foreground_negative"
 
 [inputs.kde_scheme.view.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:3485
+# docs/facts/kde/inputs.toml:4877
 light = "= input.kde_scheme.view.foreground_neutral"
-# docs/facts/kde/inputs.toml:3485
+# docs/facts/kde/inputs.toml:4877
 dark = "= input.kde_scheme.view.foreground_neutral"
 
 [inputs.kde_scheme.view.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:3505
+# docs/facts/kde/inputs.toml:4897
 light = "= input.kde_scheme.view.foreground_positive"
-# docs/facts/kde/inputs.toml:3505
+# docs/facts/kde/inputs.toml:4897
 dark = "= input.kde_scheme.view.foreground_positive"
 
 [inputs.kde_scheme.view.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:3525
+# docs/facts/kde/inputs.toml:4917
 light = "= input.kde_scheme.view.decoration_focus"
-# docs/facts/kde/inputs.toml:3525
+# docs/facts/kde/inputs.toml:4917
 dark = "= input.kde_scheme.view.decoration_focus"
 
 [inputs.kde_scheme.view.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:3545
+# docs/facts/kde/inputs.toml:4937
 light = "= input.kde_scheme.view.decoration_hover"
-# docs/facts/kde/inputs.toml:3545
+# docs/facts/kde/inputs.toml:4937
 dark = "= input.kde_scheme.view.decoration_hover"
 
 [inputs.kde_scheme.window.inactive.background_normal]
-# docs/facts/kde/inputs.toml:3565
+# docs/facts/kde/inputs.toml:4957
 light = "= input.kde_scheme.window.background_normal"
-# docs/facts/kde/inputs.toml:3565
+# docs/facts/kde/inputs.toml:4957
 dark = "= input.kde_scheme.window.background_normal"
 
 [inputs.kde_scheme.window.inactive.background_alternate]
-# docs/facts/kde/inputs.toml:3585
+# docs/facts/kde/inputs.toml:4977
 light = "= input.kde_scheme.window.background_alternate"
-# docs/facts/kde/inputs.toml:3585
+# docs/facts/kde/inputs.toml:4977
 dark = "= input.kde_scheme.window.background_alternate"
 
 [inputs.kde_scheme.window.inactive.foreground_normal]
-# docs/facts/kde/inputs.toml:3605
+# docs/facts/kde/inputs.toml:4997
 light = "= input.kde_scheme.window.foreground_normal"
-# docs/facts/kde/inputs.toml:3605
+# docs/facts/kde/inputs.toml:4997
 dark = "= input.kde_scheme.window.foreground_normal"
 
 [inputs.kde_scheme.window.inactive.foreground_inactive]
-# docs/facts/kde/inputs.toml:3625
+# docs/facts/kde/inputs.toml:5017
 light = "= input.kde_scheme.window.foreground_inactive"
-# docs/facts/kde/inputs.toml:3625
+# docs/facts/kde/inputs.toml:5017
 dark = "= input.kde_scheme.window.foreground_inactive"
 
 [inputs.kde_scheme.window.inactive.foreground_active]
-# docs/facts/kde/inputs.toml:3645
+# docs/facts/kde/inputs.toml:5037
 light = "= input.kde_scheme.window.foreground_active"
-# docs/facts/kde/inputs.toml:3645
+# docs/facts/kde/inputs.toml:5037
 dark = "= input.kde_scheme.window.foreground_active"
 
 [inputs.kde_scheme.window.inactive.foreground_link]
-# docs/facts/kde/inputs.toml:3665
+# docs/facts/kde/inputs.toml:5057
 light = "= input.kde_scheme.window.foreground_link"
-# docs/facts/kde/inputs.toml:3665
+# docs/facts/kde/inputs.toml:5057
 dark = "= input.kde_scheme.window.foreground_link"
 
 [inputs.kde_scheme.window.inactive.foreground_visited]
-# docs/facts/kde/inputs.toml:3685
+# docs/facts/kde/inputs.toml:5077
 light = "= input.kde_scheme.window.foreground_visited"
-# docs/facts/kde/inputs.toml:3685
+# docs/facts/kde/inputs.toml:5077
 dark = "= input.kde_scheme.window.foreground_visited"
 
 [inputs.kde_scheme.window.inactive.foreground_negative]
-# docs/facts/kde/inputs.toml:3705
+# docs/facts/kde/inputs.toml:5097
 light = "= input.kde_scheme.window.foreground_negative"
-# docs/facts/kde/inputs.toml:3705
+# docs/facts/kde/inputs.toml:5097
 dark = "= input.kde_scheme.window.foreground_negative"
 
 [inputs.kde_scheme.window.inactive.foreground_neutral]
-# docs/facts/kde/inputs.toml:3725
+# docs/facts/kde/inputs.toml:5117
 light = "= input.kde_scheme.window.foreground_neutral"
-# docs/facts/kde/inputs.toml:3725
+# docs/facts/kde/inputs.toml:5117
 dark = "= input.kde_scheme.window.foreground_neutral"
 
 [inputs.kde_scheme.window.inactive.foreground_positive]
-# docs/facts/kde/inputs.toml:3745
+# docs/facts/kde/inputs.toml:5137
 light = "= input.kde_scheme.window.foreground_positive"
-# docs/facts/kde/inputs.toml:3745
+# docs/facts/kde/inputs.toml:5137
 dark = "= input.kde_scheme.window.foreground_positive"
 
 [inputs.kde_scheme.window.inactive.decoration_focus]
-# docs/facts/kde/inputs.toml:3765
+# docs/facts/kde/inputs.toml:5157
 light = "= input.kde_scheme.window.decoration_focus"
-# docs/facts/kde/inputs.toml:3765
+# docs/facts/kde/inputs.toml:5157
 dark = "= input.kde_scheme.window.decoration_focus"
 
 [inputs.kde_scheme.window.inactive.decoration_hover]
-# docs/facts/kde/inputs.toml:3785
+# docs/facts/kde/inputs.toml:5177
 light = "= input.kde_scheme.window.decoration_hover"
-# docs/facts/kde/inputs.toml:3785
+# docs/facts/kde/inputs.toml:5177
 dark = "= input.kde_scheme.window.decoration_hover"
 
 [inputs.inactive.button.background_normal]
-# docs/facts/kde/inputs.toml:3805
+# docs/facts/kde/inputs.toml:5197
 light = "= input.kde_scheme.button.inactive.background_normal"
-# docs/facts/kde/inputs.toml:3805
+# docs/facts/kde/inputs.toml:5197
 dark = "= input.kde_scheme.button.inactive.background_normal"
 
 [inputs.inactive.button.background_alternate]
-# docs/facts/kde/inputs.toml:3820
+# docs/facts/kde/inputs.toml:5212
 light = "= input.kde_scheme.button.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:3820
+# docs/facts/kde/inputs.toml:5212
 dark = "= input.kde_scheme.button.inactive.background_alternate"
 
 [inputs.inactive.button.foreground_normal]
-# docs/facts/kde/inputs.toml:3835
+# docs/facts/kde/inputs.toml:5227
 light = "= input.kde_scheme.button.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:3835
+# docs/facts/kde/inputs.toml:5227
 dark = "= input.kde_scheme.button.inactive.foreground_normal"
 
 [inputs.inactive.button.foreground_inactive]
-# docs/facts/kde/inputs.toml:3850
+# docs/facts/kde/inputs.toml:5242
 light = "= input.kde_scheme.button.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:3850
+# docs/facts/kde/inputs.toml:5242
 dark = "= input.kde_scheme.button.inactive.foreground_inactive"
 
 [inputs.inactive.button.foreground_active]
-# docs/facts/kde/inputs.toml:3865
+# docs/facts/kde/inputs.toml:5257
 light = "= input.kde_scheme.button.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:3865
+# docs/facts/kde/inputs.toml:5257
 dark = "= input.kde_scheme.button.inactive.foreground_active"
 
 [inputs.inactive.button.foreground_link]
-# docs/facts/kde/inputs.toml:3880
+# docs/facts/kde/inputs.toml:5272
 light = "= input.kde_scheme.button.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:3880
+# docs/facts/kde/inputs.toml:5272
 dark = "= input.kde_scheme.button.inactive.foreground_link"
 
 [inputs.inactive.button.foreground_visited]
-# docs/facts/kde/inputs.toml:3895
+# docs/facts/kde/inputs.toml:5287
 light = "= input.kde_scheme.button.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:3895
+# docs/facts/kde/inputs.toml:5287
 dark = "= input.kde_scheme.button.inactive.foreground_visited"
 
 [inputs.inactive.button.foreground_negative]
-# docs/facts/kde/inputs.toml:3910
+# docs/facts/kde/inputs.toml:5302
 light = "= input.kde_scheme.button.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:3910
+# docs/facts/kde/inputs.toml:5302
 dark = "= input.kde_scheme.button.inactive.foreground_negative"
 
 [inputs.inactive.button.foreground_neutral]
-# docs/facts/kde/inputs.toml:3925
+# docs/facts/kde/inputs.toml:5317
 light = "= input.kde_scheme.button.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:3925
+# docs/facts/kde/inputs.toml:5317
 dark = "= input.kde_scheme.button.inactive.foreground_neutral"
 
 [inputs.inactive.button.foreground_positive]
-# docs/facts/kde/inputs.toml:3940
+# docs/facts/kde/inputs.toml:5332
 light = "= input.kde_scheme.button.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:3940
+# docs/facts/kde/inputs.toml:5332
 dark = "= input.kde_scheme.button.inactive.foreground_positive"
 
 [inputs.inactive.button.decoration_focus]
-# docs/facts/kde/inputs.toml:3955
+# docs/facts/kde/inputs.toml:5347
 light = "= input.kde_scheme.button.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:3955
+# docs/facts/kde/inputs.toml:5347
 dark = "= input.kde_scheme.button.inactive.decoration_focus"
 
 [inputs.inactive.button.decoration_hover]
-# docs/facts/kde/inputs.toml:3970
+# docs/facts/kde/inputs.toml:5362
 light = "= input.kde_scheme.button.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:3970
+# docs/facts/kde/inputs.toml:5362
 dark = "= input.kde_scheme.button.inactive.decoration_hover"
 
 [inputs.inactive.complementary.background_normal]
-# docs/facts/kde/inputs.toml:3985
+# docs/facts/kde/inputs.toml:5377
 light = "= input.kde_scheme.complementary.inactive.background_normal"
-# docs/facts/kde/inputs.toml:3985
+# docs/facts/kde/inputs.toml:5377
 dark = "= input.kde_scheme.complementary.inactive.background_normal"
 
 [inputs.inactive.complementary.background_alternate]
-# docs/facts/kde/inputs.toml:4000
+# docs/facts/kde/inputs.toml:5392
 light = "= input.kde_scheme.complementary.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:4000
+# docs/facts/kde/inputs.toml:5392
 dark = "= input.kde_scheme.complementary.inactive.background_alternate"
 
 [inputs.inactive.complementary.foreground_normal]
-# docs/facts/kde/inputs.toml:4015
+# docs/facts/kde/inputs.toml:5407
 light = "= input.kde_scheme.complementary.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:4015
+# docs/facts/kde/inputs.toml:5407
 dark = "= input.kde_scheme.complementary.inactive.foreground_normal"
 
 [inputs.inactive.complementary.foreground_inactive]
-# docs/facts/kde/inputs.toml:4030
+# docs/facts/kde/inputs.toml:5422
 light = "= input.kde_scheme.complementary.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:4030
+# docs/facts/kde/inputs.toml:5422
 dark = "= input.kde_scheme.complementary.inactive.foreground_inactive"
 
 [inputs.inactive.complementary.foreground_active]
-# docs/facts/kde/inputs.toml:4045
+# docs/facts/kde/inputs.toml:5437
 light = "= input.kde_scheme.complementary.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:4045
+# docs/facts/kde/inputs.toml:5437
 dark = "= input.kde_scheme.complementary.inactive.foreground_active"
 
 [inputs.inactive.complementary.foreground_link]
-# docs/facts/kde/inputs.toml:4060
+# docs/facts/kde/inputs.toml:5452
 light = "= input.kde_scheme.complementary.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:4060
+# docs/facts/kde/inputs.toml:5452
 dark = "= input.kde_scheme.complementary.inactive.foreground_link"
 
 [inputs.inactive.complementary.foreground_visited]
-# docs/facts/kde/inputs.toml:4075
+# docs/facts/kde/inputs.toml:5467
 light = "= input.kde_scheme.complementary.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:4075
+# docs/facts/kde/inputs.toml:5467
 dark = "= input.kde_scheme.complementary.inactive.foreground_visited"
 
 [inputs.inactive.complementary.foreground_negative]
-# docs/facts/kde/inputs.toml:4090
+# docs/facts/kde/inputs.toml:5482
 light = "= input.kde_scheme.complementary.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:4090
+# docs/facts/kde/inputs.toml:5482
 dark = "= input.kde_scheme.complementary.inactive.foreground_negative"
 
 [inputs.inactive.complementary.foreground_neutral]
-# docs/facts/kde/inputs.toml:4105
+# docs/facts/kde/inputs.toml:5497
 light = "= input.kde_scheme.complementary.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:4105
+# docs/facts/kde/inputs.toml:5497
 dark = "= input.kde_scheme.complementary.inactive.foreground_neutral"
 
 [inputs.inactive.complementary.foreground_positive]
-# docs/facts/kde/inputs.toml:4120
+# docs/facts/kde/inputs.toml:5512
 light = "= input.kde_scheme.complementary.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:4120
+# docs/facts/kde/inputs.toml:5512
 dark = "= input.kde_scheme.complementary.inactive.foreground_positive"
 
 [inputs.inactive.complementary.decoration_focus]
-# docs/facts/kde/inputs.toml:4135
+# docs/facts/kde/inputs.toml:5527
 light = "= input.kde_scheme.complementary.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:4135
+# docs/facts/kde/inputs.toml:5527
 dark = "= input.kde_scheme.complementary.inactive.decoration_focus"
 
 [inputs.inactive.complementary.decoration_hover]
-# docs/facts/kde/inputs.toml:4150
+# docs/facts/kde/inputs.toml:5542
 light = "= input.kde_scheme.complementary.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:4150
+# docs/facts/kde/inputs.toml:5542
 dark = "= input.kde_scheme.complementary.inactive.decoration_hover"
 
 [inputs.inactive.header.background_normal]
-# docs/facts/kde/inputs.toml:4168
+# docs/facts/kde/inputs.toml:5560
 light = "= input.kde_scheme.window.background_normal"
-# docs/facts/kde/inputs.toml:4168
+# docs/facts/kde/inputs.toml:5560
 dark = "= input.kde_scheme.window.background_normal"
 
 [inputs.inactive.header.background_alternate]
-# docs/facts/kde/inputs.toml:4188
+# docs/facts/kde/inputs.toml:5580
 light = "= input.kde_scheme.window.background_alternate"
-# docs/facts/kde/inputs.toml:4188
+# docs/facts/kde/inputs.toml:5580
 dark = "= input.kde_scheme.window.background_alternate"
 
 [inputs.inactive.header.foreground_normal]
-# docs/facts/kde/inputs.toml:4208
+# docs/facts/kde/inputs.toml:5600
 light = "= input.kde_scheme.window.foreground_normal"
-# docs/facts/kde/inputs.toml:4208
+# docs/facts/kde/inputs.toml:5600
 dark = "= input.kde_scheme.window.foreground_normal"
 
 [inputs.inactive.header.foreground_inactive]
-# docs/facts/kde/inputs.toml:4228
+# docs/facts/kde/inputs.toml:5620
 light = "= input.kde_scheme.window.foreground_inactive"
-# docs/facts/kde/inputs.toml:4228
+# docs/facts/kde/inputs.toml:5620
 dark = "= input.kde_scheme.window.foreground_inactive"
 
 [inputs.inactive.header.foreground_active]
-# docs/facts/kde/inputs.toml:4248
+# docs/facts/kde/inputs.toml:5640
 light = "= input.kde_scheme.window.foreground_active"
-# docs/facts/kde/inputs.toml:4248
+# docs/facts/kde/inputs.toml:5640
 dark = "= input.kde_scheme.window.foreground_active"
 
 [inputs.inactive.header.foreground_link]
-# docs/facts/kde/inputs.toml:4268
+# docs/facts/kde/inputs.toml:5660
 light = "= input.kde_scheme.window.foreground_link"
-# docs/facts/kde/inputs.toml:4268
+# docs/facts/kde/inputs.toml:5660
 dark = "= input.kde_scheme.window.foreground_link"
 
 [inputs.inactive.header.foreground_visited]
-# docs/facts/kde/inputs.toml:4288
+# docs/facts/kde/inputs.toml:5680
 light = "= input.kde_scheme.window.foreground_visited"
-# docs/facts/kde/inputs.toml:4288
+# docs/facts/kde/inputs.toml:5680
 dark = "= input.kde_scheme.window.foreground_visited"
 
 [inputs.inactive.header.foreground_negative]
-# docs/facts/kde/inputs.toml:4308
+# docs/facts/kde/inputs.toml:5700
 light = "= input.kde_scheme.window.foreground_negative"
-# docs/facts/kde/inputs.toml:4308
+# docs/facts/kde/inputs.toml:5700
 dark = "= input.kde_scheme.window.foreground_negative"
 
 [inputs.inactive.header.foreground_neutral]
-# docs/facts/kde/inputs.toml:4328
+# docs/facts/kde/inputs.toml:5720
 light = "= input.kde_scheme.window.foreground_neutral"
-# docs/facts/kde/inputs.toml:4328
+# docs/facts/kde/inputs.toml:5720
 dark = "= input.kde_scheme.window.foreground_neutral"
 
 [inputs.inactive.header.foreground_positive]
-# docs/facts/kde/inputs.toml:4348
+# docs/facts/kde/inputs.toml:5740
 light = "= input.kde_scheme.window.foreground_positive"
-# docs/facts/kde/inputs.toml:4348
+# docs/facts/kde/inputs.toml:5740
 dark = "= input.kde_scheme.window.foreground_positive"
 
 [inputs.inactive.header.decoration_focus]
-# docs/facts/kde/inputs.toml:4368
+# docs/facts/kde/inputs.toml:5760
 light = "= input.kde_scheme.window.decoration_focus"
-# docs/facts/kde/inputs.toml:4368
+# docs/facts/kde/inputs.toml:5760
 dark = "= input.kde_scheme.window.decoration_focus"
 
 [inputs.inactive.header.decoration_hover]
-# docs/facts/kde/inputs.toml:4388
+# docs/facts/kde/inputs.toml:5780
 light = "= input.kde_scheme.window.decoration_hover"
-# docs/facts/kde/inputs.toml:4388
+# docs/facts/kde/inputs.toml:5780
 dark = "= input.kde_scheme.window.decoration_hover"
 
 [inputs.inactive.selection.background_normal]
-# docs/facts/kde/inputs.toml:4408
+# docs/facts/kde/inputs.toml:5800
 light = "= input.kde_scheme.selection.inactive.background_normal"
-# docs/facts/kde/inputs.toml:4408
+# docs/facts/kde/inputs.toml:5800
 dark = "= input.kde_scheme.selection.inactive.background_normal"
 
 [inputs.inactive.selection.background_alternate]
-# docs/facts/kde/inputs.toml:4423
+# docs/facts/kde/inputs.toml:5815
 light = "= input.kde_scheme.selection.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:4423
+# docs/facts/kde/inputs.toml:5815
 dark = "= input.kde_scheme.selection.inactive.background_alternate"
 
 [inputs.inactive.selection.foreground_normal]
-# docs/facts/kde/inputs.toml:4438
+# docs/facts/kde/inputs.toml:5830
 light = "= input.kde_scheme.selection.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:4438
+# docs/facts/kde/inputs.toml:5830
 dark = "= input.kde_scheme.selection.inactive.foreground_normal"
 
 [inputs.inactive.selection.foreground_inactive]
-# docs/facts/kde/inputs.toml:4453
+# docs/facts/kde/inputs.toml:5845
 light = "= input.kde_scheme.selection.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:4453
+# docs/facts/kde/inputs.toml:5845
 dark = "= input.kde_scheme.selection.inactive.foreground_inactive"
 
 [inputs.inactive.selection.foreground_active]
-# docs/facts/kde/inputs.toml:4468
+# docs/facts/kde/inputs.toml:5860
 light = "= input.kde_scheme.selection.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:4468
+# docs/facts/kde/inputs.toml:5860
 dark = "= input.kde_scheme.selection.inactive.foreground_active"
 
 [inputs.inactive.selection.foreground_link]
-# docs/facts/kde/inputs.toml:4483
+# docs/facts/kde/inputs.toml:5875
 light = "= input.kde_scheme.selection.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:4483
+# docs/facts/kde/inputs.toml:5875
 dark = "= input.kde_scheme.selection.inactive.foreground_link"
 
 [inputs.inactive.selection.foreground_visited]
-# docs/facts/kde/inputs.toml:4498
+# docs/facts/kde/inputs.toml:5890
 light = "= input.kde_scheme.selection.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:4498
+# docs/facts/kde/inputs.toml:5890
 dark = "= input.kde_scheme.selection.inactive.foreground_visited"
 
 [inputs.inactive.selection.foreground_negative]
-# docs/facts/kde/inputs.toml:4513
+# docs/facts/kde/inputs.toml:5905
 light = "= input.kde_scheme.selection.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:4513
+# docs/facts/kde/inputs.toml:5905
 dark = "= input.kde_scheme.selection.inactive.foreground_negative"
 
 [inputs.inactive.selection.foreground_neutral]
-# docs/facts/kde/inputs.toml:4528
+# docs/facts/kde/inputs.toml:5920
 light = "= input.kde_scheme.selection.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:4528
+# docs/facts/kde/inputs.toml:5920
 dark = "= input.kde_scheme.selection.inactive.foreground_neutral"
 
 [inputs.inactive.selection.foreground_positive]
-# docs/facts/kde/inputs.toml:4543
+# docs/facts/kde/inputs.toml:5935
 light = "= input.kde_scheme.selection.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:4543
+# docs/facts/kde/inputs.toml:5935
 dark = "= input.kde_scheme.selection.inactive.foreground_positive"
 
 [inputs.inactive.selection.decoration_focus]
-# docs/facts/kde/inputs.toml:4558
+# docs/facts/kde/inputs.toml:5950
 light = "= input.kde_scheme.selection.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:4558
+# docs/facts/kde/inputs.toml:5950
 dark = "= input.kde_scheme.selection.inactive.decoration_focus"
 
 [inputs.inactive.selection.decoration_hover]
-# docs/facts/kde/inputs.toml:4573
+# docs/facts/kde/inputs.toml:5965
 light = "= input.kde_scheme.selection.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:4573
+# docs/facts/kde/inputs.toml:5965
 dark = "= input.kde_scheme.selection.inactive.decoration_hover"
 
 [inputs.inactive.tooltip.background_normal]
-# docs/facts/kde/inputs.toml:4588
+# docs/facts/kde/inputs.toml:5980
 light = "= input.kde_scheme.tooltip.inactive.background_normal"
-# docs/facts/kde/inputs.toml:4588
+# docs/facts/kde/inputs.toml:5980
 dark = "= input.kde_scheme.tooltip.inactive.background_normal"
 
 [inputs.inactive.tooltip.background_alternate]
-# docs/facts/kde/inputs.toml:4603
+# docs/facts/kde/inputs.toml:5995
 light = "= input.kde_scheme.tooltip.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:4603
+# docs/facts/kde/inputs.toml:5995
 dark = "= input.kde_scheme.tooltip.inactive.background_alternate"
 
 [inputs.inactive.tooltip.foreground_normal]
-# docs/facts/kde/inputs.toml:4618
+# docs/facts/kde/inputs.toml:6010
 light = "= input.kde_scheme.tooltip.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:4618
+# docs/facts/kde/inputs.toml:6010
 dark = "= input.kde_scheme.tooltip.inactive.foreground_normal"
 
 [inputs.inactive.tooltip.foreground_inactive]
-# docs/facts/kde/inputs.toml:4633
+# docs/facts/kde/inputs.toml:6025
 light = "= input.kde_scheme.tooltip.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:4633
+# docs/facts/kde/inputs.toml:6025
 dark = "= input.kde_scheme.tooltip.inactive.foreground_inactive"
 
 [inputs.inactive.tooltip.foreground_active]
-# docs/facts/kde/inputs.toml:4648
+# docs/facts/kde/inputs.toml:6040
 light = "= input.kde_scheme.tooltip.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:4648
+# docs/facts/kde/inputs.toml:6040
 dark = "= input.kde_scheme.tooltip.inactive.foreground_active"
 
 [inputs.inactive.tooltip.foreground_link]
-# docs/facts/kde/inputs.toml:4663
+# docs/facts/kde/inputs.toml:6055
 light = "= input.kde_scheme.tooltip.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:4663
+# docs/facts/kde/inputs.toml:6055
 dark = "= input.kde_scheme.tooltip.inactive.foreground_link"
 
 [inputs.inactive.tooltip.foreground_visited]
-# docs/facts/kde/inputs.toml:4678
+# docs/facts/kde/inputs.toml:6070
 light = "= input.kde_scheme.tooltip.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:4678
+# docs/facts/kde/inputs.toml:6070
 dark = "= input.kde_scheme.tooltip.inactive.foreground_visited"
 
 [inputs.inactive.tooltip.foreground_negative]
-# docs/facts/kde/inputs.toml:4693
+# docs/facts/kde/inputs.toml:6085
 light = "= input.kde_scheme.tooltip.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:4693
+# docs/facts/kde/inputs.toml:6085
 dark = "= input.kde_scheme.tooltip.inactive.foreground_negative"
 
 [inputs.inactive.tooltip.foreground_neutral]
-# docs/facts/kde/inputs.toml:4708
+# docs/facts/kde/inputs.toml:6100
 light = "= input.kde_scheme.tooltip.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:4708
+# docs/facts/kde/inputs.toml:6100
 dark = "= input.kde_scheme.tooltip.inactive.foreground_neutral"
 
 [inputs.inactive.tooltip.foreground_positive]
-# docs/facts/kde/inputs.toml:4723
+# docs/facts/kde/inputs.toml:6115
 light = "= input.kde_scheme.tooltip.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:4723
+# docs/facts/kde/inputs.toml:6115
 dark = "= input.kde_scheme.tooltip.inactive.foreground_positive"
 
 [inputs.inactive.tooltip.decoration_focus]
-# docs/facts/kde/inputs.toml:4738
+# docs/facts/kde/inputs.toml:6130
 light = "= input.kde_scheme.tooltip.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:4738
+# docs/facts/kde/inputs.toml:6130
 dark = "= input.kde_scheme.tooltip.inactive.decoration_focus"
 
 [inputs.inactive.tooltip.decoration_hover]
-# docs/facts/kde/inputs.toml:4753
+# docs/facts/kde/inputs.toml:6145
 light = "= input.kde_scheme.tooltip.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:4753
+# docs/facts/kde/inputs.toml:6145
 dark = "= input.kde_scheme.tooltip.inactive.decoration_hover"
 
 [inputs.inactive.view.background_normal]
-# docs/facts/kde/inputs.toml:4768
+# docs/facts/kde/inputs.toml:6160
 light = "= input.kde_scheme.view.inactive.background_normal"
-# docs/facts/kde/inputs.toml:4768
+# docs/facts/kde/inputs.toml:6160
 dark = "= input.kde_scheme.view.inactive.background_normal"
 
 [inputs.inactive.view.background_alternate]
-# docs/facts/kde/inputs.toml:4783
+# docs/facts/kde/inputs.toml:6175
 light = "= input.kde_scheme.view.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:4783
+# docs/facts/kde/inputs.toml:6175
 dark = "= input.kde_scheme.view.inactive.background_alternate"
 
 [inputs.inactive.view.foreground_normal]
-# docs/facts/kde/inputs.toml:4798
+# docs/facts/kde/inputs.toml:6190
 light = "= input.kde_scheme.view.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:4798
+# docs/facts/kde/inputs.toml:6190
 dark = "= input.kde_scheme.view.inactive.foreground_normal"
 
 [inputs.inactive.view.foreground_inactive]
-# docs/facts/kde/inputs.toml:4813
+# docs/facts/kde/inputs.toml:6205
 light = "= input.kde_scheme.view.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:4813
+# docs/facts/kde/inputs.toml:6205
 dark = "= input.kde_scheme.view.inactive.foreground_inactive"
 
 [inputs.inactive.view.foreground_active]
-# docs/facts/kde/inputs.toml:4828
+# docs/facts/kde/inputs.toml:6220
 light = "= input.kde_scheme.view.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:4828
+# docs/facts/kde/inputs.toml:6220
 dark = "= input.kde_scheme.view.inactive.foreground_active"
 
 [inputs.inactive.view.foreground_link]
-# docs/facts/kde/inputs.toml:4843
+# docs/facts/kde/inputs.toml:6235
 light = "= input.kde_scheme.view.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:4843
+# docs/facts/kde/inputs.toml:6235
 dark = "= input.kde_scheme.view.inactive.foreground_link"
 
 [inputs.inactive.view.foreground_visited]
-# docs/facts/kde/inputs.toml:4858
+# docs/facts/kde/inputs.toml:6250
 light = "= input.kde_scheme.view.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:4858
+# docs/facts/kde/inputs.toml:6250
 dark = "= input.kde_scheme.view.inactive.foreground_visited"
 
 [inputs.inactive.view.foreground_negative]
-# docs/facts/kde/inputs.toml:4873
+# docs/facts/kde/inputs.toml:6265
 light = "= input.kde_scheme.view.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:4873
+# docs/facts/kde/inputs.toml:6265
 dark = "= input.kde_scheme.view.inactive.foreground_negative"
 
 [inputs.inactive.view.foreground_neutral]
-# docs/facts/kde/inputs.toml:4888
+# docs/facts/kde/inputs.toml:6280
 light = "= input.kde_scheme.view.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:4888
+# docs/facts/kde/inputs.toml:6280
 dark = "= input.kde_scheme.view.inactive.foreground_neutral"
 
 [inputs.inactive.view.foreground_positive]
-# docs/facts/kde/inputs.toml:4903
+# docs/facts/kde/inputs.toml:6295
 light = "= input.kde_scheme.view.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:4903
+# docs/facts/kde/inputs.toml:6295
 dark = "= input.kde_scheme.view.inactive.foreground_positive"
 
 [inputs.inactive.view.decoration_focus]
-# docs/facts/kde/inputs.toml:4918
+# docs/facts/kde/inputs.toml:6310
 light = "= input.kde_scheme.view.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:4918
+# docs/facts/kde/inputs.toml:6310
 dark = "= input.kde_scheme.view.inactive.decoration_focus"
 
 [inputs.inactive.view.decoration_hover]
-# docs/facts/kde/inputs.toml:4933
+# docs/facts/kde/inputs.toml:6325
 light = "= input.kde_scheme.view.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:4933
+# docs/facts/kde/inputs.toml:6325
 dark = "= input.kde_scheme.view.inactive.decoration_hover"
 
 [inputs.inactive.window.background_normal]
-# docs/facts/kde/inputs.toml:4948
+# docs/facts/kde/inputs.toml:6340
 light = "= input.kde_scheme.window.inactive.background_normal"
-# docs/facts/kde/inputs.toml:4948
+# docs/facts/kde/inputs.toml:6340
 dark = "= input.kde_scheme.window.inactive.background_normal"
 
 [inputs.inactive.window.background_alternate]
-# docs/facts/kde/inputs.toml:4963
+# docs/facts/kde/inputs.toml:6355
 light = "= input.kde_scheme.window.inactive.background_alternate"
-# docs/facts/kde/inputs.toml:4963
+# docs/facts/kde/inputs.toml:6355
 dark = "= input.kde_scheme.window.inactive.background_alternate"
 
 [inputs.inactive.window.foreground_normal]
-# docs/facts/kde/inputs.toml:4978
+# docs/facts/kde/inputs.toml:6370
 light = "= input.kde_scheme.window.inactive.foreground_normal"
-# docs/facts/kde/inputs.toml:4978
+# docs/facts/kde/inputs.toml:6370
 dark = "= input.kde_scheme.window.inactive.foreground_normal"
 
 [inputs.inactive.window.foreground_inactive]
-# docs/facts/kde/inputs.toml:4993
+# docs/facts/kde/inputs.toml:6385
 light = "= input.kde_scheme.window.inactive.foreground_inactive"
-# docs/facts/kde/inputs.toml:4993
+# docs/facts/kde/inputs.toml:6385
 dark = "= input.kde_scheme.window.inactive.foreground_inactive"
 
 [inputs.inactive.window.foreground_active]
-# docs/facts/kde/inputs.toml:5008
+# docs/facts/kde/inputs.toml:6400
 light = "= input.kde_scheme.window.inactive.foreground_active"
-# docs/facts/kde/inputs.toml:5008
+# docs/facts/kde/inputs.toml:6400
 dark = "= input.kde_scheme.window.inactive.foreground_active"
 
 [inputs.inactive.window.foreground_link]
-# docs/facts/kde/inputs.toml:5023
+# docs/facts/kde/inputs.toml:6415
 light = "= input.kde_scheme.window.inactive.foreground_link"
-# docs/facts/kde/inputs.toml:5023
+# docs/facts/kde/inputs.toml:6415
 dark = "= input.kde_scheme.window.inactive.foreground_link"
 
 [inputs.inactive.window.foreground_visited]
-# docs/facts/kde/inputs.toml:5038
+# docs/facts/kde/inputs.toml:6430
 light = "= input.kde_scheme.window.inactive.foreground_visited"
-# docs/facts/kde/inputs.toml:5038
+# docs/facts/kde/inputs.toml:6430
 dark = "= input.kde_scheme.window.inactive.foreground_visited"
 
 [inputs.inactive.window.foreground_negative]
-# docs/facts/kde/inputs.toml:5053
+# docs/facts/kde/inputs.toml:6445
 light = "= input.kde_scheme.window.inactive.foreground_negative"
-# docs/facts/kde/inputs.toml:5053
+# docs/facts/kde/inputs.toml:6445
 dark = "= input.kde_scheme.window.inactive.foreground_negative"
 
 [inputs.inactive.window.foreground_neutral]
-# docs/facts/kde/inputs.toml:5068
+# docs/facts/kde/inputs.toml:6460
 light = "= input.kde_scheme.window.inactive.foreground_neutral"
-# docs/facts/kde/inputs.toml:5068
+# docs/facts/kde/inputs.toml:6460
 dark = "= input.kde_scheme.window.inactive.foreground_neutral"
 
 [inputs.inactive.window.foreground_positive]
-# docs/facts/kde/inputs.toml:5083
+# docs/facts/kde/inputs.toml:6475
 light = "= input.kde_scheme.window.inactive.foreground_positive"
-# docs/facts/kde/inputs.toml:5083
+# docs/facts/kde/inputs.toml:6475
 dark = "= input.kde_scheme.window.inactive.foreground_positive"
 
 [inputs.inactive.window.decoration_focus]
-# docs/facts/kde/inputs.toml:5098
+# docs/facts/kde/inputs.toml:6490
 light = "= input.kde_scheme.window.inactive.decoration_focus"
-# docs/facts/kde/inputs.toml:5098
+# docs/facts/kde/inputs.toml:6490
 dark = "= input.kde_scheme.window.inactive.decoration_focus"
 
 [inputs.inactive.window.decoration_hover]
-# docs/facts/kde/inputs.toml:5113
+# docs/facts/kde/inputs.toml:6505
 light = "= input.kde_scheme.window.inactive.decoration_hover"
-# docs/facts/kde/inputs.toml:5113
+# docs/facts/kde/inputs.toml:6505
 dark = "= input.kde_scheme.window.inactive.decoration_hover"
 
 [colors.light.surfaces.button]
@@ -3510,9 +3510,9 @@ layout.small_spacing = 4
 layout.medium_spacing = 6
 # docs/facts/kde/tokens.toml:10713
 layout.large_spacing = 8
-# docs/facts/kde/tokens.toml:11171
+# docs/facts/kde/tokens.toml:11245
 color.contrast = 4
-# docs/facts/kde/tokens.toml:11198
+# docs/facts/kde/tokens.toml:11272
 color.frame_contrast = 0.2
 
 [tokens.focus]
@@ -3572,7 +3572,7 @@ popup_very_large = [{ x_px = 0, y_px = "= add(6px, 0px)", blur_px = 24, spread_p
 [tokens]
 # docs/facts/kde/tokens.toml:1531
 size_classes = {}
-# docs/facts/kde/tokens.toml:11228
+# docs/facts/kde/tokens.toml:11302
 material = "absent"
 
 [tokens.behavior]
@@ -4802,41 +4802,41 @@ mirroring = { nav_back = { swap_with = "nav_forward" }, nav_forward = { swap_wit
 animated_visuals = {}
 
 [tokens.kde]
-# docs/facts/kde/tokens.toml:10774
+# docs/facts/kde/tokens.toml:10778
 disabled.intensity = "darken"
-# docs/facts/kde/tokens.toml:10799
+# docs/facts/kde/tokens.toml:10808
 disabled.intensity_amount = 0.1
-# docs/facts/kde/tokens.toml:10819
+# docs/facts/kde/tokens.toml:10833
 disabled.color = "none"
-# docs/facts/kde/tokens.toml:10844
+# docs/facts/kde/tokens.toml:10863
 disabled.color_amount = 0.0
-# docs/facts/kde/tokens.toml:10864
+# docs/facts/kde/tokens.toml:10888
 disabled.contrast = "fade"
-# docs/facts/kde/tokens.toml:10889
+# docs/facts/kde/tokens.toml:10918
 disabled.contrast_amount = 0.65
-# docs/facts/kde/tokens.toml:10909
+# docs/facts/kde/tokens.toml:10943
 disabled.color_color = "#383838"
-# docs/facts/kde/tokens.toml:10929
+# docs/facts/kde/tokens.toml:10968
 inactive.intensity = "none"
-# docs/facts/kde/tokens.toml:10954
+# docs/facts/kde/tokens.toml:10998
 inactive.intensity_amount = 0.0
-# docs/facts/kde/tokens.toml:10974
+# docs/facts/kde/tokens.toml:11023
 inactive.color = "fade"
-# docs/facts/kde/tokens.toml:10999
+# docs/facts/kde/tokens.toml:11053
 inactive.color_amount = 0.025
-# docs/facts/kde/tokens.toml:11019
+# docs/facts/kde/tokens.toml:11078
 inactive.contrast = "tint"
-# docs/facts/kde/tokens.toml:11044
+# docs/facts/kde/tokens.toml:11108
 inactive.contrast_amount = 0.1
-# docs/facts/kde/tokens.toml:11064
+# docs/facts/kde/tokens.toml:11133
 inactive.color_color = "#706f6e"
-# docs/facts/kde/tokens.toml:11084
+# docs/facts/kde/tokens.toml:11158
 inactive_enabled = false
-# docs/facts/kde/tokens.toml:11104
+# docs/facts/kde/tokens.toml:11178
 inactive_change_selection_color = true
-# docs/facts/kde/tokens.toml:11124
+# docs/facts/kde/tokens.toml:11198
 tint_factor = "none"
-# docs/facts/kde/tokens.toml:11146
+# docs/facts/kde/tokens.toml:11220
 titlebar_is_accent_colored = false
 
 [widgets.button.body]

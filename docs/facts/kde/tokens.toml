@@ -10770,6 +10770,10 @@ quote = "color = mix(color, vec4(vec3(dot(color.rgb, vec3(0.2126, 0.7152, 0.0722
 # ---- token.kde and token.params.color (S4.8, S4.6): KColorScheme's effects and contrast as Breeze's scheme files
 # state them, applyScheme() copying them into kdeglobals (colorsapplicator.cpp:311-359). Both files state the same.
 # Written by the KDE facts lane (roles half).
+# Each effect fact also cites KColorScheme's read of its key with the default it takes where the key is unset
+# (kcolorscheme@6.31.0 src/kcolorscheme.cpp:36-50: one default for the Disabled group, the other for the Inactive
+# group, read only where the group's Enable holds, by default true for Disabled and false for Inactive, :39-40; the
+# effect colour read only where the colour effect is on, :47-49, else the transparent black of :23).
 
 [[fact]]
 key = "token.kde.disabled.intensity"
@@ -10796,6 +10800,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:41"
+quote = "_effects[Intensity] = cfg.readEntry(\"IntensityEffect\", (int)(state == QPalette::Disabled ? IntensityDarken : IntensityNoEffect));"
+
 [[fact]]
 key = "token.kde.disabled.intensity_amount"
 value = 0.1
@@ -10815,6 +10824,11 @@ quote = "IntensityAmount=0.1"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:44"
+quote = "_amount[Intensity] = cfg.readEntry(\"IntensityAmount\", state == QPalette::Disabled ? 0.10 : 0.0);"
 
 [[fact]]
 key = "token.kde.disabled.color"
@@ -10841,6 +10855,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:42"
+quote = "_effects[Color] = cfg.readEntry(\"ColorEffect\", (int)(state == QPalette::Disabled ? ColorNoEffect : ColorDesaturate));"
+
 [[fact]]
 key = "token.kde.disabled.color_amount"
 value = 0.0
@@ -10860,6 +10879,11 @@ quote = "ColorAmount=0"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:45"
+quote = "_amount[Color] = cfg.readEntry(\"ColorAmount\", state == QPalette::Disabled ? 0.0 : -0.9);"
 
 [[fact]]
 key = "token.kde.disabled.contrast"
@@ -10886,6 +10910,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:43"
+quote = "_effects[Contrast] = cfg.readEntry(\"ContrastEffect\", (int)(state == QPalette::Disabled ? ContrastFade : ContrastTint));"
+
 [[fact]]
 key = "token.kde.disabled.contrast_amount"
 value = 0.65
@@ -10906,6 +10935,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:46"
+quote = "_amount[Contrast] = cfg.readEntry(\"ContrastAmount\", state == QPalette::Disabled ? 0.65 : 0.25);"
+
 [[fact]]
 key = "token.kde.disabled.color_color"
 value = "#383838"
@@ -10925,6 +10959,11 @@ quote = "Color=56,56,56"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:47-49"
+quote = "if (_effects[Color] > ColorNoEffect) { _color = cfg.readEntry(\"Color\", state == QPalette::Disabled ? QColor(56, 56, 56) : QColor(112, 111, 110)); }"
 
 [[fact]]
 key = "token.kde.inactive.intensity"
@@ -10951,6 +10990,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:41"
+quote = "_effects[Intensity] = cfg.readEntry(\"IntensityEffect\", (int)(state == QPalette::Disabled ? IntensityDarken : IntensityNoEffect));"
+
 [[fact]]
 key = "token.kde.inactive.intensity_amount"
 value = 0.0
@@ -10970,6 +11014,11 @@ quote = "IntensityAmount=0"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:44"
+quote = "_amount[Intensity] = cfg.readEntry(\"IntensityAmount\", state == QPalette::Disabled ? 0.10 : 0.0);"
 
 [[fact]]
 key = "token.kde.inactive.color"
@@ -10996,6 +11045,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:42"
+quote = "_effects[Color] = cfg.readEntry(\"ColorEffect\", (int)(state == QPalette::Disabled ? ColorNoEffect : ColorDesaturate));"
+
 [[fact]]
 key = "token.kde.inactive.color_amount"
 value = 0.025
@@ -11015,6 +11069,11 @@ quote = "ColorAmount=0.025"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:45"
+quote = "_amount[Color] = cfg.readEntry(\"ColorAmount\", state == QPalette::Disabled ? 0.0 : -0.9);"
 
 [[fact]]
 key = "token.kde.inactive.contrast"
@@ -11041,6 +11100,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:43"
+quote = "_effects[Contrast] = cfg.readEntry(\"ContrastEffect\", (int)(state == QPalette::Disabled ? ContrastFade : ContrastTint));"
+
 [[fact]]
 key = "token.kde.inactive.contrast_amount"
 value = 0.1
@@ -11061,6 +11125,11 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:46"
+quote = "_amount[Contrast] = cfg.readEntry(\"ContrastAmount\", state == QPalette::Disabled ? 0.65 : 0.25);"
+
 [[fact]]
 key = "token.kde.inactive.color_color"
 value = "#706f6e"
@@ -11080,6 +11149,11 @@ quote = "Color=112,111,110"
 kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:352-359"
 quote = "groupEffectOut.writeEntry(effect, groupEffectTheme.readEntry(effect), writeConfigFlag);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:47-49"
+quote = "if (_effects[Color] > ColorNoEffect) { _color = cfg.readEntry(\"Color\", state == QPalette::Disabled ? QColor(56, 56, 56) : QColor(112, 111, 110)); }"
 
 [[fact]]
 key = "token.kde.inactive_enabled"
