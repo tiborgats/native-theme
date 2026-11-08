@@ -4,7 +4,7 @@
 
 use super::qfont_from_string::{QtFontFields, qfont_from_string};
 
-use crate::blocks::text::{FontPatch, FontStyle, TextStylePatch};
+use crate::blocks::text::{FontPatch, FontStyle, TextCase, TextStylePatch};
 use crate::units::FontSize;
 use crate::value::Value;
 
@@ -29,11 +29,13 @@ const WEIGHTS: std::ops::RangeInclusive<i32> = 1..=1000;
 /// where it is not above zero and finite or, for a point size, where
 /// `font_dpi` is `None`; the weight, unpatched outside 1
 /// to 1000; the style (`QFont::Style`: 0 normal, 1 italic, 2 oblique; 3,
-/// no member, unpatched). The stretch, capitalisation, spacings, style
-/// name, features and axes are the readers unit's reads (the KDE trace's
-/// K3.46), not read here.
+/// no member, unpatched); and the capitalization, the style's `case`
+/// ([`text_case`]). The stretch, spacings, style name, features and axes
+/// are the readers unit's reads (the KDE trace's K3.46), not read here
+/// (S9.3's *The KDE reader's readings*, ADD-A140).
 pub(super) fn font_patch(text: &str, font_dpi: Option<f32>) -> Option<TextStylePatch> {
     let fields = qfont_from_string(text)?;
+    let case = fields.capitalization.and_then(text_case).map(Value::Stated);
     let font = FontPatch {
         family: fields
             .family
@@ -49,10 +51,30 @@ pub(super) fn font_patch(text: &str, font_dpi: Option<f32>) -> Option<TextStyleP
         style: fields.style.and_then(font_style).map(Value::Stated),
         ..FontPatch::default()
     };
-    (font != FontPatch::default()).then(|| TextStylePatch {
-        font: Some(font),
+    let font = (font != FontPatch::default()).then_some(font);
+    (font.is_some() || case.is_some()).then(|| TextStylePatch {
+        font,
+        case,
         ..TextStylePatch::default()
     })
+}
+
+/// Qt's capitalization integer as the style's `case`: each
+/// `QFont::Capitalization` but `MixedCase` the `TextCase` member of the
+/// same meaning, `AllUppercase` (1) `Upper`, `AllLowercase` (2) `Lower`,
+/// `SmallCaps` (3) and `Capitalize` (4) (`qtbase@6.12.0
+/// src/gui/text/qfont.h:99-105`, `qfont.cpp:1742-1746`); `MixedCase` (0),
+/// "the normal text rendering option where no capitalization change is
+/// applied", leaves the style's `case`, and so does a number no member
+/// holds.
+fn text_case(capitalization: u8) -> Option<TextCase> {
+    match capitalization {
+        1 => Some(TextCase::Upper),
+        2 => Some(TextCase::Lower),
+        3 => Some(TextCase::SmallCaps),
+        4 => Some(TextCase::Capitalize),
+        _ => None,
+    }
 }
 
 /// The size Qt set, in logical pixels: a pixel size as it is, a point size

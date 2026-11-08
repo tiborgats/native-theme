@@ -1,7 +1,7 @@
 //! The KDE reader (the `kde` feature, Linux): kdeglobals as KConfig cascades
-//! it, the colour scheme file it names, `kcmfonts` and the icon theme's
-//! sizes, into a [`ReaderState`] and a reader layer (S8, S9.3, S9.5); and
-//! the icon theme `detect` reports.
+//! it, the colour scheme file it names, the icon theme's sizes and, on X11,
+//! `Xft.dpi`, into a [`ReaderState`] and a reader layer (S8, S9.3, S9.5);
+//! and the icon theme `detect` reports.
 //!
 //! kdeglobals holds what Plasma's `applyScheme()` wrote from the scheme file
 //! and the accent: the results, which the reader states under the scheme it
@@ -14,14 +14,28 @@
 //! The accent, the conditions and the fonts are the layer's portable part,
 //! which any preset takes (S9.5).
 //!
+//! Every key the reader reads that its file leaves unset is read as KDE
+//! reads it there, never left to the layers beneath: a colour key and a
+//! colour effect as KColorScheme reads it, an icon size as KIconTheme does,
+//! each from the built-in defaults in `defaults.rs`, which cite their rows
+//! and the KDE facts that cite them (S9.1, S9.3, S4.8). A value is read as
+//! KConfig reads it: a bool true unless it is `false`, `no`, `off` or `0`,
+//! the empty value included; a number or colour KConfig cannot convert, an
+//! empty one included, its default.
+//!
 //! The kdeglobals files are `$XDG_CONFIG_DIRS/kdeglobals`
 //! (`/etc/xdg/kdeglobals`), then `kdedefaults/kdeglobals`, the defaults
 //! Plasma keeps beneath the user's file, then the user's `kdeglobals`, each
 //! in the user's config directory (`$XDG_CONFIG_HOME`, else `~/.config`).
 //!
-//! The font entries are parsed by the clean room's Qt font parser,
-//! `qfont_from_string` (the 0.8.0 plan's D10), its code placed in
-//! `src/cleanroom_readers/`, unchanged but for its panic-free arithmetic.
+//! Three helpers come from the clean room (the 0.8.0 plan's D10, S2.2's
+//! *The readers' helpers*), their code placed unchanged in
+//! `src/cleanroom_readers/`, each with an adapter of its own: the font
+//! entries are parsed by Qt's font parser, `qfont_from_string` (`font.rs`;
+//! unchanged but for its panic-free arithmetic); the scheme is Plasma's
+//! dark-or-light test, `kde_color_scheme` (`scheme.rs`); and the font DPI is
+//! the one Qt's xcb plugin forces from `Xft.dpi`, `qxcb_xft_dpi`
+//! (`font_dpi.rs`).
 //!
 //! # Sources
 //!
@@ -33,8 +47,6 @@
 //!   theme and the animation speed.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
-//! - `kcmfonts`: `forceFontDPI`, on X11, the file the fonts KCM writes it
-//!   to.
 //!
 //! # Sources not watched
 //!
@@ -44,14 +56,22 @@
 //! - `color-schemes/<ColorScheme>.colors` in the data directories: the
 //!   scheme file kdeglobals names, which a scheme's package writes; Plasma
 //!   applies a scheme by writing kdeglobals, which is watched.
-//! - `Xft.dpi` (`xrdb -query`): the rest of the font DPI, read from the X
+//! - `Xft.dpi` (`xrdb -query`): the font DPI on X11, read from the X
 //!   server, not from a settings file.
 //! - The icon theme's `index.theme`: its sizes, which the icon theme's
 //!   package writes.
 //! - `$XDG_SESSION_TYPE`: the session type, which decides whether the font
 //!   DPI is read, fixed for a session.
 
+mod defaults;
 mod font;
+mod font_dpi;
+#[path = "../cleanroom_readers/kde_color_scheme.rs"]
+#[allow(
+    clippy::integer_division,
+    reason = "the clean room's helper, placed unchanged (D10): Qt's qGray truncates by its definition, and the divisor is the constant 32"
+)]
+mod kde_color_scheme;
 #[path = "../cleanroom_readers/qfont_from_string.rs"]
 #[allow(
     dead_code,
@@ -62,8 +82,13 @@ mod font;
     reason = "the clean room's parser, its style kept as written (D10): a style lint only"
 )]
 mod qfont_from_string;
+#[path = "../cleanroom_readers/qxcb_xft_dpi.rs"]
+mod qxcb_xft_dpi;
+mod scheme;
 
 use configparser::ini::Ini;
+
+use defaults::SetDefaults;
 
 use crate::blocks::BlockPatch;
 use crate::blocks::icon::IconStylePatch;
@@ -92,16 +117,21 @@ use crate::value::{SchemeMap, SurfaceMap, Value};
 const UNSCALED: f32 = 1.0;
 
 /// The colour groups KColorScheme reads and `applyScheme()` writes, each the
-/// surface set `kde-breeze` declares for it and its group's name,
-/// `[Colors:<name>]` (`colorsapplicator.cpp:157-163`, S9.1).
-const COLOR_GROUPS: [(SurfaceSet, &str); 7] = [
-    (SurfaceSet::View, "View"),
-    (SurfaceSet::Window, "Window"),
-    (SurfaceSet::Button, "Button"),
-    (SurfaceSet::Selection, "Selection"),
-    (SurfaceSet::Tooltip, "Tooltip"),
-    (SurfaceSet::Complementary, "Complementary"),
-    (SurfaceSet::Header, "Header"),
+/// surface set `kde-breeze` declares for it, its group's name,
+/// `[Colors:<name>]` (`colorsapplicator.cpp:157-163`, S9.1), and
+/// KColorScheme's defaults for its keys (`defaults.rs`).
+const COLOR_GROUPS: [(SurfaceSet, &str, &SetDefaults); 7] = [
+    (SurfaceSet::View, "View", &defaults::VIEW),
+    (SurfaceSet::Window, "Window", &defaults::WINDOW),
+    (SurfaceSet::Button, "Button", &defaults::BUTTON),
+    (SurfaceSet::Selection, "Selection", &defaults::SELECTION),
+    (SurfaceSet::Tooltip, "Tooltip", &defaults::TOOLTIP),
+    (
+        SurfaceSet::Complementary,
+        "Complementary",
+        &defaults::COMPLEMENTARY,
+    ),
+    (SurfaceSet::Header, "Header", &defaults::HEADER),
 ];
 
 /// Qt's `transparent`, `#00000000`, the `AccentColor` `applyScheme()` reads
@@ -116,12 +146,12 @@ const TRANSPARENT: Color = Color {
 
 /// `[KDE] contrast` where kdeglobals sets none: KColorScheme's default,
 /// `g.readEntry("contrast", 7)` (`kcolorscheme@6.31.0
-/// src/kcolorscheme.cpp:519-527`, `docs/facts/kde/tokens.toml:11171`).
+/// src/kcolorscheme.cpp:519-527`, `docs/facts/kde/tokens.toml:11335`).
 const DEFAULT_CONTRAST: f32 = 7.0;
 
 /// `[KDE] frameContrast` where kdeglobals sets none: KColorScheme's
 /// default, `const qreal default_value = 0.2;` (`kcolorscheme@6.31.0
-/// src/kcolorscheme.cpp:529-539`, `docs/facts/kde/tokens.toml:11198`).
+/// src/kcolorscheme.cpp:529-539`, `docs/facts/kde/tokens.toml:11362`).
 const DEFAULT_FRAME_CONTRAST: f32 = 0.2;
 
 /// The scheme file `[General] ColorScheme` names, as the reader found it.
@@ -143,8 +173,8 @@ pub(crate) struct KdeData {
     pub(crate) kdeglobals: Ini,
     /// The scheme file kdeglobals names.
     pub(crate) scheme_file: SchemeFile,
-    /// The font DPI: `forceFontDPI`, else `Xft.dpi`, on an X11 session
-    /// ([`read_font_dpi`]); `None` elsewhere.
+    /// The font DPI: `Xft.dpi`, on an X11 session
+    /// ([`font_dpi::read_font_dpi`]); `None` elsewhere.
     pub(crate) font_dpi: Option<f32>,
     /// The icon theme's `index.theme`, where it was found.
     pub(crate) icon_index: Option<Ini>,
@@ -153,7 +183,7 @@ pub(crate) struct KdeData {
 /// The reader's state and layer from what it read, its own preset's part
 /// under `own` (S9.5). Zero I/O.
 ///
-/// - The state: the scheme ([`scheme`]); animations off and reduced motion
+/// - The state: the scheme ([`scheme::scheme`]); animations off and reduced motion
 ///   where `[KDE] AnimationDurationFactor` is 0 (K3.30, K3.90); the font DPI;
 ///   text unscaled ([`UNSCALED`]).
 /// - The common bases: `input.accent` ([`accent`]); the text-role slots
@@ -173,7 +203,7 @@ pub(crate) struct KdeData {
 /// and kdeglobals stood in for it (S9.3).
 pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     let ini = &data.kdeglobals;
-    let scheme = scheme(ini);
+    let scheme = scheme::scheme(ini);
     let mut state = ReaderState::new(scheme, UNSCALED);
     let factor = animation_duration_factor(ini);
     state.animations_off = factor == Some(0.0);
@@ -247,7 +277,7 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
         }));
     }
     let theme = icon_theme(ini);
-    let sizes = data.icon_index.as_ref().and_then(icon_sizes);
+    let sizes = data.icon_index.as_ref().map(icon_sizes);
     if theme.is_some() || sizes.is_some() {
         own_bases.tokens.icons = Some(Box::new(IconTokensPatch {
             theme: theme.map(Value::Stated),
@@ -287,17 +317,6 @@ pub(crate) fn build_reading(data: &KdeData, own: PresetId) -> Reading {
     }
 }
 
-/// The scheme kdeglobals' colours are: dark where `[Colors:Window]
-/// BackgroundNormal` is dark by its BT.601 luminance, else light, as 0.7.0's
-/// reader decided (`2796b26e:native-theme/src/kde/mod.rs:469-480`).
-fn scheme(ini: &Ini) -> Scheme {
-    let dark = color(ini, "Colors:Window", "BackgroundNormal").is_some_and(|bg| {
-        let [r, g, b, _] = bg.to_srgb8_clamped();
-        0.299 * f32::from(r) + 0.587 * f32::from(g) + 0.114 * f32::from(b) < 128.0
-    });
-    if dark { Scheme::Dark } else { Scheme::Light }
-}
-
 /// `[KDE] AnimationDurationFactor`, where it is a finite number not below
 /// zero.
 fn animation_duration_factor(ini: &Ini) -> Option<f32> {
@@ -313,8 +332,9 @@ fn animation_duration_factor(ini: &Ini) -> Option<f32> {
 ///   the common bases at both schemes, the accent the user chose.
 /// - Absent or `transparent`, Plasma's default "Accent color from color
 ///   scheme": in the common bases the scheme's own accent as KDE publishes
-///   it, the `Selection` set's `BackgroundNormal`, under the scheme read
-///   only; in the own part `#00000000` at that scheme.
+///   it, the `Selection` set's `BackgroundNormal` (KColorScheme's default
+///   where kdeglobals leaves it unset), under the scheme read only; in the
+///   own part `#00000000` at that scheme.
 fn accent(ini: &Ini, scheme: Scheme) -> (Option<InputValue>, Option<InputValue>) {
     let chosen = color(ini, "General", "AccentColor").filter(|color| *color != TRANSPARENT);
     match chosen {
@@ -326,20 +346,38 @@ fn accent(ini: &Ini, scheme: Scheme) -> (Option<InputValue>, Option<InputValue>)
             )
         }
         None => {
-            let highlight = color(ini, "Colors:Selection", "BackgroundNormal")
-                .map(|color| InputValue::new(SchemeMap::one(scheme, Value::Stated(color))));
+            let selection = active_value(
+                ini,
+                SurfaceSet::Selection,
+                "Selection",
+                &defaults::SELECTION,
+                KdeSchemeKey::BackgroundNormal,
+            );
+            let highlight = InputValue::new(SchemeMap::one(scheme, Value::Stated(selection)));
             let none = InputValue::new(SchemeMap::one(scheme, Value::Stated(TRANSPARENT)));
-            (highlight, Some(none))
+            (Some(highlight), Some(none))
         }
     }
 }
 
-/// A KConfig colour entry, `r,g,b` or `r,g,b,a`, each channel an integer
-/// `0..=255`; `None` for any other value.
+/// A KConfig colour entry in the form KConfig writes, `r,g,b` or `r,g,b,a`,
+/// each channel an integer `0..=255` (`kconfig@6.31.0
+/// src/gui/kconfiggroupgui.cpp:54-81`, `:134-150`); `None` for any other
+/// value: a list of another length or a component no byte holds, which
+/// KConfig reads as the key's default, and a value it reads as an invalid
+/// colour (empty, `invalid`) or hands to Qt's colour parser (one starting
+/// with `#`, or one without a comma), each read as unset (S9.3, a recorded
+/// inexactness for the last).
 pub(crate) fn parse_color(value: &str) -> Option<Color> {
     let channels: Vec<u8> = value
         .split(',')
-        .map(|channel| channel.trim().parse::<u8>().ok())
+        .map(|channel| {
+            channel
+                .trim()
+                .parse::<i32>()
+                .ok()
+                .and_then(|channel| u8::try_from(channel).ok())
+        })
         .collect::<Option<_>>()?;
     let channel = |index: usize| channels.get(index).map(|c| f32::from(*c) / 255.0);
     let alpha = match channels.len() {
@@ -407,39 +445,48 @@ const fn kconfig_wm_key(key: KdeWmKey) -> &'static str {
     }
 }
 
-/// The colour group `name`'s `key` in `ini` as KColorScheme reads it over a
-/// file with the key unset: `Header`'s from `[Colors:Window]` where
-/// `[Colors:Header]` lacks it (`kcolorscheme.cpp:330-333`, S9.1); `None`
-/// for another set, whose unset key is KColorScheme's default, which no
-/// fact states yet.
-fn active_value(ini: &Ini, set: SurfaceSet, name: &str, key: KdeSchemeKey) -> Option<Color> {
-    color(ini, &group(name), kconfig_key(key)).or_else(|| {
-        (set == SurfaceSet::Header)
-            .then(|| color(ini, &group("Window"), kconfig_key(key)))
-            .flatten()
-    })
+/// The colour group `name`'s `key` in `ini` as KColorScheme reads it: the
+/// group's value, else its default ([`default_value`]).
+fn active_value(
+    ini: &Ini,
+    set: SurfaceSet,
+    name: &str,
+    defaults: &SetDefaults,
+    key: KdeSchemeKey,
+) -> Color {
+    color(ini, &group(name), kconfig_key(key))
+        .unwrap_or_else(|| default_value(ini, set, defaults, key))
+}
+
+/// The default KColorScheme reads for the colour set `set`'s `key` in `ini`
+/// where its group, or its `[Inactive]` group, leaves it unset: for
+/// `Header` the file's `[Colors:Window]` value over `Header`'s table
+/// (`kcolorscheme.cpp:330-333`), for another set its table `defaults`
+/// (`:289-342`, `:251-278`; the KDE facts' scheme inputs cite each row).
+fn default_value(ini: &Ini, set: SurfaceSet, defaults: &SetDefaults, key: KdeSchemeKey) -> Color {
+    let window = (set == SurfaceSet::Header)
+        .then(|| color(ini, &group("Window"), kconfig_key(key)))
+        .flatten();
+    window.unwrap_or_else(|| defaults.color(key))
 }
 
 /// The colour role patch of kdeglobals' results: each colour group's keys,
 /// every set's roles the catalogue's key table maps them to
-/// ([`KdeSchemeKey::role`]), `Header`'s from `[Colors:Window]` where it
-/// lacks one; and the `[WM]` keyed roles (K2.11), each key kdeglobals' where
+/// ([`KdeSchemeKey::role`]), a key kdeglobals leaves unset KColorScheme's
+/// default ([`active_value`]); and the `[WM]` keyed roles (K2.11), each key kdeglobals' where
 /// it states one, else the references Breeze falls back to, the palette's
 /// `Highlight` and `HighlightedText`, active for the active title bar and
 /// disabled for the inactive one (`breeze@c97883a
 /// kstyle/breezehelper.cpp:98-102`, the widget catalogue's `[WM]` roles).
 fn results(ini: &Ini) -> ColorRolesPatch {
     let mut surfaces = SurfaceMap::default();
-    for (set, name) in COLOR_GROUPS {
+    for (set, name, defaults) in COLOR_GROUPS {
         let mut patch = SurfaceRolesPatch::default();
         for key in KdeSchemeKey::ALL {
-            if let Some(color) = active_value(ini, set, name, key) {
-                set_role(&mut patch, key, Value::Stated(color));
-            }
+            let color = active_value(ini, set, name, defaults, key);
+            set_role(&mut patch, key, Value::Stated(color));
         }
-        if patch != SurfaceRolesPatch::default() {
-            surfaces.insert(set, BlockPatch::Fields(patch));
-        }
+        surfaces.insert(set, BlockPatch::Fields(patch));
     }
     let keyed: Vec<(Key, Value<Color>)> = KdeWmKey::ALL
         .into_iter()
@@ -494,30 +541,42 @@ fn input(path: &str) -> Option<InputName> {
     InputName::new(path).ok()
 }
 
+/// The colour set `set`'s inactive value of `key` in `ini`, as KColorScheme
+/// reads its `Inactive` group: the `[Inactive]` group's value where the
+/// set's group has one, a key it lacks the set's default
+/// ([`default_value`]), not its active value (`kcolorscheme.cpp:344-357`);
+/// else the active value (`:345-351`). So `Header` without a group of its
+/// own reads its active values, `Window`'s over `Header`'s table, never
+/// `[Colors:Window][Inactive]`.
+fn inactive_value(
+    ini: &Ini,
+    set: SurfaceSet,
+    name: &str,
+    defaults: &SetDefaults,
+    key: KdeSchemeKey,
+) -> Color {
+    if has_inactive_group(ini, name) {
+        color(ini, &inactive_group(name), kconfig_key(key))
+            .unwrap_or_else(|| default_value(ini, set, defaults, key))
+    } else {
+        active_value(ini, set, name, defaults, key)
+    }
+}
+
+/// Whether `ini` has the colour group `name` with an `[Inactive]` group.
+fn has_inactive_group(ini: &Ini, name: &str) -> bool {
+    has_group(ini, &group(name)) && has_group(ini, &inactive_group(name))
+}
+
 /// kdeglobals' inactive results, the inactive input roles
-/// `input.inactive.<set>.<key>` under `scheme` (K3.51, S9.1): each key of
-/// the group's `[Inactive]` group where it has one, else the group's active
-/// value, as KColorScheme reads a set without one (`kcolorscheme.cpp:344-352`);
-/// a key an `[Inactive]` group lacks is KColorScheme's default, which no fact
-/// states yet, and is not stated. `Header` without a group of its own reads
-/// `Window`'s.
+/// `input.inactive.<set>.<key>` under `scheme` (K3.51, S9.1), each key's
+/// [`inactive_value`].
 fn inactive_results(ini: &Ini, scheme: Scheme) -> Vec<(InputName, InputValue)> {
     let mut entries = Vec::new();
-    for (set, name) in COLOR_GROUPS {
-        let source = if set == SurfaceSet::Header && !has_group(ini, &group(name)) {
-            "Window"
-        } else {
-            name
-        };
-        let inactive = has_group(ini, &inactive_group(source));
+    for (set, name, defaults) in COLOR_GROUPS {
         for key in KdeSchemeKey::ALL {
-            let value = if inactive {
-                color(ini, &inactive_group(source), kconfig_key(key))
-            } else {
-                active_value(ini, set, name, key)
-            };
-            let name = input(&format!("inactive.{}.{}", set.name(), key.name()));
-            if let (Some(name), Some(value)) = (name, value) {
+            let value = inactive_value(ini, set, name, defaults, key);
+            if let Some(name) = input(&format!("inactive.{}.{}", set.name(), key.name())) {
                 entries.push((
                     name,
                     InputValue::new(SchemeMap::one(scheme, Value::Stated(value))),
@@ -535,14 +594,13 @@ fn inactive_results(ini: &Ini, scheme: Scheme) -> Vec<(InputName, InputValue)> {
 ///   `inactive_groups`, those whose group has an `[Inactive]` group; and
 ///   `unset_keys`, the scheme inputs of the groups it has that it leaves
 ///   unset;
-/// - each `kde_scheme.<set>.<key>` the file states, `Header`'s from
-///   `[Colors:Window]` where it lacks one; a key it leaves unset in
-///   another set is KColorScheme's default, which no fact states yet, so
-///   the layers beneath keep theirs there;
-/// - each `kde_scheme.<set>.inactive.<key>`: the file's `[Inactive]` value
-///   for a set `inactive_groups` names (unset likewise), else
-///   `= input.kde_scheme.<set>.<key>`, what KColorScheme reads for a set
-///   without one (`kcolorscheme.cpp:345-351`);
+/// - each `kde_scheme.<set>.<key>`, for every set, the file's value, a key
+///   it leaves unset, or a whole group, as KColorScheme reads it unset
+///   ([`active_value`]);
+/// - each `kde_scheme.<set>.inactive.<key>`: for a set `inactive_groups`
+///   names, the file's `[Inactive]` value, a key it lacks the set's default
+///   ([`inactive_value`]), else `= input.kde_scheme.<set>.<key>`, what
+///   KColorScheme reads for a set without one (`kcolorscheme.cpp:345-351`);
 /// - each `kde_scheme.wm.<key>`: the file's `[WM]` key where it states one,
 ///   else the default `applyScheme()` takes over the same file
 ///   (`colorsapplicator.cpp:287-309`): the `Header` Normal background and
@@ -552,9 +610,9 @@ fn scheme_inputs(file: &Ini, scheme: Scheme, bases: &mut Bases) {
     let mut groups = Vec::new();
     let mut inactive_groups = Vec::new();
     let mut unset_keys = Vec::new();
-    for (set, name) in COLOR_GROUPS {
+    for (set, name, defaults) in COLOR_GROUPS {
         let has = has_group(file, &group(name));
-        let inactive = has && has_group(file, &inactive_group(name));
+        let inactive = has_inactive_group(file, name);
         if has {
             groups.push(set);
         }
@@ -568,17 +626,18 @@ fn scheme_inputs(file: &Ini, scheme: Scheme, bases: &mut Bases) {
             if has && stated.is_none() {
                 unset_keys.extend(input(&active));
             }
-            let value = active_value(file, set, name, key).map(Value::Stated);
-            let inactive_value = if inactive {
-                let stated = color(file, &inactive_group(name), kconfig_key(key));
-                if stated.is_none() {
+            let value = Some(Value::Stated(active_value(file, set, name, defaults, key)));
+            let inactive_entry = if inactive {
+                if color(file, &inactive_group(name), kconfig_key(key)).is_none() {
                     unset_keys.extend(input(&inactive_name));
                 }
-                stated.map(Value::Stated)
+                Some(Value::Stated(inactive_value(
+                    file, set, name, defaults, key,
+                )))
             } else {
                 expr(&format!("input.{active}"))
             };
-            for (path, value) in [(active, value), (inactive_name, inactive_value)] {
+            for (path, value) in [(active, value), (inactive_name, inactive_entry)] {
                 if let (Some(name), Some(value)) = (input(&path), value) {
                     bases
                         .inputs
@@ -617,13 +676,20 @@ fn scheme_inputs(file: &Ini, scheme: Scheme, bases: &mut Bases) {
     *bases.inputs.kde_unset_keys.slot(scheme) = Some(unset_keys);
 }
 
-/// A KConfig boolean entry, `true` or `false`.
+/// A KConfig boolean entry as KConfig reads one: false where it is
+/// `false`, `no`, `off` or `0` in any case, else true, the empty value
+/// included (`kconfig@6.31.0 src/core/kconfiggroup.cpp:249-255`, S4.8's
+/// *Unset and empty*); `None` where the key is unset.
 fn flag(ini: &Ini, section: &str, key: &str) -> Option<bool> {
-    ini.get(section, key)
-        .and_then(|value| value.trim().parse::<bool>().ok())
+    ini.get(section, key).map(|value| {
+        let value = value.trim().to_ascii_lowercase();
+        !matches!(value.as_str(), "false" | "no" | "off" | "0")
+    })
 }
 
-/// A KConfig number entry, where it is finite.
+/// A KConfig number entry, where it is finite; `None` where it is unset or
+/// KConfig cannot convert it, the empty value included, so the caller takes
+/// the key's default (`kconfig@6.31.0 src/core/kconfiggroup.cpp:256-268`).
 fn number(ini: &Ini, section: &str, key: &str) -> Option<f32> {
     ini.get(section, key)
         .and_then(|value| value.trim().parse::<f32>().ok())
@@ -648,58 +714,73 @@ fn scheme_options(file: &Ini) -> (Option<f32>, bool) {
     (tint, titlebar)
 }
 
-/// One colour group's effects as kdeglobals' `[ColorEffects:<group>]`
-/// holds them (K3.40, K3.50, S4.8): each key's value where it states one,
-/// the effects by KColorScheme's enums (`kcolorscheme@6.31.0
-/// src/kcolorschemehelpers_p.h:57-79`, `docs/facts/kde/tokens.toml:10792`,
-/// `:10837`, `:10882`); a key it leaves unset is KColorScheme's default,
-/// which no fact states yet, so the layers beneath keep theirs. Where
-/// `[ColorEffects:Disabled] Enable` is false the disabled group's three
-/// effects are `none`, as KColorScheme then applies none
-/// (`kcolorscheme.cpp:39-40`).
-fn effects(ini: &Ini, section: &str, disabled: bool) -> KdeEffectsPatch {
-    let off = disabled && flag(ini, section, "Enable") == Some(false);
-    let intensity = integer(ini, section, "IntensityEffect").and_then(|v| match v {
-        0 => Some(KdeIntensityEffect::None),
-        1 => Some(KdeIntensityEffect::Shade),
-        2 => Some(KdeIntensityEffect::Darken),
-        3 => Some(KdeIntensityEffect::Lighten),
-        _ => None,
-    });
-    let color_effect = integer(ini, section, "ColorEffect").and_then(|v| match v {
-        0 => Some(KdeColorEffect::None),
-        1 => Some(KdeColorEffect::Desaturate),
-        2 => Some(KdeColorEffect::Fade),
-        3 => Some(KdeColorEffect::Tint),
-        _ => None,
-    });
-    let contrast = integer(ini, section, "ContrastEffect").and_then(|v| match v {
-        0 => Some(KdeContrastEffect::None),
-        1 => Some(KdeContrastEffect::Fade),
-        2 => Some(KdeContrastEffect::Tint),
-        _ => None,
-    });
-    let amount = |key: &str| number(ini, section, key).map(Value::Stated);
+/// One colour group's effects as KColorScheme reads kdeglobals'
+/// `[ColorEffects:<group>]` (K3.40, K3.50, S4.8): each key's value where it
+/// states one, the effects by KColorScheme's enums (`kcolorscheme@6.31.0
+/// src/kcolorschemehelpers_p.h:57-79`, `docs/facts/kde/tokens.toml:10885`,
+/// `:10940`, `:10995`), a key it leaves unset or KConfig cannot convert,
+/// the empty value included, the group's default `defaults`
+/// (`kcolorscheme.cpp:36-49`); an empty `Color` is stated as its default
+/// too, which KColorScheme reads as an invalid colour, a recorded
+/// inexactness (S4.8's *Unset and empty*). An effect number no enum member
+/// holds is not stated. Where the disabled group's `Enable` is false
+/// (`disabled`) its three effects are `none`, as KColorScheme then applies
+/// none (`:39-40`).
+fn effects(
+    ini: &Ini,
+    section: &str,
+    defaults: &defaults::EffectDefaults,
+    disabled: bool,
+) -> KdeEffectsPatch {
+    let off = disabled && !flag(ini, section, "Enable").unwrap_or(defaults.enable);
+    let effect = |key: &str| integer(ini, section, key);
+    let intensity = match effect("IntensityEffect") {
+        None => Some(defaults.intensity),
+        Some(0) => Some(KdeIntensityEffect::None),
+        Some(1) => Some(KdeIntensityEffect::Shade),
+        Some(2) => Some(KdeIntensityEffect::Darken),
+        Some(3) => Some(KdeIntensityEffect::Lighten),
+        Some(_) => None,
+    };
+    let color_effect = match effect("ColorEffect") {
+        None => Some(defaults.color),
+        Some(0) => Some(KdeColorEffect::None),
+        Some(1) => Some(KdeColorEffect::Desaturate),
+        Some(2) => Some(KdeColorEffect::Fade),
+        Some(3) => Some(KdeColorEffect::Tint),
+        Some(_) => None,
+    };
+    let contrast = match effect("ContrastEffect") {
+        None => Some(defaults.contrast),
+        Some(0) => Some(KdeContrastEffect::None),
+        Some(1) => Some(KdeContrastEffect::Fade),
+        Some(2) => Some(KdeContrastEffect::Tint),
+        Some(_) => None,
+    };
+    let amount =
+        |key: &str, default: f32| Some(Value::Stated(number(ini, section, key).unwrap_or(default)));
     KdeEffectsPatch {
         intensity: if off {
             Some(KdeIntensityEffect::None)
         } else {
             intensity
         },
-        intensity_amount: amount("IntensityAmount"),
+        intensity_amount: amount("IntensityAmount", defaults.intensity_amount),
         color: if off {
             Some(KdeColorEffect::None)
         } else {
             color_effect
         },
-        color_amount: amount("ColorAmount"),
-        color_color: color(ini, section, "Color").map(Value::Stated),
+        color_amount: amount("ColorAmount", defaults.color_amount),
+        color_color: Some(Value::Stated(
+            color(ini, section, "Color").unwrap_or_else(|| defaults.color_color()),
+        )),
         contrast: if off {
             Some(KdeContrastEffect::None)
         } else {
             contrast
         },
-        contrast_amount: amount("ContrastAmount"),
+        contrast_amount: amount("ContrastAmount", defaults.contrast_amount),
     }
 }
 
@@ -713,18 +794,25 @@ fn effects(ini: &Ini, section: &str, disabled: bool) -> KdeEffectsPatch {
 ///
 /// `inactive_enabled` is `[ColorEffects:Inactive] Enable`, false where unset
 /// (`kcolorscheme.cpp:39-40`); `inactive_change_selection_color` its
-/// `ChangeSelectionColor`, else its `Enable`, else true (`:307`).
+/// `ChangeSelectionColor`, else its `Enable`, else true (`:307`); each read
+/// as KConfig reads a bool ([`flag`]), so an empty one, which
+/// `applyScheme()` writes where the scheme file lacks the key, is true.
 fn scheme_tokens(ini: &Ini, options: Option<(Option<f32>, bool)>) -> TokensPatch {
     let inactive_section = "ColorEffects:Inactive";
     let enable = flag(ini, inactive_section, "Enable");
     let kde = KdeTokensPatch {
-        disabled: Some(effects(ini, "ColorEffects:Disabled", true)),
-        inactive: Some(effects(ini, inactive_section, false)),
-        inactive_enabled: Some(Value::Stated(enable.unwrap_or(false))),
+        disabled: Some(effects(
+            ini,
+            "ColorEffects:Disabled",
+            &defaults::DISABLED,
+            true,
+        )),
+        inactive: Some(effects(ini, inactive_section, &defaults::INACTIVE, false)),
+        inactive_enabled: Some(Value::Stated(enable.unwrap_or(defaults::INACTIVE.enable))),
         inactive_change_selection_color: Some(Value::Stated(
             flag(ini, inactive_section, "ChangeSelectionColor")
                 .or(enable)
-                .unwrap_or(true),
+                .unwrap_or(defaults::INACTIVE_CHANGE_SELECTION_COLOR),
         )),
         tint_factor: options.map(|(tint, _)| tint.map(Value::Stated)),
         titlebar_is_accent_colored: options.map(|(_, titlebar)| Value::Stated(titlebar)),
@@ -754,40 +842,49 @@ fn scheme_tokens(ini: &Ini, options: Option<(Option<f32>, bool)>) -> TokensPatch
 /// context's size from the `[Icon Theme]` key its preset's fact read
 /// (`docs/facts/kde/tokens.toml`), `toolbar` `ToolbarDefault`, `small`
 /// `SmallDefault`, `large` `DesktopDefault`, `dialog` `DialogDefault`,
-/// `panel` `PanelDefault`, the default size KIconTheme reads for each group
+/// `panel` `PanelDefault` and `keyed.main_toolbar` `MainToolbarDefault`,
+/// the default size KIconTheme reads for each group
 /// (`kiconthemes@6.31.0 src/kicontheme.cpp:469-472`); a key the theme
-/// omits or that is no whole number above zero is KIconTheme's fallback for
-/// the group, which no fact states, and keeps the preset's. `None` where it
-/// states none.
-fn icon_sizes(index: &Ini) -> Option<IconSizeTokensPatch> {
-    let size = |key: &str| {
-        index
+/// omits, or one KConfig does not convert to an integer, is KIconTheme's
+/// own default for the group (`defaults::ICON_SIZES`), and a whole number
+/// not above zero is not stated (S9.3).
+fn icon_sizes(index: &Ini) -> IconSizeTokensPatch {
+    let size = |key: &str, default: u16| {
+        let size = match index
             .get("Icon Theme", key)
-            .and_then(|value| value.trim().parse::<u16>().ok())
-            .filter(|size| *size > 0)
-            .map(|size| {
-                BlockPatch::Fields(IconStylePatch {
-                    size: Some(Value::Stated(Px(f32::from(size)))),
-                    ..IconStylePatch::default()
-                })
+            .map(|value| value.trim().parse::<i32>())
+        {
+            None | Some(Err(_)) => Some(f32::from(default)),
+            Some(Ok(size)) => (size > 0).then_some(size as f32),
+        };
+        size.map(|size| {
+            BlockPatch::Fields(IconStylePatch {
+                size: Some(Value::Stated(Px(size))),
+                ..IconStylePatch::default()
             })
+        })
     };
-    let sizes = IconSizeTokensPatch {
-        toolbar: size("ToolbarDefault"),
-        small: size("SmallDefault"),
-        large: size("DesktopDefault"),
-        dialog: size("DialogDefault"),
-        panel: size("PanelDefault"),
+    let defaults = &defaults::ICON_SIZES;
+    let keyed: Vec<_> = size("MainToolbarDefault", defaults.main_toolbar)
+        .map(|patch| (crate::key!("main_toolbar"), patch))
+        .into_iter()
+        .collect();
+    IconSizeTokensPatch {
+        toolbar: size("ToolbarDefault", defaults.toolbar),
+        small: size("SmallDefault", defaults.small),
+        large: size("DesktopDefault", defaults.desktop),
+        dialog: size("DialogDefault", defaults.dialog),
+        panel: size("PanelDefault", defaults.panel),
+        keyed: (!keyed.is_empty()).then_some(keyed),
         ..IconSizeTokensPatch::default()
-    };
-    (sizes != IconSizeTokensPatch::default()).then_some(sizes)
+    }
 }
 
 /// Reads the KDE settings, its own preset's part under `own`: kdeglobals
 /// as KConfig cascades it ([`read_kconfig_files`] of [`kdeglobals_files`]),
 /// the scheme file it names
-/// ([`read_scheme_file`]), the font DPI ([`read_font_dpi`]) and the icon
-/// theme's `index.theme`.
+/// ([`read_scheme_file`]), the font DPI ([`font_dpi::read_font_dpi`]) and
+/// the icon theme's `index.theme`.
 ///
 /// Fails only where no kdeglobals file can be read
 /// (`ReaderFailure::Platform`, S9.3); a scheme file that cannot be found or
@@ -813,7 +910,7 @@ pub(crate) fn read(own: PresetId) -> Result<Reading, ReaderFailure> {
         })
     });
     let data = KdeData {
-        font_dpi: read_font_dpi(crate::detect::session_type().as_deref()),
+        font_dpi: font_dpi::read_font_dpi(crate::detect::session_type().as_deref()),
         kdeglobals,
         scheme_file,
         icon_index,
@@ -846,10 +943,15 @@ fn icon_base_dirs(data_dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
 }
 
 /// The scheme file kdeglobals' `[General] ColorScheme` names:
-/// `color-schemes/<name>.colors` in the first of `data_dirs` that holds it,
+/// `color-schemes/<name>.colors` in the first of `data_dirs` where it is a
+/// file, as Qt's `QStandardPaths::locate` finds it for the colours KCM and
+/// plasma-integration (`plasma-workspace@6.8.2 kcms/colors/colors.cpp:468-474`,
+/// `plasma-integration@6.8.2 qt6/src/platformtheme/khintssettings.cpp:457-458`),
 /// read as KConfig reads it; [`SchemeFile::Unnamed`] where kdeglobals names
-/// none, [`SchemeFile::Unreadable`] where no data directory holds a readable
-/// one, the reason naming the scheme and the files.
+/// none, [`SchemeFile::Unreadable`] where no data directory holds it, where
+/// the file found cannot be read (not a reason to look further, S9.3) or
+/// where the name is not one plain path component, the reason naming the
+/// scheme and the files.
 pub(crate) fn read_scheme_file(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf]) -> SchemeFile {
     let Some(name) = kdeglobals
         .get("General", "ColorScheme")
@@ -866,14 +968,20 @@ pub(crate) fn read_scheme_file(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf
         .iter()
         .map(|dir| dir.join("color-schemes").join(format!("{name}.colors")))
         .collect();
-    match files.iter().find_map(|file| std::fs::read(file).ok()) {
-        Some(bytes) => {
-            let mut ini = create_kde_parser();
-            read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
-            SchemeFile::Read(ini)
-        }
+    match files.iter().find(|file| file.is_file()) {
+        Some(file) => match std::fs::read(file) {
+            Ok(bytes) => {
+                let mut ini = create_kde_parser();
+                read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
+                SchemeFile::Read(ini)
+            }
+            Err(error) => SchemeFile::Unreadable(format!(
+                "the colour scheme `{name}`'s file {} cannot be read ({error}); kdeglobals stands in for it",
+                file.display()
+            )),
+        },
         None => SchemeFile::Unreadable(format!(
-            "the colour scheme `{name}` has no readable scheme file ({}); kdeglobals stands in for it",
+            "the colour scheme `{name}` has no scheme file ({}); kdeglobals stands in for it",
             files
                 .iter()
                 .map(|file| file.display().to_string())
@@ -881,41 +989,6 @@ pub(crate) fn read_scheme_file(kdeglobals: &Ini, data_dirs: &[std::path::PathBuf
                 .join(", ")
         )),
     }
-}
-
-/// The font DPI the KDE reader reports (S9.4, K3.46): on an X11 session
-/// `kcmfonts`' `forceFontDPI` where it is set ([`force_font_dpi`]), else the
-/// X server's `Xft.dpi` ([`crate::detect::xft_dpi`]); `None` on any other
-/// session, where Plasma has no font DPI setting and the preset's
-/// `token.text.font_dpi` applies (`docs/facts/kde/tokens.toml:7937`).
-fn read_font_dpi(session_type: Option<&str>) -> Option<f32> {
-    if session_type != Some("x11") {
-        return None;
-    }
-    crate::detect::xdg_config_home()
-        .and_then(|dir| kcmfonts_key_in(&dir, "General", "forceFontDPI"))
-        .as_deref()
-        .and_then(force_font_dpi)
-        .or_else(crate::detect::xft_dpi)
-}
-
-/// A `forceFontDPI` value as a font DPI: Plasma declares the key a UInt
-/// whose default 0 means unset, so it is parsed as a `u32` and 0 is `None`,
-/// as is anything that is not a `u32` (0.7.0's reading,
-/// `2796b26e:native-theme/src/detect.rs:696-703`).
-fn force_font_dpi(value: &str) -> Option<f32> {
-    let dpi = value.trim().parse::<u32>().ok()?;
-    (dpi > 0).then_some(dpi as f32)
-}
-
-/// [`kcmfonts`]'s `section` `key` in the config directory `config_dir`, the
-/// file read as KConfig reads it ([`read_kconfig`]), its bytes decoded
-/// lossily.
-fn kcmfonts_key_in(config_dir: &std::path::Path, section: &str, key: &str) -> Option<String> {
-    let bytes = std::fs::read(config_dir.join("kcmfonts")).ok()?;
-    let mut ini = create_kde_parser();
-    read_kconfig(&mut ini, &String::from_utf8_lossy(&bytes));
-    ini.get(section, key)
 }
 
 /// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or

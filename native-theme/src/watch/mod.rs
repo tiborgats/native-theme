@@ -349,8 +349,8 @@ impl Debounce {
 /// detection caches it reads through before it reads.
 ///
 /// The watcher observes what the platform's reader reads (the reader module
-/// lists its sources): on KDE `kdeglobals`, `kdedefaults/kdeglobals` and
-/// `kcmfonts` in the config directory; on GNOME and Budgie the portal's
+/// lists its sources): on KDE `kdeglobals` and `kdedefaults/kdeglobals` in
+/// the config directory; on GNOME and Budgie the portal's
 /// `SettingChanged`
 /// for the `org.freedesktop.appearance` settings and the
 /// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
@@ -577,7 +577,6 @@ mod tests {
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         ("kde", "kdeglobals", "kdeglobals"),
         ("kde", "kdedefaults/kdeglobals", "kdedefaults/kdeglobals"),
-        ("kde", "kcmfonts", "kcmfonts"),
         (
             "gnome",
             "org.freedesktop.appearance color-scheme",

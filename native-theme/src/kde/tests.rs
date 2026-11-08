@@ -449,28 +449,65 @@ fn parse_color_reads_three_or_four_channels() {
     assert_eq!(parse_color("0, 0, 0"), Some(rgb(0, 0, 0)));
     assert_eq!(parse_color("255,255,255"), Some(rgb(255, 255, 255)));
     assert_eq!(parse_color("0,0,0,0"), Some(TRANSPARENT));
-    for refused in ["invalid", "1,2", "1,2,3,4,5", "256,0,0", "", "1,2,-3"] {
+    assert_eq!(parse_color("-0,+1,2"), Some(rgb(0, 1, 2)));
+    for refused in [
+        "invalid",
+        "1,2",
+        "1,2,3,4,5",
+        "256,0,0",
+        "",
+        "1,2,-3",
+        "#010203",
+        "1;2;3",
+        "1.5,2,3",
+    ] {
         assert_eq!(parse_color(refused), None, "{refused:?}");
     }
 }
 
-/// The scheme is dark where the window background is dark, else light,
-/// and light without one (0.7.0's `is_dark_theme` tests).
+/// The scheme is Plasma's test of the `Window` background: dark where Qt's
+/// grey of it is below the threshold, so a mid-grey window 0.7.0's BT.601
+/// luminance called light is dark; light where it is unset or no colour,
+/// KColorScheme's default window; the `View` background plays no part.
 #[test]
-fn the_window_background_decides_the_scheme() {
+fn the_scheme_is_plasmas_test_of_the_window_background() {
+    let scheme_of = |text: &str| scheme::scheme(&ini(text));
     assert_eq!(
-        scheme(&ini("[Colors:Window]\nBackgroundNormal=20,22,24\n")),
+        scheme_of("[Colors:Window]\nBackgroundNormal=20,22,24\n"),
         Scheme::Dark
     );
     assert_eq!(
-        scheme(&ini("[Colors:Window]\nBackgroundNormal=239,240,241\n")),
-        Scheme::Light
+        scheme_of("[Colors:Window]\nBackgroundNormal=150,150,150\n"),
+        Scheme::Dark
     );
-    assert_eq!(scheme(&ini("")), Scheme::Light);
     assert_eq!(
-        scheme(&ini("[Colors:View]\nBackgroundNormal=0,0,0\n")),
+        scheme_of("[Colors:Window]\nBackgroundNormal=239,240,241\n"),
         Scheme::Light
     );
+    assert_eq!(scheme_of(""), Scheme::Light);
+    assert_eq!(
+        scheme_of("[Colors:Window]\nBackgroundNormal=#000000\n"),
+        Scheme::Light
+    );
+    assert_eq!(
+        scheme_of("[Colors:View]\nBackgroundNormal=0,0,0\n"),
+        Scheme::Light
+    );
+}
+
+/// A bool entry is false where it is `false`, `no`, `off` or `0` in any
+/// case, else true, the empty value included; an unset one is `None`
+/// (S4.8's *Unset and empty*).
+#[test]
+fn a_bool_entry_is_read_as_kconfig_reads_it() {
+    let file = ini("[G]\na=false\nb=No\nc=OFF\nd=0\ne=\nf=true\ng=yes\nh=1\ni=anything\n");
+    for key in ["a", "b", "c", "d"] {
+        assert_eq!(flag(&file, "G", key), Some(false), "{key}");
+    }
+    for key in ["e", "f", "g", "h", "i"] {
+        assert_eq!(flag(&file, "G", key), Some(true), "{key}");
+    }
+    assert_eq!(flag(&file, "G", "unset"), None);
 }
 
 /// A factor of 0 turns animations off and asks for reduced motion; another
@@ -555,8 +592,9 @@ fn an_accent_color_is_the_accent_at_both_schemes() {
 }
 
 /// The results: each group's keys as its set's roles under the scheme
-/// read, `Header`'s from `[Colors:Window]` where kdeglobals has no `Header`
-/// group, nothing at the other scheme.
+/// read, a key kdeglobals leaves unset KColorScheme's default for the set,
+/// `Header`'s from `[Colors:Window]` over `Header`'s own table where
+/// kdeglobals has no `Header` group, nothing at the other scheme.
 #[test]
 fn the_results_are_the_colour_groups_under_the_scheme_read() {
     let reading = reading(&data(KDEGLOBALS_DARK, SchemeFile::Unnamed));
@@ -571,10 +609,147 @@ fn the_results_are_the_colour_groups_under_the_scheme_read() {
     assert_eq!(view.background, Some(Value::Stated(rgb(10, 11, 12))));
     assert_eq!(view.foreground, Some(Value::Stated(rgb(200, 201, 202))));
     assert_eq!(view.decoration_focus, Some(Value::Stated(rgb(13, 14, 15))));
-    assert_eq!(view.link, None);
+    assert_eq!(
+        view.link,
+        Some(Value::Stated(
+            defaults::VIEW.color(KdeSchemeKey::ForegroundLink)
+        ))
+    );
+    assert_eq!(
+        view.decoration_hover,
+        Some(Value::Stated(
+            defaults::VIEW.color(KdeSchemeKey::DecorationHover)
+        ))
+    );
     let header = fields(SurfaceSet::Header);
     assert_eq!(header.background, Some(Value::Stated(rgb(20, 21, 22))));
     assert_eq!(header.foreground, Some(Value::Stated(rgb(210, 211, 212))));
+    assert_eq!(
+        header.background_alternate,
+        Some(Value::Stated(
+            defaults::HEADER.color(KdeSchemeKey::BackgroundAlternate)
+        ))
+    );
+    assert_ne!(
+        defaults::HEADER.color(KdeSchemeKey::BackgroundAlternate),
+        defaults::WINDOW.color(KdeSchemeKey::BackgroundAlternate)
+    );
+    for set in [SurfaceSet::Button, SurfaceSet::Complementary] {
+        let patch = fields(set);
+        assert!(patch.positive.is_some() && patch.decoration_hover.is_some());
+    }
+}
+
+/// The KDE facts file `name` (`docs/facts/kde/<name>`), parsed.
+fn kde_facts(name: &str) -> Vec<toml::Value> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../docs/facts/kde")
+        .join(name);
+    let text = std::fs::read_to_string(&path).unwrap();
+    let table: toml::Table = toml::from_str(&text).unwrap();
+    table["fact"].as_array().unwrap().clone()
+}
+
+/// The last `{ r, g, b }` row of a table quote, as a colour.
+fn last_row(quote: &str) -> Color {
+    let row = quote.rsplit('{').find(|part| part.contains('}')).unwrap();
+    let channels: Vec<u8> = row
+        .split('}')
+        .next()
+        .unwrap()
+        .split(',')
+        .map(|channel| channel.trim().parse().unwrap())
+        .collect();
+    let [r, g, b] = channels.as_slice() else {
+        panic!("a row of three: {quote}");
+    };
+    rgb(*r, *g, *b)
+}
+
+/// Every row of KColorScheme's default tables the reader holds is the row
+/// its KDE fact cites (`docs/facts/kde/inputs.toml`, each `scheme:light`
+/// scheme-input fact's table quote ending at the set's row for its key):
+/// all seven sets' twelve keys, `DecorationHover`'s table row included,
+/// where Breeze Light's value differs.
+#[test]
+fn the_default_tables_are_the_rows_the_facts_cite() {
+    let mut checked = 0;
+    for fact in kde_facts("inputs.toml") {
+        let key = fact["key"].as_str().unwrap();
+        let light = fact
+            .get("when")
+            .and_then(|when| when.get("conditions"))
+            .is_some_and(|c| c.as_array().unwrap() == &[toml::Value::from("scheme:light")]);
+        let parts: Vec<&str> = key.split('.').collect();
+        let [_, "kde_scheme", set_name, key_name] = parts.as_slice() else {
+            continue;
+        };
+        let Some((_, _, defaults)) = COLOR_GROUPS
+            .iter()
+            .find(|(set, _, _)| set.name() == *set_name)
+        else {
+            continue;
+        };
+        let Some(key) = KdeSchemeKey::ALL
+            .into_iter()
+            .find(|k| k.name() == *key_name)
+        else {
+            continue;
+        };
+        if !light {
+            continue;
+        }
+        let quote = fact["cite"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|cite| cite["quote"].as_str())
+            .find(|quote| quote.starts_with("static const"))
+            .unwrap_or_else(|| panic!("{key:?}: no table quote"));
+        assert_eq!(
+            defaults.color(key),
+            last_row(quote),
+            "{set_name}.{key_name}"
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 7 * 12);
+}
+
+/// Each of KIconTheme's six group defaults the reader holds is the row its
+/// `token.icons.sizes` fact cites (`docs/facts/kde/tokens.toml`, the
+/// `m_iconGroups` quote ending at the group's row).
+#[test]
+fn the_icon_size_defaults_are_the_rows_the_facts_cite() {
+    let sizes = &defaults::ICON_SIZES;
+    let expected = [
+        ("token.icons.sizes.toolbar.size", sizes.toolbar),
+        (
+            "token.icons.sizes.keyed.main_toolbar.size",
+            sizes.main_toolbar,
+        ),
+        ("token.icons.sizes.small.size", sizes.small),
+        ("token.icons.sizes.large.size", sizes.desktop),
+        ("token.icons.sizes.panel.size", sizes.panel),
+        ("token.icons.sizes.dialog.size", sizes.dialog),
+    ];
+    let facts = kde_facts("tokens.toml");
+    for (key, size) in expected {
+        let fact = facts
+            .iter()
+            .find(|fact| fact["key"].as_str() == Some(key))
+            .unwrap();
+        let quote = fact["cite"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|cite| cite["quote"].as_str())
+            .find(|quote| quote.starts_with("std::array<GroupInfo"))
+            .unwrap();
+        let row = quote.trim_end_matches(',').trim_end_matches('}');
+        let cited: u16 = row.rsplit(',').next().unwrap().trim().parse().unwrap();
+        assert_eq!(size, cited, "{key}");
+    }
 }
 
 /// Where kdeglobals has no `[WM]`, the `[WM]` roles are the references
@@ -621,15 +796,20 @@ fn the_wm_roles_fall_back_to_the_selection() {
     );
 }
 
-/// The inactive input roles: a group's `[Inactive]` keys where it has one
-/// (a key it lacks unstated), else its active values (K3.51).
+/// The inactive input roles: a group's `[Inactive]` keys where it has one,
+/// a key it lacks the set's default, not its active value; else its active
+/// values, KColorScheme's defaults where kdeglobals leaves them unset
+/// (K3.51).
 #[test]
 fn the_inactive_results_are_the_inactive_groups_else_the_active_ones() {
     let reading = reading(&data(KDEGLOBALS_DARK, SchemeFile::Unnamed));
     let bases = own(&reading.layer);
     let at = |path| input_color(bases, path, Scheme::Dark);
     assert_eq!(at("inactive.view.background_normal"), Some(rgb(16, 17, 18)));
-    assert_eq!(at("inactive.view.foreground_normal"), None);
+    assert_eq!(
+        at("inactive.view.foreground_normal"),
+        Some(defaults::VIEW.color(KdeSchemeKey::ForegroundNormal))
+    );
     assert_eq!(
         at("inactive.window.foreground_normal"),
         Some(rgb(210, 211, 212))
@@ -638,13 +818,53 @@ fn the_inactive_results_are_the_inactive_groups_else_the_active_ones() {
         at("inactive.header.background_normal"),
         Some(rgb(20, 21, 22))
     );
-    assert_eq!(at("inactive.button.foreground_normal"), None);
+    assert_eq!(
+        at("inactive.button.foreground_normal"),
+        Some(defaults::BUTTON.color(KdeSchemeKey::ForegroundNormal))
+    );
+    assert_eq!(
+        bases
+            .inputs
+            .entries
+            .iter()
+            .filter(|(name, _)| name.to_string().starts_with("inactive."))
+            .count(),
+        7 * 12
+    );
+}
+
+/// `Header` without a group of its own reads its inactive input roles from
+/// its active values, `Window`'s over `Header`'s table, as KColorScheme
+/// reads `Header` with no `[Colors:Header][Inactive]` group, never from
+/// `[Colors:Window][Inactive]`.
+#[test]
+fn header_without_a_group_reads_its_active_values_when_inactive() {
+    let text = "[Colors:Window]\nBackgroundNormal=20,21,22\n\n\
+                [Colors:Window][Inactive]\nBackgroundNormal=1,1,1\nForegroundNormal=2,2,2\n";
+    let reading = reading(&data(text, SchemeFile::Unnamed));
+    let bases = own(&reading.layer);
+    let at = |path| input_color(bases, path, Scheme::Dark);
+    assert_eq!(at("inactive.window.background_normal"), Some(rgb(1, 1, 1)));
+    assert_eq!(
+        at("inactive.header.background_normal"),
+        Some(rgb(20, 21, 22))
+    );
+    assert_eq!(
+        at("inactive.header.foreground_normal"),
+        Some(defaults::HEADER.color(KdeSchemeKey::ForegroundNormal))
+    );
+    assert_eq!(
+        at("inactive.window.background_alternate"),
+        Some(defaults::WINDOW.color(KdeSchemeKey::BackgroundAlternate))
+    );
 }
 
 /// The scheme inputs of the scheme file, under the scheme read: its
-/// values, `Header`'s unset key from `Window`, the inactive inputs of a set
-/// without `[Inactive]` as references to its active ones, the three lists,
-/// and the `[WM]` defaults where it states none (S9.1).
+/// values, `Header`'s unset key from `Window` over `Header`'s table, another
+/// unset key, a whole group's included, and a key its `[Inactive]` group
+/// lacks KColorScheme's default, the inactive inputs of a set without
+/// `[Inactive]` as references to its active ones, the three lists, and the
+/// `[WM]` defaults where it states none (S9.1).
 #[test]
 fn the_scheme_inputs_are_the_scheme_files() {
     let reading = reading(&data(KDEGLOBALS_DARK, SchemeFile::Read(ini(SCHEME_FILE))));
@@ -660,8 +880,18 @@ fn the_scheme_inputs_are_the_scheme_files() {
         at("kde_scheme.view.inactive.background_normal"),
         Some(rgb(116, 117, 118))
     );
-    assert!(input_value(bases, "kde_scheme.view.inactive.foreground_normal").is_none());
-    assert!(input_value(bases, "kde_scheme.view.background_alternate").is_none());
+    assert_eq!(
+        at("kde_scheme.view.inactive.foreground_normal"),
+        Some(defaults::VIEW.color(KdeSchemeKey::ForegroundNormal))
+    );
+    assert_eq!(
+        at("kde_scheme.view.background_alternate"),
+        Some(defaults::VIEW.color(KdeSchemeKey::BackgroundAlternate))
+    );
+    assert_eq!(
+        at("kde_scheme.header.foreground_link"),
+        Some(defaults::HEADER.color(KdeSchemeKey::ForegroundLink))
+    );
     assert_eq!(
         at("kde_scheme.header.background_normal"),
         Some(rgb(130, 131, 132))
@@ -674,7 +904,10 @@ fn the_scheme_inputs_are_the_scheme_files() {
         input_expr(bases, "kde_scheme.window.inactive.background_normal", dark),
         Some(Expr::parse("input.kde_scheme.window.background_normal").unwrap())
     );
-    assert!(input_value(bases, "kde_scheme.button.background_normal").is_none());
+    assert_eq!(
+        at("kde_scheme.button.background_normal"),
+        Some(defaults::BUTTON.color(KdeSchemeKey::BackgroundNormal))
+    );
     assert_eq!(
         input_expr(bases, "kde_scheme.button.inactive.background_normal", dark),
         Some(Expr::parse("input.kde_scheme.button.background_normal").unwrap())
@@ -761,11 +994,23 @@ fn the_scheme_tokens_are_a_rule_under_the_scheme_read() {
     assert_eq!(disabled.contrast, Some(KdeContrastEffect::None));
     assert_eq!(disabled.intensity_amount, Some(Value::Stated(0.15)));
     assert_eq!(disabled.color_color, Some(Value::Stated(rgb(1, 2, 3))));
-    assert_eq!(disabled.color_amount, None);
-    let inactive = kde.inactive.as_ref().unwrap();
-    assert_eq!(inactive.contrast, Some(KdeContrastEffect::Tint));
-    assert_eq!(inactive.contrast_amount, Some(Value::Stated(0.3)));
-    assert_eq!(inactive.intensity, None);
+    assert_eq!(
+        disabled.color_amount,
+        Some(Value::Stated(defaults::DISABLED.color_amount))
+    );
+    let inactive = kde.inactive.as_ref();
+    assert_eq!(
+        inactive.map(|i| i.contrast),
+        Some(Some(KdeContrastEffect::Tint))
+    );
+    assert_eq!(
+        inactive.map(|i| i.contrast_amount.clone()),
+        Some(Some(Value::Stated(0.3)))
+    );
+    assert_eq!(
+        inactive.map(|i| i.intensity),
+        Some(Some(defaults::INACTIVE.intensity))
+    );
     assert_eq!(kde.inactive_enabled, Some(Value::Stated(true)));
     assert_eq!(
         kde.inactive_change_selection_color,
@@ -807,7 +1052,21 @@ fn unset_scheme_tokens_are_kcolorschemes_defaults() {
     );
     assert_eq!(kde.tint_factor, None);
     assert_eq!(kde.titlebar_is_accent_colored, None);
-    assert_eq!(kde.disabled.as_ref().unwrap().intensity, None);
+    for (effects, defaults) in [
+        (kde.disabled.as_ref(), &defaults::DISABLED),
+        (kde.inactive.as_ref(), &defaults::INACTIVE),
+    ] {
+        let expected = KdeEffectsPatch {
+            intensity: Some(defaults.intensity),
+            intensity_amount: Some(Value::Stated(defaults.intensity_amount)),
+            color: Some(defaults.color),
+            color_amount: Some(Value::Stated(defaults.color_amount)),
+            color_color: Some(Value::Stated(defaults.color_color())),
+            contrast: Some(defaults.contrast),
+            contrast_amount: Some(Value::Stated(defaults.contrast_amount)),
+        };
+        assert_eq!(effects, Some(&expected));
+    }
     let params = tokens.params.as_ref().unwrap();
     assert_eq!(
         params.first().unwrap().1,
@@ -822,6 +1081,64 @@ fn unset_scheme_tokens_are_kcolorschemes_defaults() {
             ),
         ]
     );
+}
+
+/// The empty values `applyScheme()` writes for the effect keys a scheme
+/// file lacks are read as KConfig reads them: an empty `Enable` and
+/// `ChangeSelectionColor` true, an empty number or colour the default
+/// (S4.8's *Unset and empty*).
+#[test]
+fn empty_effect_values_are_read_as_kconfig_reads_them() {
+    let text = "[ColorEffects:Inactive]\nEnable=\nChangeSelectionColor=\nIntensityEffect=\n\
+                IntensityAmount=\nColor=\n\n[ColorEffects:Disabled]\nEnable=\nContrastAmount=\n";
+    let reading = reading(&data(text, SchemeFile::Unnamed));
+    let RuleBody::Tokens(tokens) = &reading.layer.rules.first().unwrap().body else {
+        panic!("a tokens rule");
+    };
+    let Some(BlockPatch::Fields(kde)) = &tokens.kde else {
+        panic!("token.kde's fields");
+    };
+    assert_eq!(kde.inactive_enabled, Some(Value::Stated(true)));
+    assert_eq!(
+        kde.inactive_change_selection_color,
+        Some(Value::Stated(true))
+    );
+    let inactive = kde.inactive.as_ref().unwrap();
+    assert_eq!(inactive.intensity, Some(defaults::INACTIVE.intensity));
+    assert_eq!(
+        inactive.intensity_amount,
+        Some(Value::Stated(defaults::INACTIVE.intensity_amount))
+    );
+    assert_eq!(
+        inactive.color_color,
+        Some(Value::Stated(defaults::INACTIVE.color_color()))
+    );
+    let disabled = kde.disabled.as_ref().unwrap();
+    assert_eq!(disabled.intensity, Some(defaults::DISABLED.intensity));
+    assert_eq!(
+        disabled.contrast_amount,
+        Some(Value::Stated(defaults::DISABLED.contrast_amount))
+    );
+
+    let off = reading_tokens_disabled("[ColorEffects:Disabled]\nEnable=No\n");
+    assert_eq!(off.intensity, Some(KdeIntensityEffect::None));
+    assert_eq!(off.contrast, Some(KdeContrastEffect::None));
+}
+
+/// The disabled effects of kdeglobals `text`.
+fn reading_tokens_disabled(text: &str) -> KdeEffectsPatch {
+    match &reading(&data(text, SchemeFile::Unnamed))
+        .layer
+        .rules
+        .first()
+        .map(|rule| &rule.body)
+    {
+        Some(RuleBody::Tokens(tokens)) => match &tokens.kde {
+            Some(BlockPatch::Fields(kde)) => kde.disabled.clone().unwrap_or_default(),
+            _ => KdeEffectsPatch::default(),
+        },
+        _ => KdeEffectsPatch::default(),
+    }
 }
 
 /// With no scheme named, the reader states no scheme input: Breeze Light's,
@@ -941,8 +1258,30 @@ fn a_refused_font_entry_patches_nothing() {
     assert_eq!(font::font_patch(",", Some(96.0)), None);
 }
 
+/// The capitalization: each `QFont::Capitalization` but `MixedCase` the
+/// style's `case` of the same meaning; `MixedCase`, and a number no member
+/// holds, leave it.
+#[test]
+fn the_capitalization_is_the_styles_case() {
+    use crate::blocks::text::TextCase;
+
+    let case = |capitalization: u8| {
+        let text = format!("Synthetic Sans,11,-1,5,400,0,0,0,0,0,{capitalization},0,0,0,0,1");
+        font::font_patch(&text, Some(96.0)).unwrap().case
+    };
+    assert_eq!(case(0), None);
+    assert_eq!(case(1), Some(Value::Stated(TextCase::Upper)));
+    assert_eq!(case(2), Some(Value::Stated(TextCase::Lower)));
+    assert_eq!(case(3), Some(Value::Stated(TextCase::SmallCaps)));
+    assert_eq!(case(4), Some(Value::Stated(TextCase::Capitalize)));
+    assert_eq!(case(5), None);
+}
+
 /// The icon theme and its sizes under the own part, each size from its
-/// `[Icon Theme]` key; a key absent or no size keeps the preset's.
+/// `[Icon Theme]` key, `MainToolbarDefault` the keyed `main_toolbar`; a
+/// key the theme omits, or one KConfig does not convert to an integer, is
+/// KIconTheme's default for its group; a size not above zero is not
+/// stated.
 #[test]
 fn the_icon_theme_and_its_sizes() {
     let mut data = data(KDEGLOBALS_DARK, SchemeFile::Unnamed);
@@ -961,12 +1300,28 @@ fn the_icon_theme_and_its_sizes() {
         None => None,
         other => panic!("{other:?}"),
     };
-    assert_eq!(size(&sizes.toolbar), Some(Value::Stated(Px(24.0))));
-    assert_eq!(size(&sizes.small), Some(Value::Stated(Px(18.0))));
+    let px = |size: u16| Some(Value::Stated(Px(f32::from(size))));
+    let icon_defaults = &defaults::ICON_SIZES;
+    assert_eq!(size(&sizes.toolbar), px(24));
+    assert_eq!(size(&sizes.small), px(18));
     assert_eq!(size(&sizes.panel), None);
-    assert_eq!(size(&sizes.dialog), None);
-    assert_eq!(size(&sizes.large), None);
-    assert_eq!(icon_sizes(&ini("[Icon Theme]\n")), None);
+    assert_eq!(size(&sizes.dialog), px(icon_defaults.dialog));
+    assert_eq!(size(&sizes.large), px(icon_defaults.desktop));
+    let main_toolbar = |sizes: &IconSizeTokensPatch| match sizes.keyed.as_deref() {
+        Some([(key, patch)]) if *key == crate::key!("main_toolbar") => size(&Some(patch.clone())),
+        _ => None,
+    };
+    assert_eq!(main_toolbar(sizes), px(icon_defaults.main_toolbar));
+
+    let stated = icon_sizes(&ini(
+        "[Icon Theme]\nMainToolbarDefault=30\nDesktopDefault=-4\n",
+    ));
+    assert_eq!(main_toolbar(&stated), px(30));
+    assert_eq!(size(&stated.large), None);
+    let unset = icon_sizes(&ini("[Icon Theme]\n"));
+    assert_eq!(size(&unset.toolbar), px(icon_defaults.toolbar));
+    assert_eq!(size(&unset.small), px(icon_defaults.small));
+    assert_eq!(size(&unset.panel), px(icon_defaults.panel));
 }
 
 /// Every expression the reader writes parses.
@@ -998,7 +1353,7 @@ fn the_colour_groups_are_kde_breezes_sets() {
     let file = crate::toml::layer::read_preset(PresetId::KdeBreeze.source()).unwrap();
     let declared = &file.declarations.surface_sets;
     assert_eq!(declared.len(), COLOR_GROUPS.len());
-    for (set, _) in COLOR_GROUPS {
+    for (set, _, _) in COLOR_GROUPS {
         assert!(declared.contains(&set), "{set:?}");
     }
 }
@@ -1041,23 +1396,63 @@ fn the_scheme_file_is_found_in_the_data_directories() {
     ));
 }
 
-/// `forceFontDPI` is read from kcmfonts, a `u32` above zero; the font DPI
-/// is read on X11 only (0.7.0's `force_font_dpi_is_read_from_kcmfonts`).
+/// The scheme file is located by existence, as `QStandardPaths::locate`
+/// finds it: a data directory whose `<name>.colors` is no file (here a
+/// directory) is passed over; a file found there that cannot be read is
+/// the unreadable scheme file, not a reason to look further (S9.3).
 #[test]
-fn force_font_dpi_is_read_from_kcmfonts() {
-    let dir = temp_config_dir("kcmfonts");
-    std::fs::write(
-        dir.join("kcmfonts"),
-        "[General\nstray=1\n\n[General]\nforceFontDPI=120\n",
-    )
-    .unwrap();
+fn the_scheme_file_is_located_by_existence() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = temp_config_dir("scheme-file-exists");
+    let (first, second, third) = (dir.join("first"), dir.join("second"), dir.join("third"));
+    std::fs::create_dir_all(first.join("color-schemes/Synthetic.colors")).unwrap();
+    for data_dir in [&second, &third] {
+        std::fs::create_dir_all(data_dir.join("color-schemes")).unwrap();
+        std::fs::write(
+            data_dir.join("color-schemes/Synthetic.colors"),
+            "[Colors:View]\nBackgroundNormal=1,2,3\n",
+        )
+        .unwrap();
+    }
+    let kdeglobals = ini("[General]\nColorScheme=Synthetic\n");
+    assert!(matches!(
+        read_scheme_file(&kdeglobals, &[first.clone(), third.clone()]),
+        SchemeFile::Read(_)
+    ));
+
+    let locked = second.join("color-schemes/Synthetic.colors");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+    if std::fs::read(&locked).is_err() {
+        match read_scheme_file(&kdeglobals, &[first, second, third]) {
+            SchemeFile::Unreadable(why) => {
+                assert!(
+                    why.contains("second/color-schemes/Synthetic.colors"),
+                    "{why}"
+                );
+                assert!(why.contains("cannot be read"), "{why}");
+            }
+            _ => panic!("an unreadable scheme file found first is the fallback"),
+        }
+    }
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o644)).unwrap();
+}
+
+/// The font DPI is the one Qt's xcb plugin forces from the X resources:
+/// the last `Xft.dpi` line it parses, a decimal rounded, where it is above
+/// zero; none without one; and it is read on X11 only.
+#[test]
+fn the_font_dpi_is_xft_dpi_on_x11() {
+    use font_dpi::{font_dpi_of, read_font_dpi};
+
     assert_eq!(
-        kcmfonts_key_in(&dir, "General", "forceFontDPI").as_deref(),
-        Some("120")
+        font_dpi_of("Xft.antialias:\t1\nXft.dpi:\t120\nXft.hinting:\t1\n"),
+        Some(120.0)
     );
-    assert_eq!(force_font_dpi("120"), Some(120.0));
-    for unset in ["0", "-1", "96.5", ""] {
-        assert_eq!(force_font_dpi(unset), None, "{unset:?}");
+    assert_eq!(font_dpi_of("Xft.dpi:\t96\nXft.dpi:\t144\n"), Some(144.0));
+    assert_eq!(font_dpi_of("Xft.dpi:\t120.6\n"), Some(121.0));
+    for none in ["Xft.dpi:\t0\n", "Xft.dpi:\tbig\n", "*.dpi:\t96\n", ""] {
+        assert_eq!(font_dpi_of(none), None, "{none:?}");
     }
     assert_eq!(read_font_dpi(Some("wayland")), None);
     assert_eq!(read_font_dpi(None), None);
