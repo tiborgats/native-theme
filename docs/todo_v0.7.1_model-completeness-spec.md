@@ -5221,7 +5221,8 @@ with the resolved colour as the platform draws it, S2.1's hand-over; ADD-A128). 
   copied by `os-probe.yml`'s macOS job, Xcode 26.6's by run 42215651196 (the folder's `README.txt` and `xcode.txt`
   record the run and each file's SHA-256), no CI job checking them; a runner image or the Android emulator's system image another harness measures) and `distribution` (a
   dated package snapshot the harnesses install, which no citation names), each listing the generations (preset IDs)
-  it serves, and the one `git` entry with `evidence = true`, the evidence repository (*The evidence root*, below); `[[site]]` documentation sites with their pinning method (their source repositories at a commit, or
+  it serves, and the one `git` entry with `evidence = true`, the evidence repository, which serves none
+  (`generations = []`; *The evidence root*, below); `[[site]]` documentation sites with their pinning method (their source repositories at a commit, or
   snapshots); `[[not_pinned]]` cited code that is not a platform source (the toolkits, the project's own files), with
   its reason; and a `[presets]` table naming the release each preset describes (`macos-tahoe = "macOS 26"`). A page
   snapshot is a `[[source]]` of kind `snapshot`, one per page and keyed by its id (not by generation), with its site,

@@ -232,12 +232,14 @@ the facts tooling reads it.
   `scripts/update_sources.sh` checks the entry out at `<cache>/native-theme-evidence/` like every pin, `--verify`
   included. Every other worktree (a lane's, the tooling's, any branch whose pin differs from the main checkout's) sets
   `NATIVE_THEME_EVIDENCE` to its own evidence checkout, a clone at `.claude/worktrees/<branch>-evidence/` (git-ignored
-  with the worktrees), and `update_sources.sh` skips the evidence entry, `--verify` included, when that variable is
-  set; a worktree that forgets it reads the cache's checkout, which is at the main checkout's pin, so its readers fail
-  on a differing pin rather than read the wrong evidence. Two `update_sources.sh` changes are the tooling task's, not
-  today's behaviour: `--only <id>` fetches named entries alone (the whole cache is about 4.4 GB, and running the facts
-  gate needs only this entry), and a moved evidence pin is fetched into the existing checkout, so only the new runs
-  download (today `fetch_one` fetches every entry afresh into `<cache>/<id>.tmp`).
+  with the worktrees). `update_sources.sh` skips the evidence entry, `--verify` included, when that variable is set
+  and in any worktree (`git rev-parse --git-dir` differs from `--git-common-dir` there), so a worktree that forgets
+  the variable cannot move the shared checkout under a gate running in the main checkout; its readers then read the
+  cache's checkout, at the main checkout's pin, and fail on a differing pin rather than read the wrong evidence. Three
+  `update_sources.sh` changes are the tooling task's, not today's behaviour: the skips above; `--only <id>` fetches
+  named entries alone (the whole cache is about 4.4 GB, and running the facts gate needs only this entry); a moved
+  evidence pin is fetched into the existing checkout, so only the new runs download (today `fetch_one` fetches every
+  entry afresh into `<cache>/<id>.tmp`).
 - **The evidence root:** citations keep their `docs/evidence/...` paths. Every reader (today `check_facts.py`,
   `check_fact_citations.py`, `check_function_vectors.py`, `generate_dynamic_type.py` and the facts gate) resolves a
   path `docs/evidence/<rest>` to `<root>/docs/evidence/<rest>`, the root being, in this order: a test fixture's root
@@ -286,15 +288,17 @@ the facts tooling reads it.
      `git rev-parse <first commit>:docs/evidence` there (the same tree); the second adds the root README and the
      licence files and restates `docs/evidence/README.md` for its new home (it says the runs are kept "in the
      repository");
-  3. the tooling task's branch: its first commit adds the pin, naming the second commit, with CI's shared checkout
-     step; then the readers switch to the evidence root one by one, each commit still holding this repository's
-     `docs/evidence/`, so a reader not yet switched reads it and a switched one reads the checkout, whose files step 2
-     proved the same; then `update_sources.sh`, `check_sources.py`, the step cache, the documents (`CONTRIBUTING.md`,
-     whose link into `docs/evidence/` points at the evidence repository; `docs/new-os-version-guide.md`, whose
-     recording steps copy a run's artifacts into the evidence repository; `scripts/README.md`) and
-     `check_pinned_citations.py`'s exemption of `docs/evidence/` dropped; last, `docs/evidence/` removed, with the
-     guard. So every commit of the branch has its readers' evidence. The working documents' and the imported rows'
-     `docs/evidence/` paths stay as written, naming files by the root rule above (`docs/archive/` is never edited);
+  3. the tooling task's branch: its first commit adds the pin, naming the second commit, with `check_sources.py`'s
+     waiver for the evidence entry (without it `check_sources.py` fails every later commit and `update_sources.sh`,
+     which refuses a `sources.toml` with form problems, cannot fetch the evidence) and CI's shared checkout step; then
+     the readers switch to the evidence root one by one, each commit still holding this repository's `docs/evidence/`,
+     so a reader not yet switched reads it and a switched one reads the checkout, whose files step 2 proved the same;
+     then `update_sources.sh`, the rest of `check_sources.py`, the step cache, the documents (`CONTRIBUTING.md`, whose
+     link into `docs/evidence/` points at the evidence repository; `docs/new-os-version-guide.md`, whose recording
+     steps copy a run's artifacts into the evidence repository; `scripts/README.md`) and `check_pinned_citations.py`'s
+     exemption of `docs/evidence/` dropped; last, `docs/evidence/` removed, with the guard. So every commit of the
+     branch has its readers' evidence. The working documents' and the imported rows' `docs/evidence/` paths stay as
+     written, naming files by the root rule above (`docs/archive/` is never edited);
   4. the branches open at the switch land as the next item says.
 - **Branches open at the switch:** their evidence goes to the evidence repository, not into this repository's history.
   Each one's changes to `docs/evidence/` since its merge base with `v0.8.0-rc1` are applied on its evidence branch,
