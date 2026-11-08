@@ -6421,6 +6421,26 @@ no combination of its own; ADD-A131), less those `not_drawn` names and those `re
 declared variants, holds at most one variant of each `exclusive_variants` group (S10) and is listed once, which
 `check_facts.py` checks.
 
+**What the axes and sets hold** (ADD-A141; the KD-C1, GN-C1 and WN-C1 verifiers' questions). `variant_sets` and
+`variant_products` together give every set of variants the platform draws on one element, never a sample: a set the
+platform draws that the entry leaves out is a defect of the model, as a missing state is (the KDE facts' round 6 added
+the KD-C1 verifier's 278). Every flag the entry's `flags` declares is in `axes.states`: a declared flag is one some
+rule selects on (S12 refuses a keyed flag none does), so it changes what is drawn, and outside the axes no
+combination would hold it (`@keyboard_focus_change`, which 22 KDE facts select on while the combinations never held
+it, KD-C1); `check_facts.py` refuses a declared flag the axes leave out. `axes.conditions` holds the conditions under
+which the platform draws the widget's own values differently; a condition that reaches the widget only through a
+value its facts reference (a token's rule: the speed factor under `animations_off`) is checked at that value's facts,
+whose combinations hold it, and the verifiers' comparison opens it at the widget (`verify_facts.py`'s resolver,
+f9fb16e4); rejected: every such condition in every widget's axes (each doubles a widget's combinations to check what
+the referenced value's facts already check). A variant the platform draws only inside a host (a nested button:
+AutoSuggestBox's query button, `@query`; the pager's `@first`) is declared with its host's context in
+`axes.contexts` and not drawn outside it (`{ variants = ["@query"], not_context = [{ widget = "autocomplete" }] }`),
+even while the host's unit is not enabled: the gate skips the host's combinations until it is (*While the units are
+built*, below) and checks the variant nowhere else, so no combination the platform never draws is asked for, and
+enabling the host's unit changes no state model. Rejected: such variants left out until their hosts' units (a
+model short of what the platform draws); the variant declared with no host context (the gate would check it at the
+top level, drawn as the base, where the platform never draws it).
+
 **Variant products** (ADD-A122). Where the sets a platform draws are the combinations of independent choices
 (libadwaita's button: a content form, a shape, a colour style, a toggle, each class set or not), an entry states them
 as `variant_products` beside or in place of `variant_sets`: a list of products, each a list of groups, a group
@@ -6458,6 +6478,17 @@ sample, so a set the platform draws cannot pass unchecked; M1a task 14 bounds th
 combinations once per scheme and flavour and reusing what the set's rules share, not by checking fewer. Rejected:
 the plain list alone, unreviewable at that size; and products left untrimmed, which would assert sets the platform
 does not draw, so the exclusive groups, `requires_variants` and `not_drawn` trim them as they trim listed sets.
+
+**Sets not yet measured** (ADD-A141; the MC-C1 tie-break, U695). Where the sets are drawn but no pass measured them,
+a key's look on a set is unknown exactly where two of its variants each state their own facts of the key: one
+pending fact per such pair, `when` naming the two variants and placed after both, covers every set holding the pair,
+and a set whose variants state the key once at most takes that fact, as S17's *Which fact applies* gives it, each
+variant's facts being its own look over the base's. A measured pair replaces its pending fact by the measured value,
+or by a decision that the pair's looks compose (one variant's facts holding on the other's sets), recorded per key.
+Rejected: one pending fact per set and key (`macos-tahoe`'s 1,209 sets each listed where the pairs cover them, the
+gate's memory a known limit); no pending fact (the later variant's fact on the set, a composition no evidence shows);
+a pending fact on every set holding a variant with facts of its own (the sets where the look follows from one
+variant's facts would wait on a measurement they do not need).
 
 The gate also resolves each fact's own
 `when`, so a fact naming a size class, a position or a direction is checked too. A preset with flavours is checked
