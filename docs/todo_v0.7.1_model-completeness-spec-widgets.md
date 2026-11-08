@@ -9631,7 +9631,8 @@ Q3.26); `material-3` `oklab` (Compose's `ColorVectorConverter.kt:30-48`; MAT-X13
 animations' space, `CompositionColorSpace_Rgb` (`SharedTransitionAnimations.cpp:111`, the brush transitions its
 controls' colours move by, W1-023), whose arithmetic (premultiplied or straight) the compositor holds, not the cache:
 a measurement, the WinUI host capturing a brush transition's middle frame between two colours of different alpha and
-the facts stating the member it matches (a pending fact until then; the Open items); `macos-*` (MAC-X11) and `ios-*`
+the facts stating the member it matches (a pending fact until then; the Open items): straight, with no 8-bit
+truncation, `straight_srgb` (run 42308526155, U157; S2.7, ADD-A141); `macos-*` (MAC-X11) and `ios-*`
 (X-MO-1) Core Animation's colour interpolation, which no cached source states: a measurement likewise, the probe and
 the iOS host capturing a colour transition's middle frame. A member is added where none matches (S2.7).
 

@@ -932,6 +932,18 @@ pub enum ShadowFalloff { Gaussian,             // CSS's: a Gaussian blur, its de
                                                // `shadow.size`
 ```
 
+**Layer order** (ADD-A141; the GN-C1 verifier's question). `Layers` lists its layers bottom first, as `Paint`
+does (S2.3), each painted over the ones before it, so the model has one order for every list of layers; the layers
+without `inset` are painted beneath the part's fill and the inset layers over it, beneath its stroke, as CSS paints a
+`box-shadow` (W3C CSS Backgrounds and Borders Level 3, *Drop Shadows*). A CSS `box-shadow` list paints its first
+shadow on top, so a fact states it reversed (libadwaita's `0 0 0 1px $border_color, 0 1px 3px 1px …, 0 2px 6px 2px
+…` the widest layer first); material-web's elevation, its `::before` shadow beneath its `::after`, is already bottom
+first. A part a platform draws from two nodes of one box (GTK's menu button, the outer `menubutton` node and its inner
+button, `menubutton.card > button`) states the outer node's layers first and the inner node's after them, as the
+inner node is painted over the outer. Rejected: CSS's order, first on top (one lane's sources, against `Paint`'s and
+material-web's order, so a connector would read two orders); no stated order (the GNOME and Material facts already
+disagree).
+
 **Blur and falloff** (ADD-A134). `blur` is CSS's blur radius: under `Gaussian` the layer's shape (the part's
 outline moved by `x` and `y`, grown by `spread`, or shrunk where `inset`) is blurred by a Gaussian whose standard
 deviation is half of `blur`, as CSS's `box-shadow` defines it (W3C CSS Backgrounds and Borders Level 3, *Shadow
@@ -1242,6 +1254,9 @@ its source, for every `t` a timing gives, overshoot included:
   and truncated toward zero (Qt's `QVariantAnimation` colour interpolator, which QML's `ColorAnimation` uses,
   `qtbase@6.12.0 src/gui/animation/qguivariantanimation.cpp:16-22`, `src/corelib/animation/qvariantanimation_p.h:89-94`,
   `qtdeclarative@6.12.0 src/quick/util/qquickanimation.cpp:776-782`).
+- `StraightSrgb` (ADD-A141): each channel and the alpha interpolated apart without premultiplying, as fractions, with
+  no 8-bit step and no clamp (`Color` holds a channel outside `0..=1`, S2.1): WinUI's composition path (below),
+  measured.
 - `Oklab`: L, a, b and the straight alpha interpolated apart and clamped to `0..=1`, `±0.5`, `±0.5` and `0..=1`
   before the conversion back to the target colour's space (sRGB for every Material colour); every Oklab value, the
   endpoints and each frame, is held as half-float L, a and b with a 10-bit alpha (`androidx@e4d933c9
@@ -1271,7 +1286,18 @@ src/dxaml/xcp/components/comptree/SharedTransitionAnimations.cpp:111`,
 compositor, not this source, holds; and a storyboard animation left on the UI thread blends straight 8-bit ARGB by a
 fraction rounded to 256ths (`src/dxaml/xcp/core/animation/ColorAnimation.cpp:51-131`). `windows-11`'s token is the
 composition path's, which its controls' brush transitions take (W1-023), the member its measurement matches (the
-catalogue's *token.motion.color_space*); a WinUI fact on the other path is the case below. Core Animation's colour
+catalogue's *token.motion.color_space*); a WinUI fact on the other path is the case below. That member is
+`StraightSrgb` (ADD-A141; U157's measurement): the WinUI host's brush transitions between colours of different alpha
+(run 42308526155, `read_host.py`'s `[color_space]`) fit straight interpolation within a level and premultiplied and
+Oklab interpolation only within 16 to 51, and refitted with the 8-bit truncation and without it (each frame's best
+`t` in 2000ths, over the two translucent recordings' 22 distinct frames each) they are off by 0.50 and 0.64 levels on
+average truncated, 0.14 and 0.05 without, the worst one level either way: the compositor does not truncate as Qt does,
+so `StraightSrgb8`, Qt's, would state a rounding WinUI does not draw. Rejected: `StraightSrgb8` with its truncation
+as a recorded inexactness (a member named and implemented for Qt's arithmetic, stated for a toolkit the measurement
+shows does not share it); a rounded 8-bit member (the frames do not tell rounding from no rounding, and the composition
+path's colours are floats until they are drawn). The refit is to be committed as `read_host.py`'s next revision before
+the fact names the member, and its vector table measured on the WinUI host with the colour animation held at set
+progresses (the composition animation's controller paused at a `Progress`), S2.2's measured route. Core Animation's colour
 interpolation, `macos-*`'s and `ios-*`'s, has no source in the cache and is measured likewise. Rejected: R9's one
 space for every platform (Compose's colour transitions pass through other colours, and Qt Quick's wherever the alpha
 changes); a space on every `Transition` (a field each transition states, where one toolkit fixes the space for all of
@@ -2778,7 +2804,8 @@ pub struct MotionTokens {
     pub speed_factor: Value<f32>,            // R9
     pub color_space: Value<ColorInterpolation>,   // the space colour transitions move through (S2.7; ADD-A125)
 }
-pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, Oklab }   // closed; each to its source (S2.7)
+pub enum ColorInterpolation { PremultipliedSrgb, StraightSrgb8, StraightSrgb, Oklab }   // closed; each to its
+                                                                                       // source (S2.7; ADD-A141)
 ```
 
 The sketch gives the checkers the keys' types (ADD-A123): a `token.motion.durations.<key>` is a duration, a
