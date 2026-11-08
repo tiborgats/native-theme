@@ -7,7 +7,8 @@
 //! (`$XDG_CONFIG_HOME`, else `~/.config`).
 //!
 //! The clean room's Qt font parser, `qfont_from_string` (the 0.8.0 plan's
-//! D10), its code placed unchanged in `src/cleanroom_readers/`, is linked
+//! D10), its code placed in `src/cleanroom_readers/`, unchanged but for its
+//! panic-free arithmetic, is linked
 //! here with its vector test; the KDE reader, which reads kdeglobals' font entries
 //! with it, returns with the `kde-breeze` preset (M1b).
 
@@ -18,7 +19,7 @@
 )]
 #[allow(
     clippy::collapsible_if,
-    reason = "the clean room's parser, placed unchanged (D10): a style lint only"
+    reason = "the clean room's parser, its style kept as written (D10): a style lint only"
 )]
 mod qfont_from_string;
 

@@ -1,5 +1,6 @@
 //! The clean room's two GNOME helpers (the 0.8.0 plan's D10), their code
-//! placed unchanged in `src/cleanroom_readers/` (their vector tests named
+//! placed in `src/cleanroom_readers/`, unchanged but for its panic-free
+//! arithmetic (their vector tests named
 //! `vectors_reader_<helper>` and reading `tests/vectors/`), and what the reader keeps of what
 //! they give: Pango's font-description parser, [`pango_font_description`],
 //! for the gsettings font strings, and libadwaita's accent classification,
@@ -16,7 +17,7 @@ mod adw_accent_nearest;
     clippy::collapsible_if,
     clippy::manual_ignore_case_cmp,
     clippy::type_complexity,
-    reason = "the clean room's parser, placed unchanged (D10): style lints only"
+    reason = "the clean room's parser, its style kept as written (D10): style lints only"
 )]
 mod pango_font_description;
 
