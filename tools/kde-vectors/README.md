@@ -3,7 +3,10 @@
 Generates the vector tables of the KDE platform functions (specification S2.2 *Checked against their references*)
 by the `compiled_source` route, under `native-theme/tests/vectors/`: `kirigami_lerp.tsv`, `kde_shade.tsv`,
 `kcu_mix.tsv`, `kcu_tint.tsv`, `kcu_shade.tsv`, `kcu_overlay.tsv`, `kirigami_tint.tsv`, `kde_effects.tsv` and
-`kde_selection_inactive.tsv`.
+`kde_selection_inactive.tsv`; and, by the `public_api` route, the KDE reader's `reader.qfont_from_string.tsv`:
+`QFont::fromString` called through the system's Qt 6.12.0 (`qfont.cpp`) on the strings Qt 6.12 writes for Plasma's
+default fonts (`plasma-integration@6.8.2`) and typical choices, Qt 5's strings and each field's edge cases, each
+result read through `QFont`'s getters and `resolveMask()` (its string cells JSON string literals).
 
 `generate.py` reads each upstream file from the source cache (`scripts/update_sources.sh`) as the commit
 `docs/facts/sources.toml` pins holds it, through git's objects (`tools/pinned.py`): Qt's `qcolor.cpp`, Kirigami's

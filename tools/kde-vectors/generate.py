@@ -20,6 +20,12 @@ Writes these tables under `native-theme/tests/vectors/`:
   background role (`:380-391`);
 - `kde_selection_inactive.tsv`: the Selection set's Inactive start, `KColorScheme(QPalette::Inactive, Selection,
   config)` (`:304-321`, `:374-378`) over an in-memory config with the inactive effects disabled.
+- `reader.qfont_from_string.tsv`, by the `public_api` route: the KDE reader's `QFont::fromString` (`qtbase@6.12.0
+  src/gui/text/qfont.cpp:2246-2320`) called through the system's Qt 6.12.0 by `qfont.cpp`, on the strings Qt 6.12
+  writes (`QFont::toString`) for Plasma's default fonts (`plasma-integration@6.8.2
+  qt6/src/platformtheme/kfontsettingsdata.cpp`, read from the source cache) and typical choices, Qt 5's and earlier
+  Qt 6 releases' strings, and each field count's and field's edge cases; each result read through `QFont`'s getters
+  and `resolveMask()`. A string cell is a JSON string literal.
 
 The functions' inputs: the Breeze 6.8.2 colour schemes' colours (`breeze@6.8.2 colors/BreezeLight.colors`,
 `BreezeDark.colors`, read from the source cache) at the arguments the facts pass (`docs/facts/kde/`), the branches'
@@ -43,6 +49,7 @@ another Qt or KConfig. Run from the repository root, the source cache's folder o
     python3 -I tools/kde-vectors/generate.py [source cache]
 """
 
+import json
 import random
 import re
 import struct
@@ -662,6 +669,242 @@ def new_tables(rng, reference, fused, source_cache):
         print(f"{name}.tsv: {n} rows")
 
 
+# ---- QFont::fromString, the KDE reader's font entries (the public_api route: the system's Qt 6.12.0)
+
+PLASMA_INTEGRATION = "plasma-integration@6.8.2"
+FONT_DATA = "qt6/src/platformtheme/kfontsettingsdata.cpp"
+QT_STYLE_HINTS = {"SansSerif": 0, "Helvetica": 0, "Serif": 1, "Times": 1, "TypeWriter": 2, "Courier": 2,
+                  "OldEnglish": 3, "Decorative": 3, "System": 4, "AnyStyle": 5, "Cursive": 6, "Monospace": 7,
+                  "Fantasy": 8}
+QT_WEIGHTS = {"Thin": 100, "ExtraLight": 200, "Light": 300, "Normal": 400, "Medium": 500, "DemiBold": 600,
+              "Bold": 700, "ExtraBold": 800, "Black": 900}
+# Qt 5's QFont::Weight constants (0 to 99), each and the midpoints between neighbours, where the nearest is a tie
+LEGACY_WEIGHTS = [0, 6, 12, 18, 19, 25, 37, 38, 50, 53, 54, 57, 60, 63, 69, 75, 78, 81, 84, 87, 93, 99, 100, 400,
+                  -1, -6, -7, -1000]
+# fields 1 to 15 of a Qt 6 string (field 0 the family), to vary one at a time
+QT6_TAIL = ["10", "-1", "5", "400", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1"]
+QT5_TAIL = ["10", "-1", "5", "50", "0", "0", "0", "0", "0"]
+# one field's variants: (field index, values); the field's value as written, whitespace and junk included
+FIELD_VARIANTS = [
+    (1, ["11", "10.5", "9.75", "0", "-1", "-0.5", " 10 ", "+10", ".5", "5.", "1e1", "1E+1", "1e", "abc", "", "nan",
+         "inf", "-inf", "1e400", "10 ", " 10", "0x10", "1,5"]),
+    (2, ["13", "0", "-1", "65535", "65536", "13.5", " 13 ", "+13", "0x10", "abc", "", "2147483647",
+         "2147483648"]),
+    (3, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "255", "256", "-1"]),
+    (4, ["1", "100", "350", "999", "1000", "1001", "0", "-5", "65536", "abc", "", " 700 ", "700.0"]),
+    (5, ["1", "2", "3", "4", "-1", "x"]),
+    (6, ["1", "2", "-1"]),
+    (7, ["1"]),
+    (8, ["1", "x"]),
+    (10, ["1", "2", "3", "4", "5", "8", "-1"]),
+    (11, ["1", "2"]),
+    (12, ["1.5", "-2", "0.01", "0.015625", "0.02", "-0.01", "110", "abc"]),
+    (13, ["2.7", "-1", "0.03"]),
+    (14, ["50", "100", "125", "4000", "4001", "-1", "4096"]),
+    (15, ["0", "2", "256", "65535", "65536", "-1"]),
+]
+
+
+def plasma_fonts(cache: Path):
+    """Plasma's default fonts (kfontsettingsdata.cpp's DefaultFontData): (group, key, family, size, weight, hint)."""
+    text = pinned.pinned(cache, PLASMA_INTEGRATION, FONT_DATA).decode("utf-8")
+    rows = re.findall(r'\{(GeneralId|"WM"), "(\w+)", (DefaultFont|"[^"]+"), (\d+), QFont::(\w+), QFont::(\w+), "\w+"\}',
+                      text)
+    default = re.search(r'DefaultFont\[\] = "([^"]+)";', text).group(1)
+    if len(rows) != 7 or not default:
+        sys.exit(f"{PLASMA_INTEGRATION} {FONT_DATA}: {len(rows)} default fonts, not 7")
+    return [(group.strip('"').replace("GeneralId", "General"), key, default if family == "DefaultFont" else
+             family.strip('"'), int(size), QT_WEIGHTS[weight], QT_STYLE_HINTS[hint])
+            for group, key, family, size, weight, hint in rows]
+
+
+def qfont_build(work: Path):
+    qt = [QT_INCLUDE, QT_INCLUDE / "QtCore", QT_INCLUDE / "QtGui"]
+    exe = work / "qfont"
+    pinned.sandboxed(["g++", "-std=c++20", "-fPIC", "-O2", *(f"-I{p}" for p in qt), "-o", exe, HERE / "qfont.cpp",
+                      "-lQt6Gui", "-lQt6Core"], writable=[work], check=True)
+    return exe
+
+
+def qfont_run(exe: Path, lines):
+    out = pinned.sandboxed([exe], readable=[exe.parent], input="".join(x + "\n" for x in lines),
+                           capture_output=True, text=True, check=True).stdout.splitlines()
+    if len(out) != len(lines):
+        sys.exit(f"{exe.name}: {len(out)} results for {len(lines)} lines")
+    return out
+
+
+def hex_text(s):
+    return "=" if s == "" else s.encode("utf-8").hex()
+
+
+def unhex_text(cell):
+    return None if cell == "-" else "" if cell == "=" else bytes.fromhex(cell).decode("utf-8")
+
+
+def written_fonts(exe: Path, plasma):
+    """The strings Qt 6.12 writes (QFont::toString, as KConfig writes a font entry) for Plasma's defaults and for
+    the forms a user's choice takes: bold, italic, a fractional size, a pixel size, a style name, features, axes."""
+    def w(family, pt, px, weight, style, hint, style_name=None, features=None, axes=None):
+        return "\t".join(["w", hex_text(family), repr(float(pt)), str(px), str(weight), str(style), str(hint),
+                          "-" if style_name is None else hex_text(style_name),
+                          "-" if features is None else hex_text(features), "-" if axes is None else hex_text(axes)])
+    specs = [w(family, size, 0, weight, 0, hint) for _, _, family, size, weight, hint in plasma]
+    specs += [w(family, size, 0, weight, 0, hint, "Regular") for _, _, family, size, weight, hint in plasma[:2]]
+    specs += [w("Noto Sans", 10, 0, 700, 0, 0), w("Noto Sans", 10, 0, 400, 1, 0, "Italic"),
+              w("Noto Sans", 10.5, 0, 400, 0, 0), w("Noto Sans", 0, 13, 400, 0, 0),
+              w("Noto Sans", 11, 0, 600, 0, 0, "SemiBold"), w("Inter", 10, 0, 400, 0, 5, None, "tnum=1,ss01=1"),
+              w("Inter", 10, 0, 400, 0, 5, None, None, "wght=450,opsz=14"),
+              w("Inter", 10, 0, 400, 0, 5, None, "liga=0", "wght=450.5"),
+              w("Hack", 9, 0, 400, 0, 7), w("Noto Sans Mono", 10, 0, 400, 0, 7),
+              w("Cantarell", 11, 0, 400, 2, 5), w("Noto Sans CJK JP", 10, 0, 400, 0, 5)]
+    return [unhex_text(x) for x in qfont_run(exe, specs)]
+
+
+def qfont_inputs(written):
+    family = "Noto Sans"
+    rows = list(written)
+    # Qt 5's strings (10 fields, 11 with a style name) and earlier Qt 6 releases' (16, 17 with a style name)
+    rows += [",".join([family, *QT5_TAIL]), ",".join([family, *QT5_TAIL, "Regular"]),
+             ",".join(["Hack", *QT5_TAIL]), "Noto Sans,10,-1,5,75,0,0,0,0,0", "Noto Sans,10,-1,5,50,1,0,0,0,0",
+             "Noto Sans,8,-1,5,50,0,0,0,0,0,Regular", "Noto Sans,-1,13,5,50,0,0,0,0,0",
+             ",".join([family, *QT6_TAIL]), ",".join([family, *QT6_TAIL, "Regular"]),
+             "Noto Sans,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1", "Noto Sans,-1,13,5,400,0,0,0,0,0,0,0,0,0,0,1"]
+    # the field count's cases (fromString's `count`): 1, 2, 3 to 9 refused, 10 to 15, 16, 17, the feature and axis
+    # counts and their entries
+    base = [family, *QT6_TAIL]
+    rows += ["", " ", "Noto Sans", "Noto Sans,11", "Noto Sans,0", "Noto Sans,abc", "Noto Sans,11,"]
+    rows += [",".join(base[:n]) for n in range(3, 10)]
+    rows += [",".join([*base[:10], "Regular"]), ",".join([*base[:10], ""])]
+    rows += [",".join(base[:n]) for n in range(12, 16)]
+    rows += [",".join([*base, "Regular", "1", "tnum=1", "1", "wght=450"]),
+             ",".join([*base, "", "0", "0"]), ",".join([*base, "Bold", "0"]), ",".join([*base, "", "2", "tnum=1"]),
+             ",".join([*base, "", "2", "tnum=1", "liga=0", "1", "wght=450.5"]),
+             ",".join([*base, "", "1", "tnum", "0"]), ",".join([*base, "", "1", "tnu=1", "0"]),
+             ",".join([*base, "", "1", "tnums=1", "0"]), ",".join([*base, "", "1", "tnum=x", "0"]),
+             ",".join([*base, "", "1", "tnum=-1", "0"]), ",".join([*base, "", "1", "tnum=4294967295", "0"]),
+             ",".join([*base, "", "1", "tnum=4294967296", "0"]), ",".join([*base, "", "1", " tnum=1", "0"]),
+             ",".join([*base, "", "1", "tnum= 1 ", "0"]), ",".join([*base, "", "1", "tnum=1=2", "0"]),
+             ",".join([*base, "", "1", "tnum=1", "1"]), ",".join([*base, "", "0", "1", "wght=abc"]),
+             ",".join([*base, "", "0", "1", "wght=1e40"]), ",".join([*base, "", "0", "1", "wght=-1.5"]),
+             ",".join([*base, "", "0", "2", "wght=450", "wght=500"]), ",".join([*base, "", "-1", "0"]),
+             ",".join([*base, "", "x", "0"]), ",".join([*base, "", "0", "x"]), ",".join([*base, "", "0"]),
+             ",".join([*base, "", "0", "0", "extra"])]
+    # whitespace, the family's own characters, the weight scales
+    rows += [" Noto Sans,10", "Noto Sans ,10", "\tNoto Sans,10\n", " Noto Sans,10", " ,10", ",10",
+             "\"Noto Sans\",10", "'Noto Sans',10", "Noto Sans [Monotype],10", "Noto Sans CJK JP,10",
+             "Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1 ", "Noto Sans, 10 ,-1,5, 400 ,0,0,0,0,0,0,0,0,0,0,1"]
+    rows += [",".join([family, "10", "-1", "5", str(x), *QT5_TAIL[4:]]) for x in LEGACY_WEIGHTS]
+    rows += [",".join([family, "10", "-1", "5", str(x), *QT5_TAIL[4:], "Regular"]) for x in [50, 75, 400]]
+    rows += [",".join([family, "10", "-1", "5", str(x), *QT6_TAIL[4:10]]) for x in [50, 400, 700]]
+    for k, values in FIELD_VARIANTS:
+        for v in values:
+            fields = [*base]
+            fields[k] = v
+            rows.append(",".join(fields))
+            if k <= 8:
+                fields = [family, *QT5_TAIL]
+                fields[k] = v
+                rows.append(",".join(fields))
+    rows += ["Noto Sans,10,13,5,400,0,0,0,0,0,0,0,0,0,0,1", "Noto Sans,0,0,5,400,0,0,0,0,0,0,0,0,0,0,1",
+             "Noto Sans,-1,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"]
+    seen, out = set(), []
+    for r in rows:
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
+
+
+QF_FAMILIES, QF_SIZE, QF_HINT, QF_STRATEGY, QF_WEIGHT, QF_STYLE, QF_UNDERLINE, QF_STRIKE, QF_FIXED, QF_STRETCH, \
+    QF_CAPS, QF_LETTER, QF_WORD = 0x20000, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x100, 0x200, 0x400, 0x1000, 0x2000, \
+    0x4000
+
+
+def real_cell(text):
+    """A real the harness printed "%.17g", as the shortest decimal that reads back as that double."""
+    return repr(float(text))
+
+
+def qfont_row(s, r):
+    f = r.split("\t")
+    ok, mask = f[0] == "1", int(f[1])
+    if not ok:
+        assert mask == 0 and f[17:] == ["-", "-", "-"], (s, r)
+
+    def opt(bit, cell):
+        return cell if mask & bit else "none"
+
+    def opt_text(cell):
+        value = unhex_text(cell)
+        return "none" if value is None else string_cell(value)
+    point, pixel = float(f[3]), int(f[4])
+    return [
+        string_cell(s), "true" if ok else "false",
+        "none" if not mask & QF_FAMILIES else string_cell(unhex_text(f[2])),
+        real_cell(f[3]) if mask & QF_SIZE and point > 0 else "none",
+        str(pixel) if mask & QF_SIZE and pixel > 0 else "none",
+        opt(QF_HINT, f[5]), opt(QF_WEIGHT, f[6]), opt(QF_STYLE, f[7]),
+        opt(QF_UNDERLINE, "true" if f[8] == "1" else "false"), opt(QF_STRIKE, "true" if f[9] == "1" else "false"),
+        opt(QF_FIXED, "true" if f[10] == "1" else "false"), opt(QF_CAPS, f[11]), opt(QF_LETTER, f[12]),
+        opt(QF_LETTER, real_cell(f[13])), opt(QF_WORD, real_cell(f[14])), opt(QF_STRETCH, f[15]),
+        opt(QF_STRATEGY, f[16]), opt_text(f[17]), opt_text(f[18]), opt_text(f[19]),
+    ]
+
+
+def string_cell(s):
+    """A `string` cell: the JSON string literal of `s` (the proposed column type: any string, the empty one,
+    surrounding whitespace and control characters included)."""
+    return json.dumps(s, ensure_ascii=False)
+
+
+def qfont_table(source_cache: Path, work: Path):
+    exe = qfont_build(work)
+    inputs = qfont_inputs(written_fonts(exe, plasma_fonts(source_cache)))
+    results = qfont_run(exe, [hex_text(s) for s in inputs])
+    rows, infinite = [], []
+    for s, r in zip(inputs, results):
+        row = qfont_row(s, r)
+        # a number cell holds no infinity: an infinite point size ("inf", "1e400") is left to the description
+        if row[3] in ("inf", "-inf", "nan"):
+            infinite.append(s)
+        else:
+            rows.append(row)
+    write_table(
+        VECTORS / "reader.qfont_from_string.tsv",
+        ["# function: reader.qfont_from_string",
+         "# route: public_api",
+         "# source: qtbase@6.12.0",
+         "# generations: kde-breeze",
+         "# generator: tools/kde-vectors",
+         "# inputs: s:string",
+         "# outputs: ok:bool family:option<string> point_size:option<number> pixel_size:option<number> "
+         "style_hint:option<number> weight:option<number> style:option<number> underline:option<bool> "
+         "strike_out:option<bool> fixed_pitch:option<bool> capitalization:option<number> "
+         "letter_spacing_type:option<number> letter_spacing:option<number> word_spacing:option<number> "
+         "stretch:option<number> style_strategy:option<number> style_name:option<string> features:option<string> "
+         "axes:option<string>",
+         f"# written by tools/kde-vectors/generate.py on Qt {qt_version()}; do not edit. Each row:",
+         "# QFont::fromString(s) on a default-constructed QFont, read through QFont's getters. A string cell is a",
+         "# JSON string literal. `none`: the call did not set the property (not in QFont::resolveMask(); for",
+         "# style_name, features and axes, which carry no mask bit: a font holding sentinels kept them), so a",
+         "# reader keeps its starting value there; point_size is `none` also where the size set is a pixel size,",
+         "# and pixel_size where it is a point size. Integers are Qt's (QFont::StyleHint, the OpenType weight,",
+         "# QFont::Style, QFont::Capitalization, QFont::SpacingType, the stretch in percent, QFont::StyleStrategy).",
+         "# features and axes: the call's entries as tag=value joined by commas, by tag, \"\" for none. The inputs:",
+         "# the strings Qt 6.12 writes for Plasma's default fonts (plasma-integration@6.8.2",
+         "# qt6/src/platformtheme/kfontsettingsdata.cpp) and for typical choices, Qt 5's and earlier Qt 6",
+         "# releases' strings, then each field count and each field's variants, whitespace and junk. Left out:",
+         f"# {len(infinite)} inputs whose point size Qt sets to infinity (a number cell holds none):",
+         *(f"# {string_cell(s)}" for s in infinite)],
+        ["s", "ok", "family", "point_size", "pixel_size", "style_hint", "weight", "style", "underline",
+         "strike_out", "fixed_pitch", "capitalization", "letter_spacing_type", "letter_spacing", "word_spacing",
+         "stretch", "style_strategy", "style_name", "features", "axes"],
+        rows,
+    )
+    print(f"reader.qfont_from_string.tsv: {len(rows)} rows")
+
+
 def main():
     if qt_version() != QT_VERSION:
         sys.exit(f"Qt {qt_version() or '(none)'} found; the pin is Qt {QT_VERSION}")
@@ -734,6 +977,7 @@ def main():
         )
 
         new_tables(rng, reference, fused, source_cache)
+        qfont_table(source_cache, tmp)
 
 if __name__ == "__main__":
     main()
