@@ -6424,7 +6424,9 @@ declared variants, holds at most one variant of each `exclusive_variants` group 
 **What the axes and sets hold** (ADD-A141; the KD-C1, GN-C1 and WN-C1 verifiers' questions). `variant_sets` and
 `variant_products` together give every set of variants the platform draws on one element, never a sample: a set the
 platform draws that the entry leaves out is a defect of the model, as a missing state is (the KDE facts' round 6 added
-the KD-C1 verifier's 278). Every flag the entry's `flags` declares is in `axes.states`: a declared flag is one some
+the KD-C1 verifier's 278; on `ios-*` the system type with an image and a menu, with a menu on hold, and with an image
+and a toggle, which the gate met only where a fact's own `when` named them, the iOS facts lane's round 5, c8610c67),
+so the gate checks each set whether a fact names it or not. Every flag the entry's `flags` declares is in `axes.states`: a declared flag is one some
 rule selects on (S12 refuses a keyed flag none does), so it changes what is drawn, and outside the axes no
 combination would hold it (`@keyboard_focus_change`, which 22 KDE facts select on while the combinations never held
 it, KD-C1); `check_facts.py` refuses a declared flag the axes leave out. `axes.conditions` holds the conditions under
@@ -6491,7 +6493,19 @@ a pending fact on every set holding a variant with facts of its own (the sets wh
 variant's facts would wait on a measurement they do not need).
 
 The gate also resolves each fact's own
-`when`, so a fact naming a size class, a position or a direction is checked too. A preset with flavours is checked
+`when`, so a fact naming a size class, a position or a direction is checked too. A fact's own combination is its
+`when`'s positive lists completed with what the widget requires (`requires_variants`) and nothing else; where that
+completion is one the state model does not draw, for a size or a variant its named variants lack (`ios-13`'s 94
+facts naming `mini`, `small` or `large` and no style, which only the configuration styles take, `sizes_by_variant`;
+52 "not available (Size)" failures in the iOS facts lane's round 5) or by `not_drawn`, it is completed once with each
+variant, or set, the state model draws that makes it drawn (for a size, each `sizes_by_variant` entry whose `sizes`
+hold it), each completion the declarations and `not_drawn` leave drawn checked, an undrawn one no failure (the gate
+today refuses the size before it reads `not_drawn`); a `when` no completion makes drawn holds in no combination the platform draws, a finding of the
+fact, not a skip (ADD-A141; the gate's code a follow-up). Rejected: the first such style alone (the lane's proposal: an
+order the entries happen to have picks the one style that checks a fact claiming them all, and a fact naming a
+condition outside the axes would be checked on that style only); the style required in the `when` (a size's look
+held by every style would be split into a fact per style, the same value each); the combination skipped (a fact
+naming a condition outside the axes would go unchecked). A preset with flavours is checked
 once per flavour, each with its flavour's entries. An entry with
 `preset:` (or `flavor:`) replaces the shared entry of its widget for that preset (or flavour). `check_facts.py` checks
 the names against the catalogue's entry, `check_fact_citations.py` the citations, `check_facts_trace.py` counts their
