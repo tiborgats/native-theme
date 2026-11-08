@@ -119,7 +119,8 @@ if [[ -n "$EVIDENCE_ID" ]]; then
     skip=""
     if [[ -n "${NATIVE_THEME_EVIDENCE:-}" ]]; then
         skip="NATIVE_THEME_EVIDENCE is set: the readers read $NATIVE_THEME_EVIDENCE"
-    elif [[ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ]]; then
+    elif [[ "$(git rev-parse --path-format=absolute --git-dir)" != \
+        "$(git rev-parse --path-format=absolute --git-common-dir)" ]]; then
         skip="a worktree: only the main checkout fetches it; set NATIVE_THEME_EVIDENCE to a clone of your own"
     fi
     if [[ -n "$skip" ]] && cut -f1 <<<"$ENTRIES" | grep -qxF -- "$EVIDENCE_ID"; then

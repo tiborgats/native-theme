@@ -7,7 +7,9 @@ kind and no others; ids are unique and `<name>@<version>` (for a commit pin, `ta
 commit's first eight hex digits); SHAs are 40 hex (SHA-256s 64); every generation is a preset id of the plan; one pin
 per name and generation. The git entry with `evidence = true`, this project's evidence repository (spec S17 *The
 evidence root*), is waived the rules it cannot meet: `release`, `researched` and `proof`, a non-empty `generations`
-and the `<name>@<version>` id (EVIDENCE_WAIVED).
+and the `<name>@<version>` id (EVIDENCE_WAIVED). There is exactly one, with the id `native-theme-evidence`, `tag =
+"commit"`, `generations = []`, a `note` and no field beyond EVIDENCE_FIELDS (no `project`, `release`, `researched` or
+`proof`: its commit is this project's own, moved by its facts commits); `evidence` is never `false`.
 A git entry's repository is an https URL with a path, its tag a tag name that is the id's version (after a `v` or a
 prefix ending in `/`, `_` or `-`), its sparse folders relative paths without spaces, `..` or a leading `-`. Every
 [[site]] names its method, and a "repository" site the git [[source]] ids of its repositories, each naming the site
@@ -65,6 +67,8 @@ BOOL_FIELDS = {"evidence"}                                         # bools; ever
 # The COMMON fields the evidence entry (a git entry with `evidence = true`) does without: its commit is this project's
 # own, moved by its own facts commits, so it has no release, research date or proof of a platform pin.
 EVIDENCE_WAIVED = {"release", "researched", "proof"}
+EVIDENCE_ID = citations.EVIDENCE_ID
+EVIDENCE_FIELDS = {"id", "kind", "evidence", "repository", "tag", "commit", "generations", "note"}
 
 
 class Entry(dict):
@@ -166,6 +170,10 @@ def source_problems(e):
                 out.append(f"{where}: sparse path {p!r} is not a relative folder")
         if "project" not in e and "site" not in e and "note" not in e:
             out.append(f"{where}: neither a project, a site nor a note saying why it is pinned")
+    if evidence:
+        out += evidence_problems(where, e)
+    elif "evidence" in e:
+        out.append(f"{where}: `evidence` is `true` on the evidence entry alone, never `false`")
     if kind == "sdk":
         shape = "xcode" if "xcode" in e else "windows image" if "windows" in e else "system image"
         for f in sorted(SDK_SHAPES[shape] - set(e)):
@@ -201,6 +209,22 @@ def source_problems(e):
     return out
 
 
+def evidence_problems(where, e):
+    """The evidence entry's own rules (spec S17 *The evidence root*), beyond its kind's."""
+    out = []
+    if e.get("id") != EVIDENCE_ID:
+        out.append(f"{where}: the evidence entry's id is not {EVIDENCE_ID!r}")
+    if e.get("tag") != "commit":
+        out.append(f"{where}: the evidence entry is not a commit pin (`tag = \"commit\"`)")
+    if e.get("generations") != []:
+        out.append(f"{where}: the evidence entry serves no generation (`generations = []`)")
+    if "note" not in e:
+        out.append(f"{where}: the evidence entry has no `note` saying why it is pinned")
+    # a field no git entry has is reported as unknown already (fields_problems)
+    out += [f"{where}: the evidence entry has a `{f}`" for f in sorted((e.keys() & KINDS["git"][1]) - EVIDENCE_FIELDS)]
+    return out
+
+
 def check_form(data):
     """Problems in sources.toml's form, and the projects it covers (project -> which list names it)."""
     out = [f"unknown table `{k}`" for k in data if k not in ("source", "site", "not_pinned")]
@@ -215,6 +239,9 @@ def check_form(data):
         else:
             covered[project] = by
 
+    n = sum(1 for e in sources if e.get("kind") == "git" and e.get("evidence") is True)
+    if n != 1:
+        out.append(f"{n} evidence entries (a git [[source]] with `evidence = true`), not one")
     for e in sources:
         out += source_problems(e)
         sid = e.get("id", "?")
@@ -359,6 +386,16 @@ generations = ["macos-tahoe"]
 researched = "2026-10-31"
 proof = "the archive's capture"
 
+[[source]]
+id = "native-theme-evidence"
+kind = "git"
+evidence = true
+repository = "https://github.com/tiborgats/native-theme-evidence.git"
+tag = "commit"
+commit = "342ac5a6bfe26225d9dfe209d51e1ff9d3238c97"
+generations = []
+note = "The evidence repository."
+
 [[site]]
 project = "learn.microsoft.com"
 url = "https://learn.microsoft.com/"
@@ -395,28 +432,42 @@ def self_test() -> int:
         return text.replace(old, new, 1)
 
     expect("good", good, [])
-    evidence = good + """
-[[source]]
-id = "native-theme-evidence"
-kind = "git"
-evidence = true
-repository = "https://github.com/tiborgats/native-theme-evidence.git"
-tag = "commit"
-commit = "342ac5a6bfe26225d9dfe209d51e1ff9d3238c97"
-generations = []
-note = "The evidence repository."
-"""
-    expect("the evidence entry", evidence, [])
+    evidence = good
+    one = "0 evidence entries (a git [[source]] with `evidence = true`), not one"
     expect("the evidence entry's waiver needs `evidence = true`", edit(evidence, "evidence = true\n", ""),
-           ["source native-theme-evidence: missing field `proof`", "source native-theme-evidence: missing field "
+           [one, "source native-theme-evidence: missing field `proof`", "source native-theme-evidence: missing field "
             "`release`", "source native-theme-evidence: missing field `researched`",
             "source native-theme-evidence: id is not `<name>@<version>`",
             "source native-theme-evidence: generations is not a non-empty list"])
     expect("evidence not a bool", edit(evidence, "evidence = true", 'evidence = "true"'),
-           ["source native-theme-evidence: evidence is not a bool", "source native-theme-evidence: missing field "
+           ["source native-theme-evidence: evidence is not a bool", one, "source native-theme-evidence: missing field "
             "`proof`", "source native-theme-evidence: missing field `release`", "source native-theme-evidence: "
             "missing field `researched`", "source native-theme-evidence: id is not `<name>@<version>`",
             "source native-theme-evidence: generations is not a non-empty list"])
+    ev = "source native-theme-evidence: the evidence entry"
+    expect("the evidence entry's id", edit(evidence, 'id = "native-theme-evidence"', 'id = "native-theme-evidence@1"'),
+           ["source native-theme-evidence@1: a commit pin's version is not its commit's first eight hex digits",
+            "source native-theme-evidence@1: the evidence entry's id is not 'native-theme-evidence'"])
+    expect("the evidence entry's tag",
+           edit(evidence, 'tag = "commit"\ncommit = "342ac5a6', 'tag = "v1"\ncommit = "342ac5a6'),
+           [f"{ev} is not a commit pin (`tag = \"commit\"`)"])
+    expect("the evidence entry's generations", edit(evidence, "generations = []", 'generations = ["adwaita"]'),
+           [f"{ev} serves no generation (`generations = []`)"])
+    expect("the evidence entry's note", edit(evidence, 'note = "The evidence repository."\n', ""),
+           ["source native-theme-evidence: neither a project, a site nor a note saying why it is pinned",
+            f"{ev} has no `note` saying why it is pinned"])
+    expect("the evidence entry's release", edit(evidence, "generations = []", 'generations = []\nrelease = "x"'),
+           ["source native-theme-evidence: unknown field `release`"])
+    expect("the evidence entry's sparse folders",
+           edit(evidence, "generations = []", 'generations = []\nsparse = ["d"]'),
+           [f"{ev} has a `sparse`"])
+    expect("evidence false", edit(evidence, 'tag = "v6.8.2"', 'tag = "v6.8.2"\nevidence = false'),
+           ["source breeze@6.8.2: `evidence` is `true` on the evidence entry alone, never `false`"])
+    second = good.split("[[source]]\nid = \"native-theme-evidence\"")[1].split("[[site]]")[0]
+    expect("two evidence entries", edit(evidence, "[[site]]", "[[source]]\nid = \"native-theme-evidence\"" + second
+                                        + "[[site]]"),
+           ["2 evidence entries (a git [[source]] with `evidence = true`), not one",
+            "source native-theme-evidence: id not unique"])
     expect("duplicate id", edit(good, 'id = "docs@f54166ed"', 'id = "breeze@6.8.2"'),
            ["source breeze@6.8.2: a commit pin's version is not its commit's first eight hex digits",
             "source breeze@6.8.2: id not unique",

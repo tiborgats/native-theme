@@ -79,8 +79,8 @@ A value the specification defines (S9.4's `token.text.font_dpi = 72` on `macos-*
 scripts/check_facts.py refuses a fact stating one, and scripts/check_preset_citations.py accepts the comment for that
 key, value and presets alone.
 
-Per `measured` citation: the evidence file is committed (`git ls-files` in the evidence root) and exists, the run folder's `run.toml` has an
-entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
+Per `measured` citation: the evidence file is committed (`git ls-files` in the evidence root) and exists, the run
+folder's `run.toml` has an entry for the image, and, for a measured derivation (a citation with `inputs` of an expression value, S17 *A measured
 derivation*), the evidence path names a list of pass tables in a TOML file (pass_problems): each holds the `inputs` as
 quoted keys, `result`, and `conditions` (a list of S7.1's condition strings naming the pass's scheme) unless the fact's
 `when` fixes the scheme, nothing else, every value spelled as a fact's `value` for its key's type
