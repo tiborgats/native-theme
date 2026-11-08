@@ -61,7 +61,9 @@ above 1 (the undershoot and overshoot a timing gives). UTF-8, lines ending in `\
      normalises whitespace), optional `conversion` (check_fact_citations.CONVERSIONS' names, comma-separated, or
      `-`); check_fact_citations.py checks what they say;
    - `measured`: `evidence` (`docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`, S17's form: the
-     table there holds the inputs the harness set or read and the outputs it measured);
+     table there holds the inputs the harness set or read and the outputs it measured; its run's `run.toml` read
+     under the evidence root, S17 *The evidence root*: check_facts.Context.evidence_root, a clean checkout of the
+     evidence repository at sources.toml's pin, without which a measured row fails the run);
    - a strategy's table: `preset` (the preset the row serves), `value` (the placed value's field path,
      `<widget>.values.<name>`), `when` (S11's `when` of the rule placing it, a TOML inline table, `{}` for none):
      the row's `PlacementParams` are that preset's, resolved under that `when` (S2.2), not columns.
