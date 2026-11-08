@@ -286,8 +286,9 @@ sections, `docs/todo.md` and the presets' definition comments, the first
 three `PLAN_EXCLUDED` until M2.6; then the 0.8.0 plan's: the ledger's
 triage, the pinned sources and their cache, the facts and their citations,
 the generated widgets, presets, `sf_tracking` and `dynamic_type` tables and
-`docs/platform-facts.md`, the function vectors, the trace lines and the
-pinned line citations), docs and the archive index, then the docs.rs emulation,
+`docs/platform-facts.md`, the function vectors, the trace lines, the
+pinned line citations and no file tracked under `docs/evidence/`, whose
+evidence lives in `native-theme-evidence`), docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -767,8 +768,8 @@ Lists every citation of today's `docs/platform-facts.md` or the deleted
 the 0.8.0 plan's *Citations of today's platform-facts.md by line*): since
 the switch the document is generated and the rules file is gone, so a line
 number without its commit names a line of another file, or of none. It
-reads every file git tracks or would track, but `docs/archive/`,
-`docs/evidence/` and the scripts that define and convert the format
+reads every file git tracks or would track, but `docs/archive/` and the
+scripts that define and convert the format
 (`citations.py`, `repin_citations.py`, `import_platform_facts.py`,
 `convert_inheritance_rules.py` and itself). A `:N` continuation after a
 pinned citation inherits its commit; a mention with no line is no line

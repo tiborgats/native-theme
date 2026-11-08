@@ -530,6 +530,16 @@ jobs:
       # inheritance-rules.toml name the commit they read (`@fc6109d1`).
       - run: python3 scripts/check_pinned_citations.py
       - run: python3 scripts/check_pinned_citations.py --self-test
+      # The evidence lives in native-theme-evidence, pinned by
+      # docs/facts/sources.toml: no file under docs/evidence/ is tracked here,
+      # as scripts/check_release.sh checks too.
+      - name: No evidence in this repository
+        run: |
+          tracked=$(git ls-files -- docs/evidence)
+          if [ -n "$tracked" ]; then
+            printf "tracked here, belongs in native-theme-evidence: %s\n" $tracked | head -20
+            exit 1
+          fi
 
   doc:
     name: Documentation

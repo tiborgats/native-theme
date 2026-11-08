@@ -19,9 +19,10 @@ none, 1 when there are some, 2 on a wrong command line or when git cannot list t
 Rule
 ----
 Files: every file git tracks or would track (`git ls-files --cached --others --exclude-standard`), read
-as UTF-8 (a file that is not is skipped), except EXEMPT: `docs/archive/` and `docs/evidence/`, which
-record what was true when they were written, and the scripts that define and convert the citation
-format, whose patterns and fixtures name the unpinned form.
+as UTF-8 (a file that is not is skipped), except EXEMPT: `docs/archive/`, which records what was true
+when it was written, and the scripts that define and convert the citation format, whose patterns and
+fixtures name the unpinned form. The evidence, whose recorded files keep the citations of their run's
+commit, lives in the evidence repository (spec S17 *The evidence root*), not here.
 
 Citations. `platform-facts.md:` or `inheritance-rules.toml:` followed by a digit, with or without a
 leading `docs/`. A pinned citation, `platform-facts.md@<sha>:N`, has `@` where the rule wants `:`, so
@@ -35,7 +36,7 @@ import re
 import subprocess
 import sys
 
-EXEMPT_DIRS = ("docs/archive/", "docs/evidence/")
+EXEMPT_DIRS = ("docs/archive/",)
 EXEMPT_FILES = (
     "scripts/check_pinned_citations.py",
     "scripts/citations.py",
@@ -90,7 +91,6 @@ def self_test() -> int:
                         "a range platform-facts.md:358-368, a section `docs/platform-facts.md` §2.21\n",
         "CHANGELOG.md": "no line: docs/platform-facts.md and docs/inheritance-rules.toml\n",
         "docs/archive/old.md": "platform-facts.md:12\n",
-        "docs/evidence/os-probe/README.md": "inheritance-rules.toml:3\n",
         "scripts/citations.py": "platform-facts.md:LINE platform-facts.md:1061\n",
     }
     want = [
