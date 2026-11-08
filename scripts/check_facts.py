@@ -180,7 +180,9 @@ A `[[fact]]` (S17 *Fields*):
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
   generations: its source entry's `generations`; a measured citation's, the preset its run's `run.toml` maps its image
-  to (S17 *`evidence`*; check_fact_citations.py checks the rest of run.toml).
+  to (S17 *`evidence`*; check_fact_citations.py checks the rest of run.toml), read under the evidence root (S17 *The
+  evidence root*: a fixture's, else `NATIVE_THEME_EVIDENCE` or the pin's checkout in the source cache, a clean
+  checkout at sources.toml's pin; Context.evidence_root), so a measured fact fails the run without one.
 
 ADD-A125 to ADD-A130 (each rule's function states it in full):
 
@@ -766,7 +768,7 @@ class Context:
         """The parsed run.toml of a run folder, or None when it is missing or no valid TOML."""
         key = (harness, run)
         if key not in self._runs:
-            p = self.root / EVIDENCE / harness / run / "run.toml"
+            p = self.evidence_root / EVIDENCE / harness / run / "run.toml"
             try:
                 self._runs[key] = tomllib.loads(p.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
