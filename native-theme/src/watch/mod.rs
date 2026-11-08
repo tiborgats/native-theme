@@ -19,7 +19,8 @@
 //! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases:
 //!
 //! 1. **Platform-specific wakeup** -- where the backend has one, it runs
-//!    first (GNOME closes its D-Bus connection).
+//!    first (GNOME closes its D-Bus connection; macOS, which has no watcher
+//!    thread, removes its observer).
 //!    This wakes the background thread's event loop so it can observe the
 //!    disconnect.
 //! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
@@ -55,6 +56,8 @@
 
 #[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
 mod gnome;
+#[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
+mod macos;
 
 use std::sync::mpsc;
 use std::thread::JoinHandle;
@@ -147,6 +150,17 @@ impl ThemeSubscription {
             platform_shutdown,
         }
     }
+
+    /// Create a `ThemeSubscription` for a watcher without a thread: dropping
+    /// it only runs `platform_shutdown`.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    pub(crate) fn from_platform_shutdown(platform_shutdown: Box<dyn FnOnce() + Send>) -> Self {
+        Self {
+            shutdown_tx: None,
+            thread: None,
+            platform_shutdown: Some(platform_shutdown),
+        }
+    }
 }
 
 impl Drop for ThemeSubscription {
@@ -175,7 +189,11 @@ impl Drop for ThemeSubscription {
 /// a callback that panics loses that one event, and the watcher keeps
 /// running. This holds with the default `panic = "unwind"`; under
 /// `panic = "abort"` a panicking callback aborts the process.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 fn fire(callback: &impl Fn(ThemeChangeEvent)) {
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         callback(ThemeChangeEvent::Changed)
@@ -189,11 +207,19 @@ fn fire(callback: &impl Fn(ThemeChangeEvent)) {
 /// and the callback fires once for all of them. The value is T20's KDE
 /// window, reused on every platform to keep one user action one event: a
 /// design value, not a platform fact.
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 const DEBOUNCE_MS: u32 = 300;
 
 /// [`DEBOUNCE_MS`] as a [`Duration`](std::time::Duration).
-#[cfg(any(test, all(target_os = "linux", feature = "portal")))]
+#[cfg(any(
+    test,
+    all(target_os = "linux", feature = "portal"),
+    all(target_os = "macos", feature = "macos"),
+))]
 const DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(DEBOUNCE_MS as u64);
 
 /// Fire `callback` once per burst of relevant messages from `events`,
@@ -308,10 +334,11 @@ impl Debounce {
 /// for the `org.freedesktop.appearance` settings and the
 /// `org.gnome.desktop.interface` and `org.gnome.desktop.a11y.interface`
 /// keys the reader reads; on a desktop with no reader of its own the same
-/// signal for the settings its portal-only read reads. One change can
-/// raise several of them, so the callback fires once per burst, 300 ms
-/// after the last. The KDE, macOS and Windows watchers return with their
-/// readers.
+/// signal for the settings its portal-only read reads; on macOS the
+/// notifications of the macOS reader's sources, with the `macos` feature.
+/// One change can raise several of them, so the callback fires once per
+/// burst, 300 ms after the last. The KDE and Windows watchers return with
+/// their readers.
 ///
 /// A callback that panics loses that one event: the panic is contained, and
 /// the watcher keeps running (with the default `panic = "unwind"`; under
@@ -354,7 +381,22 @@ pub fn on_theme_change(
         }
     }
 
-    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    #[cfg(target_os = "macos")]
+    {
+        #[cfg(feature = "macos")]
+        {
+            macos::watch_macos(callback)
+        }
+        #[cfg(not(feature = "macos"))]
+        {
+            let _ = callback;
+            Err(crate::Error::WatchUnavailable {
+                reason: "enable the 'macos' feature for macOS theme watching",
+            })
+        }
+    }
+
+    #[cfg(target_os = "windows")]
     {
         let _ = callback;
         Err(crate::Error::WatchUnavailable {
@@ -450,8 +492,8 @@ mod tests {
     /// The source-to-notification table (M1-T6-08): for each linked reader,
     /// every source its module lists under `# Sources`, and the notification
     /// its watcher observes for it: a `namespace key` of the portal's
-    /// `SettingChanged` (GNOME, the portal-only read). The KDE, macOS and
-    /// Windows rows return with their readers.
+    /// `SettingChanged` (GNOME, the portal-only read), a notification's name
+    /// (macOS). The KDE and Windows rows return with their readers.
     const SOURCE_NOTIFICATIONS: &[(&str, &str, &str)] = &[
         (
             "gnome",
@@ -553,12 +595,29 @@ mod tests {
             "org.gnome.desktop.a11y.interface reduced-motion",
             "org.gnome.desktop.a11y.interface reduced-motion",
         ),
+        (
+            "macos",
+            "AppleInterfaceStyle",
+            "AppleInterfaceThemeChangedNotification",
+        ),
+        ("macos", "NSColor", "NSSystemColorsDidChangeNotification"),
+        (
+            "macos",
+            "NSScroller.preferredScrollerStyle",
+            "NSPreferredScrollerStyleDidChangeNotification",
+        ),
+        (
+            "macos",
+            "NSWorkspace.accessibilityDisplayOptions",
+            "NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification",
+        ),
     ];
 
     /// Each reader's module source, whose docs list its sources.
     const READER_MODULES: &[(&str, &str)] = &[
         ("gnome", include_str!("../gnome/mod.rs")),
         ("portal", include_str!("../gnome/portal.rs")),
+        ("macos", include_str!("../macos.rs")),
     ];
 
     /// The sources a reader module lists: the first code span of each item
@@ -575,7 +634,10 @@ mod tests {
     }
 
     /// The notifications the table gives for `reader`'s sources.
-    #[cfg(all(target_os = "linux", feature = "portal"))]
+    #[cfg(any(
+        all(target_os = "linux", feature = "portal"),
+        all(target_os = "macos", feature = "macos"),
+    ))]
     fn table_notifications(reader: &str) -> impl Iterator<Item = &'static str> {
         SOURCE_NOTIFICATIONS
             .iter()
@@ -625,6 +687,24 @@ mod tests {
                 "{reader}: a watched setting with no row"
             );
         }
+    }
+
+    /// The macOS watcher registers for the notification of every macOS row.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn the_macos_watcher_observes_every_macos_source() {
+        let observed: Vec<&str> = macos::registrations().iter().map(|r| r.name_id).collect();
+        for notification in table_notifications("macos") {
+            assert!(
+                observed.contains(&notification),
+                "the macOS watcher does not register for `{notification}`"
+            );
+        }
+        assert_eq!(
+            observed.len(),
+            table_notifications("macos").count(),
+            "macos: a registered notification with no row"
+        );
     }
 
     /// Every gsettings key the GNOME reader reads is a listed source.
@@ -900,7 +980,7 @@ mod tests {
     /// the two, so a drop that hangs fails the test after `per_drop_timeout`
     /// instead of blocking it. A platform or desktop without a watcher
     /// (`WatchUnavailable`) skips the test.
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn assert_subscribe_and_drop_returns(rounds: usize, per_drop_timeout: std::time::Duration) {
         for round in 0..rounds {
             let (done_tx, done_rx) = mpsc::channel();
@@ -917,6 +997,13 @@ mod tests {
                 ),
             }
         }
+    }
+
+    /// The macOS watcher has no thread: a drop removes its observer.
+    #[cfg(all(target_os = "macos", feature = "watch"))]
+    #[test]
+    fn macos_subscribe_and_drop_returns() {
+        assert_subscribe_and_drop_returns(1000, std::time::Duration::from_secs(5));
     }
 
     /// A few rounds keep the test short.
