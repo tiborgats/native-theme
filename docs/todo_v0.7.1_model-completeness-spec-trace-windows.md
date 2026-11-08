@@ -754,7 +754,7 @@ additions to the core and the contradictions with the rationale, each decided in
 | W3-53† | `token.behavior.scroll @ !cond system_setting:listbox_smooth_scroll (list boxes' animated scrolling)` | rule |
 | W3-53† | `PartStyle.transitions, <widget>.values.presentations @ !cond system_setting:ui_effects (the master switch)` | rule |
 | W3-53† | `reader:windows:SPI_GETMENUFADE, SPI_GETTOOLTIPFADE, SPI_GETSELECTIONFADE, SPI_GETCOMBOBOXANIMATION, SPI_GETLISTBOXSMOOTHSCROLLING, SPI_GETHOTTRACKING, SPI_GETDROPSHADOW, SPI_GETUIEFFECTS` | reader |
-| W3-35 | `role.@* (the eight high-contrast system colours Window, WindowText, Hotlight, GrayText, Highlight, HighlightText, ButtonFace, ButtonText: keyed roles the reader states under cond contrast_high, per contrast theme)` | role |
+| W3-35 | `role.@* (the eight high-contrast system colours Window, WindowText, Hotlight, GrayText, Highlight, HighlightText, ButtonFace, ButtonText: keyed roles the reader states under cond contrast_high, per contrast theme; their bases WinUI's placeholders, the preset's rule under cond contrast_high the default contrast theme Aquatic's colours, S3.1, ADD-A135)` | role |
 | W3-35 | `PartStyle.{fill,stroke,text,focus} @ cond contrast_high (each part's mapping to those roles: focus, disabled, selected-hover among them)` | rule |
 | W3-35 | `progress_bar.track.stroke @ cond contrast_high (a border drawn only there)` | rule |
 | W3-35 | `switch.track.stroke @ {checked} cond contrast_high (the on track's border drawn only there)` | rule |

@@ -893,7 +893,7 @@ rationale, each decided in the core's additions register (S22).
 | GN-3.14 | `role.global.accent` | role |
 | GN-3.14 | `role.global.accent_foreground` | role |
 | GN-3.14 | `role.global.accent_standalone` | role |
-| GN-3.15 | `reader:gnome:portal accent RGB snapped to the nearest of nine accents` | reader |
+| GN-3.15 | `reader:gnome:portal accent RGB classified into one of libadwaita's nine accents by OKLCH chroma and hue ranges, the accent's colour stated (adw_accent_nearest; S9.3, ADD-A135)` | reader |
 | GN-3.15 | `input.accent` | input |
 | GN-3.16 | `reader:gnome:org.gnome.desktop.interface accent-color enum as fallback` | reader |
 | GN-3.16 | `input.accent` | input |
