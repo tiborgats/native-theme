@@ -21,8 +21,13 @@
 # icon), one FAB form, one Expressive icon-button width. `variant_sets` and `variant_products` (ADD-A122) give the
 # sets the facts state (each drawn by Compose or the tokens), the products the icon buttons' and the FABs' independent
 # choices, the extended FAB with a leading icon among them (its own start padding, FloatingActionButton.kt:898-899,
-# MAT-N2); the platform draws more (a style with a leading icon, the other FAB colours lowered, the Expressive shapes
-# and widths across the icon-button styles), which no fact states yet (the lane report).
+# MAT-N2). The choices are independent wherever Compose's composables are (the MT-C1 tie-break, from its blind
+# verifier's model): a leading icon on every style (ButtonWithIconContentPadding, TextButtonWithIconContentPadding, the
+# toggles' `icon`), the lowered elevation on every FAB colour (loweredElevation is an elevation parameter), and under
+# flavour expressive the square shape on every button, toggle and icon-button style (each composable's `shapes`) and
+# the icon buttons' widths on every icon-button style (a size modifier, IconButtonDefaults' container sizes); the
+# facts that apply to those sets are the ones each choice states. The menu button under flavour expressive takes
+# the one size its tokens give (container height 40px, `small`).
 # Sizes (S10; ADD-A131): flavour baseline's buttons but the FABs take one size, `regular` (Button has no size
 # parameter, its minimum height ButtonDefaults.MinHeight, Button.kt:139-150, :174), the FABs' sizes in their
 # `sizes_by_variant` entries. Under flavour expressive the FAB's and the extended FAB's entries state their default,
@@ -49,13 +54,13 @@ recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "f
 not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["toggle"], not_variants = ["icon_only"] }]
 sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "extra_large"] }, { variant = "@extended_fab", sizes = ["regular"] }]
 exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"]]
-variant_sets = [["menu", "primary"], ["menu", "@outlined"]]
+variant_sets = []
 variant_products = [
+  [{ any = ["with_icon"] }, { any = ["primary", "tinted", "flat", "@elevated", "@outlined"] }],              # the text buttons, with or without a leading icon
   [{ one = ["icon_only"] }, { any = ["primary", "tinted", "@outlined"] }, { any = ["toggle"] }],              # the icon buttons
-  [{ one = ["@fab", "@extended_fab"] }, { one = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }],  # the FAB colours
-  [{ one = ["@fab", "@extended_fab"] }, { any = ["@surface"] }, { one = ["@lowered"] }],                     # the lowered FABs
-  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }],  # the extended FABs with an icon
-  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["@surface"] }, { one = ["@lowered"] }],    # lowered, with an icon
+  [{ one = ["menu"] }, { any = ["with_icon"] }, { any = ["primary", "@outlined"] }],                        # the menu buttons
+  [{ one = ["@fab", "@extended_fab"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }, { any = ["@lowered"] }],  # the FAB colours, lowered or not
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@surface"] }, { any = ["@lowered"] }],  # the extended FABs with an icon
 ]
 rows = ["MAT-B1", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N4", "MAT-N8", "MAT-X22"]
 
@@ -234,6 +239,34 @@ kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:174"
 quote = "minHeight = ButtonDefaults.MinHeight,"
 
+# a leading icon on every style (the MT-C1 tie-break): each style composable takes its content padding
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:931-932"
+quote = "/** The default content padding used by [Button] that contains an [Icon]. */ public val ButtonWithIconContentPadding: PaddingValues ="
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:1036-1041"
+quote = "* The default content padding used by [TextButton] that contains an [Icon]."
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:494"
+quote = "contentPadding: PaddingValues = ButtonDefaults.ContentPadding,"
+
+# the lowered elevation on every FAB colour: the elevation is a parameter of its own, beside the container colour
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:137"
+quote = "elevation: FloatingActionButtonElevation = FloatingActionButtonDefaults.elevation(),"
+
+# the menu buttons with a leading icon
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-standard-menu-button.scss:34-35"
+quote = "/// md.comp.standard-menu-button.with-icon.leading-icon.size (Enabled / Leading icon) $with-icon-leading-icon-size: 18px;"
+
 [[model]]
 widget = "button"
 when = { conditions = ["flavor:expressive"] }
@@ -246,17 +279,16 @@ axes = { states = ["hover", "focus_visible", "pressed", "disabled", "checked"], 
 exclusive = []
 recency = { state_layer = ["focus_visible", "hover"], elevation = ["pressed", "focus_visible", "hover"] }
 not_drawn = [{ states = ["disabled", "hover"] }, { states = ["disabled", "focus_visible"] }, { states = ["disabled", "pressed"] }, { states = ["checked"], not_variants = ["toggle"] }, { variants = ["toggle", "flat"] }, { variants = ["@fab"], states = ["disabled"] }, { variants = ["@extended_fab"], states = ["disabled"] }, { variants = ["@lowered"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@surface"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@primary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@secondary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@tertiary_container"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@branded"], not_variants = ["@fab", "@extended_fab"] }, { variants = ["@narrow"], not_variants = ["icon_only"] }, { variants = ["@wide"], not_variants = ["icon_only"] }]
-sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }]
+sizes_by_variant = [{ variant = "@fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }, { variant = "@extended_fab", sizes = ["small", "regular", "large", "extra_large"], default_size = "regular" }, { variant = "menu", sizes = ["small"] }]
 exclusive_variants = [["primary", "tinted", "flat", "@elevated", "@outlined", "@secondary", "@tertiary", "@surface", "@primary_container", "@secondary_container", "@tertiary_container", "@branded"], ["icon_only", "with_icon"], ["@fab", "@extended_fab"], ["@narrow", "@wide"]]
-variant_sets = [["toggle", "primary"], ["toggle", "tinted"], ["toggle", "@elevated"], ["toggle", "@outlined"], ["toggle", "@square"], ["menu", "primary"], ["menu", "@outlined"]]
+variant_sets = []
 variant_products = [
-  [{ one = ["icon_only"] }, { any = ["primary", "tinted", "@outlined"] }, { any = ["toggle"] }],              # the icon buttons
-  [{ one = ["icon_only"] }, { any = ["toggle"] }, { one = ["@square"] }],                                     # the square icon buttons
-  [{ one = ["icon_only"] }, { one = ["@narrow", "@wide"] }],                                                  # the icon-button widths
-  [{ one = ["@fab", "@extended_fab"] }, { one = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }],  # the FAB colours
-  [{ one = ["@fab", "@extended_fab"] }, { any = ["@surface", "@branded"] }, { one = ["@lowered"] }],          # the lowered FABs
-  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }],  # the extended FABs with an icon
-  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["@surface", "@branded"] }, { one = ["@lowered"] }],  # lowered, with an icon
+  [{ any = ["with_icon"] }, { any = ["primary", "tinted", "flat", "@elevated", "@outlined"] }, { any = ["@square"] }],  # the text buttons: a leading icon, a style, the square shape
+  [{ one = ["toggle"] }, { any = ["with_icon"] }, { any = ["primary", "tinted", "@elevated", "@outlined"] }, { any = ["@square"] }],  # the text toggles
+  [{ one = ["icon_only"] }, { any = ["primary", "tinted", "@outlined"] }, { any = ["toggle"] }, { any = ["@square"] }, { any = ["@narrow", "@wide"] }],  # the icon buttons: style, toggle, shape, width
+  [{ one = ["menu"] }, { any = ["with_icon"] }, { any = ["primary", "@outlined"] }],                        # the menu buttons
+  [{ one = ["@fab", "@extended_fab"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }, { any = ["@lowered"] }],  # the FAB colours, lowered or not
+  [{ one = ["@extended_fab"] }, { one = ["with_icon"] }, { any = ["primary", "@secondary", "@tertiary", "@primary_container", "@secondary_container", "@tertiary_container", "@surface", "@branded"] }, { any = ["@lowered"] }],  # the extended FABs with an icon
 ]
 rows = ["MAT-B9", "MAT-B10", "MAT-B12", "MAT-N1", "MAT-N2", "MAT-N5", "MAT-X22"]
 
@@ -512,3 +544,54 @@ quote = "@use 'md-sys-color';"
 kind = "published"
 source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:144-145"
 quote = "FabBaselineTokens.ContainerWidth, FabBaselineTokens.ContainerHeight,"
+
+# the square shape on every style (the MT-C1 tie-break): each Expressive composable takes its shapes
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:236-238"
+quote = "public fun Button( onClick: () -> Unit, shapes: ButtonShapes,"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Button.kt:864-866"
+quote = "public fun TextButton( onClick: () -> Unit, shapes: ButtonShapes,"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButton.kt:210-212"
+quote = "public fun IconButton( onClick: () -> Unit, shapes: IconButtonShapes,"
+
+# the text toggles with a leading icon
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:157-163"
+quote = "public fun ToggleButton( checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, buttonSize: ToggleButtonSize = ToggleButtonDefaults.size, enabled: Boolean = true, icon: @Composable (() -> Unit)? = null,"
+
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ToggleButton.kt:168-169"
+quote = "contentPadding: PaddingValues = ToggleButtonDefaults.contentPaddingFor(buttonSize, hasStartIcon = icon != null),"
+
+# the icon buttons' widths on every icon-button style: a container size the application applies
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/IconButtonDefaults.kt:1078-1079"
+quote = "public fun extraSmallContainerSize( widthOption: IconButtonWidthOption = IconButtonWidthOption.Uniform"
+
+# the lowered elevation on every FAB colour
+[[model.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButton.kt:137"
+quote = "elevation: FloatingActionButtonElevation = FloatingActionButtonDefaults.elevation(),"
+
+# the menu button's one size: its tokens' container height, the small button's
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-filled-menu-button.scss:25-26"
+quote = "/// md.comp.filled-menu-button.container.height (Enabled / Container) $container-height: 40px;"
+
+[[model.cite]]
+kind = "published"
+source = "material-web@2.5.0 tokens/versions/latest/sass/_md-comp-button-small.scss:23"
+quote = "$container-height: 40px;"
+
