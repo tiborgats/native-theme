@@ -26,6 +26,18 @@ kind = "published"
 source = "plasma-workspace@6.8.2 kcms/colors/ui/AccentColorUI.qml:39-40"
 quote = "case 0: // colorScheme kcm.accentColor = \"transparent\";"
 
+# A key a scheme file leaves unset (S9.1: the KDE reader's and a KDE port's scheme inputs). KColorScheme reads each
+# key of a colour group with its set's default table beneath (loadSerializedColors, loadDecorationColors:
+# kcolorscheme@6.31.0 src/kcolorscheme.cpp:251-278), and a key an [Inactive] group lacks from the same defaults
+# (:344-357, cited on Header's inactive facts). So each scheme:light fact of a set's twelve keys cites, beside Breeze's
+# value, the default KColorScheme reads for that key where the file leaves it unset: the set's table row (:122-216,
+# "These numbers come from the default color scheme which is currently Breeze Light", :120-121; every row equals
+# BreezeLight.colors but DecorationHover's 147,206,233, where Breeze states 61,174,233), the set's choice of table in
+# initFromConfig (:289-342) and the key's read. Header's defaults are the file's [Colors:Window] values with Header's
+# own table beneath (:330-333). On Plasma's default path applyScheme() copies a colour key into kdeglobals only where
+# the file states it (plasma-workspace@6.8.2 kcms/colors/colorsapplicator.cpp:118-123, :225-226), so kdeglobals
+# leaves the key unset too and KColorScheme reads the same default there.
+
 [[fact]]
 key = "input.kde_scheme.button.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -36,6 +48,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:31"
 quote = "BackgroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-149"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.button.background_alternate"
@@ -48,6 +75,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:30"
 quote = "BackgroundAlternate=163,212,250"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-150"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.button.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -58,6 +100,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:39"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-151"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.button.foreground_inactive"
@@ -70,6 +127,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:35"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-152"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.button.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -80,6 +152,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:34"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-153"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.button.foreground_link"
@@ -92,6 +179,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:36"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-154"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.button.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -102,6 +204,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:41"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-155"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.button.foreground_negative"
@@ -114,6 +231,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:37"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-156"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.button.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -124,6 +256,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:38"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-157"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.button.foreground_positive"
@@ -136,6 +283,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:40"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:148-158"
+quote = "static const SerializedColors defaultButtonColors = { { 252, 252, 252 }, // Background { 163, 212, 250 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:300-302"
+quote = "case KColorScheme::Button: groupName = QStringLiteral(\"Colors:Button\"); defaultColors = defaultButtonColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.button.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -146,6 +308,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:32"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.button.decoration_hover"
@@ -158,6 +335,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:33"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.complementary.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -168,6 +360,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:45"
 quote = "BackgroundNormal=42,46,50"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-188"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.complementary.background_alternate"
@@ -180,6 +387,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:44"
 quote = "BackgroundAlternate=27,30,32"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-189"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -190,6 +412,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:53"
 quote = "ForegroundNormal=252,252,252"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-190"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_inactive"
@@ -202,6 +439,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:49"
 quote = "ForegroundInactive=161,169,177"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-191"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -212,6 +464,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:48"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-192"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_link"
@@ -224,6 +491,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:50"
 quote = "ForegroundLink=29,153,243"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-193"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active { 29, 153, 243 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -234,6 +516,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:55"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-194"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active { 29, 153, 243 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_negative"
@@ -246,6 +543,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:51"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-195"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active { 29, 153, 243 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -256,6 +568,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:52"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-196"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active { 29, 153, 243 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.complementary.foreground_positive"
@@ -268,6 +595,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:54"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:187-197"
+quote = "static const SerializedColors defaultComplementaryColors = { { 42, 46, 50 }, // Background { 27, 30, 32 }, // Alternate { 252, 252, 252 }, // Normal { 161, 169, 177 }, // Inactive { 61, 174, 233 }, // Active { 29, 153, 243 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:326-328"
+quote = "case KColorScheme::Complementary: groupName = QStringLiteral(\"Colors:Complementary\"); defaultColors = defaultComplementaryColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.complementary.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -278,6 +620,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:46"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.complementary.decoration_hover"
@@ -290,6 +647,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:47"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.header.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -300,6 +672,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:59"
 quote = "BackgroundNormal=222,224,226"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-201"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.header.background_alternate"
@@ -312,6 +699,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:58"
 quote = "BackgroundAlternate=239,240,241"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-202"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.header.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -322,6 +724,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:67"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-203"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.header.foreground_inactive"
@@ -334,6 +751,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:63"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-204"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.header.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -344,6 +776,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:62"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-205"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.header.foreground_link"
@@ -356,6 +803,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:64"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-206"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.header.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -366,6 +828,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:69"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-207"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.header.foreground_negative"
@@ -378,6 +855,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:65"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-208"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.header.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -388,6 +880,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:66"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-209"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.header.foreground_positive"
@@ -400,6 +907,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:68"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:200-210"
+quote = "static const SerializedColors defaultHeaderColors = { { 222, 224, 226 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.header.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -410,6 +932,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:60"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.header.decoration_hover"
@@ -422,6 +959,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:61"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.selection.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -432,6 +984,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:87"
 quote = "BackgroundNormal=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-162"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.selection.background_alternate"
@@ -444,6 +1011,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:86"
 quote = "BackgroundAlternate=163,212,250"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-163"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.selection.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -454,6 +1036,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:95"
 quote = "ForegroundNormal=255,255,255"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-164"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.selection.foreground_inactive"
@@ -466,6 +1063,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:91"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-165"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.selection.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -476,6 +1088,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:90"
 quote = "ForegroundActive=255,255,255"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-166"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.selection.foreground_link"
@@ -488,6 +1115,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:92"
 quote = "ForegroundLink=253,188,75"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-167"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active { 253, 188, 75 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.selection.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -498,6 +1140,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:97"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-168"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active { 253, 188, 75 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.selection.foreground_negative"
@@ -510,6 +1167,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:93"
 quote = "ForegroundNegative=176,55,69"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-169"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active { 253, 188, 75 }, // Link { 155, 89, 182 }, // Visited { 176, 55, 69 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.selection.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -520,6 +1192,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:94"
 quote = "ForegroundNeutral=198,92,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-170"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active { 253, 188, 75 }, // Link { 155, 89, 182 }, // Visited { 176, 55, 69 }, // Negative { 198, 92, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.selection.foreground_positive"
@@ -532,6 +1219,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:96"
 quote = "ForegroundPositive=23,104,57"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:161-171"
+quote = "static const SerializedColors defaultSelectionColors = { { 61, 174, 233 }, // Background { 163, 212, 250 }, // Alternate { 255, 255, 255 }, // Normal { 112, 125, 138 }, // Inactive { 255, 255, 255 }, // Active { 253, 188, 75 }, // Link { 155, 89, 182 }, // Visited { 176, 55, 69 }, // Negative { 198, 92, 0 }, // Neutral { 23, 104, 57 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:310-312"
+quote = "if (state == QPalette::Active || (state == QPalette::Inactive && !inactiveSelectionEffect)) { groupName = QStringLiteral(\"Colors:Selection\"); defaultColors = defaultSelectionColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.selection.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -542,6 +1244,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:88"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.selection.decoration_hover"
@@ -554,6 +1271,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:89"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -564,6 +1296,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:101"
 quote = "BackgroundNormal=247,247,247"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-175"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.background_alternate"
@@ -576,6 +1323,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:100"
 quote = "BackgroundAlternate=239,240,241"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-176"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -586,6 +1348,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:109"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-177"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_inactive"
@@ -598,6 +1375,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:105"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-178"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -608,6 +1400,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:104"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-179"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_link"
@@ -620,6 +1427,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:106"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-180"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -630,6 +1452,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:111"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-181"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_negative"
@@ -642,6 +1479,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:107"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-182"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -652,6 +1504,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:108"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-183"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.foreground_positive"
@@ -664,6 +1531,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:110"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:174-184"
+quote = "static const SerializedColors defaultTooltipColors = { { 247, 247, 247 }, // Background { 239, 240, 241 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:322-324"
+quote = "case KColorScheme::Tooltip: groupName = QStringLiteral(\"Colors:Tooltip\"); defaultColors = defaultTooltipColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.tooltip.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -674,6 +1556,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:102"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.tooltip.decoration_hover"
@@ -686,6 +1583,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:103"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.view.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -696,6 +1608,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:115"
 quote = "BackgroundNormal=255,255,255"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-123"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.view.background_alternate"
@@ -708,6 +1635,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:114"
 quote = "BackgroundAlternate=247,247,247"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-124"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.view.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -718,6 +1660,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:123"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-125"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.view.foreground_inactive"
@@ -730,6 +1687,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:119"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-126"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.view.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -740,6 +1712,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:118"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-127"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.view.foreground_link"
@@ -752,6 +1739,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:120"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-128"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.view.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -762,6 +1764,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:125"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-129"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.view.foreground_negative"
@@ -774,6 +1791,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:121"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-130"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.view.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -784,6 +1816,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:122"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-131"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.view.foreground_positive"
@@ -796,6 +1843,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:124"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:122-132"
+quote = "static const SerializedColors defaultViewColors = { { 255, 255, 255 }, // Background { 247, 247, 247 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:338-340"
+quote = "case KColorScheme::View: groupName = QStringLiteral(\"Colors:View\"); defaultColors = defaultViewColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.view.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -806,6 +1868,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:116"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.view.decoration_hover"
@@ -818,6 +1895,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:117"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.window.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -828,6 +1920,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:129"
 quote = "BackgroundNormal=239,240,241"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-136"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:262-267"
+quote = "std::pair{\"BackgroundNormal\", &SerializedColors::NormalBackground},"
 
 [[fact]]
 key = "input.kde_scheme.window.background_alternate"
@@ -840,6 +1947,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:128"
 quote = "BackgroundAlternate=227,229,231"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-137"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:263-267"
+quote = "std::pair{\"BackgroundAlternate\", &SerializedColors::AlternateBackground},"
+
 [[fact]]
 key = "input.kde_scheme.window.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -850,6 +1972,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:137"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-138"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:254-267"
+quote = "std::pair{\"ForegroundNormal\", &SerializedColors::NormalText},"
 
 [[fact]]
 key = "input.kde_scheme.window.foreground_inactive"
@@ -862,6 +1999,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:133"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-139"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:255-267"
+quote = "std::pair{\"ForegroundInactive\", &SerializedColors::InactiveText},"
+
 [[fact]]
 key = "input.kde_scheme.window.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -872,6 +2024,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:132"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-140"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:256-267"
+quote = "std::pair{\"ForegroundActive\", &SerializedColors::ActiveText},"
 
 [[fact]]
 key = "input.kde_scheme.window.foreground_link"
@@ -884,6 +2051,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:134"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-141"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:257-267"
+quote = "std::pair{\"ForegroundLink\", &SerializedColors::LinkText},"
+
 [[fact]]
 key = "input.kde_scheme.window.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -894,6 +2076,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:139"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-142"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:258-267"
+quote = "std::pair{\"ForegroundVisited\", &SerializedColors::VisitedText},"
 
 [[fact]]
 key = "input.kde_scheme.window.foreground_negative"
@@ -906,6 +2103,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:135"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-143"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:259-267"
+quote = "std::pair{\"ForegroundNegative\", &SerializedColors::NegativeText},"
+
 [[fact]]
 key = "input.kde_scheme.window.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -916,6 +2128,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:136"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-144"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:260-267"
+quote = "std::pair{\"ForegroundNeutral\", &SerializedColors::NeutralText},"
 
 [[fact]]
 key = "input.kde_scheme.window.foreground_positive"
@@ -928,6 +2155,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:138"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:135-145"
+quote = "static const SerializedColors defaultWindowColors = { { 239, 240, 241 }, // Background { 227, 229, 231 }, // Alternate { 35, 38, 41 }, // Normal { 112, 125, 138 }, // Inactive { 61, 174, 233 }, // Active { 41, 128, 185 }, // Link { 155, 89, 182 }, // Visited { 218, 68, 83 }, // Negative { 246, 116, 0 }, // Neutral { 39, 174, 96 } // Positive"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:296-298"
+quote = "case KColorScheme::Window: groupName = QStringLiteral(\"Colors:Window\"); defaultColors = defaultWindowColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:261-267"
+quote = "std::pair{\"ForegroundPositive\", &SerializedColors::PositiveText},"
+
 [[fact]]
 key = "input.kde_scheme.window.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -938,6 +2180,21 @@ rows = ["K3.54"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:130"
 quote = "DecorationFocus=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-214"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:275"
+quote = "colors.Focus = group.readEntry(\"DecorationFocus\", defaults.Focus);"
 
 [[fact]]
 key = "input.kde_scheme.window.decoration_hover"
@@ -950,6 +2207,21 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:131"
 quote = "DecorationHover=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:213-215"
+quote = "static const DecorationColors defaultDecorationColors = { { 61, 174, 233 }, // Focus { 147, 206, 233 }, // Hover"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:293"
+quote = "DecorationColors defaultDecoColors = defaultDecorationColors;"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:276"
+quote = "colors.Hover = group.readEntry(\"DecorationHover\", defaults.Hover);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.background_normal"
 when = { conditions = ["scheme:light"] }
@@ -960,6 +2232,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:73"
 quote = "BackgroundNormal=239,240,241"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.header.inactive.background_alternate"
@@ -972,6 +2254,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:72"
 quote = "BackgroundAlternate=227,229,231"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_normal"
 when = { conditions = ["scheme:light"] }
@@ -982,6 +2274,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:81"
 quote = "ForegroundNormal=35,38,41"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_inactive"
@@ -994,6 +2296,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:77"
 quote = "ForegroundInactive=112,125,138"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_active"
 when = { conditions = ["scheme:light"] }
@@ -1004,6 +2316,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:76"
 quote = "ForegroundActive=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_link"
@@ -1016,6 +2338,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:78"
 quote = "ForegroundLink=41,128,185"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_visited"
 when = { conditions = ["scheme:light"] }
@@ -1026,6 +2358,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:83"
 quote = "ForegroundVisited=155,89,182"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_negative"
@@ -1038,6 +2380,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:79"
 quote = "ForegroundNegative=218,68,83"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_neutral"
 when = { conditions = ["scheme:light"] }
@@ -1048,6 +2400,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:80"
 quote = "ForegroundNeutral=246,116,0"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.header.inactive.foreground_positive"
@@ -1060,6 +2422,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:82"
 quote = "ForegroundPositive=39,174,96"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.decoration_focus"
 when = { conditions = ["scheme:light"] }
@@ -1071,6 +2443,16 @@ kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:74"
 quote = "DecorationFocus=61,174,233"
 
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
+
 [[fact]]
 key = "input.kde_scheme.header.inactive.decoration_hover"
 when = { conditions = ["scheme:light"] }
@@ -1081,6 +2463,16 @@ rows = ["K3.54", "K3.51"]
 kind = "published"
 source = "breeze@6.8.2 colors/BreezeLight.colors:75"
 quote = "DecorationHover=61,174,233"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:347-357"
+quote = "KConfigGroup inactiveGroup = KConfigGroup(&cfg, QStringLiteral(\"Inactive\")); if (inactiveGroup.exists()) { cfg = inactiveGroup; hasInactivePalette = true; } } _contrast = KColorScheme::contrastF(config); const SerializedColors loadedColors = loadSerializedColors(cfg, defaultColors); const DecorationColors loadedDecoColors = loadDecorationColors(cfg, defaultDecoColors);"
+
+[[fact.cite]]
+kind = "published"
+source = "kcolorscheme@6.31.0 src/kcolorscheme.cpp:330-333"
+quote = "case KColorScheme::Header: groupName = QStringLiteral(\"Colors:Header\"); defaultColors = loadSerializedColors(config->group(QStringLiteral(\"Colors:Window\")), defaultHeaderColors); defaultDecoColors = loadDecorationColors(config->group(QStringLiteral(\"Colors:Window\")), defaultDecorationColors);"
 
 [[fact]]
 key = "input.kde_scheme.wm.active_background"
