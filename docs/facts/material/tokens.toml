@@ -9860,15 +9860,44 @@ kind = "published"
 source = "frameworks-base@android-17.0.0_r1 core/res/res/values/config.xml:3166"
 quote = "<dimen name=\"config_viewConfigurationTouchSlop\">8dp</dimen>"
 
+# a drag starts once the pointer passes its slop, which Compose's drag detectors take by the pointer's type
+# (DragGestureDetector.kt:315, Draggable.kt:950-951): a mouse's is the touch slop scaled by 0.125dp / 18dp, a
+# touch's the touch slop
 [[fact]]
 key = "token.behavior.drag_threshold"
+value = "= mul(token.behavior.touch.slop, div(0.125px, 18px))"
+rows = []
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:1150-1155"
+quote = "private val mouseSlop get() = 0.125.dp private val defaultTouchSlop // The default touch slop on Android devices get() = 18.dp private val mouseToTouchSlopRatio get() = mouseSlop / defaultTouchSlop"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:1161-1164"
+quote = "internal fun ViewConfiguration.pointerSlop(pointerType: PointerType): Float { return when (pointerType) { PointerType.Mouse -> touchSlop * mouseToTouchSlopRatio"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:315"
+quote = "awaitPointerSlopOrCancellation(down.id, down.type, orientation = orientationLock) {"
+
+[[fact]]
+key = "token.behavior.drag_threshold"
+when = { conditions = ["input:touch"] }
 value = "= token.behavior.touch.slop"
 rows = []
 
 [[fact.cite]]
 kind = "published"
-source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:76-86"
-quote = "public suspend fun AwaitPointerEventScope.awaitTouchSlopOrCancellation( pointerId: PointerId, onTouchSlopReached: (change: PointerInputChange, overSlop: Offset) -> Unit, ): PointerInputChange? {"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:1161-1166"
+quote = "internal fun ViewConfiguration.pointerSlop(pointerType: PointerType): Float { return when (pointerType) { PointerType.Mouse -> touchSlop * mouseToTouchSlopRatio else -> touchSlop } }"
+
+[[fact.cite]]
+kind = "published"
+source = "androidx@e4d933c9 compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/DragGestureDetector.kt:315"
+quote = "awaitPointerSlopOrCancellation(down.id, down.type, orientation = orientationLock) {"
 
 # Compose's paging (Pager) and Android's paging slop (twice the touch slop, getScaledPagingTouchSlop): which Compose
 # uses is unread (U556)
