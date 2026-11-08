@@ -192,10 +192,11 @@ every preset, and the release's run (`FACTS_GATE_RELEASE=1`) refuses a subset.
 
 The gate runs its parallel steps on as many threads as the machine has;
 `NT_FACTS_GATE_THREADS=8` runs them on eight, and a value that is no number
-above zero fails the test. The count sets the speed and adds little memory:
-each condition vector's combinations are enumerated as they are checked, a
-chunk at a time, never all held, so each thread adds about 60 MB and the six
-presets peak near 3 GB on 32 threads.
+above zero fails the test. The count sets the speed and the memory: as many
+condition vectors are checked at once as there are threads, each one's
+combinations enumerated as they are checked, a chunk at a time, never all
+held, so each thread adds about 120 MB and the six presets peak near 4 GB on
+16 threads, 6 GB on 32.
 
 ## Project structure
 
@@ -263,7 +264,7 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 
 Design-level choices are captured in files under `docs/`:
 
-- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence under [`docs/evidence/`](docs/evidence/); the bundled presets are generated from them (`scripts/generate_preset.py`)
+- [`docs/facts/`](docs/facts/) — the verified platform facts, one directory per platform: each value with its source, pinned in [`docs/facts/sources.toml`](docs/facts/sources.toml), or its measurement with the evidence in the evidence repository, [`native-theme-evidence`](https://github.com/tiborgats/native-theme-evidence), at the paths its citations name (`docs/evidence/…`) and at the commit `sources.toml` pins; the bundled presets are generated from them (`scripts/generate_preset.py`)
 - [`docs/platform-facts.md`](docs/platform-facts.md) — every value the facts state, per preset, generated from `docs/facts/` by `scripts/generate_platform_facts.py`; never edited (the hand-written document of 0.7.0, which the planning documents cite by line, is the one commit `fc6109d1` holds)
 - [`docs/property-registry.toml`](docs/property-registry.toml) — the registry of 0.7.0's theme fields, generated from the 0.8.0 model at its plan's M2.6
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)

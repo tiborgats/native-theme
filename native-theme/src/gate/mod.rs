@@ -10,6 +10,7 @@ mod tree;
 
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use ::toml::{Table, Value as Item};
 
@@ -397,6 +398,7 @@ impl Preset {
             theme,
             stack,
             window: conditions.window.clone(),
+            contexts: Arc::default(),
         })
     }
 }
@@ -1873,7 +1875,13 @@ pub struct Resolved {
     theme: ResolvedTheme,
     stack: Stack,
     window: WindowConditions,
+    /// Each combination context read so far, as [`context_element`] reads
+    /// it: a gate's run queries millions of combinations in a few contexts.
+    contexts: Arc<Mutex<Vec<ContextRead>>>,
 }
+
+/// A combination context and its ancestor as [`context_element`] reads it.
+type ContextRead = (Item, Result<ContextElement, Unread>);
 
 /// A value the gate read, a part's or a widget value's tree (whole, or at
 /// a key's place), and the places its evaluation read a synthetic layer's
@@ -2182,8 +2190,12 @@ impl Resolved {
     ) -> Result<Session<'r>, Unread> {
         let widget = widget_kind(&combination.widget)?;
         let parsed = Parsed::of(combination)?;
+        let context = match &combination.context {
+            Some(context) => Some(self.context_element(context)?),
+            None => None,
+        };
         let mut scope = self.root(root);
-        if let Some(context) = &combination.context {
+        if let Some(context) = &context {
             scope = self.context_scope(context, scope, metrics)?;
         }
         let mut session = Session {
@@ -2234,46 +2246,31 @@ impl Resolved {
         Ok(session)
     }
 
-    /// The scope inside a context's ancestor (S11's context selector, as a
-    /// state model's `axes.contexts` writes it): its widget's or part's
-    /// element, holding the context's variants and states, queried in
-    /// `scope`.
+    /// [`context_element`] of `context`, read once for every combination
+    /// in it.
+    fn context_element(&self, context: &Item) -> Result<ContextElement, Unread> {
+        let mut contexts = self.contexts.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some((_, read)) = contexts.iter().find(|(held, _)| held == context) {
+            return read.clone();
+        }
+        let read = context_element(context);
+        contexts.push((context.clone(), read.clone()));
+        read
+    }
+
+    /// The scope inside a context's ancestor `context`: its element
+    /// queried in `scope`.
     fn context_scope(
         &self,
-        context: &Item,
+        context: &ContextElement,
         scope: Scope,
         metrics: &dyn FontMetrics,
     ) -> Result<Scope, Unread> {
-        let mut table = Table::new();
-        table.insert("context".to_owned(), Item::Array(vec![context.clone()]));
-        let When(selector) = parse_when(&Item::Table(table))?;
-        let Some(context) = selector.context.first() else {
-            return Err(Unread::Refused("an empty context".to_owned()));
-        };
-        let part = match &context.target {
-            Some(WidgetOrPart::Part(PartRef::Typed(part))) => *part,
-            Some(WidgetOrPart::Widget(WidgetRef::Typed(kind))) => registry::widgets()
-                .iter()
-                .find(|info| info.kind == *kind)
-                .and_then(|info| info.parts.iter().find(|part| part.root))
-                .and_then(|root| TypedPart::from_names(*kind, root.name))
-                .ok_or_else(|| Unread::NotHeld("a context widget with no root".to_owned()))?,
-            _ => {
-                return Err(Unread::NotHeld(
-                    "a context naming no typed widget the gate can draw".to_owned(),
-                ));
-            }
-        };
-        let variants = context.variants.all_of.clone();
-        let mut states = StateFlags::new();
-        for flag in &context.states.all_of {
-            states = states.with(flag.clone());
-        }
-        let mut element = Element::new(PartRef::Typed(part), &scope, metrics)
-            .with_variants(&variants)
-            .with_states(states, &[]);
-        if let Some(size) = context.sizes.all_of.first() {
-            element = element.with_size(*size);
+        let mut element = Element::new(PartRef::Typed(context.part), &scope, metrics)
+            .with_variants(&context.variants)
+            .with_states(context.states.clone(), &[]);
+        if let Some(size) = context.size {
+            element = element.with_size(size);
         }
         match self.theme.style(&element) {
             Styled::Style((_, inside)) => Ok(inside),
@@ -2282,6 +2279,66 @@ impl Resolved {
             ))),
         }
     }
+}
+
+/// A combination context's ancestor (S11's context selector, as a state
+/// model's `axes.contexts` writes it): its widget's or part's element,
+/// holding the context's variants, states and size.
+#[derive(Clone, Debug)]
+struct ContextElement {
+    part: TypedPart,
+    variants: Vec<VariantRef>,
+    states: StateFlags,
+    size: Option<ControlSize>,
+}
+
+/// Whether the model holds what the combination context `context` names:
+/// [`Resolved::session`] skips each combination in a context naming a
+/// widget or part it does not hold yet, once the combination's names read
+/// ([`names_read`]).
+pub fn context_held(context: &Item) -> bool {
+    !matches!(context_element(context), Err(Unread::NotHeld(_)))
+}
+
+/// Whether the names `combination` holds read, as [`Resolved::session`]
+/// reads them before its context.
+pub fn names_read(combination: &Combination) -> bool {
+    Parsed::of(combination).is_ok()
+}
+
+/// The ancestor a combination's `context` names, read.
+fn context_element(context: &Item) -> Result<ContextElement, Unread> {
+    let mut table = Table::new();
+    table.insert("context".to_owned(), Item::Array(vec![context.clone()]));
+    let When(selector) = parse_when(&Item::Table(table))?;
+    let Some(context) = selector.context.first() else {
+        return Err(Unread::Refused("an empty context".to_owned()));
+    };
+    let part = match &context.target {
+        Some(WidgetOrPart::Part(PartRef::Typed(part))) => *part,
+        Some(WidgetOrPart::Widget(WidgetRef::Typed(kind))) => registry::widgets()
+            .iter()
+            .find(|info| info.kind == *kind)
+            .and_then(|info| info.parts.iter().find(|part| part.root))
+            .and_then(|root| TypedPart::from_names(*kind, root.name))
+            .ok_or_else(|| Unread::NotHeld("a context widget with no root".to_owned()))?,
+        _ => {
+            return Err(Unread::NotHeld(
+                "a context naming no typed widget the gate can draw".to_owned(),
+            ));
+        }
+    };
+    let variants = context.variants.all_of.clone();
+    let mut states = StateFlags::new();
+    for flag in &context.states.all_of {
+        states = states.with(flag.clone());
+    }
+    Ok(ContextElement {
+        part,
+        variants,
+        states,
+        size: context.sizes.all_of.first().copied(),
+    })
 }
 
 /// What the query answered for a part.

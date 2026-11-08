@@ -32,7 +32,9 @@ the eleven styles in STYLES' order, each size and leading a whole number of poin
 `UIContentSizeCategory` of CATEGORIES: the seven standard ones by name, `AX1` … `AX5` the five accessibility
 categories in order, smallest first, as UIKit's `preferredFont(forTextStyle:compatibleWith:)` returns them per
 category: the script checks every table's sizes against the sizes the iOS host measured per category (EVIDENCE, each
-`[[text_style]]` of the regular legibility weight) and refuses a page or an evidence file where they differ.
+`[[text_style]]` of the regular legibility weight, read under the evidence root: `NATIVE_THEME_EVIDENCE`, else the
+pin's checkout in the source cache, a clean checkout at sources.toml's pin, spec S17 *The evidence root*) and refuses
+a page or an evidence file where they differ.
 """
 import hashlib
 import json
@@ -238,7 +240,21 @@ def snapshot(root: Path, cache: Path) -> dict:
         raise InputError(f"{path}: {err}") from err
 
 
+def evidence_root(root: Path) -> Path:
+    """The evidence root of the repository at `root` (spec S17 *The evidence root*, citations.evidence_root): a clean
+    checkout of the evidence repository at sources.toml's pin, or InputError."""
+    try:
+        sources = tomllib.loads((root / SOURCES).read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as err:
+        raise InputError(f"{SOURCES}: {err}") from err
+    try:
+        return citations.evidence_root(sources)
+    except citations.EvidenceRootError as err:
+        raise InputError(str(err)) from err
+
+
 def evidence_files(root: Path) -> dict:
+    """EVIDENCE's files under the evidence root `root`, parsed."""
     out = {}
     for path in EVIDENCE:
         try:
@@ -359,7 +375,7 @@ def main(argv) -> int:
         return 2
     root = Path(".")
     try:
-        files = generate(snapshot(root, citations.cache_dir()), evidence_files(root))
+        files = generate(snapshot(root, citations.cache_dir()), evidence_files(evidence_root(root)))
     except InputError as err:
         print(f"error: {err}", file=sys.stderr)
         return 2

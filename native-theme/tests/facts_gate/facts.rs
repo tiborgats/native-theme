@@ -1,7 +1,9 @@
 //! The facts (S17 *Format*): each `[[fact]]` of a platform directory's
 //! files, in file order, and the tolerance it is compared at for a preset.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use native_theme::gate::{Tolerance, is_derivation};
 use toml::{Table, Value};
@@ -111,10 +113,220 @@ pub fn read(file: &str, text: &str) -> Result<Vec<Fact>, String> {
     Ok(out)
 }
 
+/// The evidence files the citations read, each read and parsed once however
+/// many citations name it: thousands of citations name a few files of
+/// hundreds of kilobytes.
+pub struct Evidence {
+    /// The evidence root ([`evidence_root`], or a fixture's root), which the
+    /// evidence paths (`docs/evidence/…`) are relative to.
+    root: PathBuf,
+    files: Mutex<HashMap<String, Arc<EvidenceFile>>>,
+}
+
+/// One evidence file: its text, or why it does not read; its parses made
+/// when first asked for.
+struct EvidenceFile {
+    text: Result<String, String>,
+    toml: OnceLock<Result<Table, String>>,
+    json: OnceLock<Option<serde_json::Value>>,
+}
+
+impl Evidence {
+    /// The evidence under the evidence root `root`, none read yet.
+    pub fn new(root: &Path) -> Evidence {
+        Evidence {
+            root: root.to_path_buf(),
+            files: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// The file at `path`, below the root, read on the first call.
+    fn file(&self, path: &str) -> Arc<EvidenceFile> {
+        let mut files = self
+            .files
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Arc::clone(files.entry(path.to_owned()).or_insert_with(|| {
+            Arc::new(EvidenceFile {
+                text: std::fs::read_to_string(self.root.join(path))
+                    .map_err(|error| error.to_string()),
+                toml: OnceLock::new(),
+                json: OnceLock::new(),
+            })
+        }))
+    }
+}
+
+/// The variable naming a checkout of the evidence repository other than the
+/// source cache's (spec S17 *The evidence root*).
+pub const EVIDENCE_VARIABLE: &str = "NATIVE_THEME_EVIDENCE";
+
+/// The variable naming the source cache, and its default: those of
+/// `scripts/citations.py` (`cache_dir`).
+const SOURCES_VARIABLE: &str = "NATIVE_THEME_SOURCES";
+const DEFAULT_CACHE: &str = "/run/media/tibi/work/cargo-build/native-theme-sources";
+
+/// The evidence repository's entry id in `sources.toml`, its folder in the
+/// source cache.
+const EVIDENCE_ID: &str = "native-theme-evidence";
+
+/// The evidence root of the facts root `facts` outside a fixture (spec S17
+/// *The evidence root*): the directory [`EVIDENCE_VARIABLE`] names, else
+/// the pin's checkout in the source cache, as [`evidence_root_at`] checks
+/// it.
+pub fn evidence_root(facts: &Path) -> Result<PathBuf, String> {
+    let set = |name: &str| std::env::var_os(name).filter(|value| !value.is_empty());
+    let cache = set(SOURCES_VARIABLE).map_or_else(|| PathBuf::from(DEFAULT_CACHE), PathBuf::from);
+    evidence_root_at(facts, set(EVIDENCE_VARIABLE).map(PathBuf::from), &cache)
+}
+
+/// The commit `sources.toml` (its text) pins the evidence repository at:
+/// its one `git` entry with `evidence = true`.
+pub fn evidence_pin(sources: &str) -> Result<String, String> {
+    let table: Table = toml::from_str(sources).map_err(|error| format!("sources.toml: {error}"))?;
+    let pins: Vec<&Value> = table
+        .get("source")
+        .and_then(Value::as_array)
+        .map(|entries| {
+            entries
+                .iter()
+                .filter(|entry| {
+                    entry.get("kind").and_then(Value::as_str) == Some("git")
+                        && entry.get("evidence").and_then(Value::as_bool) == Some(true)
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    match pins.as_slice() {
+        [pin] => pin
+            .get("commit")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| "sources.toml: the evidence entry has no commit".to_owned()),
+        _ => Err(format!(
+            "sources.toml: {} evidence entries (a git [[source]] with `evidence = true`), not one",
+            pins.len()
+        )),
+    }
+}
+
+/// The evidence root of the facts root `facts`: `named` (the variable's
+/// directory), else `<cache>/native-theme-evidence`. It must be the top of
+/// a git checkout whose HEAD is the commit `sources.toml` pins
+/// ([`evidence_pin`]) and which is clean, `git status --porcelain --ignored
+/// --untracked-files=all` printing nothing (ignored files count: the gate
+/// reads files on disk); otherwise an error naming the root and the pin, so
+/// the gate never runs without its evidence.
+pub fn evidence_root_at(
+    facts: &Path,
+    named: Option<PathBuf>,
+    cache: &Path,
+) -> Result<PathBuf, String> {
+    let sources = std::fs::read_to_string(facts.join("sources.toml"))
+        .map_err(|error| format!("{}: {error}", facts.join("sources.toml").display()))?;
+    let commit = evidence_pin(&sources)?;
+    let (root, place, fix) = match named {
+        Some(root) => {
+            let place = format!("{EVIDENCE_VARIABLE}={}", root.display());
+            (
+                root,
+                place,
+                format!("check {EVIDENCE_ID} out there at {commit}"),
+            )
+        }
+        None => {
+            let root = cache.join(EVIDENCE_ID);
+            let place = format!(
+                "{} (the source cache's checkout of {EVIDENCE_ID})",
+                root.display()
+            );
+            (
+                root,
+                place,
+                format!("fetch it with scripts/update_sources.sh --only {EVIDENCE_ID}"),
+            )
+        }
+    };
+    if !root.is_dir() {
+        return Err(format!(
+            "no evidence root: {place} is no directory; the pin is {commit} ({fix})"
+        ));
+    }
+    let git = |args: &[&str]| -> Result<Option<String>, String> {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&root)
+            .args(args)
+            .output()
+            .map_err(|error| format!("the evidence root {place}: git: {error}"))?;
+        Ok(output
+            .status
+            .success()
+            .then(|| String::from_utf8_lossy(&output.stdout).into_owned()))
+    };
+    if git(&["rev-parse", "--show-prefix"])?.as_deref() != Some("\n") {
+        return Err(format!(
+            "the evidence root {place} is not the top of a git checkout; the pin is {commit} ({fix})"
+        ));
+    }
+    let head = git(&["rev-parse", "--verify", "-q", "HEAD"])?.unwrap_or_default();
+    let head = head.trim();
+    if head != commit {
+        return Err(format!(
+            "the evidence root {place} is at {}, not at the pin {commit} ({fix})",
+            if head.is_empty() { "no commit" } else { head }
+        ));
+    }
+    let status = git(&[
+        "status",
+        "--porcelain",
+        "--ignored",
+        "--untracked-files=all",
+    ])?;
+    match status.as_deref().map(str::trim) {
+        Some("") => Ok(root),
+        status => {
+            let changed: Vec<&str> = status.map(str::lines).into_iter().flatten().collect();
+            let first = changed
+                .first()
+                .map(|line| format!("; first: {}", line.trim()))
+                .unwrap_or_default();
+            Err(format!(
+                "the evidence root {place} at the pin {commit} is not clean: {} paths changed, \
+                 untracked or ignored{first}",
+                changed.len()
+            ))
+        }
+    }
+}
+
+impl EvidenceFile {
+    /// Its text parsed as TOML, or why it does not read or parse.
+    fn toml(&self) -> Result<&Table, String> {
+        self.toml
+            .get_or_init(|| {
+                let text = self.text.as_ref().map_err(String::clone)?;
+                toml::from_str(text).map_err(|error| error.to_string())
+            })
+            .as_ref()
+            .map_err(String::clone)
+    }
+
+    /// Its text parsed as JSON, where it reads and parses.
+    fn json(&self) -> Option<&serde_json::Value> {
+        self.json
+            .get_or_init(|| {
+                let text = self.text.as_ref().ok()?;
+                serde_json::from_str(text).ok()
+            })
+            .as_ref()
+    }
+}
+
 /// The generations a `measured` citation's evidence serves: its run's
 /// `run.toml` maps the image folder to its preset (S17 *`evidence`*). The
-/// evidence path is the repository's, `root` its root.
-fn evidence_preset(root: &Path, evidence: &str) -> Option<String> {
+/// evidence path is a `docs/evidence/…` path under the evidence root.
+fn evidence_preset(files: &Evidence, evidence: &str) -> Option<String> {
     let file = evidence.split_once('#').map_or(evidence, |(file, _)| file);
     let parts: Vec<&str> = file.split('/').collect();
     // docs/evidence/<harness>/<date>-run-<id>/<image>/…
@@ -124,9 +336,9 @@ fn evidence_preset(root: &Path, evidence: &str) -> Option<String> {
         }
         _ => return None,
     };
-    let text = std::fs::read_to_string(root.join(run).join("run.toml")).ok()?;
-    let table: Table = toml::from_str(&text).ok()?;
-    table
+    let file = files.file(&format!("{run}/run.toml"));
+    file.toml()
+        .ok()?
         .get("images")?
         .get(image)?
         .get("preset")?
@@ -146,9 +358,9 @@ const IMAGE_EXTENSIONS: [&str; 9] = [
 /// `input_image` names those files) is not, and compares as read; nor is a
 /// GNOME render-node file (`.node`) or an analysis of one, which holds the
 /// colour's OKLab coordinates unrounded, converted as the colour function
-/// converts them (S17), no pixel drawn. The evidence path is the
-/// repository's, `root` its root.
-fn drawn_pixels(root: &Path, evidence: &str) -> bool {
+/// converts them (S17), no pixel drawn. The evidence path is a
+/// `docs/evidence/…` path under the evidence root.
+fn drawn_pixels(files: &Evidence, evidence: &str) -> bool {
     let file = evidence.split_once('#').map_or(evidence, |(file, _)| file);
     let drawn = |name: &str| {
         Path::new(name)
@@ -158,11 +370,12 @@ fn drawn_pixels(root: &Path, evidence: &str) -> bool {
                 IMAGE_EXTENSIONS.contains(&extension.to_ascii_lowercase().as_str())
             })
     };
-    let Ok(text) = std::fs::read_to_string(root.join(file)) else {
+    let read = files.file(file);
+    if read.text.is_err() {
         return false;
-    };
+    }
     let names: Vec<String> = if file.ends_with(".json") {
-        let Ok(document) = serde_json::from_str::<serde_json::Value>(&text) else {
+        let Some(document) = read.json() else {
             return false;
         };
         match document.get("input_image") {
@@ -175,7 +388,7 @@ fn drawn_pixels(root: &Path, evidence: &str) -> bool {
             _ => Vec::new(),
         }
     } else if file.ends_with(".toml") {
-        let Ok(table) = toml::from_str::<Table>(&text) else {
+        let Ok(table) = read.toml() else {
             return false;
         };
         match table.get("input_image") {
@@ -196,12 +409,12 @@ fn drawn_pixels(root: &Path, evidence: &str) -> bool {
 /// A citation's measured tolerance: one number, or one per leaf; its
 /// colours compared as drawn where its evidence was read from drawn pixels
 /// ([`drawn_pixels`]).
-fn measured(root: &Path, cite: &Table) -> Option<Tolerance> {
+fn measured(files: &Evidence, cite: &Table) -> Option<Tolerance> {
     let tolerance = measured_tolerance(cite)?;
     let drawn = cite
         .get("evidence")
         .and_then(Value::as_str)
-        .is_some_and(|evidence| drawn_pixels(root, evidence));
+        .is_some_and(|evidence| drawn_pixels(files, evidence));
     Some(if drawn {
         tolerance.from_drawn_pixels()
     } else {
@@ -276,7 +489,7 @@ pub fn points(value: &Value) -> Vec<String> {
 /// tolerance*): the smallest of the measured citations serving the preset,
 /// else the quote check's precision; its leaves in points marked so, as
 /// the value is compared in px (S9.4).
-pub fn tolerance(fact: &Fact, root: &Path, preset: &str) -> Tolerance {
+pub fn tolerance(fact: &Fact, files: &Evidence, preset: &str) -> Tolerance {
     let points = match &fact.stated {
         Stated::Value(value) => points(value),
         Stated::Pending(_) => Vec::new(),
@@ -287,10 +500,10 @@ pub fn tolerance(fact: &Fact, root: &Path, preset: &str) -> Tolerance {
         .filter(|cite| {
             cite.get("evidence")
                 .and_then(Value::as_str)
-                .and_then(|evidence| evidence_preset(root, evidence))
+                .and_then(|evidence| evidence_preset(files, evidence))
                 .is_some_and(|served| served == preset)
         })
-        .filter_map(|cite| measured(root, cite))
+        .filter_map(|cite| measured(files, cite))
         .reduce(Tolerance::smallest)
         .unwrap_or_else(Tolerance::quote)
         .in_points(&points)
@@ -345,7 +558,7 @@ pub struct DerivationPass {
 /// citation whose evidence the gate cannot read is an error.
 pub fn derivation_passes(
     fact: &Fact,
-    root: &Path,
+    files: &Evidence,
     preset: &str,
 ) -> Result<Vec<DerivationPass>, String> {
     let mut out = Vec::new();
@@ -358,27 +571,30 @@ pub fn derivation_passes(
         let Some(evidence) = cite.get("evidence").and_then(Value::as_str) else {
             continue;
         };
-        if evidence_preset(root, evidence).as_deref() != Some(preset) {
+        if evidence_preset(files, evidence).as_deref() != Some(preset) {
             continue;
         }
         let (file, path) = evidence
             .split_once('#')
             .ok_or_else(|| format!("{}: `{evidence}` names no path in its file", fact.place()))?;
-        let text = std::fs::read_to_string(root.join(file))
+        let read = files.file(file);
+        let table = read
+            .toml()
             .map_err(|error| format!("{}: {file}: {error}", fact.place()))?;
-        let table: Table =
-            toml::from_str(&text).map_err(|error| format!("{}: {file}: {error}", fact.place()))?;
-        let mut at = Value::Table(table);
-        for segment in path.split('.') {
+        let mut segments = path.split('.');
+        let mut at = segments
+            .next()
+            .and_then(|segment| table.get(segment))
+            .ok_or_else(|| format!("{}: {file} holds no `{path}`", fact.place()))?;
+        for segment in segments {
             at = at
                 .get(segment)
-                .cloned()
                 .ok_or_else(|| format!("{}: {file} holds no `{path}`", fact.place()))?;
         }
         let passes = at
             .as_array()
             .ok_or_else(|| format!("{}: {file}#{path} is not a list of passes", fact.place()))?;
-        let tolerance = measured(root, cite).unwrap_or_else(Tolerance::quote);
+        let tolerance = measured(files, cite).unwrap_or_else(Tolerance::quote);
         let names: Vec<String> = cite
             .get("inputs")
             .and_then(Value::as_array)

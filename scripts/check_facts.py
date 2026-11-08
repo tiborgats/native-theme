@@ -180,7 +180,9 @@ A `[[fact]]` (S17 *Fields*):
   that generation; a fact without one has citations that together serve each generation of its directory among the
   presets that exist (existing_presets(); a `preset:` in `not_conditions` takes that generation out). A citation's
   generations: its source entry's `generations`; a measured citation's, the preset its run's `run.toml` maps its image
-  to (S17 *`evidence`*; check_fact_citations.py checks the rest of run.toml).
+  to (S17 *`evidence`*; check_fact_citations.py checks the rest of run.toml), read under the evidence root (S17 *The
+  evidence root*: a fixture's, else `NATIVE_THEME_EVIDENCE` or the pin's checkout in the source cache, a clean
+  checkout at sources.toml's pin; Context.evidence_root), so a measured fact fails the run without one.
 
 ADD-A125 to ADD-A130 (each rule's function states it in full):
 
@@ -291,6 +293,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import check_spec_names
+import citations
 import spec_catalogue
 
 FACTS = Path("docs/facts")
@@ -705,10 +708,17 @@ def parse_evidence(s):
 
 
 class Context:
-    """What the checks read: the sources, the core's and the catalogue's names, the existing presets, the runs."""
+    """What the checks read: the sources, the core's and the catalogue's names, the existing presets, the runs.
 
-    def __init__(self, root=Path("."), core_text=None, cat_text=None, sources_text=None, presets=None, rows=None):
+    `evidence` is a fixture's root holding its own docs/evidence/ (a self-test's); without it, the evidence root is
+    resolved when evidence is first read (evidence_root), from `NATIVE_THEME_EVIDENCE` or the pin's checkout in the
+    source cache (`cache`, else citations.cache_dir's)."""
+
+    def __init__(self, root=Path("."), core_text=None, cat_text=None, sources_text=None, presets=None, rows=None,
+                 evidence=None, cache=None):
         self.root = Path(root)
+        self._evidence_root = Path(evidence) if evidence is not None else None
+        self._cache = cache
         try:
             core_text = core_text if core_text is not None else (self.root / CORE).read_text(encoding="utf-8")
             cat_text = cat_text if cat_text is not None else (self.root / CATALOGUE).read_text(encoding="utf-8")
@@ -743,11 +753,22 @@ class Context:
         self.rows = gap_map_rows(self.root) if rows is None else rows
         self._runs = {}
 
+    @property
+    def evidence_root(self) -> Path:
+        """The root a path `docs/evidence/<rest>` is read under (spec S17 *The evidence root*): the fixture's, else a
+        clean checkout of the evidence repository at sources.toml's pin, resolved once; InputError without one."""
+        if self._evidence_root is None:
+            try:
+                self._evidence_root = citations.evidence_root(self.sources_data, self._cache)
+            except citations.EvidenceRootError as err:
+                raise InputError(str(err)) from err
+        return self._evidence_root
+
     def run_toml(self, harness, run):
         """The parsed run.toml of a run folder, or None when it is missing or no valid TOML."""
         key = (harness, run)
         if key not in self._runs:
-            p = self.root / EVIDENCE / harness / run / "run.toml"
+            p = self.evidence_root / EVIDENCE / harness / run / "run.toml"
             try:
                 self._runs[key] = tomllib.loads(p.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
@@ -4131,7 +4152,7 @@ def write_fixture(root: Path, files: dict):
 
 def fixture_context(root: Path):
     return Context(root, core_text=SELF_TEST_CORE, cat_text=SELF_TEST_CATALOGUE, sources_text=SELF_TEST_SOURCES,
-                   rows=SELF_TEST_ROWS)
+                   rows=SELF_TEST_ROWS, evidence=root)
 
 
 _SBV = 'sizes_by_variant = [{ variant = "@pill", sizes = ["regular"] }]'

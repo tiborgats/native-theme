@@ -259,6 +259,8 @@ jobs:
           - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
     steps:
       - uses: actions/checkout@v6
+      # The facts gate reads the evidence at its pin.
+      - uses: ./.github/actions/evidence
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme ${{ matrix.flags }}
@@ -478,6 +480,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # check_function_vectors.py reads the evidence at its pin.
+      - uses: ./.github/actions/evidence
       # The widget coverage's `cargo metadata` resolves the workspace with
       # the toolchain every other job uses.
       - uses: dtolnay/rust-toolchain@stable
@@ -526,6 +530,16 @@ jobs:
       # inheritance-rules.toml name the commit they read (`@fc6109d1`).
       - run: python3 scripts/check_pinned_citations.py
       - run: python3 scripts/check_pinned_citations.py --self-test
+      # The evidence lives in native-theme-evidence, pinned by
+      # docs/facts/sources.toml: no file under docs/evidence/ is tracked here,
+      # as scripts/check_release.sh checks too.
+      - name: No evidence in this repository
+        run: |
+          tracked=$(git ls-files -- docs/evidence)
+          if [ -n "$tracked" ]; then
+            printf "tracked here, belongs in native-theme-evidence: %s\n" $tracked | head -20
+            exit 1
+          fi
 
   doc:
     name: Documentation

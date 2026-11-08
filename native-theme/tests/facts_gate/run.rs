@@ -5,18 +5,19 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use native_theme::gate::{
     Combination, Conditions, Drawing, FactKey, FactValue, Outcome, Preset, Resolved, SetWhole,
-    Tolerance, Unread, When, content_variants, is_listed_default, listed_key, parse_key,
-    parse_value, parse_when, parts, set_whole, widgets,
+    Tolerance, Unread, When, content_variants, context_held, is_listed_default, listed_key,
+    names_read, parse_key, parse_value, parse_when, parts, set_whole, widgets,
 };
 use native_theme::{FontMetrics, Layer, Px, ResolvedFont, RootInputs, Size};
 use toml::Value;
 
 use super::facts::{self, Fact, Stated};
-use super::model::{self, Mentioned, Model, Point, strings};
+use super::model::{self, Block, Mentioned, Model, Point, Space, strings};
 use super::units::Units;
 
 /// The gate's font measurement (S17 *The gate*, the design's "fixed,
@@ -380,6 +381,9 @@ pub struct Prepared<'f> {
 pub struct KeyFacts<'f> {
     name: String,
     key: FactKey,
+    /// The widget whose element the key is queried with
+    /// ([`FactKey::widget`]), held as every combination asks for it.
+    widget: Option<String>,
     /// The set-whole block the key is a leaf of (S6.1, S17).
     set_whole: Option<SetWhole>,
     facts: Vec<Prepared<'f>>,
@@ -515,7 +519,7 @@ pub fn read_all(platform: &Platform, report: &mut Report) {
 pub fn prepare<'f>(
     platform: &'f Platform,
     preset: &str,
-    repo: &Path,
+    evidence: &facts::Evidence,
     report: &mut Report,
 ) -> Vec<KeyFacts<'f>> {
     let mut out: Vec<KeyFacts<'f>> = Vec::new();
@@ -553,7 +557,7 @@ pub fn prepare<'f>(
             },
         };
         let mut passes = Vec::new();
-        match facts::derivation_passes(fact, repo, preset) {
+        match facts::derivation_passes(fact, evidence, preset) {
             Ok(read) => {
                 for pass in read {
                     match parse_value(key, &pass.result) {
@@ -574,7 +578,7 @@ pub fn prepare<'f>(
             when,
             value,
             leaf,
-            tolerance: facts::tolerance(fact, repo, preset),
+            tolerance: facts::tolerance(fact, evidence, preset),
             passes,
         };
         match out.iter_mut().find(|held| held.name == fact.key) {
@@ -582,6 +586,7 @@ pub fn prepare<'f>(
             None => out.push(KeyFacts {
                 name: fact.key.clone(),
                 key: key.clone(),
+                widget: key.widget(),
                 set_whole: block,
                 facts: vec![prepared],
             }),
@@ -599,6 +604,7 @@ pub fn prepare<'f>(
             match parse_key(&name) {
                 Ok(key) => out.push(KeyFacts {
                     name,
+                    widget: key.widget(),
                     key,
                     set_whole: None,
                     facts: Vec::new(),
@@ -634,28 +640,39 @@ fn applying_of<'p, 'f>(
     report: &mut Report,
     combination: &dyn Fn() -> String,
 ) -> Option<&'p Prepared<'f>> {
-    let held: Vec<&Prepared<'f>> = facts
-        .iter()
-        .zip(held)
-        .filter(|(_, holds)| **holds)
-        .map(|(fact, _)| fact)
-        .collect();
-    if let Some(last) = held.last() {
-        for earlier in &held {
-            if let Stated::Pending(id) = &earlier.fact.stated
-                && !std::ptr::eq(*earlier, *last)
-            {
-                report.fail(format!(
-                    "{}: the pending fact {id} of `{}` is shadowed by {} under {}",
-                    earlier.fact.place(),
-                    earlier.fact.key,
-                    last.fact.place(),
-                    combination()
-                ));
-            }
+    applying_at(facts, held, report, combination).and_then(|at| facts.get(at))
+}
+
+/// [`applying_of`], the fact that applies by its place among `facts`.
+fn applying_at(
+    facts: &[Prepared<'_>],
+    held: &[bool],
+    report: &mut Report,
+    combination: &dyn Fn() -> String,
+) -> Option<usize> {
+    let holding = || {
+        facts
+            .iter()
+            .zip(held)
+            .enumerate()
+            .filter(|(_, (_, holds))| **holds)
+            .map(|(at, (fact, _))| (at, fact))
+    };
+    let (at, last) = holding().next_back()?;
+    for (_, earlier) in holding() {
+        if let Stated::Pending(id) = &earlier.fact.stated
+            && !std::ptr::eq(earlier, last)
+        {
+            report.fail(format!(
+                "{}: the pending fact {id} of `{}` is shadowed by {} under {}",
+                earlier.fact.place(),
+                earlier.fact.key,
+                last.fact.place(),
+                combination()
+            ));
         }
     }
-    held.last().copied()
+    Some(at)
 }
 
 /// What to do with the fact that applies to a key.
@@ -1253,12 +1270,71 @@ fn combination_of(point: Point, widget: &str, context: Option<&Value>) -> Combin
     combination
 }
 
-/// A widget's state model in force for one preset and flavour: what its
-/// rules and facts tell apart, and its condition vectors.
+/// A data combination's fields, as a state model's enumeration gives them
+/// ([`combination_of`]).
+fn point_of(combination: &Combination) -> Point {
+    Point {
+        conditions: Vec::new(),
+        context: None,
+        variants: combination.variants.clone(),
+        states: combination.states.clone(),
+        order: combination.order.clone(),
+        size: combination.size.clone(),
+        density: combination.density.clone(),
+    }
+}
+
+/// Whether the gate skips each combination of `block`, of the widget
+/// `widget`'s state model whose combinations are `space`, on its context
+/// alone ([`Resolved::session`]): the context names what the model does
+/// not hold yet, and every name the block's combinations hold reads, so
+/// none is refused before its context is read (a combination's names read
+/// where each of them does).
+fn context_skips(widget: &str, space: &Space<'_>, block: &Block<'_>) -> bool {
+    let Some(context) = block.context else {
+        return false;
+    };
+    let reads = |set: &dyn Fn(&mut Combination)| {
+        let mut combination = Combination::new(widget);
+        set(&mut combination);
+        names_read(&combination)
+    };
+    !context_held(context)
+        && reads(&|combination| combination.variants.clone_from(&block.variants))
+        && space.flag_sets.iter().all(|(states, order)| {
+            reads(&|combination| {
+                combination.states.clone_from(states);
+                combination.order.clone_from(order);
+            })
+        })
+        && block
+            .sizes
+            .iter()
+            .all(|size| reads(&|combination| combination.size.clone_from(size)))
+        && space
+            .densities
+            .iter()
+            .all(|density| reads(&|combination| combination.density.clone_from(density)))
+}
+
+/// A widget's state model in force for one preset and flavour: its
+/// combinations, projected onto what its rules and facts tell apart, those
+/// the gate skips on their context alone left out ([`context_skips`]), and
+/// its condition vectors.
 struct Planned<'m> {
     entry: &'m Model,
-    mentioned: Mentioned,
+    space: Space<'m>,
     vectors: Vec<Vec<String>>,
+}
+
+impl Planned<'_> {
+    /// Whether its enumeration gives `combination`, left out or not.
+    fn gives(&self, combination: &Combination) -> bool {
+        let point = point_of(combination);
+        let context = combination.context.as_ref();
+        self.space.holds(&point, context)
+            && combination_of(point, &self.entry.widget, context) == *combination
+    }
 }
 
 /// Combinations each held once, in the order first given, told apart by a
@@ -1292,60 +1368,78 @@ impl Distinct {
 }
 
 /// A condition vector's combinations, given in turn to the function it is
-/// called with ([`plan_vector`]).
-type Combinations<'c> = dyn Fn(&mut dyn FnMut(Combination)) + 'c;
+/// called with, and the number of those left out, which the gate skips
+/// ([`plan_vector`]).
+type Combinations<'c> = dyn Fn(&mut dyn FnMut(Combination)) -> u64 + 'c;
+
+/// The state models of `planned` whose vectors hold `vector`, one per
+/// widget, and the combinations of `own`, the facts' own `when`s', that
+/// none of their enumerations gives.
+fn vector_plan<'p, 'm>(
+    planned: &'p [Planned<'m>],
+    own: Option<&'p Distinct>,
+    vector: &[String],
+) -> (Vec<&'p Planned<'m>>, Vec<&'p Combination>) {
+    let models: Vec<&Planned<'_>> = planned
+        .iter()
+        .filter(|planned| planned.vectors.iter().any(|held| held == vector))
+        .collect();
+    let rest = own
+        .iter()
+        .flat_map(|own| &own.held)
+        .filter(|combination| !models.iter().any(|planned| planned.gives(combination)))
+        .collect();
+    (models, rest)
+}
 
 /// The widget combinations of the condition vector `vector`, each once,
 /// given to `each` as they are enumerated: each state model's of `planned`
 /// whose vectors hold `vector`, in turn (one model per widget, each giving
-/// each of its combinations once, [`model::combinations`]), then each of
-/// `own`, the facts' own `when`s', that none of them gave.
+/// each of its combinations once, [`Space::each`]), then each of `own`,
+/// the facts' own `when`s', that none of them gives. Those the gate skips
+/// on their context alone are left out, never enumerated
+/// ([`context_skips`]); the number of them.
 fn plan_vector(
     planned: &[Planned<'_>],
     own: Option<&Distinct>,
     vector: &[String],
     each: &mut dyn FnMut(Combination),
-) {
-    let mut given = vec![false; own.map_or(0, |own| own.held.len())];
-    let vectors = [vector.to_vec()];
-    for planned in planned
-        .iter()
-        .filter(|planned| planned.vectors.iter().any(|held| held == vector))
-    {
+) -> u64 {
+    let (models, rest) = vector_plan(planned, own, vector);
+    let mut left_out = 0_u64;
+    for planned in models {
         let widget = &planned.entry.widget;
-        model::combinations(
-            planned.entry,
-            &vectors,
-            Some(&planned.mentioned),
-            |point, context| {
-                let combination = combination_of(point, widget, context);
-                if let Some(slot) = own
-                    .and_then(|own| own.position(&combination))
-                    .and_then(|at| given.get_mut(at))
-                {
-                    *slot = true;
-                }
-                each(combination);
-            },
-        );
+        left_out = left_out.saturating_add(planned.space.each(vector, |point, context| {
+            each(combination_of(point, widget, context));
+        }));
     }
-    for (combination, given) in own.iter().flat_map(|own| &own.held).zip(given) {
-        if !given {
-            each(combination.clone());
-        }
+    for combination in rest {
+        each(combination.clone());
     }
+    left_out
+}
+
+/// The number of the widget combinations of the condition vector `vector`
+/// ([`plan_vector`]), those left out among them.
+fn vector_count(planned: &[Planned<'_>], own: Option<&Distinct>, vector: &[String]) -> u64 {
+    let (models, rest) = vector_plan(planned, own, vector);
+    models
+        .iter()
+        .map(|planned| planned.space.count())
+        .chain(std::iter::once(
+            u64::try_from(rest.len()).unwrap_or(u64::MAX),
+        ))
+        .fold(0, u64::saturating_add)
 }
 
 /// Runs the gate over the facts root `root` for `presets`, each with the
-/// platform directory it is checked against (S17 *Generations*).
-pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
+/// platform directory it is checked against (S17 *Generations*), the
+/// citations' evidence read under the evidence root `evidence` (S17 *The
+/// evidence root*: [`facts::evidence_root`]'s, or a fixture's own root).
+pub fn run(root: &Path, evidence: &Path, presets: &[(String, Preset)]) -> Report {
     let started = Instant::now();
     let mut report = Report::default();
-    let repo = root
-        .parent()
-        .and_then(Path::parent)
-        .unwrap_or(root)
-        .to_path_buf();
+    let evidence = facts::Evidence::new(evidence);
     let mut directories: Vec<_> = std::fs::read_dir(root)
         .map(|entries| {
             entries
@@ -1403,7 +1497,7 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
                 &entry.axis_conditions,
                 &["light".to_owned(), "dark".to_owned()],
             );
-            let count = model::combinations(entry, &vectors, None, |_, _| {});
+            let count = model::count(entry, &vectors);
             report.combinations.insert(
                 format!("{} {} {:?}", entry.file, entry.widget, entry.conditions),
                 count,
@@ -1419,7 +1513,7 @@ pub fn run(root: &Path, presets: &[(String, Preset)]) -> Report {
             } else {
                 flavors.iter().map(|flavor| Some(flavor.as_str())).collect()
             };
-            let keys = prepare(&platform, preset.id(), &repo, &mut report);
+            let keys = prepare(&platform, preset.id(), &evidence, &mut report);
             let not_drawn = not_drawn_map(&platform, preset.id(), &mut report);
             for flavor in flavors {
                 declarations_run(&platform, preset, flavor, &mut report);
@@ -1726,9 +1820,11 @@ fn not_drawn_whens(entry: &Model, preset: &str, report: &mut Report) -> Vec<When
 /// The normal and the perturbed run of one preset and flavour, each
 /// condition vector resolved for both: the perturbed run's stand-in is
 /// decided by the facts that apply under the vector. The vectors are
-/// resolved as many at once as [`threads`] gives, each checked in turn and
-/// dropped with its combinations, which are enumerated as they are checked
-/// ([`plan_vector`]), never all held: one vector's run to millions.
+/// checked as many at once as [`threads`] gives, each resolved, checked
+/// into its own report and dropped with its combinations, which are
+/// enumerated as they are checked ([`plan_vector`]), never all held: one
+/// vector's run to millions. The reports are merged in the vectors' order,
+/// as one run checking each in turn records them.
 fn check(
     platform: &Platform,
     preset: &Preset,
@@ -1763,7 +1859,7 @@ fn check(
         let mut mentioned = Mentioned::of_model(entry);
         for key in keys
             .iter()
-            .filter(|key| key.key.widget().as_deref() == Some(entry.widget.as_str()))
+            .filter(|key| key.widget.as_deref() == Some(entry.widget.as_str()))
         {
             for prepared in &key.facts {
                 if let Some(when) = &prepared.written {
@@ -1802,9 +1898,12 @@ fn check(
         );
         let vectors = model::condition_vectors(&entry.axis_conditions, &schemes);
         global_vectors.extend(vectors.iter().cloned());
+        let space = Space::of(entry, &mentioned, |space, block| {
+            context_skips(&entry.widget, space, block)
+        });
         planned.push(Planned {
             entry,
-            mentioned,
+            space,
             vectors,
         });
     }
@@ -1847,63 +1946,83 @@ fn check(
     vectors.extend(own.keys().cloned());
     let vectors: Vec<Vec<String>> = vectors.into_iter().collect();
     let plan = |vector: &[String], each: &mut dyn FnMut(Combination)| {
-        plan_vector(&planned, own.get(vector), vector, each);
+        plan_vector(&planned, own.get(vector), vector, each)
     };
-    let count = |vector: &[String]| {
-        let mut count = 0_u64;
-        plan(vector, &mut |_| count += 1);
-        count
-    };
+    let count = |vector: &[String]| vector_count(&planned, own.get(vector), vector);
     let root = root_inputs();
-    for batch in vectors.chunks(threads()) {
-        // A batch's vectors resolved for both runs in parallel; what
-        // resolving found recorded before the vector's checks, as one run in
-        // turn records it.
-        let resolutions = parallel(batch, |vector| {
-            let mut report = Report::default();
+    // As many vectors checked at once as there are threads, the threads
+    // shared among those being checked ([`Threads`]); those the state
+    // models plan, the most combinations, first.
+    let planned_in = |vector: &[String]| {
+        planned
+            .iter()
+            .filter(|planned| planned.vectors.iter().any(|held| held == vector))
+            .count()
+    };
+    let mut order: Vec<usize> = (0..vectors.len()).collect();
+    order.sort_by_key(|at| {
+        std::cmp::Reverse(vectors.get(*at).map_or(0, |vector| planned_in(vector)))
+    });
+    let widgets = widget_keys(keys);
+    let threads = Threads {
+        count: threads(),
+        checking: AtomicUsize::new(0),
+    };
+    let at_once = threads.count.min(vectors.len()).max(1);
+    // Each vector resolved and checked on its own, into its own report;
+    // the reports merged in the vectors' order, as one run checking each
+    // in turn records them.
+    let mut found = parallel_on(at_once, &order, |at| {
+        let mut report = Report::default();
+        threads.checking.fetch_add(1, Ordering::Relaxed);
+        if let Some(vector) = vectors.get(*at) {
             let resolved = resolve_vector(preset, keys, vector, flavor, &count, &mut report);
-            (report, resolved)
-        });
-        for (vector, (found, resolved)) in batch.iter().zip(resolutions) {
-            report.merge(found);
-            let Some((normal, perturbed)) = resolved else {
-                continue;
-            };
-            let passes = std::iter::once((Pass::Normal, Some(normal)))
-                .chain(std::iter::once((Pass::Perturbed, perturbed)));
-            for (pass, resolved) in passes {
-                let Some(resolved) = resolved else {
-                    continue;
-                };
-                if global_vectors.contains(vector) {
-                    check_globals(
-                        preset.id(),
-                        &resolved,
-                        keys,
-                        vector,
-                        (pass, drawing),
-                        &root,
-                        report,
-                    );
-                    if pass == Pass::Normal {
-                        definitions(preset.id(), &resolved, &root, report, &|| {
-                            format!("{vector:?}")
-                        });
+            if let Some((normal, perturbed)) = resolved {
+                let passes = std::iter::once((Pass::Normal, Some(normal)))
+                    .chain(std::iter::once((Pass::Perturbed, perturbed)));
+                for (pass, resolved) in passes {
+                    let Some(resolved) = resolved else {
+                        continue;
+                    };
+                    if global_vectors.contains(vector) {
+                        check_globals(
+                            preset.id(),
+                            &resolved,
+                            keys,
+                            vector,
+                            (pass, drawing),
+                            &root,
+                            &mut report,
+                        );
+                        if pass == Pass::Normal {
+                            definitions(preset.id(), &resolved, &root, &mut report, &|| {
+                                format!("{vector:?}")
+                            });
+                        }
                     }
+                    let holding = holding(&widgets, &resolved);
+                    let run = Run {
+                        preset: preset.id(),
+                        resolved: &resolved,
+                        vector,
+                        not_drawn: &not_drawn,
+                        pass,
+                        drawing,
+                        root: &root,
+                        threads: &threads,
+                        widgets: &widgets,
+                        holding: &holding,
+                    };
+                    check_widgets(&run, &|each| plan(vector, each), &mut report);
                 }
-                let run = Run {
-                    preset: preset.id(),
-                    resolved: &resolved,
-                    keys,
-                    vector,
-                    not_drawn: &not_drawn,
-                    pass,
-                    drawing,
-                    root: &root,
-                };
-                check_widgets(&run, &|each| plan(vector, each), report);
             }
         }
+        threads.checking.fetch_sub(1, Ordering::Relaxed);
+        (*at, report)
+    });
+    found.sort_by_key(|(at, _)| *at);
+    for (_, found) in found {
+        report.merge(found);
     }
 }
 
@@ -2003,11 +2122,25 @@ pub fn definitions(
     }
 }
 
+/// The threads a check's condition vectors share: [`threads`] of them,
+/// split among the vectors being checked, so a vector still checked as
+/// others finish takes the threads they leave.
+struct Threads {
+    count: usize,
+    checking: AtomicUsize,
+}
+
+impl Threads {
+    /// The threads each vector being checked probes its combinations on.
+    fn each(&self) -> usize {
+        (self.count / self.checking.load(Ordering::Relaxed).max(1)).max(1)
+    }
+}
+
 /// One resolution of a condition vector, for one pass.
 struct Run<'a, 'f> {
     preset: &'a str,
     resolved: &'a Resolved,
-    keys: &'a [KeyFacts<'f>],
     vector: &'a [String],
     /// Each widget's `not_drawn` entries.
     not_drawn: &'a BTreeMap<String, Vec<When>>,
@@ -2015,6 +2148,39 @@ struct Run<'a, 'f> {
     /// How the measured platform's renderer draws a colour (S17).
     drawing: Drawing,
     root: &'a RootInputs,
+    /// The threads its combinations are probed and compared on.
+    threads: &'a Threads,
+    /// Each widget's keys of the preset ([`widget_keys`]).
+    widgets: &'a HashMap<&'a str, WidgetKeys<'a, 'f>>,
+    /// Each widget's facts whose conditions hold in `resolved`
+    /// ([`holding`]).
+    holding: &'a HashMap<&'a str, Holding<'a>>,
+}
+
+impl<'a, 'f> Run<'a, 'f> {
+    /// The facts that apply to the keys of `widget`, `session`'s
+    /// combination's widget ([`applying_in`]); none where it has none.
+    fn applying(
+        &self,
+        widget: &str,
+        session: &native_theme::gate::Session<'_>,
+        report: &mut Report,
+        describe: &dyn Fn() -> String,
+    ) -> Applying<'_, 'f> {
+        static NO_KEYS: WidgetKeys<'static, 'static> = WidgetKeys {
+            keys: Vec::new(),
+            whens: Vec::new(),
+            starts: Vec::new(),
+            classes: Vec::new(),
+        };
+        static NO_WHENS: Holding<'static> = Holding {
+            whens: Vec::new(),
+            at: Vec::new(),
+        };
+        let keys = self.widgets.get(widget).unwrap_or(&NO_KEYS);
+        let holding = self.holding.get(widget).unwrap_or(&NO_WHENS);
+        applying_in(keys, holding, session, report, describe)
+    }
 }
 
 /// Every token, colour-role and input key under one condition vector.
@@ -2190,45 +2356,160 @@ enum Probe {
     },
 }
 
-/// How many combinations [`check_widgets`] probes, or compares, at once.
-const PROBED_AT_ONCE: usize = 1 << 16;
+/// How many combinations [`check_widgets`] probes, or compares, at once
+/// for each thread it runs on.
+const PROBED_BY_THREAD: usize = 1 << 11;
 
-/// A widget's keys for a combination, with the fact that applies to each
-/// and whether each of its facts' `when` holds.
-struct Applying<'k, 'f> {
+/// A widget's keys, in order, and each of their facts' `when` with its
+/// key, in order, each key's from its place in `starts`: what every
+/// combination of the widget asks, gathered once. Facts whose `when` is
+/// written alike and whose keys name the same part (the widget's values
+/// one) share a class in `classes`: whether the `when` holds is the same
+/// for all of them, as [`Session::holds_each`] matches each `when` against
+/// its key's part's element.
+///
+/// [`Session::holds_each`]: native_theme::gate::Session::holds_each
+#[derive(Default)]
+struct WidgetKeys<'k, 'f> {
     keys: Vec<&'k KeyFacts<'f>>,
-    held: Vec<Vec<bool>>,
-    facts: Vec<Option<&'k Prepared<'f>>>,
+    whens: Vec<(&'k When, &'k FactKey)>,
+    starts: Vec<usize>,
+    classes: Vec<usize>,
 }
 
-/// The facts that apply to the widget keys of `session`'s combination;
-/// a pending fact a later one shadows is a failure in `report`.
-fn applying_in<'k, 'f>(
-    keys: &'k [KeyFacts<'f>],
-    widget: &str,
+/// Each widget's keys among `keys`, by the widget.
+fn widget_keys<'k, 'f>(keys: &'k [KeyFacts<'f>]) -> HashMap<&'k str, WidgetKeys<'k, 'f>> {
+    let mut out: HashMap<&str, WidgetKeys<'_, '_>> = HashMap::new();
+    let mut classes: HashMap<(&str, String, &str), usize> = HashMap::new();
+    for key in keys {
+        let Some(widget) = key.widget.as_deref() else {
+            continue;
+        };
+        // The key's part, or `values`: what follows its widget (S17's key,
+        // `parse_key`); a key spelled with a quoted segment its own.
+        let part = if key.name.contains(['"', '\'']) {
+            key.name.as_str()
+        } else {
+            key.name.split('.').nth(1).unwrap_or_default()
+        };
+        let entry = out.entry(widget).or_default();
+        entry.keys.push(key);
+        entry.starts.push(entry.whens.len());
+        for fact in &key.facts {
+            let written = fact
+                .written
+                .as_ref()
+                .map(Value::to_string)
+                .unwrap_or_default();
+            let next = classes.len();
+            let class = *classes.entry((widget, written, part)).or_insert(next);
+            entry.whens.push((&fact.when, &key.key));
+            entry.classes.push(class);
+        }
+    }
+    out
+}
+
+/// The `when`s of a widget's facts ([`WidgetKeys`]) whose conditions hold
+/// in a resolution, one of each class, with its key; and each of those
+/// facts by its place among the widget's, with its class's place among
+/// them. Those whose conditions do not hold hold for none of its
+/// combinations.
+struct Holding<'k> {
+    whens: Vec<(&'k When, &'k FactKey)>,
+    at: Vec<(usize, usize)>,
+}
+
+/// Each widget's [`Holding`] of `widgets` in `resolved`.
+fn holding<'k>(
+    widgets: &HashMap<&'k str, WidgetKeys<'k, '_>>,
+    resolved: &Resolved,
+) -> HashMap<&'k str, Holding<'k>> {
+    widgets
+        .iter()
+        .map(|(name, widget)| {
+            let mut holding = Holding {
+                whens: Vec::new(),
+                at: Vec::new(),
+            };
+            let mut of_class: HashMap<usize, usize> = HashMap::new();
+            for (at, (held, class)) in widget.whens.iter().zip(&widget.classes).enumerate() {
+                if resolved.conditions_hold(held.0) {
+                    let next = holding.whens.len();
+                    let place = *of_class.entry(*class).or_insert(next);
+                    if place == next {
+                        holding.whens.push(*held);
+                    }
+                    holding.at.push((at, place));
+                }
+            }
+            (*name, holding)
+        })
+        .collect()
+}
+
+/// A widget's keys for a combination, with the fact that applies to each,
+/// by its place among the key's facts, and whether each of its facts'
+/// `when` holds.
+struct Applying<'w, 'f> {
+    widget: &'w WidgetKeys<'w, 'f>,
+    held: Vec<bool>,
+    at: Vec<Option<usize>>,
+}
+
+impl<'w, 'f> Applying<'w, 'f> {
+    /// Whether each of the facts of the key at `index` holds.
+    fn held_of(&self, index: usize) -> &[bool] {
+        let (Some(key), Some(start)) = (
+            self.widget.keys.get(index),
+            self.widget.starts.get(index).copied(),
+        ) else {
+            return &[];
+        };
+        self.held
+            .get(start..start.saturating_add(key.facts.len()))
+            .unwrap_or_default()
+    }
+
+    /// The fact that applies to each key.
+    fn facts(&self) -> Vec<Option<&'w Prepared<'f>>> {
+        self.widget
+            .keys
+            .iter()
+            .zip(&self.at)
+            .map(|(key, at)| at.and_then(|at| key.facts.get(at)))
+            .collect()
+    }
+}
+
+/// The facts that apply to the keys `widget` of `session`'s combination's
+/// widget, those whose conditions hold in its resolution `holding`, each
+/// matched against the combination's element; a pending fact a later one
+/// shadows is a failure in `report`.
+fn applying_in<'w, 'f>(
+    widget: &'w WidgetKeys<'w, 'f>,
+    holding: &Holding<'_>,
     session: &native_theme::gate::Session<'_>,
     report: &mut Report,
     describe: &dyn Fn() -> String,
-) -> Applying<'k, 'f> {
-    let keys: Vec<&KeyFacts<'_>> = keys
-        .iter()
-        .filter(|key| key.key.widget().as_deref() == Some(widget))
-        .collect();
-    let whens: Vec<(&When, &FactKey)> = keys
-        .iter()
-        .flat_map(|key| key.facts.iter().map(|fact| (&fact.when, &key.key)))
-        .collect();
-    let mut held = session.holds_each(&whens).into_iter();
-    let held: Vec<Vec<bool>> = keys
-        .iter()
-        .map(|key| held.by_ref().take(key.facts.len()).collect())
-        .collect();
-    let facts = keys
-        .iter()
-        .zip(&held)
-        .map(|(key, held)| applying_of(&key.facts, held, report, describe))
-        .collect();
-    Applying { keys, held, facts }
+) -> Applying<'w, 'f> {
+    let holds = session.holds_each(&holding.whens);
+    let mut held = vec![false; widget.whens.len()];
+    for (at, place) in &holding.at {
+        if let (Some(slot), Some(holds)) = (held.get_mut(*at), holds.get(*place)) {
+            *slot = *holds;
+        }
+    }
+    let mut applying = Applying {
+        widget,
+        held,
+        at: Vec::with_capacity(widget.keys.len()),
+    };
+    for (index, key) in widget.keys.iter().enumerate() {
+        let at = applying_at(&key.facts, applying.held_of(index), report, describe);
+        applying.at.push(at);
+    }
+    applying
 }
 
 /// The environment variable that sets how many threads the gate's parallel
@@ -2252,13 +2533,12 @@ fn threads() -> usize {
 /// The threads `value`, [`THREADS_VARIABLE`]'s value, sets: its count, or
 /// the machine's parallelism where it is `None`; a value that is no number
 /// above zero is an error, never a silently different run. The count sets
-/// the speed and adds little memory: each thread holds one combination's
-/// session or one resolution at a time, and a batch of condition vectors,
-/// as many as the threads, its two resolutions each (about 11 MB apiece);
-/// the rest of the peak is one vector's chunk of combinations and the
-/// distinct ones it compares ([`check`]). So the default, every thread the
-/// machine has, is safe: about 60 MB a thread, the six presets near 3 GB on
-/// 32 threads.
+/// the speed and the memory: as many condition vectors are checked at once
+/// as there are threads ([`check`]), each holding its two resolutions
+/// (about 11 MB apiece), a chunk of its combinations, and the distinct ones
+/// it compares with their signatures. So the default, every thread the
+/// machine has, is safe: about 120 MB a thread, the six presets near 4 GB
+/// on 16 threads, 6 GB on 32.
 pub fn thread_count(value: Option<&str>) -> Result<usize, String> {
     match value {
         None => Ok(std::thread::available_parallelism().map_or(1, std::num::NonZero::get)),
@@ -2274,9 +2554,22 @@ pub fn thread_count(value: Option<&str>) -> Result<usize, String> {
 /// `f` over each of `items` on [`threads`] threads, the results in the
 /// items' order.
 pub fn parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    parallel_on(threads(), items, f)
+}
+
+/// `f` over each of `items` on `threads` threads, the results in the
+/// items' order; on the calling thread alone where `threads` is one.
+fn parallel_on<T: Sync, R: Send>(
+    threads: usize,
+    items: &[T],
+    f: impl Fn(&T) -> R + Sync,
+) -> Vec<R> {
+    if threads <= 1 {
+        return items.iter().map(f).collect();
+    }
     let next = std::sync::atomic::AtomicUsize::new(0);
     let mut done: Vec<(usize, R)> = std::thread::scope(|scope| {
-        let workers: Vec<_> = (0..threads().min(items.len()))
+        let workers: Vec<_> = (0..threads.min(items.len()))
             .map(|_| {
                 scope.spawn(|| {
                     let mut out = Vec::new();
@@ -2304,10 +2597,10 @@ pub fn parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Ve
 /// `combinations` gives in turn, each distinct signature compared once, at
 /// its first combination; a combination a `not_drawn` entry names, as the
 /// query matches it, is not queried (S17). The combinations are probed, and
-/// the distinct ones compared, in parallel, each step's findings recorded
-/// in the combinations' order.
+/// the distinct ones compared, on the vector's share of the threads
+/// ([`Threads`]), each step's findings recorded in the combinations' order.
 fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mut Report) {
-    let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
+    let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
     let metrics = StubMetrics;
     let probe = |combination: &Combination| {
         let describe = || format!("{vector:?} {combination:?}");
@@ -2332,18 +2625,13 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
             ));
         }
         let mut probe = Report::default();
-        let applying = applying_in(keys, &combination.widget, &session, &mut probe, &describe);
+        let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
         // Each key's applying fact by its place among the key's facts, the
         // widget's keys always in one order.
         let facts: Vec<u32> = applying
-            .keys
+            .at
             .iter()
-            .zip(&applying.facts)
-            .map(|(key, fact)| {
-                fact.and_then(|fact| key.facts.iter().position(|held| std::ptr::eq(held, fact)))
-                    .and_then(|at| u32::try_from(at).ok())
-                    .unwrap_or(u32::MAX)
-            })
+            .map(|at| at.and_then(|at| u32::try_from(at).ok()).unwrap_or(u32::MAX))
             .collect();
         let element = format!(
             "{} {:?} {:?}",
@@ -2361,7 +2649,7 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
     let mut signatures: HashSet<(String, Vec<u32>, Vec<u32>)> = HashSet::new();
     let mut queried: Vec<Combination> = Vec::new();
     let mut probe_chunk = |chunk: &mut Vec<Combination>, report: &mut Report| {
-        let probes = parallel(chunk, probe);
+        let probes = parallel_on(run.threads.each(), chunk, probe);
         for (combination, probe) in chunk.drain(..).zip(probes) {
             match probe {
                 Probe::Skipped => report.combinations_skipped += 1,
@@ -2382,17 +2670,19 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
         }
     };
     let mut chunk: Vec<Combination> = Vec::new();
-    combinations(&mut |combination| {
+    let left_out = combinations(&mut |combination| {
         chunk.push(combination);
-        if chunk.len() >= PROBED_AT_ONCE {
+        if chunk.len() >= PROBED_BY_THREAD.saturating_mul(run.threads.each()) {
             probe_chunk(&mut chunk, report);
         }
     });
     probe_chunk(&mut chunk, report);
+    report.combinations_skipped += left_out;
     // The distinct ones compared in chunks too, each chunk's findings
     // merged in order before the next is compared.
-    for chunk in queried.chunks(PROBED_AT_ONCE) {
-        let found = parallel(chunk, |combination| {
+    let threads = run.threads.each();
+    for chunk in queried.chunks(PROBED_BY_THREAD.saturating_mul(threads)) {
+        let found = parallel_on(threads, chunk, |combination| {
             let mut report = Report::default();
             compare_widget(run, combination, &mut report);
             report
@@ -2406,18 +2696,17 @@ fn check_widgets(run: &Run<'_, '_>, combinations: &Combinations<'_>, report: &mu
 /// Every widget key of `combination`, queried, compared with the fact that
 /// applies.
 fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Report) {
-    let (resolved, keys, vector, pass) = (run.resolved, run.keys, run.vector, run.pass);
+    let (resolved, vector, pass) = (run.resolved, run.vector, run.pass);
     let metrics = StubMetrics;
     let describe = || format!("{vector:?} {combination:?}");
     let Ok(session) = resolved.session(combination, run.root, &metrics) else {
         return;
     };
     let mut probe = Report::default();
-    let applying = applying_in(keys, &combination.widget, &session, &mut probe, &describe);
+    let applying = run.applying(&combination.widget, &session, &mut probe, &describe);
     report.queried += 1;
-    let widget_keys = &applying.keys;
-    let held = &applying.held;
-    let facts = &applying.facts;
+    let widget_keys = &applying.widget.keys;
+    let facts = &applying.facts();
     for (index, (key, fact)) in widget_keys.iter().zip(facts.iter().copied()).enumerate() {
         // A later fact of a block holding the key states it (S17 *Which
         // fact applies*): the block's comparison is the key's.
@@ -2461,9 +2750,11 @@ fn compare_widget(run: &Run<'_, '_>, combination: &Combination, report: &mut Rep
         let leaf = |name: &str| {
             widget_keys
                 .iter()
-                .zip(held)
-                .find(|(key, _)| key.name == name)
-                .map_or(LeafFact::NoKey, |(key, held)| leaf_of(key, held))
+                .enumerate()
+                .find(|(_, key)| key.name == name)
+                .map_or(LeafFact::NoKey, |(at, key)| {
+                    leaf_of(key, applying.held_of(at))
+                })
         };
         let whole = composed(key, fact, &leaf, pass, report, &describe);
         match verdict(
