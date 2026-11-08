@@ -7,19 +7,24 @@
 #   cells' `can_become_focused` is false, so `focused` is never set there; on the iPad the focus engine draws its effect
 #   on the focused item, `focus_visible`); `@loading`, the flag `showsActivityIndicator` sets, is a state flag
 #   (S7.2's `Widget(Key)`) the drawing distinguishes: the activity indicator in place of the image (UIButtonConfiguration.h),
-#   the bezel and title as without it in every state at medium (analysis.toml `cells.<scheme>.<style>__activity_indicator_shown`).
+#   the bezel and title as without it in every state at medium (analysis.toml `cells.<scheme>.<style>__activity_indicator_shown`);
+#   `open` (`isHeld`, while the button presents its menu) and `route_active` (the route picker's active tint) are
+#   drawn and unmeasured (U686, U122). `focused` is not an axis: UIKit applies the focus effect whenever an item is
+#   focused (UIView.h `focusEffect`, `token.behavior.focus_visible_when` `any_focus`), so `focused` holds exactly
+#   where `focus_visible` does and draws nothing of its own (the tie-break of IO-C1).
 # - Conditions: the schemes; the idiom (the iPhone's facts; the iPad's styles at medium and rest read alike in
 #   focus1/index.toml, the rest pending U114); Increase Contrast, Bold Text and Button Shapes are not captured
-#   (pending U116-U118).
+#   (pending U116-U118); `tint_dimmed` (the dimmed tint behind a presented alert), read for the plain and the filled
+#   title at rest and medium, the rest pending (U685; the tie-break of IO-C1).
 # - The base (ADD-A125, the catalogue): an element with none of the styles and forms is `UIButton(type: .system)` with
 #   no configuration (analysis.toml `forms.<scheme>.system`); no `requires_variants`. Every button a UIKit host draws
 #   for itself is the base, or one of its forms or identities, in its host's context (`axes.contexts`, the contexts
 #   the trace's rules select: an alert's and an action sheet's actions, the bar items, the toolbar editor's Done, the
 #   bottom tab bar's sidebar toggle, the search field's and the text field's buttons, the calendar header's, the edit
 #   menu's, the find bar's, AVKit's media controls', the ink toolbar's, the document launch view's, the status page's
-#   and the teaching tip's). The search field's clear button is the chain `[search_field.body, input]` S17 allows,
-#   which scripts/check_facts.py does not read yet (`axes.contexts[i] is not a table`): its combinations are
-#   `context search_field` ones until the checker takes a chain (the lane's report).
+#   and the teaching tip's). The search field's clear button is the chain `[search_field.body, input]` S17 allows
+#   (the catalogue's; scripts/check_facts.py reads chains since ADD-A125's checkers), `clear_field` not drawn in the
+#   search field outside it (the tie-break of IO-C1).
 # - Variants: one configuration style each (two exclusive groups on 26, so `primary` pairs with `glass` and `clear`
 #   alone), or one of the forms that are no configuration (the system types, the bar items with `add` the system add
 #   item, the paste control, the route picker) or a host's identity (`clear_field`, `overflow`, `pane_toggle`,
@@ -39,8 +44,9 @@
 #   drew, `<style>__role_primary`, the prominent glass ones on 26 too).
 # - Sizes (S10; ADD-A131): an element with no configuration style takes one size, `regular` (no `buttonSize`), so
 #   `sizes = ["regular"]` and its default `regular`; each configuration style takes the four `buttonSize`s in its
-#   `sizes_by_variant` entry, its default pending (no reading of a configuration's default `buttonSize`: the host sets
-#   it on every specimen and UIButtonConfiguration.h states no default; U129). On 26 a button in `toolbar.bar` is a
+#   `sizes_by_variant` entry, its default `regular` (U129 settled: run 42269041636 read a new configuration's
+#   `buttonSize` as medium on every style, symbols_read.toml `defaults.<style>.default_size`; UIButtonConfiguration.h
+#   states no default). On 26 a button in `toolbar.bar` is a
 #   bar item, the prominent one `primary`: UIBarButtonItem and UIBarItem declare no size (their whole definitions at
 #   xcode@26.6, the SDK header pass, U310), so the bar's entry gives it one, `regular` (ADD-A131's `sizes_by_context`).
 # - Not drawn: the configuration-only variants without a style (the corner styles, `@role_primary`,
@@ -51,10 +57,14 @@
 #   UIKit's own items (an application's configured button placed in a bar is a custom view, no bar item), but
 #   `primary` in `toolbar.bar` on 26 (the prominent item, and the done style); `primary` in a bar on 13
 #   (`UIBarButtonItemStyleProminent` is iOS 26's); the base in the hosts whose rows name no plain button (the text
-#   field, the search field, the bottom tab bar, the ink toolbar, the toolbar editor).
+#   field, the search field, the bottom tab bar, the ink toolbar, the toolbar editor); in an alert's or action
+#   sheet's actions every variant a UIAlertAction cannot hold (an image, a menu, a toggle, a pointer style, a button
+#   type); in `toolbar.bar` the forms that are no bar item (`@info`, `@contact_add`, `@paste_control`, `route`), and
+#   on 26 the configuration's corner styles, role, indicator and activity indicator beside the prominent item (the
+#   tie-break of IO-C1, from the verifier's model).
 # - Not declared (the lane's report): the states the host rows name beside the button's (`default` in an alert, DL-5
 #   and DL-7; `selected` on a bar item, P3-3†, which the facts state as `checked` with `toggle`, the run's toggle;
-#   `dragged`, P4-10†; the route button's `route_active`): their rows' facts are the host units'.
+#   `dragged`, P4-10†): their rows' facts are the host units'.
 # - `drop_target` (ledger queue #159, P3-11†): UIButton adopts spring loading (UIButton.h:184), and UIKit's default
 #   spring-loading effect highlights the view while a drag hovers it (UISpringLoadedInteraction.h:20); its look is
 #   pending (U475, button.toml's last facts).
@@ -72,8 +82,8 @@ sizes_by_variant = [
   { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = "regular" },
 ]
 densities = []
-flags = ["@loading"]
-axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+flags = ["@loading", "route_active"]
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes", "tint_dimmed"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }, [{ scope = "any", widget = "search_field", part = "body" }, { scope = "any", widget = "input" }]] }
 exclusive = []
 exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
@@ -163,6 +173,25 @@ not_drawn = [
   { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_variants = ["pane_toggle"] },
   { context = [{ scope = "any", widget = "ink_toolbar" }], not_variants = ["tool"] },
   { context = [{ scope = "any", widget = "toolbar_editor" }], not_variants = ["done"] },
+  { states = ["open"], not_variants = ["menu", "overflow", "back"] },
+  { states = ["route_active"], not_variants = ["route"] },
+  { variants = ["clear_field"], context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "input" }] },
+  { variants = ["toggle"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["menu"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["with_icon"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["icon_only"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["close"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@info"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@contact_add"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["route"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@paste_control"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@info"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@contact_add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@paste_control"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["route"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
 ]
 rows = ["B-1", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†", "P3-11†"]
 
@@ -230,6 +259,73 @@ quote = "@property (nonatomic, assign, getter=isSpringLoaded) BOOL springLoaded;
 kind = "published"
 source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UISpringLoadedInteraction.h:20"
 quote = "- UISpringLoadedInteractionEffectStatePossible: the view may springload and should provide a visual cue to the user. The default effect highlights the view."
+
+# `tint_dimmed` (the tie-break of IO-C1, from the verifier's model): a view's tint is dimmed while its
+# tintAdjustmentMode is dimmed (UIKit sets it behind a presented alert, D-16), and a button draws in it: run
+# 42269041636's tint scene drew a plain and a filled button (Measure.swift's buttonRow) under each mode, their titles'
+# textColor the tint's under normal and a grey under dimmed (button.toml's tint_dimmed facts, U685)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:324"
+quote = "When tintAdjustmentMode has a value of UIViewTintAdjustmentModeDimmed for a view, the color it returns from tintColor will be modified to give a dimmed appearance."
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-15/measure1/index.toml#scene_read.0.dimmed_system_tint_adjustment_mode"
+tolerance = 0
+
+# `open` (the tie-break of IO-C1, from the verifier's model): `isHeld` while the button presents its menu, a state
+# of the button's whose change updates its configuration (UIButton.h:79); a button presents a menu only with one
+# (`menu`, the bar's `overflow`, the back button's history), so `open` is not drawn without them; its look is
+# unmeasured (U686)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:88-89"
+quote = "/// Returns true while the button is presenting a menu."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:79"
+quote = "/// When YES, the button will automatically call -updatedConfigurationForButton: on its `configuration ` when the button's state changes"
+
+# `route_active` (the catalogue's shared flag on `route`; the tie-break of IO-C1, from the verifier's model): the
+# route picker takes its active tint while AirPlay is active (AVRoutePickerView's iOS property, in the cache's
+# macOS SDK copy of the header); not drawn on any other form; its look is unmeasured (U122)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:124-127"
+quote = "The view's tint color when AirPlay is active."
+
+# an alert's and an action sheet's buttons are UIAlertActions, a title, a style (default, cancel, destructive) and
+# the enabled state alone: no image, menu, toggle, pointer style or button type, so those variants are not drawn in
+# `dialog.action_area` (the tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAlertController.h:32-40"
+quote = "@interface UIAlertAction : NSObject <NSCopying>"
+absent = ["image", "menu", "pointerStyle", "buttonType"]
+
+# a bar's items are UIBarButtonItems (its system items, a title or an image): a button of a UIButtonType, a paste
+# control or a route picker placed in a bar is the application's custom view, no bar item (the catalogue's
+# Nested controls), so `@info`, `@contact_add`, `@paste_control` and `route` are not drawn in `toolbar.bar` (the
+# tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:28-55"
+quote = "typedef NS_ENUM(NSInteger, UIBarButtonSystemItem) {"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:68"
+quote = "- (instancetype)initWithCustomView:(UIView *)customView;"
+
+# the search field's clear button is its text field's (UISearchTextField is a UITextField): the nested chain
+# `[search_field.body, input]` the catalogue names (S17's ordered chain), `clear_field` not drawn in the search field
+# outside it (the tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@16.4 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UISearchTextField.h:29"
+quote = "@interface UISearchTextField : UITextField"
 
 # `hover`: a button tracks a pointer's hover
 [[model.cite]]
@@ -694,8 +790,8 @@ sizes_by_context = [
   { context = { scope = "any", widget = "toolbar", part = "bar" }, sizes = ["regular"], default_size = "regular" },
 ]
 densities = []
-flags = ["@loading"]
-axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }] }
+flags = ["@loading", "route_active"]
+axes = { states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], conditions = ["scheme:light", "scheme:dark", "idiom:phone", "idiom:pad", "contrast_increased", "bold_text", "button_shapes", "tint_dimmed"], contexts = [{ scope = "any", widget = "dialog", part = "action_area", variants = ["alert"] }, { scope = "any", widget = "dialog", part = "action_area", variants = ["@action_sheet"] }, { scope = "any", widget = "toolbar", part = "bar" }, { scope = "any", widget = "toolbar_editor" }, { scope = "any", widget = "bottom_tab_bar", part = "bar" }, { scope = "any", widget = "search_field" }, { scope = "any", widget = "input" }, { scope = "any", widget = "calendar", part = "header" }, { scope = "any", widget = "edit_menu" }, { scope = "any", widget = "find_bar" }, { scope = "any", widget = "media_controls", part = "bar" }, { scope = "any", widget = "ink_toolbar" }, { scope = "any", widget = "component.document_launch_view" }, { scope = "any", widget = "status_page", part = "action_area" }, { scope = "any", widget = "teaching_tip", part = "action_area" }, [{ scope = "any", widget = "search_field", part = "body" }, { scope = "any", widget = "input" }]] }
 exclusive = []
 exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 variant_products = [
@@ -817,6 +913,34 @@ not_drawn = [
   { context = [{ scope = "any", widget = "bottom_tab_bar", part = "bar" }], not_variants = ["pane_toggle"] },
   { context = [{ scope = "any", widget = "ink_toolbar" }], not_variants = ["tool"] },
   { context = [{ scope = "any", widget = "toolbar_editor" }], not_variants = ["done"] },
+  { states = ["open"], not_variants = ["menu", "overflow", "back"] },
+  { states = ["route_active"], not_variants = ["route"] },
+  { variants = ["clear_field"], context = [{ scope = "any", widget = "search_field" }], not_context = [{ scope = "any", widget = "input" }] },
+  { variants = ["toggle"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["menu"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["with_icon"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["icon_only"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["close"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@info"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@contact_add"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["route"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@paste_control"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_highlight"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_lift"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@pointer_hover"], context = [{ scope = "any", widget = "dialog", part = "action_area" }] },
+  { variants = ["@info"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@contact_add"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@paste_control"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["route"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@corner_fixed"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@corner_small"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@corner_medium"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@corner_large"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["pill"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@corner_dynamic"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@role_primary"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { variants = ["@indicator_popup"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
+  { states = ["@loading"], context = [{ scope = "any", widget = "toolbar", part = "bar" }] },
 ]
 rows = ["B-1", "B-2", "B-3", "B-4", "B-7", "B-10", "B-11", "B-12", "B-17", "B-18†", "P3-11†"]
 
@@ -940,6 +1064,81 @@ kind = "published"
 source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAccessibilityIdentification.h:32-33"
 quote = "@interface UIBarItem (UIAccessibility) <UIAccessibilityIdentification>"
 absent = ["buttonSize"]
+
+# `tint_dimmed` (the tie-break of IO-C1, from the verifier's model): a view's tint is dimmed while its
+# tintAdjustmentMode is dimmed (UIKit sets it behind a presented alert, D-16), and a button draws in it: run
+# 42269041636's tint scene drew a plain and a filled button (Measure.swift's buttonRow) under each mode, their titles'
+# textColor the tint's under normal and a grey under dimmed (button.toml's tint_dimmed facts, U685)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIView.h:338"
+quote = "When tintAdjustmentMode has a value of UIViewTintAdjustmentModeDimmed for a view, the color it returns from tintColor will be modified to give a dimmed appearance."
+
+[[model.cite]]
+kind = "measured"
+evidence = "docs/evidence/ios-host/2026-11-06-run-42269041636/ios-host-macos-26/measure1/index.toml#scene_read.0.dimmed_system_tint_adjustment_mode"
+tolerance = 0
+
+# `open` (the tie-break of IO-C1, from the verifier's model): `isHeld` while the button presents its menu, a state
+# of the button's whose change updates its configuration (UIButton.h:79); a button presents a menu only with one
+# (`menu`, the bar's `overflow`, the back button's history), so `open` is not drawn without them; its look is
+# unmeasured (U686)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:88-89"
+quote = "/// Returns true while the button is presenting a menu."
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIButton.h:79"
+quote = "/// When YES, the button will automatically call -updatedConfigurationForButton: on its `configuration ` when the button's state changes"
+
+# `route_active` (the catalogue's shared flag on `route`; the tie-break of IO-C1, from the verifier's model): the
+# route picker takes its active tint while AirPlay is active (AVRoutePickerView's iOS property, in the cache's
+# macOS SDK copy of the header); not drawn on any other form; its look is unmeasured (U122)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/AVKit.framework/Headers/AVRoutePickerView.h:124-127"
+quote = "The view's tint color when AirPlay is active."
+
+# an alert's and an action sheet's buttons are UIAlertActions, a title, a style (default, cancel, destructive) and
+# the enabled state alone: no image, menu, toggle, pointer style or button type, so those variants are not drawn in
+# `dialog.action_area` (the tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIAlertController.h:32-40"
+quote = "@interface UIAlertAction : NSObject <NSCopying>"
+absent = ["image", "menu", "pointerStyle", "buttonType"]
+
+# a bar's items are UIBarButtonItems (its system items, a title or an image): a button of a UIButtonType, a paste
+# control or a route picker placed in a bar is the application's custom view, no bar item (the catalogue's
+# Nested controls), so `@info`, `@contact_add`, `@paste_control` and `route` are not drawn in `toolbar.bar` (the
+# tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:37-64"
+quote = "typedef NS_ENUM(NSInteger, UIBarButtonSystemItem) {"
+
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:77"
+quote = "- (instancetype)initWithCustomView:(UIView *)customView;"
+
+# the prominent bar item (`primary` in `toolbar.bar`) is a UIBarButtonItem, which has no corner style, role, menu
+# indicator or activity indicator: those are not drawn in the bar (the tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIBarButtonItem.h:69-240"
+quote = "@interface UIBarButtonItem : UIBarItem <NSCoding>"
+absent = ["cornerStyle", "showsActivityIndicator", "UIButtonRole", "indicator"]
+
+# the search field's clear button is its text field's (UISearchTextField is a UITextField): the nested chain
+# `[search_field.body, input]` the catalogue names (S17's ordered chain), `clear_field` not drawn in the search field
+# outside it (the tie-break of IO-C1, from the verifier's model)
+[[model.cite]]
+kind = "published"
+source = "xcode@26.6 iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/UIKit.framework/Headers/UISearchTextField.h:29"
+quote = "@interface UISearchTextField : UITextField"
 
 # `hover`: a button tracks a pointer's hover
 [[model.cite]]

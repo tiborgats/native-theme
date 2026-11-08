@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 5583c7ea06784ca6d4e78c2c93f78e80b74133721e1ba336ba11ddb991031c8b
+# generated lines: sha256 6b3f3266c0a7e4c5b5f9e996aeac8e29104c5114b332c3bc4a2c946c2c4e284b
 
 [preset]
 id = "ios-26"
@@ -135,14 +135,14 @@ keys = [
 ]
 # hand-written: end declare
 
-# docs/facts/ios/state-models.toml:678
+# docs/facts/ios/state-models.toml:774
 [declare.widget.button]
 available = true
 variants = ["flat", "@gray", "tinted", "primary", "glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"]
 sizes = ["regular"]
 default_size = "regular"
 densities = []
-flags = ["@loading"]
+flags = ["@loading", "route_active"]
 exclusive = []
 exclusive_variants = [["flat", "@gray", "tinted", "primary", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["flat", "@gray", "tinted", "glass", "clear", "@info", "@contact_add", "close", "back", "done", "add", "@share", "@paste_control", "route", "clear_field", "overflow", "pane_toggle", "previous", "next", "tool"], ["@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic"], ["with_icon", "icon_only"], ["@pointer_highlight", "@pointer_lift", "@pointer_hover"], ["@cancel", "@role_primary", "destructive"]]
 sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }, { variant = "@gray", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }, { variant = "tinted", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }, { variant = "primary", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }, { variant = "glass", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }, { variant = "clear", sizes = ["mini", "small", "regular", "large"], default_size = "regular" }]
@@ -150,7 +150,7 @@ sizes_by_context = []
 
 [pending]
 # docs/facts/ios/button.toml:160921
-"widgets.button.body.fill" = ["U110", "U118", "U114", "U116", "U115", "U122", "U113", "U112", "U475"]
+"widgets.button.body.fill" = ["U110", "U118", "U114", "U116", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:197602
 "widgets.button.body.corners.top_left" = ["U682", "U114", "U255", "U115", "U120", "U122", "U113", "U112"]
 # docs/facts/ios/button.toml:199415
@@ -162,9 +162,9 @@ sizes_by_context = []
 # docs/facts/ios/button.toml:204854
 "widgets.button.body.corners.curve" = ["U682", "U255", "U114", "U115", "U122", "U113", "U112"]
 # docs/facts/ios/button.toml:214331
-"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475"]
+"widgets.button.label.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:240946
-"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U122", "U120", "U111", "U113", "U112", "U475"]
+"widgets.button.icon.icon.fill" = ["U115", "U114", "U116", "U122", "U120", "U111", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:245921
 "widgets.button.values.menu_indicator_gap_px" = ["U120", "U114", "U113", "U112"]
 # docs/facts/ios/button.toml:246631
@@ -182,7 +182,7 @@ sizes_by_context = []
 # docs/facts/ios/button.toml:252078
 "widgets.button.menu_indicator" = ["U114", "U113", "U112"]
 # docs/facts/ios/button.toml:264503
-"widgets.button.subtitle.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475"]
+"widgets.button.subtitle.text.fill" = ["U255", "U114", "U116", "U111", "U115", "U122", "U113", "U112", "U475", "U685", "U686"]
 # docs/facts/ios/button.toml:266731
 "widgets.button.subtitle.text.font.family" = ["U114", "U117", "U113", "U112"]
 # docs/facts/ios/button.toml:267785
@@ -433,129 +433,129 @@ sizes_by_context = []
 "colors.light.surfaces.window.background_alternate" = "U452"
 # docs/facts/ios/roles.toml:4561
 "colors.dark.surfaces.window.background_alternate" = "U452"
-# docs/facts/ios/roles.toml:5922
+# docs/facts/ios/roles.toml:5706
 "colors.light.surfaces.window.disabled.background" = "U454"
-# docs/facts/ios/roles.toml:5922
+# docs/facts/ios/roles.toml:5706
 "colors.dark.surfaces.window.disabled.background" = "U454"
-# docs/facts/ios/roles.toml:5927
+# docs/facts/ios/roles.toml:5711
 "colors.light.surfaces.window.disabled.background_alternate" = "U454"
-# docs/facts/ios/roles.toml:5927
+# docs/facts/ios/roles.toml:5711
 "colors.dark.surfaces.window.disabled.background_alternate" = "U454"
-# docs/facts/ios/roles.toml:6165
+# docs/facts/ios/roles.toml:5949
 "colors.light.surfaces.window.disabled.link" = "U454"
-# docs/facts/ios/roles.toml:6165
+# docs/facts/ios/roles.toml:5949
 "colors.dark.surfaces.window.disabled.link" = "U454"
-# docs/facts/ios/roles.toml:6882
+# docs/facts/ios/roles.toml:6666
 "colors.light.surfaces.window.disabled.border" = "U454"
-# docs/facts/ios/roles.toml:6882
+# docs/facts/ios/roles.toml:6666
 "colors.dark.surfaces.window.disabled.border" = "U454"
-# docs/facts/ios/roles.toml:7486
+# docs/facts/ios/roles.toml:7270
 "colors.light.surfaces.selection.background_alternate" = "U455"
-# docs/facts/ios/roles.toml:7486
+# docs/facts/ios/roles.toml:7270
 "colors.dark.surfaces.selection.background_alternate" = "U455"
-# docs/facts/ios/roles.toml:7704
+# docs/facts/ios/roles.toml:7488
 "colors.light.surfaces.selection.link" = "U455"
-# docs/facts/ios/roles.toml:7704
+# docs/facts/ios/roles.toml:7488
 "colors.dark.surfaces.selection.link" = "U455"
-# docs/facts/ios/roles.toml:8421
+# docs/facts/ios/roles.toml:7989
 "colors.light.surfaces.selection.border" = "U455"
-# docs/facts/ios/roles.toml:8421
+# docs/facts/ios/roles.toml:7989
 "colors.dark.surfaces.selection.border" = "U455"
-# docs/facts/ios/roles.toml:9022
+# docs/facts/ios/roles.toml:8590
 "colors.light.surfaces.selection.disabled.background_alternate" = "U455"
-# docs/facts/ios/roles.toml:9022
+# docs/facts/ios/roles.toml:8590
 "colors.dark.surfaces.selection.disabled.background_alternate" = "U455"
-# docs/facts/ios/roles.toml:9240
+# docs/facts/ios/roles.toml:8808
 "colors.light.surfaces.selection.disabled.link" = "U455"
-# docs/facts/ios/roles.toml:9240
+# docs/facts/ios/roles.toml:8808
 "colors.dark.surfaces.selection.disabled.link" = "U455"
-# docs/facts/ios/roles.toml:9957
+# docs/facts/ios/roles.toml:9525
 "colors.light.surfaces.selection.disabled.border" = "U455"
-# docs/facts/ios/roles.toml:9957
+# docs/facts/ios/roles.toml:9525
 "colors.dark.surfaces.selection.disabled.border" = "U455"
-# docs/facts/ios/roles.toml:10500
+# docs/facts/ios/roles.toml:10068
 "colors.light.surfaces.dialog.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:10500
+# docs/facts/ios/roles.toml:10068
 "colors.dark.surfaces.dialog.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:10505
+# docs/facts/ios/roles.toml:10073
 "colors.light.surfaces.dialog.foreground" = "U461"
-# docs/facts/ios/roles.toml:10505
+# docs/facts/ios/roles.toml:10073
 "colors.dark.surfaces.dialog.foreground" = "U461"
-# docs/facts/ios/roles.toml:10510
+# docs/facts/ios/roles.toml:10078
 "colors.light.surfaces.dialog.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:10510
+# docs/facts/ios/roles.toml:10078
 "colors.dark.surfaces.dialog.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:10604
+# docs/facts/ios/roles.toml:10172
 "colors.light.surfaces.dialog.link" = "U461"
-# docs/facts/ios/roles.toml:10604
+# docs/facts/ios/roles.toml:10172
 "colors.dark.surfaces.dialog.link" = "U461"
-# docs/facts/ios/roles.toml:11321
+# docs/facts/ios/roles.toml:10673
 "colors.light.surfaces.dialog.border" = "U461"
-# docs/facts/ios/roles.toml:11321
+# docs/facts/ios/roles.toml:10673
 "colors.dark.surfaces.dialog.border" = "U461"
-# docs/facts/ios/roles.toml:11860
+# docs/facts/ios/roles.toml:11212
 "colors.light.surfaces.dialog.disabled.background" = "U461"
-# docs/facts/ios/roles.toml:11860
+# docs/facts/ios/roles.toml:11212
 "colors.dark.surfaces.dialog.disabled.background" = "U461"
-# docs/facts/ios/roles.toml:11865
+# docs/facts/ios/roles.toml:11217
 "colors.light.surfaces.dialog.disabled.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:11865
+# docs/facts/ios/roles.toml:11217
 "colors.dark.surfaces.dialog.disabled.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:11870
+# docs/facts/ios/roles.toml:11222
 "colors.light.surfaces.dialog.disabled.foreground" = "U461"
-# docs/facts/ios/roles.toml:11870
+# docs/facts/ios/roles.toml:11222
 "colors.dark.surfaces.dialog.disabled.foreground" = "U461"
-# docs/facts/ios/roles.toml:11875
+# docs/facts/ios/roles.toml:11227
 "colors.light.surfaces.dialog.disabled.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:11875
+# docs/facts/ios/roles.toml:11227
 "colors.dark.surfaces.dialog.disabled.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:11969
+# docs/facts/ios/roles.toml:11321
 "colors.light.surfaces.dialog.disabled.link" = "U461"
-# docs/facts/ios/roles.toml:11969
+# docs/facts/ios/roles.toml:11321
 "colors.dark.surfaces.dialog.disabled.link" = "U461"
-# docs/facts/ios/roles.toml:12686
+# docs/facts/ios/roles.toml:12038
 "colors.light.surfaces.dialog.disabled.border" = "U461"
-# docs/facts/ios/roles.toml:12686
+# docs/facts/ios/roles.toml:12038
 "colors.dark.surfaces.dialog.disabled.border" = "U461"
-# docs/facts/ios/roles.toml:13225
+# docs/facts/ios/roles.toml:12577
 "colors.light.surfaces.popover.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:13225
+# docs/facts/ios/roles.toml:12577
 "colors.dark.surfaces.popover.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:13292
+# docs/facts/ios/roles.toml:12644
 "colors.light.surfaces.popover.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:13292
+# docs/facts/ios/roles.toml:12644
 "colors.dark.surfaces.popover.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:13386
+# docs/facts/ios/roles.toml:12738
 "colors.light.surfaces.popover.link" = "U461"
-# docs/facts/ios/roles.toml:13386
+# docs/facts/ios/roles.toml:12738
 "colors.dark.surfaces.popover.link" = "U461"
-# docs/facts/ios/roles.toml:14103
+# docs/facts/ios/roles.toml:13239
 "colors.light.surfaces.popover.border" = "U461"
-# docs/facts/ios/roles.toml:14103
+# docs/facts/ios/roles.toml:13239
 "colors.dark.surfaces.popover.border" = "U461"
-# docs/facts/ios/roles.toml:14642
+# docs/facts/ios/roles.toml:13778
 "colors.light.surfaces.popover.disabled.background" = "U461"
-# docs/facts/ios/roles.toml:14642
+# docs/facts/ios/roles.toml:13778
 "colors.dark.surfaces.popover.disabled.background" = "U461"
-# docs/facts/ios/roles.toml:14647
+# docs/facts/ios/roles.toml:13783
 "colors.light.surfaces.popover.disabled.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:14647
+# docs/facts/ios/roles.toml:13783
 "colors.dark.surfaces.popover.disabled.background_alternate" = "U461"
-# docs/facts/ios/roles.toml:14652
+# docs/facts/ios/roles.toml:13788
 "colors.light.surfaces.popover.disabled.foreground" = "U461"
-# docs/facts/ios/roles.toml:14652
+# docs/facts/ios/roles.toml:13788
 "colors.dark.surfaces.popover.disabled.foreground" = "U461"
-# docs/facts/ios/roles.toml:14657
+# docs/facts/ios/roles.toml:13793
 "colors.light.surfaces.popover.disabled.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:14657
+# docs/facts/ios/roles.toml:13793
 "colors.dark.surfaces.popover.disabled.foreground_inactive" = "U461"
-# docs/facts/ios/roles.toml:14751
+# docs/facts/ios/roles.toml:13887
 "colors.light.surfaces.popover.disabled.link" = "U461"
-# docs/facts/ios/roles.toml:14751
+# docs/facts/ios/roles.toml:13887
 "colors.dark.surfaces.popover.disabled.link" = "U461"
-# docs/facts/ios/roles.toml:15468
+# docs/facts/ios/roles.toml:14604
 "colors.light.surfaces.popover.disabled.border" = "U461"
-# docs/facts/ios/roles.toml:15468
+# docs/facts/ios/roles.toml:14604
 "colors.dark.surfaces.popover.disabled.border" = "U461"
 # docs/facts/ios/tokens.toml:1514
 "tokens.motion.timings.default" = "U128"
@@ -935,65 +935,65 @@ border = "#3c3c431f"
 foreground_active = "absent"
 # docs/facts/ios/roles.toml:4659
 link_visited = "absent"
-# docs/facts/ios/roles.toml:4749
-negative = "absent"
-# docs/facts/ios/roles.toml:4839
-neutral = "absent"
-# docs/facts/ios/roles.toml:4929
-positive = "absent"
-# docs/facts/ios/roles.toml:5019
+# docs/facts/ios/roles.toml:4752
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:4769
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:4786
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:4803
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:5109
+# docs/facts/ios/roles.toml:4893
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:5199
+# docs/facts/ios/roles.toml:4983
 shade = "absent"
-# docs/facts/ios/roles.toml:5289
+# docs/facts/ios/roles.toml:5073
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:5379
+# docs/facts/ios/roles.toml:5163
 background_active = "absent"
-# docs/facts/ios/roles.toml:5469
+# docs/facts/ios/roles.toml:5253
 background_link = "absent"
-# docs/facts/ios/roles.toml:5559
+# docs/facts/ios/roles.toml:5343
 background_visited = "absent"
-# docs/facts/ios/roles.toml:5649
+# docs/facts/ios/roles.toml:5433
 background_negative = "absent"
-# docs/facts/ios/roles.toml:5739
+# docs/facts/ios/roles.toml:5523
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:5829
+# docs/facts/ios/roles.toml:5613
 background_positive = "absent"
-# docs/facts/ios/roles.toml:5964
+# docs/facts/ios/roles.toml:5748
 disabled.foreground = "#3c3c434c"
-# docs/facts/ios/roles.toml:6036
+# docs/facts/ios/roles.toml:5820
 disabled.foreground_inactive = "#3c3c432d"
-# docs/facts/ios/roles.toml:6076
+# docs/facts/ios/roles.toml:5860
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:6170
+# docs/facts/ios/roles.toml:5954
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:6259
+# docs/facts/ios/roles.toml:6043
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:6348
+# docs/facts/ios/roles.toml:6132
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:6437
+# docs/facts/ios/roles.toml:6221
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:6526
+# docs/facts/ios/roles.toml:6310
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:6615
+# docs/facts/ios/roles.toml:6399
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:6704
+# docs/facts/ios/roles.toml:6488
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:6793
+# docs/facts/ios/roles.toml:6577
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:6887
+# docs/facts/ios/roles.toml:6671
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:6976
+# docs/facts/ios/roles.toml:6760
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:7065
+# docs/facts/ios/roles.toml:6849
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:7154
+# docs/facts/ios/roles.toml:6938
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:7243
+# docs/facts/ios/roles.toml:7027
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:7332
+# docs/facts/ios/roles.toml:7116
 disabled.background_positive = "absent"
 
 [colors.light.keyed]
@@ -1077,131 +1077,131 @@ system_grouped_background_tertiary_elevated = "#f2f2f7"
 [colors.light.surfaces.dialog]
 # docs/facts/ios/roles.toml:3743
 background = "#ffffff"
-# docs/facts/ios/roles.toml:10515
+# docs/facts/ios/roles.toml:10083
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:10609
+# docs/facts/ios/roles.toml:10177
 link_visited = "absent"
-# docs/facts/ios/roles.toml:10698
-negative = "absent"
-# docs/facts/ios/roles.toml:10787
-neutral = "absent"
-# docs/facts/ios/roles.toml:10876
-positive = "absent"
-# docs/facts/ios/roles.toml:10965
+# docs/facts/ios/roles.toml:10269
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:10285
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:10301
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:10317
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:11054
+# docs/facts/ios/roles.toml:10406
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:11143
+# docs/facts/ios/roles.toml:10495
 shade = "absent"
-# docs/facts/ios/roles.toml:11232
+# docs/facts/ios/roles.toml:10584
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:11326
+# docs/facts/ios/roles.toml:10678
 background_active = "absent"
-# docs/facts/ios/roles.toml:11415
+# docs/facts/ios/roles.toml:10767
 background_link = "absent"
-# docs/facts/ios/roles.toml:11504
+# docs/facts/ios/roles.toml:10856
 background_visited = "absent"
-# docs/facts/ios/roles.toml:11593
+# docs/facts/ios/roles.toml:10945
 background_negative = "absent"
-# docs/facts/ios/roles.toml:11682
+# docs/facts/ios/roles.toml:11034
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:11771
+# docs/facts/ios/roles.toml:11123
 background_positive = "absent"
-# docs/facts/ios/roles.toml:11880
+# docs/facts/ios/roles.toml:11232
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:11974
+# docs/facts/ios/roles.toml:11326
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:12063
+# docs/facts/ios/roles.toml:11415
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:12152
+# docs/facts/ios/roles.toml:11504
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:12241
+# docs/facts/ios/roles.toml:11593
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:12330
+# docs/facts/ios/roles.toml:11682
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:12419
+# docs/facts/ios/roles.toml:11771
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:12508
+# docs/facts/ios/roles.toml:11860
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:12597
+# docs/facts/ios/roles.toml:11949
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:12691
+# docs/facts/ios/roles.toml:12043
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:12780
+# docs/facts/ios/roles.toml:12132
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:12869
+# docs/facts/ios/roles.toml:12221
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:12958
+# docs/facts/ios/roles.toml:12310
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:13047
+# docs/facts/ios/roles.toml:12399
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:13136
+# docs/facts/ios/roles.toml:12488
 disabled.background_positive = "absent"
 
 [colors.light.surfaces.popover]
 # docs/facts/ios/roles.toml:3810
 background = "#ffffff"
-# docs/facts/ios/roles.toml:13252
+# docs/facts/ios/roles.toml:12604
 foreground = "#000000"
-# docs/facts/ios/roles.toml:13297
+# docs/facts/ios/roles.toml:12649
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:13391
+# docs/facts/ios/roles.toml:12743
 link_visited = "absent"
-# docs/facts/ios/roles.toml:13480
-negative = "absent"
-# docs/facts/ios/roles.toml:13569
-neutral = "absent"
-# docs/facts/ios/roles.toml:13658
-positive = "absent"
-# docs/facts/ios/roles.toml:13747
+# docs/facts/ios/roles.toml:12835
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:12851
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:12867
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:12883
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:13836
+# docs/facts/ios/roles.toml:12972
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:13925
+# docs/facts/ios/roles.toml:13061
 shade = "absent"
-# docs/facts/ios/roles.toml:14014
+# docs/facts/ios/roles.toml:13150
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:14108
+# docs/facts/ios/roles.toml:13244
 background_active = "absent"
-# docs/facts/ios/roles.toml:14197
+# docs/facts/ios/roles.toml:13333
 background_link = "absent"
-# docs/facts/ios/roles.toml:14286
+# docs/facts/ios/roles.toml:13422
 background_visited = "absent"
-# docs/facts/ios/roles.toml:14375
+# docs/facts/ios/roles.toml:13511
 background_negative = "absent"
-# docs/facts/ios/roles.toml:14464
+# docs/facts/ios/roles.toml:13600
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:14553
+# docs/facts/ios/roles.toml:13689
 background_positive = "absent"
-# docs/facts/ios/roles.toml:14662
+# docs/facts/ios/roles.toml:13798
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:14756
+# docs/facts/ios/roles.toml:13892
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:14845
+# docs/facts/ios/roles.toml:13981
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:14934
+# docs/facts/ios/roles.toml:14070
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:15023
+# docs/facts/ios/roles.toml:14159
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:15112
+# docs/facts/ios/roles.toml:14248
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:15201
+# docs/facts/ios/roles.toml:14337
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:15290
+# docs/facts/ios/roles.toml:14426
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:15379
+# docs/facts/ios/roles.toml:14515
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:15473
+# docs/facts/ios/roles.toml:14609
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:15562
+# docs/facts/ios/roles.toml:14698
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:15651
+# docs/facts/ios/roles.toml:14787
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:15740
+# docs/facts/ios/roles.toml:14876
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:15829
+# docs/facts/ios/roles.toml:14965
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:15918
+# docs/facts/ios/roles.toml:15054
 disabled.background_positive = "absent"
 
 [colors.light.global]
@@ -1223,77 +1223,77 @@ selection_text_foreground_unfocused = "absent"
 find_highlight = "#ffdd00"
 
 [colors.light.surfaces.selection]
-# docs/facts/ios/roles.toml:7446
+# docs/facts/ios/roles.toml:7230
 background = "#d1d1d6"
-# docs/facts/ios/roles.toml:7513
+# docs/facts/ios/roles.toml:7297
 foreground = "#000000"
-# docs/facts/ios/roles.toml:7575
+# docs/facts/ios/roles.toml:7359
 foreground_inactive = "#3c3c4399"
-# docs/facts/ios/roles.toml:7615
+# docs/facts/ios/roles.toml:7399
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:7709
+# docs/facts/ios/roles.toml:7493
 link_visited = "absent"
-# docs/facts/ios/roles.toml:7798
-negative = "absent"
-# docs/facts/ios/roles.toml:7887
-neutral = "absent"
-# docs/facts/ios/roles.toml:7976
-positive = "absent"
-# docs/facts/ios/roles.toml:8065
+# docs/facts/ios/roles.toml:7585
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:7601
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:7617
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:7633
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:8154
+# docs/facts/ios/roles.toml:7722
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:8243
+# docs/facts/ios/roles.toml:7811
 shade = "absent"
-# docs/facts/ios/roles.toml:8332
+# docs/facts/ios/roles.toml:7900
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:8426
+# docs/facts/ios/roles.toml:7994
 background_active = "absent"
-# docs/facts/ios/roles.toml:8515
+# docs/facts/ios/roles.toml:8083
 background_link = "absent"
-# docs/facts/ios/roles.toml:8604
+# docs/facts/ios/roles.toml:8172
 background_visited = "absent"
-# docs/facts/ios/roles.toml:8693
+# docs/facts/ios/roles.toml:8261
 background_negative = "absent"
-# docs/facts/ios/roles.toml:8782
+# docs/facts/ios/roles.toml:8350
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:8871
+# docs/facts/ios/roles.toml:8439
 background_positive = "absent"
-# docs/facts/ios/roles.toml:8982
+# docs/facts/ios/roles.toml:8550
 disabled.background = "#d1d1d6"
-# docs/facts/ios/roles.toml:9049
+# docs/facts/ios/roles.toml:8617
 disabled.foreground = "#3c3c434c"
-# docs/facts/ios/roles.toml:9111
+# docs/facts/ios/roles.toml:8679
 disabled.foreground_inactive = "#3c3c432d"
-# docs/facts/ios/roles.toml:9151
+# docs/facts/ios/roles.toml:8719
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:9245
+# docs/facts/ios/roles.toml:8813
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:9334
+# docs/facts/ios/roles.toml:8902
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:9423
+# docs/facts/ios/roles.toml:8991
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:9512
+# docs/facts/ios/roles.toml:9080
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:9601
+# docs/facts/ios/roles.toml:9169
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:9690
+# docs/facts/ios/roles.toml:9258
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:9779
+# docs/facts/ios/roles.toml:9347
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:9868
+# docs/facts/ios/roles.toml:9436
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:9962
+# docs/facts/ios/roles.toml:9530
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:10051
+# docs/facts/ios/roles.toml:9619
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:10140
+# docs/facts/ios/roles.toml:9708
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:10229
+# docs/facts/ios/roles.toml:9797
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:10318
+# docs/facts/ios/roles.toml:9886
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:10407
+# docs/facts/ios/roles.toml:9975
 disabled.background_positive = "absent"
 
 [colors.dark.surfaces.window]
@@ -1309,65 +1309,65 @@ border = "#54545880"
 foreground_active = "absent"
 # docs/facts/ios/roles.toml:4659
 link_visited = "absent"
-# docs/facts/ios/roles.toml:4749
-negative = "absent"
-# docs/facts/ios/roles.toml:4839
-neutral = "absent"
-# docs/facts/ios/roles.toml:4929
-positive = "absent"
-# docs/facts/ios/roles.toml:5019
+# docs/facts/ios/roles.toml:4752
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:4769
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:4786
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:4803
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:5109
+# docs/facts/ios/roles.toml:4893
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:5199
+# docs/facts/ios/roles.toml:4983
 shade = "absent"
-# docs/facts/ios/roles.toml:5289
+# docs/facts/ios/roles.toml:5073
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:5379
+# docs/facts/ios/roles.toml:5163
 background_active = "absent"
-# docs/facts/ios/roles.toml:5469
+# docs/facts/ios/roles.toml:5253
 background_link = "absent"
-# docs/facts/ios/roles.toml:5559
+# docs/facts/ios/roles.toml:5343
 background_visited = "absent"
-# docs/facts/ios/roles.toml:5649
+# docs/facts/ios/roles.toml:5433
 background_negative = "absent"
-# docs/facts/ios/roles.toml:5739
+# docs/facts/ios/roles.toml:5523
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:5829
+# docs/facts/ios/roles.toml:5613
 background_positive = "absent"
-# docs/facts/ios/roles.toml:5980
+# docs/facts/ios/roles.toml:5764
 disabled.foreground = "#ebebf54c"
-# docs/facts/ios/roles.toml:6047
+# docs/facts/ios/roles.toml:5831
 disabled.foreground_inactive = "#ebebf528"
-# docs/facts/ios/roles.toml:6076
+# docs/facts/ios/roles.toml:5860
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:6170
+# docs/facts/ios/roles.toml:5954
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:6259
+# docs/facts/ios/roles.toml:6043
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:6348
+# docs/facts/ios/roles.toml:6132
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:6437
+# docs/facts/ios/roles.toml:6221
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:6526
+# docs/facts/ios/roles.toml:6310
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:6615
+# docs/facts/ios/roles.toml:6399
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:6704
+# docs/facts/ios/roles.toml:6488
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:6793
+# docs/facts/ios/roles.toml:6577
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:6887
+# docs/facts/ios/roles.toml:6671
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:6976
+# docs/facts/ios/roles.toml:6760
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:7065
+# docs/facts/ios/roles.toml:6849
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:7154
+# docs/facts/ios/roles.toml:6938
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:7243
+# docs/facts/ios/roles.toml:7027
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:7332
+# docs/facts/ios/roles.toml:7116
 disabled.background_positive = "absent"
 
 [colors.dark.keyed]
@@ -1451,131 +1451,131 @@ system_grouped_background_tertiary_elevated = "#3a3a3c"
 [colors.dark.surfaces.dialog]
 # docs/facts/ios/roles.toml:3754
 background = "#1c1c1e"
-# docs/facts/ios/roles.toml:10515
+# docs/facts/ios/roles.toml:10083
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:10609
+# docs/facts/ios/roles.toml:10177
 link_visited = "absent"
-# docs/facts/ios/roles.toml:10698
-negative = "absent"
-# docs/facts/ios/roles.toml:10787
-neutral = "absent"
-# docs/facts/ios/roles.toml:10876
-positive = "absent"
-# docs/facts/ios/roles.toml:10965
+# docs/facts/ios/roles.toml:10269
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:10285
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:10301
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:10317
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:11054
+# docs/facts/ios/roles.toml:10406
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:11143
+# docs/facts/ios/roles.toml:10495
 shade = "absent"
-# docs/facts/ios/roles.toml:11232
+# docs/facts/ios/roles.toml:10584
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:11326
+# docs/facts/ios/roles.toml:10678
 background_active = "absent"
-# docs/facts/ios/roles.toml:11415
+# docs/facts/ios/roles.toml:10767
 background_link = "absent"
-# docs/facts/ios/roles.toml:11504
+# docs/facts/ios/roles.toml:10856
 background_visited = "absent"
-# docs/facts/ios/roles.toml:11593
+# docs/facts/ios/roles.toml:10945
 background_negative = "absent"
-# docs/facts/ios/roles.toml:11682
+# docs/facts/ios/roles.toml:11034
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:11771
+# docs/facts/ios/roles.toml:11123
 background_positive = "absent"
-# docs/facts/ios/roles.toml:11880
+# docs/facts/ios/roles.toml:11232
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:11974
+# docs/facts/ios/roles.toml:11326
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:12063
+# docs/facts/ios/roles.toml:11415
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:12152
+# docs/facts/ios/roles.toml:11504
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:12241
+# docs/facts/ios/roles.toml:11593
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:12330
+# docs/facts/ios/roles.toml:11682
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:12419
+# docs/facts/ios/roles.toml:11771
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:12508
+# docs/facts/ios/roles.toml:11860
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:12597
+# docs/facts/ios/roles.toml:11949
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:12691
+# docs/facts/ios/roles.toml:12043
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:12780
+# docs/facts/ios/roles.toml:12132
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:12869
+# docs/facts/ios/roles.toml:12221
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:12958
+# docs/facts/ios/roles.toml:12310
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:13047
+# docs/facts/ios/roles.toml:12399
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:13136
+# docs/facts/ios/roles.toml:12488
 disabled.background_positive = "absent"
 
 [colors.dark.surfaces.popover]
 # docs/facts/ios/roles.toml:3821
 background = "#1c1c1e"
-# docs/facts/ios/roles.toml:13263
+# docs/facts/ios/roles.toml:12615
 foreground = "#ffffff"
-# docs/facts/ios/roles.toml:13297
+# docs/facts/ios/roles.toml:12649
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:13391
+# docs/facts/ios/roles.toml:12743
 link_visited = "absent"
-# docs/facts/ios/roles.toml:13480
-negative = "absent"
-# docs/facts/ios/roles.toml:13569
-neutral = "absent"
-# docs/facts/ios/roles.toml:13658
-positive = "absent"
-# docs/facts/ios/roles.toml:13747
+# docs/facts/ios/roles.toml:12835
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:12851
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:12867
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:12883
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:13836
+# docs/facts/ios/roles.toml:12972
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:13925
+# docs/facts/ios/roles.toml:13061
 shade = "absent"
-# docs/facts/ios/roles.toml:14014
+# docs/facts/ios/roles.toml:13150
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:14108
+# docs/facts/ios/roles.toml:13244
 background_active = "absent"
-# docs/facts/ios/roles.toml:14197
+# docs/facts/ios/roles.toml:13333
 background_link = "absent"
-# docs/facts/ios/roles.toml:14286
+# docs/facts/ios/roles.toml:13422
 background_visited = "absent"
-# docs/facts/ios/roles.toml:14375
+# docs/facts/ios/roles.toml:13511
 background_negative = "absent"
-# docs/facts/ios/roles.toml:14464
+# docs/facts/ios/roles.toml:13600
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:14553
+# docs/facts/ios/roles.toml:13689
 background_positive = "absent"
-# docs/facts/ios/roles.toml:14662
+# docs/facts/ios/roles.toml:13798
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:14756
+# docs/facts/ios/roles.toml:13892
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:14845
+# docs/facts/ios/roles.toml:13981
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:14934
+# docs/facts/ios/roles.toml:14070
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:15023
+# docs/facts/ios/roles.toml:14159
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:15112
+# docs/facts/ios/roles.toml:14248
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:15201
+# docs/facts/ios/roles.toml:14337
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:15290
+# docs/facts/ios/roles.toml:14426
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:15379
+# docs/facts/ios/roles.toml:14515
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:15473
+# docs/facts/ios/roles.toml:14609
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:15562
+# docs/facts/ios/roles.toml:14698
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:15651
+# docs/facts/ios/roles.toml:14787
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:15740
+# docs/facts/ios/roles.toml:14876
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:15829
+# docs/facts/ios/roles.toml:14965
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:15918
+# docs/facts/ios/roles.toml:15054
 disabled.background_positive = "absent"
 
 [colors.dark.global]
@@ -1597,77 +1597,77 @@ selection_text_foreground_unfocused = "absent"
 find_highlight = "#ffdd00"
 
 [colors.dark.surfaces.selection]
-# docs/facts/ios/roles.toml:7457
+# docs/facts/ios/roles.toml:7241
 background = "#3a3a3c"
-# docs/facts/ios/roles.toml:7524
+# docs/facts/ios/roles.toml:7308
 foreground = "#ffffff"
-# docs/facts/ios/roles.toml:7586
+# docs/facts/ios/roles.toml:7370
 foreground_inactive = "#ebebf599"
-# docs/facts/ios/roles.toml:7615
+# docs/facts/ios/roles.toml:7399
 foreground_active = "absent"
-# docs/facts/ios/roles.toml:7709
+# docs/facts/ios/roles.toml:7493
 link_visited = "absent"
-# docs/facts/ios/roles.toml:7798
-negative = "absent"
-# docs/facts/ios/roles.toml:7887
-neutral = "absent"
-# docs/facts/ios/roles.toml:7976
-positive = "absent"
-# docs/facts/ios/roles.toml:8065
+# docs/facts/ios/roles.toml:7585
+negative = "= role.global.status.error.standalone"
+# docs/facts/ios/roles.toml:7601
+neutral = "= role.global.status.warning.standalone"
+# docs/facts/ios/roles.toml:7617
+positive = "= role.global.status.success.standalone"
+# docs/facts/ios/roles.toml:7633
 decoration_focus = "absent"
-# docs/facts/ios/roles.toml:8154
+# docs/facts/ios/roles.toml:7722
 decoration_hover = "absent"
-# docs/facts/ios/roles.toml:8243
+# docs/facts/ios/roles.toml:7811
 shade = "absent"
-# docs/facts/ios/roles.toml:8332
+# docs/facts/ios/roles.toml:7900
 shade_darker = "absent"
-# docs/facts/ios/roles.toml:8426
+# docs/facts/ios/roles.toml:7994
 background_active = "absent"
-# docs/facts/ios/roles.toml:8515
+# docs/facts/ios/roles.toml:8083
 background_link = "absent"
-# docs/facts/ios/roles.toml:8604
+# docs/facts/ios/roles.toml:8172
 background_visited = "absent"
-# docs/facts/ios/roles.toml:8693
+# docs/facts/ios/roles.toml:8261
 background_negative = "absent"
-# docs/facts/ios/roles.toml:8782
+# docs/facts/ios/roles.toml:8350
 background_neutral = "absent"
-# docs/facts/ios/roles.toml:8871
+# docs/facts/ios/roles.toml:8439
 background_positive = "absent"
-# docs/facts/ios/roles.toml:8993
+# docs/facts/ios/roles.toml:8561
 disabled.background = "#3a3a3c"
-# docs/facts/ios/roles.toml:9060
+# docs/facts/ios/roles.toml:8628
 disabled.foreground = "#ebebf54c"
-# docs/facts/ios/roles.toml:9122
+# docs/facts/ios/roles.toml:8690
 disabled.foreground_inactive = "#ebebf528"
-# docs/facts/ios/roles.toml:9151
+# docs/facts/ios/roles.toml:8719
 disabled.foreground_active = "absent"
-# docs/facts/ios/roles.toml:9245
+# docs/facts/ios/roles.toml:8813
 disabled.link_visited = "absent"
-# docs/facts/ios/roles.toml:9334
+# docs/facts/ios/roles.toml:8902
 disabled.negative = "absent"
-# docs/facts/ios/roles.toml:9423
+# docs/facts/ios/roles.toml:8991
 disabled.neutral = "absent"
-# docs/facts/ios/roles.toml:9512
+# docs/facts/ios/roles.toml:9080
 disabled.positive = "absent"
-# docs/facts/ios/roles.toml:9601
+# docs/facts/ios/roles.toml:9169
 disabled.decoration_focus = "absent"
-# docs/facts/ios/roles.toml:9690
+# docs/facts/ios/roles.toml:9258
 disabled.decoration_hover = "absent"
-# docs/facts/ios/roles.toml:9779
+# docs/facts/ios/roles.toml:9347
 disabled.shade = "absent"
-# docs/facts/ios/roles.toml:9868
+# docs/facts/ios/roles.toml:9436
 disabled.shade_darker = "absent"
-# docs/facts/ios/roles.toml:9962
+# docs/facts/ios/roles.toml:9530
 disabled.background_active = "absent"
-# docs/facts/ios/roles.toml:10051
+# docs/facts/ios/roles.toml:9619
 disabled.background_link = "absent"
-# docs/facts/ios/roles.toml:10140
+# docs/facts/ios/roles.toml:9708
 disabled.background_visited = "absent"
-# docs/facts/ios/roles.toml:10229
+# docs/facts/ios/roles.toml:9797
 disabled.background_negative = "absent"
-# docs/facts/ios/roles.toml:10318
+# docs/facts/ios/roles.toml:9886
 disabled.background_neutral = "absent"
-# docs/facts/ios/roles.toml:10407
+# docs/facts/ios/roles.toml:9975
 disabled.background_positive = "absent"
 
 [tokens.text]
@@ -10773,6 +10773,38 @@ target = "button.values"
 [rules.set]
 # docs/facts/ios/button.toml:306833
 help_tooltip_on_click = false
+
+[[rules]]
+when = { conditions = ["scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/ios/button.toml:308089
+text.fill = "#3c3c434c"
+
+[[rules]]
+when = { conditions = ["scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["flat"], not_variants = ["toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/ios/button.toml:308100
+text.fill = "#ebebf54c"
+
+[[rules]]
+when = { conditions = ["scheme:light", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/ios/button.toml:308111
+text.fill = "#3c3c434c"
+
+[[rules]]
+when = { conditions = ["scheme:dark", "tint_dimmed"], not_conditions = ["idiom:pad", "contrast_increased", "bold_text", "button_shapes"], not_states = ["pressed", "disabled", "checked", "hover", "focus_visible", "@loading", "drop_target", "open", "route_active"], variants = ["primary"], not_variants = ["glass", "clear", "toggle", "@corner_fixed", "@corner_small", "@corner_medium", "@corner_large", "pill", "@corner_dynamic", "with_icon", "icon_only", "menu", "@indicator_popup", "@menu_on_hold", "@cancel", "@role_primary", "destructive", "@pointer_highlight", "@pointer_lift", "@pointer_hover"], sizes = ["regular"] }
+target = "button.label"
+
+[rules.set]
+# docs/facts/ios/button.toml:308122
+text.fill = "#ebebf54c"
 
 [[rules]]
 when = { conditions = ["scheme:light", "contrast_increased"] }
