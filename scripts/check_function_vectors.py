@@ -65,8 +65,10 @@ platform function has. UTF-8, lines ending in `\\n`, tab-separated.
    table) PLACEMENT_COLUMNS, each name once:
    - generated routes: optional `source`, the header's entry that wrote the row where the header names several;
    - `published`: `cite` (`<sources.toml id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`, the id one of the
-     header's `source` entries), `quote` (the cited text, its tabs and newlines written as spaces: the quote check
-     normalises whitespace), optional `conversion` (check_fact_citations.CONVERSIONS' names, comma-separated, or
+     header's `source` entries; several citations of the same row separated by ` ; `, each from another entry, as
+     where two snapshots of a page carry the same row: they together serve their entries' generations, S2.2),
+     `quote` (the cited text, its tabs and newlines written as spaces: the quote check normalises whitespace; with
+     several citations, text each of them holds), optional `conversion` (check_fact_citations.CONVERSIONS' names, comma-separated, or
      `-`); check_fact_citations.py checks what they say;
    - `measured`: `evidence` (`docs/evidence/<harness>/<YYYY-MM-DD>-run-<id>/<image>/<file>#<path>`, S17's form: the
      table there holds the inputs the harness set or read and the outputs it measured; its run's `run.toml` read
@@ -171,6 +173,7 @@ ROUTE_COLUMNS = {
     "published": (("cite", "quote"), ("conversion",)),
     "measured": (("evidence",), ()),
 }
+CITE_SEPARATOR = " ; "   # between a published row's citations (its `cite` cell)
 PLACEMENT_COLUMNS = ("preset", "value", "when")
 # S2.2's readers' helpers (ADD-A135): `reader.<helper>.tsv`, the list read from the core's *The readers' helpers*
 READER = "reader."
@@ -524,10 +527,17 @@ def route_cell_problem(t: Table, name: str, cell: str, ctx):
     if name == "source":
         return None if cell in t.sources else f"`{cell}` is not one of the header's `# source:` entries"
     if name == "cite":
-        src = check_facts.parse_source(cell)
-        if not src:
-            return f"`{cell}` is not `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`"
-        return None if src[0] in t.sources else f"`{src[0]}` is not one of the header's `# source:` entries"
+        ids = []
+        for part in cell.split(CITE_SEPARATOR):
+            src = check_facts.parse_source(part)
+            if not src:
+                return f"`{part}` is not `<id> <path>:<line or l1-l2>` or `<id> #<JSON pointer>`"
+            if src[0] not in t.sources:
+                return f"`{src[0]}` is not one of the header's `# source:` entries"
+            if src[0] in ids:
+                return f"`{src[0]}` cited twice in one row"
+            ids.append(src[0])
+        return None
     if name == "quote":
         return None
     if name == "conversion":
@@ -884,7 +894,10 @@ def served(t: Table, row: dict, ctx) -> set:
             gens |= {x for x in g if isinstance(x, str)} if isinstance(g, list) else set()
         return gens
     if route == "published":
-        return ctx.fc.cite_generations({"kind": "published", "source": row.get("cite")})
+        gens = set()
+        for part in str(row.get("cite", "")).split(CITE_SEPARATOR):
+            gens |= ctx.fc.cite_generations({"kind": "published", "source": part})
+        return gens
     if route == "measured":
         return ctx.fc.cite_generations({"kind": "measured", "evidence": row.get("evidence")})
     return set()
@@ -1466,6 +1479,45 @@ def self_test() -> int:
         got, _, _ = run(files)
         if len(got) != 1 or "with design = new_york: no row serves it" not in got[0]:
             failures.append(f"literal enum argument without rows, called: got {got}")
+        # a row citing two snapshots serves both entries' generations (S2.2: a row's citations together)
+        older = "hig-typography@2025-10-29"
+        two = dict(SELF_TEST_FILES)
+        two[SF] = (SF_TABLE.replace("# generations: macos-tahoe", f"# source: {older}\n"
+                                    "# generations: macos-tahoe, macos-monterey")
+                   .replace("#/sections/3/rows/9\t", f"#/sections/3/rows/9 ; {older} #/sections/2/rows/9\t")
+                   .replace("#/sections/4/rows/9\t", f"#/sections/4/rows/9 ; {older} #/sections/3/rows/9\t"))
+        two["native-theme/src/presets/macos-monterey.toml"] = SELF_TEST_FILES[TAHOE]
+        sources = check_facts.SELF_TEST_SOURCES + (f'\n[[source]]\nid = "{older}"\nkind = "snapshot"\n'
+                                                   'generations = ["macos-monterey", "ios-13"]\nfile = "page.json"\n')
+
+        def run_two(files):
+            root = base / f"case{n[0]}"
+            n[0] += 1
+            write_fixture(root, files, ("adwaita", "macos-tahoe", "macos-monterey"))
+            ctx = Context(root, core_text=SELF_TEST_CORE, cat_text=check_facts.SELF_TEST_CATALOGUE,
+                          sources_text=sources, rows=check_facts.SELF_TEST_ROWS)
+            return [f"{f}:{ln}: {w}" for f, ln, w in check(ctx)[0]]
+
+        got = run_two(two)
+        if got:
+            failures.append(f"a row citing two snapshots: got {got}")
+        one = dict(two)
+        one[SF] = two[SF].replace(f" ; {older} #/sections/2/rows/9", "")
+        got = run_two(one)
+        if len(got) != 2 or not any("the row (design = sf_pro) does not serve `macos-monterey`" in g for g in got) \
+                or not any("for `macos-monterey` with design = sf_pro: no row serves it" in g for g in got):
+            failures.append(f"a row citing the newer snapshot alone: got {got}")
+        for what, old, new, want in (
+                ("a bad second citation", f"{older} #/sections/2/rows/9", "rows/9", "`rows/9` is not `<id>"),
+                ("a second citation outside the header", f"{older} #/sections/2/rows/9", "xcode@26.6 #/x",
+                 "`xcode@26.6` is not one of the header's `# source:` entries"),
+                ("an entry cited twice", f"{older} #/sections/2/rows/9", "hig-typography@2026-10-29 #/x",
+                 "`hig-typography@2026-10-29` cited twice in one row")):
+            bad = dict(two)
+            bad[SF] = two[SF].replace(old, new, 1)
+            got = run_two(bad)
+            if not got or not any(want in g for g in got):
+                failures.append(f"{what}: got {got}")
         # the vacuous run: nothing implemented, facts calling a function
         files = {k: v for k, v in SELF_TEST_FILES.items() if not k.startswith("native-theme/")}
         got, info, counts = run(files, presets=())

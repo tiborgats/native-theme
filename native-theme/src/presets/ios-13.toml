@@ -2,7 +2,7 @@
 # The lines between `# hand-written: begin <part>` and `# hand-written: end <part>` state what no fact states,
 # written by hand (S11, S17: `[preset] generation`, the `[declare]` keyed namespaces, the `read` facts as bases);
 # `generate_preset.py <id> --write` regenerates every other line and carries them over.
-# generated lines: sha256 b05ab2280772b637ed7a019430fd7aba13aa937a5e6dc439d8264c497706478a
+# generated lines: sha256 4ef6e328bd858ab2c5ebc8b34b0895903e5efefa76eb7f7895b9a26889d04aa6
 
 [preset]
 id = "ios-13"
@@ -1090,397 +1090,375 @@ sizes_by_variant = [{ variant = "flat", sizes = ["mini", "small", "regular", "la
 "tokens.icons.sizes.panel.weight" = "U127"
 # docs/facts/ios/tokens.toml:1611
 "tokens.icons.sizes.panel.scale" = "U127"
-# docs/facts/ios/tokens.toml:1906
-"tokens.text.keyed.large_title.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:2118
+# docs/facts/ios/tokens.toml:2149
 "tokens.text.keyed.large_title.font.style" = "U463"
-# docs/facts/ios/tokens.toml:2123
+# docs/facts/ios/tokens.toml:2154
 "tokens.text.keyed.large_title.font.width" = "U463"
-# docs/facts/ios/tokens.toml:2128
+# docs/facts/ios/tokens.toml:2159
 "tokens.text.keyed.large_title.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:2133
+# docs/facts/ios/tokens.toml:2164
 "tokens.text.keyed.large_title.font.features" = "U463"
-# docs/facts/ios/tokens.toml:2174
-"tokens.text.keyed.title_1.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:2383
+# docs/facts/ios/tokens.toml:2444
 "tokens.text.keyed.title_1.font.style" = "U463"
-# docs/facts/ios/tokens.toml:2388
+# docs/facts/ios/tokens.toml:2449
 "tokens.text.keyed.title_1.font.width" = "U463"
-# docs/facts/ios/tokens.toml:2393
+# docs/facts/ios/tokens.toml:2454
 "tokens.text.keyed.title_1.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:2398
+# docs/facts/ios/tokens.toml:2459
 "tokens.text.keyed.title_1.font.features" = "U463"
-# docs/facts/ios/tokens.toml:2439
-"tokens.text.keyed.title_2.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:2648
+# docs/facts/ios/tokens.toml:2739
 "tokens.text.keyed.title_2.font.style" = "U463"
-# docs/facts/ios/tokens.toml:2653
+# docs/facts/ios/tokens.toml:2744
 "tokens.text.keyed.title_2.font.width" = "U463"
-# docs/facts/ios/tokens.toml:2658
+# docs/facts/ios/tokens.toml:2749
 "tokens.text.keyed.title_2.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:2663
+# docs/facts/ios/tokens.toml:2754
 "tokens.text.keyed.title_2.font.features" = "U463"
-# docs/facts/ios/tokens.toml:2704
-"tokens.text.keyed.title_3.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:2913
+# docs/facts/ios/tokens.toml:3034
 "tokens.text.keyed.title_3.font.style" = "U463"
-# docs/facts/ios/tokens.toml:2918
+# docs/facts/ios/tokens.toml:3039
 "tokens.text.keyed.title_3.font.width" = "U463"
-# docs/facts/ios/tokens.toml:2923
+# docs/facts/ios/tokens.toml:3044
 "tokens.text.keyed.title_3.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:2928
+# docs/facts/ios/tokens.toml:3049
 "tokens.text.keyed.title_3.font.features" = "U463"
-# docs/facts/ios/tokens.toml:2969
-"tokens.text.keyed.headline.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:3178
+# docs/facts/ios/tokens.toml:3329
 "tokens.text.keyed.headline.font.style" = "U463"
-# docs/facts/ios/tokens.toml:3183
+# docs/facts/ios/tokens.toml:3334
 "tokens.text.keyed.headline.font.width" = "U463"
-# docs/facts/ios/tokens.toml:3188
+# docs/facts/ios/tokens.toml:3339
 "tokens.text.keyed.headline.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:3193
+# docs/facts/ios/tokens.toml:3344
 "tokens.text.keyed.headline.font.features" = "U463"
-# docs/facts/ios/tokens.toml:3234
-"tokens.text.keyed.subheadline.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:3443
+# docs/facts/ios/tokens.toml:3624
 "tokens.text.keyed.subheadline.font.style" = "U463"
-# docs/facts/ios/tokens.toml:3448
+# docs/facts/ios/tokens.toml:3629
 "tokens.text.keyed.subheadline.font.width" = "U463"
-# docs/facts/ios/tokens.toml:3453
+# docs/facts/ios/tokens.toml:3634
 "tokens.text.keyed.subheadline.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:3458
+# docs/facts/ios/tokens.toml:3639
 "tokens.text.keyed.subheadline.font.features" = "U463"
-# docs/facts/ios/tokens.toml:3499
-"tokens.text.keyed.body.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:3708
+# docs/facts/ios/tokens.toml:3919
 "tokens.text.keyed.body.font.style" = "U463"
-# docs/facts/ios/tokens.toml:3713
+# docs/facts/ios/tokens.toml:3924
 "tokens.text.keyed.body.font.width" = "U463"
-# docs/facts/ios/tokens.toml:3718
+# docs/facts/ios/tokens.toml:3929
 "tokens.text.keyed.body.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:3723
+# docs/facts/ios/tokens.toml:3934
 "tokens.text.keyed.body.font.features" = "U463"
-# docs/facts/ios/tokens.toml:3764
-"tokens.text.keyed.callout.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:3973
+# docs/facts/ios/tokens.toml:4214
 "tokens.text.keyed.callout.font.style" = "U463"
-# docs/facts/ios/tokens.toml:3978
+# docs/facts/ios/tokens.toml:4219
 "tokens.text.keyed.callout.font.width" = "U463"
-# docs/facts/ios/tokens.toml:3983
+# docs/facts/ios/tokens.toml:4224
 "tokens.text.keyed.callout.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:3988
+# docs/facts/ios/tokens.toml:4229
 "tokens.text.keyed.callout.font.features" = "U463"
-# docs/facts/ios/tokens.toml:4029
-"tokens.text.keyed.footnote.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:4238
+# docs/facts/ios/tokens.toml:4509
 "tokens.text.keyed.footnote.font.style" = "U463"
-# docs/facts/ios/tokens.toml:4243
+# docs/facts/ios/tokens.toml:4514
 "tokens.text.keyed.footnote.font.width" = "U463"
-# docs/facts/ios/tokens.toml:4248
+# docs/facts/ios/tokens.toml:4519
 "tokens.text.keyed.footnote.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:4253
+# docs/facts/ios/tokens.toml:4524
 "tokens.text.keyed.footnote.font.features" = "U463"
-# docs/facts/ios/tokens.toml:4294
-"tokens.text.keyed.caption_1.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:4503
+# docs/facts/ios/tokens.toml:4804
 "tokens.text.keyed.caption_1.font.style" = "U463"
-# docs/facts/ios/tokens.toml:4508
+# docs/facts/ios/tokens.toml:4809
 "tokens.text.keyed.caption_1.font.width" = "U463"
-# docs/facts/ios/tokens.toml:4513
+# docs/facts/ios/tokens.toml:4814
 "tokens.text.keyed.caption_1.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:4518
+# docs/facts/ios/tokens.toml:4819
 "tokens.text.keyed.caption_1.font.features" = "U463"
-# docs/facts/ios/tokens.toml:4559
-"tokens.text.keyed.caption_2.letter_spacing" = "U462"
-# docs/facts/ios/tokens.toml:4768
+# docs/facts/ios/tokens.toml:5099
 "tokens.text.keyed.caption_2.font.style" = "U463"
-# docs/facts/ios/tokens.toml:4773
+# docs/facts/ios/tokens.toml:5104
 "tokens.text.keyed.caption_2.font.width" = "U463"
-# docs/facts/ios/tokens.toml:4778
+# docs/facts/ios/tokens.toml:5109
 "tokens.text.keyed.caption_2.font.axes" = "U463"
-# docs/facts/ios/tokens.toml:4783
+# docs/facts/ios/tokens.toml:5114
 "tokens.text.keyed.caption_2.font.features" = "U463"
-# docs/facts/ios/tokens.toml:4790
+# docs/facts/ios/tokens.toml:5121
 "tokens.text.keyed.large_title_tight" = "U464"
-# docs/facts/ios/tokens.toml:4795
+# docs/facts/ios/tokens.toml:5126
 "tokens.text.keyed.large_title_loose" = "U464"
-# docs/facts/ios/tokens.toml:4800
+# docs/facts/ios/tokens.toml:5131
 "tokens.text.keyed.title_1_tight" = "U464"
-# docs/facts/ios/tokens.toml:4805
+# docs/facts/ios/tokens.toml:5136
 "tokens.text.keyed.title_1_loose" = "U464"
-# docs/facts/ios/tokens.toml:4810
+# docs/facts/ios/tokens.toml:5141
 "tokens.text.keyed.title_2_tight" = "U464"
-# docs/facts/ios/tokens.toml:4815
+# docs/facts/ios/tokens.toml:5146
 "tokens.text.keyed.title_2_loose" = "U464"
-# docs/facts/ios/tokens.toml:4820
+# docs/facts/ios/tokens.toml:5151
 "tokens.text.keyed.title_3_tight" = "U464"
-# docs/facts/ios/tokens.toml:4825
+# docs/facts/ios/tokens.toml:5156
 "tokens.text.keyed.title_3_loose" = "U464"
-# docs/facts/ios/tokens.toml:4830
+# docs/facts/ios/tokens.toml:5161
 "tokens.text.keyed.headline_tight" = "U464"
-# docs/facts/ios/tokens.toml:4835
+# docs/facts/ios/tokens.toml:5166
 "tokens.text.keyed.headline_loose" = "U464"
-# docs/facts/ios/tokens.toml:4840
+# docs/facts/ios/tokens.toml:5171
 "tokens.text.keyed.subheadline_tight" = "U464"
-# docs/facts/ios/tokens.toml:4845
+# docs/facts/ios/tokens.toml:5176
 "tokens.text.keyed.subheadline_loose" = "U464"
-# docs/facts/ios/tokens.toml:4850
+# docs/facts/ios/tokens.toml:5181
 "tokens.text.keyed.body_tight" = "U464"
-# docs/facts/ios/tokens.toml:4855
+# docs/facts/ios/tokens.toml:5186
 "tokens.text.keyed.body_loose" = "U464"
-# docs/facts/ios/tokens.toml:4860
+# docs/facts/ios/tokens.toml:5191
 "tokens.text.keyed.callout_tight" = "U464"
-# docs/facts/ios/tokens.toml:4865
+# docs/facts/ios/tokens.toml:5196
 "tokens.text.keyed.callout_loose" = "U464"
-# docs/facts/ios/tokens.toml:4870
-"tokens.text.keyed.footnote_tight" = "U464"
-# docs/facts/ios/tokens.toml:4875
-"tokens.text.keyed.footnote_loose" = "U464"
-# docs/facts/ios/tokens.toml:4880
-"tokens.text.keyed.caption_1_tight" = "U464"
-# docs/facts/ios/tokens.toml:4885
-"tokens.text.keyed.caption_1_loose" = "U464"
-# docs/facts/ios/tokens.toml:4890
-"tokens.text.keyed.caption_2_tight" = "U464"
-# docs/facts/ios/tokens.toml:4895
-"tokens.text.keyed.caption_2_loose" = "U464"
-# docs/facts/ios/tokens.toml:4901
-"tokens.text.keyed.large_title_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4906
-"tokens.text.keyed.title_1_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4911
-"tokens.text.keyed.title_2_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4916
-"tokens.text.keyed.title_3_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4921
-"tokens.text.keyed.headline_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4926
-"tokens.text.keyed.subheadline_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4931
-"tokens.text.keyed.body_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4936
-"tokens.text.keyed.callout_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4941
-"tokens.text.keyed.footnote_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4946
-"tokens.text.keyed.caption_1_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4951
-"tokens.text.keyed.caption_2_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4956
-"tokens.text.roles.body_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4961
-"tokens.text.roles.caption_emphasized" = "U465"
-# docs/facts/ios/tokens.toml:4967
-"tokens.text.keyed.extra_large_title" = "U466"
-# docs/facts/ios/tokens.toml:4972
-"tokens.text.keyed.extra_large_title_2" = "U466"
-# docs/facts/ios/tokens.toml:4978
-"tokens.text.roles.display_large" = "U467"
-# docs/facts/ios/tokens.toml:4983
-"tokens.text.roles.display_medium" = "U467"
-# docs/facts/ios/tokens.toml:4988
-"tokens.text.roles.display_small" = "U467"
-# docs/facts/ios/tokens.toml:4993
-"tokens.text.roles.label" = "U467"
-# docs/facts/ios/tokens.toml:4998
-"tokens.text.roles.monospace" = "U467"
-# docs/facts/ios/tokens.toml:5003
-"tokens.text.roles.numeric" = "U467"
-# docs/facts/ios/tokens.toml:5009
-"tokens.text.fallbacks.families" = "U468"
-# docs/facts/ios/tokens.toml:5014
-"tokens.text.fallbacks.per_language" = "U468"
-# docs/facts/ios/tokens.toml:5019
-"tokens.text.fallbacks.per_family" = "U468"
-# docs/facts/ios/tokens.toml:5024
-"tokens.text.fallbacks.emoji_family" = "U468"
-# docs/facts/ios/tokens.toml:5030
-"tokens.text.rendering.engine" = "U469"
-# docs/facts/ios/tokens.toml:5035
-"tokens.text.rendering.antialiasing" = "U469"
-# docs/facts/ios/tokens.toml:5040
-"tokens.text.rendering.hinting" = "U469"
-# docs/facts/ios/tokens.toml:5045
-"tokens.text.rendering.subpixel_order" = "U469"
-# docs/facts/ios/tokens.toml:5050
-"tokens.text.rendering.lcd_filter" = "U469"
-# docs/facts/ios/tokens.toml:5055
-"tokens.text.rendering.gamma" = "U469"
-# docs/facts/ios/tokens.toml:5060
-"tokens.text.rendering.contrast" = "U469"
-# docs/facts/ios/tokens.toml:5066
-"tokens.caret.blink_on_ms" = "U470"
-# docs/facts/ios/tokens.toml:5071
-"tokens.caret.blink_off_ms" = "U470"
-# docs/facts/ios/tokens.toml:5076
-"tokens.caret.blink_style" = "U470"
-# docs/facts/ios/tokens.toml:5081
-"tokens.caret.blink_timeout_ms" = "U470"
-# docs/facts/ios/tokens.toml:5086
-"tokens.caret.solid_while_typing" = "U470"
-# docs/facts/ios/tokens.toml:5092
-"tokens.caret.color" = "U471"
-# docs/facts/ios/tokens.toml:5097
-"tokens.caret.secondary" = "U471"
-# docs/facts/ios/tokens.toml:5102
-"tokens.caret.shown_in_read_only" = "U471"
-# docs/facts/ios/tokens.toml:5108
-"tokens.behavior.double_click_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:5113
-"tokens.behavior.double_click_distance_px" = "U472"
-# docs/facts/ios/tokens.toml:5118
-"tokens.behavior.double_click_height_px" = "U472"
-# docs/facts/ios/tokens.toml:5123
-"tokens.behavior.drag_threshold_px" = "U472"
-# docs/facts/ios/tokens.toml:5128
-"tokens.behavior.drag_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:5133
-"tokens.behavior.drag_min_delay_ms" = "U472"
-# docs/facts/ios/tokens.toml:5138
-"tokens.behavior.hover_time_ms" = "U472"
-# docs/facts/ios/tokens.toml:5143
-"tokens.behavior.hide_pointer_while_typing" = "U472"
-# docs/facts/ios/tokens.toml:5148
-"tokens.behavior.hide_pointer_delay_ms" = "U472"
-# docs/facts/ios/tokens.toml:5153
-"tokens.behavior.hide_pointer_fade_ms" = "U472"
-# docs/facts/ios/tokens.toml:5158
-"tokens.behavior.single_click_activates" = "U472"
-# docs/facts/ios/tokens.toml:5164
-"tokens.behavior.key_repeat" = "U473"
-# docs/facts/ios/tokens.toml:5175
-"tokens.behavior.touch.delay_ms" = "U474"
-# docs/facts/ios/tokens.toml:5180
-"tokens.behavior.touch.slop_px" = "U474"
-# docs/facts/ios/tokens.toml:5185
-"tokens.behavior.touch.paging_slop_px" = "U474"
-# docs/facts/ios/tokens.toml:5190
-"tokens.behavior.touch.double_tap_time_ms" = "U474"
-# docs/facts/ios/tokens.toml:5195
-"tokens.behavior.touch.double_tap_slop_px" = "U474"
 # docs/facts/ios/tokens.toml:5201
-"tokens.behavior.spring_loading_ms" = "U475"
+"tokens.text.keyed.footnote_tight" = "U464"
+# docs/facts/ios/tokens.toml:5206
+"tokens.text.keyed.footnote_loose" = "U464"
+# docs/facts/ios/tokens.toml:5211
+"tokens.text.keyed.caption_1_tight" = "U464"
+# docs/facts/ios/tokens.toml:5216
+"tokens.text.keyed.caption_1_loose" = "U464"
+# docs/facts/ios/tokens.toml:5221
+"tokens.text.keyed.caption_2_tight" = "U464"
+# docs/facts/ios/tokens.toml:5226
+"tokens.text.keyed.caption_2_loose" = "U464"
+# docs/facts/ios/tokens.toml:5232
+"tokens.text.keyed.large_title_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5237
+"tokens.text.keyed.title_1_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5242
+"tokens.text.keyed.title_2_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5247
+"tokens.text.keyed.title_3_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5252
+"tokens.text.keyed.headline_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5257
+"tokens.text.keyed.subheadline_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5262
+"tokens.text.keyed.body_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5267
+"tokens.text.keyed.callout_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5272
+"tokens.text.keyed.footnote_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5277
+"tokens.text.keyed.caption_1_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5282
+"tokens.text.keyed.caption_2_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5287
+"tokens.text.roles.body_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5292
+"tokens.text.roles.caption_emphasized" = "U465"
+# docs/facts/ios/tokens.toml:5298
+"tokens.text.keyed.extra_large_title" = "U466"
+# docs/facts/ios/tokens.toml:5303
+"tokens.text.keyed.extra_large_title_2" = "U466"
+# docs/facts/ios/tokens.toml:5309
+"tokens.text.roles.display_large" = "U467"
+# docs/facts/ios/tokens.toml:5314
+"tokens.text.roles.display_medium" = "U467"
+# docs/facts/ios/tokens.toml:5319
+"tokens.text.roles.display_small" = "U467"
+# docs/facts/ios/tokens.toml:5324
+"tokens.text.roles.label" = "U467"
+# docs/facts/ios/tokens.toml:5329
+"tokens.text.roles.monospace" = "U467"
+# docs/facts/ios/tokens.toml:5334
+"tokens.text.roles.numeric" = "U467"
+# docs/facts/ios/tokens.toml:5340
+"tokens.text.fallbacks.families" = "U468"
+# docs/facts/ios/tokens.toml:5345
+"tokens.text.fallbacks.per_language" = "U468"
+# docs/facts/ios/tokens.toml:5350
+"tokens.text.fallbacks.per_family" = "U468"
+# docs/facts/ios/tokens.toml:5355
+"tokens.text.fallbacks.emoji_family" = "U468"
+# docs/facts/ios/tokens.toml:5361
+"tokens.text.rendering.engine" = "U469"
+# docs/facts/ios/tokens.toml:5366
+"tokens.text.rendering.antialiasing" = "U469"
+# docs/facts/ios/tokens.toml:5371
+"tokens.text.rendering.hinting" = "U469"
+# docs/facts/ios/tokens.toml:5376
+"tokens.text.rendering.subpixel_order" = "U469"
 # docs/facts/ios/tokens.toml:5381
-"tokens.focus.kind" = "U477"
+"tokens.text.rendering.lcd_filter" = "U469"
 # docs/facts/ios/tokens.toml:5386
-"tokens.focus.paint" = "U477"
+"tokens.text.rendering.gamma" = "U469"
 # docs/facts/ios/tokens.toml:5391
+"tokens.text.rendering.contrast" = "U469"
+# docs/facts/ios/tokens.toml:5397
+"tokens.caret.blink_on_ms" = "U470"
+# docs/facts/ios/tokens.toml:5402
+"tokens.caret.blink_off_ms" = "U470"
+# docs/facts/ios/tokens.toml:5407
+"tokens.caret.blink_style" = "U470"
+# docs/facts/ios/tokens.toml:5412
+"tokens.caret.blink_timeout_ms" = "U470"
+# docs/facts/ios/tokens.toml:5417
+"tokens.caret.solid_while_typing" = "U470"
+# docs/facts/ios/tokens.toml:5423
+"tokens.caret.color" = "U471"
+# docs/facts/ios/tokens.toml:5428
+"tokens.caret.secondary" = "U471"
+# docs/facts/ios/tokens.toml:5433
+"tokens.caret.shown_in_read_only" = "U471"
+# docs/facts/ios/tokens.toml:5439
+"tokens.behavior.double_click_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:5444
+"tokens.behavior.double_click_distance_px" = "U472"
+# docs/facts/ios/tokens.toml:5449
+"tokens.behavior.double_click_height_px" = "U472"
+# docs/facts/ios/tokens.toml:5454
+"tokens.behavior.drag_threshold_px" = "U472"
+# docs/facts/ios/tokens.toml:5459
+"tokens.behavior.drag_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:5464
+"tokens.behavior.drag_min_delay_ms" = "U472"
+# docs/facts/ios/tokens.toml:5469
+"tokens.behavior.hover_time_ms" = "U472"
+# docs/facts/ios/tokens.toml:5474
+"tokens.behavior.hide_pointer_while_typing" = "U472"
+# docs/facts/ios/tokens.toml:5479
+"tokens.behavior.hide_pointer_delay_ms" = "U472"
+# docs/facts/ios/tokens.toml:5484
+"tokens.behavior.hide_pointer_fade_ms" = "U472"
+# docs/facts/ios/tokens.toml:5489
+"tokens.behavior.single_click_activates" = "U472"
+# docs/facts/ios/tokens.toml:5495
+"tokens.behavior.key_repeat" = "U473"
+# docs/facts/ios/tokens.toml:5506
+"tokens.behavior.touch.delay_ms" = "U474"
+# docs/facts/ios/tokens.toml:5511
+"tokens.behavior.touch.slop_px" = "U474"
+# docs/facts/ios/tokens.toml:5516
+"tokens.behavior.touch.paging_slop_px" = "U474"
+# docs/facts/ios/tokens.toml:5521
+"tokens.behavior.touch.double_tap_time_ms" = "U474"
+# docs/facts/ios/tokens.toml:5526
+"tokens.behavior.touch.double_tap_slop_px" = "U474"
+# docs/facts/ios/tokens.toml:5532
+"tokens.behavior.spring_loading_ms" = "U475"
+# docs/facts/ios/tokens.toml:5712
+"tokens.focus.kind" = "U477"
+# docs/facts/ios/tokens.toml:5717
+"tokens.focus.paint" = "U477"
+# docs/facts/ios/tokens.toml:5722
 "tokens.focus.width_px" = "U477"
-# docs/facts/ios/tokens.toml:5396
+# docs/facts/ios/tokens.toml:5727
 "tokens.focus.dash" = "U477"
-# docs/facts/ios/tokens.toml:5401
+# docs/facts/ios/tokens.toml:5732
 "tokens.focus.offset.top_px" = "U477"
-# docs/facts/ios/tokens.toml:5406
+# docs/facts/ios/tokens.toml:5737
 "tokens.focus.offset.right_px" = "U477"
-# docs/facts/ios/tokens.toml:5411
+# docs/facts/ios/tokens.toml:5742
 "tokens.focus.offset.bottom_px" = "U477"
-# docs/facts/ios/tokens.toml:5416
+# docs/facts/ios/tokens.toml:5747
 "tokens.focus.offset.left_px" = "U477"
-# docs/facts/ios/tokens.toml:5421
+# docs/facts/ios/tokens.toml:5752
 "tokens.focus.corners.top_left" = "U477"
-# docs/facts/ios/tokens.toml:5426
+# docs/facts/ios/tokens.toml:5757
 "tokens.focus.corners.top_right" = "U477"
-# docs/facts/ios/tokens.toml:5431
+# docs/facts/ios/tokens.toml:5762
 "tokens.focus.corners.bottom_right" = "U477"
-# docs/facts/ios/tokens.toml:5436
+# docs/facts/ios/tokens.toml:5767
 "tokens.focus.corners.bottom_left" = "U477"
-# docs/facts/ios/tokens.toml:5441
+# docs/facts/ios/tokens.toml:5772
 "tokens.focus.corners.curve" = "U477"
-# docs/facts/ios/tokens.toml:5446
+# docs/facts/ios/tokens.toml:5777
 "tokens.focus.shadow" = "U477"
-# docs/facts/ios/tokens.toml:5451
+# docs/facts/ios/tokens.toml:5782
 "tokens.focus.transition" = "U477"
-# docs/facts/ios/tokens.toml:5457
+# docs/facts/ios/tokens.toml:5788
 "tokens.icons.set" = "U478"
-# docs/facts/ios/tokens.toml:5462
+# docs/facts/ios/tokens.toml:5793
 "tokens.icons.theme" = "U478"
-# docs/facts/ios/tokens.toml:5467
+# docs/facts/ios/tokens.toml:5798
 "tokens.icons.theme_fallback" = "U478"
-# docs/facts/ios/tokens.toml:5472
+# docs/facts/ios/tokens.toml:5803
 "tokens.icons.mirroring" = "U478"
-# docs/facts/ios/tokens.toml:5478
+# docs/facts/ios/tokens.toml:5809
 "tokens.icons.sizes.toolbar.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:5483
+# docs/facts/ios/tokens.toml:5814
 "tokens.icons.sizes.toolbar.fill" = "U479"
-# docs/facts/ios/tokens.toml:5488
+# docs/facts/ios/tokens.toml:5819
 "tokens.icons.sizes.toolbar.axes" = "U479"
-# docs/facts/ios/tokens.toml:5493
+# docs/facts/ios/tokens.toml:5824
 "tokens.icons.sizes.toolbar.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:5498
+# docs/facts/ios/tokens.toml:5829
 "tokens.icons.sizes.toolbar.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:5503
+# docs/facts/ios/tokens.toml:5834
 "tokens.icons.sizes.toolbar.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:5508
+# docs/facts/ios/tokens.toml:5839
 "tokens.icons.sizes.toolbar.animation" = "U479"
-# docs/facts/ios/tokens.toml:5513
+# docs/facts/ios/tokens.toml:5844
 "tokens.icons.sizes.small.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:5518
+# docs/facts/ios/tokens.toml:5849
 "tokens.icons.sizes.small.fill" = "U479"
-# docs/facts/ios/tokens.toml:5523
+# docs/facts/ios/tokens.toml:5854
 "tokens.icons.sizes.small.axes" = "U479"
-# docs/facts/ios/tokens.toml:5528
+# docs/facts/ios/tokens.toml:5859
 "tokens.icons.sizes.small.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:5533
+# docs/facts/ios/tokens.toml:5864
 "tokens.icons.sizes.small.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:5538
+# docs/facts/ios/tokens.toml:5869
 "tokens.icons.sizes.small.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:5543
+# docs/facts/ios/tokens.toml:5874
 "tokens.icons.sizes.small.animation" = "U479"
-# docs/facts/ios/tokens.toml:5548
+# docs/facts/ios/tokens.toml:5879
 "tokens.icons.sizes.large.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:5553
+# docs/facts/ios/tokens.toml:5884
 "tokens.icons.sizes.large.fill" = "U479"
-# docs/facts/ios/tokens.toml:5558
+# docs/facts/ios/tokens.toml:5889
 "tokens.icons.sizes.large.axes" = "U479"
-# docs/facts/ios/tokens.toml:5563
+# docs/facts/ios/tokens.toml:5894
 "tokens.icons.sizes.large.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:5568
+# docs/facts/ios/tokens.toml:5899
 "tokens.icons.sizes.large.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:5573
+# docs/facts/ios/tokens.toml:5904
 "tokens.icons.sizes.large.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:5578
+# docs/facts/ios/tokens.toml:5909
 "tokens.icons.sizes.large.animation" = "U479"
-# docs/facts/ios/tokens.toml:5583
+# docs/facts/ios/tokens.toml:5914
 "tokens.icons.sizes.dialog.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:5588
+# docs/facts/ios/tokens.toml:5919
 "tokens.icons.sizes.dialog.fill" = "U479"
-# docs/facts/ios/tokens.toml:5593
+# docs/facts/ios/tokens.toml:5924
 "tokens.icons.sizes.dialog.axes" = "U479"
-# docs/facts/ios/tokens.toml:5598
+# docs/facts/ios/tokens.toml:5929
 "tokens.icons.sizes.dialog.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:5603
+# docs/facts/ios/tokens.toml:5934
 "tokens.icons.sizes.dialog.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:5608
+# docs/facts/ios/tokens.toml:5939
 "tokens.icons.sizes.dialog.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:5613
+# docs/facts/ios/tokens.toml:5944
 "tokens.icons.sizes.dialog.animation" = "U479"
-# docs/facts/ios/tokens.toml:5618
+# docs/facts/ios/tokens.toml:5949
 "tokens.icons.sizes.panel.rendering_mode" = "U479"
-# docs/facts/ios/tokens.toml:5623
+# docs/facts/ios/tokens.toml:5954
 "tokens.icons.sizes.panel.fill" = "U479"
-# docs/facts/ios/tokens.toml:5628
+# docs/facts/ios/tokens.toml:5959
 "tokens.icons.sizes.panel.axes" = "U479"
-# docs/facts/ios/tokens.toml:5633
+# docs/facts/ios/tokens.toml:5964
 "tokens.icons.sizes.panel.symbol_variants" = "U479"
-# docs/facts/ios/tokens.toml:5638
+# docs/facts/ios/tokens.toml:5969
 "tokens.icons.sizes.panel.symbolic_colors" = "U479"
-# docs/facts/ios/tokens.toml:5643
+# docs/facts/ios/tokens.toml:5974
 "tokens.icons.sizes.panel.state_effect" = "U479"
-# docs/facts/ios/tokens.toml:5648
+# docs/facts/ios/tokens.toml:5979
 "tokens.icons.sizes.panel.animation" = "U479"
-# docs/facts/ios/tokens.toml:5656
+# docs/facts/ios/tokens.toml:5987
 "tokens.icons.sizes.keyed" = "U650"
-# docs/facts/ios/tokens.toml:5662
+# docs/facts/ios/tokens.toml:5993
 "tokens.elevation" = "U480"
-# docs/facts/ios/tokens.toml:5667
+# docs/facts/ios/tokens.toml:5998
 "tokens.size_classes" = "U480"
-# docs/facts/ios/tokens.toml:5673
+# docs/facts/ios/tokens.toml:6004
 "tokens.motion.speed_factor" = "U481"
-# docs/facts/ios/tokens.toml:5678
+# docs/facts/ios/tokens.toml:6009
 "tokens.motion.durations.navigation_ms" = "U481"
-# docs/facts/ios/tokens.toml:5683
+# docs/facts/ios/tokens.toml:6014
 "tokens.motion.timings.navigation" = "U481"
-# docs/facts/ios/tokens.toml:5689
+# docs/facts/ios/tokens.toml:6020
 "tokens.params.opacity.disabled" = "U486"
 # docs/facts/ios/state-models.toml:61
 "declare.widget.button.sizes_by_variant.flat.default_size" = "U129"
@@ -1922,159 +1900,181 @@ roles.footnote = "= token.text.keyed.footnote"
 roles.caption = "= token.text.keyed.caption_1"
 # docs/facts/ios/tokens.toml:1767
 roles.caption2 = "= token.text.keyed.caption_2"
-# docs/facts/ios/tokens.toml:1914
+# docs/facts/ios/tokens.toml:1907
+keyed.large_title.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:1945
 keyed.large_title.fill = "absent"
-# docs/facts/ios/tokens.toml:1943
+# docs/facts/ios/tokens.toml:1974
 keyed.large_title.decoration = "absent"
-# docs/facts/ios/tokens.toml:1972
+# docs/facts/ios/tokens.toml:2003
 keyed.large_title.case = "mixed"
-# docs/facts/ios/tokens.toml:2001
+# docs/facts/ios/tokens.toml:2032
 keyed.large_title.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:2030
+# docs/facts/ios/tokens.toml:2061
 keyed.large_title.elision = "absent"
-# docs/facts/ios/tokens.toml:2059
+# docs/facts/ios/tokens.toml:2090
 keyed.large_title.wrap = "absent"
-# docs/facts/ios/tokens.toml:2088
+# docs/facts/ios/tokens.toml:2119
 keyed.large_title.max_lines = "absent"
-# docs/facts/ios/tokens.toml:2180
+# docs/facts/ios/tokens.toml:2205
+keyed.title_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2241
 keyed.title_1.fill = "absent"
-# docs/facts/ios/tokens.toml:2209
+# docs/facts/ios/tokens.toml:2270
 keyed.title_1.decoration = "absent"
-# docs/facts/ios/tokens.toml:2238
+# docs/facts/ios/tokens.toml:2299
 keyed.title_1.case = "mixed"
-# docs/facts/ios/tokens.toml:2267
+# docs/facts/ios/tokens.toml:2328
 keyed.title_1.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:2296
+# docs/facts/ios/tokens.toml:2357
 keyed.title_1.elision = "absent"
-# docs/facts/ios/tokens.toml:2325
+# docs/facts/ios/tokens.toml:2386
 keyed.title_1.wrap = "absent"
-# docs/facts/ios/tokens.toml:2354
+# docs/facts/ios/tokens.toml:2415
 keyed.title_1.max_lines = "absent"
-# docs/facts/ios/tokens.toml:2445
+# docs/facts/ios/tokens.toml:2500
+keyed.title_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2536
 keyed.title_2.fill = "absent"
-# docs/facts/ios/tokens.toml:2474
+# docs/facts/ios/tokens.toml:2565
 keyed.title_2.decoration = "absent"
-# docs/facts/ios/tokens.toml:2503
+# docs/facts/ios/tokens.toml:2594
 keyed.title_2.case = "mixed"
-# docs/facts/ios/tokens.toml:2532
+# docs/facts/ios/tokens.toml:2623
 keyed.title_2.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:2561
+# docs/facts/ios/tokens.toml:2652
 keyed.title_2.elision = "absent"
-# docs/facts/ios/tokens.toml:2590
+# docs/facts/ios/tokens.toml:2681
 keyed.title_2.wrap = "absent"
-# docs/facts/ios/tokens.toml:2619
-keyed.title_2.max_lines = "absent"
 # docs/facts/ios/tokens.toml:2710
+keyed.title_2.max_lines = "absent"
+# docs/facts/ios/tokens.toml:2795
+keyed.title_3.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:2831
 keyed.title_3.fill = "absent"
-# docs/facts/ios/tokens.toml:2739
+# docs/facts/ios/tokens.toml:2860
 keyed.title_3.decoration = "absent"
-# docs/facts/ios/tokens.toml:2768
+# docs/facts/ios/tokens.toml:2889
 keyed.title_3.case = "mixed"
-# docs/facts/ios/tokens.toml:2797
+# docs/facts/ios/tokens.toml:2918
 keyed.title_3.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:2826
+# docs/facts/ios/tokens.toml:2947
 keyed.title_3.elision = "absent"
-# docs/facts/ios/tokens.toml:2855
+# docs/facts/ios/tokens.toml:2976
 keyed.title_3.wrap = "absent"
-# docs/facts/ios/tokens.toml:2884
+# docs/facts/ios/tokens.toml:3005
 keyed.title_3.max_lines = "absent"
-# docs/facts/ios/tokens.toml:2975
+# docs/facts/ios/tokens.toml:3090
+keyed.headline.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:3126
 keyed.headline.fill = "absent"
-# docs/facts/ios/tokens.toml:3004
+# docs/facts/ios/tokens.toml:3155
 keyed.headline.decoration = "absent"
-# docs/facts/ios/tokens.toml:3033
+# docs/facts/ios/tokens.toml:3184
 keyed.headline.case = "mixed"
-# docs/facts/ios/tokens.toml:3062
+# docs/facts/ios/tokens.toml:3213
 keyed.headline.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:3091
+# docs/facts/ios/tokens.toml:3242
 keyed.headline.elision = "absent"
-# docs/facts/ios/tokens.toml:3120
+# docs/facts/ios/tokens.toml:3271
 keyed.headline.wrap = "absent"
-# docs/facts/ios/tokens.toml:3149
+# docs/facts/ios/tokens.toml:3300
 keyed.headline.max_lines = "absent"
-# docs/facts/ios/tokens.toml:3240
-keyed.subheadline.fill = "absent"
-# docs/facts/ios/tokens.toml:3269
-keyed.subheadline.decoration = "absent"
-# docs/facts/ios/tokens.toml:3298
-keyed.subheadline.case = "mixed"
-# docs/facts/ios/tokens.toml:3327
-keyed.subheadline.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:3356
-keyed.subheadline.elision = "absent"
 # docs/facts/ios/tokens.toml:3385
+keyed.subheadline.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:3421
+keyed.subheadline.fill = "absent"
+# docs/facts/ios/tokens.toml:3450
+keyed.subheadline.decoration = "absent"
+# docs/facts/ios/tokens.toml:3479
+keyed.subheadline.case = "mixed"
+# docs/facts/ios/tokens.toml:3508
+keyed.subheadline.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:3537
+keyed.subheadline.elision = "absent"
+# docs/facts/ios/tokens.toml:3566
 keyed.subheadline.wrap = "absent"
-# docs/facts/ios/tokens.toml:3414
+# docs/facts/ios/tokens.toml:3595
 keyed.subheadline.max_lines = "absent"
-# docs/facts/ios/tokens.toml:3505
+# docs/facts/ios/tokens.toml:3680
+keyed.body.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:3716
 keyed.body.fill = "absent"
-# docs/facts/ios/tokens.toml:3534
+# docs/facts/ios/tokens.toml:3745
 keyed.body.decoration = "absent"
-# docs/facts/ios/tokens.toml:3563
+# docs/facts/ios/tokens.toml:3774
 keyed.body.case = "mixed"
-# docs/facts/ios/tokens.toml:3592
+# docs/facts/ios/tokens.toml:3803
 keyed.body.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:3621
+# docs/facts/ios/tokens.toml:3832
 keyed.body.elision = "absent"
-# docs/facts/ios/tokens.toml:3650
+# docs/facts/ios/tokens.toml:3861
 keyed.body.wrap = "absent"
-# docs/facts/ios/tokens.toml:3679
+# docs/facts/ios/tokens.toml:3890
 keyed.body.max_lines = "absent"
-# docs/facts/ios/tokens.toml:3770
+# docs/facts/ios/tokens.toml:3975
+keyed.callout.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:4011
 keyed.callout.fill = "absent"
-# docs/facts/ios/tokens.toml:3799
+# docs/facts/ios/tokens.toml:4040
 keyed.callout.decoration = "absent"
-# docs/facts/ios/tokens.toml:3828
+# docs/facts/ios/tokens.toml:4069
 keyed.callout.case = "mixed"
-# docs/facts/ios/tokens.toml:3857
+# docs/facts/ios/tokens.toml:4098
 keyed.callout.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:3886
+# docs/facts/ios/tokens.toml:4127
 keyed.callout.elision = "absent"
-# docs/facts/ios/tokens.toml:3915
+# docs/facts/ios/tokens.toml:4156
 keyed.callout.wrap = "absent"
-# docs/facts/ios/tokens.toml:3944
+# docs/facts/ios/tokens.toml:4185
 keyed.callout.max_lines = "absent"
-# docs/facts/ios/tokens.toml:4035
+# docs/facts/ios/tokens.toml:4270
+keyed.footnote.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:4306
 keyed.footnote.fill = "absent"
-# docs/facts/ios/tokens.toml:4064
+# docs/facts/ios/tokens.toml:4335
 keyed.footnote.decoration = "absent"
-# docs/facts/ios/tokens.toml:4093
+# docs/facts/ios/tokens.toml:4364
 keyed.footnote.case = "mixed"
-# docs/facts/ios/tokens.toml:4122
+# docs/facts/ios/tokens.toml:4393
 keyed.footnote.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:4151
+# docs/facts/ios/tokens.toml:4422
 keyed.footnote.elision = "absent"
-# docs/facts/ios/tokens.toml:4180
+# docs/facts/ios/tokens.toml:4451
 keyed.footnote.wrap = "absent"
-# docs/facts/ios/tokens.toml:4209
+# docs/facts/ios/tokens.toml:4480
 keyed.footnote.max_lines = "absent"
-# docs/facts/ios/tokens.toml:4300
-keyed.caption_1.fill = "absent"
-# docs/facts/ios/tokens.toml:4329
-keyed.caption_1.decoration = "absent"
-# docs/facts/ios/tokens.toml:4358
-keyed.caption_1.case = "mixed"
-# docs/facts/ios/tokens.toml:4387
-keyed.caption_1.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:4416
-keyed.caption_1.elision = "absent"
-# docs/facts/ios/tokens.toml:4445
-keyed.caption_1.wrap = "absent"
-# docs/facts/ios/tokens.toml:4474
-keyed.caption_1.max_lines = "absent"
 # docs/facts/ios/tokens.toml:4565
+keyed.caption_1.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:4601
+keyed.caption_1.fill = "absent"
+# docs/facts/ios/tokens.toml:4630
+keyed.caption_1.decoration = "absent"
+# docs/facts/ios/tokens.toml:4659
+keyed.caption_1.case = "mixed"
+# docs/facts/ios/tokens.toml:4688
+keyed.caption_1.word_spacing_px = 0
+# docs/facts/ios/tokens.toml:4717
+keyed.caption_1.elision = "absent"
+# docs/facts/ios/tokens.toml:4746
+keyed.caption_1.wrap = "absent"
+# docs/facts/ios/tokens.toml:4775
+keyed.caption_1.max_lines = "absent"
+# docs/facts/ios/tokens.toml:4860
+keyed.caption_2.letter_spacing = "= sf_tracking(font_size, sf_pro)"
+# docs/facts/ios/tokens.toml:4896
 keyed.caption_2.fill = "absent"
-# docs/facts/ios/tokens.toml:4594
+# docs/facts/ios/tokens.toml:4925
 keyed.caption_2.decoration = "absent"
-# docs/facts/ios/tokens.toml:4623
+# docs/facts/ios/tokens.toml:4954
 keyed.caption_2.case = "mixed"
-# docs/facts/ios/tokens.toml:4652
+# docs/facts/ios/tokens.toml:4983
 keyed.caption_2.word_spacing_px = 0
-# docs/facts/ios/tokens.toml:4681
+# docs/facts/ios/tokens.toml:5012
 keyed.caption_2.elision = "absent"
-# docs/facts/ios/tokens.toml:4710
+# docs/facts/ios/tokens.toml:5041
 keyed.caption_2.wrap = "absent"
-# docs/facts/ios/tokens.toml:4739
+# docs/facts/ios/tokens.toml:5070
 keyed.caption_2.max_lines = "absent"
 # S9.4
 font_dpi = 72
@@ -2090,11 +2090,11 @@ durations.default_ms = 734.901
 [tokens.behavior]
 # docs/facts/ios/tokens.toml:1782
 long_press_ms = 500
-# docs/facts/ios/tokens.toml:5209
+# docs/facts/ios/tokens.toml:5540
 mnemonics = "never"
-# docs/facts/ios/tokens.toml:5287
+# docs/facts/ios/tokens.toml:5618
 mnemonic_when_disabled = "absent"
-# docs/facts/ios/tokens.toml:5365
+# docs/facts/ios/tokens.toml:5696
 focus_visible_when = "any_focus"
 
 [tokens.caret]
@@ -2102,9 +2102,9 @@ focus_visible_when = "any_focus"
 width_px = 2
 
 [tokens]
-# docs/facts/ios/tokens.toml:5698
+# docs/facts/ios/tokens.toml:6029
 kde = "absent"
-# docs/facts/ios/tokens.toml:5715
+# docs/facts/ios/tokens.toml:6046
 material = "absent"
 
 [tokens.icons]

@@ -43846,7 +43846,8 @@ rows = ["MAC-B08"]
 
 # ---------------------------------------------------------------------------------------------------------------------
 # macos-monterey: the tahoe fill's facts above, each SDK citation at Xcode 16.4 (the macOS 15.5 SDK, the
-# run 41006842699 macos-15 job's header copy): the label's decoration, mnemonic decoration, word spacing and case (letter spacing pending U237).
+# run 41006842699 macos-15 job's header copy): the label's decoration, mnemonic decoration, word spacing and case; its letter spacing SF Pro's tracking from
+# the HIG's macOS tracking table in a capture from macOS 15's lifetime (hig-typography@2025-08-15, ADD-A136; U237 settled).
 
 [[fact]]
 key = "button.label.text.decoration"
@@ -43960,8 +43961,53 @@ quote = "- (void)setTitleWithMnemonic:(null_unspecified NSString *)stringWithAmp
 [[fact]]
 key = "button.label.text.letter_spacing"
 when = { conditions = ["preset:macos-monterey"] }
-pending = "U237"
+value = "= sf_tracking(font_size, sf_pro)"
 rows = ["MAC-X18"]
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/81/text"
+quote = "macOS tracking values"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/0/0/inlineContent/0/text"
+quote = "Size (points)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/0/1/0/inlineContent/0/text"
+quote = "Tracking (1/1000 em)"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/4/0/0/inlineContent/0/text"
+quote = "9"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/4/1/0/inlineContent/0/text"
+quote = "+19"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/0/0/inlineContent/0/text"
+quote = "11"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/6/1/0/inlineContent/0/text"
+quote = "+6"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/0/0/inlineContent/0/text"
+quote = "13"
+
+[[fact.cite]]
+kind = "published"
+source = "hig-typography@2025-08-15 #/primaryContentSections/0/content/82/rows/8/1/0/inlineContent/0/text"
+quote = "-6"
 
 [[fact]]
 key = "button.label.text.word_spacing"
